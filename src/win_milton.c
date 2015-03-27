@@ -1,6 +1,9 @@
 #include "system_includes.h"
 #include "gl_helpers.h"
 
+
+#include "milton.h"
+
 typedef int32_t bool32;
 
 #define snprintf sprintf_s
@@ -273,6 +276,9 @@ int CALLBACK WinMain(
     {
         return FALSE;
     }
+
+    MiltonState milton_state;
+    milton_init(&milton_state);
 
     while (g_running)
     {

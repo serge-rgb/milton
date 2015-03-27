@@ -1,2 +1,2 @@
 @echo off
-:: TODO: clone libserg and move gl_helpers..
+git clone https://github.com/bigmonachus/libserg.git src/libserg
