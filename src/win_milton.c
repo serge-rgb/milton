@@ -1,5 +1,4 @@
 #include "system_includes.h"
-#include "gl_helpers.h"
 
 #include "libserg/memory.h"
 
