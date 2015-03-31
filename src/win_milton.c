@@ -3,12 +3,9 @@
 
 #include "libserg/memory.h"
 
-
 #include "milton.h"
 
 #define snprintf sprintf_s
-
-// static HGLRC g_glcontext_handle;
 
 typedef struct
 {
@@ -32,8 +29,8 @@ typedef struct
     int height;
 } GuiData;
 
-GuiMsg  g_gui_msgs;
-GuiData g_gui_data;
+static GuiMsg  g_gui_msgs;
+static GuiData g_gui_data;
 
 void platform_quit()
 {
@@ -88,8 +85,9 @@ static void win32_resize(
     // NOTE: Here we would allocate a new raster buffer
 }
 
-static void win32_process_input(Win32State* win_state, HWND window)
+static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 {
+    MiltonInput input = { 0 };
     MSG message;
     while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
     {
@@ -135,6 +133,7 @@ static void win32_process_input(Win32State* win_state, HWND window)
             g_gui_msgs ^= GuiMsg_RESIZED;
         }
     }
+    return input;
 }
 
 LRESULT APIENTRY WndProc(
@@ -263,8 +262,9 @@ int CALLBACK WinMain(
         win_state.window = window;
     }
 
-    size_t memory_size = 1 * // One gigabyte
-        1024 * 1024 * 1024;
+
+    const size_t total_memory_size = 1 * 1024 * 1024 * 1024;  // Total memory requirement for Milton.
+    const size_t frame_heap_in_MB = 32 * 1024 * 1024;         // Size of transient memory
 
     // Create root arena
     void* big_chunk_of_memory =
@@ -275,36 +275,34 @@ int CALLBACK WinMain(
 #else
                 NULL, //  lpAddress,
 #endif
-                memory_size,//  dwSize,
+                total_memory_size,//  dwSize,
                 MEM_COMMIT | MEM_RESERVE, //  flAllocationType,
                 PAGE_READWRITE//  flProtect
                 );
 
 
     assert (big_chunk_of_memory);
-    Arena root_arena = arena_init(big_chunk_of_memory, memory_size);
+    Arena root_arena = arena_init(big_chunk_of_memory, total_memory_size);
+    // Create a transient arena, called once per update
+    Arena frame_arena = arena_spawn(&root_arena, frame_heap_in_MB);
     MiltonState milton_state;
-    milton_init(&root_arena, &milton_state);
+    {
+        milton_state.root_arena = &root_arena;
+        milton_state.frame_arena = &frame_arena;
+        milton_init(&milton_state);
+    }
 
-    g_gui_data.width = width;
-    g_gui_data.height = height;
+    // Initialize global GUI data.
+    {
+        g_gui_data.width = width;
+        g_gui_data.height = height;
+    }
 
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
-        win32_process_input(&win_state, window);
+        MiltonInput input = win32_process_input(&win_state, window);
 
-        // Test: paint it red!
-        uint32_t red = 0xffff0000;
-        uint32_t* pixels = (uint32_t*) milton_state.raster_buffer;
-            for (int h = 0; h < win_state.height; ++h)
-            {
-                for (int w = 0; w < win_state.width; ++w)
-                {
-                    *pixels = red;
-                    ++pixels;
-                }
-            }
-
+        milton_update(&milton_state, &input);
         win32_display_raster_buffer(
                 &win_state,
                 milton_state.raster_buffer,
