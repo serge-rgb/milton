@@ -13,19 +13,24 @@ typedef struct
     int32_t width;
     int32_t height;
     BITMAPINFO bitmap_info;
+    MiltonBrush stored_brush;
 } Win32State;
 
 typedef enum
 {
-    GuiMsg_RESIZING    = (1 << 0),
-    GuiMsg_RESIZED     = (1 << 1),
-    GuiMsg_SHOULD_QUIT = (1 << 2),
+    GuiMsg_RESIZED     = (1 << 0),
+    GuiMsg_SHOULD_QUIT = (1 << 1),
 } GuiMsg;
 
 typedef struct
 {
     int width;
     int height;
+    // Mouse info
+    int mouse_x;
+    int mouse_y;
+    bool32 left_down;
+    bool32 right_down;
 } GuiData;
 
 static GuiMsg  g_gui_msgs;
@@ -63,7 +68,6 @@ static void win32_resize(
 
     win_state->width = width;
     win_state->height = height;
-    //win_state->bytes_per_pixel = 3;
 
     BITMAPINFOHEADER header;
     {
@@ -84,6 +88,21 @@ static void win32_resize(
     // NOTE: Here we would allocate a new raster buffer
 }
 
+// Request hover and leave.
+static void win32_request_mouse_tracking(HWND window)
+{
+    TRACKMOUSEEVENT mouse_event = { 0 };
+    {
+        mouse_event.cbSize      = sizeof(TRACKMOUSEEVENT);
+        mouse_event.dwFlags     = TME_HOVER | TME_LEAVE;
+        mouse_event.hwndTrack   = window;
+        mouse_event.dwHoverTime = 100;  // TODO: Find sweet spot for latency.
+    }
+
+    TrackMouseEvent(&mouse_event);
+}
+
+
 static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 {
     MiltonInput input = { 0 };
@@ -98,10 +117,29 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
         {
         case WM_LBUTTONDOWN:
             {
+                g_gui_data.mouse_x   = GET_X_LPARAM(message.lParam);
+                g_gui_data.mouse_y   = GET_Y_LPARAM(message.lParam);
+                g_gui_data.left_down = 1;
+
+#if 0
+                char buffer[1024];
+                snprintf(buffer, 1024, "Click! %d %d\n", g_gui_data.mouse_x, g_gui_data.mouse_y);
+                OutputDebugStringA(buffer);
+#endif
                 break;
             }
         case WM_LBUTTONUP:
             {
+                g_gui_data.left_down = 0;
+                break;
+            }
+        case WM_MOUSEMOVE:
+            {
+                if (g_gui_data.left_down || g_gui_data.right_down)
+                {
+                    g_gui_data.mouse_x = GET_X_LPARAM(message.lParam);
+                    g_gui_data.mouse_y = GET_Y_LPARAM(message.lParam);
+                }
                 break;
             }
         case WM_SYSKEYUP:
@@ -130,7 +168,15 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
         {
             win32_resize(win_state, g_gui_data.width, g_gui_data.height);
             g_gui_msgs ^= GuiMsg_RESIZED;
+            input.full_refresh = 1;
         }
+    }
+
+    if (g_gui_data.left_down)
+    {
+        win_state->stored_brush.x = g_gui_data.mouse_x;
+        win_state->stored_brush.y = g_gui_data.mouse_y;
+        input.brush = &win_state->stored_brush;
     }
     return input;
 }
@@ -149,13 +195,16 @@ LRESULT APIENTRY WndProc(
         {
             // Let win32_process_input handle it.
             g_gui_msgs |= GuiMsg_RESIZED;
-            break;
-        }
-    case WM_SIZING:
-        {
-            RECT* rect = (RECT*)lParam;
-            g_gui_data.width = rect->right - rect->left;
-            g_gui_data.height = rect->bottom - rect->top;
+            if (wParam == SIZE_MAXIMIZED)
+            {
+                g_gui_data.width = LOWORD(lParam);
+                g_gui_data.height = HIWORD(lParam);
+            }
+            if (wParam == SIZE_RESTORED)
+            {
+                g_gui_data.width = LOWORD(lParam);
+                g_gui_data.height = HIWORD(lParam);
+            }
             break;
         }
     case WM_CREATE:
@@ -189,11 +238,11 @@ LRESULT APIENTRY WndProc(
 
 static void win32_display_raster_buffer(
         Win32State* win_state,
-        uint8_t* bytes, int32_t width, int32_t height, uint8_t bytes_per_pixel)
+        uint8_t* bytes, int32_t full_width, int32_t full_height, uint8_t bytes_per_pixel)
 {
     // Make sure we have allocated enough memory for the current window.
-    assert(width > win_state->width);
-    assert(height > win_state->height);
+    assert(full_width > win_state->width);
+    assert(full_height > win_state->height);
 
     StretchDIBits(
             GetDC(win_state->window),
@@ -280,6 +329,7 @@ int CALLBACK WinMain(
                 PAGE_READWRITE//  flProtect
                 );
 
+    win32_request_mouse_tracking(window);
 
     assert (big_chunk_of_memory);
     Arena root_arena = arena_init(big_chunk_of_memory, total_memory_size);
@@ -298,18 +348,28 @@ int CALLBACK WinMain(
         g_gui_data.height = height;
     }
 
+    MiltonInput input = { 0 };
+    {
+        input.full_refresh = 1;
+    }
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
-        MiltonInput input = win32_process_input(&win_state, window);
+        bool32 modified = milton_update(&milton_state, &input);
+        if (modified)
+        {
+            win32_display_raster_buffer(
+                    &win_state,
+                    milton_state.raster_buffer,
+                    milton_state.full_width,
+                    milton_state.full_height,
+                    milton_state.bytes_per_pixel
+                    );
+        }
 
-        milton_update(&milton_state, &input);
-        win32_display_raster_buffer(
-                &win_state,
-                milton_state.raster_buffer,
-                milton_state.width,
-                milton_state.height,
-                milton_state.bytes_per_pixel
-                );
+        input = win32_process_input(&win_state, window);
+        milton_state.screen_width = win_state.width;
+        milton_state.screen_height = win_state.height;
+
         // Sleep until we need to.
         WaitMessage();
     }

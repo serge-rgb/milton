@@ -4,6 +4,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <windowsx.h>
 #endif
 
 // Platform independent includes:
