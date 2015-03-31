@@ -111,7 +111,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             {
                 uint32_t vkcode = (uint32_t)message.wParam;
                 bool32 was_down = ((message.lParam & (1 << 30)) != 0);
-                bool32 is_down  = ((message.lParam & (1 << 31)) == 0);
+                bool32 is_down  = ((message.lParam & ((uint64_t)1 << 31)) == 0);
                 bool32 alt_key_was_down = (message.lParam & (1 << 29));
                 if (was_down && vkcode == VK_ESCAPE)
                 {
@@ -208,6 +208,7 @@ static void win32_display_raster_buffer(
             SRCCOPY);
 }
 
+#pragma warning(suppress: 28251)
 int CALLBACK WinMain(
         HINSTANCE hInstance,
         HINSTANCE hPrevInstance,
