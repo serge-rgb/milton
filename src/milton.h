@@ -15,13 +15,13 @@ typedef int32_t     bool32;
 
 typedef v2l StrokePoint;
 
-typedef struct
+typedef struct StoredStroke_s
 {
     StrokePoint* points;
     int64        num_points;
 } StoredStroke;
 
-typedef struct
+typedef struct MiltonState_s
 {
     int32_t     full_width;             // Dimensions of the raster
     int32_t     full_height;
@@ -50,13 +50,13 @@ typedef struct
     // Debug:
 } MiltonState;
 
-typedef struct
+typedef struct MiltonInput_s
 {
     bool32 full_refresh;
     v2l* brush;
 } MiltonInput;
 
-typedef struct
+typedef struct Rectl_s
 {
     v2l top_left;
     v2l bot_right;
@@ -69,7 +69,7 @@ static void milton_init(MiltonState* milton_state)
     milton_state->full_width      = 7680;
     milton_state->full_height     = 4320;
     milton_state->bytes_per_pixel = 4;
-    milton_state->view_scale      = 1000 * 1000 * 1000;  // A billion.
+    milton_state->view_scale      = ((int64)1 << 10);
     // A view_scale of a billion puts the initial scale at one meter.
 
     // View center can be at ( 0, 0 ) for debuggability
@@ -110,24 +110,56 @@ static v2l canvas_to_raster(MiltonState* milton_state, v2l canvas_point)
     return point;
 }
 
+    // Move to infinite canvas
+static v2l raster_to_canvas(MiltonState* milton_state, v2l raster_point)
+{
+    v2l canvas_point = raster_point;
+    canvas_point = scale_v2l (canvas_point, milton_state->view_scale);
+    canvas_point = sub_v2l   (canvas_point, milton_state->view_center);
+    return canvas_point;
+}
+
 static void rasterize_stroke(MiltonState* milton_state, v2l* points, int64 num_points)
 {
     uint32* pixels = (uint32_t*)milton_state->raster_buffer;
 
     for (int64 i = 0; i < num_points; ++i)
     {
+
         v2l canvas_point = points[i];
 
-        v2l point = canvas_to_raster(milton_state, canvas_point);
 
-        if (point.w >= milton_state->screen_size.w || point.h >= milton_state->screen_size.h)
-            continue;
-        int64 index = point.y * milton_state->screen_size.w + point.x;
+        v2l base_point = canvas_to_raster(milton_state, canvas_point);
 
-        assert ( milton_state->raster_buffer_size < ((uint64)1 << 63));
-        assert (index < (int64)milton_state->raster_buffer_size);
+        int64 base_index = base_point.y * milton_state->screen_size.w + base_point.x;
+        int64 scale = 1;
+        for (int64 y = -10; y <= 10; ++y)
+        {
+            for (int64 x = -10; x <= 10; ++x)
+            {
+                v2l point = add_v2l(base_point, make_v2l(x, y));
 
-        pixels[index] = 0xff0000ff;
+                int64 diffx = point.x - base_point.x;
+                int64 diffy = point.y - base_point.y;
+                int64 dist2 = diffx * diffx +  diffy * diffy;
+                if (dist2 > 25) continue;
+
+                int64 index = base_index + (scale * y) * milton_state->screen_size.w + (scale * x);
+
+                if (point.w >= milton_state->screen_size.w || point.h >= milton_state->screen_size.h)
+                    continue;
+                if (index < 0)
+                    continue;
+
+
+
+                assert ( milton_state->raster_buffer_size < ((uint64)1 << 63));
+                assert (index < (int64)milton_state->raster_buffer_size);
+                assert (index >= 0);
+
+                pixels[index] = 0xff0000ff;
+            }
+        }
 
     }
 }
@@ -152,9 +184,8 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     if (input->brush)
     {
         v2l in_point = *input->brush;
-        // Move to infinite canvas
-        v2l canvas_point = scale_v2l(in_point, milton_state->view_scale);
-        canvas_point = sub_v2l(canvas_point, milton_state->view_center);
+
+        v2l canvas_point = raster_to_canvas(milton_state, in_point);
 
         // Add to current stroke.
         milton_state->stroke_points[milton_state->num_stroke_points++] = canvas_point;
@@ -178,6 +209,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->num_stroke_points = 0;
     }
 
+    // Rasterize *every* stroke...
     for (int i = 0; i < milton_state->num_stored_strokes; ++i)
     {
         StoredStroke* stored = &milton_state->stored_strokes[i];
