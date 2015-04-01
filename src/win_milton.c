@@ -2,6 +2,12 @@
 
 #include "libserg/memory.h"
 
+#ifdef _MSC_VER
+#if (_MSC_VER == 1800)
+#define inline __inline
+#endif
+#endif
+
 #include "milton.h"
 
 #define snprintf sprintf_s

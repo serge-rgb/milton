@@ -16,7 +16,7 @@ typedef struct $<name_2>_s
     };
 } $<name_2>;
 
-static $<name_2> make_$<name_2>($<type> x, $<type> y)
+inline static $<name_2> make_$<name_2>($<type> x, $<type> y)
 {
     $<name_2> result;
     result.x = x;
@@ -24,7 +24,7 @@ static $<name_2> make_$<name_2>($<type> x, $<type> y)
     return result;
 }
 
-static $<name_2> sub_$<name_2> ($<name_2> a, $<name_2> b)
+inline static $<name_2> sub_$<name_2> ($<name_2> a, $<name_2> b)
 {
     $<name_2> result;
     result.x = a.x - b.x;
@@ -32,7 +32,7 @@ static $<name_2> sub_$<name_2> ($<name_2> a, $<name_2> b)
     return result;
 }
 
-static $<name_2> add_$<name_2> ($<name_2> a, $<name_2> b)
+inline static $<name_2> add_$<name_2> ($<name_2> a, $<name_2> b)
 {
     $<name_2> result;
     result.x = a.x + b.x;
@@ -40,7 +40,7 @@ static $<name_2> add_$<name_2> ($<name_2> a, $<name_2> b)
     return result;
 }
 
-static $<name_2> mul_$<name_2> ($<name_2> a, $<name_2> b)
+inline static $<name_2> mul_$<name_2> ($<name_2> a, $<name_2> b)
 {
     $<name_2> result;
     result.x = a.x * b.x;
@@ -48,7 +48,7 @@ static $<name_2> mul_$<name_2> ($<name_2> a, $<name_2> b)
     return result;
 }
 
-static $<name_2> scale_$<name_2> ($<name_2> v, $<type> factor)
+inline static $<name_2> scale_$<name_2> ($<name_2> v, $<type> factor)
 {
     $<name_2> result;
     result.x = factor * v.x;
@@ -56,7 +56,7 @@ static $<name_2> scale_$<name_2> ($<name_2> v, $<type> factor)
     return result;
 }
 
-static $<name_2> invscale_$<name_2> ($<name_2> v, $<type> factor)
+inline static $<name_2> invscale_$<name_2> ($<name_2> v, $<type> factor)
 {
     $<name_2> result;
     result.x = v.x / factor;
