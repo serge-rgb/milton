@@ -1,11 +1,4 @@
 #include "system_includes.h"
-// Rename types for convenience
-typedef int32_t     int32;
-typedef uint32_t    uint32;
-typedef int16_t     int16;
-typedef uint16_t    uint16;
-typedef int8_t      int8;
-typedef uint8_t     uint8;
 
 #include "libserg/memory.h"
 
@@ -20,7 +13,7 @@ typedef struct
     int32_t width;
     int32_t height;
     BITMAPINFO bitmap_info;
-    MiltonBrush stored_brush;
+    v2l stored_brush;
 } Win32State;
 
 typedef enum
@@ -181,8 +174,8 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 
     if (g_gui_data.left_down)
     {
-        win_state->stored_brush.x = g_gui_data.mouse_x;
-        win_state->stored_brush.y = g_gui_data.mouse_y;
+        win_state->stored_brush.x = (int64)g_gui_data.mouse_x;
+        win_state->stored_brush.y = (int64)g_gui_data.mouse_y;
         input.brush = &win_state->stored_brush;
     }
     return input;
@@ -341,11 +334,11 @@ int CALLBACK WinMain(
     Arena root_arena = arena_init(big_chunk_of_memory, total_memory_size);
     // Create a transient arena, called once per update
     Arena frame_arena = arena_spawn(&root_arena, frame_heap_in_MB);
-    MiltonState milton_state;
+    MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
     {
-        milton_state.root_arena = &root_arena;
-        milton_state.frame_arena = &frame_arena;
-        milton_init(&milton_state);
+        milton_state->root_arena = &root_arena;
+        milton_state->frame_arena = &frame_arena;
+        milton_init(milton_state);
     }
 
     // Initialize global GUI data.
@@ -360,20 +353,20 @@ int CALLBACK WinMain(
     }
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
-        bool32 modified = milton_update(&milton_state, &input);
+        bool32 modified = milton_update(milton_state, &input);
         if (modified)
         {
             win32_display_raster_buffer(
                     &win_state,
-                    milton_state.raster_buffer,
-                    milton_state.full_width,
-                    milton_state.full_height,
-                    milton_state.bytes_per_pixel
+                    milton_state->raster_buffer,
+                    milton_state->full_width,
+                    milton_state->full_height,
+                    milton_state->bytes_per_pixel
                     );
         }
 
         input = win32_process_input(&win_state, window);
-        milton_state.screen_size = make_v2i( win_state.width, win_state.height );
+        milton_state->screen_size = make_v2l( win_state.width, win_state.height );
 
         // Sleep until we need to.
         WaitMessage();
