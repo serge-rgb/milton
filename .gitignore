@@ -1,2 +1,3 @@
 src/libserg
 build
+src/*.generated.h

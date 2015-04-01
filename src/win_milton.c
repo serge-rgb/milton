@@ -1,4 +1,11 @@
 #include "system_includes.h"
+// Rename types for convenience
+typedef int32_t     int32;
+typedef uint32_t    uint32;
+typedef int16_t     int16;
+typedef uint16_t    uint16;
+typedef int8_t      int8;
+typedef uint8_t     uint8;
 
 #include "libserg/memory.h"
 
@@ -24,11 +31,11 @@ typedef enum
 
 typedef struct
 {
-    int width;
-    int height;
+    int32 width;
+    int32 height;
     // Mouse info
-    int mouse_x;
-    int mouse_y;
+    int32 mouse_x;
+    int32 mouse_y;
     bool32 left_down;
     bool32 right_down;
 } GuiData;
@@ -41,12 +48,12 @@ void platform_quit()
     g_gui_msgs |= GuiMsg_SHOULD_QUIT;
 }
 
-void path_at_exe(char* full_path, int buffer_size, char* fname)
+static void path_at_exe(char* full_path, int32 buffer_size, char* fname)
 {
     GetModuleFileName(NULL, full_path, (DWORD)buffer_size);
     {  // Trim to backslash
-        int len = 0;
-        for(int i = 0; i < buffer_size; ++i)
+        int32 len = 0;
+        for(int32 i = 0; i < buffer_size; ++i)
         {
             char c = full_path[i];
             if (!c)
@@ -62,7 +69,7 @@ void path_at_exe(char* full_path, int buffer_size, char* fname)
 
 static void win32_resize(
         Win32State* win_state,
-        int width, int height)
+        int32 width, int32 height)
 {
     // NOTE: here we would free the raster buffer
 
@@ -279,10 +286,10 @@ int CALLBACK WinMain(
         return FALSE;
     }
 
-    int x = 100;
-    int y = 100;
-    int width = 1024;
-    int height = 768;
+    int32 x = 100;
+    int32 y = 100;
+    int32 width = 1024;
+    int32 height = 768;
     HWND window = CreateWindowExA(
             0, //WS_EX_TOPMOST ,  // dwExStyle
             window_class.lpszClassName,     // class Name
@@ -310,7 +317,6 @@ int CALLBACK WinMain(
     {
         win_state.window = window;
     }
-
 
     const size_t total_memory_size = 1 * 1024 * 1024 * 1024;  // Total memory requirement for Milton.
     const size_t frame_heap_in_MB = 32 * 1024 * 1024;         // Size of transient memory
@@ -367,8 +373,7 @@ int CALLBACK WinMain(
         }
 
         input = win32_process_input(&win_state, window);
-        milton_state.screen_width = win_state.width;
-        milton_state.screen_height = win_state.height;
+        milton_state.screen_size = make_v2i( win_state.width, win_state.height );
 
         // Sleep until we need to.
         WaitMessage();
