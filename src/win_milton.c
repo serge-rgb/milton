@@ -324,11 +324,11 @@ int CALLBACK WinMain(
     assert (big_chunk_of_memory);
     Arena root_arena = arena_init(big_chunk_of_memory, total_memory_size);
     // Create a transient arena, called once per update
-    Arena frame_arena = arena_spawn(&root_arena, frame_heap_in_MB);
+    Arena transient_arena = arena_spawn(&root_arena, frame_heap_in_MB);
     MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
     {
         milton_state->root_arena = &root_arena;
-        milton_state->frame_arena = &frame_arena;
+        milton_state->transient_arena = &transient_arena;
         milton_init(milton_state);
     }
 
@@ -358,7 +358,6 @@ int CALLBACK WinMain(
 
         input = win32_process_input(&win_state, window);
         milton_state->screen_size = make_v2l( win_state.width, win_state.height );
-
         // Sleep until we need to.
         WaitMessage();
     }
