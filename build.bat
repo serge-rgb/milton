@@ -1,3 +1,5 @@
+@echo off
+
 pushd src
 
 cl metaprogram.c /nologo

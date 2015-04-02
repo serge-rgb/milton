@@ -94,21 +94,6 @@ static void win32_resize(
     // NOTE: Here we would allocate a new raster buffer
 }
 
-// Request hover and leave.
-static void win32_request_mouse_tracking(HWND window)
-{
-    TRACKMOUSEEVENT mouse_event = { 0 };
-    {
-        mouse_event.cbSize      = sizeof(TRACKMOUSEEVENT);
-        mouse_event.dwFlags     = TME_HOVER | TME_LEAVE;
-        mouse_event.hwndTrack   = window;
-        mouse_event.dwHoverTime = 100;  // TODO: Find sweet spot for latency.
-    }
-
-    TrackMouseEvent(&mouse_event);
-}
-
-
 static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 {
     MiltonInput input = { 0 };
@@ -146,6 +131,12 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                     g_gui_data.mouse_x = GET_X_LPARAM(message.lParam);
                     g_gui_data.mouse_y = GET_Y_LPARAM(message.lParam);
                 }
+                break;
+            }
+        case WM_MOUSEWHEEL:
+            {
+                int delta = GET_WHEEL_DELTA_WPARAM(message.wParam);
+                input.scale = delta;
                 break;
             }
         case WM_SYSKEYUP:
@@ -214,10 +205,6 @@ LRESULT APIENTRY WndProc(
             break;
         }
     case WM_CREATE:
-        {
-            break;
-        }
-    case WM_MOUSEMOVE:
         {
             break;
         }
@@ -333,8 +320,6 @@ int CALLBACK WinMain(
                 MEM_COMMIT | MEM_RESERVE, //  flAllocationType,
                 PAGE_READWRITE//  flProtect
                 );
-
-    win32_request_mouse_tracking(window);
 
     assert (big_chunk_of_memory);
     Arena root_arena = arena_init(big_chunk_of_memory, total_memory_size);
