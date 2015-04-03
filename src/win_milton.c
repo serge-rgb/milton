@@ -152,6 +152,10 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 {
                     platform_quit();
                 }
+                if (was_down && vkcode == VK_BACK)
+                {
+                    input.reset = 1;
+                }
             }
         default:
             {

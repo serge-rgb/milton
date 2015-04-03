@@ -70,6 +70,7 @@ typedef struct MiltonState_s
 typedef struct MiltonInput_s
 {
     bool32 full_refresh;
+    bool32 reset;
     v2l* brush;
     int scale;
 } MiltonInput;
@@ -136,7 +137,7 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
 
     const int64 radius = (int64)(brush.radius * scale);
 
-    if (radius > 300 || radius == 0)
+    if (radius > 1000 || radius == 0)
     {
         rbrush.bitmask = 0;
         return rbrush;
@@ -301,6 +302,12 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->stored_strokes[milton_state->num_stored_strokes++] = stored;
 
         milton_state->num_stroke_points = 0;
+    }
+    if (input->reset)
+    {
+        milton_state->view_scale = 1 << 10;
+        milton_state->num_stored_strokes = 0;
+        updated = 1;
     }
     // Rasterize *every* stroke...
     for (int i = 0; i < milton_state->num_stored_strokes; ++i)
