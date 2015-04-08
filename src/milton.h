@@ -82,7 +82,7 @@ static void milton_init(MiltonState* milton_state)
     milton_state->full_width      = 7680;
     milton_state->full_height     = 4320;
     milton_state->bytes_per_pixel = 4;
-    milton_state->view_scale      = ((int64)1 << 10);
+    milton_state->view_scale      = ((int64)1 << 16);
     // A view_scale of a billion puts the initial scale at one meter.
 
     int closest_power_of_two = (1 << 27);  // Ceiling of log2(width * height * bpp)
@@ -137,7 +137,7 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
 
     const int64 radius = (int64)(brush.radius * scale);
 
-    if (radius > 2500 || radius == 0)
+    if (radius > 2000 || radius == 0)
     {
         rbrush.bitmask = 0;
         return rbrush;
@@ -152,6 +152,13 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
     int64 radius2 = radius * radius;
 
     size_t size = rbrush.size.w * rbrush.size.h ;
+    if (transient_arena->count + (int64)size >= transient_arena->size)
+    {
+        // IMPORTANT
+        // TODO: Do something here. request more mem? Defer rasterization?
+        rbrush.bitmask = NULL;
+        return rbrush;
+    }
     uint8* bitmask = arena_alloc_array(transient_arena, size, uint8);
 
     rbrush.bitmask_size = size;
@@ -172,7 +179,7 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
                         int64 ip = i + x;
                         int64 jp = j + y;
 
-                        if ((ip * ip + jp * jp) <= radius2)
+                        if ((ip * ip + jp * jp) < radius2)
                         {
                             // write 1 to mask
                             ++bitmask[index];
@@ -182,7 +189,7 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
             }
             else
             {
-                if ((i*i + j*j) <= radius2) bitmask[index] = 255;
+                if ((i*i + j*j) < radius2) bitmask[index] = 255;
             }
             float opacity = (float)bitmask[index] / 25.0f;
             if (opacity > 0.0f)
@@ -252,7 +259,7 @@ static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v2l* 
                     if (bit_value && index >= 0)
                     {
                         pixels[index] = (uint32)((float)0xff000000 * (float)bit_value);
-						pixels[index] += 0x0000ccdd;
+                        pixels[index] += 0x0000ccdd;
                     }
 
                 }
@@ -333,7 +340,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     }
     if (input->reset)
     {
-        milton_state->view_scale = 1 << 10;
+        milton_state->view_scale = 1 << 16;
         milton_state->num_stored_strokes = 0;
         updated = 1;
     }
