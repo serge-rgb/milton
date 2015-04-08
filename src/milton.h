@@ -137,7 +137,7 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
 
     const int64 radius = (int64)(brush.radius * scale);
 
-    if (radius > 500 || radius == 0)
+    if (radius > 2500 || radius == 0)
     {
         rbrush.bitmask = 0;
         return rbrush;
@@ -163,15 +163,38 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
         {
             int64 index = (j + radius) * rbrush.size.w + (i + radius);
             assert(index < (int64)size);
-            if ((i * i + j * j) < radius2)
+            if (radius > 10)
             {
-                // write 1 to mask
-                bitmask[index] = 1;
+                for (int y = -1; y <= 1; ++y)
+                {
+                    for (int x = -1; x <= 1; ++x)
+                    {
+                        int64 ip = i + x;
+                        int64 jp = j + y;
+
+                        if ((ip * ip + jp * jp) <= radius2)
+                        {
+                            // write 1 to mask
+                            ++bitmask[index];
+                        }
+                    }
+                }
             }
             else
             {
-                // write 0 to mask
-                bitmask[index] = 0;
+                if ((i*i + j*j) <= radius2) bitmask[index] = 255;
+            }
+            float opacity = (float)bitmask[index] / 25.0f;
+            if (opacity > 0.0f)
+            {
+                if (opacity >= 1.0f)
+                {
+                    bitmask[index] = 255;
+                }
+                else
+                {
+                    bitmask[index] = (uint8)(opacity * 255.0f);
+                }
             }
         }
     }
@@ -224,12 +247,13 @@ static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v2l* 
                         bitmask_y * milton_state->screen_size.w +
                         bitmask_x;
 
-                    if (index < 0) continue;
-
                     assert ( milton_state->raster_buffer_size < ((uint64)1 << 63));
                     assert (index < (int64)milton_state->raster_buffer_size);
-                    if (bit_value)
-                        pixels[index] = 0xff00ffff;
+                    if (bit_value && index >= 0)
+                    {
+                        pixels[index] = (uint32)((float)0xff000000 * (float)bit_value);
+						pixels[index] += 0x0000ccdd;
+                    }
 
                 }
             }
@@ -262,7 +286,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             for (int x = 0; x < milton_state->screen_size.w; ++x)
             {
-                *pixels++ = 0xff000000;
+                *pixels++ = 0xffffffff;
             }
         }
         updated = 1;
