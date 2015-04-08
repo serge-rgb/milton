@@ -137,7 +137,7 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
 
     const int64 radius = (int64)(brush.radius * scale);
 
-    if (radius > 1000 || radius == 0)
+    if (radius > 500 || radius == 0)
     {
         rbrush.bitmask = 0;
         return rbrush;
@@ -195,39 +195,43 @@ static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v2l* 
 
         int64 base_index = base_point.y * milton_state->screen_size.w + base_point.x;
 
-        for (int64 y = 0; y < rbrush.size.h; ++y)
+        const int64 h_limit = min(rbrush.size.h, milton_state->screen_size.h) + base_point.y;
+        const int64 w_limit = min(rbrush.size.w, milton_state->screen_size.w) + base_point.x;
+
+        if (base_point.y >= milton_state->screen_size.h || base_point.x >= milton_state->screen_size.w)
+            continue;
+        for (int64 y = base_point.y; y < h_limit; ++y)
         {
-            for (int64 x = 0; x < rbrush.size.w; ++x)
+            for (int64 x = base_point.x; x < w_limit; ++x)
             {
                 int64 bitmask_x = rbrush.bounds.top_left.x + x;
                 int64 bitmask_y = rbrush.bounds.bot_right.y + y;
 
-                if (base_point.x + bitmask_x >= milton_state->screen_size.w ||
-                        base_point.y + bitmask_y < 0)
-                    continue;
-                if (base_point.y + bitmask_y >= milton_state->screen_size.h ||
-                        base_point.x + bitmask_x < 0)
-                    continue;
+                if ( bitmask_x >= 0 && bitmask_y >= 0)
+                {
+                    bitmask_x -= base_point.x;
+                    bitmask_y -= base_point.y;
 
-                int64 bitmask_index =
-                    (bitmask_y + rbrush.size.h / 2) * rbrush.size.w +
-                    (bitmask_x + rbrush.size.w / 2);
+                    int64 bitmask_index =
+                        (bitmask_y + rbrush.size.h / 2) * rbrush.size.w +
+                        (bitmask_x + rbrush.size.w / 2);
 
 
-                assert (bitmask_index < (int64)rbrush.bitmask_size);
-                uint8 bit_value = rbrush.bitmask[bitmask_index];
+                    assert (bitmask_index < (int64)rbrush.bitmask_size);
+                    uint8 bit_value = rbrush.bitmask[bitmask_index];
 
-                int64 index = base_index +
-                    bitmask_y * milton_state->screen_size.w +
-                    bitmask_x;
+                    int64 index = base_index +
+                        bitmask_y * milton_state->screen_size.w +
+                        bitmask_x;
 
-                if (index < 0) continue;
+                    if (index < 0) continue;
 
-                assert ( milton_state->raster_buffer_size < ((uint64)1 << 63));
-                assert (index < (int64)milton_state->raster_buffer_size);
-                if (bit_value)
-                    pixels[index] = 0xff00ffff;
+                    assert ( milton_state->raster_buffer_size < ((uint64)1 << 63));
+                    assert (index < (int64)milton_state->raster_buffer_size);
+                    if (bit_value)
+                        pixels[index] = 0xff00ffff;
 
+                }
             }
         }
     }
