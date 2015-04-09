@@ -16,6 +16,8 @@ typedef int32_t     bool32;
 #define false 0
 #endif
 
+#define stack_count(arr) (sizeof((arr)) / sizeof((arr)[0]))
+
 inline int64 absl(int64 a)
 {
     return a < 0 ? -a : a;
@@ -30,6 +32,7 @@ inline int64 minl(int64 a, int64 b)
 {
     return a < b? a : b;
 }
+
 
 #include <math.h>  // powf
 
@@ -86,7 +89,12 @@ typedef struct MiltonState_s
     // Heap
     Arena*      root_arena;         // Persistent memory.
     Arena*      transient_arena;    // Gets reset after every call to milton_update().
-    // Debug:
+
+    // Don't overspend...
+    size_t  brush_cache_scales[30];
+    int64  brush_cache_scales_count;
+    RasterBrush brush_cache[30];
+
 } MiltonState;
 
 typedef struct MiltonInput_s
@@ -153,9 +161,10 @@ inline static v2l raster_to_canvas(MiltonState* milton_state, v2l raster_point)
     return canvas_point;
 }
 
-static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, float scale)
+static RasterBrush rasterize_brush(MiltonState* milton_state, const Brush brush, float scale)
 {
-    RasterBrush rbrush;
+    Arena* transient_arena = milton_state->transient_arena;
+    RasterBrush rbrush = { 0 };
 
     const int64 radius = (int64)(brush.radius * scale);
 
@@ -174,6 +183,17 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
     int64 radius2 = radius * radius;
 
     size_t size = rbrush.size.w * rbrush.size.h ;
+    float* bitmask = NULL;
+
+    for (int i = 0; i < milton_state->brush_cache_scales_count; ++i)
+    {
+        if (size == milton_state->brush_cache_scales[i])
+        {
+            rbrush = milton_state->brush_cache[i];
+            bitmask = rbrush.bitmask;
+        }
+
+    }
     if (transient_arena->count + (int64)size >= transient_arena->size)
     {
         // IMPORTANT
@@ -181,10 +201,20 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
         rbrush.bitmask = NULL;
         return rbrush;
     }
-    float* bitmask = arena_alloc_array(transient_arena, size, float);
 
-    rbrush.bitmask_size = size;
-    rbrush.bitmask = bitmask;
+    if (!rbrush.bitmask)
+    {
+        bitmask = arena_alloc_array(transient_arena, size, float);
+        rbrush.bitmask = bitmask;
+        rbrush.bitmask_size = size;
+        milton_state->brush_cache[milton_state->brush_cache_scales_count] = rbrush;
+        milton_state->brush_cache_scales[milton_state->brush_cache_scales_count] = size;
+		int64 arrsize = stack_count(milton_state->brush_cache_scales);
+        milton_state->brush_cache_scales_count =
+            (milton_state->brush_cache_scales_count + 1) % arrsize;
+    }
+
+    assert (rbrush.bitmask);
 
     for (int64 i = -radius; i < radius; ++i)
     {
@@ -283,14 +313,14 @@ static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v3f c
     uint32* pixels = (uint32_t*)milton_state->raster_buffer;
 
     const float relative_scale = (float)brush.view_scale / (float)milton_state->view_scale;
-    RasterBrush rbrush = rasterize_brush(milton_state->transient_arena, brush, relative_scale);
+    RasterBrush rbrush = rasterize_brush(milton_state, brush, relative_scale);
 
     if (!rbrush.bitmask) return;
 
     assert (num_points > 0);
 
     v2l prev_point = canvas_to_raster(milton_state, points[0]);
-    int64 i = 1;
+    int64 i = 0;
     while ( i < num_points )
     {
         v2l canvas_point = points[i];
@@ -395,6 +425,7 @@ static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v3f c
 static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 {
     arena_reset(milton_state->transient_arena);
+    milton_state->brush_cache_scales_count = 0;
     bool32 updated = 0;
     if (input->scale)
     {
@@ -421,22 +452,22 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         }
         updated = 1;
     }
+    Brush brush = { 0 };
+    {
+        brush.view_scale = milton_state->view_scale;
+        brush.radius = 10;
+    }
+    v3f color = { 0.5f, 0.6f, 0.7f };
     if (input->brush)
     {
         v2l in_point = *input->brush;
 
         v2l canvas_point = raster_to_canvas(milton_state, in_point);
 
-        Brush brush = { 0 };
-        {
-            brush.view_scale = milton_state->view_scale;
-            brush.radius = 10;
-        }
         // Add to current stroke.
 
         milton_state->stroke_points[milton_state->num_stroke_points++] = canvas_point;
 
-        v3f color = { 0.5f, 0.7f, 0.6f };
         rasterize_stroke(milton_state, brush, color, milton_state->stroke_points,
                 milton_state->num_stroke_points);
         updated = 1;
@@ -444,12 +475,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     else if (milton_state->num_stroke_points > 0)
     {
         // Push stroke to history.
-
-        Brush brush = { 0 };
-        {
-            brush.view_scale = milton_state->view_scale;
-            brush.radius = 10;
-        }
         Stroke stored;
         stored.brush = brush;
         stored.points = arena_alloc_array(milton_state->root_arena,
@@ -472,7 +497,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     for (int i = 0; i < milton_state->num_stored_strokes; ++i)
     {
         Stroke* stored = &milton_state->stored_strokes[i];
-        v3f color = { 0.5f, 0.7f, 0.6f };
         rasterize_stroke(milton_state, stored->brush, color, stored->points, stored->num_points);
     }
 
