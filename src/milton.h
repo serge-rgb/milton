@@ -329,40 +329,10 @@ static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v3f c
         if (raster_distance(prev_point, base_point) > 1)
         {
             v2l delta = sub_v2l(base_point, prev_point);
-            if (delta.x != 0)
-            {
-                if (delta.x > 0)
-                    ++prev_point.x;
-                else
-                    --prev_point.x;
-                float slope = (float)delta.y / (float)delta.x;
-                if (slope >= 0.5f)
-                {
-                    if (delta.y > 0)
-                        ++prev_point.y;
-                    else
-                        --prev_point.y;
-                }
-            }
-            else if (delta.y != 0)
-            {
-                if (delta.y > 0)
-                    ++prev_point.y;
-                else
-                    --prev_point.y;
-                float slope = (float)delta.x / (float)delta.y;
-                if (slope >= 0.5f)
-                {
-                    if (delta.x > 0)
-                        ++prev_point.x;
-                    else
-                        --prev_point.x;
-                }
-            }
-            else
-            {
-                assert(!"Houston, we have a problem.");
-            }
+            float magnitude = sqrtf((float)(delta.x * delta.x) + (float)(delta.y * delta.y));
+            float dx = 2 * (float)delta.x / magnitude;
+            float dy = 2 * (float)delta.y / magnitude;
+            prev_point = add_v2l(prev_point, (v2l){(int64)dx, (int64)dy});
             base_point = prev_point;
         }
         else
