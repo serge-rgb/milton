@@ -16,6 +16,20 @@ typedef int32_t     bool32;
 #define false 0
 #endif
 
+inline int64 absl(int64 a)
+{
+    return a < 0 ? -a : a;
+}
+
+inline int64 maxl(int64 a, int64 b)
+{
+    return a > b? a : b;
+}
+
+inline int64 minl(int64 a, int64 b)
+{
+    return a < b? a : b;
+}
 
 #include <math.h>  // powf
 
@@ -62,12 +76,12 @@ typedef struct MiltonState_s
     int64 view_scale;
 
     // Current stroke.
-    v2l stroke_points[4096];
+    v2l         stroke_points[4096];
     int64       num_stroke_points;
 
     // Before we get our nice spacial partition...
     Stroke    stored_strokes[4096];
-    int64           num_stored_strokes;
+    int64     num_stored_strokes;
 
     // Heap
     Arena*      root_arena;         // Persistent memory.
@@ -178,7 +192,7 @@ static RasterBrush rasterize_brush(Arena* transient_arena, const Brush brush, fl
         {
             int64 index = (j + radius) * rbrush.size.w + (i + radius);
             assert(index < (int64)size);
-            if (radius > 10)
+            if (radius >= 5)
             {
                 for (int y = -1; y <= 1; ++y)
                 {
@@ -242,6 +256,12 @@ inline BitScanResult find_least_significant_set_bit(uint32 value)
     return result;
 }
 
+inline int64 raster_distance(v2l a, v2l b)
+{
+    int64 res = maxl(absl(a.x - b.x), absl(a.y - b.y));
+    return res;
+}
+
 static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v3f color, v2l* points, int64 num_points)
 {
     static uint32 mask_a = 0xff000000;
@@ -267,18 +287,66 @@ static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v3f c
 
     if (!rbrush.bitmask) return;
 
-    for (int64 i = 0; i < num_points; ++i)
+    assert (num_points > 0);
+
+    v2l prev_point = canvas_to_raster(milton_state, points[0]);
+    int64 i = 1;
+    while ( i < num_points )
     {
         v2l canvas_point = points[i];
-
         v2l base_point = canvas_to_raster(milton_state, canvas_point);
+
+        if (raster_distance(prev_point, base_point) > 1)
+        {
+            v2l delta = sub_v2l(base_point, prev_point);
+            if (delta.x != 0)
+            {
+                if (delta.x > 0)
+                    ++prev_point.x;
+                else
+                    --prev_point.x;
+                float slope = (float)delta.y / (float)delta.x;
+                if (slope >= 0.5f)
+                {
+                    if (delta.y > 0)
+                        ++prev_point.y;
+                    else
+                        --prev_point.y;
+                }
+            }
+            else if (delta.y != 0)
+            {
+                if (delta.y > 0)
+                    ++prev_point.y;
+                else
+                    --prev_point.y;
+                float slope = (float)delta.x / (float)delta.y;
+                if (slope >= 0.5f)
+                {
+                    if (delta.x > 0)
+                        ++prev_point.x;
+                    else
+                        --prev_point.x;
+                }
+            }
+            else
+            {
+                assert(!"Houston, we have a problem.");
+            }
+            base_point = prev_point;
+        }
+        else
+        {
+            ++i; // ready to get next point next frame.
+        }
 
         int64 base_index = base_point.y * milton_state->screen_size.w + base_point.x;
 
         const int64 h_limit = min(rbrush.size.h, milton_state->screen_size.h) + base_point.y;
         const int64 w_limit = min(rbrush.size.w, milton_state->screen_size.w) + base_point.x;
 
-        if (base_point.y >= milton_state->screen_size.h || base_point.x >= milton_state->screen_size.w)
+        if (base_point.y >= milton_state->screen_size.h ||
+                base_point.x >= milton_state->screen_size.w || base_point.x < 0 || base_point.y < 0)
             continue;
         for (int64 y = base_point.y; y < h_limit; ++y)
         {
@@ -316,10 +384,10 @@ static void rasterize_stroke(MiltonState* milton_state, const Brush brush, v3f c
                             ((uint8)(color.b * 255.0f) << shift_b);
                         pixels[index] = pixel_color;
                     }
-
                 }
             }
         }
+        prev_point = base_point;
     }
 }
 
