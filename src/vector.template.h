@@ -74,6 +74,12 @@ typedef struct $<name_3>_s
             $<type> y;
             $<type> z;
         };
+        struct
+        {
+            $<type> r;
+            $<type> g;
+            $<type> b;
+        };
         $<type> d[3];
     };
 } $<name_3>;
