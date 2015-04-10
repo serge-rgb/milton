@@ -19,7 +19,7 @@ typedef struct
     int32_t width;
     int32_t height;
     BITMAPINFO bitmap_info;
-    v2l stored_brush;
+    v2i stored_brush;
 } Win32State;
 
 typedef enum
@@ -361,7 +361,7 @@ int CALLBACK WinMain(
         }
 
         input = win32_process_input(&win_state, window);
-        milton_state->screen_size = make_v2l( win_state.width, win_state.height );
+        milton_state->screen_size = (v2i){ win_state.width, win_state.height };
         // Sleep until we need to.
         WaitMessage();
     }
