@@ -309,7 +309,7 @@ int CALLBACK WinMain(
     }
 
     const size_t total_memory_size = 1 * 1024 * 1024 * 1024;  // Total memory requirement for Milton.
-    const size_t frame_heap_in_MB = 128 * 1024 * 1024;         // Size of transient memory
+    const size_t frame_heap_in_MB = 32 * 1024 * 1024;         // Size of transient memory
 
     // Create root arena
     void* big_chunk_of_memory =
