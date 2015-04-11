@@ -4,7 +4,8 @@
 
 #ifdef _MSC_VER
 #if (_MSC_VER == 1800)
-#define inline __inline
+//#define inline __inline
+#define inline __forceinline  // This don't do shit...
 #endif
 #endif
 

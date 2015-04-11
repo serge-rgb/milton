@@ -80,6 +80,12 @@ typedef struct $<name_3>_s
             $<type> g;
             $<type> b;
         };
+        struct
+        {
+            $<type> h;
+            $<type> s;
+            $<type> v;
+        };
         $<type> d[3];
     };
 } $<name_3>;
@@ -90,5 +96,50 @@ static $<name_3> make_$<name_3>($<type> x, $<type> y, $<type> z)
     result.x = x;
     result.y = y;
     result.z = z;
+    return result;
+}
+
+inline static $<name_3> sub_$<name_3> ($<name_3> a, $<name_3> b)
+{
+    $<name_3> result;
+    result.x = a.x - b.x;
+    result.y = a.y - b.y;
+    result.z = a.z - b.z;
+    return result;
+}
+
+inline static $<name_3> add_$<name_3> ($<name_3> a, $<name_3> b)
+{
+    $<name_3> result;
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    result.z = a.z + b.z;
+    return result;
+}
+
+inline static $<name_3> mul_$<name_3> ($<name_3> a, $<name_3> b)
+{
+    $<name_3> result;
+    result.x = a.x * b.x;
+    result.y = a.y * b.y;
+    result.z = a.z * b.z;
+    return result;
+}
+
+inline static $<name_3> scale_$<name_3> ($<name_3> v, $<type> factor)
+{
+    $<name_3> result;
+    result.x = factor * v.x;
+    result.y = factor * v.y;
+    result.z = factor * v.z;
+    return result;
+}
+
+inline static $<name_3> invscale_$<name_3> ($<name_3> v, $<type> factor)
+{
+    $<name_3> result;
+    result.x = v.x / factor;
+    result.y = v.y / factor;
+    result.z = v.z / factor;
     return result;
 }

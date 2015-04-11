@@ -244,8 +244,7 @@ inline static Rect get_points_bounds(v2i* points, int64 num_points)
 v3f hsv_to_rgb(v3f hsv)
 {
     v3f rgb = { 0 };
-    /* *pixels++ = 0xffffffff; */
-    //*pixels++ = 0xff373737;
+
     float h = hsv.x;
     float s = hsv.y;
     float v = hsv.z;
@@ -310,19 +309,27 @@ v3f hsv_to_rgb(v3f hsv)
     return rgb;
 
 }
-inline static float sRGB_to_linear(float linear)
+
+inline static v3f sRGB_to_linear(v3f rgb)
 {
-    float sc = linear;
-    if (sc <= 0.0031308f)
+    v3f result;
+    memcpy(result.d, rgb.d, 3 * sizeof(float));
+    float* d = result.d;
+    for (int i = 0; i < 3; ++i)
     {
-        sc *= 12.92f;
+        if (*d <= 0.0031308f)
+        {
+            *d *= 12.92f;
+        }
+        else
+        {
+            *d = powf((*d + 0.055f) / 1.055f, 2.4f);
+        }
+        ++d;
     }
-    else
-    {
-        sc = powf((sc + 0.055f) / 1.055f, 2.4f);
-    }
-    return sc;
+    return result;
 }
+
 static void rasterize_stroke(
         MiltonState* milton_state, Stroke* stroke, v3f color)
 {
@@ -335,9 +342,7 @@ static void rasterize_stroke(
     uint32 shift_g = find_least_significant_set_bit(mask_g).index;
     uint32 shift_b = find_least_significant_set_bit(mask_b).index;
 
-    color.r = sRGB_to_linear(color.r);
-    color.g = sRGB_to_linear(color.g);
-    color.b = sRGB_to_linear(color.b);
+    color = sRGB_to_linear(color);
 
     uint32* pixels = (uint32_t*)milton_state->raster_buffer;
 
@@ -525,26 +530,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             for (int x = 0; x < milton_state->screen_size.w; ++x)
             {
-                float c = (float)y / (float)milton_state->screen_size.h;
-                float h, s, v;
-                h = c * 360;
-                s = 0.8f;
-                v = (float)x / (float)milton_state->screen_size.w;
-                v3f hsv = {h, s, v};
-                v3f rgb = hsv_to_rgb(hsv);
-                rgb.r = sRGB_to_linear(rgb.r);
-                rgb.g = sRGB_to_linear(rgb.g);
-                rgb.b = sRGB_to_linear(rgb.b);
-
-                rgb.r *= 255;
-                rgb.g *= 255;
-                rgb.b *= 255;
-                *pixels = 0xff000000;
-                *pixels |= ((uint32)((uint8)rgb.r)) << 16;
-                *pixels |= ((uint32)((uint8)rgb.g)) << 8;
-                *pixels++ |= ((uint32)((uint8)rgb.b));
-
-
+                *pixels++ = 0xffffffff;
             }
         }
         updated = 1;
@@ -558,8 +544,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     bool32 break_stroke = false;
     if (input->brush)
     {
-        float c = (float)input->brush->x / (float)milton_state->screen_size.w;
-        color = (v3f) { c, c, c };
         v2i in_point = *input->brush;
 
         v2i canvas_point = raster_to_canvas(milton_state, in_point);
