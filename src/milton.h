@@ -18,6 +18,10 @@ typedef int32_t     bool32;
 
 #define stack_count(arr) (sizeof((arr)) / sizeof((arr)[0]))
 
+inline float absf(float a)
+{
+    return a < 0 ? -a : a;
+}
 inline int32 absi(int32 a)
 {
     return a < 0 ? -a : a;
@@ -237,6 +241,88 @@ inline static Rect get_points_bounds(v2i* points, int64 num_points)
     return points_bounds;
 }
 
+v3f hsv_to_rgb(v3f hsv)
+{
+    v3f rgb = { 0 };
+    /* *pixels++ = 0xffffffff; */
+    //*pixels++ = 0xff373737;
+    float h = hsv.x;
+    float s = hsv.y;
+    float v = hsv.z;
+    float hh = h / 60.0f;
+    int hi = (int)(hh);
+    float cr = v * s;
+    float x = cr * (1.0f - absf((fmodf(hh, 2.0f)) - 1.0f));
+    float m = v - cr;
+
+    switch (hi)
+    {
+    case 0:
+        {
+            rgb.r = cr;
+            rgb.g = x;
+            rgb.b = 0;
+            break;
+        }
+    case 1:
+        {
+            rgb.r = x;
+            rgb.g = cr;
+            rgb.b = 0;
+            break;
+        }
+    case 2:
+        {
+            rgb.r = 0;
+            rgb.g = cr;
+            rgb.b = x;
+            break;
+        }
+    case 3:
+        {
+            rgb.r = 0;
+            rgb.g = x;
+            rgb.b = cr;
+            break;
+        }
+    case 4:
+        {
+            rgb.r = x;
+            rgb.g = 0;
+            rgb.b = cr;
+            break;
+        }
+    case 5:
+        {
+            rgb.r = cr;
+            rgb.g = 0;
+            rgb.b = x;
+            //  don't break;
+        }
+    default:
+        {
+            break;
+        }
+    }
+    rgb.r += m;
+    rgb.g += m;
+    rgb.b += m;
+    return rgb;
+
+}
+inline static float sRGB_to_linear(float linear)
+{
+    float sc = linear;
+    if (sc <= 0.0031308f)
+    {
+        sc *= 12.92f;
+    }
+    else
+    {
+        sc = powf((sc + 0.055f) / 1.055f, 2.4f);
+    }
+    return sc;
+}
 static void rasterize_stroke(
         MiltonState* milton_state, Stroke* stroke, v3f color)
 {
@@ -249,12 +335,9 @@ static void rasterize_stroke(
     uint32 shift_g = find_least_significant_set_bit(mask_g).index;
     uint32 shift_b = find_least_significant_set_bit(mask_b).index;
 
-    /* static const float gamma = 1.8f; */
-    static const float gamma = 2.2f;  // I think this is OK for Windows.
-
-    color.r = powf(color.r, gamma);
-    color.g = powf(color.g, gamma);
-    color.b = powf(color.b, gamma);
+    color.r = sRGB_to_linear(color.r);
+    color.g = sRGB_to_linear(color.g);
+    color.b = sRGB_to_linear(color.b);
 
     uint32* pixels = (uint32_t*)milton_state->raster_buffer;
 
@@ -442,7 +525,26 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             for (int x = 0; x < milton_state->screen_size.w; ++x)
             {
-                *pixels++ = 0xffffffff;
+                float c = (float)y / (float)milton_state->screen_size.h;
+                float h, s, v;
+                h = c * 360;
+                s = 0.8f;
+                v = (float)x / (float)milton_state->screen_size.w;
+                v3f hsv = {h, s, v};
+                v3f rgb = hsv_to_rgb(hsv);
+                rgb.r = sRGB_to_linear(rgb.r);
+                rgb.g = sRGB_to_linear(rgb.g);
+                rgb.b = sRGB_to_linear(rgb.b);
+
+                rgb.r *= 255;
+                rgb.g *= 255;
+                rgb.b *= 255;
+                *pixels = 0xff000000;
+                *pixels |= ((uint32)((uint8)rgb.r)) << 16;
+                *pixels |= ((uint32)((uint8)rgb.g)) << 8;
+                *pixels++ |= ((uint32)((uint8)rgb.b));
+
+
             }
         }
         updated = 1;
@@ -452,10 +554,12 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         brush.view_scale = milton_state->view_scale;
         brush.radius = 10;
     }
-    v3f color = { 0.5f, 0.6f, 0.7f };
+    v3f color = { 0.5f, 0.5f, 0.5f };
     bool32 break_stroke = false;
     if (input->brush)
     {
+        float c = (float)input->brush->x / (float)milton_state->screen_size.w;
+        color = (v3f) { c, c, c };
         v2i in_point = *input->brush;
 
         v2i canvas_point = raster_to_canvas(milton_state, in_point);
