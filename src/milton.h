@@ -67,7 +67,7 @@ typedef struct Brush_s
     int32 radius;  // This should be replaced by a BrushType and some union containing brush info.
 } Brush;
 
-typedef struct Stroke_s
+typedef struct StrokeChunk_s
 {
     v2i*        points;
     v2i*        rpoints;
@@ -75,6 +75,13 @@ typedef struct Stroke_s
     int64       num_points;
     Brush       brush;
     Rect        bounds;
+} StrokeChunk;
+
+typedef struct Stroke_s
+{
+    StrokeChunk*    chunks;
+    int64           num_chunks;
+    struct Stroke_s *next;
 } Stroke;
 
 typedef struct MiltonState_s
@@ -95,8 +102,10 @@ typedef struct MiltonState_s
     int64       num_stroke_points;
 
     // Before we get our nice spacial partition...
-    Stroke    stored_strokes[4096];
-    int64     num_stored_strokes;
+    StrokeChunk     stored_chunks[4096];
+    int64           num_stored_chunks;
+
+    Stroke*         strokes;
 
     // Heap
     Arena*      root_arena;         // Persistent memory.
@@ -330,8 +339,7 @@ inline static v3f sRGB_to_linear(v3f rgb)
     return result;
 }
 
-static void rasterize_stroke(
-        MiltonState* milton_state, Stroke* stroke, v3f color)
+static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f color)
 {
     static uint32 mask_a = 0xff000000;
     static uint32 mask_r = 0x00ff0000;
@@ -346,159 +354,134 @@ static void rasterize_stroke(
 
     uint32* pixels = (uint32_t*)milton_state->raster_buffer;
 
-    const float relative_scale = (float)stroke->brush.view_scale / (float)milton_state->view_scale;
+    v2i* rpoints = arena_alloc_array(milton_state->transient_arena, 1024, v2i);
+    int64 num_rpoints = 1024;
 
-    assert (stroke->num_points > 0);
-
-    int32 multisample_factor = 3;  // 3x3 square
-
-    Rect points_bounds = stroke->bounds;;
-    points_bounds.top_left = canvas_to_raster(milton_state, points_bounds.top_left);
-    points_bounds.bot_right = canvas_to_raster(milton_state, points_bounds.bot_right);
-
-
-    Rect raster_bounds = rect_enlarge(points_bounds, (int32)(relative_scale * stroke->brush.radius) + multisample_factor);
-    // Clip the raster bounds
+    for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
     {
-        if (raster_bounds.left < 0)
-        {
-            raster_bounds.left = 0;
-        }
-        if (raster_bounds.right > milton_state->screen_size.w)
-        {
-            raster_bounds.right = milton_state->screen_size.w;
-        }
+        StrokeChunk* chunk = &stroke->chunks[chunk_index];
+        const float relative_scale = (float)chunk->brush.view_scale / (float)milton_state->view_scale;
 
-        if (raster_bounds.top < 0)
-        {
-            raster_bounds.top = 0;
-        }
-        if (raster_bounds.bottom > milton_state->screen_size.h)
-        {
-            raster_bounds.bottom = milton_state->screen_size.h;
-        }
-    }
+        assert (chunk->num_points > 0);
 
-    Rect brush_bounds = get_brush_bounds(stroke->brush, relative_scale);
+        int32 multisample_factor = 3;  // 3x3 square
 
-    float raster_radius = stroke->brush.radius * relative_scale;
+        Rect points_bounds = chunk->bounds;;
+        points_bounds.top_left = canvas_to_raster(milton_state, points_bounds.top_left);
+        points_bounds.bot_right = canvas_to_raster(milton_state, points_bounds.bot_right);
 
-    // Transform to canvas
-    int64 num_accepted_points = 0;
-    int64 i = 0;
-#if 0
-    int64 max_accepted_points = num_points * 10;
-    v2i prev_point = canvas_to_raster(milton_state, points[0]);
-    while ( i < max_accepted_points)
-    {
-        v2i candidate = canvas_to_raster(milton_state, points[i]);
-        if (raster_distance(prev_point, candidate) > 1)
+
+        Rect raster_bounds = rect_enlarge(points_bounds, (int32)(relative_scale * chunk->brush.radius) + multisample_factor);
+        // Clip the raster bounds
         {
-            v2i delta = sub_v2i(candidate, prev_point);
-            float magnitude = sqrtf((float)(delta.x * delta.x) + (float)(delta.y * delta.y));
-            float dx = 2 * (float)delta.x / magnitude;
-            float dy = 2 * (float)delta.y / magnitude;
-            prev_point = add_v2i(prev_point, (v2i){(int32)dx, (int32)dy});
-            candidate = prev_point;
-        }
-        else
-        {
-            ++i; // ready to get next point next frame.
-        }
-
-        if (
-                candidate.x + raster_radius >= raster_bounds.left &&
-                candidate.x - raster_radius <  raster_bounds.right &&
-                candidate.y + raster_radius >= raster_bounds.top &&
-                candidate.y - raster_radius <  raster_bounds.bottom)
-        {
-            rpoints[num_accepted_points++] = candidate;
-        }
-
-        prev_point = candidate;
-    }
-#else
-    for(int64 i = 0; i < stroke->num_points; ++i)
-    {
-        v2i candidate = canvas_to_raster(milton_state, stroke->points[i]);
-        if (
-                candidate.x + raster_radius >= raster_bounds.left &&
-                candidate.x - raster_radius <  raster_bounds.right &&
-                candidate.y + raster_radius >= raster_bounds.top &&
-                candidate.y - raster_radius <  raster_bounds.bottom)
-        {
-            stroke->rpoints[num_accepted_points++] = candidate;
-        }
-    }
-#endif
-
-    // Paint..
-    int32 test_radius = (int32)(raster_radius * raster_radius);
-    for (int32 y = raster_bounds.top; y < raster_bounds.bottom; ++y)
-    {
-        for (int32 x = raster_bounds.left; x < raster_bounds.right; ++x)
-        {
-            // i,j is our test point
-            v2i test_point = { x, y };
-
-            // Iterate through stroke. When inside, draw
-            /* v2i prev_point = canvas_to_raster(milton_state, points[0]); */
-            v2i prev_point = stroke->rpoints[0];
-            int64 i = 0;
-            while ( i < num_accepted_points)
+            if (raster_bounds.left < 0)
             {
-                /* v2i canvas_point = points[i]; */
-                /* v2i base_point = canvas_to_raster(milton_state, canvas_point); */
-                v2i base_point = stroke->rpoints[i];
+                raster_bounds.left = 0;
+            }
+            if (raster_bounds.right > milton_state->screen_size.w)
+            {
+                raster_bounds.right = milton_state->screen_size.w;
+            }
 
-                // Either do interpolation or increase index to get next point.
+            if (raster_bounds.top < 0)
+            {
+                raster_bounds.top = 0;
+            }
+            if (raster_bounds.bottom > milton_state->screen_size.h)
+            {
+                raster_bounds.bottom = milton_state->screen_size.h;
+            }
+        }
+
+
+        float raster_radius = chunk->brush.radius * relative_scale;
+
+        // Transform to canvas
+        int64 num_accepted_points = 0;
+        for(int64 i = 0; i < chunk->num_points; ++i)
+        {
+            v2i candidate = canvas_to_raster(milton_state, chunk->points[i]);
+            if (
+                    candidate.x + raster_radius >= raster_bounds.left &&
+                    candidate.x - raster_radius <  raster_bounds.right &&
+                    candidate.y + raster_radius >= raster_bounds.top &&
+                    candidate.y - raster_radius <  raster_bounds.bottom)
+            {
+                chunk->rpoints[num_accepted_points++] = candidate;
+            }
+        }
+
+        // Paint..
+        Rect brush_bounds = get_brush_bounds(chunk->brush, relative_scale);
+        int32 test_radius = (int32)(raster_radius * raster_radius);
+        for (int32 y = raster_bounds.top; y < raster_bounds.bottom; ++y)
+        {
+            for (int32 x = raster_bounds.left; x < raster_bounds.right; ++x)
+            {
+                // i,j is our test point
+                v2i test_point = { x, y };
+
+                // Iterate through chunk. When inside, draw
+                /* v2i prev_point = canvas_to_raster(milton_state, points[0]); */
+                v2i prev_point = chunk->rpoints[0];
+                int64 i = 0;
+                bool32 found = false;
+                while ( !found && i < num_accepted_points)
+                {
+                    /* v2i canvas_point = points[i]; */
+                    /* v2i base_point = canvas_to_raster(milton_state, canvas_point); */
+                    v2i base_point = chunk->rpoints[i];
+
+                    // Either do interpolation or increase index to get next point.
 #if 0
-                if (raster_distance(prev_point, base_point) > 1)
-                {
-                    v2i delta = sub_v2i(base_point, prev_point);
-                    float magnitude = sqrtf((float)(delta.x * delta.x) + (float)(delta.y * delta.y));
-                    float dx = 2 * (float)delta.x / magnitude;
-                    float dy = 2 * (float)delta.y / magnitude;
-                    prev_point = add_v2i(prev_point, (v2i){(int32)dx, (int32)dy});
-                    base_point = prev_point;
-                }
-                else
-                {
+                    if (raster_distance(prev_point, base_point) > 1)
+                    {
+                        v2i delta = sub_v2i(base_point, prev_point);
+                        float magnitude = sqrtf((float)(delta.x * delta.x) + (float)(delta.y * delta.y));
+                        float dx = 2 * (float)delta.x / magnitude;
+                        float dy = 2 * (float)delta.y / magnitude;
+                        prev_point = add_v2i(prev_point, (v2i){(int32)dx, (int32)dy});
+                        base_point = prev_point;
+                    }
+                    else
+                    {
 
-                    ++i; // ready to get next point next frame.
-                }
+                        ++i; // ready to get next point next frame.
+                    }
 #else
-                ++i;
+                    ++i;
 #endif
 #if 1
-                if (
-                        !(
-                            base_point.x - raster_radius > brush_bounds.right &&
-                            base_point.y + raster_radius < brush_bounds.top &&
-                            base_point.x + raster_radius < brush_bounds.left &&
-                            base_point.y - raster_radius > brush_bounds.bottom
-                         ))
+                    if (
+                            !(
+                                base_point.x - raster_radius > brush_bounds.right &&
+                                base_point.y + raster_radius < brush_bounds.top &&
+                                base_point.x + raster_radius < brush_bounds.left &&
+                                base_point.y - raster_radius > brush_bounds.bottom
+                             ))
 #endif
-                {
-                    // TODO: Check bounding box for stroke at this point.
-
-                    // Check if inside brush!
-                    // TODO: multisample
-                    float brush_alpha = 1.0f;
-
-                    v2i diff = sub_v2i(test_point, base_point);
-                    int32 dist2 = diff.x * diff.x + diff.y * diff.y;
-                    if (dist2 < test_radius)
                     {
-                        uint32 pixel_color =
-                            ((uint8)(brush_alpha * 255.0f) << shift_a) +
-                            ((uint8)(color.r * 255.0f) << shift_r) +
-                            ((uint8)(color.g * 255.0f) << shift_g) +
-                            ((uint8)(color.b * 255.0f) << shift_b);
-                        pixels[y * milton_state->screen_size.w + x] = pixel_color;
-                    }
+                        // TODO: Check bounding box for chunk at this point.
 
-                    prev_point = base_point;
+                        // Check if inside brush!
+                        // TODO: multisample
+                        float brush_alpha = 1.0f;
+
+                        v2i diff = sub_v2i(test_point, base_point);
+                        int32 dist2 = diff.x * diff.x + diff.y * diff.y;
+                        if (dist2 < test_radius)
+                        {
+                            found = true;
+                            uint32 pixel_color =
+                                ((uint8)(brush_alpha * 255.0f) << shift_a) +
+                                ((uint8)(color.r * 255.0f) << shift_r) +
+                                ((uint8)(color.g * 255.0f) << shift_g) +
+                                ((uint8)(color.b * 255.0f) << shift_b);
+                            pixels[y * milton_state->screen_size.w + x] = pixel_color;
+                        }
+
+                        prev_point = base_point;
+                    }
                 }
             }
         }
@@ -540,8 +523,9 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         brush.view_scale = milton_state->view_scale;
         brush.radius = 10;
     }
-    v3f color = { 0.5f, 0.5f, 0.5f };
+    v3f color = { 0.5f, 0.6f, 0.7f };
     bool32 break_stroke = false;
+    bool32 finish_stroke = false;
     if (input->brush)
     {
         v2i in_point = *input->brush;
@@ -565,55 +549,90 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             break_stroke = true;
         }
 
-        v2i* rpoints = arena_alloc_array(milton_state->transient_arena, milton_state->num_stroke_points, v2i);
+        v2i* rpoints = arena_alloc_array(milton_state->transient_arena, 10 * milton_state->num_stroke_points, v2i);
 
         ++milton_state->num_stroke_points;
 
-        Stroke s = { 0 };
+        StrokeChunk c = { 0 };
+        // Draw current chunk
         {
-            s.bounds = points_bounds;
-            s.points = milton_state->stroke_points;
-            s.rpoints = rpoints;
-            s.num_points = milton_state->num_stroke_points;
-            s.brush = brush;
+            c.bounds = points_bounds;
+            c.points = milton_state->stroke_points;
+            c.rpoints = rpoints;
+            c.num_points = milton_state->num_stroke_points;
+            c.brush = brush;
         }
-        rasterize_stroke(milton_state, &s, color);
+        Stroke chunk_stroke = { 0 };
+        {
+            chunk_stroke.chunks = &c;
+            chunk_stroke.num_chunks = 1;
+        }
+        rasterize_stroke(milton_state, &chunk_stroke, color);
 
         updated = 1;
     }
     else if (milton_state->num_stroke_points > 0)
     {
         break_stroke = true;
+        finish_stroke = true;
     }
     if (break_stroke)
     {
         // Push stroke to history.
-        Stroke stored;
-        stored.bounds = get_points_bounds(milton_state->stroke_points, milton_state->num_stroke_points);
-        stored.rpoints = arena_alloc_array(milton_state->root_arena, 10 * milton_state->num_stroke_points, v2i);
+        StrokeChunk stored;
+        stored.bounds =
+            get_points_bounds(milton_state->stroke_points, milton_state->num_stroke_points);
+        stored.rpoints =
+            arena_alloc_array(milton_state->root_arena, 10 * milton_state->num_stroke_points, v2i);
         stored.brush = brush;
-        stored.points = arena_alloc_array(milton_state->root_arena,
-                milton_state->num_stroke_points, v2i);
-        memcpy(stored.points, milton_state->stroke_points,
-                milton_state->num_stroke_points * sizeof(v2i));
-        stored.num_points = milton_state->num_stroke_points;
+        stored.points =
+            arena_alloc_array(milton_state->root_arena, milton_state->num_stroke_points, v2i);
+        memcpy(stored.points,
+                milton_state->stroke_points, milton_state->num_stroke_points * sizeof(v2i));
+        stored.num_points =
+            milton_state->num_stroke_points;
 
-
-        milton_state->stored_strokes[milton_state->num_stored_strokes++] = stored;
+        milton_state->stored_chunks[milton_state->num_stored_chunks++] = stored;
 
         milton_state->num_stroke_points = 0;
     }
+    if (finish_stroke)
+    {
+        Stroke* stroke = arena_alloc_elem(milton_state->root_arena, Stroke);
+        Stroke* head = milton_state->strokes;
+        {
+            stroke->num_chunks = milton_state->num_stored_chunks;
+            stroke->chunks = arena_alloc_array(milton_state->root_arena, stroke->num_chunks, StrokeChunk);
+            memcpy(stroke->chunks, milton_state->stored_chunks, sizeof(StrokeChunk) * stroke->num_chunks);
+            stroke->next = head;
+        }
+        milton_state->strokes = stroke;
+        milton_state->num_stored_chunks = 0;
+    }
     if (input->reset)
     {
+        // TODO: FIXME
         milton_state->view_scale = 1 << 16;
-        milton_state->num_stored_strokes = 0;
+        milton_state->num_stored_chunks = 0;
         updated = 1;
     }
-    // Rasterize *every* stroke...
-    for (int i = 0; i < milton_state->num_stored_strokes; ++i)
+    // Render stored chunks
+    if (milton_state->num_stored_chunks)
     {
-        Stroke* stored = &milton_state->stored_strokes[i];
-        rasterize_stroke(milton_state, stored, color);
+        Stroke stored = { 0 };
+        {
+            stored.chunks = milton_state->stored_chunks;
+            stored.num_chunks =
+                milton_state->num_stored_chunks;
+        }
+        rasterize_stroke(milton_state, &stored, color);
+    }
+    // Rasterize *every* stroke...
+    Stroke* stroke = milton_state->strokes;
+    while(stroke)
+    {
+        rasterize_stroke(milton_state, stroke, color);
+        stroke = stroke->next;
     }
 
     return updated;
