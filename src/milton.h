@@ -414,6 +414,10 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
         // Paint..
         Rect brush_bounds = get_brush_bounds(chunk->brush, relative_scale);
         int32 test_radius = (int32)(raster_radius * raster_radius);
+        if (test_radius == 0)
+        {
+            goto end;
+        }
         for (int32 y = raster_bounds.top; y < raster_bounds.bottom; ++y)
         {
             for (int32 x = raster_bounds.left; x < raster_bounds.right; ++x)
@@ -486,6 +490,8 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
             }
         }
     }
+end:
+    return;
 }
 
 // Returns non-zero if the raster buffer was modified by this update.
@@ -495,13 +501,15 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     bool32 updated = 0;
     if (input->scale)
     {
+        static float scale_factor = 1.3f;
+        static int32 view_scale_limit = 1900000;
         if (input->scale > 0 && milton_state->view_scale > 2)
         {
-            milton_state->view_scale /= 2;
+            milton_state->view_scale = (int32)(milton_state->view_scale / scale_factor);
         }
-        else if (milton_state->view_scale <= ((int32)1 << 30))
+        else if (milton_state->view_scale < view_scale_limit)
         {
-            milton_state->view_scale *= 2;
+            milton_state->view_scale = (int32)(milton_state->view_scale * scale_factor) + 1;
         }
 
     }
