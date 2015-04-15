@@ -338,6 +338,14 @@ inline v3f sRGB_to_linear(v3f rgb)
     return result;
 }
 
+inline bool32 is_inside_bounds(v2i point, int32 radius, Rect bounds)
+{
+    return
+        point.x + radius >= bounds.left &&
+        point.x - radius <  bounds.right &&
+        point.y + radius >= bounds.top &&
+        point.y - radius <  bounds.bottom;
+}
 static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f color)
 {
     static uint32 mask_a = 0xff000000;
@@ -352,9 +360,6 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
     color = sRGB_to_linear(color);
 
     uint32* pixels = (uint32_t*)milton_state->raster_buffer;
-
-    v2i* rpoints = arena_alloc_array(milton_state->transient_arena, 1024, v2i);
-    int64 num_rpoints = 1024;
 
     for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
     {
@@ -395,29 +400,77 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
             }
         }
 
+        int32 raster_radius = (int32)(stroke->brush.radius * relative_scale);
 
-        v2i* rpoints = arena_alloc_array(milton_state->transient_arena,
+        // IMPORTANT: fpoints will grow in a deque manner, but we assume it is
+        // contiguous. No one else can use this arena until this function is
+        // finished.
+        v2i* fpoints = arena_alloc_array(milton_state->transient_arena,
                 chunk->num_points, v2i);
-        float raster_radius = stroke->brush.radius * relative_scale;
-
-        // Transform to canvas
-        int64 num_accepted_points = 0;
-        for(int64 i = 0; i < chunk->num_points; ++i)
+        int64 num_fpoints = chunk->num_points;
+        int64 fpoint_count = 0;
+        // TODO: add point from previous chunk and next chunk to avoid gaps in
+        // the interpolation
         {
-            v2i candidate = canvas_to_raster(milton_state, chunk->points[i]);
-            if (
-                    candidate.x + raster_radius >= raster_bounds.left &&
-                    candidate.x - raster_radius <  raster_bounds.right &&
-                    candidate.y + raster_radius >= raster_bounds.top &&
-                    candidate.y - raster_radius <  raster_bounds.bottom)
+            v2i point = canvas_to_raster(milton_state, chunk->points[0]);
+            v2i prev_point = point;
+            int64 i = 0;
+            while (i < chunk->num_points)
             {
-                rpoints[num_accepted_points++] = candidate;
+                point = canvas_to_raster(milton_state, chunk->points[i]);
+#if 1
+                if (raster_distance(prev_point, point) > 1)
+                {
+#if 1
+                    v2i delta = sub_v2i(point, prev_point);
+                    float magnitude = sqrtf((float)(delta.x * delta.x) + (float)(delta.y * delta.y));
+                    float dx = 2 * (float)delta.x / magnitude;
+                    float dy = 2 * (float)delta.y / magnitude;
+                    prev_point = add_v2i(prev_point, (v2i){(int32)dx, (int32)dy});
+                    point = prev_point;
+#else
+                    v2i delta = sub_v2i(point, prev_point);
+                    if (delta.x > 0)
+                    {
+                        ++prev_point.x;
+                    }
+                    else if (delta.x < 0)
+                    {
+                        --prev_point.x;
+                    }
+                    if (delta.y > 0)
+                    {
+                        ++prev_point.y;
+                    }
+                    else if (delta.y < 0)
+                    {
+                        --prev_point.y;
+                    }
+                    point = prev_point;
+#endif
+                }
+                else
+#endif
+                {
+                    ++i;
+                }
+                if ( is_inside_bounds(point, raster_radius, raster_bounds))
+                {
+                    fpoints[fpoint_count++] = point;
+                }
+                if (fpoint_count > num_fpoints)
+                {
+                    num_fpoints += 8;
+                    // ASSUMPTION: fpoints is the only thing being pushed right now...
+                    arena_alloc_array(milton_state->transient_arena, 8, v2i);
+                }
+                prev_point = point;
             }
         }
 
         // Paint..
-        //Rect brush_bounds = get_brush_bounds(stroke->brush, relative_scale);
-        int32 test_radius = (int32)(raster_radius * raster_radius);
+        Rect brush_bounds = get_brush_bounds(stroke->brush, relative_scale);
+        int32 test_radius = raster_radius * raster_radius;
         if (test_radius == 0)
         {
             goto end;
@@ -431,56 +484,15 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
 
                 // Iterate through chunk. When inside, draw
                 /* v2i prev_point = canvas_to_raster(milton_state, points[0]); */
-                v2i prev_point = rpoints[0];
+                v2i prev_point = fpoints[0];
                 int64 i = 0;
                 bool32 found = false;
-                while ( !found && i < num_accepted_points)
+                while ( !found && i < fpoint_count)
                 {
                     /* v2i canvas_point = points[i]; */
                     /* v2i base_point = canvas_to_raster(milton_state, canvas_point); */
-                    v2i base_point = rpoints[i];
-
-                    // Either do interpolation or increase index to get next point.
-#if 0
-                    if (raster_distance(prev_point, base_point) > 1)
-                    {
-#if 0
-                        v2i delta = sub_v2i(base_point, prev_point);
-                        float magnitude = sqrtf((float)(delta.x * delta.x) + (float)(delta.y * delta.y));
-                        float dx = 2 * (float)delta.x / magnitude;
-                        float dy = 2 * (float)delta.y / magnitude;
-                        prev_point = add_v2i(prev_point, (v2i){(int32)dx, (int32)dy});
-                        base_point = prev_point;
-#else
-                        v2i delta = sub_v2i(base_point, prev_point);
-                        if (delta.x > 0)
-                        {
-                            ++prev_point.x;
-                        }
-                        else if (delta.x < 0)
-                        {
-                            --prev_point.x;
-                        }
-                        if (delta.y > 0)
-                        {
-                            ++prev_point.y;
-                        }
-                        else if (delta.y < 0)
-                        {
-                            --prev_point.y;
-                        }
-                       base_point = prev_point;
-#endif
-                    }
-                    else
-                    {
-
-                        ++i; // ready to get next point next frame.
-                    }
-#else
-                    ++i;
-#endif
-#if 0
+                    v2i base_point = fpoints[++i];
+#if 1
                     if (
                             !(
                                 base_point.x - raster_radius > brush_bounds.right &&
