@@ -402,75 +402,25 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
 
         int32 raster_radius = (int32)(stroke->brush.radius * relative_scale);
 
-        // IMPORTANT: fpoints will grow in a deque manner, but we assume it is
-        // contiguous. No one else can use this arena until this function is
-        // finished.
-        v2i* fpoints = arena_alloc_array(milton_state->transient_arena,
-                chunk->num_points, v2i);
-        int64 num_fpoints = chunk->num_points;
-        int64 fpoint_count = 0;
-        // TODO: add point from previous chunk and next chunk to avoid gaps in
-        // the interpolation
+        v2i* rpoints = arena_alloc_array(milton_state->transient_arena, chunk->num_points, v2i);
+        int64 rpoint_count = 0;
         {
             v2i point = canvas_to_raster(milton_state, chunk->points[0]);
-            v2i prev_point = point;
             int64 i = 0;
             while (i < chunk->num_points)
             {
-                point = canvas_to_raster(milton_state, chunk->points[i]);
-#if 1
-                if (raster_distance(prev_point, point) > 1)
-                {
-#if 1
-                    v2i delta = sub_v2i(point, prev_point);
-                    float magnitude = sqrtf((float)(delta.x * delta.x) + (float)(delta.y * delta.y));
-                    float dx = 2 * (float)delta.x / magnitude;
-                    float dy = 2 * (float)delta.y / magnitude;
-                    prev_point = add_v2i(prev_point, (v2i){(int32)dx, (int32)dy});
-                    point = prev_point;
-#else
-                    v2i delta = sub_v2i(point, prev_point);
-                    if (delta.x > 0)
-                    {
-                        ++prev_point.x;
-                    }
-                    else if (delta.x < 0)
-                    {
-                        --prev_point.x;
-                    }
-                    if (delta.y > 0)
-                    {
-                        ++prev_point.y;
-                    }
-                    else if (delta.y < 0)
-                    {
-                        --prev_point.y;
-                    }
-                    point = prev_point;
-#endif
-                }
-                else
-#endif
-                {
-                    ++i;
-                }
+                point = canvas_to_raster(milton_state, chunk->points[i++]);
                 if ( is_inside_bounds(point, raster_radius, raster_bounds))
                 {
-                    fpoints[fpoint_count++] = point;
+                    rpoints[rpoint_count++] = point;
                 }
-                if (fpoint_count > num_fpoints)
-                {
-                    num_fpoints += 8;
-                    // ASSUMPTION: fpoints is the only thing being pushed right now...
-                    arena_alloc_array(milton_state->transient_arena, 8, v2i);
-                }
-                prev_point = point;
             }
         }
 
         // Paint..
         Rect brush_bounds = get_brush_bounds(stroke->brush, relative_scale);
         int32 test_radius = raster_radius * raster_radius;
+        float brush_alpha = 1.0f;
         if (test_radius == 0)
         {
             goto end;
@@ -484,35 +434,90 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
 
                 // Iterate through chunk. When inside, draw
                 /* v2i prev_point = canvas_to_raster(milton_state, points[0]); */
-                v2i prev_point = fpoints[0];
-                int64 i = 0;
-                bool32 found = false;
-                while ( !found && i < fpoint_count)
+                int32 dx = 0;
+                int32 dy = 0;
+                if (rpoint_count > 1)
                 {
-                    /* v2i canvas_point = points[i]; */
-                    /* v2i base_point = canvas_to_raster(milton_state, canvas_point); */
-                    v2i base_point = fpoints[++i];
-#if 1
-                    if (
-                            !(
-                                base_point.x - raster_radius > brush_bounds.right &&
-                                base_point.y + raster_radius < brush_bounds.top &&
-                                base_point.x + raster_radius < brush_bounds.left &&
-                                base_point.y - raster_radius > brush_bounds.bottom
-                             ))
-#endif
+                    int64 i = 0;
+                    bool32 found = false;
+                    for (int64 i = 0; !found && i < rpoint_count - 1; i += 1)
                     {
-                        // TODO: Check bounding box for chunk at this point.
+                        if (found) break;
+                        v2i prev_point = rpoints[i];
+                        v2i base_point = rpoints[i + 1];
+#if 1
+                        if (
+                                !(
+                                    base_point.x - raster_radius > brush_bounds.right &&
+                                    base_point.y + raster_radius < brush_bounds.top &&
+                                    base_point.x + raster_radius < brush_bounds.left &&
+                                    base_point.y - raster_radius > brush_bounds.bottom
+                                 ))
+#endif
+                        {
+                            // TODO: multisample
 
-                        // Check if inside brush!
-                        // TODO: multisample
-                        float brush_alpha = 1.0f;
+                            v2i ab_i = sub_v2i(base_point, prev_point);
+                            v2f ab = {(float)ab_i.x, (float)ab_i.y};
+                            float ab_mag2 = ab.x * ab.x + ab.y * ab.y;
+                            if (ab_mag2 > 0)
+                            {
+                                // magnitude of line segment
+                                float ab_mag = sqrtf(ab_mag2);
+                                //float ab_mag = (ab_mag2);
 
-                        v2i diff = sub_v2i(test_point, base_point);
-                        int32 dist2 = diff.x * diff.x + diff.y * diff.y;
+                                // unit vector in line segment
+                                v2f d = { ab.x / ab_mag, ab.y / ab_mag };
+
+                                // vector to test point
+                                v2i ax_i = sub_v2i(test_point, prev_point);
+                                v2f ax = { (float)ax_i.x, (float)ax_i.y };
+
+                                // projected magnitude of ax, in ab
+                                float disc = d.x * ax.x + d.y * ax.y;
+                                v2i proj =
+                                {
+                                    (int32)(prev_point.x + disc * d.x),
+                                    (int32)(prev_point.y + disc * d.y),
+                                };
+                                if (disc <= 0)
+                                {
+                                    proj = prev_point;
+                                }
+                                if (disc >= ab_mag)
+                                {
+                                    proj = base_point;
+                                }
+
+                                dx = test_point.x - proj.x;
+                                dy = test_point.y - proj.y;
+
+                                {
+                                    int32 dist2 = dx * dx + dy * dy;
+                                    if (dist2 < test_radius)
+                                    {
+                                        found = true;
+                                        uint32 pixel_color =
+                                            ((uint8)(brush_alpha * 255.0f) << shift_a) +
+                                            ((uint8)(color.r * 255.0f) << shift_r) +
+                                            ((uint8)(color.g * 255.0f) << shift_g) +
+                                            ((uint8)(color.b * 255.0f) << shift_b);
+                                        pixels[y * milton_state->screen_size.w + x] = pixel_color;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    v2i base_point = rpoints[0];
+                    dx = test_point.x - base_point.x;
+                    dy = test_point.y - base_point.y;
+                    {
+                        int32 dist2 = dx * dx + dy * dy;
                         if (dist2 < test_radius)
                         {
-                            found = true;
                             uint32 pixel_color =
                                 ((uint8)(brush_alpha * 255.0f) << shift_a) +
                                 ((uint8)(color.r * 255.0f) << shift_r) +
@@ -520,8 +525,6 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                                 ((uint8)(color.b * 255.0f) << shift_b);
                             pixels[y * milton_state->screen_size.w + x] = pixel_color;
                         }
-
-                        prev_point = base_point;
                     }
                 }
             }
@@ -589,7 +592,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         raster_bounds.top_left = canvas_to_raster(milton_state, points_bounds.top_left);
         raster_bounds.bot_right = canvas_to_raster(milton_state, points_bounds.bot_right);
         if (((raster_bounds.right - raster_bounds.left) * (raster_bounds.bottom - raster_bounds.top))
-                > 10)
+                > 25)
         {
             break_stroke = true;
         }
