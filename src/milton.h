@@ -70,17 +70,16 @@ typedef struct Brush_s
 typedef struct StrokeChunk_s
 {
     v2i*        points;
-    v2i*        rpoints;
-
     int64       num_points;
-    Brush       brush;
     Rect        bounds;
 } StrokeChunk;
 
 typedef struct Stroke_s
 {
+    Brush           brush;
     StrokeChunk*    chunks;
     int64           num_chunks;
+
     struct Stroke_s *next;
 } Stroke;
 
@@ -158,7 +157,7 @@ static Rect bounding_rect_for_stroke(v2i points[], int64 num_points)
 }
 
     // Move from infinite canvas to raster
-inline static v2i canvas_to_raster(MiltonState* milton_state, v2i canvas_point)
+inline v2i canvas_to_raster(MiltonState* milton_state, v2i canvas_point)
 {
     v2i screen_center = invscale_v2i(milton_state->screen_size, 2);
     v2i point = canvas_point;
@@ -168,7 +167,7 @@ inline static v2i canvas_to_raster(MiltonState* milton_state, v2i canvas_point)
 }
 
     // Move to infinite canvas
-inline static v2i raster_to_canvas(MiltonState* milton_state, v2i raster_point)
+inline v2i raster_to_canvas(MiltonState* milton_state, v2i raster_point)
 {
     v2i screen_center = invscale_v2i(milton_state->screen_size, 2);
     v2i canvas_point = raster_point;
@@ -230,7 +229,7 @@ static Rect rect_enlarge(Rect src, int32 offset)
     return result;
 }
 
-inline static Rect get_points_bounds(v2i* points, int64 num_points)
+inline Rect get_points_bounds(v2i* points, int64 num_points)
 {
     Rect points_bounds;
     points_bounds.top_left = points[0];
@@ -319,7 +318,7 @@ v3f hsv_to_rgb(v3f hsv)
 
 }
 
-inline static v3f sRGB_to_linear(v3f rgb)
+inline v3f sRGB_to_linear(v3f rgb)
 {
     v3f result;
     memcpy(result.d, rgb.d, 3 * sizeof(float));
@@ -360,7 +359,8 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
     for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
     {
         StrokeChunk* chunk = &stroke->chunks[chunk_index];
-        const float relative_scale = (float)chunk->brush.view_scale / (float)milton_state->view_scale;
+        const float relative_scale =
+            (float)stroke->brush.view_scale / (float)milton_state->view_scale;
 
         assert (chunk->num_points > 0);
 
@@ -371,7 +371,9 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
         points_bounds.bot_right = canvas_to_raster(milton_state, points_bounds.bot_right);
 
 
-        Rect raster_bounds = rect_enlarge(points_bounds, (int32)(relative_scale * chunk->brush.radius) + multisample_factor);
+        Rect raster_bounds = rect_enlarge(
+                points_bounds,
+                (int32)(relative_scale * stroke->brush.radius) + multisample_factor);
         // Clip the raster bounds
         {
             if (raster_bounds.left < 0)
@@ -394,7 +396,9 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
         }
 
 
-        float raster_radius = chunk->brush.radius * relative_scale;
+        v2i* rpoints = arena_alloc_array(milton_state->transient_arena,
+                chunk->num_points, v2i);
+        float raster_radius = stroke->brush.radius * relative_scale;
 
         // Transform to canvas
         int64 num_accepted_points = 0;
@@ -407,12 +411,12 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                     candidate.y + raster_radius >= raster_bounds.top &&
                     candidate.y - raster_radius <  raster_bounds.bottom)
             {
-                chunk->rpoints[num_accepted_points++] = candidate;
+                rpoints[num_accepted_points++] = candidate;
             }
         }
 
         // Paint..
-        Rect brush_bounds = get_brush_bounds(chunk->brush, relative_scale);
+        //Rect brush_bounds = get_brush_bounds(stroke->brush, relative_scale);
         int32 test_radius = (int32)(raster_radius * raster_radius);
         if (test_radius == 0)
         {
@@ -427,25 +431,46 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
 
                 // Iterate through chunk. When inside, draw
                 /* v2i prev_point = canvas_to_raster(milton_state, points[0]); */
-                v2i prev_point = chunk->rpoints[0];
+                v2i prev_point = rpoints[0];
                 int64 i = 0;
                 bool32 found = false;
                 while ( !found && i < num_accepted_points)
                 {
                     /* v2i canvas_point = points[i]; */
                     /* v2i base_point = canvas_to_raster(milton_state, canvas_point); */
-                    v2i base_point = chunk->rpoints[i];
+                    v2i base_point = rpoints[i];
 
                     // Either do interpolation or increase index to get next point.
 #if 0
                     if (raster_distance(prev_point, base_point) > 1)
                     {
+#if 0
                         v2i delta = sub_v2i(base_point, prev_point);
                         float magnitude = sqrtf((float)(delta.x * delta.x) + (float)(delta.y * delta.y));
                         float dx = 2 * (float)delta.x / magnitude;
                         float dy = 2 * (float)delta.y / magnitude;
                         prev_point = add_v2i(prev_point, (v2i){(int32)dx, (int32)dy});
                         base_point = prev_point;
+#else
+                        v2i delta = sub_v2i(base_point, prev_point);
+                        if (delta.x > 0)
+                        {
+                            ++prev_point.x;
+                        }
+                        else if (delta.x < 0)
+                        {
+                            --prev_point.x;
+                        }
+                        if (delta.y > 0)
+                        {
+                            ++prev_point.y;
+                        }
+                        else if (delta.y < 0)
+                        {
+                            --prev_point.y;
+                        }
+                       base_point = prev_point;
+#endif
                     }
                     else
                     {
@@ -455,7 +480,7 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
 #else
                     ++i;
 #endif
-#if 1
+#if 0
                     if (
                             !(
                                 base_point.x - raster_radius > brush_bounds.right &&
@@ -552,12 +577,11 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         raster_bounds.top_left = canvas_to_raster(milton_state, points_bounds.top_left);
         raster_bounds.bot_right = canvas_to_raster(milton_state, points_bounds.bot_right);
         if (((raster_bounds.right - raster_bounds.left) * (raster_bounds.bottom - raster_bounds.top))
-                > 25)
+                > 10)
         {
             break_stroke = true;
         }
 
-        v2i* rpoints = arena_alloc_array(milton_state->transient_arena, 10 * milton_state->num_stroke_points, v2i);
 
         ++milton_state->num_stroke_points;
 
@@ -566,14 +590,13 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             c.bounds = points_bounds;
             c.points = milton_state->stroke_points;
-            c.rpoints = rpoints;
             c.num_points = milton_state->num_stroke_points;
-            c.brush = brush;
         }
         Stroke chunk_stroke = { 0 };
         {
             chunk_stroke.chunks = &c;
             chunk_stroke.num_chunks = 1;
+            chunk_stroke.brush = brush;
         }
         rasterize_stroke(milton_state, &chunk_stroke, color);
 
@@ -590,9 +613,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         StrokeChunk stored;
         stored.bounds =
             get_points_bounds(milton_state->stroke_points, milton_state->num_stroke_points);
-        stored.rpoints =
-            arena_alloc_array(milton_state->root_arena, 10 * milton_state->num_stroke_points, v2i);
-        stored.brush = brush;
         stored.points =
             arena_alloc_array(milton_state->root_arena, milton_state->num_stroke_points, v2i);
         memcpy(stored.points,
@@ -609,6 +629,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         Stroke* stroke = arena_alloc_elem(milton_state->root_arena, Stroke);
         Stroke* head = milton_state->strokes;
         {
+            stroke->brush = brush;
             stroke->num_chunks = milton_state->num_stored_chunks;
             stroke->chunks = arena_alloc_array(milton_state->root_arena, stroke->num_chunks, StrokeChunk);
             memcpy(stroke->chunks, milton_state->stored_chunks, sizeof(StrokeChunk) * stroke->num_chunks);
@@ -629,6 +650,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         Stroke stored = { 0 };
         {
+            stored.brush = brush;
             stored.chunks = milton_state->stored_chunks;
             stored.num_chunks =
                 milton_state->num_stored_chunks;
