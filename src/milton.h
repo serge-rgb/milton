@@ -361,15 +361,24 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
 
     uint32* pixels = (uint32_t*)milton_state->raster_buffer;
 
+    v2i last_point = { 0 };
     for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
     {
         StrokeChunk* chunk = &stroke->chunks[chunk_index];
+        StrokeChunk* next_chunk = NULL;
+        v2i next_point = { 0 };
+        if (chunk_index < stroke->num_chunks - 1)
+        {
+            next_chunk = &stroke->chunks[chunk_index + 1];
+            next_point = canvas_to_raster(milton_state,
+                    next_chunk->points[0]);
+        }
         const float relative_scale =
             (float)stroke->brush.view_scale / (float)milton_state->view_scale;
 
         assert (chunk->num_points > 0);
 
-        int32 multisample_factor = 3;  // 3x3 square
+        int32 multisample_factor = 3 + (int32)(3 * relative_scale);  // 3x3 square
 
         Rect points_bounds = chunk->bounds;;
         points_bounds.top_left = canvas_to_raster(milton_state, points_bounds.top_left);
@@ -425,6 +434,11 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
         {
             goto end;
         }
+        if (rpoint_count == 0)
+        {
+            continue;
+        }
+
         for (int32 y = raster_bounds.top; y < raster_bounds.bottom; ++y)
         {
             for (int32 x = raster_bounds.left; x < raster_bounds.right; ++x)
@@ -440,11 +454,41 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                 {
                     int64 i = 0;
                     bool32 found = false;
-                    for (int64 i = 0; !found && i < rpoint_count - 1; i += 1)
+                    for (int64 i = -1; !found && i < rpoint_count; ++i)
                     {
                         if (found) break;
-                        v2i prev_point = rpoints[i];
-                        v2i base_point = rpoints[i + 1];
+                        v2i prev_point = { 0 };
+                        if (i == -1)
+                        {
+                            if (chunk_index > 0)
+                            {
+                                prev_point = last_point;
+                            }
+                            else
+                            {
+                                ++i;
+                            }
+                        }
+                        if (i >= 0)
+                        {
+                            prev_point = rpoints[i];
+                        }
+                        v2i base_point = { 0 };
+                        if (i == rpoint_count - 1)
+                        {
+                            if (next_chunk)
+                            {
+                                base_point = next_point;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            base_point = rpoints[i + 1];
+                        }
 #if 1
                         if (
                                 !(
@@ -484,7 +528,7 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                                 {
                                     proj = prev_point;
                                 }
-                                if (disc >= ab_mag)
+                                else if (disc >= ab_mag)
                                 {
                                     proj = base_point;
                                 }
@@ -529,6 +573,7 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                 }
             }
         }
+        last_point = canvas_to_raster(milton_state, chunk->points[chunk->num_points - 1]);
     }
 end:
     return;
