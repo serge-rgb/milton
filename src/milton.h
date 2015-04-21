@@ -37,6 +37,10 @@ inline int32 mini(int32 a, int32 b)
     return a < b? a : b;
 }
 
+inline int64 minl(int64 a, int64 b)
+{
+    return a < b? a : b;
+}
 
 #include <math.h>  // powf
 
@@ -72,6 +76,7 @@ typedef struct StrokeChunk_s
     v2i*        points;
     int64       num_points;
     Rect        bounds;
+    bool32      dirty;
 } StrokeChunk;
 
 typedef struct Stroke_s
@@ -346,6 +351,7 @@ inline bool32 is_inside_bounds(v2i point, int32 radius, Rect bounds)
         point.y + radius >= bounds.top &&
         point.y - radius <  bounds.bottom;
 }
+
 static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f color)
 {
     static uint32 mask_a = 0xff000000;
@@ -365,6 +371,12 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
     for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
     {
         StrokeChunk* chunk = &stroke->chunks[chunk_index];
+        if (!chunk->dirty)
+        {
+            last_point = canvas_to_raster(milton_state, chunk->points[chunk->num_points - 1]);
+            continue;
+        }
+        chunk->dirty = false;
         StrokeChunk* next_chunk = NULL;
         v2i next_point = { 0 };
         if (chunk_index < stroke->num_chunks - 1)
@@ -447,7 +459,6 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                 v2i test_point = { x, y };
 
                 // Iterate through chunk. When inside, draw
-                /* v2i prev_point = canvas_to_raster(milton_state, points[0]); */
                 int32 dx = 0;
                 int32 dy = 0;
                 if (rpoint_count > 1)
@@ -578,13 +589,23 @@ end:
     return;
 }
 
+inline void make_stroke_dirty(Stroke* stroke)
+{
+    for (int64 i = 0; i < stroke->num_chunks; ++i)
+    {
+        stroke->chunks[i].dirty = true;
+    }
+}
+
 // Returns non-zero if the raster buffer was modified by this update.
 static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 {
     arena_reset(milton_state->transient_arena);
     bool32 updated = 0;
+
     if (input->scale)
     {
+        input->full_refresh = true;
         static float scale_factor = 1.3f;
         static int32 view_scale_limit = 1900000;
         if (input->scale > 0 && milton_state->view_scale > 2)
@@ -595,11 +616,18 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             milton_state->view_scale = (int32)(milton_state->view_scale * scale_factor) + 1;
         }
-
     }
+
     // Do a complete re-rasterization.
-    if (input->full_refresh || 1)
+    if (input->full_refresh)
     {
+        // Clear all strokes
+        Stroke* stroke = milton_state->strokes;
+        while (stroke)
+        {
+            make_stroke_dirty(stroke);
+            stroke = stroke->next;
+        }
         uint32* pixels = (uint32_t*)milton_state->raster_buffer;
         for (int y = 0; y < milton_state->screen_size.h; ++y)
         {
@@ -649,6 +677,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             c.bounds = points_bounds;
             c.points = milton_state->stroke_points;
             c.num_points = milton_state->num_stroke_points;
+            c.dirty = true;
         }
         Stroke chunk_stroke = { 0 };
         {
@@ -656,6 +685,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             chunk_stroke.num_chunks = 1;
             chunk_stroke.brush = brush;
         }
+        make_stroke_dirty(&chunk_stroke);
         rasterize_stroke(milton_state, &chunk_stroke, color);
 
         updated = 1;
@@ -681,6 +711,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                 milton_state->stroke_points, milton_state->num_stroke_points * sizeof(v2i));
         stored.num_points =
             milton_state->num_stroke_points;
+        stored.dirty = true;
 
         milton_state->stored_chunks[milton_state->num_stored_chunks++] = stored;
 
@@ -715,10 +746,11 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             stored.brush = brush;
             stored.chunks = milton_state->stored_chunks;
-            stored.num_chunks =
-                milton_state->num_stored_chunks;
+            stored.num_chunks = milton_state->num_stored_chunks;
         }
+        stored.chunks[milton_state->num_stored_chunks - 1].dirty = true;
         rasterize_stroke(milton_state, &stored, color);
+
     }
     // Rasterize *every* stroke...
     Stroke* stroke = milton_state->strokes;
@@ -727,6 +759,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         rasterize_stroke(milton_state, stroke, color);
         stroke = stroke->next;
     }
+    updated = 1;
 
     return updated;
 }
