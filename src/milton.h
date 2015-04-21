@@ -452,7 +452,6 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                 int32 dy = 0;
                 if (rpoint_count > 1)
                 {
-                    int64 i = 0;
                     bool32 found = false;
                     for (int64 i = -1; !found && i < rpoint_count; ++i)
                     {
@@ -616,7 +615,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         brush.view_scale = milton_state->view_scale;
         brush.radius = 10;
     }
-    v3f color = { 0.5f, 0.6f, 0.7f };
+    v3f color = { 0.7f, 0.6f, 0.5f };
     bool32 break_stroke = false;
     bool32 finish_stroke = false;
     if (input->brush)
@@ -633,17 +632,16 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         Rect points_bounds = get_points_bounds(
                 milton_state->stroke_points, milton_state->num_stroke_points);
 
+        ++milton_state->num_stroke_points;
+
         Rect raster_bounds;
         raster_bounds.top_left = canvas_to_raster(milton_state, points_bounds.top_left);
         raster_bounds.bot_right = canvas_to_raster(milton_state, points_bounds.bot_right);
         if (((raster_bounds.right - raster_bounds.left) * (raster_bounds.bottom - raster_bounds.top))
-                > 25)
+                > 20)
         {
             break_stroke = true;
         }
-
-
-        ++milton_state->num_stroke_points;
 
         StrokeChunk c = { 0 };
         // Draw current chunk
@@ -667,6 +665,10 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         break_stroke = true;
         finish_stroke = true;
     }
+	else
+	{
+		finish_stroke = true;
+	}
     if (break_stroke)
     {
         // Push stroke to history.
@@ -697,6 +699,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         }
         milton_state->strokes = stroke;
         milton_state->num_stored_chunks = 0;
+        milton_state->num_stroke_points = 0;
     }
     if (input->reset)
     {
