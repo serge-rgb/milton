@@ -157,6 +157,10 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 {
                     input.reset = 1;
                 }
+                if (was_down && vkcode == VK_SPACE)
+                {
+                    input.full_refresh = true;
+                }
             }
         default:
             {
