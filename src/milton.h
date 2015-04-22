@@ -354,6 +354,65 @@ inline bool32 is_inside_bounds(v2i point, int32 radius, Rect bounds)
         point.y - radius <  bounds.bottom;
 }
 
+inline bool32 rasterize_stroke_inner_loop (uint32* pixels,
+        int32 x, int32 y,
+        int32 dx, int32 dy,
+        int32 screen_w, int32 test_radius, v3f color,
+        uint32 mask_r, uint32 mask_g, uint32 mask_b, uint32 mask_a,
+        uint32 shift_r, uint32 shift_g, uint32 shift_b, uint32 shift_a)
+{
+    static float brush_alpha = 1.0f;
+    bool32 found = false;
+    int samples = 0;
+    for (int i = -1; i <= 1; ++i)
+    {
+        for (int j = -1; j <= 1; ++j)
+        {
+
+            int32 dist2 = (dx + i) * (dx + i) + (dy + j) * (dy + j);
+            if (dist2 < test_radius)
+            {
+                ++samples;
+            }
+        }
+    }
+
+    if (samples > 0)
+    {
+        // TODO: do gamma correction after blending.
+        //color = sRGB_to_linear(color);
+
+        {
+            uint32 old = pixels[y * screen_w + x];
+
+
+            float old_contr = (float)((old & mask_a) >> shift_a) / 255.0f;
+            float contr = samples / 9.0f;
+
+            old &= ~mask_a;
+
+            //pixel = (uint32)((1 - contr) * (old * old_contr) + contr * pixel);
+            float sr = ((old & mask_r) >> shift_r) / 255.0f;
+            float sg = ((old & mask_g) >> shift_g) / 255.0f;
+            float sb = ((old & mask_b) >> shift_b) / 255.0f;
+
+            float r = (1 - contr) * (sr * old_contr) + (contr * color.r);
+            float g = (1 - contr) * (sg * old_contr) + (contr * color.g);
+            float b = (1 - contr) * (sb * old_contr) + (contr * color.b);
+
+            uint32 pixel =
+                ((uint8)(r * 255.0f) << shift_r) +
+                ((uint8)(g * 255.0f) << shift_g) +
+                ((uint8)(b * 255.0f) << shift_b);
+
+            pixel |= ((uint32)(255.0f * brush_alpha) << shift_a);
+            pixels[y * screen_w + x] = pixel;
+            found = samples == 9;
+        }
+    }
+    return found;
+}
+
 static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f color)
 {
     static uint32 mask_a = 0xff000000;
@@ -523,7 +582,7 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                         {
                             base_point = rpoints[i + 1];
                         }
-#if 1
+
                         if (
                                 !(
                                     base_point.x - raster_radius > brush_bounds.right &&
@@ -531,10 +590,7 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                                     base_point.x + raster_radius < brush_bounds.left &&
                                     base_point.y - raster_radius > brush_bounds.bottom
                                  ))
-#endif
                         {
-                            // TODO: multisample
-
                             v2i ab_i = sub_v2i(base_point, prev_point);
                             v2f ab = {(float)ab_i.x, (float)ab_i.y};
                             float ab_mag2 = ab.x * ab.x + ab.y * ab.y;
@@ -571,17 +627,12 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                                 dy = test_point.y - proj.y;
 
                                 {
-                                    int32 dist2 = dx * dx + dy * dy;
-                                    if (dist2 < test_radius)
-                                    {
-                                        found = true;
-                                        uint32 pixel_color =
-                                            ((uint8)(brush_alpha * 255.0f) << shift_a) +
-                                            ((uint8)(color.r * 255.0f) << shift_r) +
-                                            ((uint8)(color.g * 255.0f) << shift_g) +
-                                            ((uint8)(color.b * 255.0f) << shift_b);
-                                        pixels[y * milton_state->screen_size.w + x] = pixel_color;
-                                    }
+                                    found = rasterize_stroke_inner_loop(pixels,
+                                            x, y,
+                                            dx, dy,
+                                            milton_state->screen_size.w, test_radius, color,
+                                            mask_r, mask_g, mask_b, mask_a,
+                                            shift_r, shift_g, shift_b, shift_a);
                                 }
                             }
                         }
@@ -592,18 +643,12 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                     v2i base_point = rpoints[0];
                     dx = test_point.x - base_point.x;
                     dy = test_point.y - base_point.y;
-                    {
-                        int32 dist2 = dx * dx + dy * dy;
-                        if (dist2 < test_radius)
-                        {
-                            uint32 pixel_color =
-                                ((uint8)(brush_alpha * 255.0f) << shift_a) +
-                                ((uint8)(color.r * 255.0f) << shift_r) +
-                                ((uint8)(color.g * 255.0f) << shift_g) +
-                                ((uint8)(color.b * 255.0f) << shift_b);
-                            pixels[y * milton_state->screen_size.w + x] = pixel_color;
-                        }
-                    }
+                    rasterize_stroke_inner_loop(pixels,
+                            x, y,
+                            dx, dy,
+                            milton_state->screen_size.w, test_radius, color,
+                            mask_r, mask_g, mask_b, mask_a,
+                            shift_r, shift_g, shift_b, shift_a);
                 }
             }
         }
@@ -668,7 +713,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         brush.view_scale = milton_state->view_scale;
         brush.radius = 10;
     }
-    v3f color = { 0.7f, 0.6f, 0.5f };
+    v3f color = { 0.4f, 0.7f, 0.6f };
     bool32 break_stroke = false;
     bool32 finish_stroke = false;
     if (input->brush)
@@ -696,7 +741,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                 points_bounds.bot_right);
         if (
                 ((raster_bounds.right - raster_bounds.left) * (raster_bounds.bottom - raster_bounds.top))
-                > 100
+                > 25
                 ||
                 (milton_state->num_stroke_points > MAX_POINTS_IN_STROKE_CHUNK)
                 )
