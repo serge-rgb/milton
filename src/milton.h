@@ -332,9 +332,9 @@ inline v3f sRGB_to_linear(v3f rgb)
     float* d = result.d;
     for (int i = 0; i < 3; ++i)
     {
-        if (*d <= 0.0031308f)
+        if (*d <= 0.04045f)
         {
-            *d *= 12.92f;
+            *d /= 12.92f;
         }
         else
         {
@@ -810,6 +810,8 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->num_stored_chunks = 0;
         milton_state->num_stroke_points = 0;
         make_stroke_dirty(stroke);
+        // TODO: need separate buffer for current stroke. Needed for
+        // multisampling and will be useful for other things too..
     }
     if (input->reset)
     {
