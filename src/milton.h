@@ -16,6 +16,8 @@ typedef int32_t     bool32;
 #define false 0
 #endif
 
+#define SEXY 1
+
 #define stack_count(arr) (sizeof((arr)) / sizeof((arr)[0]))
 
 inline float absf(float a)
@@ -361,8 +363,11 @@ inline void rasterize_stroke_inner_loop (uint32* pixels,
         uint32 mask_r, uint32 mask_g, uint32 mask_b, uint32 mask_a,
         uint32 shift_r, uint32 shift_g, uint32 shift_b, uint32 shift_a)
 {
-    //static float brush_alpha = 0.5f;
+#ifdef SEXY
     static float brush_alpha = 1.0f;
+#else
+    static float brush_alpha = 0.5f;
+#endif
     int samples = 0;
     for (int i = -1; i <= 1; ++i)
     {
@@ -428,7 +433,18 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
 
     uint32* pixels = (uint32_t*)milton_state->raster_buffer;
 
+    const float relative_scale =
+        (float)stroke->brush.view_scale / (float)milton_state->view_scale;
+    Rect brush_bounds = get_brush_bounds(stroke->brush, relative_scale);
+    int32 raster_radius = (int32)(stroke->brush.radius * relative_scale);
+    int32 test_radius = raster_radius * raster_radius;
+    if (test_radius == 0)
+    {
+        return;
+    }
+
     v2i last_point = { 0 };
+    Rect prev_raster_bounds = { 0 };
     for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
     {
         StrokeChunk* chunk = &stroke->chunks[chunk_index];
@@ -448,11 +464,8 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                     milton_state->view_scale,
                     next_chunk->points[0]);
         }
-        const float relative_scale =
-            (float)stroke->brush.view_scale / (float)milton_state->view_scale;
 
         assert (chunk->num_points > 0);
-
 
         Rect points_bounds = chunk->bounds;
         points_bounds.top_left = canvas_to_raster (milton_state->screen_size,
@@ -475,7 +488,6 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
             points_bounds.bottom = maxi(points_bounds.bottom, prev_bounds.top);
             points_bounds.right = maxi(points_bounds.right, prev_bounds.left);
         }
-
 
         Rect raster_bounds = rect_enlarge(
                 points_bounds,
@@ -501,8 +513,6 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
             }
         }
 
-        int32 raster_radius = (int32)(stroke->brush.radius * relative_scale);
-
         v2i* rpoints = arena_alloc_array(milton_state->transient_arena, chunk->num_points, v2i);
         int64 rpoint_count = 0;
         {
@@ -521,13 +531,6 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
         }
 
         // Paint..
-        Rect brush_bounds = get_brush_bounds(stroke->brush, relative_scale);
-        int32 test_radius = raster_radius * raster_radius;
-        float brush_alpha = 1.0f;
-        if (test_radius == 0)
-        {
-            goto end;
-        }
         if (rpoint_count == 0)
         {
             continue;
@@ -539,12 +542,28 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
             {
                 // i,j is our test point
                 v2i test_point = { x, y };
+                // Ignore points that overlap previous chunk
+#ifndef SEXY
+                if (chunk_index > 0)
+                {
+                    if (
+                            test_point.x >= prev_raster_bounds.left && test_point.x <= prev_raster_bounds.right &&
+                            test_point.y >= prev_raster_bounds.top && test_point.y <= prev_raster_bounds.bottom
+                       )
+                    {
+                        // TODO: check here for bitmask?
+                        continue;
+                    }
+                }
+#endif
 
                 // Iterate through chunk. When inside, draw
-                int32 dx = 0;
-                int32 dy = 0;
+                int32 paint_dx = 0;
+                int32 paint_dy = 0;
                 if (rpoint_count > 1)
                 {
+                    float min_dist = (1 << 30);
+                    v2i min_point = { 0 };
                     for (int64 i = -1; i < rpoint_count; ++i)
                     {
                         v2i prev_point = { 0 };
@@ -620,38 +639,45 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                                     proj = base_point;
                                 }
 
-                                dx = test_point.x - proj.x;
-                                dy = test_point.y - proj.y;
-
-                                rasterize_stroke_inner_loop(pixels,
-                                        x, y,
-                                        dx, dy,
-                                        milton_state->screen_size.w, test_radius, color,
-                                        mask_r, mask_g, mask_b, mask_a,
-                                        shift_r, shift_g, shift_b, shift_a);
+                                int32 dx = test_point.x - proj.x;
+                                int32 dy = test_point.y - proj.y;
+                                float dist = (float)dx * dx + dy * dy;
+                                if (dist < min_dist)
+                                {
+                                    paint_dx = dx;
+                                    paint_dy = dy;
+                                    min_dist = dist;
+                                    min_point = proj;
+                                }
                             }
                         }
                     }
+                    // Found min distance and point. Paint
+                    rasterize_stroke_inner_loop(pixels,
+                            x, y,
+                            paint_dx, paint_dy,
+                            milton_state->screen_size.w, test_radius, color,
+                            mask_r, mask_g, mask_b, mask_a,
+                            shift_r, shift_g, shift_b, shift_a);
                 }
                 else
                 {
                     v2i base_point = rpoints[0];
-                    dx = test_point.x - base_point.x;
-                    dy = test_point.y - base_point.y;
+                    paint_dx = test_point.x - base_point.x;
+                    paint_dy = test_point.y - base_point.y;
                     rasterize_stroke_inner_loop(pixels,
                             x, y,
-                            dx, dy,
+                            paint_dx, paint_dy,
                             milton_state->screen_size.w, test_radius, color,
                             mask_r, mask_g, mask_b, mask_a,
                             shift_r, shift_g, shift_b, shift_a);
                 }
             }
         }
+        prev_raster_bounds = raster_bounds;
         last_point = canvas_to_raster(milton_state->screen_size, milton_state->view_scale,
                 chunk->points[chunk->num_points - 1]);
     }
-end:
-    return;
 }
 
 inline void make_stroke_dirty(Stroke* stroke)
@@ -726,8 +752,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                 milton_state->stroke_points, milton_state->num_stroke_points);
 
         ++milton_state->num_stroke_points;
-
-        //rectify_stroke_points(milton_state->transient_arena, milton_state->stroke_points, &milton_state->num_stroke_points, milton_state->screen_size, milton_state->view_scale);
 
         Rect raster_bounds;
         raster_bounds.top_left = canvas_to_raster(milton_state->screen_size, milton_state->view_scale,
