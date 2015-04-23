@@ -33,8 +33,17 @@ inline int32 maxi(int32 a, int32 b)
 {
     return a > b? a : b;
 }
-
 inline int32 mini(int32 a, int32 b)
+{
+    return a < b? a : b;
+}
+
+inline float maxf(float a, float b)
+{
+    return a > b? a : b;
+}
+
+inline float minf(float a, float b)
 {
     return a < b? a : b;
 }
@@ -368,18 +377,22 @@ inline void rasterize_stroke_inner_loop (uint32* pixels,
 #else
     static float brush_alpha = 0.5f;
 #endif
+
+    float max_samples = 4;
+
     int samples = 0;
-    for (int i = -1; i <= 1; ++i)
+    for (float i = -0.5f; i <= 0.5f; i += 1.0f)
     {
-        for (int j = -1; j <= 1; ++j)
+        for (float j = -0.5f; j <= 0.5f; j += 1.0f)
         {
-            int32 dist2 = (dx + i) * (dx + i) + (dy + j) * (dy + j);
-            if (dist2 <= test_radius)
+            float d = (dx + i) * (dx + i) + (dy + j) * (dy + j);
+            if (d <= test_radius)
             {
                 ++samples;
             }
         }
     }
+
     if (samples > 0)
     {
         // TODO: do gamma correction after blending.
@@ -388,7 +401,7 @@ inline void rasterize_stroke_inner_loop (uint32* pixels,
         uint32 old = pixels[y * screen_w + x];
 
         // NOTE: Not using stored alpha!
-        float contr = samples / 9.0f;
+        float contr = samples / max_samples;
 
         float sr = ((old & mask_r) >> shift_r) / 255.0f;
         float sg = ((old & mask_g) >> shift_g) / 255.0f;
@@ -734,7 +747,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         brush.view_scale = milton_state->view_scale;
         brush.radius = 10;
     }
-    v3f color = { 0.4f, 0.5f, 0.6f };
+    v3f color = { 0.9f, 0.4f, 0.4f };
     bool32 break_stroke = false;
     bool32 finish_stroke = false;
     if (input->brush)
