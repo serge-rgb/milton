@@ -283,8 +283,11 @@ int CALLBACK WinMain(
 
     int32 x = 100;
     int32 y = 100;
-    int32 width = 1920;
-    int32 height = 1080;
+    //int32 width = 1920;
+    //int32 height = 1080;
+    int32 width = 1280;
+    int32 height = 720;
+
     HWND window = CreateWindowExA(
             0, //WS_EX_TOPMOST ,  // dwExStyle
             window_class.lpszClassName,     // class Name

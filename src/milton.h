@@ -16,7 +16,6 @@ typedef int32_t     bool32;
 #define false 0
 #endif
 
-#define SEXY 1
 
 #define stack_count(arr) (sizeof((arr)) / sizeof((arr)[0]))
 
@@ -108,6 +107,7 @@ typedef struct MiltonState_s
     uint8_t     bytes_per_pixel;
     uint8_t*    raster_buffer;
     size_t      raster_buffer_size;
+    uint8*      sample_buffer;  // Same size as raster buffer.
 
     v2i screen_size;
 
@@ -152,7 +152,9 @@ static void milton_init(MiltonState* milton_state)
     milton_state->raster_buffer_size = closest_power_of_two;
 
     milton_state->raster_buffer = arena_alloc_array(milton_state->root_arena,
-            milton_state->raster_buffer_size, uint8_t);
+            milton_state->raster_buffer_size, uint8);
+    milton_state->sample_buffer = arena_alloc_array(milton_state->root_arena,
+            milton_state->raster_buffer_size, uint8);
 }
 
 static Rect bounding_rect_for_stroke(v2i points[], int64 num_points)
@@ -365,20 +367,20 @@ inline bool32 is_inside_bounds(v2i point, int32 radius, Rect bounds)
         point.y - radius <  bounds.bottom;
 }
 
-inline void rasterize_stroke_inner_loop (uint32* pixels,
+inline void rasterize_stroke_inner_loop (uint32* pixels, uint8* sample_buffer,
         int32 x, int32 y,
         int32 dx, int32 dy,
         int32 screen_w, int32 test_radius, v3f color,
         uint32 mask_r, uint32 mask_g, uint32 mask_b, uint32 mask_a,
         uint32 shift_r, uint32 shift_g, uint32 shift_b, uint32 shift_a)
 {
-#ifdef SEXY
+#if 0
     static float brush_alpha = 1.0f;
 #else
     static float brush_alpha = 0.5f;
 #endif
 
-    float max_samples = 4;
+    int max_samples = 4;
 
     int samples = 0;
     for (float i = -0.5f; i <= 0.5f; i += 1.0f)
@@ -401,7 +403,7 @@ inline void rasterize_stroke_inner_loop (uint32* pixels,
         uint32 old = pixels[y * screen_w + x];
 
         // NOTE: Not using stored alpha!
-        float contr = samples / max_samples;
+        float contr = samples / (float)max_samples;
 
         float sr = ((old & mask_r) >> shift_r) / 255.0f;
         float sg = ((old & mask_g) >> shift_g) / 255.0f;
@@ -410,10 +412,22 @@ inline void rasterize_stroke_inner_loop (uint32* pixels,
 
         uint8 max_a = (uint8)(brush_alpha * 255.0f);
 
-        float da = (brush_alpha * contr);
+        // Compare with stored alpha
+        uint8 existing_samples = sample_buffer[y * screen_w + x];
 
-        //if ((da + sa) / 2 < brush_alpha)
+        if (samples > existing_samples)
         {
+            float da = (brush_alpha * contr);
+            if (samples + existing_samples > max_samples)
+            {
+                da = brush_alpha * (1 - ((existing_samples)/(float)max_samples));
+                sample_buffer[y * screen_w + x] = (uint8)max_samples;
+            }
+            else
+            {
+                sample_buffer[y * screen_w + x] = (uint8)samples;
+            }
+
             float r = (1 - da) * (sr * sa) + (da * color.r);
             float g = (1 - da) * (sg * sa) + (da * color.g);
             float b = (1 - da) * (sb * sa) + (da * color.b);
@@ -422,10 +436,8 @@ inline void rasterize_stroke_inner_loop (uint32* pixels,
                 ((uint8)(r * 255.0f) << shift_r) +
                 ((uint8)(g * 255.0f) << shift_g) +
                 ((uint8)(b * 255.0f) << shift_b) +
-                ((uint8)(255.0f) << shift_a);
-               // ((uint8)(da * 255.0f) << shift_a);
+                ((uint8)(da + sa * 255.0f) << shift_a);
 
-            //pixel |= ((uint32)(255) << shift_a);
             pixels[y * screen_w + x] = pixel;
         }
     }
@@ -457,7 +469,10 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
     }
 
     v2i last_point = { 0 };
-    Rect prev_raster_bounds = { 0 };
+
+    Rect* stored_raster_bounds = arena_alloc_array(
+            milton_state->transient_arena, stroke->num_chunks, Rect);
+
     for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
     {
         StrokeChunk* chunk = &stroke->chunks[chunk_index];
@@ -525,6 +540,9 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                 raster_bounds.bottom = milton_state->screen_size.h;
             }
         }
+        // Save current raster_bounds
+        stored_raster_bounds[chunk_index] = raster_bounds;
+
 
         v2i* rpoints = arena_alloc_array(milton_state->transient_arena, chunk->num_points, v2i);
         int64 rpoint_count = 0;
@@ -549,6 +567,9 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
             continue;
         }
 
+        ///////
+        // Iterate raster_bounds and paint
+        ///////
         for (int32 y = raster_bounds.top; y < raster_bounds.bottom; ++y)
         {
             for (int32 x = raster_bounds.left; x < raster_bounds.right; ++x)
@@ -556,7 +577,7 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                 // i,j is our test point
                 v2i test_point = { x, y };
                 // Ignore points that overlap previous chunk
-#ifndef SEXY
+#if 0
                 if (chunk_index > 0)
                 {
                     if (
@@ -666,7 +687,7 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                         }
                     }
                     // Found min distance and point. Paint
-                    rasterize_stroke_inner_loop(pixels,
+                    rasterize_stroke_inner_loop(pixels, milton_state->sample_buffer,
                             x, y,
                             paint_dx, paint_dy,
                             milton_state->screen_size.w, test_radius, color,
@@ -678,7 +699,7 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                     v2i base_point = rpoints[0];
                     paint_dx = test_point.x - base_point.x;
                     paint_dy = test_point.y - base_point.y;
-                    rasterize_stroke_inner_loop(pixels,
+                    rasterize_stroke_inner_loop(pixels, milton_state->sample_buffer,
                             x, y,
                             paint_dx, paint_dy,
                             milton_state->screen_size.w, test_radius, color,
@@ -687,9 +708,20 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
                 }
             }
         }
-        prev_raster_bounds = raster_bounds;
         last_point = canvas_to_raster(milton_state->screen_size, milton_state->view_scale,
                 chunk->points[chunk->num_points - 1]);
+    }
+    // Clear the parts of the alpha buffer that we used
+    for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
+    {
+        Rect raster_bounds = stored_raster_bounds[chunk_index];
+        for (int j = raster_bounds.top; j < raster_bounds.bottom; ++j)
+        {
+            for (int i = raster_bounds.left; i < raster_bounds.right; ++i)
+            {
+                milton_state->sample_buffer[j * milton_state->screen_size.w + i] = 0;
+            }
+        }
     }
 }
 
@@ -722,26 +754,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    // Do a complete re-rasterization.
-    if (input->full_refresh)
-    {
-        // Clear all strokes
-        Stroke* stroke = milton_state->strokes;
-        while (stroke)
-        {
-            make_stroke_dirty(stroke);
-            stroke = stroke->next;
-        }
-        uint32* pixels = (uint32_t*)milton_state->raster_buffer;
-        for (int y = 0; y < milton_state->screen_size.h; ++y)
-        {
-            for (int x = 0; x < milton_state->screen_size.w; ++x)
-            {
-                *pixels++ = 0xffffffff;
-            }
-        }
-        updated = 1;
-    }
     Brush brush = { 0 };
     {
         brush.view_scale = milton_state->view_scale;
@@ -795,7 +807,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             chunk_stroke.num_chunks = 1;
             chunk_stroke.brush = brush;
         }
-        rasterize_stroke(milton_state, &chunk_stroke, color);
+        //rasterize_stroke(milton_state, &chunk_stroke, color);
 
         updated = 1;
     }
@@ -841,6 +853,27 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->num_stored_chunks = 0;
         milton_state->num_stroke_points = 0;
         make_stroke_dirty(stroke);
+        input->full_refresh = true;
+    }
+    // Do a complete re-rasterization.
+    if (input->full_refresh)
+    {
+        // Clear all strokes
+        Stroke* stroke = milton_state->strokes;
+        while (stroke)
+        {
+            make_stroke_dirty(stroke);
+            stroke = stroke->next;
+        }
+        uint32* pixels = (uint32_t*)milton_state->raster_buffer;
+        for (int y = 0; y < milton_state->screen_size.h; ++y)
+        {
+            for (int x = 0; x < milton_state->screen_size.w; ++x)
+            {
+                *pixels++ = 0xffffffff;
+            }
+        }
+        updated = 1;
     }
     if (input->reset)
     {
