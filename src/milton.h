@@ -443,7 +443,13 @@ inline void rasterize_stroke_inner_loop (uint32* pixels, uint8* sample_buffer,
     }
 }
 
-static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f color)
+typedef enum
+{
+    StrokeRasterFlags_none = 0,
+    StrokeRasterFlags_dont_clear_sample_buffer = (1 << 0),
+} StrokeRasterFlags;
+
+static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f color, StrokeRasterFlags flags)
 {
     static uint32 mask_a = 0xff000000;
     static uint32 mask_r = 0x00ff0000;
@@ -576,20 +582,6 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
             {
                 // i,j is our test point
                 v2i test_point = { x, y };
-                // Ignore points that overlap previous chunk
-#if 0
-                if (chunk_index > 0)
-                {
-                    if (
-                            test_point.x >= prev_raster_bounds.left && test_point.x <= prev_raster_bounds.right &&
-                            test_point.y >= prev_raster_bounds.top && test_point.y <= prev_raster_bounds.bottom
-                       )
-                    {
-                        // TODO: check here for bitmask?
-                        continue;
-                    }
-                }
-#endif
 
                 // Iterate through chunk. When inside, draw
                 int32 paint_dx = 0;
@@ -711,10 +703,75 @@ static void rasterize_stroke(MiltonState* milton_state, Stroke* stroke, v3f colo
         last_point = canvas_to_raster(milton_state->screen_size, milton_state->view_scale,
                 chunk->points[chunk->num_points - 1]);
     }
-    // Clear the parts of the alpha buffer that we used
+    if (!(flags & StrokeRasterFlags_dont_clear_sample_buffer))
+    {
+        // Set the sample buffer back to all-zeroes
+        for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
+        {
+            Rect raster_bounds = stored_raster_bounds[chunk_index];
+            for (int j = raster_bounds.top; j < raster_bounds.bottom; ++j)
+            {
+                for (int i = raster_bounds.left; i < raster_bounds.right; ++i)
+                {
+                    milton_state->sample_buffer[j * milton_state->screen_size.w + i] = 0;
+                }
+            }
+        }
+    }
+}
+
+static void clear_sample_buffer(MiltonState* milton_state, Stroke* stroke)
+{
+    // Set the sample buffer back to all-zeroes
     for (int64 chunk_index = 0; chunk_index < stroke->num_chunks; ++chunk_index)
     {
-        Rect raster_bounds = stored_raster_bounds[chunk_index];
+        StrokeChunk* chunk = &stroke->chunks[chunk_index];
+        Rect points_bounds = chunk->bounds;
+        points_bounds.top_left = canvas_to_raster (milton_state->screen_size,
+                milton_state->view_scale, points_bounds.top_left);
+        points_bounds.bot_right = canvas_to_raster(milton_state->screen_size,
+                milton_state->view_scale, points_bounds.bot_right);
+
+        if (chunk_index > 0)
+        {
+            StrokeChunk* prev_chunk = &stroke->chunks[chunk_index - 1];
+            Rect prev_bounds = prev_chunk->bounds;
+            prev_bounds.top_left = canvas_to_raster (milton_state->screen_size,
+                    milton_state->view_scale, prev_bounds.top_left);
+            prev_bounds.bot_right = canvas_to_raster(milton_state->screen_size,
+                    milton_state->view_scale, prev_bounds.bot_right);
+
+            // Avoid gaps between chunk bounds.
+            points_bounds.left = mini(points_bounds.left, prev_bounds.right);
+            points_bounds.top = mini(points_bounds.top, prev_bounds.bottom);
+            points_bounds.bottom = maxi(points_bounds.bottom, prev_bounds.top);
+            points_bounds.right = maxi(points_bounds.right, prev_bounds.left);
+        }
+
+        Rect raster_bounds = rect_enlarge(
+                points_bounds,
+                (int32)(1.0f * stroke->brush.radius));
+        // Clip the raster bounds
+        {
+            if (raster_bounds.left < 0)
+            {
+                raster_bounds.left = 0;
+            }
+            if (raster_bounds.right > milton_state->screen_size.w)
+            {
+                raster_bounds.right = milton_state->screen_size.w;
+            }
+
+            if (raster_bounds.top < 0)
+            {
+                raster_bounds.top = 0;
+            }
+            if (raster_bounds.bottom > milton_state->screen_size.h)
+            {
+                raster_bounds.bottom = milton_state->screen_size.h;
+            }
+        }
+
         for (int j = raster_bounds.top; j < raster_bounds.bottom; ++j)
         {
             for (int i = raster_bounds.left; i < raster_bounds.right; ++i)
@@ -852,8 +909,8 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->strokes = stroke;
         milton_state->num_stored_chunks = 0;
         milton_state->num_stroke_points = 0;
-        make_stroke_dirty(stroke);
-        input->full_refresh = true;
+        clear_sample_buffer(milton_state, stroke);
+        //make_stroke_dirty(stroke);
     }
     // Do a complete re-rasterization.
     if (input->full_refresh)
@@ -891,13 +948,13 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             stored.chunks = milton_state->stored_chunks;
             stored.num_chunks = milton_state->num_stored_chunks;
         }
-        rasterize_stroke(milton_state, &stored, color);
+        rasterize_stroke(milton_state, &stored, color, StrokeRasterFlags_dont_clear_sample_buffer);
     }
     // Rasterize *every* stroke...
     Stroke* stroke = milton_state->strokes;
     while(stroke)
     {
-        rasterize_stroke(milton_state, stroke, color);
+        rasterize_stroke(milton_state, stroke, color, StrokeRasterFlags_none);
         stroke = stroke->next;
     }
     updated = 1;
