@@ -384,8 +384,8 @@ inline int32 rect_area(Rect rect)
     return (rect.right - rect.left) * (rect.bottom - rect.top);
 }
 
-static Rect get_chunk_raster_bounds(v2i screen_size, int32 view_scale,
-        Stroke* stroke, int32 start, Brush brush)
+static Rect get_stroke_raster_bounds(
+        v2i screen_size, int32 view_scale, Stroke* stroke, int32 start, Brush brush)
 {
     v2f* points = stroke->points;
     int32 num_points = stroke->num_points;
@@ -412,81 +412,9 @@ static Rect get_chunk_raster_bounds(v2i screen_size, int32 view_scale,
     return limits;
 }
 
-// Returns non-zero if the raster buffer was modified by this update.
-static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
+static void render_rect(MiltonState* milton_state, Rect limits)
 {
-    arena_reset(milton_state->transient_arena);
-    bool32 updated = false;
-
-    if (input->scale)
-    {
-        input->full_refresh = true;
-        static float scale_factor = 1.3f;
-        static int32 view_scale_limit = 1900000;
-        if (input->scale > 0 && milton_state->view_scale > 2)
-        {
-            milton_state->view_scale = (int32)(milton_state->view_scale / scale_factor);
-        }
-        else if (milton_state->view_scale < view_scale_limit)
-        {
-            milton_state->view_scale = (int32)(milton_state->view_scale * scale_factor) + 1;
-        }
-    }
-
-    Brush brush;
-    {
-        brush.radius = 10.0f * milton_state->view_scale;
-    }
-    v3f color = { 0.9f, 0.4f, 0.4f };
-
-    bool32 finish_stroke = false;
-    if (input->brush)
-    {
-        v2i in_point = *input->brush;
-
-        v2f canvas_point = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, in_point);
-
-        // Add to current stroke.
-        milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
-        milton_state->working_stroke.brush = brush;
-
-        milton_state->strokes[0] = milton_state->working_stroke;  // Copy current stroke.
-
-        updated = true;
-    }
-    else if (milton_state->working_stroke.num_points)
-    {
-        milton_state->strokes[0] = (Stroke){ 0 };  // Clear working stroke.
-        milton_state->working_stroke.num_points = 0;
-    }
-
     uint32* pixels = (uint32*)milton_state->raster_buffer;
-    Rect limits = { 0 };
-
-    if (input->full_refresh)
-    {
-        limits.left = 0;
-        limits.right = milton_state->screen_size.w;
-        limits.top = 0;
-        limits.bottom = milton_state->screen_size.h;
-    }
-#if 0
-    else if (milton_state->num_strokes &&
-            milton_state->strokes[milton_state->num_strokes - 1].num_chunks)
-    {
-        Stroke* stroke = &milton_state->strokes[milton_state->num_strokes - 1];
-        StrokeChunk chunk = stroke->chunks[stroke->num_chunks - 1];
-        limits = rect_enlarge(chunk.bounds, (int32)stroke->brush.radius);
-        limits.top_left = canvas_to_raster(milton_state->screen_size, milton_state->view_scale, limits.top_left);
-        limits.bot_right = canvas_to_raster(milton_state->screen_size, milton_state->view_scale, limits.bot_right);
-    }
-#else
-    limits.left = 0;
-    limits.right = milton_state->screen_size.w;
-    limits.top = 0;
-    limits.bottom = milton_state->screen_size.h;
-#endif
-
     Stroke* strokes = milton_state->strokes;
 
     for (int j = limits.top; j < limits.bottom; ++j)
@@ -558,6 +486,83 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             pixels[j * milton_state->screen_size.w + i] = pixel;
         }
     }
+}
+// Returns non-zero if the raster buffer was modified by this update.
+static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
+{
+    arena_reset(milton_state->transient_arena);
+    bool32 updated = false;
+
+    if (input->scale)
+    {
+        input->full_refresh = true;
+        static float scale_factor = 1.3f;
+        static int32 view_scale_limit = 1900000;
+        if (input->scale > 0 && milton_state->view_scale > 2)
+        {
+            milton_state->view_scale = (int32)(milton_state->view_scale / scale_factor);
+        }
+        else if (milton_state->view_scale < view_scale_limit)
+        {
+            milton_state->view_scale = (int32)(milton_state->view_scale * scale_factor) + 1;
+        }
+    }
+
+    Brush brush;
+    {
+        brush.radius = 10.0f * milton_state->view_scale;
+    }
+    v3f color = { 0.9f, 0.4f, 0.4f };
+
+    bool32 finish_stroke = false;
+    if (input->brush)
+    {
+        v2i in_point = *input->brush;
+
+        v2f canvas_point = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, in_point);
+
+        // Add to current stroke.
+        milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
+        milton_state->working_stroke.brush = brush;
+
+        milton_state->strokes[0] = milton_state->working_stroke;  // Copy current stroke.
+
+        updated = true;
+    }
+    else if (milton_state->working_stroke.num_points)
+    {
+        milton_state->strokes[0] = (Stroke){ 0 };  // Clear working stroke.
+        milton_state->working_stroke.num_points = 0;
+    }
+
+    Rect limits = { 0 };
+
+    if (input->full_refresh)
+    {
+        limits.left = 0;
+        limits.right = milton_state->screen_size.w;
+        limits.top = 0;
+        limits.bottom = milton_state->screen_size.h;
+    }
+#if 0
+    else if (milton_state->num_strokes &&
+            milton_state->strokes[milton_state->num_strokes - 1].num_chunks)
+    {
+        Stroke* stroke = &milton_state->strokes[milton_state->num_strokes - 1];
+        StrokeChunk chunk = stroke->chunks[stroke->num_chunks - 1];
+        limits = rect_enlarge(chunk.bounds, (int32)stroke->brush.radius);
+        limits.top_left = canvas_to_raster(milton_state->screen_size, milton_state->view_scale, limits.top_left);
+        limits.bot_right = canvas_to_raster(milton_state->screen_size, milton_state->view_scale, limits.bot_right);
+    }
+#else
+    limits.left = 0;
+    limits.right = milton_state->screen_size.w;
+    limits.top = 0;
+    limits.bottom = milton_state->screen_size.h;
+#endif
+    render_rect(milton_state, limits);
+
+
     updated = true;
 
     return updated;
