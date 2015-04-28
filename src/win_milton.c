@@ -20,7 +20,7 @@ typedef struct
     int32_t width;
     int32_t height;
     BITMAPINFO bitmap_info;
-    v2i stored_brush;
+    v2i stored_point;
 } Win32State;
 
 typedef enum
@@ -180,9 +180,15 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 
     if (g_gui_data.left_down)
     {
-        win_state->stored_brush.x = (int64)g_gui_data.mouse_x;
-        win_state->stored_brush.y = (int64)g_gui_data.mouse_y;
-        input.brush = &win_state->stored_brush;
+        if (
+                win_state->stored_point.x != g_gui_data.mouse_x ||
+                win_state->stored_point.y != g_gui_data.mouse_y
+                )
+        {
+            win_state->stored_point.x = (int64)g_gui_data.mouse_x;
+            win_state->stored_point.y = (int64)g_gui_data.mouse_y;
+            input.point = &win_state->stored_point;
+        }
     }
     return input;
 }
