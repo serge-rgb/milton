@@ -88,14 +88,15 @@ typedef struct Rect_s
 
 typedef struct Brush_s
 {
-    float radius;  // This should be replaced by a BrushType and some union containing brush info.
+    int32 radius;  // This should be replaced by a BrushType and some union containing brush info.
 } Brush;
 
 #define LIMIT_STROKE_POINTS 1024
 typedef struct Stroke_s
 {
     Brush   brush;
-    v2f     points[LIMIT_STROKE_POINTS];
+    // TODO turn this into a deque??
+    v2i     points[LIMIT_STROKE_POINTS];
     int32   num_points;
     Rect    bounds;
 
@@ -115,7 +116,7 @@ typedef struct MiltonState_s
     // Maps screen_size to a rectangle in our infinite canvas.
     int32 view_scale;
 
-    v2f     last_point;  // Last input point. Used to determine area to update.
+    v2i     last_point;  // Last input point. Used to determine area to update.
     Stroke  working_stroke;
 
     Stroke  strokes[4096];  // TODO: Create a deque to store arbitrary number of strokes.
@@ -142,7 +143,7 @@ static void milton_init(MiltonState* milton_state)
     milton_state->full_width      = 7680;
     milton_state->full_height     = 4320;
     milton_state->bytes_per_pixel = 4;
-    milton_state->view_scale      = ((int32)1 << 12);
+    milton_state->view_scale      = (1 << 12);
     milton_state->num_strokes       = 1;  // Working stroke is index 0
 
     int closest_power_of_two = (1 << 27);  // Ceiling of log2(width * height * bpp)
@@ -152,15 +153,6 @@ static void milton_init(MiltonState* milton_state)
             milton_state->raster_buffer_size, uint8);
 }
 
-    // Move from infinite canvas to raster
-inline v2i canvas_to_raster_f(v2i screen_size, int32 view_scale, v2f canvas_point)
-{
-    v2i screen_center = invscale_v2i(screen_size, 2);
-    v2i point = {  (int32)canvas_point.x, (int32)canvas_point.y};
-    point = invscale_v2i(point, view_scale);
-    point = add_v2i     ( point, screen_center );
-    return point;
-}
 inline v2i canvas_to_raster(v2i screen_size, int32 view_scale, v2i canvas_point)
 {
     v2i screen_center = invscale_v2i(screen_size, 2);
@@ -170,13 +162,12 @@ inline v2i canvas_to_raster(v2i screen_size, int32 view_scale, v2i canvas_point)
     return point;
 }
 
-    // Move to infinite canvas
-inline v2f raster_to_canvas(v2i screen_size, int32 view_scale, v2i raster_point)
+inline v2i raster_to_canvas(v2i screen_size, int32 view_scale, v2i raster_point)
 {
-    v2f screen_center = v2i_to_v2f(invscale_v2i(screen_size, 2));
-    v2f canvas_point = v2i_to_v2f(raster_point);
-    canvas_point = sub_v2f   ( canvas_point ,  screen_center );
-    canvas_point = scale_v2f (canvas_point, (float)view_scale);
+    v2i screen_center = invscale_v2i(screen_size, 2);
+    v2i canvas_point = raster_point;
+    canvas_point = sub_v2i   ( canvas_point ,  screen_center );
+    canvas_point = scale_v2i (canvas_point, view_scale);
     return canvas_point;
 }
 
@@ -212,7 +203,7 @@ inline int32 raster_distance(v2i a, v2i b)
 }
 static Rect get_brush_bounds(const Brush brush, float relative_scale)
 {
-    int32 pixel_radius = (int32)((float)brush.radius * relative_scale);
+    int32 pixel_radius = (int32)(brush.radius * relative_scale);
     Rect bounds =
     {
         // top_left
@@ -233,21 +224,21 @@ static Rect rect_enlarge(Rect src, int32 offset)
     return result;
 }
 
-static Rect bounding_rect_for_stroke(v2f points[], int64 num_points)
+static Rect bounding_rect_for_stroke(v2i points[], int64 num_points)
 {
     assert (num_points > 0);
 
-    v2i top_left =  v2f_to_v2i (points[0]);
-    v2i bot_right = v2f_to_v2i (points[0]);
+    v2i top_left =  points[0];
+    v2i bot_right = points[0];
 
     for (int64 i = 1; i < num_points; ++i)
     {
-        v2f point = points[i];
-        if (point.x < top_left.x)   top_left.x = (int32)point.x;
-        if (point.x > bot_right.x)  bot_right.x = (int32)point.x;
+        v2i point = points[i];
+        if (point.x < top_left.x)   top_left.x = point.x;
+        if (point.x > bot_right.x)  bot_right.x = point.x;
 
-        if (point.y < top_left.y)   top_left.y = (int32)point.y;
-        if (point.y > bot_right.y)  bot_right.y = (int32)point.y;
+        if (point.y < top_left.y)   top_left.y = point.y;
+        if (point.y > bot_right.y)  bot_right.y = point.y;
     }
     Rect rect = { top_left, bot_right };
     return rect;
@@ -368,15 +359,15 @@ inline int32 rect_area(Rect rect)
 static Rect get_stroke_raster_bounds(
         v2i screen_size, int32 view_scale, Stroke* stroke, int32 start, Brush brush)
 {
-    v2f* points = stroke->points;
+    v2i* points = stroke->points;
     int32 num_points = stroke->num_points;
-    v2i point = canvas_to_raster_f(screen_size, view_scale, points[0]);
+    v2i point = canvas_to_raster(screen_size, view_scale, points[0]);
 
     Rect limits = { point.x, point.y, point.x, point.y };
     assert ( start < stroke->num_points );
     for (int i = start; i < num_points; ++i)
     {
-        v2i point = canvas_to_raster_f(screen_size, view_scale, points[i]);
+        v2i point = canvas_to_raster(screen_size, view_scale, points[i]);
         if (point.x < limits.left)
             limits.left = point.x;
         if (point.x > limits.right)
@@ -386,7 +377,7 @@ static Rect get_stroke_raster_bounds(
         if (point.y > limits.bottom)
             limits.bottom = point.y;
     }
-    limits = rect_enlarge(limits, (int32)(brush.radius / view_scale));
+    limits = rect_enlarge(limits, (brush.radius / view_scale));
 
     assert (limits.right >= limits.left);
     assert (limits.bottom >= limits.top);
@@ -403,17 +394,16 @@ static void render_rect(MiltonState* milton_state, Rect limits)
         for (int i = limits.left; i < limits.right; ++i)
         {
             v2i raster_point = {i, j};
-            v2f canvas_point = raster_to_canvas(
+            v2i canvas_point = raster_to_canvas(
                     milton_state->screen_size, milton_state->view_scale, raster_point);
 
             uint32 pixel = 0xffffffff;
             for(int stroke_i = 0; stroke_i < milton_state->num_strokes; ++stroke_i)
             {
                 Stroke* stroke = &strokes[stroke_i];
-                v2f* points = stroke->points;
-                v2f last_point = {0};
-#if 1
-                Rect bounds = rect_enlarge(stroke->bounds, (int32)stroke->brush.radius);
+                v2i* points = stroke->points;
+
+                Rect bounds = rect_enlarge(stroke->bounds, stroke->brush.radius);
                 if (
                         canvas_point.x < bounds.left ||
                         canvas_point.x >= bounds.right ||
@@ -423,19 +413,18 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                 {
 
                 }
-#endif
                 else for (int point_i = 0; point_i < stroke->num_points - 1; ++point_i)
                 {
                     // Find closest point.
                     v2f min_point = {0};
                     float min_dist = FLT_MAX;
-                    v2f a = points[point_i];
-                    v2f b = points[point_i + 1];
+                    v2i a = points[point_i];
+                    v2i b = points[point_i + 1];
 
-                    const float top = min (a.y, b.y);
-                    const float bottom = max (a.y, b.y);
-                    const float right = max (a.x, b.x);
-                    const float left = min (a.x, b.x);
+                    const int32 top = min (a.y, b.y);
+                    const int32 bottom = max (a.y, b.y);
+                    const int32 right = max (a.x, b.x);
+                    const int32 left = min (a.x, b.x);
 
                     if (
                             (
@@ -454,15 +443,15 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                     }
                     else
                     {
-                        v2f ab = sub_v2f(b, a);//{(float)b.x - a.x, (float)b.y - a.y};
+                        v2f ab = {(float)b.x - a.x, (float)b.y - a.y};
                         float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
                         if (mag_ab2 > 0)
                         {
                             float mag_ab = sqrtf(mag_ab2);
                             float d_x = ab.x / mag_ab;
                             float d_y = ab.y / mag_ab;
-                            float ax_x = canvas_point.x - a.x;
-                            float ax_y = canvas_point.y - a.y;
+                            float ax_x = (float)canvas_point.x - a.x;
+                            float ax_y = (float)canvas_point.y - a.y;
                             float disc = d_x * ax_x + d_y * ax_y;
                             v2f point;
                             if (disc >= 0 && disc <= mag_ab)
@@ -474,11 +463,11 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                             }
                             else if (disc < 0)
                             {
-                                point = a;
+                                point = v2i_to_v2f(a);
                             }
                             else
                             {
-                                point = b;
+                                point = v2i_to_v2f(b);
                             }
                             float dx = (float) (canvas_point.x - point.x);
                             float dy = (float) (canvas_point.y - point.y);
@@ -523,7 +512,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 
     Brush brush;
     {
-        brush.radius = 10.0f * milton_state->view_scale;
+        brush.radius = 10 * milton_state->view_scale;
     }
     v3f color = { 0.9f, 0.4f, 0.4f };
 
@@ -532,7 +521,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         v2i in_point = *input->point;
 
-        v2f canvas_point = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, in_point);
+        v2i canvas_point = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, in_point);
 
         // Add to current stroke.
         milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
@@ -543,7 +532,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 
         milton_state->strokes[0] = milton_state->working_stroke;  // Copy current stroke.
 
-        milton_state->last_point = v2i_to_v2f(in_point);
+        milton_state->last_point = in_point;
 
         updated = true;
     }
@@ -571,15 +560,15 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     else if (milton_state->strokes[0].num_points > 1)
     {
         Stroke* stroke = &milton_state->strokes[0];
-        v2f new_point = v2i_to_v2f(canvas_to_raster_f(
+        v2i new_point = canvas_to_raster(
                     milton_state->screen_size, milton_state->view_scale,
-                    stroke->points[stroke->num_points - 2]));
+                    stroke->points[stroke->num_points - 2]);
 
-        limits.left =   (int32)min (milton_state->last_point.x, new_point.x);
-        limits.right =  (int32)max (milton_state->last_point.x, new_point.x);
-        limits.top =    (int32)min (milton_state->last_point.y, new_point.y);
-        limits.bottom = (int32)max (milton_state->last_point.y, new_point.y);
-        limits = rect_enlarge(limits, (int32)(stroke->brush.radius / milton_state->view_scale));
+        limits.left =   min (milton_state->last_point.x, new_point.x);
+        limits.right =  max (milton_state->last_point.x, new_point.x);
+        limits.top =    min (milton_state->last_point.y, new_point.y);
+        limits.bottom = max (milton_state->last_point.y, new_point.y);
+        limits = rect_enlarge(limits, (stroke->brush.radius / milton_state->view_scale));
 
     }
     else
