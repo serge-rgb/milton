@@ -89,6 +89,8 @@ typedef struct Rect_s
 typedef struct Brush_s
 {
     int32 radius;  // This should be replaced by a BrushType and some union containing brush info.
+    v3f   color;
+    float alpha;
 } Brush;
 
 #define LIMIT_STROKE_POINTS 1024
@@ -133,6 +135,7 @@ typedef struct MiltonInput_s
 {
     bool32 full_refresh;
     bool32 reset;
+    bool32 end_stroke;
     v2i* point;
     int scale;
 } MiltonInput;
@@ -201,18 +204,6 @@ inline int32 raster_distance(v2i a, v2i b)
 {
     int32 res = maxi(absi(a.x - b.x), absi(a.y - b.y));
     return res;
-}
-static Rect get_brush_bounds(const Brush brush, float relative_scale)
-{
-    int32 pixel_radius = (int32)(brush.radius * relative_scale);
-    Rect bounds =
-    {
-        // top_left
-        (v2i) { -pixel_radius, -pixel_radius },
-        // bot_right
-        (v2i) { pixel_radius, pixel_radius },
-    };
-    return bounds;
 }
 
 static Rect rect_enlarge(Rect src, int32 offset)
@@ -422,6 +413,15 @@ typedef struct LinkedList_Stroke_s
 
 static void render_rect(MiltonState* milton_state, Rect limits)
 {
+    static uint32 mask_a = 0xff000000;
+    static uint32 mask_r = 0x00ff0000;
+    static uint32 mask_g = 0x0000ff00;
+    static uint32 mask_b = 0x000000ff;
+    uint32 shift_a = find_least_significant_set_bit(mask_a).index;
+    uint32 shift_r = find_least_significant_set_bit(mask_r).index;
+    uint32 shift_g = find_least_significant_set_bit(mask_g).index;
+    uint32 shift_b = find_least_significant_set_bit(mask_b).index;
+
     uint32* pixels = (uint32*)milton_state->raster_buffer;
     Stroke* strokes = milton_state->strokes;
 
@@ -451,6 +451,15 @@ static void render_rect(MiltonState* milton_state, Rect limits)
         }
     }
 
+    v3f brush_color = { 0 };
+    v3f color = { 0 };
+    if (stroke_list)
+    {
+        brush_color = stroke_list->elem->brush.color;
+        color = sRGB_to_linear(stroke_list->elem->brush.color);
+    }
+
+
     for (int j = limits.top; j < limits.bottom; ++j)
     {
         for (int i = limits.left; i < limits.right; ++i)
@@ -459,12 +468,30 @@ static void render_rect(MiltonState* milton_state, Rect limits)
             v2i canvas_point = raster_to_canvas(
                     milton_state->screen_size, milton_state->view_scale, raster_point);
 
-            uint32 pixel = 0xffffffff;
+            // Clear color
+            float dr = 1.0f;
+            float dg = 1.0f;
+            float db = 1.0f;
+            float da = 1.0f;
 
             struct LinkedList_Stroke_s* list_iter = stroke_list;
             while(list_iter)
             {
                 Stroke* stroke = list_iter->elem;
+                // Update color?
+                // TODO: figure out how to do gamma-correct compositing...
+                {
+                    if (
+                            stroke->brush.color.r != brush_color.r ||
+                            stroke->brush.color.g != brush_color.g ||
+                            stroke->brush.color.b != brush_color.b
+                       )
+                    {
+                        brush_color = stroke->brush.color;
+                        color = sRGB_to_linear(stroke->brush.color);
+                    }
+                }
+
                 assert (stroke);
                 v2i* points = stroke->clipped_points;
 
@@ -542,12 +569,38 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                         }
                     }
                 }
-                list_iter = list_iter->next;
+
+                {
+                    // TODO: do multi-sampling here
+                }
+
+                // If the stroke contributes to the pixel, do compositing.
                 if (sqrtf(min_dist) < stroke->brush.radius)
                 {
-                    pixel = 0xff661100;
+                    // Do compositing
+                    // ---------------
+
+                    float sr = color.r;
+                    float sg = color.g;
+                    float sb = color.b;
+                    float sa = stroke->brush.alpha;
+
+                    dr = (1 - sa) * dr + sa * sr;
+                    dg = (1 - sa) * dg + sa * sg;
+                    db = (1 - sa) * db + sa * sb;
+                    da = sa + da * (1 - sa);
                 }
+
+                list_iter = list_iter->next;
+
             }
+            // From [0, 1] to [0, 255]
+            uint32 pixel =
+                ((uint8)(dr * 255.0f) << shift_r) +
+                ((uint8)(dg * 255.0f) << shift_g) +
+                ((uint8)(db * 255.0f) << shift_b) +
+                ((uint8)(da * 255.0f) << shift_a);
+
             pixels[j * milton_state->screen_size.w + i] = pixel;
         }
     }
@@ -607,9 +660,11 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    Brush brush;
+    Brush brush = { 0 };
     {
         brush.radius = 10 * milton_state->view_scale;
+        brush.alpha = 0.5f;
+        brush.color = (v3f){ 0.4f, 0.6f, 0.6f };
     }
     v3f color = { 0.9f, 0.4f, 0.4f };
 
@@ -626,24 +681,26 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 
         v2i canvas_point = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, in_point);
 
-        // Add to current stroke.
-        milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
         // TODO: make deque!!
-        if (milton_state->working_stroke.num_points > LIMIT_STROKE_POINTS) milton_state->working_stroke.num_points = 1;
-        milton_state->working_stroke.brush = brush;
-        milton_state->working_stroke.bounds =
-            bounding_rect_for_stroke(milton_state->working_stroke.points,
-                    milton_state->working_stroke.num_points);
+//        if (milton_state->working_stroke.num_points < LIMIT_STROKE_POINTS)
+        {
+            // Add to current stroke.
+            milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
+            milton_state->working_stroke.brush = brush;
+            milton_state->working_stroke.bounds =
+                bounding_rect_for_stroke(milton_state->working_stroke.points,
+                        milton_state->working_stroke.num_points);
 
+        }
         milton_state->strokes[0] = milton_state->working_stroke;  // Copy current stroke.
 
         milton_state->last_point = in_point;
 
         updated = true;
     }
-    else if (milton_state->working_stroke.num_points)
+    if (input->end_stroke)
     {
-        if (num_strokes < 4096)
+        if (milton_state->num_strokes < 4096)
         {
             // Copy current stroke.
             milton_state->strokes[milton_state->num_strokes++] = milton_state->working_stroke;
@@ -671,7 +728,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             render_rect(milton_state, split_rects[i]);
         }
     }
-    else if (milton_state->strokes[0].num_points >= 1)
+    else if (milton_state->strokes[0].num_points > 1)
     {
         Stroke* stroke = &milton_state->strokes[0];
         v2i new_point = canvas_to_raster(
@@ -685,7 +742,18 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits = rect_enlarge(limits, (stroke->brush.radius / milton_state->view_scale));
 
         render_rect(milton_state, limits);
-
+    }
+    else if (milton_state->strokes[0].num_points == 1)
+    {
+        Stroke* stroke = &milton_state->strokes[0];
+        v2i point = canvas_to_raster(milton_state->screen_size, milton_state->view_scale,
+                stroke->points[0]);
+        int32 raster_radius = stroke->brush.radius / milton_state->view_scale;
+        limits.left = -raster_radius  + point.x;
+        limits.right = raster_radius  + point.x;
+        limits.top = -raster_radius   + point.y;
+        limits.bottom = raster_radius + point.y;
+        render_rect(milton_state, limits);
     }
     updated = true;
 

@@ -27,6 +27,7 @@ typedef enum
 {
     GuiMsg_RESIZED     = (1 << 0),
     GuiMsg_SHOULD_QUIT = (1 << 1),
+    GuiMsg_END_STROKE  = (1 << 2),
 } GuiMsg;
 
 typedef struct
@@ -112,16 +113,14 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 g_gui_data.mouse_x   = GET_X_LPARAM(message.lParam);
                 g_gui_data.mouse_y   = GET_Y_LPARAM(message.lParam);
                 g_gui_data.left_down = 1;
-
-#if 0
-                char buffer[1024];
-                snprintf(buffer, 1024, "Click! %d %d\n", g_gui_data.mouse_x, g_gui_data.mouse_y);
-                OutputDebugStringA(buffer);
-#endif
                 break;
             }
         case WM_LBUTTONUP:
             {
+                if (g_gui_data.left_down)
+                {
+                    g_gui_msgs |= GuiMsg_END_STROKE;
+                }
                 g_gui_data.left_down = 0;
                 break;
             }
@@ -175,6 +174,11 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             win32_resize(win_state, g_gui_data.width, g_gui_data.height);
             g_gui_msgs ^= GuiMsg_RESIZED;
             input.full_refresh = 1;
+        }
+        if (g_gui_msgs & GuiMsg_END_STROKE)
+        {
+            input.end_stroke = true;
+            g_gui_msgs ^= GuiMsg_END_STROKE;
         }
     }
 
@@ -360,6 +364,7 @@ int CALLBACK WinMain(
     {
         input.full_refresh = 1;
     }
+
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
         bool32 modified = milton_update(milton_state, &input);
