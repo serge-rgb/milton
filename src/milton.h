@@ -307,8 +307,7 @@ v3f hsv_to_rgb(v3f hsv)
 
 inline v3f sRGB_to_linear(v3f rgb)
 {
-    v3f result;
-    memcpy(result.d, rgb.d, 3 * sizeof(float));
+    v3f result = rgb;
     float* d = result.d;
     for (int i = 0; i < 3; ++i)
     {
@@ -405,6 +404,7 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
     }
 }
 
+// This actually makes things faster in render_rect.
 typedef struct LinkedList_Stroke_s
 {
     Stroke* elem;
@@ -451,15 +451,6 @@ static void render_rect(MiltonState* milton_state, Rect limits)
         }
     }
 
-    v3f brush_color = { 0 };
-    v3f color = { 0 };
-    if (stroke_list)
-    {
-        brush_color = stroke_list->elem->brush.color;
-        color = sRGB_to_linear(stroke_list->elem->brush.color);
-    }
-
-
     for (int j = limits.top; j < limits.bottom; ++j)
     {
         for (int i = limits.left; i < limits.right; ++i)
@@ -478,19 +469,6 @@ static void render_rect(MiltonState* milton_state, Rect limits)
             while(list_iter)
             {
                 Stroke* stroke = list_iter->elem;
-                // Update color?
-                // TODO: figure out how to do gamma-correct compositing...
-                {
-                    if (
-                            stroke->brush.color.r != brush_color.r ||
-                            stroke->brush.color.g != brush_color.g ||
-                            stroke->brush.color.b != brush_color.b
-                       )
-                    {
-                        brush_color = stroke->brush.color;
-                        color = sRGB_to_linear(stroke->brush.color);
-                    }
-                }
 
                 assert (stroke);
                 v2i* points = stroke->clipped_points;
@@ -512,59 +490,39 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                         v2i a = points[point_i];
                         v2i b = points[point_i + 1];
 
-                        // TODO: figure out if this is still a perf win.
-#if 1
-                        const int32 top = min (a.y, b.y);
-                        const int32 bottom = max (a.y, b.y);
-                        const int32 right = max (a.x, b.x);
-                        const int32 left = min (a.x, b.x);
-
-                        if (
-                                ( canvas_point.x + stroke->brush.radius < left) ||
-                                ( canvas_point.x - stroke->brush.radius > right) ||
-                                ( canvas_point.y + stroke->brush.radius < top) ||
-                                ( canvas_point.y - stroke->brush.radius > bottom)
-                           )
+                        v2f ab = {(float)b.x - a.x, (float)b.y - a.y};
+                        float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
+                        if (mag_ab2 > 0)
                         {
-                            // Ignore
-                        }
-                        else
-#endif
-                        {
-                            v2f ab = {(float)b.x - a.x, (float)b.y - a.y};
-                            float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-                            if (mag_ab2 > 0)
+                            float mag_ab = sqrtf(mag_ab2);
+                            float d_x = ab.x / mag_ab;
+                            float d_y = ab.y / mag_ab;
+                            float ax_x = (float)canvas_point.x - a.x;
+                            float ax_y = (float)canvas_point.y - a.y;
+                            float disc = d_x * ax_x + d_y * ax_y;
+                            v2i point;
+                            if (disc >= 0 && disc <= mag_ab)
                             {
-                                float mag_ab = sqrtf(mag_ab2);
-                                float d_x = ab.x / mag_ab;
-                                float d_y = ab.y / mag_ab;
-                                float ax_x = (float)canvas_point.x - a.x;
-                                float ax_y = (float)canvas_point.y - a.y;
-                                float disc = d_x * ax_x + d_y * ax_y;
-                                v2i point;
-                                if (disc >= 0 && disc <= mag_ab)
+                                point = (v2i)
                                 {
-                                    point = (v2i)
-                                    {
-                                        (int32)(a.x + disc * d_x), (int32)(a.y + disc * d_y),
-                                    };
-                                }
-                                else if (disc < 0)
-                                {
-                                    point = a;
-                                }
-                                else
-                                {
-                                    point = b;
-                                }
-                                float dx = (float) (canvas_point.x - point.x);
-                                float dy = (float) (canvas_point.y - point.y);
-                                float dist = dx * dx + dy * dy;
-                                if (dist < min_dist)
-                                {
-                                    min_dist = dist;
-                                    min_point = point;
-                                }
+                                    (int32)(a.x + disc * d_x), (int32)(a.y + disc * d_y),
+                                };
+                            }
+                            else if (disc < 0)
+                            {
+                                point = a;
+                            }
+                            else
+                            {
+                                point = b;
+                            }
+                            float dx = (float) (canvas_point.x - point.x);
+                            float dy = (float) (canvas_point.y - point.y);
+                            float dist = dx * dx + dy * dy;
+                            if (dist < min_dist)
+                            {
+                                min_dist = dist;
+                                min_point = point;
                             }
                         }
                     }
@@ -580,9 +538,9 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                     // Do compositing
                     // ---------------
 
-                    float sr = color.r;
-                    float sg = color.g;
-                    float sb = color.b;
+                    float sr = stroke->brush.color.r;
+                    float sg = stroke->brush.color.g;
+                    float sb = stroke->brush.color.b;
                     float sa = stroke->brush.alpha;
 
                     dr = (1 - sa) * dr + sa * sr;
@@ -664,9 +622,13 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         brush.radius = 10 * milton_state->view_scale;
         brush.alpha = 0.5f;
-        brush.color = (v3f){ 0.4f, 0.6f, 0.6f };
+        brush.color = (v3f){ 0.5f, 0.5f, 0.5f };
+        // TODO: Figure out how much we need to mess with gamma
+        // NOTE: This is not correct:
+        //   ---  brush.color = sRGB_to_linear(brush.color);
+        // Doing color^gamma should be done
+        // as a last step before pushing to the monitor.
     }
-    v3f color = { 0.9f, 0.4f, 0.4f };
 
     bool32 finish_stroke = false;
     if (input->point)
