@@ -618,6 +618,14 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
+    if (input->reset)
+    {
+        milton_state->num_strokes = 1;
+        milton_state->strokes[0].num_points = 0;
+        milton_state->working_stroke.num_points = 0;
+        input->full_refresh = true;
+    }
+
     Brush brush = { 0 };
     {
         brush.radius = 10 * milton_state->view_scale;
