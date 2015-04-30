@@ -97,12 +97,11 @@ typedef struct Stroke_s
     Brush   brush;
     // TODO turn this into a deque??
     v2i     points[LIMIT_STROKE_POINTS];
-    v2i     clipped_points[LIMIT_STROKE_POINTS];
+    v2i     clipped_points[2 * LIMIT_STROKE_POINTS];  // Clipped points are in the form [ab bc cd df]
+                                                        // That's why we double the space for them.
     int32   num_points;
     int32   num_clipped_points;
     Rect    bounds;
-
-    struct Stroke_s *next;
 } Stroke;
 
 typedef struct MiltonState_s
@@ -380,21 +379,46 @@ static Rect get_stroke_raster_bounds(
 static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
 {
     stroke->num_clipped_points = 0;
-    if (is_inside_bounds(stroke->points[0], stroke->brush.radius, rect))
+    if (stroke->num_points == 1)
     {
-        stroke->clipped_points[stroke->num_clipped_points++] = stroke->points[0];
-    }
-    for (int32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
-    {
-        v2i a = stroke->points[point_i];
-        v2i b = stroke->points[point_i + 1];
-        if (is_inside_bounds(a, stroke->brush.radius, rect) ||
-                is_inside_bounds(b, stroke->brush.radius, rect))
+        if (is_inside_bounds(stroke->points[0], stroke->brush.radius, rect))
         {
-            stroke->clipped_points[stroke->num_clipped_points++] = b;
+            stroke->clipped_points[stroke->num_clipped_points++] = stroke->points[0];
+        }
+    }
+    else
+    {
+        for (int32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
+        {
+            v2i a = stroke->points[point_i];
+            v2i b = stroke->points[point_i + 1];
+
+            // Very conservative...
+            bool32 inside =
+                !(
+                        (a.x > rect.right && b.x > rect.right) ||
+                        (a.x < rect.left && b.x < rect.left) ||
+                        (a.y < rect.top && b.y < rect.top) ||
+                        (a.y > rect.bottom && b.y > rect.bottom)
+                 );
+
+            // We can add the segment
+            if (inside)
+            {
+                // TODO: don't duplicate strokes..
+                // Add the first point if the last segment didn't make it through
+                stroke->clipped_points[stroke->num_clipped_points++] = a;
+                stroke->clipped_points[stroke->num_clipped_points++] = b;
+            }
         }
     }
 }
+
+typedef struct LinkedList_Stroke_s
+{
+    Stroke* elem;
+    struct LinkedList_Stroke_s* next;
+} LinkedList_Stroke;
 
 static void render_rect(MiltonState* milton_state, Rect limits)
 {
@@ -406,11 +430,25 @@ static void render_rect(MiltonState* milton_state, Rect limits)
             limits.top_left);
     canvas_limits.bot_right = raster_to_canvas(milton_state->screen_size, milton_state->view_scale,
             limits.bot_right);
-    for (int stroke_i = 0; stroke_i < milton_state->num_strokes; ++stroke_i)
+
+    LinkedList_Stroke* stroke_list = NULL;
+
+    // Go backwards so that list is in the correct older->newer order.
+    for (int stroke_i = milton_state->num_strokes - 1; stroke_i >= 0; --stroke_i)
     {
         Stroke* stroke = &strokes[stroke_i];
         Rect enlarged_limits = rect_enlarge(canvas_limits, stroke->brush.radius);
         stroke_clip_to_rect(stroke, enlarged_limits);
+        if (stroke->num_clipped_points)
+        {
+            LinkedList_Stroke* list_elem = arena_alloc_elem(
+                    milton_state->transient_arena, LinkedList_Stroke);
+
+            LinkedList_Stroke* tail = stroke_list;
+            list_elem->elem = stroke;
+            list_elem->next = stroke_list;
+            stroke_list = list_elem;
+        }
     }
 
     for (int j = limits.top; j < limits.bottom; ++j)
@@ -422,80 +460,94 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                     milton_state->screen_size, milton_state->view_scale, raster_point);
 
             uint32 pixel = 0xffffffff;
-            // TODO: Only loop accepted strokes. This loop kills perf.
-            for(int stroke_i = 0; stroke_i < milton_state->num_strokes; ++stroke_i)
+
+            struct LinkedList_Stroke_s* list_iter = stroke_list;
+            while(list_iter)
             {
-                Stroke* stroke = &strokes[stroke_i];
+                Stroke* stroke = list_iter->elem;
+                assert (stroke);
                 v2i* points = stroke->clipped_points;
 
-                for (int point_i = 0; point_i < stroke->num_clipped_points - 1; ++point_i)
+                v2i min_point = {0};
+                float min_dist = FLT_MAX;
+                if (stroke->num_clipped_points == 1)
                 {
-                    // Find closest point.
-                    v2f min_point = {0};
-                    float min_dist = FLT_MAX;
-                    v2i a = points[point_i];
-                    v2i b = points[point_i + 1];
-#if 0
-
-                    const int32 top = min (a.y, b.y);
-                    const int32 bottom = max (a.y, b.y);
-                    const int32 right = max (a.x, b.x);
-                    const int32 left = min (a.x, b.x);
-
-                    if (
-                             ( a.x < left && b.x < left) ||
-                             ( a.x > right && b.x > right) ||
-                             ( a.y < top && b.y < top) ||
-                             ( a.y > bottom && b.y > bottom )
-                       )
+                    min_point = points[0];
+                    float dx = (float) (canvas_point.x - min_point.x);
+                    float dy = (float) (canvas_point.y - min_point.y);
+                    min_dist = dx * dx + dy * dy;
+                }
+                else
+                {
+                    for (int point_i = 0; point_i < stroke->num_clipped_points - 1; point_i += 2)
                     {
-                        // Ignore
-                    }
-                    else
-#endif
-                    {
-                        v2f ab = {(float)b.x - a.x, (float)b.y - a.y};
-                        float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-                        if (mag_ab2 > 0)
+                        // Find closest point.
+                        v2i a = points[point_i];
+                        v2i b = points[point_i + 1];
+
+                        // TODO: figure out if this is still a perf win.
+#if 1
+                        const int32 top = min (a.y, b.y);
+                        const int32 bottom = max (a.y, b.y);
+                        const int32 right = max (a.x, b.x);
+                        const int32 left = min (a.x, b.x);
+
+                        if (
+                                ( canvas_point.x + stroke->brush.radius < left) ||
+                                ( canvas_point.x - stroke->brush.radius > right) ||
+                                ( canvas_point.y + stroke->brush.radius < top) ||
+                                ( canvas_point.y - stroke->brush.radius > bottom)
+                           )
                         {
-                            float mag_ab = sqrtf(mag_ab2);
-                            float d_x = ab.x / mag_ab;
-                            float d_y = ab.y / mag_ab;
-                            float ax_x = (float)canvas_point.x - a.x;
-                            float ax_y = (float)canvas_point.y - a.y;
-                            float disc = d_x * ax_x + d_y * ax_y;
-                            v2f point;
-                            if (disc >= 0 && disc <= mag_ab)
+                            // Ignore
+                        }
+                        else
+#endif
+                        {
+                            v2f ab = {(float)b.x - a.x, (float)b.y - a.y};
+                            float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
+                            if (mag_ab2 > 0)
                             {
-                                point = (v2f)
+                                float mag_ab = sqrtf(mag_ab2);
+                                float d_x = ab.x / mag_ab;
+                                float d_y = ab.y / mag_ab;
+                                float ax_x = (float)canvas_point.x - a.x;
+                                float ax_y = (float)canvas_point.y - a.y;
+                                float disc = d_x * ax_x + d_y * ax_y;
+                                v2i point;
+                                if (disc >= 0 && disc <= mag_ab)
                                 {
-                                    a.x + disc * d_x, a.y + disc * d_y,
-                                };
-                            }
-                            else if (disc < 0)
-                            {
-                                point = v2i_to_v2f(a);
-                            }
-                            else
-                            {
-                                point = v2i_to_v2f(b);
-                            }
-                            float dx = (float) (canvas_point.x - point.x);
-                            float dy = (float) (canvas_point.y - point.y);
-                            float dist = dx * dx + dy * dy;
-                            if (dist < min_dist)
-                            {
-                                min_dist = dist;
-                                min_point = point;
+                                    point = (v2i)
+                                    {
+                                        (int32)(a.x + disc * d_x), (int32)(a.y + disc * d_y),
+                                    };
+                                }
+                                else if (disc < 0)
+                                {
+                                    point = a;
+                                }
+                                else
+                                {
+                                    point = b;
+                                }
+                                float dx = (float) (canvas_point.x - point.x);
+                                float dy = (float) (canvas_point.y - point.y);
+                                float dist = dx * dx + dy * dy;
+                                if (dist < min_dist)
+                                {
+                                    min_dist = dist;
+                                    min_point = point;
+                                }
                             }
                         }
                     }
-                    if (sqrtf(min_dist) < stroke->brush.radius)
-                    {
-                        pixel = 0xff661100;
-                    }
                 }
-            } // if
+                list_iter = list_iter->next;
+                if (sqrtf(min_dist) < stroke->brush.radius)
+                {
+                    pixel = 0xff661100;
+                }
+            }
             pixels[j * milton_state->screen_size.w + i] = pixel;
         }
     }
@@ -566,10 +618,18 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         v2i in_point = *input->point;
 
+        // Avoid creating really large update rects when starting. new strokes
+        if (milton_state->working_stroke.num_points == 0)
+        {
+            milton_state->last_point = in_point;
+        }
+
         v2i canvas_point = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, in_point);
 
         // Add to current stroke.
         milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
+        // TODO: make deque!!
+        if (milton_state->working_stroke.num_points > LIMIT_STROKE_POINTS) milton_state->working_stroke.num_points = 1;
         milton_state->working_stroke.brush = brush;
         milton_state->working_stroke.bounds =
             bounding_rect_for_stroke(milton_state->working_stroke.points,
@@ -583,12 +643,15 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     }
     else if (milton_state->working_stroke.num_points)
     {
-        // Copy current stroke.
-        milton_state->strokes[milton_state->num_strokes++] = milton_state->working_stroke;
-        // Clear working_stroke
+        if (num_strokes < 4096)
         {
-            milton_state->strokes[0] = (Stroke){ 0 };  // Clear working stroke.
-            milton_state->working_stroke.num_points = 0;
+            // Copy current stroke.
+            milton_state->strokes[milton_state->num_strokes++] = milton_state->working_stroke;
+            // Clear working_stroke
+            {
+                milton_state->strokes[0] = (Stroke){ 0 };  // Clear working stroke.
+                milton_state->working_stroke.num_points = 0;
+            }
         }
     }
 
@@ -602,13 +665,13 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits.bottom = milton_state->screen_size.h;
         Rect* split_rects = NULL;
         int32 num_rects = rect_split(milton_state->transient_arena,
-                limits, 10, 10, &split_rects);
+                limits, 20, 20, &split_rects);
         for (int i = 0; i < num_rects; ++i)
         {
             render_rect(milton_state, split_rects[i]);
         }
     }
-    else if (milton_state->strokes[0].num_points > 1)
+    else if (milton_state->strokes[0].num_points >= 1)
     {
         Stroke* stroke = &milton_state->strokes[0];
         v2i new_point = canvas_to_raster(
