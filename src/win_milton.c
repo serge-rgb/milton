@@ -41,6 +41,7 @@ typedef struct
     bool32 right_down;
 } GuiData;
 
+static HGLRC   g_gl_context_handle;
 static GuiMsg  g_gui_msgs;
 static GuiData g_gui_data;
 
@@ -225,6 +226,11 @@ LRESULT APIENTRY WndProc(
         }
     case WM_CREATE:
         {
+            bool32 success = win32_setup_context(window, &g_gl_context_handle);
+            if (!success)
+            {
+                platform_quit();
+            }
             break;
         }
     case WM_DESTROY:
@@ -351,6 +357,12 @@ int CALLBACK WinMain(
     {
         milton_state->root_arena = &root_arena;
         milton_state->transient_arena = &transient_arena;
+
+        // This assertion basically says that WM_CREATE should have been called
+        // by this time.  Since the windows build is not intended to ship, we
+        // can do this with a clear conscience.
+        assert ( g_gl_context_handle != NULL );
+
         milton_init(milton_state);
     }
 
