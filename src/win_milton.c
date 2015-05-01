@@ -28,12 +28,11 @@ typedef enum
     GuiMsg_RESIZED     = (1 << 0),
     GuiMsg_SHOULD_QUIT = (1 << 1),
     GuiMsg_END_STROKE  = (1 << 2),
+    GuiMsg_GL_DRAW     = (1 << 3),
 } GuiMsg;
 
 typedef struct
 {
-    int32 width;
-    int32 height;
     // Mouse info
     int32 mouse_x;
     int32 mouse_y;
@@ -48,6 +47,116 @@ static GuiData g_gui_data;
 void platform_quit()
 {
     g_gui_msgs |= GuiMsg_SHOULD_QUIT;
+}
+
+// Copied from libserg.
+static int milton_win32_setup_context(HWND window, HGLRC* context)
+{
+    int format_index = 0;
+
+    PIXELFORMATDESCRIPTOR pfd = { 0 };
+    {
+        pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+        pfd.nVersion = 1;
+        pfd.dwFlags =
+            PFD_DRAW_TO_WINDOW |   // support window
+            PFD_SUPPORT_OPENGL |   // support OpenGL
+            PFD_DOUBLEBUFFER;      // double buffered
+        pfd.iPixelType = PFD_TYPE_RGBA;
+        pfd.cColorBits = 32;
+        pfd.cDepthBits = 24;
+        pfd.cStencilBits = 8;
+        pfd.iLayerType = PFD_MAIN_PLANE;
+    }
+
+
+    // get the best available match of pixel format for the device context
+    format_index = ChoosePixelFormat(GetDC(window), &pfd);
+
+    // make that the pixel format of the device context
+    int succeeded = SetPixelFormat(GetDC(window), format_index, &pfd);
+
+    if (!succeeded)
+    {
+        OutputDebugStringA("Could not set pixel format\n");
+        return 0;
+    }
+
+    HGLRC dummy_context = wglCreateContext(GetDC(window));
+    if (!dummy_context)
+    {
+        OutputDebugStringA("Could not create GL context. Exiting");
+        return 0;
+    }
+    wglMakeCurrent(GetDC(window), dummy_context);
+    if (!succeeded)
+    {
+        OutputDebugStringA("Could not set current GL context. Exiting");
+        return 0;
+    }
+
+    GLenum glew_result = glewInit();
+    if (glew_result != GLEW_OK)
+    {
+        OutputDebugStringA("Could not init glew.\n");
+        return 0;
+    }
+
+    const int pixel_attribs[] =
+    {
+        WGL_ACCELERATION_ARB   , WGL_FULL_ACCELERATION_ARB           ,
+        WGL_DRAW_TO_WINDOW_ARB , GL_TRUE           ,
+        WGL_SUPPORT_OPENGL_ARB , GL_TRUE           ,
+        WGL_DOUBLE_BUFFER_ARB  , GL_TRUE           ,
+        WGL_PIXEL_TYPE_ARB     , WGL_TYPE_RGBA_ARB ,
+        WGL_COLOR_BITS_ARB     , 32                ,
+        WGL_DEPTH_BITS_ARB     , 24                ,
+        WGL_STENCIL_BITS_ARB   , 8                 ,
+        0                      ,
+    };
+    UINT num_formats = 0;
+
+    int format_indices[20];
+
+    wglChoosePixelFormatARB(GetDC(window),
+            pixel_attribs, NULL, 20 /*max_formats*/, format_indices, &num_formats);
+    if (!num_formats)
+    {
+        OutputDebugStringA("Could not choose pixel format. Exiting.");
+        return 0;
+    }
+
+    // The spec *guarantees* that this does not happen but nothing ever works...
+    if (num_formats > 20)
+    {
+        num_formats = 20;
+    }
+
+    succeeded = 0;
+    for (uint32_t i = 0; i < num_formats; ++i)
+    {
+        int local_index = format_indices[i];
+        succeeded = SetPixelFormat(GetDC(window), local_index, &pfd);
+        if (succeeded)
+            break;
+    }
+    if (!succeeded)
+    {
+        OutputDebugStringA("Could not set pixel format for final rendering context.\n");
+        return 0;
+    }
+
+    const int context_attribs[] =
+    {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
+    *context = wglCreateContextAttribsARB(GetDC(window), 0/*shareContext*/,
+            context_attribs);
+    wglMakeCurrent(GetDC(window), *context);
+    return 1;
 }
 
 static void path_at_exe(char* full_path, int32 buffer_size, char* fname)
@@ -69,14 +178,9 @@ static void path_at_exe(char* full_path, int32 buffer_size, char* fname)
     strcat(full_path, fname);
 }
 
-static void win32_resize(
-        Win32State* win_state,
-        int32 width, int32 height)
+static void win32_resize(Win32State* win_state)
 {
     // NOTE: here we would free the raster buffer
-
-    win_state->width = width;
-    win_state->height = height;
 
     BITMAPINFOHEADER header;
     {
@@ -94,7 +198,13 @@ static void win32_resize(
     }
     win_state->bitmap_info.bmiHeader = header;
 
-    // NOTE: Here we would allocate a new raster buffer
+    RECT rect;
+    GetClientRect(win_state->window, &rect);
+    win_state->width = (int)(rect.right - rect.left);
+    win_state->height = (int)(rect.bottom - rect.top);
+
+
+    glViewport(0, 0, win_state->width, win_state->height);
 }
 
 static MiltonInput win32_process_input(Win32State* win_state, HWND window)
@@ -114,8 +224,18 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 g_gui_data.mouse_x   = GET_X_LPARAM(message.lParam);
                 g_gui_data.mouse_y   = GET_Y_LPARAM(message.lParam);
                 g_gui_data.left_down = 1;
+                TRACKMOUSEEVENT track_mouse_event = { 0 };
+                {
+                    track_mouse_event.cbSize = sizeof(TRACKMOUSEEVENT);
+                    track_mouse_event.dwFlags = TME_LEAVE;
+                    track_mouse_event.hwndTrack = win_state->window;
+
+              }
+                TrackMouseEvent(&track_mouse_event);
                 break;
             }
+        case WM_MOUSELEAVE:
+            // Fall-through
         case WM_LBUTTONUP:
             {
                 if (g_gui_data.left_down)
@@ -172,7 +292,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
         // Handle custom flags
         if (g_gui_msgs & GuiMsg_RESIZED)
         {
-            win32_resize(win_state, g_gui_data.width, g_gui_data.height);
+            win32_resize(win_state);
             g_gui_msgs ^= GuiMsg_RESIZED;
             input.full_refresh = 1;
         }
@@ -212,21 +332,11 @@ LRESULT APIENTRY WndProc(
         {
             // Let win32_process_input handle it.
             g_gui_msgs |= GuiMsg_RESIZED;
-            if (wParam == SIZE_MAXIMIZED)
-            {
-                g_gui_data.width = LOWORD(lParam);
-                g_gui_data.height = HIWORD(lParam);
-            }
-            if (wParam == SIZE_RESTORED)
-            {
-                g_gui_data.width = LOWORD(lParam);
-                g_gui_data.height = HIWORD(lParam);
-            }
             break;
         }
     case WM_CREATE:
         {
-            bool32 success = win32_setup_context(window, &g_gl_context_handle);
+            bool32 success = milton_win32_setup_context(window, &g_gl_context_handle);
             if (!success)
             {
                 platform_quit();
@@ -238,6 +348,7 @@ LRESULT APIENTRY WndProc(
             platform_quit();
             break;
         }
+#if 0
     case WM_PAINT:
         {
             PAINTSTRUCT paint;
@@ -246,12 +357,23 @@ LRESULT APIENTRY WndProc(
             EndPaint(window, &paint);
             break;
         }
+#endif
     default:
         {
             result = DefWindowProc(window, message, wParam, lParam);
         }
     };
     return result;
+}
+
+void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id, DWORD time)
+{
+    if (event_id == 42)
+    {
+        SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
+    }
+
+    g_gui_msgs |= GuiMsg_GL_DRAW;
 }
 
 static void win32_display_raster_buffer(
@@ -366,29 +488,28 @@ int CALLBACK WinMain(
         milton_init(milton_state);
     }
 
-    // Initialize global GUI data.
-    {
-        g_gui_data.width = width;
-        g_gui_data.height = height;
-    }
-
     MiltonInput input = { 0 };
     {
         input.full_refresh = 1;
     }
 
+    milton_state->screen_size = (v2i){ win_state.width, win_state.height };
+    SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
+    bool32 modified = false;
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
-        bool32 modified = milton_update(milton_state, &input);
-        if (modified)
+        modified |= milton_update(milton_state, &input);
+        if (g_gui_msgs & GuiMsg_GL_DRAW)
         {
-            win32_display_raster_buffer(
-                    &win_state,
-                    milton_state->raster_buffer,
-                    milton_state->full_width,
-                    milton_state->full_height,
-                    milton_state->bytes_per_pixel
-                    );
+            g_gui_msgs ^= GuiMsg_GL_DRAW;
+
+            if (modified)
+            {
+                HDC dc = GetDC(window);
+                milton_gl_backend_draw(milton_state);
+                SwapBuffers(dc);
+                modified = false;
+            }
         }
 
         input = win32_process_input(&win_state, window);

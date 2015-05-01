@@ -154,6 +154,10 @@ typedef struct MiltonInput_s
 static void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;
+    glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGBA,
+            milton_state->screen_size.w, milton_state->screen_size.h,
+            0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)milton_state->raster_buffer);
     glUseProgram(gl->quad_program);
     glBindVertexArray(gl->quad_vao);
     GLCHK (glDrawArrays (GL_TRIANGLE_FAN, 0, 4) );
@@ -167,26 +171,32 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 
         shader_contents[0] =
             "#version 330\n"
+            "#extension GL_ARB_explicit_uniform_location : enable\n"
             "layout(location = 0) in vec2 position;\n"
             "\n"
             "out vec2 coord;\n"
             "\n"
             "void main()\n"
             "{\n"
-            "    coord = (position + vec2(1,1))/2;\n"
-            "    // direct to clip space. must be in [-1, 1]^2\n"
-            "    gl_Position = vec4(position, 0.0, 1.0);\n"
+            "   coord = (position + vec2(1,1))/2;\n"
+            "   coord.y = 1 - coord.y;"
+            "   // direct to clip space. must be in [-1, 1]^2\n"
+            "   gl_Position = vec4(position, 0.0, 1.0);\n"
             "}\n";
 
 
         shader_contents[1] =
             "#version 330\n"
+            "#extension GL_ARB_explicit_uniform_location : enable\n"
             "\n"
+            "layout(location = 1) uniform sampler2D buffer;\n"
+            "in vec2 coord;\n"
             "out vec4 out_color;\n"
 
             "void main(void)\n"
             "{\n"
-            "    out_color = vec4(0.0, 0.0, 1.0, 0);\n"
+            "   out_color = texture(buffer, coord);"
+            //"    out_color = vec4(coord.x, coord.y, 1.0, 0);\n"
             "}\n";
 
         GLuint shader_objects[2] = {0};
@@ -197,11 +207,12 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         }
         milton_state->gl->quad_program = glCreateProgram();
         gl_link_program(milton_state->gl->quad_program, shader_objects, 2);
-        //GLuint shaders[2];
+
+        glUseProgram(milton_state->gl->quad_program);
+        glUniform1i(1, 0 /*GL_TEXTURE0*/);
     }
 
     // Create texture
-    // Create ray tracing target
     {
         GLCHK (glActiveTexture (GL_TEXTURE0) );
         // Create texture
@@ -216,7 +227,7 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 
         // Pass a null pointer, texture will be filled by opencl ray tracer
         GLCHK ( glTexImage2D(
-                    GL_TEXTURE_2D, 0, GL_RGBA32F,
+                    GL_TEXTURE_2D, 0, GL_RGBA,
                     milton_state->screen_size.w, milton_state->screen_size.h,
                     0, GL_RGBA, GL_FLOAT, NULL) );
     }
@@ -587,7 +598,7 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                 float min_dist = FLT_MAX;
                 float dx = 0;
                 float dy = 0;
-                int32 radius_squared = stroke->brush.radius * stroke->brush.radius;
+                //int64 radius_squared = stroke->brush.radius * stroke->brush.radius;
                 if (stroke->num_clipped_points == 1)
                 {
                     min_point = points[0];
@@ -658,7 +669,7 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                         dists[3] = (dx + v) * (dx + v) + (dy + u) * (dy + u);
                         for (int i = 0; i < 4; ++i)
                         {
-                            if (dists[i] < radius_squared)
+                            if (sqrtf(dists[i]) < stroke->brush.radius)
                             {
                                 ++samples;
                             }
