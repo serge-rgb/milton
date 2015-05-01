@@ -192,11 +192,16 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             "layout(location = 1) uniform sampler2D buffer;\n"
             "in vec2 coord;\n"
             "out vec4 out_color;\n"
-
+            "\n"
+            "vec3 sRGB_to_linear(vec3 rgb)\n"
+            "{\n"
+                "vec3 result = pow((rgb + vec3(0.055)) / vec3(1.055), vec3(2.4));\n"
+                "return result;\n"
+            "}\n"
             "void main(void)\n"
             "{\n"
             "   out_color = texture(buffer, coord);"
-            //"    out_color = vec4(coord.x, coord.y, 1.0, 0);\n"
+            "   out_color = vec4(sRGB_to_linear(out_color.rgb), 1);"
             "}\n";
 
         GLuint shader_objects[2] = {0};
