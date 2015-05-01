@@ -395,8 +395,6 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
             // We can add the segment
             if (inside)
             {
-                // TODO: don't duplicate strokes..
-                // Add the first point if the last segment didn't make it through
                 stroke->clipped_points[stroke->num_clipped_points++] = a;
                 stroke->clipped_points[stroke->num_clipped_points++] = b;
             }
@@ -475,11 +473,14 @@ static void render_rect(MiltonState* milton_state, Rect limits)
 
                 v2i min_point = {0};
                 float min_dist = FLT_MAX;
+                float dx = 0;
+                float dy = 0;
+                int32 radius_squared = stroke->brush.radius * stroke->brush.radius;
                 if (stroke->num_clipped_points == 1)
                 {
                     min_point = points[0];
-                    float dx = (float) (canvas_point.x - min_point.x);
-                    float dy = (float) (canvas_point.y - min_point.y);
+                    dx = (float) (canvas_point.x - min_point.x);
+                    dy = (float) (canvas_point.y - min_point.y);
                     min_dist = dx * dx + dy * dy;
                 }
                 else
@@ -516,37 +517,62 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                             {
                                 point = b;
                             }
-                            float dx = (float) (canvas_point.x - point.x);
-                            float dy = (float) (canvas_point.y - point.y);
-                            float dist = dx * dx + dy * dy;
+                            float test_dx = (float) (canvas_point.x - point.x);
+                            float test_dy = (float) (canvas_point.y - point.y);
+                            float dist = test_dx * test_dx + test_dy * test_dy;
                             if (dist < min_dist)
                             {
                                 min_dist = dist;
                                 min_point = point;
+                                dx = test_dx;
+                                dy = test_dy;
                             }
                         }
                     }
                 }
 
+
+                if (min_dist < FLT_MAX)
                 {
-                    // TODO: do multi-sampling here
-                }
+                    int samples = 0;
+                    {
+                        float u = 0.223607f * milton_state->view_scale;  // sin(arctan(1/2)) / 2
+                        float v = 0.670820f * milton_state->view_scale;  // cos(arctan(1/2)) / 2 + u
 
-                // If the stroke contributes to the pixel, do compositing.
-                if (sqrtf(min_dist) < stroke->brush.radius)
-                {
-                    // Do compositing
-                    // ---------------
+                        float dists[4];
+                        dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);
+                        dists[1] = (dx - v) * (dx - v) + (dy + u) * (dy + u);
+                        dists[2] = (dx + u) * (dx + u) + (dy + v) * (dy + v);
+                        dists[3] = (dx + v) * (dx + v) + (dy + u) * (dy + u);
+                        for (int i = 0; i < 4; ++i)
+                        {
+                            if (dists[i] < radius_squared)
+                            {
+                                ++samples;
+                            }
+                        }
+                    }
 
-                    float sr = stroke->brush.color.r;
-                    float sg = stroke->brush.color.g;
-                    float sb = stroke->brush.color.b;
-                    float sa = stroke->brush.alpha;
+                    // If the stroke contributes to the pixel, do compositing.
+                    if (samples > 0)
+                    {
+                        // Do compositing
+                        // ---------------
 
-                    dr = (1 - sa) * dr + sa * sr;
-                    dg = (1 - sa) * dg + sa * sg;
-                    db = (1 - sa) * db + sa * sb;
-                    da = sa + da * (1 - sa);
+                        float coverage = (float)samples / 4.0f;
+
+                        float sr = stroke->brush.color.r;
+                        float sg = stroke->brush.color.g;
+                        float sb = stroke->brush.color.b;
+                        float sa = stroke->brush.alpha;
+
+                        sa *= coverage;
+
+                        dr = (1 - sa) * dr + sa * sr;
+                        dg = (1 - sa) * dg + sa * sg;
+                        db = (1 - sa) * db + sa * sb;
+                        da = sa + da * (1 - sa);
+                    }
                 }
 
                 list_iter = list_iter->next;
@@ -652,7 +678,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         v2i canvas_point = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, in_point);
 
         // TODO: make deque!!
-//        if (milton_state->working_stroke.num_points < LIMIT_STROKE_POINTS)
+        if (milton_state->working_stroke.num_points < LIMIT_STROKE_POINTS)
         {
             // Add to current stroke.
             milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
@@ -692,7 +718,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits.bottom = milton_state->screen_size.h;
         Rect* split_rects = NULL;
         int32 num_rects = rect_split(milton_state->transient_arena,
-                limits, 20, 20, &split_rects);
+                limits, 10, 10, &split_rects);
         for (int i = 0; i < num_rects; ++i)
         {
             render_rect(milton_state, split_rects[i]);
