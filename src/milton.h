@@ -579,6 +579,8 @@ static void render_rect(MiltonState* milton_state, Rect limits)
 
     for (int j = limits.top; j < limits.bottom; ++j)
     {
+        float f = ((float)j / milton_state->screen_size.h);
+
         for (int i = limits.left; i < limits.right; ++i)
         {
             v2i raster_point = {i, j};
@@ -586,9 +588,15 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                     milton_state->screen_size, milton_state->view_scale, raster_point);
 
             // Clear color
+#if 0
             float dr = 1.0f;
             float dg = 1.0f;
             float db = 1.0f;
+#else
+            float dr = f;
+            float dg = f;
+            float db = f;
+#endif
             float da = 1.0f;
 
             struct LinkedList_Stroke_s* list_iter = stroke_list;
@@ -784,7 +792,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         brush.radius = 10 * milton_state->view_scale;
         brush.alpha = 0.5f;
-        brush.color = (v3f){ 0.5f, 0.5f, 0.5f };
+        brush.color = (v3f){ 0.7f, 0.5f, 0.7f };
     }
 
     bool32 finish_stroke = false;
