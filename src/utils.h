@@ -1,6 +1,15 @@
 // utils.h
 // (c) Copyright 2015 by Sergio Gonzalez.
 
+// -------------
+// Useful macros
+// -------------
+
+#define stack_count(arr) (sizeof((arr)) / sizeof((arr)[0]))
+
+// -------------
+// -------------
+
 typedef struct Rect_s
 {
     union
@@ -20,14 +29,31 @@ typedef struct Rect_s
     };
 } Rect;
 
+inline int32 rect_area(Rect rect)
+{
+    return (rect.right - rect.left) * (rect.bottom - rect.top);
+}
+
+inline bool32 is_inside_rect(v2i point, Rect bounds)
+{
+    return
+        point.x >= bounds.left &&
+        point.x <  bounds.right &&
+        point.y >= bounds.top &&
+        point.y <  bounds.bottom;
+}
+
+#if 0
 inline v2i v2f_to_v2i(v2f p)
 {
     return (v2i){(int32)p.x, (int32)p.y};
 }
+
 inline v2f v2i_to_v2f(v2i p)
 {
     return (v2f){(float)p.x, (float)p.y};
 }
+#endif
 
 // ---------------
 // Math functions.
@@ -41,29 +67,5 @@ inline float absf(float a)
 inline int32 absi(int32 a)
 {
     return a < 0 ? -a : a;
-}
-
-inline int32 maxi(int32 a, int32 b)
-{
-    return a > b? a : b;
-}
-inline int32 mini(int32 a, int32 b)
-{
-    return a < b? a : b;
-}
-
-inline float maxf(float a, float b)
-{
-    return a > b? a : b;
-}
-
-inline float minf(float a, float b)
-{
-    return a < b? a : b;
-}
-
-inline int64 minl(int64 a, int64 b)
-{
-    return a < b? a : b;
 }
 

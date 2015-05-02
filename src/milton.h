@@ -19,9 +19,6 @@ typedef int32_t     bool32;
 #endif
 
 
-#define stack_count(arr) (sizeof((arr)) / sizeof((arr)[0]))
-
-
 #include <math.h>  // powf
 #include <float.h>
 
@@ -30,7 +27,6 @@ typedef int32_t     bool32;
 
 #include "utils.h"
 #include "color.h"
-
 
 
 typedef struct Brush_s
@@ -286,13 +282,7 @@ inline BitScanResult find_least_significant_set_bit(uint32 value)
     return result;
 }
 
-inline int32 raster_distance(v2i a, v2i b)
-{
-    int32 res = maxi(absi(a.x - b.x), absi(a.y - b.y));
-    return res;
-}
-
-static Rect rect_enlarge(Rect src, int32 offset)
+inline Rect rect_enlarge(Rect src, int32 offset)
 {
     Rect result;
     result.left = src.left - offset;
@@ -302,7 +292,7 @@ static Rect rect_enlarge(Rect src, int32 offset)
     return result;
 }
 
-static Rect bounding_rect_for_stroke(v2i points[], int64 num_points)
+static Rect bounding_rect_for_points(v2i points[], int64 num_points)
 {
     assert (num_points > 0);
 
@@ -329,11 +319,6 @@ inline bool32 is_inside_bounds(v2i point, int32 radius, Rect bounds)
         point.x - radius <  bounds.right &&
         point.y + radius >= bounds.top &&
         point.y - radius <  bounds.bottom;
-}
-
-inline int32 rect_area(Rect rect)
-{
-    return (rect.right - rect.left) * (rect.bottom - rect.top);
 }
 
 static Rect get_stroke_raster_bounds(
@@ -369,7 +354,7 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
     stroke->num_clipped_points = 0;
     if (stroke->num_points == 1)
     {
-        if (is_inside_bounds(stroke->points[0], stroke->brush.radius, rect))
+        if (is_inside_rect(stroke->points[0], rect))
         {
             stroke->clipped_points[stroke->num_clipped_points++] = stroke->points[0];
         }
@@ -445,12 +430,17 @@ static void render_rect(MiltonState* milton_state, Rect limits)
             list_elem->next = stroke_list;
             stroke_list = list_elem;
         }
+        // TODO:
+        // Check if `limits` lies completely inside stroke.
+        // If so, don't add it to the list, just keep track of it so we can do
+        // a cheap fill-pass.
+        // TODO
+        // Every stroke that fills and that is completely opaque resets every
+        // stroke before it!
     }
 
     for (int j = limits.top; j < limits.bottom; ++j)
     {
-        float f = ((float)j / milton_state->screen_size.h);
-
         for (int i = limits.left; i < limits.right; ++i)
         {
             v2i raster_point = {i, j};
@@ -458,15 +448,9 @@ static void render_rect(MiltonState* milton_state, Rect limits)
                     milton_state->screen_size, milton_state->view_scale, raster_point);
 
             // Clear color
-#if 1
             float dr = 1.0f;
             float dg = 1.0f;
             float db = 1.0f;
-#else
-            float dr = f;
-            float dg = f;
-            float db = f;
-#endif
             float da = 1.0f;
 
             struct LinkedList_Stroke_s* list_iter = stroke_list;
@@ -714,7 +698,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                 milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
                 milton_state->working_stroke.brush = brush;
                 milton_state->working_stroke.bounds =
-                    bounding_rect_for_stroke(milton_state->working_stroke.points,
+                    bounding_rect_for_points(milton_state->working_stroke.points,
                             milton_state->working_stroke.num_points);
 
             }
@@ -749,7 +733,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits.bottom = milton_state->screen_size.h;
         Rect* split_rects = NULL;
         int32 num_rects = rect_split(milton_state->transient_arena,
-                limits, 30, 30, &split_rects);
+                limits, 20, 20, &split_rects);
         for (int i = 0; i < num_rects; ++i)
         {
             render_rect(milton_state, split_rects[i]);
