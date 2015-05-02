@@ -143,3 +143,31 @@ inline $<name_3> invscale_$<name_3> ($<name_3> v, $<type> factor)
     result.z = v.z / factor;
     return result;
 }
+
+typedef struct $<name_4>_s
+{
+    union
+    {
+        struct
+        {
+            $<type> x;
+            $<type> y;
+            $<type> z;
+            $<type> w;
+        };
+        struct
+        {
+            $<type> r;
+            $<type> g;
+            $<type> b;
+            $<type> a;
+        };
+        struct
+        {
+            $<type> h;
+            $<type> s;
+            $<type> v;
+        };
+        $<type> d[4];
+    };
+} $<name_4>;

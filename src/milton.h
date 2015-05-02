@@ -66,7 +66,11 @@ typedef struct MiltonState_s
 
     MiltonGLState* gl;
 
+    ColorManagement cm;
+
     ColorPicker picker;
+
+    Brush brush;
 
     bool32 canvas_blocked;  // When interacting with the UI.
 
@@ -253,6 +257,8 @@ static void milton_init(MiltonState* milton_state)
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
+    color_init(&milton_state->cm);
+
     // Init picker
     {
         int32 bound_radius_px = 100;
@@ -261,12 +267,29 @@ static void milton_init(MiltonState* milton_state)
         milton_state->picker.bound_radius_px = bound_radius_px;
         milton_state->picker.wheel_half_width = wheel_half_width;
         milton_state->picker.wheel_radius = (float)bound_radius_px - 5.0f - wheel_half_width;
+        milton_state->picker.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
+        Rect bounds;
+        bounds.left = milton_state->picker.center.x - bound_radius_px;
+        bounds.right = milton_state->picker.center.x + bound_radius_px;
+        bounds.top = milton_state->picker.center.y + bound_radius_px;
+        bounds.bottom = milton_state->picker.center.y - bound_radius_px;
+        milton_state->picker.bounds = bounds;
+        milton_state->picker.pixels = arena_alloc_array(
+                milton_state->root_arena, (4 * bound_radius_px * bound_radius_px), uint32);
         picker_update(&milton_state->picker,
                 (v2i){
                 milton_state->picker.center.x + (int)(milton_state->picker.wheel_radius),
                 milton_state->picker.center.y
                 });
     }
+
+    Brush brush = { 0 };
+    {
+        brush.radius = 10 * milton_state->view_scale;
+        brush.alpha = 0.5f;
+        brush.color = hsv_to_rgb(milton_state->picker.hsv);
+    }
+    milton_state->brush = brush;
 
     int closest_power_of_two = (1 << 27);  // Ceiling of log2(width * height * bpp)
     milton_state->raster_buffer_size = closest_power_of_two;
@@ -293,31 +316,6 @@ inline v2i raster_to_canvas(v2i screen_size, int32 view_scale, v2i raster_point)
     canvas_point = sub_v2i   ( canvas_point ,  screen_center );
     canvas_point = scale_v2i (canvas_point, view_scale);
     return canvas_point;
-}
-
-typedef struct BitScanResult_s
-{
-    uint32 index;
-    bool32 found;
-} BitScanResult;
-
-inline BitScanResult find_least_significant_set_bit(uint32 value)
-{
-    BitScanResult result = { 0 };
-#if defined(_MSC_VER)
-    result.found = _BitScanForward((DWORD*)&result.index, value);
-#else
-    for (uint32 i = 0; i < 32; ++i)
-    {
-        if (value & (1 << i))
-        {
-            result.index = i;
-            result.found = true;
-            break;
-        }
-    }
-#endif
-    return result;
 }
 
 inline Rect rect_enlarge(Rect src, int32 offset)
@@ -423,7 +421,7 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
     }
 }
 
-// This actually makes things faster in render_strokes_in_rect.
+// This actually makes things faster
 typedef struct LinkedList_Stroke_s
 {
     Stroke* elem;
@@ -432,15 +430,6 @@ typedef struct LinkedList_Stroke_s
 
 static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
 {
-    static uint32 mask_a = 0xff000000;
-    static uint32 mask_r = 0x00ff0000;
-    static uint32 mask_g = 0x0000ff00;
-    static uint32 mask_b = 0x000000ff;
-    uint32 shift_a = find_least_significant_set_bit(mask_a).index;
-    uint32 shift_r = find_least_significant_set_bit(mask_r).index;
-    uint32 shift_g = find_least_significant_set_bit(mask_g).index;
-    uint32 shift_b = find_least_significant_set_bit(mask_b).index;
-
     uint32* pixels = (uint32*)milton_state->raster_buffer;
     Stroke* strokes = milton_state->strokes;
 
@@ -616,12 +605,10 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
 
             }
             // From [0, 1] to [0, 255]
-            uint32 pixel =
-                ((uint8)(dr * 255.0f) << shift_r) +
-                ((uint8)(dg * 255.0f) << shift_g) +
-                ((uint8)(db * 255.0f) << shift_b) +
-                ((uint8)(da * 255.0f) << shift_a);
-
+            v4f d = {
+                dr, dg, db, da
+            };
+            uint32 pixel = color_v4f_to_u32(milton_state->cm, d);
             pixels[j * milton_state->screen_size.w + i] = pixel;
         }
     }
@@ -660,49 +647,94 @@ static int32 rect_split(Arena* transient_arena,
     return i;
 }
 
-static void render_picker(ColorPicker* picker, uint32* pixels, v2i screen_size)
+inline Rect rect_clip_to_screen(Rect limits, v2i screen_size)
 {
-    static uint32 mask_a = 0xff000000;
-    static uint32 mask_r = 0x00ff0000;
-    static uint32 mask_g = 0x0000ff00;
-    static uint32 mask_b = 0x000000ff;
-    uint32 shift_a = find_least_significant_set_bit(mask_a).index;
-    uint32 shift_r = find_least_significant_set_bit(mask_r).index;
-    uint32 shift_g = find_least_significant_set_bit(mask_g).index;
-    uint32 shift_b = find_least_significant_set_bit(mask_b).index;
+    if (limits.left < 0) limits.left = 0;
+    if (limits.right > screen_size.w) limits.right = screen_size.w;
+    if (limits.top < 0) limits.top = 0;
+    if (limits.bottom > screen_size.h) limits.bottom = screen_size.h;
+    return limits;
+}
 
-    Rect draw_rect;
-    {
-        draw_rect.left = picker->center.x - picker->bound_radius_px;
-        draw_rect.right = picker->center.x + picker->bound_radius_px;
-        draw_rect.bottom = picker->center.y + picker->bound_radius_px;
-        draw_rect.top = picker->center.y - picker->bound_radius_px;
-    }
-    assert (draw_rect.left >= 0);
-    assert (draw_rect.top >= 0);
-
+static void render_picker(ColorPicker* picker, ColorManagement cm,
+        Rect draw_rect, uint32* pixels, v2i screen_size, int32 view_scale)
+{
     v2f baseline = {1,0};
+
+    static uint32 picker_bg = 0x00cccccc;
+    static float  picker_bg_alpha = 0.5;
     for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
+            uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            uint32 src = pixels[j * screen_size.w + i];
+            picker->pixels[picker_i] = src;
+                /* (uint32)((1 - picker_bg_alpha) * src + picker_bg_alpha * picker_bg_alpha) | */
+                /* (0 << shift_a); */
+        }
+    }
+
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
+    {
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
+        {
+            uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
             v2f point = {(float)i, (float)j};
-            float angle;
-            if (picker_hits_wheel(picker, point, &angle))
+            uint32 dest_color = pixels[j * screen_size.w + i];
+
+            int samples = 0;
+            float angle = 0;
+            {
+                float u = 0.223607f;
+                float v = 0.670820f;
+
+                samples += (int)picker_hits_wheel(picker,
+                        add_v2f(point, (v2f){-u, -v}), &angle);
+                samples += (int)picker_hits_wheel(picker,
+                        add_v2f(point, (v2f){-v, u}), &angle);
+                samples += (int)picker_hits_wheel(picker,
+                        add_v2f(point, (v2f){u, v}), &angle);
+                samples += (int)picker_hits_wheel(picker,
+                        add_v2f(point, (v2f){v, u}), &angle);
+            }
+
+            if (samples > 0)
             {
                 float degree = radians_to_degrees(angle);
                 v3f hsv = { degree, 0.5f, 1.0f };
                 v3f rgb = hsv_to_rgb(hsv);
-                uint32 color =
-                    (uint32) (rgb.r * 255.0f) << shift_r |
-                    (uint32) (rgb.g * 255.0f) << shift_g |
-                    (uint32) (rgb.b * 255.0f) << shift_b |
-                    255   << shift_a;
-                pixels[j * screen_size.w + i] = color;
+
+                float contrib = samples / 4.0f;
+
+                v4f d = color_u32_to_v4f(cm, dest_color);
+
+                v4f result =
+                {
+                    ((1 - contrib) * (d.r)) + (contrib * (rgb.r)),
+                    ((1 - contrib) * (d.g)) + (contrib * (rgb.g)),
+                    ((1 - contrib) * (d.b)) + (contrib * (rgb.b)),
+                    contrib * d.a,
+                };
+                uint32 color = color_v4f_to_u32(cm, result);
+                picker->pixels[picker_i] = color;
+                //pixels[j * screen_size.w + i] = color;
+            }
+            else
+            {
+                //picker->pixels[picker_i] = dest_color;
             }
         }
     }
-
+    // Blit picker pixels
+    uint32* to_blit = picker->pixels;
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
+    {
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
+        {
+            pixels[j * screen_size.w + i] = *to_blit++;
+        }
+    }
 }
 
 inline bool32 is_user_drawing(MiltonState* milton_state)
@@ -740,13 +772,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         input->full_refresh = true;
     }
 
-    Brush brush = { 0 };
-    {
-        brush.radius = 10 * milton_state->view_scale;
-        brush.alpha = 0.5f;
-        brush.color = milton_state->picker.color;
-    }
-
     bool32 finish_stroke = false;
     if (input->point)
     {
@@ -759,6 +784,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             case ColorPickResult_change_color:
                 {
                     // We already picked up the change by creating the brush on the spot
+                    milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
                     break;
                 }
             case ColorPickResult_redraw_picker:
@@ -790,7 +816,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             {
                 // Add to current stroke.
                 milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
-                milton_state->working_stroke.brush = brush;
+                milton_state->working_stroke.brush = milton_state->brush;
                 milton_state->working_stroke.bounds =
                     bounding_rect_for_points(milton_state->working_stroke.points,
                             milton_state->working_stroke.num_points);
@@ -835,6 +861,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                 limits, 20, 20, &split_rects);
         for (int i = 0; i < num_rects; ++i)
         {
+            split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->screen_size);
             render_strokes_in_rect(milton_state, split_rects[i]);
         }
     }
@@ -850,6 +877,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits.top =    min (milton_state->last_point.y, new_point.y);
         limits.bottom = max (milton_state->last_point.y, new_point.y);
         limits = rect_enlarge(limits, (stroke->brush.radius / milton_state->view_scale));
+        limits = rect_clip_to_screen(limits, milton_state->screen_size);
 
         render_strokes_in_rect(milton_state, limits);
     }
@@ -863,11 +891,14 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits.right = raster_radius  + point.x;
         limits.top = -raster_radius   + point.y;
         limits.bottom = raster_radius + point.y;
+        limits = rect_clip_to_screen(limits, milton_state->screen_size);
         render_strokes_in_rect(milton_state, limits);
     }
 
-    render_picker(&milton_state->picker, (uint32*)milton_state->raster_buffer,
-            milton_state->screen_size);
+    Rect draw_rect = picker_get_draw_rect(&milton_state->picker);
+    render_strokes_in_rect(milton_state, draw_rect);
+    render_picker(&milton_state->picker, milton_state->cm, draw_rect, (uint32*)milton_state->raster_buffer,
+            milton_state->screen_size, milton_state->view_scale);
 
     updated = true;
 
