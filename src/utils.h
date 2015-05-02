@@ -43,7 +43,6 @@ inline bool32 is_inside_rect(v2i point, Rect bounds)
         point.y <  bounds.bottom;
 }
 
-#if 0
 inline v2i v2f_to_v2i(v2f p)
 {
     return (v2i){(int32)p.x, (int32)p.y};
@@ -53,11 +52,13 @@ inline v2f v2i_to_v2f(v2i p)
 {
     return (v2f){(float)p.x, (float)p.y};
 }
-#endif
 
 // ---------------
 // Math functions.
 // ---------------
+
+#define kPi 3.14152654f
+
 
 inline float absf(float a)
 {
@@ -69,3 +70,17 @@ inline int32 absi(int32 a)
     return a < 0 ? -a : a;
 }
 
+inline float dot(v2f a, v2f b)
+{
+   return a.x * b.x + a.y * b.y;
+}
+
+inline float magnitude(v2f a)
+{
+    return sqrtf(dot(a, a));
+}
+
+inline float radians_to_degrees(float r)
+{
+    return (180 * r) / kPi;
+}

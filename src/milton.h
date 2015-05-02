@@ -68,6 +68,8 @@ typedef struct MiltonState_s
 
     ColorPicker picker;
 
+    bool32 canvas_blocked;  // When interacting with the UI.
+
     v2i screen_size;
 
     // Maps screen_size to a rectangle in our infinite canvas.
@@ -206,28 +208,64 @@ static void milton_gl_backend_init(MiltonState* milton_state)
     }
 }
 
+#ifndef NDEBUG
+static void milton_startup_tests()
+{
+    v3f rgb = hsv_to_rgb((v3f){ 0 });
+    assert(
+            rgb.r == 0 &&
+            rgb.g == 0 &&
+            rgb.b == 0
+          );
+    rgb = hsv_to_rgb((v3f){ 0, 0, 1.0 });
+    assert(
+            rgb.r == 1 &&
+            rgb.g == 1 &&
+            rgb.b == 1
+          );
+    rgb = hsv_to_rgb((v3f){ 120, 1.0f, 0.5f });
+    assert(
+            rgb.r == 0 &&
+            rgb.g == 0.5 &&
+            rgb.b == 0
+          );
+    rgb = hsv_to_rgb((v3f){ 0, 1.0f, 1.0f });
+    assert(
+            rgb.r == 1.0 &&
+            rgb.g == 0 &&
+            rgb.b == 0
+          );
+}
+#endif
+
 static void milton_init(MiltonState* milton_state)
 {
+#ifndef NDEBUG
+    milton_startup_tests();
+#endif
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->full_width      = 7680;
     milton_state->full_height     = 4320;
     milton_state->bytes_per_pixel = 4;
     milton_state->view_scale      = (1 << 12);
-    milton_state->num_strokes       = 1;  // Working stroke is index 0
+    milton_state->num_strokes     = 0;  // Working stroke is index 0
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
     // Init picker
     {
-        v2i center = { 0 };
-        int32 bound_radius_px = 200;
-        float wheel_half_width = 30;
+        int32 bound_radius_px = 100;
+        float wheel_half_width = 10;
+        milton_state->picker.center = (v2i){ 150, 150 };
         milton_state->picker.bound_radius_px = bound_radius_px;
         milton_state->picker.wheel_half_width = wheel_half_width;
         milton_state->picker.wheel_radius = (float)bound_radius_px - 5.0f - wheel_half_width;
         picker_update(&milton_state->picker,
-                (v2i){center.x + (int)(milton_state->picker.wheel_radius), center.y});
+                (v2i){
+                milton_state->picker.center.x + (int)(milton_state->picker.wheel_radius),
+                milton_state->picker.center.y
+                });
     }
 
     int closest_power_of_two = (1 << 27);  // Ceiling of log2(width * height * bpp)
@@ -385,14 +423,14 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
     }
 }
 
-// This actually makes things faster in render_rect.
+// This actually makes things faster in render_strokes_in_rect.
 typedef struct LinkedList_Stroke_s
 {
     Stroke* elem;
     struct LinkedList_Stroke_s* next;
 } LinkedList_Stroke;
 
-static void render_rect(MiltonState* milton_state, Rect limits)
+static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
 {
     static uint32 mask_a = 0xff000000;
     static uint32 mask_r = 0x00ff0000;
@@ -415,9 +453,18 @@ static void render_rect(MiltonState* milton_state, Rect limits)
     LinkedList_Stroke* stroke_list = NULL;
 
     // Go backwards so that list is in the correct older->newer order.
-    for (int stroke_i = milton_state->num_strokes - 1; stroke_i >= 0; --stroke_i)
+    for (int stroke_i = milton_state->num_strokes; stroke_i >= 0; --stroke_i)
     {
-        Stroke* stroke = &strokes[stroke_i];
+        Stroke* stroke = NULL;
+        if (stroke_i == milton_state->num_strokes)
+        {
+            stroke = &milton_state->working_stroke;
+        }
+        else
+        {
+            stroke = &strokes[stroke_i];
+        }
+        assert(stroke);
         Rect enlarged_limits = rect_enlarge(canvas_limits, stroke->brush.radius);
         stroke_clip_to_rect(stroke, enlarged_limits);
         if (stroke->num_clipped_points)
@@ -613,6 +660,51 @@ static int32 rect_split(Arena* transient_arena,
     return i;
 }
 
+static void render_picker(ColorPicker* picker, uint32* pixels, v2i screen_size)
+{
+    static uint32 mask_a = 0xff000000;
+    static uint32 mask_r = 0x00ff0000;
+    static uint32 mask_g = 0x0000ff00;
+    static uint32 mask_b = 0x000000ff;
+    uint32 shift_a = find_least_significant_set_bit(mask_a).index;
+    uint32 shift_r = find_least_significant_set_bit(mask_r).index;
+    uint32 shift_g = find_least_significant_set_bit(mask_g).index;
+    uint32 shift_b = find_least_significant_set_bit(mask_b).index;
+
+    Rect draw_rect;
+    {
+        draw_rect.left = picker->center.x - picker->bound_radius_px;
+        draw_rect.right = picker->center.x + picker->bound_radius_px;
+        draw_rect.bottom = picker->center.y + picker->bound_radius_px;
+        draw_rect.top = picker->center.y - picker->bound_radius_px;
+    }
+    assert (draw_rect.left >= 0);
+    assert (draw_rect.top >= 0);
+
+    v2f baseline = {1,0};
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
+    {
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
+        {
+            v2f point = {(float)i, (float)j};
+            float angle;
+            if (picker_hits_wheel(picker, point, &angle))
+            {
+                float degree = radians_to_degrees(angle);
+                v3f hsv = { degree, 0.5f, 1.0f };
+                v3f rgb = hsv_to_rgb(hsv);
+                uint32 color =
+                    (uint32) (rgb.r * 255.0f) << shift_r |
+                    (uint32) (rgb.g * 255.0f) << shift_g |
+                    (uint32) (rgb.b * 255.0f) << shift_b |
+                    255   << shift_a;
+                pixels[j * screen_size.w + i] = color;
+            }
+        }
+    }
+
+}
+
 inline bool32 is_user_drawing(MiltonState* milton_state)
 {
     bool32 result = milton_state->working_stroke.num_points > 0;
@@ -642,7 +734,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (input->reset)
     {
-        milton_state->num_strokes = 1;
+        milton_state->num_strokes = 0;
         milton_state->strokes[0].num_points = 0;
         milton_state->working_stroke.num_points = 0;
         input->full_refresh = true;
@@ -652,7 +744,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         brush.radius = 10 * milton_state->view_scale;
         brush.alpha = 0.5f;
-        brush.color = (v3f){ 0.7f, 0.5f, 0.7f };
+        brush.color = milton_state->picker.color;
     }
 
     bool32 finish_stroke = false;
@@ -666,10 +758,12 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             {
             case ColorPickResult_change_color:
                 {
-                    // brush.color = something.
+                    // We already picked up the change by creating the brush on the spot
+                    break;
                 }
             case ColorPickResult_redraw_picker:
                 {
+                    // TODO: Keep the picker in a buffer so that we don't redraw it every time.
                     break;
                 }
             case ColorPickResult_nothing:
@@ -677,9 +771,9 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                     break;
                 }
             }
-
+            milton_state->canvas_blocked = true;
         }
-        else
+        else if (!milton_state->canvas_blocked)
         {
             v2i in_point = *input->point;
 
@@ -702,7 +796,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                             milton_state->working_stroke.num_points);
 
             }
-            milton_state->strokes[0] = milton_state->working_stroke;  // Copy current stroke.
 
             milton_state->last_point = in_point;
 
@@ -711,14 +804,20 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     }
     if (input->end_stroke)
     {
-        if (milton_state->num_strokes < 4096)
+        if (milton_state->canvas_blocked)
         {
-            // Copy current stroke.
-            milton_state->strokes[milton_state->num_strokes++] = milton_state->working_stroke;
-            // Clear working_stroke
+            milton_state->canvas_blocked = false;
+        }
+        else
+        {
+            if (milton_state->num_strokes < 4096)
             {
-                milton_state->strokes[0] = (Stroke){ 0 };  // Clear working stroke.
-                milton_state->working_stroke.num_points = 0;
+                // Copy current stroke.
+                milton_state->strokes[milton_state->num_strokes++] = milton_state->working_stroke;
+                // Clear working_stroke
+                {
+                    milton_state->working_stroke.num_points = 0;
+                }
             }
         }
     }
@@ -736,12 +835,12 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                 limits, 20, 20, &split_rects);
         for (int i = 0; i < num_rects; ++i)
         {
-            render_rect(milton_state, split_rects[i]);
+            render_strokes_in_rect(milton_state, split_rects[i]);
         }
     }
-    else if (milton_state->strokes[0].num_points > 1)
+    else if (milton_state->working_stroke.num_points > 1)
     {
-        Stroke* stroke = &milton_state->strokes[0];
+        Stroke* stroke = &milton_state->working_stroke;
         v2i new_point = canvas_to_raster(
                     milton_state->screen_size, milton_state->view_scale,
                     stroke->points[stroke->num_points - 2]);
@@ -752,11 +851,11 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits.bottom = max (milton_state->last_point.y, new_point.y);
         limits = rect_enlarge(limits, (stroke->brush.radius / milton_state->view_scale));
 
-        render_rect(milton_state, limits);
+        render_strokes_in_rect(milton_state, limits);
     }
-    else if (milton_state->strokes[0].num_points == 1)
+    else if (milton_state->working_stroke.num_points == 1)
     {
-        Stroke* stroke = &milton_state->strokes[0];
+        Stroke* stroke = &milton_state->working_stroke;
         v2i point = canvas_to_raster(milton_state->screen_size, milton_state->view_scale,
                 stroke->points[0]);
         int32 raster_radius = stroke->brush.radius / milton_state->view_scale;
@@ -764,9 +863,14 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits.right = raster_radius  + point.x;
         limits.top = -raster_radius   + point.y;
         limits.bottom = raster_radius + point.y;
-        render_rect(milton_state, limits);
+        render_strokes_in_rect(milton_state, limits);
     }
+
+    render_picker(&milton_state->picker, (uint32*)milton_state->raster_buffer,
+            milton_state->screen_size);
+
     updated = true;
+
 
     return updated;
 }
