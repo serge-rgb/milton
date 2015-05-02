@@ -7,10 +7,19 @@ To-Do
 =====
 
 * Engine
-    * Wacom support
-    * Cache system
+    * Short-circuit. (ie. stop work so scaling is faster)
+    * Panning
+    * Use Emscripten to port to JS.
 * UI
     * Color picker
-    * Move back to OpenGL
-    * Steal dariomanesku/cmftStudio IMUI code
+    * Figure out UI
 
+        Fork imgui (?)
+
+* Web
+    * Landing page.
+
+        Collect emails / Presentation video.
+
+* Marketing
+    * Landing page
