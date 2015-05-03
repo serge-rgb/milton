@@ -3,6 +3,12 @@ Milton
 
 Milton is a paint package. You know MS Paint? Like that.
 
+How to Compile
+==============
+
+1. > getstuff.bat from a windows shell in the root directory
+2. Open build\Milton.sln in VS 2013
+
 To-Do
 =====
 

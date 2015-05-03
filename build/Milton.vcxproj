@@ -88,6 +88,7 @@
     <ClCompile Include="..\src\win_milton.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\color.h" />
     <ClInclude Include="..\src\libserg\examples\dummy_project\dir\inside.h" />
     <ClInclude Include="..\src\libserg\examples\dummy_project\dummy_include.h" />
     <ClInclude Include="..\src\libserg\examples\dummy_project\zzzz.h" />
@@ -99,6 +100,7 @@
     <ClInclude Include="..\src\libserg\win_dirent.h" />
     <ClInclude Include="..\src\milton.h" />
     <ClInclude Include="..\src\system_includes.h" />
+    <ClInclude Include="..\src\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

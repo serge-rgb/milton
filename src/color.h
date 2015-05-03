@@ -16,6 +16,8 @@ typedef struct ColorPicker_s
     uint32* pixels;  // BLit this to render picker
 
     v3f     hsv;
+
+    bool32  is_wheel_active;
 } ColorPicker;
 
 typedef enum
@@ -31,10 +33,7 @@ typedef struct ColorManagement_s
     uint32 mask_r;
     uint32 mask_g;
     uint32 mask_b;
-    /* uint32 shift_a = find_least_significant_set_bit(mask_a).index; */
-    /* uint32 shift_r = find_least_significant_set_bit(mask_r).index; */
-    /* uint32 shift_g = find_least_significant_set_bit(mask_g).index; */
-    /* uint32 shift_b = find_least_significant_set_bit(mask_b).index; */
+
     uint32 shift_a;
     uint32 shift_r;
     uint32 shift_g;
@@ -54,6 +53,39 @@ static void color_init(ColorManagement* cm)
     cm->shift_b = find_least_significant_set_bit(cm->mask_b).index;
 }
 
+inline uint32 color_v4f_to_u32(ColorManagement cm, v4f c)
+{
+    uint32 result =
+        ((uint8)(c.r * 255.0f) << cm.shift_r) |
+        ((uint8)(c.g * 255.0f) << cm.shift_g) |
+        ((uint8)(c.b * 255.0f) << cm.shift_b) |
+        ((uint8)(c.a * 255.0f) << cm.shift_a);
+    return result;
+}
+
+inline v4f color_u32_to_v4f(ColorManagement cm, uint32 color)
+{
+    v4f result =
+    {
+        (float)(0xff & (color >> cm.shift_r)) / 255,
+        (float)(0xff & (color >> cm.shift_g)) / 255,
+        (float)(0xff & (color >> cm.shift_b)) / 255,
+        (float)(0xff & (color >> cm.shift_a)) / 255,
+    };
+
+    return result;
+}
+
+inline v4f color_rgb_to_rgba(v3f rgb, float a)
+{
+    return (v4f)
+    {
+        rgb.r,
+        rgb.g,
+        rgb.b,
+        a
+    };
+}
 
 v3f hsv_to_rgb(v3f hsv)
 {
@@ -146,7 +178,42 @@ inline v3f sRGB_to_linear(v3f rgb)
     return result;
 }
 
-static bool32 picker_hits_wheel(ColorPicker* picker, v2f point, float* out_angle)
+static bool32 picker_wheel_active(ColorPicker* picker)
+{
+    return picker->is_wheel_active;
+}
+
+static void picker_wheel_deactivate(ColorPicker* picker)
+{
+    picker->is_wheel_active = false;
+}
+
+static float picker_wheel_get_angle(ColorPicker* picker, v2f point)
+{
+    v2f center = v2i_to_v2f(picker->center);
+    v2f arrow = sub_v2f (point, center);
+    v2f baseline = { 1, 0 };
+    float dotp = (dot(arrow, baseline)) / (magnitude(arrow));
+    float angle = acosf(dotp);
+    if (point.y > center.y)
+    {
+        angle = (2 * kPi) - angle;
+    }
+    return angle;
+}
+static bool32 picker_is_within_wheel(ColorPicker* picker, v2f point)
+{
+    v2f center = v2i_to_v2f(picker->center);
+    v2f arrow = sub_v2f (point, center);
+    float dist = magnitude(arrow);
+    if ((dist <= picker->wheel_radius - picker->wheel_half_width ))
+    {
+        return true;
+    }
+    return false;
+}
+
+static bool32 picker_hits_wheel(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
     v2f arrow = sub_v2f (point, center);
@@ -156,17 +223,7 @@ static bool32 picker_hits_wheel(ColorPicker* picker, v2f point, float* out_angle
             (dist >= picker->wheel_radius - picker->wheel_half_width )
        )
     {
-        if (out_angle)
-        {
-            v2f baseline = { 1, 0 };
-            float dotp = (dot(arrow, baseline)) / (magnitude(arrow));
-            float angle = acosf(dotp);
-            if (point.y > center.y)
-            {
-                angle = (2 * kPi) - angle;
-            }
-            *out_angle = angle;
-        }
+        picker->is_wheel_active = true;
         return true;
     }
     return false;
@@ -174,9 +231,7 @@ static bool32 picker_hits_wheel(ColorPicker* picker, v2f point, float* out_angle
 
 static bool32 is_inside_picker(ColorPicker* picker, v2i point)
 {
-    // Check if we hit the wheel
-
-    return picker_hits_wheel(picker, v2i_to_v2f(point), NULL);
+    return is_inside_rect(picker->bounds, point);
 }
 
 static Rect picker_get_draw_rect(ColorPicker* picker)
@@ -194,37 +249,76 @@ static Rect picker_get_draw_rect(ColorPicker* picker)
     return draw_rect;
 }
 
-inline uint32 color_v4f_to_u32(ColorManagement cm, v4f c)
+inline v2f point_rotated_at_angle(float angle, float radius)
 {
-    uint32 result =
-        ((uint8)(c.r * 255.0f) << cm.shift_r) |
-        ((uint8)(c.g * 255.0f) << cm.shift_g) |
-        ((uint8)(c.b * 255.0f) << cm.shift_b) |
-        ((uint8)(c.a * 255.0f) << cm.shift_a);
+    v2f result =
+    {
+        radius * cosf(angle),
+        radius * sinf(angle)
+    };
     return result;
 }
 
-inline v4f color_u32_to_v4f(ColorManagement cm, uint32 color)
+static void picker_update_wheel(ColorPicker* picker, v2f point)
 {
-    v4f result =
+    float angle = picker_wheel_get_angle(picker, point);
+    picker->hsv.h = radians_to_degrees(angle);
+    // Update the triangle
     {
-        (float)(0xff & (color >> cm.shift_r)) / 255,
-        (float)(0xff & (color >> cm.shift_g)) / 255,
-        (float)(0xff & (color >> cm.shift_b)) / 255,
-        (float)(0xff & (color >> cm.shift_a)) / 255,
-    };
+        float radius = 0.9f * (picker->wheel_radius - picker->wheel_half_width);
+        v2f center = v2i_to_v2f(picker->center);
+        {
+            v2f point = point_rotated_at_angle(-angle, radius);
+            point = add_v2f(point, center);
+            picker->c = point;
+        }
+        {
+            v2f point = point_rotated_at_angle(-angle + 2 * kPi / 3.0f, radius);
+            point = add_v2f(point, center);
+            picker->b = point;
+        }
+        {
+            v2f point = point_rotated_at_angle(-angle + 4 * kPi / 3.0f, radius);
+            point = add_v2f(point, center);
+            picker->a = point;
+        }
+    }
+}
 
-    return result;
+inline v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
+{
+    float area = orientation(picker->a, picker->b, picker->c);
+    assert (area != 0);
+    float inv_area = 1.0f / area;
+    float s = orientation(picker->b, point, picker->a) * inv_area;
+    if (s > 1) s = 1;
+    float v = 1 - (orientation(point, picker->c, picker->a) * inv_area);
+    if (v > 1) v = 1;
+
+    v3f hsv =
+    {
+        picker->hsv.h,
+        s,
+        v,
+    };
+    return hsv;
 }
 
 static ColorPickResult picker_update(ColorPicker* picker, v2i point)
 {
+    ColorPickResult result = ColorPickResult_nothing;
     v2f fpoint = v2i_to_v2f(point);
     float angle = 0;
-    if (picker_hits_wheel(picker, fpoint, &angle))
+    if (picker_hits_wheel(picker, fpoint))
     {
-        picker->hsv.h = radians_to_degrees(angle);
-        return ColorPickResult_change_color;
+        picker_update_wheel(picker, fpoint);
+        result |= ColorPickResult_change_color;
     }
-    return ColorPickResult_nothing;
+    if (is_inside_triangle(fpoint, picker->a, picker->b, picker->c))
+    {
+        picker->hsv = picker_hsv_from_point(picker, fpoint);
+        result |= ColorPickResult_change_color;
+    }
+
+    return result;
 }

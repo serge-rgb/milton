@@ -137,7 +137,7 @@ inline int32 rect_area(Rect rect)
     return (rect.right - rect.left) * (rect.bottom - rect.top);
 }
 
-inline bool32 is_inside_rect(v2i point, Rect bounds)
+inline bool32 is_inside_rect(Rect bounds, v2i point)
 {
     return
         point.x >= bounds.left &&
@@ -191,5 +191,35 @@ inline float magnitude(v2f a)
 inline float radians_to_degrees(float r)
 {
     return (180 * r) / kPi;
+}
+
+// If positive, c is to the left of ab. Negative: right of ab. 0 if colinear.
+inline float orientation(v2f a, v2f b, v2f c)
+{
+    return (b.x - a.x)*(c.y - a.y) - (c.x - a.x)*(b.y - a.y);
+}
+
+#if 0
+inline v2f to_barycentric(v2f point, v2f a, v2f b, v2f c)
+{
+    float area = orientation(a, b, c);
+    assert (area != 0);
+    float inv_area = 1.0f / area;
+    v2f result =
+    {
+        inv_area * orientation(b, c, point),
+        inv_area * orientation(c, a, point),
+    };
+    return result;
+}
+#endif
+
+inline bool32 is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
+{
+    bool32 is_inside =
+        (orientation(a, b, point) <= 0) &&
+        (orientation(b, c, point) <= 0) &&
+        (orientation(c, a, point) <= 0);
+    return is_inside;
 }
 

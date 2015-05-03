@@ -151,7 +151,8 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             "void main(void)\n"
             "{\n"
             "   out_color = texture(buffer, coord);"
-            "   out_color = vec4(sRGB_to_linear(out_color.rgb), 1);"
+            // TODO: Why am I getting BGRA format?!?!?
+            "   out_color = vec4(sRGB_to_linear(out_color.rgb), 1).bgra;"
             "}\n";
 
         GLuint shader_objects[2] = {0};
@@ -264,7 +265,7 @@ static void milton_init(MiltonState* milton_state)
     {
         int32 bound_radius_px = 80;
         float wheel_half_width = 8;
-        milton_state->picker.center = (v2i){ 100, 100 };
+        milton_state->picker.center = (v2i){ 120, 120 };
         milton_state->picker.bound_radius_px = bound_radius_px;
         milton_state->picker.wheel_half_width = wheel_half_width;
         milton_state->picker.wheel_radius = (float)bound_radius_px - 5.0f - wheel_half_width;
@@ -272,8 +273,8 @@ static void milton_init(MiltonState* milton_state)
         Rect bounds;
         bounds.left = milton_state->picker.center.x - bound_radius_px;
         bounds.right = milton_state->picker.center.x + bound_radius_px;
-        bounds.top = milton_state->picker.center.y + bound_radius_px;
-        bounds.bottom = milton_state->picker.center.y - bound_radius_px;
+        bounds.top = milton_state->picker.center.y - bound_radius_px;
+        bounds.bottom = milton_state->picker.center.y + bound_radius_px;
         milton_state->picker.bounds = bounds;
         milton_state->picker.pixels = arena_alloc_array(
                 milton_state->root_arena, (4 * bound_radius_px * bound_radius_px), uint32);
@@ -320,16 +321,6 @@ inline v2i raster_to_canvas(v2i screen_size, int32 view_scale, v2i raster_point)
     return canvas_point;
 }
 
-// TODO: remove? no one is using this...
-inline bool32 is_inside_bounds(v2i point, int32 radius, Rect bounds)
-{
-    return
-        point.x + radius >= bounds.left &&
-        point.x - radius <  bounds.right &&
-        point.y + radius >= bounds.top &&
-        point.y - radius <  bounds.bottom;
-}
-
 static Rect get_stroke_raster_bounds(
         v2i screen_size, int32 view_scale, Stroke* stroke, int32 start, Brush brush)
 {
@@ -363,7 +354,7 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
     stroke->num_clipped_points = 0;
     if (stroke->num_points == 1)
     {
-        if (is_inside_rect(stroke->points[0], rect))
+        if (is_inside_rect(rect, stroke->points[0]))
         {
             stroke->clipped_points[stroke->num_clipped_points++] = stroke->points[0];
         }
@@ -593,8 +584,15 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
 {
     v2f baseline = {1,0};
 
-    static uint32 picker_bg = 0x00cccccc;
-    static float  picker_bg_alpha = 0.5;
+    v4f background_color =
+    {
+        0.5f,
+        0.5f,
+        0.55f,
+        0.3f,
+    };
+
+    // Copy canvas buffer into picker buffer
     for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
@@ -602,18 +600,36 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
             uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
             uint32 src = pixels[j * screen_size.w + i];
             picker->pixels[picker_i] = src;
-                /* (uint32)((1 - picker_bg_alpha) * src + picker_bg_alpha * picker_bg_alpha) | */
-                /* (0 << shift_a); */
         }
     }
 
+    // Render background color.
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
+    {
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
+        {
+            uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            v4f dest = color_u32_to_v4f(cm, picker->pixels[picker_i]);
+            float alpha = background_color.a;
+            v4f result =
+            {
+                dest.r * (1 - alpha) + background_color.r * alpha,
+                dest.g * (1 - alpha) + background_color.g * alpha,
+                dest.b * (1 - alpha) + background_color.b * alpha,
+                dest.a + (alpha * (1 - dest.a)),
+            };
+            picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
+        }
+    }
+
+    // render wheel
     for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
             v2f point = {(float)i, (float)j};
-            uint32 dest_color = pixels[j * screen_size.w + i];
+            uint32 dest_color = picker->pixels[picker_i];
 
             int samples = 0;
             float angle = 0;
@@ -622,17 +638,18 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
                 float v = 0.670820f;
 
                 samples += (int)picker_hits_wheel(picker,
-                        add_v2f(point, (v2f){-u, -v}), &angle);
+                        add_v2f(point, (v2f){-u, -v}));
                 samples += (int)picker_hits_wheel(picker,
-                        add_v2f(point, (v2f){-v, u}), &angle);
+                        add_v2f(point, (v2f){-v, u}));
                 samples += (int)picker_hits_wheel(picker,
-                        add_v2f(point, (v2f){u, v}), &angle);
+                        add_v2f(point, (v2f){u, v}));
                 samples += (int)picker_hits_wheel(picker,
-                        add_v2f(point, (v2f){v, u}), &angle);
+                        add_v2f(point, (v2f){v, u}));
             }
 
             if (samples > 0)
             {
+                float angle = picker_wheel_get_angle(picker, point);
                 float degree = radians_to_degrees(angle);
                 v3f hsv = { degree, 0.5f, 1.0f };
                 v3f rgb = hsv_to_rgb(hsv);
@@ -653,6 +670,22 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
             }
         }
     }
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
+    {
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
+        {
+            v2f point = { (float)i, (float)j };
+            uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            if (is_inside_triangle(point, picker->a, picker->b, picker->c))
+            {
+                v3f hsv = picker_hsv_from_point(picker, point);
+
+                picker->pixels[picker_i] = color_v4f_to_u32(cm,
+                        color_rgb_to_rgba(hsv_to_rgb(hsv), 1.0f));
+            }
+        }
+    }
+
     // Blit picker pixels
     uint32* to_blit = picker->pixels;
     for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
@@ -707,22 +740,9 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         if (!is_user_drawing(milton_state) && is_inside_picker(&milton_state->picker, point))
         {
             ColorPickResult pick_result = picker_update(&milton_state->picker, point);
-            switch (pick_result)
+            if (pick_result & ColorPickResult_change_color)
             {
-            case ColorPickResult_change_color:
-                {
-                    milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
-                    break;
-                }
-            case ColorPickResult_redraw_picker:
-                {
-                    // TODO: Keep the picker in a buffer so that we don't redraw it every time.
-                    break;
-                }
-            case ColorPickResult_nothing:
-                {
-                    break;
-                }
+                milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
             }
             milton_state->canvas_blocked = true;
         }
@@ -754,11 +774,30 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 
             updated = true;
         }
+        if (milton_state->canvas_blocked)
+        {
+            v2f fpoint = v2i_to_v2f(point);
+            ColorPicker* picker = &milton_state->picker;
+            if  (picker_wheel_active(picker))
+            {
+                //if (picker_is_within_wheel(picker, fpoint))
+                if (is_inside_triangle(fpoint, picker->a, picker->b, picker->c))
+                {
+                    picker_wheel_deactivate(picker);
+                }
+                else
+                {
+                    picker_update_wheel(&milton_state->picker, fpoint);
+                    milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
+                }
+            }
+        }
     }
     if (input->end_stroke)
     {
         if (milton_state->canvas_blocked)
         {
+            picker_wheel_deactivate(&milton_state->picker);
             milton_state->canvas_blocked = false;
         }
         else
