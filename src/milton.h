@@ -385,6 +385,7 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
     }
 }
 
+
 // This actually makes things faster
 typedef struct LinkedList_Stroke_s
 {
@@ -392,6 +393,7 @@ typedef struct LinkedList_Stroke_s
     struct LinkedList_Stroke_s* next;
 } LinkedList_Stroke;
 
+// Filter strokes and render them. See `render_strokes` for the one that should be called
 static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
 {
     uint32* pixels = (uint32*)milton_state->raster_buffer;
@@ -579,6 +581,18 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
     }
 }
 
+static void render_strokes(MiltonState* milton_state, Rect limits)
+{
+    Rect* split_rects = NULL;
+    int32 num_rects = rect_split(milton_state->transient_arena,
+            limits, 20, 20, &split_rects);
+    for (int i = 0; i < num_rects; ++i)
+    {
+        split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->screen_size);
+        render_strokes_in_rect(milton_state, split_rects[i]);
+    }
+}
+
 static void render_picker(ColorPicker* picker, ColorManagement cm,
         Rect draw_rect, uint32* pixels, v2i screen_size, int32 view_scale)
 {
@@ -589,7 +603,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
         0.5f,
         0.5f,
         0.55f,
-        0.3f,
+        0.4f,
     };
 
     // Copy canvas buffer into picker buffer
@@ -738,6 +752,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 {
     arena_reset(milton_state->transient_arena);
     bool32 updated = false;
+    bool32 selector_updated = false;
 
     if (input->scale)
     {
@@ -775,6 +790,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                 milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
             }
             milton_state->canvas_blocked = true;
+            selector_updated = true;
         }
         else if (!milton_state->canvas_blocked)
         {
@@ -820,6 +836,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
                     picker_update_wheel(&milton_state->picker, fpoint);
                     milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
                 }
+                selector_updated = true;
             }
         }
     }
@@ -846,7 +863,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 
     Rect limits = { 0 };
 
-    Rect* split_rects = NULL;
     if (input->full_refresh)
     {
         limits.left = 0;
@@ -883,23 +899,35 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits = rect_clip_to_screen(limits, milton_state->screen_size);
         /* render_strokes_in_rect(milton_state, limits); */
     }
-    int32 num_rects = rect_split(milton_state->transient_arena,
-            limits, 20, 20, &split_rects);
-    for (int i = 0; i < num_rects; ++i)
+
+    render_strokes(milton_state, limits);
+
+    // Render UI
     {
-        split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->screen_size);
-        render_strokes_in_rect(milton_state, split_rects[i]);
+        Rect* split_rects = NULL;
+        bool32 redraw = false;
+        Rect draw_rect = picker_get_draw_rect(&milton_state->picker);
+        int32 num_rects = rect_split(milton_state->transient_arena,
+                draw_rect, 20, 20, &split_rects);
+        for (int i = 0; i < num_rects; ++i)
+        {
+            Rect clipped = rect_intersect(split_rects[i], draw_rect);
+            if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
+            {
+                redraw = true;
+                break;
+            }
+        }
+        if (redraw || selector_updated)
+        {
+            render_strokes(milton_state, draw_rect);
+            render_picker(&milton_state->picker, milton_state->cm,
+                    draw_rect, (uint32*)milton_state->raster_buffer,
+                    milton_state->screen_size, milton_state->view_scale);
+        }
     }
 
-#if 1
-    Rect draw_rect = picker_get_draw_rect(&milton_state->picker);
-    render_strokes_in_rect(milton_state, draw_rect);
-    render_picker(&milton_state->picker, milton_state->cm, draw_rect, (uint32*)milton_state->raster_buffer,
-            milton_state->screen_size, milton_state->view_scale);
-#endif
-
     updated = true;
-
 
     return updated;
 }

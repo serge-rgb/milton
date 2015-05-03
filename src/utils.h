@@ -93,6 +93,25 @@ static int32 rect_split(Arena* transient_arena,
     return i;
 }
 
+inline Rect rect_intersect(Rect a, Rect b)
+{
+    Rect result;
+    result.left = max(a.left, b.left);
+    result.right = min(a.right, b.right);
+
+    if (result.left >= result.right)
+    {
+        result.left = result.right;
+    }
+    result.top = max(a.top, b.top);
+    result.bottom = min(a.bottom, b.bottom);
+    if (result.bottom <= result.top)
+    {
+        result.bottom = result.top;
+    }
+    return result;
+}
+
 inline Rect rect_clip_to_screen(Rect limits, v2i screen_size)
 {
     if (limits.left < 0) limits.left = 0;
