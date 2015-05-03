@@ -71,6 +71,7 @@ typedef struct MiltonState_s
     ColorPicker picker;
 
     Brush brush;
+    int32 brush_size;  // In screen pixels
 
     bool32 canvas_blocked;  // When interacting with the UI.
 
@@ -282,10 +283,11 @@ static void milton_init(MiltonState* milton_state)
                 milton_state->picker.center.y
                 });
     }
+    milton_state->brush_size = 10;
 
     Brush brush = { 0 };
     {
-        brush.radius = 10 * milton_state->view_scale;
+        brush.radius = milton_state->brush_size * milton_state->view_scale;
         brush.alpha = 0.5f;
         brush.color = hsv_to_rgb(milton_state->picker.hsv);
     }
@@ -762,6 +764,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             milton_state->view_scale = (int32)(milton_state->view_scale * scale_factor) + 1;
         }
+        milton_state->brush.radius = milton_state->brush_size * milton_state->view_scale;
     }
 
     if (input->reset)
