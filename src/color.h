@@ -153,6 +153,12 @@ v3f hsv_to_rgb(v3f hsv)
     rgb.r += m;
     rgb.g += m;
     rgb.b += m;
+    if (rgb.r > 1) rgb.r = 1;
+    if (rgb.g > 1) rgb.g = 1;
+    if (rgb.b > 1) rgb.b = 1;
+    if (rgb.r < 0) rgb.r = 0;
+    if (rgb.g < 0) rgb.g = 0;
+    if (rgb.b < 0) rgb.b = 0;
     assert (rgb.r >= 0.0f && rgb.r <= 1.0f);
     assert (rgb.g >= 0.0f && rgb.g <= 1.0f);
     assert (rgb.b >= 0.0f && rgb.b <= 1.0f);

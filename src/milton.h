@@ -663,7 +663,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
                     ((1 - contrib) * (d.r)) + (contrib * (rgb.r)),
                     ((1 - contrib) * (d.g)) + (contrib * (rgb.g)),
                     ((1 - contrib) * (d.b)) + (contrib * (rgb.b)),
-                    contrib * d.a,
+                    d.a + (contrib * (1 - d.a)),
                 };
                 uint32 color = color_v4f_to_u32(cm, result);
                 picker->pixels[picker_i] = color;
@@ -676,12 +676,42 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
         {
             v2f point = { (float)i, (float)j };
             uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
-            if (is_inside_triangle(point, picker->a, picker->b, picker->c))
+            uint32 dest_color = picker->pixels[picker_i];
+            // MSAA!!
+            int samples = 0;
+            {
+                float u = 0.223607f;
+                float v = 0.670820f;
+
+                samples += (int)is_inside_triangle(add_v2f(point, (v2f){-u, -v}),
+                        picker->a, picker->b, picker->c);
+                samples += (int)is_inside_triangle(add_v2f(point, (v2f){-v, u}),
+                        picker->a, picker->b, picker->c);
+                samples += (int)is_inside_triangle(add_v2f(point, (v2f){u, v}),
+                        picker->a, picker->b, picker->c);
+                samples += (int)is_inside_triangle(add_v2f(point, (v2f){v, u}),
+                        picker->a, picker->b, picker->c);
+            }
+
+            if (samples > 0)
             {
                 v3f hsv = picker_hsv_from_point(picker, point);
 
-                picker->pixels[picker_i] = color_v4f_to_u32(cm,
-                        color_rgb_to_rgba(hsv_to_rgb(hsv), 1.0f));
+                float contrib = samples / 4.0f;
+
+                v4f d = color_u32_to_v4f(cm, dest_color);
+
+                v3f rgb = hsv_to_rgb(hsv);
+
+                v4f result =
+                {
+                    ((1 - contrib) * (d.r)) + (contrib * (rgb.r)),
+                    ((1 - contrib) * (d.g)) + (contrib * (rgb.g)),
+                    ((1 - contrib) * (d.b)) + (contrib * (rgb.b)),
+                    d.a + (contrib * (1 - d.a)),
+                };
+
+                picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
             }
         }
     }
@@ -816,20 +846,13 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
 
     Rect limits = { 0 };
 
+    Rect* split_rects = NULL;
     if (input->full_refresh)
     {
         limits.left = 0;
         limits.right = milton_state->screen_size.w;
         limits.top = 0;
         limits.bottom = milton_state->screen_size.h;
-        Rect* split_rects = NULL;
-        int32 num_rects = rect_split(milton_state->transient_arena,
-                limits, 20, 20, &split_rects);
-        for (int i = 0; i < num_rects; ++i)
-        {
-            split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->screen_size);
-            render_strokes_in_rect(milton_state, split_rects[i]);
-        }
     }
     else if (milton_state->working_stroke.num_points > 1)
     {
@@ -845,7 +868,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits = rect_enlarge(limits, (stroke->brush.radius / milton_state->view_scale));
         limits = rect_clip_to_screen(limits, milton_state->screen_size);
 
-        render_strokes_in_rect(milton_state, limits);
+        /* render_strokes_in_rect(milton_state, limits); */
     }
     else if (milton_state->working_stroke.num_points == 1)
     {
@@ -858,7 +881,14 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         limits.top = -raster_radius   + point.y;
         limits.bottom = raster_radius + point.y;
         limits = rect_clip_to_screen(limits, milton_state->screen_size);
-        render_strokes_in_rect(milton_state, limits);
+        /* render_strokes_in_rect(milton_state, limits); */
+    }
+    int32 num_rects = rect_split(milton_state->transient_arena,
+            limits, 20, 20, &split_rects);
+    for (int i = 0; i < num_rects; ++i)
+    {
+        split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->screen_size);
+        render_strokes_in_rect(milton_state, split_rects[i]);
     }
 
 #if 1
