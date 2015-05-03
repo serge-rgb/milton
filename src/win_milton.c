@@ -370,7 +370,7 @@ void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id, DWORD 
 {
     if (event_id == 42)
     {
-        SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
+        SetTimer(window, 42, 8/*ms*/, win32_fire_timer);
     }
 
     g_gui_msgs |= GuiMsg_GL_DRAW;

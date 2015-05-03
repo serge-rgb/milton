@@ -262,9 +262,9 @@ static void milton_init(MiltonState* milton_state)
 
     // Init picker
     {
-        int32 bound_radius_px = 100;
-        float wheel_half_width = 10;
-        milton_state->picker.center = (v2i){ 150, 150 };
+        int32 bound_radius_px = 80;
+        float wheel_half_width = 8;
+        milton_state->picker.center = (v2i){ 100, 100 };
         milton_state->picker.bound_radius_px = bound_radius_px;
         milton_state->picker.wheel_half_width = wheel_half_width;
         milton_state->picker.wheel_radius = (float)bound_radius_px - 5.0f - wheel_half_width;
@@ -320,36 +320,7 @@ inline v2i raster_to_canvas(v2i screen_size, int32 view_scale, v2i raster_point)
     return canvas_point;
 }
 
-inline Rect rect_enlarge(Rect src, int32 offset)
-{
-    Rect result;
-    result.left = src.left - offset;
-    result.top = src.top - offset;
-    result.right = src.right + offset;
-    result.bottom = src.bottom + offset;
-    return result;
-}
-
-static Rect bounding_rect_for_points(v2i points[], int64 num_points)
-{
-    assert (num_points > 0);
-
-    v2i top_left =  points[0];
-    v2i bot_right = points[0];
-
-    for (int64 i = 1; i < num_points; ++i)
-    {
-        v2i point = points[i];
-        if (point.x < top_left.x)   top_left.x = point.x;
-        if (point.x > bot_right.x)  bot_right.x = point.x;
-
-        if (point.y < top_left.y)   top_left.y = point.y;
-        if (point.y > bot_right.y)  bot_right.y = point.y;
-    }
-    Rect rect = { top_left, bot_right };
-    return rect;
-}
-
+// TODO: remove? no one is using this...
 inline bool32 is_inside_bounds(v2i point, int32 radius, Rect bounds)
 {
     return
@@ -526,8 +497,9 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                             float mag_ab = sqrtf(mag_ab2);
                             float d_x = ab.x / mag_ab;
                             float d_y = ab.y / mag_ab;
-                            float ax_x = (float)canvas_point.x - a.x;
-                            float ax_y = (float)canvas_point.y - a.y;
+                            // TODO: Maybe store these and not do conversion in the hot loop?
+                            float ax_x = (float)(canvas_point.x - a.x);
+                            float ax_y = (float)(canvas_point.y - a.y);
                             float disc = d_x * ax_x + d_y * ax_y;
                             v2i point;
                             if (disc >= 0 && disc <= mag_ab)
@@ -616,48 +588,6 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
     }
 }
 
-static int32 rect_split(Arena* transient_arena,
-        Rect src_rect, int32 width, int32 height, Rect** dest_rects)
-{
-    int n_width = (src_rect.right - src_rect.left) / width;
-    int n_height = (src_rect.bottom - src_rect.top) / height;
-
-    if (!n_width || !n_height)
-    {
-        return 0;
-    }
-
-    int32 num_rects = (n_width + 1) * (n_height + 1);
-    *dest_rects = arena_alloc_array(transient_arena, num_rects, Rect);
-
-    int32 i = 0;
-    for (int h = src_rect.top; h < src_rect.bottom; h += height)
-    {
-        for (int w = src_rect.left; w < src_rect.right; w += width)
-        {
-            Rect rect;
-            {
-                rect.left = w;
-                rect.right = min(src_rect.right, w + width);
-                rect.top = h;
-                rect.bottom = min(src_rect.bottom, h + height);
-            }
-            (*dest_rects)[i++] = rect;
-        }
-    }
-    assert(i <= num_rects);
-    return i;
-}
-
-inline Rect rect_clip_to_screen(Rect limits, v2i screen_size)
-{
-    if (limits.left < 0) limits.left = 0;
-    if (limits.right > screen_size.w) limits.right = screen_size.w;
-    if (limits.top < 0) limits.top = 0;
-    if (limits.bottom > screen_size.h) limits.bottom = screen_size.h;
-    return limits;
-}
-
 static void render_picker(ColorPicker* picker, ColorManagement cm,
         Rect draw_rect, uint32* pixels, v2i screen_size, int32 view_scale)
 {
@@ -720,11 +650,6 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
                 };
                 uint32 color = color_v4f_to_u32(cm, result);
                 picker->pixels[picker_i] = color;
-                //pixels[j * screen_size.w + i] = color;
-            }
-            else
-            {
-                //picker->pixels[picker_i] = dest_color;
             }
         }
     }
@@ -755,7 +680,7 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         input->full_refresh = true;
         static float scale_factor = 1.5f;
-        static int32 view_scale_limit = 1900000;
+        static int32 view_scale_limit = 1000000;
         if (input->scale > 0 && milton_state->view_scale > 2)
         {
             milton_state->view_scale = (int32)(milton_state->view_scale / scale_factor);
@@ -786,7 +711,6 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
             {
             case ColorPickResult_change_color:
                 {
-                    // We already picked up the change by creating the brush on the spot
                     milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
                     break;
                 }
@@ -898,10 +822,12 @@ static bool32 milton_update(MiltonState* milton_state, MiltonInput* input)
         render_strokes_in_rect(milton_state, limits);
     }
 
+#if 1
     Rect draw_rect = picker_get_draw_rect(&milton_state->picker);
     render_strokes_in_rect(milton_state, draw_rect);
     render_picker(&milton_state->picker, milton_state->cm, draw_rect, (uint32*)milton_state->raster_buffer,
             milton_state->screen_size, milton_state->view_scale);
+#endif
 
     updated = true;
 
