@@ -1,3 +1,6 @@
+// win_milton.h
+// (c) Copyright 2015 by Sergio Gonzalez
+
 #include "system_includes.h"
 
 #include "libserg/memory.h"
@@ -498,18 +501,15 @@ int CALLBACK WinMain(
     bool32 modified = false;
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
-        modified |= milton_update(milton_state, &input);
+        milton_update(milton_state, &input);
         if (g_gui_msgs & GuiMsg_GL_DRAW)
         {
             g_gui_msgs ^= GuiMsg_GL_DRAW;
 
-            if (modified)
-            {
-                HDC dc = GetDC(window);
-                milton_gl_backend_draw(milton_state);
-                SwapBuffers(dc);
-                modified = false;
-            }
+            HDC dc = GetDC(window);
+            milton_gl_backend_draw(milton_state);
+            SwapBuffers(dc);
+            modified = false;
         }
 
         input = win32_process_input(&win_state, window);
