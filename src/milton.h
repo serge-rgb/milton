@@ -13,9 +13,16 @@ typedef int64_t     int64;
 typedef uint64_t    uint64;
 typedef int32_t     bool32;
 
-#if defined(_MSC_VER)
+#ifndef true
 #define true 1
+#else
+#error "true is already defined"
+#endif
+
+#ifndef false
 #define false 0
+#else
+#error "false is already defined"
 #endif
 
 // ==== Order matters. ====

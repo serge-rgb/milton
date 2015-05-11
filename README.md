@@ -12,6 +12,11 @@ How to Compile
 4. `gen_and_build.bat` to do run the meta-programming pass and then compile.
 4. Open build\Milton.sln in VS 2013
 
+Emscripten
+==========
+
+Note: Code Generation on OSX should be done with XCode's clang to avoid problems finding stdarg.h
+
 To-Do
 =====
 
