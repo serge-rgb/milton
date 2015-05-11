@@ -1,3 +1,4 @@
 src/libserg
+src/metaprogram
 build
 src/*.generated.h
