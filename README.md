@@ -33,6 +33,9 @@ To-Do
     * Use Emscripten to port to JS.
     * Eraser
 
+* Platforms
+    * Move to SDL.
+
 * Crazy ideas
     * Progressive rendering
 

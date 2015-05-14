@@ -162,12 +162,6 @@ typedef struct $<name_4>_s
             $<type> b;
             $<type> a;
         };
-        struct
-        {
-            $<type> h;
-            $<type> s;
-            $<type> v;
-        };
         $<type> d[4];
     };
 } $<name_4>;
