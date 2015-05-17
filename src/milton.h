@@ -149,16 +149,12 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             "in vec2 coord;\n"
             "out vec4 out_color;\n"
             "\n"
-            "vec3 sRGB_to_linear(vec3 rgb)\n"
-            "{\n"
-                "vec3 result = pow((rgb + vec3(0.055)) / vec3(1.055), vec3(2.4));\n"
-                "return result;\n"
-            "}\n"
             "void main(void)\n"
             "{\n"
             "   out_color = texture(buffer, coord);"
-            // TODO: Why am I getting BGRA format?!?!?
-            "   out_color = vec4(sRGB_to_linear(out_color.rgb), 1).bgra;"
+            // Move to linear space.
+            // TODO: Why do I have to convert to bgr?
+            "   out_color.rgb = pow(out_color.rgb, vec3(2.22)).bgr;"
             "}\n";
 
         GLuint shader_objects[2] = {0};
@@ -296,7 +292,7 @@ static void milton_init(MiltonState* milton_state)
     {
         brush.radius = milton_state->brush_size * milton_state->view_scale;
         brush.alpha = 0.5f;
-        brush.color = hsv_to_rgb(milton_state->picker.hsv);
+        brush.color = linear_to_sRGB(hsv_to_rgb(milton_state->picker.hsv));
     }
     milton_state->brush = brush;
 
@@ -362,7 +358,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             ColorPickResult pick_result = picker_update(&milton_state->picker, point);
             if (pick_result & ColorPickResult_change_color)
             {
-                milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
+                milton_state->brush.color = linear_to_sRGB(hsv_to_rgb(milton_state->picker.hsv));
             }
             milton_state->canvas_blocked = true;
             render_flags |= MiltonRenderFlags_picker_updated;
@@ -407,7 +403,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
                 else
                 {
                     picker_update_wheel(&milton_state->picker, fpoint);
-                    milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
+                    milton_state->brush.color = linear_to_sRGB(hsv_to_rgb(milton_state->picker.hsv));
                 }
                 render_flags |= MiltonRenderFlags_picker_updated;
             }

@@ -27,22 +27,17 @@ To-Do
     * libserg: meta expand produces null char.
 
 * Application
-    * Short-circuit. (ie. stop work so scaling is faster)
+    * Better platform input abstraction
+    * Queue commands & handle multiple view changes.
     * Smart full-fill stroke filtering to speed up scaling.
+    * Threaded canvas update.
     * Panning
-    * Use Emscripten to port to JS.
     * Eraser
+    * Undo/redo
 
 * Platforms
     * Move to SDL.
 
 * Crazy ideas
     * Progressive rendering
-
-* UI
-    * Figure out UI (Fork imgui? Write from scratch?)
-
-* Web
-    * Landing page.
-
 

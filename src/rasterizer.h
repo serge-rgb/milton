@@ -92,9 +92,9 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                 }
                 else
                 {
+                    // Find closest point.
                     for (int point_i = 0; point_i < stroke->num_clipped_points - 1; point_i += 2)
                     {
-                        // Find closest point.
                         v2i a = points[point_i];
                         v2i b = points[point_i + 1];
 
@@ -226,7 +226,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            uint32 picker_i = (j - draw_rect.top) * (2*picker->bound_radius_px ) + (i - draw_rect.left);
             uint32 src = pixels[j * screen_size.w + i];
             picker->pixels[picker_i] = src;
         }
@@ -261,7 +261,6 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
             uint32 dest_color = picker->pixels[picker_i];
 
             int samples = 0;
-            float angle = 0;
             {
                 float u = 0.223607f;
                 float v = 0.670820f;
@@ -276,7 +275,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
             {
                 float angle = picker_wheel_get_angle(picker, point);
                 float degree = radians_to_degrees(angle);
-                v3f hsv = { degree, 0.5f, 1.0f };
+                v3f hsv = { degree, 1.0f, 1.0f };
                 v3f rgb = hsv_to_rgb(hsv);
 
                 float contrib = samples / 4.0f;
@@ -295,6 +294,8 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
             }
         }
     }
+
+    // Render triangle
     for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
@@ -347,7 +348,10 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            pixels[j * screen_size.w + i] = *to_blit++;
+            uint32 linear_color = *to_blit++;
+            v4f sRGB = linear_to_sRGB_v4(color_u32_to_v4f(cm, linear_color));
+            uint32 color = color_v4f_to_u32(cm, sRGB);
+            pixels[j * screen_size.w + i] = color;
         }
     }
 }
@@ -410,7 +414,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         bool32 redraw = false;
         Rect draw_rect = picker_get_draw_rect(&milton_state->picker);
         int32 num_rects = rect_split(milton_state->transient_arena,
-                draw_rect, 20, 20, &split_rects);
+                draw_rect, 10, 10, &split_rects);
         for (int i = 0; i < num_rects; ++i)
         {
             Rect clipped = rect_intersect(split_rects[i], draw_rect);

@@ -40,8 +40,8 @@ inline v2i raster_to_canvas(v2i screen_size, int32 view_scale, v2i raster_point)
 
 // Very much the opposite of coding in a functional-programming style.  Every
 // stroke has a duplicate buffer where it stores only the points that may be
-// drawn. If we eventually do multithreading, we would need to allocate these
-// buffers per-call to keep things data-parallel.
+// drawn. If (TODO: s/if/when) we eventually do multithreading, we would need
+// to allocate these buffers per-call to keep things data-parallel.
 static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
 {
     stroke->num_clipped_points = 0;
