@@ -151,10 +151,8 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             "\n"
             "void main(void)\n"
             "{\n"
-            "   out_color = texture(buffer, coord);"
-            // Move to linear space.
-            // TODO: Why do I have to convert to bgr?
-            "   out_color.rgb = pow(out_color.rgb, vec3(2.22)).bgr;"
+            // TODO: Why RGB to BGR?
+            "   out_color = texture(buffer, coord).bgra;"
             "}\n";
 
         GLuint shader_objects[2] = {0};
@@ -292,7 +290,7 @@ static void milton_init(MiltonState* milton_state)
     {
         brush.radius = milton_state->brush_size * milton_state->view_scale;
         brush.alpha = 0.5f;
-        brush.color = linear_to_sRGB(hsv_to_rgb(milton_state->picker.hsv));
+        brush.color = hsv_to_rgb(milton_state->picker.hsv);
     }
     milton_state->brush = brush;
 
@@ -358,7 +356,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             ColorPickResult pick_result = picker_update(&milton_state->picker, point);
             if (pick_result & ColorPickResult_change_color)
             {
-                milton_state->brush.color = linear_to_sRGB(hsv_to_rgb(milton_state->picker.hsv));
+                milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
             }
             milton_state->canvas_blocked = true;
             render_flags |= MiltonRenderFlags_picker_updated;
@@ -403,7 +401,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
                 else
                 {
                     picker_update_wheel(&milton_state->picker, fpoint);
-                    milton_state->brush.color = linear_to_sRGB(hsv_to_rgb(milton_state->picker.hsv));
+                    milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
                 }
                 render_flags |= MiltonRenderFlags_picker_updated;
             }

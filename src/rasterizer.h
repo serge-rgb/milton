@@ -437,7 +437,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             uint32 linear_color = *to_blit++;
-            v4f sRGB = linear_to_sRGB_v4(color_u32_to_v4f(cm, linear_color));
+            v4f sRGB = color_u32_to_v4f(cm, linear_color);
             uint32 color = color_v4f_to_u32(cm, sRGB);
             pixels[j * screen_size.w + i] = color;
         }
