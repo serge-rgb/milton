@@ -1,10 +1,108 @@
 // rasterizer.h
 // (c) Copyright 2015 by Sergio Gonzalez
 
+// Very much the opposite of coding in a functional-programming style.  Every
+// stroke has a duplicate buffer where it stores only the points that may be
+// drawn. If (TODO: s/if/when) we eventually do multithreading, we would need
+// to allocate these buffers per-call to keep things data-parallel.
+static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
+{
+    stroke->num_clipped_points = 0;
+    if (stroke->num_points == 1)
+    {
+        if (is_inside_rect(rect, stroke->points[0]))
+        {
+            stroke->clipped_points[stroke->num_clipped_points++] = stroke->points[0];
+        }
+    }
+    else
+    {
+        for (int32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
+        {
+            v2i a = stroke->points[point_i];
+            v2i b = stroke->points[point_i + 1];
+
+            // Very conservative...
+            bool32 inside =
+                !(
+                        (a.x > rect.right && b.x > rect.right) ||
+                        (a.x < rect.left && b.x < rect.left) ||
+                        (a.y < rect.top && b.y < rect.top) ||
+                        (a.y > rect.bottom && b.y > rect.bottom)
+                 );
+
+            // We can add the segment
+            if (inside)
+            {
+                stroke->clipped_points[stroke->num_clipped_points++] = a;
+                stroke->clipped_points[stroke->num_clipped_points++] = b;
+            }
+        }
+    }
+}
+
+inline v2i closest_point_in_segment(
+        v2i a, v2i b, v2f ab, float ab_magnitude_squared, v2i canvas_point)
+{
+    v2i point;
+    float mag_ab = sqrtf(ab_magnitude_squared);
+    float d_x = ab.x / mag_ab;
+    float d_y = ab.y / mag_ab;
+    // TODO: Maybe store these and not do conversion in the hot loop?
+    float ax_x = (float)(canvas_point.x - a.x);
+    float ax_y = (float)(canvas_point.y - a.y);
+    float disc = d_x * ax_x + d_y * ax_y;
+    if (disc >= 0 && disc <= mag_ab)
+    {
+        point = (v2i)
+        {
+            (int32)(a.x + disc * d_x), (int32)(a.y + disc * d_y),
+        };
+    }
+    else if (disc < 0)
+    {
+        point = a;
+    }
+    else
+    {
+        point = b;
+    }
+    return point;
+}
+
+inline bool32 is_rect_filled_by_stroke(Rect rect, Stroke* stroke)
+{
+#if 0
+    for (int32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
+    {
+        v2i a = stroke->points[point_i];
+        v2i b = stroke->points[point_i + 1];
+
+        // Very conservative...
+        bool32 inside =
+            !(
+                    (a.x > rect.right && b.x > rect.right) ||
+                    (a.x < rect.left && b.x < rect.left) ||
+                    (a.y < rect.top && b.y < rect.top) ||
+                    (a.y > rect.bottom && b.y > rect.bottom)
+             );
+
+        // We can add the segment
+        if (inside)
+        {
+            stroke->clipped_points[stroke->num_clipped_points++] = a;
+            stroke->clipped_points[stroke->num_clipped_points++] = b;
+        }
+    }
+#endif
+    return false;
+}
+
 // This actually makes things faster
 typedef struct LinkedList_Stroke_s
 {
     Stroke* elem;
+    bool32  rect_filled;
     struct LinkedList_Stroke_s* next;
 } LinkedList_Stroke;
 
@@ -45,12 +143,12 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
             LinkedList_Stroke* tail = stroke_list;
             list_elem->elem = stroke;
             list_elem->next = stroke_list;
+            if (is_rect_filled_by_stroke(limits, stroke))
+            {
+                list_elem->rect_filled = true;
+            }
             stroke_list = list_elem;
         }
-        // TODO:
-        // Check if `limits` lies completely inside stroke.
-        // If so, don't add it to the list, just keep track of it so we can do
-        // a cheap fill-pass.
         // TODO
         // Every stroke that fills and that is completely opaque resets every
         // stroke before it!
@@ -76,111 +174,101 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                 Stroke* stroke = list_iter->elem;
 
                 assert (stroke);
-                v2i* points = stroke->clipped_points;
 
-                v2i min_point = {0};
-                float min_dist = FLT_MAX;
-                float dx = 0;
-                float dy = 0;
-                //int64 radius_squared = stroke->brush.radius * stroke->brush.radius;
-                if (stroke->num_clipped_points == 1)
+                // Fast path.
+                if (list_iter->rect_filled)
                 {
-                    min_point = points[0];
-                    dx = (float) (canvas_point.x - min_point.x);
-                    dy = (float) (canvas_point.y - min_point.y);
-                    min_dist = dx * dx + dy * dy;
+
                 }
+                // Slow path. There are pixels not inside.
                 else
                 {
-                    // Find closest point.
-                    for (int point_i = 0; point_i < stroke->num_clipped_points - 1; point_i += 2)
-                    {
-                        v2i a = points[point_i];
-                        v2i b = points[point_i + 1];
+                    v2i* points = stroke->clipped_points;
 
-                        v2f ab = {(float)b.x - a.x, (float)b.y - a.y};
-                        float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-                        if (mag_ab2 > 0)
+                    v2i min_point = {0};
+                    float min_dist = FLT_MAX;
+                    float dx = 0;
+                    float dy = 0;
+                    //int64 radius_squared = stroke->brush.radius * stroke->brush.radius;
+                    if (stroke->num_clipped_points == 1)
+                    {
+                        min_point = points[0];
+                        dx = (float) (canvas_point.x - min_point.x);
+                        dy = (float) (canvas_point.y - min_point.y);
+                        min_dist = dx * dx + dy * dy;
+                    }
+                    else
+                    {
+                        // Find closest point.
+                        for (int point_i = 0; point_i < stroke->num_clipped_points - 1; point_i += 2)
                         {
-                            float mag_ab = sqrtf(mag_ab2);
-                            float d_x = ab.x / mag_ab;
-                            float d_y = ab.y / mag_ab;
-                            // TODO: Maybe store these and not do conversion in the hot loop?
-                            float ax_x = (float)(canvas_point.x - a.x);
-                            float ax_y = (float)(canvas_point.y - a.y);
-                            float disc = d_x * ax_x + d_y * ax_y;
-                            v2i point;
-                            if (disc >= 0 && disc <= mag_ab)
+                            v2i a = points[point_i];
+                            v2i b = points[point_i + 1];
+
+                            v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
+                            float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
+                            if (mag_ab2 > 0)
                             {
-                                point = (v2i)
+                                v2i point = closest_point_in_segment(a, b, ab, mag_ab2, canvas_point);
+
+                                float test_dx = (float) (canvas_point.x - point.x);
+                                float test_dy = (float) (canvas_point.y - point.y);
+                                float dist = test_dx * test_dx + test_dy * test_dy;
+                                if (dist < min_dist)
                                 {
-                                    (int32)(a.x + disc * d_x), (int32)(a.y + disc * d_y),
-                                };
-                            }
-                            else if (disc < 0)
-                            {
-                                point = a;
-                            }
-                            else
-                            {
-                                point = b;
-                            }
-                            float test_dx = (float) (canvas_point.x - point.x);
-                            float test_dy = (float) (canvas_point.y - point.y);
-                            float dist = test_dx * test_dx + test_dy * test_dy;
-                            if (dist < min_dist)
-                            {
-                                min_dist = dist;
-                                min_point = point;
-                                dx = test_dx;
-                                dy = test_dy;
+                                    min_dist = dist;
+                                    min_point = point;
+                                    dx = test_dx;
+                                    dy = test_dy;
+                                }
                             }
                         }
                     }
-                }
 
 
-                if (min_dist < FLT_MAX)
-                {
-                    int samples = 0;
+                    if (min_dist < FLT_MAX)
                     {
-                        float u = 0.223607f * milton_state->view_scale;  // sin(arctan(1/2)) / 2
-                        float v = 0.670820f * milton_state->view_scale;  // cos(arctan(1/2)) / 2 + u
-
-                        float dists[4];
-                        dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);
-                        dists[1] = (dx - v) * (dx - v) + (dy + u) * (dy + u);
-                        dists[2] = (dx + u) * (dx + u) + (dy + v) * (dy + v);
-                        dists[3] = (dx + v) * (dx + v) + (dy + u) * (dy + u);
-                        for (int i = 0; i < 4; ++i)
+                        int samples = 0;
                         {
-                            if (sqrtf(dists[i]) < stroke->brush.radius)
+                            float u = 0.223607f * milton_state->view_scale;  // sin(arctan(1/2)) / 2
+                            float v = 0.670820f * milton_state->view_scale;  // cos(arctan(1/2)) / 2 + u
+
+                            float dists[4];
+                            dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);
+                            dists[1] = (dx - v) * (dx - v) + (dy + u) * (dy + u);
+                            dists[2] = (dx + u) * (dx + u) + (dy + v) * (dy + v);
+                            dists[3] = (dx + v) * (dx + v) + (dy + u) * (dy + u);
+                            for (int i = 0; i < 4; ++i)
                             {
-                                ++samples;
+                                if (sqrtf(dists[i]) < stroke->brush.radius)
+                                {
+                                    ++samples;
+                                }
                             }
+                        }
+
+                        // If the stroke contributes to the pixel, do compositing.
+                        if (samples > 0)
+                        {
+                            // Do compositing
+                            // ---------------
+
+                            float coverage = (float)samples / 4.0f;
+
+                            float sr = stroke->brush.color.r;
+                            float sg = stroke->brush.color.g;
+                            float sb = stroke->brush.color.b;
+                            float sa = stroke->brush.alpha;
+
+                            sa *= coverage;
+
+                            dr = (1 - sa) * dr + sa * sr;
+                            dg = (1 - sa) * dg + sa * sg;
+                            db = (1 - sa) * db + sa * sb;
+                            da = sa + da * (1 - sa);
                         }
                     }
 
-                    // If the stroke contributes to the pixel, do compositing.
-                    if (samples > 0)
-                    {
-                        // Do compositing
-                        // ---------------
-
-                        float coverage = (float)samples / 4.0f;
-
-                        float sr = stroke->brush.color.r;
-                        float sg = stroke->brush.color.g;
-                        float sb = stroke->brush.color.b;
-                        float sa = stroke->brush.alpha;
-
-                        sa *= coverage;
-
-                        dr = (1 - sa) * dr + sa * sr;
-                        dg = (1 - sa) * dg + sa * sg;
-                        db = (1 - sa) * db + sa * sb;
-                        da = sa + da * (1 - sa);
-                    }
                 }
 
                 list_iter = list_iter->next;

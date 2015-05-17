@@ -12,9 +12,10 @@
 #endif
 #endif
 
+#define snprintf sprintf_s
+
 #include "milton.h"
 
-#define snprintf sprintf_s
 
 typedef struct
 {
