@@ -288,7 +288,7 @@ static void render_strokes(MiltonState* milton_state, Rect limits)
 {
     Rect* split_rects = NULL;
     int32 num_rects = rect_split(milton_state->transient_arena,
-            limits, 20, 20, &split_rects);
+            limits, 8, 8, &split_rects);
     for (int i = 0; i < num_rects; ++i)
     {
         split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->screen_size);

@@ -31,6 +31,7 @@ To-Do
     * Threaded canvas update.
     * Better platform input abstraction
     * Queue commands & handle multiple view changes.
+    * Picker cache
     * Gamma correct blending
     * Panning
     * Eraser
