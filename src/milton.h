@@ -263,8 +263,8 @@ static void milton_init(MiltonState* milton_state)
 
     // Init picker
     {
-        int32 bound_radius_px = 80;
-        float wheel_half_width = 8;
+        int32 bound_radius_px = 100;
+        float wheel_half_width = 12;
         milton_state->picker.center = (v2i){ 120, 120 };
         milton_state->picker.bound_radius_px = bound_radius_px;
         milton_state->picker.wheel_half_width = wheel_half_width;
