@@ -319,7 +319,7 @@ static void render_strokes(MiltonState* milton_state, Rect limits)
 }
 
 static void render_picker(ColorPicker* picker, ColorManagement cm,
-        Rect draw_rect, uint32* pixels, v2i screen_size, int32 view_scale)
+        uint32* buffer_pixels, v2i screen_size, int32 view_scale)
 {
     v2f baseline = {1,0};
 
@@ -331,13 +331,15 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
         0.4f,
     };
 
+    Rect draw_rect = picker_get_bounds(picker);
+
     // Copy canvas buffer into picker buffer
     for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             uint32 picker_i = (j - draw_rect.top) * (2*picker->bound_radius_px ) + (i - draw_rect.left);
-            uint32 src = pixels[j * screen_size.w + i];
+            uint32 src = buffer_pixels[j * screen_size.w + i];
             picker->pixels[picker_i] = src;
         }
     }
@@ -461,7 +463,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
             uint32 linear_color = *to_blit++;
             v4f sRGB = color_u32_to_v4f(cm, linear_color);
             uint32 color = color_v4f_to_u32(cm, sRGB);
-            pixels[j * screen_size.w + i] = color;
+            buffer_pixels[j * screen_size.w + i] = color;
         }
     }
 }
@@ -522,23 +524,18 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
     {
         Rect* split_rects = NULL;
         bool32 redraw = false;
-        Rect draw_rect = picker_get_draw_rect(&milton_state->picker);
-        int32 num_rects = rect_split(milton_state->transient_arena,
-                draw_rect, 10, 10, &split_rects);
-        for (int i = 0; i < num_rects; ++i)
+        Rect picker_rect = picker_get_bounds(&milton_state->picker);
+        Rect clipped = rect_intersect(picker_rect, limits);
+        if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
         {
-            Rect clipped = rect_intersect(split_rects[i], draw_rect);
-            if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
-            {
-                redraw = true;
-                break;
-            }
+            redraw = true;
         }
+
         if (redraw || (render_flags & MiltonRenderFlags_picker_updated))
         {
-            render_strokes(milton_state, draw_rect);
+            render_strokes(milton_state, picker_rect);
             render_picker(&milton_state->picker, milton_state->cm,
-                    draw_rect, (uint32*)milton_state->raster_buffer,
+                    (uint32*)milton_state->raster_buffer,
                     milton_state->screen_size, milton_state->view_scale);
         }
     }

@@ -1,6 +1,13 @@
 // color.h
 // (c) Copyright 2015 by Sergio Gonzalez.
 
+typedef enum
+{
+    ColorPickerFlags_none,
+
+    ColorPickerFlags_wheel_active   = (1 << 0),
+} ColorPickerFlags;
+
 typedef struct ColorPicker_s
 {
     v2f a;  // Corresponds to value = 0      (black)
@@ -17,7 +24,7 @@ typedef struct ColorPicker_s
 
     v3f     hsv;
 
-    bool32  is_wheel_active;
+    ColorPickerFlags flags;
 } ColorPicker;
 
 typedef enum
@@ -203,12 +210,12 @@ inline v3f sRGB_to_linear(v3f rgb)
 
 static bool32 picker_wheel_active(ColorPicker* picker)
 {
-    return picker->is_wheel_active;
+    return (picker->flags & ColorPickerFlags_wheel_active);
 }
 
 static void picker_wheel_deactivate(ColorPicker* picker)
 {
-    picker->is_wheel_active = false;
+    picker->flags &= ~ColorPickerFlags_wheel_active;
 }
 
 static float picker_wheel_get_angle(ColorPicker* picker, v2f point)
@@ -246,7 +253,7 @@ static bool32 picker_hits_wheel(ColorPicker* picker, v2f point)
             (dist >= picker->wheel_radius - picker->wheel_half_width )
        )
     {
-        picker->is_wheel_active = true;
+        picker->flags |= ColorPickerFlags_wheel_active;
         return true;
     }
     return false;
@@ -257,19 +264,19 @@ static bool32 is_inside_picker(ColorPicker* picker, v2i point)
     return is_inside_rect(picker->bounds, point);
 }
 
-static Rect picker_get_draw_rect(ColorPicker* picker)
+static Rect picker_get_bounds(ColorPicker* picker)
 {
-    Rect draw_rect;
+    Rect picker_rect;
     {
-        draw_rect.left = picker->center.x - picker->bound_radius_px;
-        draw_rect.right = picker->center.x + picker->bound_radius_px;
-        draw_rect.bottom = picker->center.y + picker->bound_radius_px;
-        draw_rect.top = picker->center.y - picker->bound_radius_px;
+        picker_rect.left = picker->center.x - picker->bound_radius_px;
+        picker_rect.right = picker->center.x + picker->bound_radius_px;
+        picker_rect.bottom = picker->center.y + picker->bound_radius_px;
+        picker_rect.top = picker->center.y - picker->bound_radius_px;
     }
-    assert (draw_rect.left >= 0);
-    assert (draw_rect.top >= 0);
+    assert (picker_rect.left >= 0);
+    assert (picker_rect.top >= 0);
 
-    return draw_rect;
+    return picker_rect;
 }
 
 inline v2f point_rotated_at_angle(float angle, float radius)

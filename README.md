@@ -16,19 +16,23 @@ To-Do
 =====
 
 * Bugs
+    * :)
 
 * Application
     * Better platform input abstraction
     * Panning
-    * Opacity early-reject.
-    * Eraser
-    * Progressive rendering
-    * Threaded canvas update.
-    * Queue commands & handle multiple view changes.
-    * Picker cache
+    * Basic wacom support
+    * Optimize: split view & reject strokes not in view
+    * Optimize: Opacity early-reject.
+    * ^--- freebie: Eraser
+    * Optimize: Progressive rendering
+    * Optimize: Threaded canvas update.
     * Gamma correct blending
     * Undo/redo
+    * Basic saving / loading.
+    * UI: Basic IM buttons
 
 * Platforms
-    * Move to SDL.
+    * SDL version for Linux & Mac
+    * Android NDK OpenGL hello world.
 
