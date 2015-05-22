@@ -12,14 +12,6 @@ How to Compile (Windows x64)
 4. `gen_and_build.bat` to do run the meta-programming pass and then compile.
 4. Open build\Milton.sln in VS 2013
 
-How to Compile (Emscripten)
-===========================
-
-1. Run generate.sh (Note: Code Generation on OSX should be done with XCode's clang to avoid problems finding stdarg.h)
-2. Make sure you have Emscripten (>= 1.30.0) set up
-3. run `./build_web.sh`
-
-
 To-Do
 =====
 
@@ -27,18 +19,17 @@ To-Do
     * libserg: meta expand produces null char.
 
 * Application
-    * Threaded canvas update.
     * Better platform input abstraction
+    * Panning
+    * Opacity early-reject.
+    * Eraser
+    * Progressive rendering
+    * Threaded canvas update.
     * Queue commands & handle multiple view changes.
     * Picker cache
     * Gamma correct blending
-    * Panning
-    * Eraser
     * Undo/redo
 
 * Platforms
     * Move to SDL.
-
-* Crazy ideas
-    * Progressive rendering
 

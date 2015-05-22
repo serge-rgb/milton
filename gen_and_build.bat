@@ -11,4 +11,9 @@ popd
 
 msbuild build\Milton.vcxproj /v:q
 
+
+if errorlevel 1 goto end
+
+echo Success
+
 :end
