@@ -428,7 +428,7 @@ int CALLBACK WinMain(
     //int32 width = 1920;
     //int32 height = 1080;
     int32 width = 1280;
-    int32 height = 720;
+    int32 height = 800;
 
     HWND window = CreateWindowExA(
             0, //WS_EX_TOPMOST ,  // dwExStyle

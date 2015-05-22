@@ -41,6 +41,7 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
     }
 }
 
+// TODO: Micro-optimize this. Hottest part in canvas rendering.
 inline v2i closest_point_in_segment(
         v2i a, v2i b, v2f ab, float ab_magnitude_squared, v2i canvas_point)
 {
@@ -70,31 +71,40 @@ inline v2i closest_point_in_segment(
     return point;
 }
 
-inline bool32 is_rect_filled_by_stroke(Rect rect, Stroke* stroke)
+// NOTE: takes clipped points.
+inline bool32 is_rect_filled_by_stroke(Rect rect, v2i* points, int32 num_points, Brush brush, v2i screen_size, int32 view_scale)
 {
-#if 0
-    for (int32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
+    v2i rect_center =
     {
-        v2i a = stroke->points[point_i];
-        v2i b = stroke->points[point_i + 1];
+        (rect.left + rect.right) / 2,
+        (rect.top + rect.bottom) / 2,
+    };
 
-        // Very conservative...
-        bool32 inside =
-            !(
-                    (a.x > rect.right && b.x > rect.right) ||
-                    (a.x < rect.left && b.x < rect.left) ||
-                    (a.y < rect.top && b.y < rect.top) ||
-                    (a.y > rect.bottom && b.y > rect.bottom)
-             );
+    for (int32 point_i = 0; point_i < num_points; point_i += 2)
+    {
+        v2i a = points[point_i];
+        v2i b = points[point_i + 1];
 
-        // We can add the segment
-        if (inside)
+        // Get closest point
+        v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
+        float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
+        v2i p  = closest_point_in_segment( a, b, ab, mag_ab2, rect_center);
+
+        // Half width of a rectangle contained by brush at point p.
+        int32 rad = (int32)(brush.radius * 0.707106781f);  // cos(pi/4)
+        Rect bounded_rect;
         {
-            stroke->clipped_points[stroke->num_clipped_points++] = a;
-            stroke->clipped_points[stroke->num_clipped_points++] = b;
+            bounded_rect.left   = p.x - rad;
+            bounded_rect.right  = p.x + rad;
+            bounded_rect.bottom = p.y + rad;
+            bounded_rect.top    = p.y - rad;
+        }
+
+        if (is_rect_within_rect(rect, bounded_rect))
+        {
+            return true;
         }
     }
-#endif
     return false;
 }
 
@@ -113,10 +123,8 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
     Stroke* strokes = milton_state->strokes;
 
     Rect canvas_limits;
-    canvas_limits.top_left = raster_to_canvas(milton_state->screen_size, milton_state->view_scale,
-            limits.top_left);
-    canvas_limits.bot_right = raster_to_canvas(milton_state->screen_size, milton_state->view_scale,
-            limits.bot_right);
+    canvas_limits.top_left = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, limits.top_left);
+    canvas_limits.bot_right = raster_to_canvas(milton_state->screen_size, milton_state->view_scale, limits.bot_right);
 
     LinkedList_Stroke* stroke_list = NULL;
 
@@ -143,7 +151,8 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
             LinkedList_Stroke* tail = stroke_list;
             list_elem->elem = stroke;
             list_elem->next = stroke_list;
-            if (is_rect_filled_by_stroke(limits, stroke))
+            if (is_rect_filled_by_stroke(canvas_limits, stroke->clipped_points, stroke->num_clipped_points, stroke->brush,
+                        milton_state->screen_size, milton_state->view_scale))
             {
                 list_elem->rect_filled = true;
             }
@@ -178,6 +187,21 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                 // Fast path.
                 if (list_iter->rect_filled)
                 {
+#if 0  // Visualize it with black
+                    float sr = stroke->brush.color.r * 0;
+                    float sg = stroke->brush.color.g * 0;
+                    float sb = stroke->brush.color.b * 0;
+#else
+                    float sr = stroke->brush.color.r;
+                    float sg = stroke->brush.color.g;
+                    float sb = stroke->brush.color.b;
+#endif
+                    float sa = stroke->brush.alpha;
+
+                    dr = (1 - sa) * dr + sa * sr;
+                    dg = (1 - sa) * dg + sa * sg;
+                    db = (1 - sa) * db + sa * sb;
+                    da = sa + da * (1 - sa);
 
                 }
                 // Slow path. There are pixels not inside.
@@ -270,9 +294,7 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                     }
 
                 }
-
                 list_iter = list_iter->next;
-
             }
             // From [0, 1] to [0, 255]
             v4f d = {

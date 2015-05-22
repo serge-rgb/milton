@@ -27,7 +27,6 @@ To-Do
     * libserg: meta expand produces null char.
 
 * Application
-    * Smart full-fill stroke filtering to speed up scaling.
     * Threaded canvas update.
     * Better platform input abstraction
     * Queue commands & handle multiple view changes.

@@ -238,3 +238,17 @@ inline bool32 is_inside_rect(Rect bounds, v2i point)
         point.y <  bounds.bottom;
 }
 
+inline bool32 is_rect_within_rect(Rect a, Rect b)
+{
+   if (
+         (a.left   < b.left)    ||
+         (a.right  > b.right)   ||
+         (a.top    < b.top)     ||
+         (a.bottom > b.bottom)
+      )
+      {
+         return false;
+      }
+   return true;
+}
+
