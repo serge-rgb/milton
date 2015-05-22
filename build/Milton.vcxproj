@@ -85,13 +85,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\metaprogram.c" />
     <ClCompile Include="..\src\win_milton.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\canvas.h" />
     <ClInclude Include="..\src\color.h" />
-    <ClInclude Include="..\src\libserg\examples\dummy_project\dir\inside.h" />
+    <ClInclude Include="..\src\libserg\defaults.h" />
     <ClInclude Include="..\src\libserg\examples\dummy_project\dummy_include.h" />
-    <ClInclude Include="..\src\libserg\examples\dummy_project\zzzz.h" />
     <ClInclude Include="..\src\libserg\examples\vector.h" />
     <ClInclude Include="..\src\libserg\gl_helpers.h" />
     <ClInclude Include="..\src\libserg\memory.h" />
@@ -99,8 +100,10 @@
     <ClInclude Include="..\src\libserg\serg_io.h" />
     <ClInclude Include="..\src\libserg\win_dirent.h" />
     <ClInclude Include="..\src\milton.h" />
+    <ClInclude Include="..\src\rasterizer.h" />
     <ClInclude Include="..\src\system_includes.h" />
     <ClInclude Include="..\src\utils.h" />
+    <ClInclude Include="..\src\vector.generated.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
