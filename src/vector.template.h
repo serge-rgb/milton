@@ -16,14 +16,6 @@ typedef struct $<name_2>_s
     };
 } $<name_2>;
 
-inline $<name_2> make_$<name_2>($<type> x, $<type> y)
-{
-    $<name_2> result;
-    result.x = x;
-    result.y = y;
-    return result;
-}
-
 inline $<name_2> sub_$<name_2> ($<name_2> a, $<name_2> b)
 {
     $<name_2> result;
@@ -89,15 +81,6 @@ typedef struct $<name_3>_s
         $<type> d[3];
     };
 } $<name_3>;
-
-static $<name_3> make_$<name_3>($<type> x, $<type> y, $<type> z)
-{
-    $<name_3> result;
-    result.x = x;
-    result.y = y;
-    result.z = z;
-    return result;
-}
 
 inline $<name_3> sub_$<name_3> ($<name_3> a, $<name_3> b)
 {

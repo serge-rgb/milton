@@ -16,7 +16,6 @@ To-Do
 =====
 
 * Bugs
-    * libserg: meta expand produces null char.
 
 * Application
     * Better platform input abstraction
