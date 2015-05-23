@@ -109,6 +109,27 @@ inline bool32 is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
     return is_inside;
 }
 
+inline v2f polar_to_cartesian(float angle, float radius)
+{
+    v2f result =
+    {
+        radius * cosf(angle),
+        radius * sinf(angle)
+    };
+    return result;
+}
+
+inline v2i rotate_v2i(v2i p, float angle)
+{
+   v2i r =
+   {
+      (int32)((p.x * cosf(angle)) - (p.y * sinf(angle))),
+      (int32)((p.x * sinf(angle)) + (p.y * cosf(angle))),
+   };
+   return r;
+}
+
+
 // ---------------
 // The mighty rect
 // ---------------

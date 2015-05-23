@@ -279,16 +279,6 @@ static Rect picker_get_bounds(ColorPicker* picker)
     return picker_rect;
 }
 
-inline v2f point_rotated_at_angle(float angle, float radius)
-{
-    v2f result =
-    {
-        radius * cosf(angle),
-        radius * sinf(angle)
-    };
-    return result;
-}
-
 static void picker_update_wheel(ColorPicker* picker, v2f point)
 {
     float angle = picker_wheel_get_angle(picker, point);
@@ -298,17 +288,17 @@ static void picker_update_wheel(ColorPicker* picker, v2f point)
         float radius = 0.9f * (picker->wheel_radius - picker->wheel_half_width);
         v2f center = v2i_to_v2f(picker->center);
         {
-            v2f point = point_rotated_at_angle(-angle, radius);
+            v2f point = polar_to_cartesian(-angle, radius);
             point = add_v2f(point, center);
             picker->c = point;
         }
         {
-            v2f point = point_rotated_at_angle(-angle + 2 * kPi / 3.0f, radius);
+            v2f point = polar_to_cartesian(-angle + 2 * kPi / 3.0f, radius);
             point = add_v2f(point, center);
             picker->b = point;
         }
         {
-            v2f point = point_rotated_at_angle(-angle + 4 * kPi / 3.0f, radius);
+            v2f point = polar_to_cartesian(-angle + 4 * kPi / 3.0f, radius);
             point = add_v2f(point, center);
             picker->a = point;
         }

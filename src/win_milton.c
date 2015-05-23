@@ -15,6 +15,7 @@
 #define snprintf sprintf_s
 
 #include "milton.h"
+#include "platform.h"
 
 
 typedef struct
@@ -23,8 +24,9 @@ typedef struct
     // Window dimensions:
     int32_t width;
     int32_t height;
+    v2i     pan_delta;
     BITMAPINFO bitmap_info;
-    v2i stored_point;
+    v2i input_pointer;
 } Win32State;
 
 typedef enum
@@ -42,6 +44,8 @@ typedef struct
     int32 mouse_y;
     bool32 left_down;
     bool32 right_down;
+    bool32 is_panning;
+    v2i old_pan;
 } GuiData;
 
 static HGLRC   g_gl_context_handle;
@@ -207,7 +211,6 @@ static void win32_resize(Win32State* win_state)
     win_state->width = (int)(rect.right - rect.left);
     win_state->height = (int)(rect.bottom - rect.top);
 
-
     glViewport(0, 0, win_state->width, win_state->height);
 }
 
@@ -251,17 +254,15 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             }
         case WM_MOUSEMOVE:
             {
-                if (g_gui_data.left_down || g_gui_data.right_down)
-                {
-                    g_gui_data.mouse_x = GET_X_LPARAM(message.lParam);
-                    g_gui_data.mouse_y = GET_Y_LPARAM(message.lParam);
-                }
+                g_gui_data.mouse_x = GET_X_LPARAM(message.lParam);
+                g_gui_data.mouse_y = GET_Y_LPARAM(message.lParam);
                 break;
             }
         case WM_MOUSEWHEEL:
             {
                 int delta = GET_WHEEL_DELTA_WPARAM(message.wParam);
                 input.scale = delta;
+
                 break;
             }
         case WM_SYSKEYUP:
@@ -272,7 +273,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 uint32_t vkcode = (uint32_t)message.wParam;
                 bool32 was_down = ((message.lParam & (1 << 30)) != 0);
                 bool32 is_down  = ((message.lParam & ((uint64_t)1 << 31)) == 0);
-                bool32 alt_key_was_down = (message.lParam & (1 << 29));
+                bool32 alt_key_was_down     = (message.lParam & (1 << 29));
                 if (was_down && vkcode == VK_ESCAPE)
                 {
                     platform_quit();
@@ -306,17 +307,47 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             g_gui_msgs ^= GuiMsg_END_STROKE;
         }
     }
-
-    if (g_gui_data.left_down)
+    bool32 is_ctrl_down = GetKeyState(VK_CONTROL) >> 1;
+    if (is_ctrl_down && g_gui_data.left_down)  // CTRL is down.
     {
         if (
-                win_state->stored_point.x != g_gui_data.mouse_x ||
-                win_state->stored_point.y != g_gui_data.mouse_y
+                win_state->input_pointer.x != g_gui_data.mouse_x ||
+                win_state->input_pointer.y != g_gui_data.mouse_y
                 )
         {
-            win_state->stored_point.x = (int64)g_gui_data.mouse_x;
-            win_state->stored_point.y = (int64)g_gui_data.mouse_y;
-            input.point = &win_state->stored_point;
+            win_state->input_pointer.x = (int64)g_gui_data.mouse_x;
+            win_state->input_pointer.y = (int64)g_gui_data.mouse_y;
+            v2i new_pan = win_state->input_pointer;
+            // Just started panning.
+            if (!g_gui_data.is_panning)
+            {
+                input.pan_delta = (v2i) { 0 };
+            }
+            else
+            {
+                input.pan_delta = sub_v2i(new_pan, g_gui_data.old_pan);
+            }
+            g_gui_data.is_panning = true;
+            g_gui_data.old_pan = new_pan;
+            input.full_refresh = true;
+        }
+
+    }
+    else
+    {
+        g_gui_data.is_panning = false;
+    }
+
+    if (!is_ctrl_down && g_gui_data.left_down)
+    {
+        if (
+                win_state->input_pointer.x != g_gui_data.mouse_x ||
+                win_state->input_pointer.y != g_gui_data.mouse_y
+                )
+        {
+            win_state->input_pointer.x = (int64)g_gui_data.mouse_x;
+            win_state->input_pointer.y = (int64)g_gui_data.mouse_y;
+            input.point = &win_state->input_pointer;
         }
     }
     return input;
@@ -496,9 +527,16 @@ int CALLBACK WinMain(
     {
         input.full_refresh = 1;
     }
-
-    milton_state->screen_size = (v2i){ win_state.width, win_state.height };
+    win32_resize(&win_state);
+    v2i screen_size = { win_state.width, win_state.height };
+    v2i screen_center = invscale_v2i(screen_size, 2);
+    milton_state->view.screen_center = screen_center;
+    platform_update_view(
+            &milton_state->view,
+            screen_size,
+            (v2i) { 0 });
     SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
+
     bool32 modified = false;
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
@@ -514,7 +552,10 @@ int CALLBACK WinMain(
         }
 
         input = win32_process_input(&win_state, window);
-        milton_state->screen_size = (v2i){ win_state.width, win_state.height };
+        platform_update_view(
+                &milton_state->view,
+                (v2i){ win_state.width, win_state.height },
+                input.pan_delta);
         // Sleep until we need to.
         WaitMessage();
     }

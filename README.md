@@ -19,14 +19,14 @@ To-Do
     * :)
 
 * Application
-    * Better platform input abstraction
-    * Panning
-    * Basic wacom support
+    * Center of scaling
+    * Rotation
     * Optimize: split view & reject strokes not in view
     * Optimize: Opacity early-reject.
     * ^--- freebie: Eraser
     * Optimize: Progressive rendering
     * Optimize: Threaded canvas update.
+    * Basic wacom support
     * Gamma correct blending
     * Undo/redo
     * Basic saving / loading.

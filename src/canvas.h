@@ -19,22 +19,29 @@ typedef struct Stroke_s
     Rect    bounds;
 } Stroke;
 
-
-inline v2i canvas_to_raster(v2i screen_size, int32 view_scale, v2i canvas_point)
+typedef struct CanvasView_s
 {
-    v2i screen_center = invscale_v2i(screen_size, 2);
+    v2i     screen_size;    // Size in pixels
+    int32   scale;          // Zoom
+    v2i     screen_center;  // In pixels
+    float   rotation;       // Rotation in radians
+} CanvasView;
+
+inline v2i canvas_to_raster(CanvasView view, v2i canvas_point)
+{
     v2i point = canvas_point;
-    point = invscale_v2i(point, view_scale);
-    point = add_v2i     ( point, screen_center );
+    //point = rotate_v2i(canvas_point, view.rotation);
+    point = invscale_v2i(point, view.scale);
+    point = add_v2i     ( point, view.screen_center );
     return point;
 }
 
-inline v2i raster_to_canvas(v2i screen_size, int32 view_scale, v2i raster_point)
+inline v2i raster_to_canvas(CanvasView view, v2i raster_point)
 {
-    v2i screen_center = invscale_v2i(screen_size, 2);
     v2i canvas_point = raster_point;
-    canvas_point = sub_v2i   ( canvas_point ,  screen_center );
-    canvas_point = scale_v2i (canvas_point, view_scale);
+    canvas_point = sub_v2i   ( canvas_point ,  view.screen_center );
+    canvas_point = scale_v2i (canvas_point, view.scale);
+    //canvas_point = rotate_v2i(canvas_point, -view.rotation);
     return canvas_point;
 }
 
