@@ -24,24 +24,55 @@ typedef struct CanvasView_s
     v2i     screen_size;    // Size in pixels
     int32   scale;          // Zoom
     v2i     screen_center;  // In pixels
-    float   rotation;       // Rotation in radians
+#if 0
+    int     rotation;       // Rotation in radians
+    float   cos_sin_table[360][2];  // First cosine, then sine.
+#endif
 } CanvasView;
 
-inline v2i canvas_to_raster(CanvasView view, v2i canvas_point)
+
+// TODO: rotation feature?
+// Rotation changes a couple of things:
+//  - Anti-aliasing has to take it into account.
+//  - Cosines and Sines are slow!
+// It's one of those things where it is not clear if the cost outweighs the
+// benefit.  In this case, the cost is a lot of rendering performance, because
+// of the extra step in the canvas conversion.
+//
+// This feature is fundamentally different to rotation on a raster-based paint
+// package.
+#if 0
+inline v2i rotate_to_view(v2i p, CanvasView* view)
 {
-    v2i point = canvas_point;
-    //point = rotate_v2i(canvas_point, view.rotation);
-    point = invscale_v2i(point, view.scale);
-    point = add_v2i     ( point, view.screen_center );
-    return point;
+    int d = view->rotation;
+    float c = view->cos_sin_table[d][0];
+    float s = view->cos_sin_table[d][1];
+    float x = (float)p.x;
+    float y = (float)p.y;
+    v2i r =
+    {
+        (int32)(x * c - y * s),
+        (int32)(x * s + y * c),
+    };
+    return r;
+}
+#endif
+
+inline v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
+{
+    v2i raster_point = canvas_point;
+    //raster_point = rotate_to_view(canvas_point, view);
+    raster_point = invscale_v2i  (raster_point, view->scale);
+    raster_point = add_v2i       (raster_point, view->screen_center);
+    return raster_point;
 }
 
-inline v2i raster_to_canvas(CanvasView view, v2i raster_point)
+inline v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 {
     v2i canvas_point = raster_point;
-    canvas_point = sub_v2i   ( canvas_point ,  view.screen_center );
-    canvas_point = scale_v2i (canvas_point, view.scale);
-    //canvas_point = rotate_v2i(canvas_point, -view.rotation);
+    canvas_point = sub_v2i       (canvas_point, view->screen_center);
+    canvas_point = scale_v2i     (canvas_point, view->scale);
+    //canvas_point = rotate_to_view(canvas_point, view);
     return canvas_point;
 }
 

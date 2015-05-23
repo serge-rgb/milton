@@ -61,7 +61,7 @@ typedef struct MiltonState_s
 
     bool32 canvas_blocked;  // When interacting with the UI.
 
-    CanvasView view;
+    CanvasView* view;
 
     v2i     last_point;  // Last input point. Used to determine area to update.
     Stroke  working_stroke;
@@ -82,6 +82,9 @@ typedef struct MiltonInput_s
     bool32 end_stroke;
     v2i* point;
     int scale;
+#if 0
+    int rotation;
+#endif
     v2i pan_delta;
 } MiltonInput;
 
@@ -92,7 +95,7 @@ static void milton_gl_backend_draw(MiltonState* milton_state)
     MiltonGLState* gl = milton_state->gl;
     glTexImage2D(
             GL_TEXTURE_2D, 0, GL_RGBA,
-            milton_state->view.screen_size.w, milton_state->view.screen_size.h,
+            milton_state->view->screen_size.w, milton_state->view->screen_size.h,
             0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)milton_state->raster_buffer);
     glUseProgram(gl->quad_program);
     glBindVertexArray(gl->quad_vao);
@@ -164,7 +167,7 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         // Pass a null pointer, texture will be filled by opencl ray tracer
         GLCHK ( glTexImage2D(
                     GL_TEXTURE_2D, 0, GL_RGBA,
-                    milton_state->view.screen_size.w, milton_state->view.screen_size.h,
+                    milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                     0, GL_RGBA, GL_FLOAT, NULL) );
     }
     // Create quad
@@ -244,12 +247,21 @@ static void milton_init(MiltonState* milton_state)
 
     // Set the view
     {
-        CanvasView view = { 0 };
-        // view.screen_size is set by the platform abstraction layer.
-        // view.screen_center is also set there.
-        view.scale = (1 << 12);
-        view.rotation = 0.0f;
-        milton_state->view = view;
+        milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
+        // view->screen_size is set by the platform abstraction layer.
+        // view->screen_center is also set there.
+        milton_state->view->scale = (1 << 12);
+#if 0
+        milton_state->view->rotation = 0;
+        for (int d = 0; d < 360; d++)
+        {
+            float r = deegrees_to_radians(d);
+            float c = cosf(r);
+            float s = sinf(r);
+            milton_state->view->cos_sin_table[d][0] = c;
+            milton_state->view->cos_sin_table[d][1] = s;
+        }
+#endif
     }
 
     // Init picker
@@ -279,7 +291,7 @@ static void milton_init(MiltonState* milton_state)
 
     Brush brush = { 0 };
     {
-        brush.radius = milton_state->brush_size * milton_state->view.scale;
+        brush.radius = milton_state->brush_size * milton_state->view->scale;
         brush.alpha = 0.5f;
         brush.color = hsv_to_rgb(milton_state->picker.hsv);
     }
@@ -319,15 +331,15 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_full_redraw;
         static float scale_factor = 1.5f;
         static int32 view_scale_limit = 1000000;
-        if (input->scale > 0 && milton_state->view.scale > 2)
+        if (input->scale > 0 && milton_state->view->scale > 2)
         {
-            milton_state->view.scale = (int32)(milton_state->view.scale / scale_factor);
+            milton_state->view->scale = (int32)(milton_state->view->scale / scale_factor);
         }
-        else if (milton_state->view.scale < view_scale_limit)
+        else if (milton_state->view->scale < view_scale_limit)
         {
-            milton_state->view.scale = (int32)(milton_state->view.scale * scale_factor) + 1;
+            milton_state->view->scale = (int32)(milton_state->view->scale * scale_factor) + 1;
         }
-        milton_state->brush.radius = milton_state->brush_size * milton_state->view.scale;
+        milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
     }
 
     if (input->reset)
@@ -337,6 +349,22 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->strokes[0].num_points = 0;
         milton_state->working_stroke.num_points = 0;
     }
+#if 0
+    // ==== Rotate ======
+    if (input->rotation != 0)
+    {
+        render_flags |= MiltonRenderFlags_full_redraw;
+    }
+    milton_state->view->rotation += input->rotation;
+    while (milton_state->view->rotation < 0)
+    {
+        milton_state->view->rotation += 360;
+    }
+    while (milton_state->view->rotation >= 360)
+    {
+        milton_state->view->rotation -= 360;
+    }
+#endif
 
     bool32 finish_stroke = false;
     if (input->point)

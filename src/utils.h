@@ -86,6 +86,11 @@ inline float magnitude(v2f a)
     return sqrtf(dot(a, a));
 }
 
+inline float deegrees_to_radians(int d)
+{
+    assert (0 <= d && d < 360);
+    return kPi * ((float)(d) / 180.0f);
+}
 inline float radians_to_degrees(float r)
 {
     return (180 * r) / kPi;
@@ -121,12 +126,12 @@ inline v2f polar_to_cartesian(float angle, float radius)
 
 inline v2i rotate_v2i(v2i p, float angle)
 {
-   v2i r =
-   {
-      (int32)((p.x * cosf(angle)) - (p.y * sinf(angle))),
-      (int32)((p.x * sinf(angle)) + (p.y * cosf(angle))),
-   };
-   return r;
+    v2i r =
+    {
+        (int32)((p.x * cosf(angle)) - (p.y * sinf(angle))),
+        (int32)((p.x * sinf(angle)) + (p.y * cosf(angle))),
+    };
+    return r;
 }
 
 

@@ -20,7 +20,6 @@ To-Do
 
 * Application
     * Center of scaling
-    * Rotation
     * Optimize: split view & reject strokes not in view
     * Optimize: Opacity early-reject.
     * ^--- freebie: Eraser

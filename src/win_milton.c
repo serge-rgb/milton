@@ -286,6 +286,17 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 {
                     input.full_refresh = true;
                 }
+#if 0
+                if (is_down && vkcode == VK_LEFT)
+                {
+                    input.rotation = 5;
+                }
+                if (is_down && vkcode == VK_RIGHT)
+                {
+                    input.rotation = -5;
+                }
+#endif
+
             }
         default:
             {
@@ -530,9 +541,9 @@ int CALLBACK WinMain(
     win32_resize(&win_state);
     v2i screen_size = { win_state.width, win_state.height };
     v2i screen_center = invscale_v2i(screen_size, 2);
-    milton_state->view.screen_center = screen_center;
+    milton_state->view->screen_center = screen_center;
     platform_update_view(
-            &milton_state->view,
+            milton_state->view,
             screen_size,
             (v2i) { 0 });
     SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
@@ -553,7 +564,7 @@ int CALLBACK WinMain(
 
         input = win32_process_input(&win_state, window);
         platform_update_view(
-                &milton_state->view,
+                milton_state->view,
                 (v2i){ win_state.width, win_state.height },
                 input.pan_delta);
         // Sleep until we need to.

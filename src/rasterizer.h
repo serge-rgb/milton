@@ -73,7 +73,7 @@ inline v2i closest_point_in_segment(
 
 // NOTE: takes clipped points.
 inline bool32 is_rect_filled_by_stroke(
-        Rect rect, v2i* points, int32 num_points, Brush brush, CanvasView view)
+        Rect rect, v2i* points, int32 num_points, Brush brush, CanvasView* view)
 {
     v2i rect_center =
     {
@@ -211,7 +211,7 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                 // Fast path.
                 if (list_iter->rect_filled)
                 {
-#if 1  // Visualize it with black
+#if 0  // Visualize it with black
                     float sr = stroke->brush.color.r * 0;
                     float sg = stroke->brush.color.g * 0;
                     float sb = stroke->brush.color.b * 0;
@@ -278,8 +278,8 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                     {
                         int samples = 0;
                         {
-                            float u = 0.223607f * milton_state->view.scale;  // sin(arctan(1/2)) / 2
-                            float v = 0.670820f * milton_state->view.scale;  // cos(arctan(1/2)) / 2 + u
+                            float u = 0.223607f * milton_state->view->scale;  // sin(arctan(1/2)) / 2
+                            float v = 0.670820f * milton_state->view->scale;  // cos(arctan(1/2)) / 2 + u
 
                             float dists[4];
                             dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);
@@ -325,7 +325,7 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                 dr, dg, db, da
             };
             uint32 pixel = color_v4f_to_u32(milton_state->cm, d);
-            pixels[j * milton_state->view.screen_size.w + i] = pixel;
+            pixels[j * milton_state->view->screen_size.w + i] = pixel;
         }
     }
 }
@@ -337,13 +337,13 @@ static void render_strokes(MiltonState* milton_state, Rect limits)
             limits, milton_state->block_size, milton_state->block_size, &split_rects);
     for (int i = 0; i < num_rects; ++i)
     {
-        split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->view.screen_size);
+        split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->view->screen_size);
         render_strokes_in_rect(milton_state, split_rects[i]);
     }
 }
 
 static void render_picker(ColorPicker* picker, ColorManagement cm,
-        uint32* buffer_pixels, CanvasView view)
+        uint32* buffer_pixels, CanvasView* view)
 {
     v2f baseline = {1,0};
 
@@ -363,7 +363,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             uint32 picker_i = (j - draw_rect.top) * (2*picker->bound_radius_px ) + (i - draw_rect.left);
-            uint32 src = buffer_pixels[j * view.screen_size.w + i];
+            uint32 src = buffer_pixels[j * view->screen_size.w + i];
             picker->pixels[picker_i] = src;
         }
     }
@@ -487,7 +487,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
             uint32 linear_color = *to_blit++;
             v4f sRGB = color_u32_to_v4f(cm, linear_color);
             uint32 color = color_v4f_to_u32(cm, sRGB);
-            buffer_pixels[j * view.screen_size.w + i] = color;
+            buffer_pixels[j * view->screen_size.w + i] = color;
         }
     }
 }
@@ -510,9 +510,9 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         if (render_flags & MiltonRenderFlags_full_redraw)
         {
             limits.left = 0;
-            limits.right = milton_state->view.screen_size.w;
+            limits.right = milton_state->view->screen_size.w;
             limits.top = 0;
-            limits.bottom = milton_state->view.screen_size.h;
+            limits.bottom = milton_state->view->screen_size.h;
         }
         else if (milton_state->working_stroke.num_points > 1)
         {
@@ -537,20 +537,20 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
                         (milton_state->block_size - h) / 2);
             }
             limits = rect_enlarge(limits,
-                    block_offset + (stroke->brush.radius / milton_state->view.scale));
-            limits = rect_clip_to_screen(limits, milton_state->view.screen_size);
+                    block_offset + (stroke->brush.radius / milton_state->view->scale));
+            limits = rect_clip_to_screen(limits, milton_state->view->screen_size);
         }
         else if (milton_state->working_stroke.num_points == 1)
         {
             Stroke* stroke = &milton_state->working_stroke;
             v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
-            int32 raster_radius = stroke->brush.radius / milton_state->view.scale;
+            int32 raster_radius = stroke->brush.radius / milton_state->view->scale;
             raster_radius = max(raster_radius, milton_state->block_size);
             limits.left = -raster_radius  + point.x;
             limits.right = raster_radius  + point.x;
             limits.top = -raster_radius   + point.y;
             limits.bottom = raster_radius + point.y;
-            limits = rect_clip_to_screen(limits, milton_state->view.screen_size);
+            limits = rect_clip_to_screen(limits, milton_state->view->screen_size);
         }
     }
 
