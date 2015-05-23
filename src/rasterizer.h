@@ -72,7 +72,8 @@ inline v2i closest_point_in_segment(
 }
 
 // NOTE: takes clipped points.
-inline bool32 is_rect_filled_by_stroke(Rect rect, v2i* points, int32 num_points, Brush brush, v2i screen_size, int32 view_scale)
+inline bool32 is_rect_filled_by_stroke(
+        Rect rect, v2i* points, int32 num_points, Brush brush, v2i screen_size, int32 view_scale)
 {
     v2i rect_center =
     {
@@ -80,15 +81,37 @@ inline bool32 is_rect_filled_by_stroke(Rect rect, v2i* points, int32 num_points,
         (rect.top + rect.bottom) / 2,
     };
 
-    for (int32 point_i = 0; point_i < num_points; point_i += 2)
+    if (num_points >= 2)
     {
-        v2i a = points[point_i];
-        v2i b = points[point_i + 1];
+        for (int32 point_i = 0; point_i < num_points; point_i += 2)
+        {
+            v2i a = points[point_i];
+            v2i b = points[point_i + 1];
 
-        // Get closest point
-        v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
-        float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-        v2i p  = closest_point_in_segment( a, b, ab, mag_ab2, rect_center);
+            // Get closest point
+            v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
+            float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
+            v2i p  = closest_point_in_segment( a, b, ab, mag_ab2, rect_center);
+
+            // Half width of a rectangle contained by brush at point p.
+            int32 rad = (int32)(brush.radius * 0.707106781f);  // cos(pi/4)
+            Rect bounded_rect;
+            {
+                bounded_rect.left   = p.x - rad;
+                bounded_rect.right  = p.x + rad;
+                bounded_rect.bottom = p.y + rad;
+                bounded_rect.top    = p.y - rad;
+            }
+
+            if (is_rect_within_rect(rect, bounded_rect))
+            {
+                return true;
+            }
+        }
+    }
+    else if (num_points == 1)
+    {
+        v2i p  = points[0];
 
         // Half width of a rectangle contained by brush at point p.
         int32 rad = (int32)(brush.radius * 0.707106781f);  // cos(pi/4)
@@ -151,7 +174,9 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
             LinkedList_Stroke* tail = stroke_list;
             list_elem->elem = stroke;
             list_elem->next = stroke_list;
-            if (is_rect_filled_by_stroke(canvas_limits, stroke->clipped_points, stroke->num_clipped_points, stroke->brush,
+            if (is_rect_filled_by_stroke(
+                        canvas_limits,
+                        stroke->clipped_points, stroke->num_clipped_points, stroke->brush,
                         milton_state->screen_size, milton_state->view_scale))
             {
                 list_elem->rect_filled = true;
@@ -187,7 +212,7 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                 // Fast path.
                 if (list_iter->rect_filled)
                 {
-#if 0  // Visualize it with black
+#if 1  // Visualize it with black
                     float sr = stroke->brush.color.r * 0;
                     float sg = stroke->brush.color.g * 0;
                     float sb = stroke->brush.color.b * 0;
@@ -310,7 +335,7 @@ static void render_strokes(MiltonState* milton_state, Rect limits)
 {
     Rect* split_rects = NULL;
     int32 num_rects = rect_split(milton_state->transient_arena,
-            limits, 8, 8, &split_rects);
+            limits, milton_state->block_size, milton_state->block_size, &split_rects);
     for (int i = 0; i < num_rects; ++i)
     {
         split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->screen_size);
@@ -501,7 +526,20 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             limits.right =  max (milton_state->last_point.x, new_point.x);
             limits.top =    min (milton_state->last_point.y, new_point.y);
             limits.bottom = max (milton_state->last_point.y, new_point.y);
-            limits = rect_enlarge(limits, (stroke->brush.radius / milton_state->view_scale));
+            int32 block_offset = 0;
+            int32 w = limits.right - limits.left;
+            int32 h = limits.bottom - limits.top;
+            if (w < milton_state->block_size)
+            {
+                block_offset = (milton_state->block_size - w) / 2;
+            }
+            if (h < milton_state->block_size)
+            {
+                block_offset = max(block_offset,
+                        (milton_state->block_size - h) / 2);
+            }
+            limits = rect_enlarge(limits,
+                    block_offset + (stroke->brush.radius / milton_state->view_scale));
             limits = rect_clip_to_screen(limits, milton_state->screen_size);
         }
         else if (milton_state->working_stroke.num_points == 1)
@@ -510,6 +548,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             v2i point = canvas_to_raster(milton_state->screen_size, milton_state->view_scale,
                     stroke->points[0]);
             int32 raster_radius = stroke->brush.radius / milton_state->view_scale;
+            raster_radius = max(raster_radius, milton_state->block_size);
             limits.left = -raster_radius  + point.x;
             limits.right = raster_radius  + point.x;
             limits.top = -raster_radius   + point.y;

@@ -47,6 +47,9 @@ typedef struct MiltonState_s
     uint8_t*    raster_buffer;
     size_t      raster_buffer_size;
 
+    // The canvas is rendered in blocks of size (block_size*block_size).
+    int32   block_size;
+
     MiltonGLState* gl;
 
     ColorManagement cm;
@@ -237,6 +240,8 @@ static void milton_init(MiltonState* milton_state)
     milton_state->num_strokes     = 0;  // Working stroke is index 0
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
+
+    milton_state->block_size = 8;
 
     color_init(&milton_state->cm);
 
