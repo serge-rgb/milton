@@ -63,7 +63,7 @@ typedef struct MiltonState_s
 
     CanvasView* view;
 
-    v2i     last_point;  // Last input point. Used to determine area to update.
+    v2i     last_raster_input;  // Last input point. Used to determine area to update.
     Stroke  working_stroke;
 
     Stroke  strokes[4096];  // TODO: Create a deque to store arbitrary number of strokes.
@@ -384,10 +384,10 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             v2i in_point = *input->point;
 
-            // Avoid creating really large update rects when starting. new strokes
+            // Avoid creating really large update rects when starting new strokes
             if (milton_state->working_stroke.num_points == 0)
             {
-                milton_state->last_point = in_point;
+                milton_state->last_raster_input = in_point;
             }
 
             v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
@@ -398,13 +398,9 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
                 // Add to current stroke.
                 milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
                 milton_state->working_stroke.brush = milton_state->brush;
-                milton_state->working_stroke.bounds =
-                    bounding_rect_for_points(milton_state->working_stroke.points,
-                            milton_state->working_stroke.num_points);
-
             }
 
-            milton_state->last_point = in_point;
+            milton_state->last_raster_input = in_point;
         }
         if (milton_state->canvas_blocked)
         {

@@ -24,17 +24,17 @@ typedef struct
     // Window dimensions:
     int32_t width;
     int32_t height;
-    v2i     pan_delta;
     BITMAPINFO bitmap_info;
     v2i input_pointer;
 } Win32State;
 
 typedef enum
 {
-    GuiMsg_RESIZED     = (1 << 0),
-    GuiMsg_SHOULD_QUIT = (1 << 1),
-    GuiMsg_END_STROKE  = (1 << 2),
-    GuiMsg_GL_DRAW     = (1 << 3),
+    GuiMsg_RESIZED              = (1 << 0),
+    GuiMsg_SHOULD_QUIT          = (1 << 1),
+    GuiMsg_END_STROKE           = (1 << 2),
+    GuiMsg_GL_DRAW              = (1 << 3),
+    GuiMsg_CHANGE_SCALE_CENTER  = (1 << 4),
 } GuiMsg;
 
 typedef struct
@@ -262,6 +262,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             {
                 int delta = GET_WHEEL_DELTA_WPARAM(message.wParam);
                 input.scale = delta;
+                g_gui_msgs |= GuiMsg_CHANGE_SCALE_CENTER;
 
                 break;
             }
@@ -563,10 +564,22 @@ int CALLBACK WinMain(
         }
 
         input = win32_process_input(&win_state, window);
-        platform_update_view(
-                milton_state->view,
-                (v2i){ win_state.width, win_state.height },
-                input.pan_delta);
+#if 0
+        if (g_gui_msgs & GuiMsg_CHANGE_SCALE_CENTER)
+        {
+            g_gui_msgs &= ~GuiMsg_CHANGE_SCALE_CENTER;
+            milton_state->view->scale_center = win_state.input_pointer;
+            input.full_refresh = true;
+        }
+#endif
+
+        v2i screen_size = { win_state.width, win_state.height };
+
+        milton_state->view->screen_size = screen_size;
+        milton_state->view->pan_vector = add_v2i(
+                milton_state->view->pan_vector, scale_v2i(
+                    input.pan_delta, milton_state->view->scale));
+
         // Sleep until we need to.
         WaitMessage();
     }

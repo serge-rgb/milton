@@ -19,13 +19,13 @@ To-Do
     * :)
 
 * Application
-    * Center of scaling
     * Optimize: split view & reject strokes not in view
     * Optimize: Opacity early-reject.
     * ^--- freebie: Eraser
     * Optimize: Progressive rendering
     * Optimize: Threaded canvas update.
     * Basic wacom support
+    * Quadratic interpolation of strokes (intermediate points).
     * Gamma correct blending
     * Undo/redo
     * Basic saving / loading.
@@ -33,5 +33,6 @@ To-Do
 
 * Platforms
     * SDL version for Linux & Mac
-    * Android NDK OpenGL hello world.
+    * Android NDK OpenGL hello world
+    * iOS GL hello world
 

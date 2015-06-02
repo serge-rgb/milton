@@ -330,7 +330,8 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
     }
 }
 
-static void render_strokes(MiltonState* milton_state, Rect limits)
+static void render_strokes(MiltonState* milton_state,
+        Rect limits)
 {
     Rect* split_rects = NULL;
     int32 num_rects = rect_split(milton_state->transient_arena,
@@ -520,10 +521,10 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             v2i new_point = canvas_to_raster(
                     milton_state->view, stroke->points[stroke->num_points - 2]);
 
-            limits.left =   min (milton_state->last_point.x, new_point.x);
-            limits.right =  max (milton_state->last_point.x, new_point.x);
-            limits.top =    min (milton_state->last_point.y, new_point.y);
-            limits.bottom = max (milton_state->last_point.y, new_point.y);
+            limits.left =   min (milton_state->last_raster_input.x, new_point.x);
+            limits.right =  max (milton_state->last_raster_input.x, new_point.x);
+            limits.top =    min (milton_state->last_raster_input.y, new_point.y);
+            limits.bottom = max (milton_state->last_raster_input.y, new_point.y);
             int32 block_offset = 0;
             int32 w = limits.right - limits.left;
             int32 h = limits.bottom - limits.top;
@@ -533,12 +534,13 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             }
             if (h < milton_state->block_size)
             {
-                block_offset = max(block_offset,
-                        (milton_state->block_size - h) / 2);
+                block_offset = max(block_offset, (milton_state->block_size - h) / 2);
             }
             limits = rect_enlarge(limits,
                     block_offset + (stroke->brush.radius / milton_state->view->scale));
             limits = rect_clip_to_screen(limits, milton_state->view->screen_size);
+            assert (limits.right >= limits.left);
+            assert (limits.bottom >= limits.top);
         }
         else if (milton_state->working_stroke.num_points == 1)
         {
@@ -551,6 +553,8 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             limits.top = -raster_radius   + point.y;
             limits.bottom = raster_radius + point.y;
             limits = rect_clip_to_screen(limits, milton_state->view->screen_size);
+            assert (limits.right >= limits.left);
+            assert (limits.bottom >= limits.top);
         }
     }
 
