@@ -1,18 +1,30 @@
 // rasterizer.h
 // (c) Copyright 2015 by Sergio Gonzalez
 
-// Very much the opposite of coding in a functional-programming style.  Every
-// stroke has a duplicate buffer where it stores only the points that may be
-// drawn. If (TODO: s/if/when) we eventually do multithreading, we would need
-// to allocate these buffers per-call to keep things data-parallel.
-static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
+
+typedef struct ClippedStroke_s ClippedStroke;
+struct ClippedStroke_s
 {
-    stroke->num_clipped_points = 0;
+    bool32  rect_filled;
+    Brush   brush;
+    int32   num_points;
+    v2i*    points;
+    ClippedStroke* next;
+};
+
+static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect rect)
+{
+    ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
+    {
+        clipped_stroke->brush = stroke->brush;
+        clipped_stroke->num_points = 0;
+        clipped_stroke->points = arena_alloc_array(render_arena, stroke->num_points * 2, v2i);
+    }
     if (stroke->num_points == 1)
     {
         if (is_inside_rect(rect, stroke->points[0]))
         {
-            stroke->clipped_points[stroke->num_clipped_points++] = stroke->points[0];
+            clipped_stroke->points[clipped_stroke->num_points++] = stroke->points[0];
         }
     }
     else
@@ -34,11 +46,12 @@ static void stroke_clip_to_rect(Stroke* stroke, Rect rect)
             // We can add the segment
             if (inside)
             {
-                stroke->clipped_points[stroke->num_clipped_points++] = a;
-                stroke->clipped_points[stroke->num_clipped_points++] = b;
+                clipped_stroke->points[clipped_stroke->num_points++] = a;
+                clipped_stroke->points[clipped_stroke->num_points++] = b;
             }
         }
     }
+    return clipped_stroke;
 }
 
 // TODO: Micro-optimize this. Hottest part in canvas rendering.
@@ -131,16 +144,8 @@ inline bool32 is_rect_filled_by_stroke(
     return false;
 }
 
-// This actually makes things faster
-typedef struct LinkedList_Stroke_s
-{
-    Stroke* elem;
-    bool32  rect_filled;
-    struct LinkedList_Stroke_s* next;
-} LinkedList_Stroke;
-
 // Filter strokes and render them. See `render_strokes` for the one that should be called
-static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
+static void render_strokes_in_rect(Arena* render_arena, MiltonState* milton_state, Rect limits)
 {
     uint32* pixels = (uint32*)milton_state->raster_buffer;
     Stroke* strokes = milton_state->strokes;
@@ -149,7 +154,7 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
     canvas_limits.top_left = raster_to_canvas(milton_state->view, limits.top_left);
     canvas_limits.bot_right = raster_to_canvas(milton_state->view, limits.bot_right);
 
-    LinkedList_Stroke* stroke_list = NULL;
+    ClippedStroke* stroke_list = NULL;
 
     // Go backwards so that list is in the correct older->newer order.
     for (int stroke_i = milton_state->num_strokes; stroke_i >= 0; --stroke_i)
@@ -165,18 +170,14 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
         }
         assert(stroke);
         Rect enlarged_limits = rect_enlarge(canvas_limits, stroke->brush.radius);
-        stroke_clip_to_rect(stroke, enlarged_limits);
-        if (stroke->num_clipped_points)
+        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, stroke, enlarged_limits);
+        if (clipped_stroke->num_points)
         {
-            LinkedList_Stroke* list_elem = arena_alloc_elem(
-                    milton_state->transient_arena, LinkedList_Stroke);
-
-            LinkedList_Stroke* tail = stroke_list;
-            list_elem->elem = stroke;
+            ClippedStroke* list_elem = clipped_stroke;
             list_elem->next = stroke_list;
             if (is_rect_filled_by_stroke(
                         canvas_limits,
-                        stroke->clipped_points, stroke->num_clipped_points, stroke->brush,
+                        clipped_stroke->points, clipped_stroke->num_points, stroke->brush,
                         milton_state->view))
             {
                 list_elem->rect_filled = true;
@@ -201,12 +202,12 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
             float db = 1.0f;
             float da = 1.0f;
 
-            struct LinkedList_Stroke_s* list_iter = stroke_list;
+            ClippedStroke* list_iter = stroke_list;
             while(list_iter)
             {
-                Stroke* stroke = list_iter->elem;
+                ClippedStroke* clipped_stroke = list_iter;
 
-                assert (stroke);
+                assert (clipped_stroke);
 
                 // Fast path.
                 if (list_iter->rect_filled)
@@ -216,11 +217,11 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                     float sg = stroke->brush.color.g * 0;
                     float sb = stroke->brush.color.b * 0;
 #else
-                    float sr = stroke->brush.color.r;
-                    float sg = stroke->brush.color.g;
-                    float sb = stroke->brush.color.b;
+                    float sr = clipped_stroke->brush.color.r;
+                    float sg = clipped_stroke->brush.color.g;
+                    float sb = clipped_stroke->brush.color.b;
 #endif
-                    float sa = stroke->brush.alpha;
+                    float sa = clipped_stroke->brush.alpha;
 
                     dr = (1 - sa) * dr + sa * sr;
                     dg = (1 - sa) * dg + sa * sg;
@@ -231,14 +232,14 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                 // Slow path. There are pixels not inside.
                 else
                 {
-                    v2i* points = stroke->clipped_points;
+                    v2i* points = clipped_stroke->points;
 
                     v2i min_point = {0};
                     float min_dist = FLT_MAX;
                     float dx = 0;
                     float dy = 0;
                     //int64 radius_squared = stroke->brush.radius * stroke->brush.radius;
-                    if (stroke->num_clipped_points == 1)
+                    if (clipped_stroke->num_points == 1)
                     {
                         min_point = points[0];
                         dx = (float) (canvas_point.x - min_point.x);
@@ -248,7 +249,7 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                     else
                     {
                         // Find closest point.
-                        for (int point_i = 0; point_i < stroke->num_clipped_points - 1; point_i += 2)
+                        for (int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += 2)
                         {
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
@@ -273,7 +274,6 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                         }
                     }
 
-
                     if (min_dist < FLT_MAX)
                     {
                         int samples = 0;
@@ -288,7 +288,7 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
                             dists[3] = (dx + v) * (dx + v) + (dy + u) * (dy + u);
                             for (int i = 0; i < 4; ++i)
                             {
-                                if (sqrtf(dists[i]) < stroke->brush.radius)
+                                if (sqrtf(dists[i]) < clipped_stroke->brush.radius)
                                 {
                                     ++samples;
                                 }
@@ -303,10 +303,10 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
 
                             float coverage = (float)samples / 4.0f;
 
-                            float sr = stroke->brush.color.r;
-                            float sg = stroke->brush.color.g;
-                            float sb = stroke->brush.color.b;
-                            float sa = stroke->brush.alpha;
+                            float sr = clipped_stroke->brush.color.r;
+                            float sg = clipped_stroke->brush.color.g;
+                            float sb = clipped_stroke->brush.color.b;
+                            float sa = clipped_stroke->brush.alpha;
 
                             sa *= coverage;
 
@@ -330,8 +330,7 @@ static void render_strokes_in_rect(MiltonState* milton_state, Rect limits)
     }
 }
 
-static void render_strokes(MiltonState* milton_state,
-        Rect limits)
+static void render_strokes(MiltonState* milton_state, Rect limits)
 {
     Rect* split_rects = NULL;
     int32 num_rects = rect_split(milton_state->transient_arena,
@@ -339,7 +338,13 @@ static void render_strokes(MiltonState* milton_state,
     for (int i = 0; i < num_rects; ++i)
     {
         split_rects[i] = rect_clip_to_screen(split_rects[i], milton_state->view->screen_size);
-        render_strokes_in_rect(milton_state, split_rects[i]);
+        Arena render_arena = arena_push(milton_state->transient_arena,
+                arena_available_space(milton_state->transient_arena));
+
+        render_strokes_in_rect(&render_arena, milton_state, split_rects[i]);
+
+        arena_pop(&render_arena);
+        ARENA_VALIDATE(milton_state->transient_arena);
     }
 }
 

@@ -12,10 +12,8 @@ typedef struct Stroke_s
     Brush   brush;
     // TODO turn this into a deque
     v2i     points[LIMIT_STROKE_POINTS];
-    v2i     clipped_points[2 * LIMIT_STROKE_POINTS];  // Clipped points are in the form [ab bc cd df]
-                                                        // That's why we double the space for them.
+
     int32   num_points;
-    int32   num_clipped_points;
 } Stroke;
 
 typedef struct CanvasView_s
