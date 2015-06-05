@@ -19,15 +19,15 @@ To-Do
     * :)
 
 * Application
-    * Optimize: split view & reject strokes not in view
+    * Basic wacom support
     * Optimize: Opacity early-reject.
     * ^--- freebie: Eraser
+    * Optimize: split view & reject strokes not in view
     * Optimize: Progressive rendering
     * Optimize: Threaded canvas update.
-    * Basic wacom support
     * Quadratic interpolation of strokes (intermediate points).
+    * Tiled canvas (inifite panning)
     * Gamma correct blending
-    * Undo/redo
     * Basic saving / loading.
     * UI: Basic IM buttons
 

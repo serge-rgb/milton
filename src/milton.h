@@ -69,17 +69,28 @@ typedef struct MiltonState_s
     Stroke  strokes[4096];  // TODO: Create a deque to store arbitrary number of strokes.
     int32   num_strokes;
 
+    int32   num_redos;
+
     // Heap
     Arena*      root_arena;         // Persistent memory.
     Arena*      transient_arena;    // Gets reset after every call to milton_update().
 
 } MiltonState;
 
+typedef enum
+{
+    MiltonInputFlags_NONE,
+    MiltonInputFlags_FULL_REFRESH = ( 1 << 1 ),
+    MiltonInputFlags_RESET =        ( 1 << 2 ),
+    MiltonInputFlags_END_STROKE =   ( 1 << 3 ),
+    MiltonInputFlags_UNDO =         ( 1 << 4 ),
+    MiltonInputFlags_REDO =         ( 1 << 5 ),
+} MiltonInputFlags;
+
 typedef struct MiltonInput_s
 {
-    bool32 full_refresh;
-    bool32 reset;
-    bool32 end_stroke;
+    MiltonInputFlags flags;
+
     v2i* point;
     int scale;
 #if 0
@@ -322,7 +333,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     MiltonRenderFlags render_flags = MiltonRenderFlags_none;
 
     // TODO: this should go away from MiltonInput
-    if (input->full_refresh)
+    if (input->flags & MiltonInputFlags_FULL_REFRESH)
     {
         render_flags |= MiltonRenderFlags_full_redraw;
     }
@@ -342,7 +353,29 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
     }
 
-    if (input->reset)
+    if (input->flags & MiltonInputFlags_UNDO)
+    {
+        if (milton_state->working_stroke.num_points == 0 && milton_state->num_strokes > 0)
+        {
+            milton_state->num_strokes--;
+            milton_state->num_redos++;
+        }
+        else if (milton_state->working_stroke.num_points > 0)
+        {
+            // Commit working stroke.
+            assert(!"NPE");
+        }
+    }
+    else if (input->flags & MiltonInputFlags_REDO)
+    {
+        if (milton_state->num_redos > 0)
+        {
+            milton_state->num_strokes++;
+            milton_state->num_redos--;
+        }
+    }
+
+    if (input->flags & MiltonInputFlags_RESET)
     {
         render_flags |= MiltonRenderFlags_full_redraw;
         milton_state->num_strokes = 0;
@@ -421,9 +454,13 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
                 render_flags |= MiltonRenderFlags_picker_updated;
             }
         }
+
+
+        // Clear redo stack
+        milton_state->num_redos = 0;
     }
 
-    if (input->end_stroke)
+    if (input->flags & MiltonInputFlags_END_STROKE)
     {
         if (milton_state->canvas_blocked)
         {

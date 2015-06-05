@@ -218,6 +218,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 {
     MiltonInput input = { 0 };
     MSG message;
+    bool32 is_ctrl_down = GetKeyState(VK_CONTROL) >> 1;
     while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
     {
         if (message.message == WM_QUIT)
@@ -281,11 +282,24 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 }
                 if (was_down && vkcode == VK_BACK)
                 {
-                    input.reset = 1;
+                    input.flags |= MiltonInputFlags_RESET;
+                }
+
+                assert ('Z' == 0x5A);
+                if (was_down && is_ctrl_down && vkcode == 'Z')
+                {
+                    input.flags |= MiltonInputFlags_UNDO;
+                    input.flags |= MiltonInputFlags_FULL_REFRESH;
+                }
+                if (was_down && is_ctrl_down && vkcode == 'R')
+                {
+                    input.flags |= MiltonInputFlags_REDO;
+                    input.flags |= MiltonInputFlags_FULL_REFRESH;
                 }
                 if (was_down && vkcode == VK_SPACE)
+
                 {
-                    input.full_refresh = true;
+                    input.flags |= MiltonInputFlags_FULL_REFRESH;
                 }
 #if 0
                 if (is_down && vkcode == VK_LEFT)
@@ -311,15 +325,14 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
         {
             win32_resize(win_state);
             g_gui_msgs ^= GuiMsg_RESIZED;
-            input.full_refresh = 1;
+            input.flags |= MiltonInputFlags_FULL_REFRESH;
         }
         if (g_gui_msgs & GuiMsg_END_STROKE)
         {
-            input.end_stroke = true;
+            input.flags |= MiltonInputFlags_END_STROKE;
             g_gui_msgs ^= GuiMsg_END_STROKE;
         }
     }
-    bool32 is_ctrl_down = GetKeyState(VK_CONTROL) >> 1;
     if (is_ctrl_down && g_gui_data.left_down)  // CTRL is down.
     {
         if (
@@ -341,7 +354,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             }
             g_gui_data.is_panning = true;
             g_gui_data.old_pan = new_pan;
-            input.full_refresh = true;
+            input.flags |= MiltonInputFlags_FULL_REFRESH;
         }
 
     }
@@ -537,7 +550,7 @@ int CALLBACK WinMain(
 
     MiltonInput input = { 0 };
     {
-        input.full_refresh = 1;
+        input.flags |= MiltonInputFlags_FULL_REFRESH;
     }
     win32_resize(&win_state);
     v2i screen_size = { win_state.width, win_state.height };
