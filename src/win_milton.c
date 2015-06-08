@@ -17,8 +17,11 @@
 #include "milton.h"
 #include "platform.h"
 
+typedef struct Win32State_s Win32State;
 
-typedef struct
+#include "win32_wacom_defines.h"
+
+struct Win32State_s
 {
     HWND window;
     // Window dimensions:
@@ -26,7 +29,17 @@ typedef struct
     int32_t height;
     BITMAPINFO bitmap_info;
     v2i input_pointer;
-} Win32State;
+
+    HINSTANCE wintab_handle;
+    WacomAPI wacom;
+    POINT wacom_pt_old;
+    POINT wacom_pt_new;
+    UINT wacom_prs_old;
+    UINT wacom_prs_new;
+    int wacom_num_attached_devices;
+};
+
+#include "win32_wacom.h"
 
 typedef enum
 {
@@ -40,9 +53,9 @@ typedef enum
 typedef struct
 {
     // Mouse info
-    int32 mouse_x;
-    int32 mouse_y;
-    bool32 left_down;
+    int32 pointer_x;
+    int32 pointer_y;
+    bool32 is_stroking;
     bool32 right_down;
     bool32 is_panning;
     v2i old_pan;
@@ -58,114 +71,9 @@ void platform_quit()
 }
 
 // Copied from libserg.
-static int milton_win32_setup_context(HWND window, HGLRC* context)
-{
-    int format_index = 0;
+// Defined below.
+static int milton_win32_setup_context(HWND window, HGLRC* context);
 
-    PIXELFORMATDESCRIPTOR pfd = { 0 };
-    {
-        pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-        pfd.nVersion = 1;
-        pfd.dwFlags =
-            PFD_DRAW_TO_WINDOW |   // support window
-            PFD_SUPPORT_OPENGL |   // support OpenGL
-            PFD_DOUBLEBUFFER;      // double buffered
-        pfd.iPixelType = PFD_TYPE_RGBA;
-        pfd.cColorBits = 32;
-        pfd.cDepthBits = 24;
-        pfd.cStencilBits = 8;
-        pfd.iLayerType = PFD_MAIN_PLANE;
-    }
-
-
-    // get the best available match of pixel format for the device context
-    format_index = ChoosePixelFormat(GetDC(window), &pfd);
-
-    // make that the pixel format of the device context
-    int succeeded = SetPixelFormat(GetDC(window), format_index, &pfd);
-
-    if (!succeeded)
-    {
-        OutputDebugStringA("Could not set pixel format\n");
-        return 0;
-    }
-
-    HGLRC dummy_context = wglCreateContext(GetDC(window));
-    if (!dummy_context)
-    {
-        OutputDebugStringA("Could not create GL context. Exiting");
-        return 0;
-    }
-    wglMakeCurrent(GetDC(window), dummy_context);
-    if (!succeeded)
-    {
-        OutputDebugStringA("Could not set current GL context. Exiting");
-        return 0;
-    }
-
-    GLenum glew_result = glewInit();
-    if (glew_result != GLEW_OK)
-    {
-        OutputDebugStringA("Could not init glew.\n");
-        return 0;
-    }
-
-    const int pixel_attribs[] =
-    {
-        WGL_ACCELERATION_ARB   , WGL_FULL_ACCELERATION_ARB           ,
-        WGL_DRAW_TO_WINDOW_ARB , GL_TRUE           ,
-        WGL_SUPPORT_OPENGL_ARB , GL_TRUE           ,
-        WGL_DOUBLE_BUFFER_ARB  , GL_TRUE           ,
-        WGL_PIXEL_TYPE_ARB     , WGL_TYPE_RGBA_ARB ,
-        WGL_COLOR_BITS_ARB     , 32                ,
-        WGL_DEPTH_BITS_ARB     , 24                ,
-        WGL_STENCIL_BITS_ARB   , 8                 ,
-        0                      ,
-    };
-    UINT num_formats = 0;
-
-    int format_indices[20];
-
-    wglChoosePixelFormatARB(GetDC(window),
-            pixel_attribs, NULL, 20 /*max_formats*/, format_indices, &num_formats);
-    if (!num_formats)
-    {
-        OutputDebugStringA("Could not choose pixel format. Exiting.");
-        return 0;
-    }
-
-    // The spec *guarantees* that this does not happen but nothing ever works...
-    if (num_formats > 20)
-    {
-        num_formats = 20;
-    }
-
-    succeeded = 0;
-    for (uint32_t i = 0; i < num_formats; ++i)
-    {
-        int local_index = format_indices[i];
-        succeeded = SetPixelFormat(GetDC(window), local_index, &pfd);
-        if (succeeded)
-            break;
-    }
-    if (!succeeded)
-    {
-        OutputDebugStringA("Could not set pixel format for final rendering context.\n");
-        return 0;
-    }
-
-    const int context_attribs[] =
-    {
-        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
-        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-        0
-    };
-    *context = wglCreateContextAttribsARB(GetDC(window), 0/*shareContext*/,
-            context_attribs);
-    wglMakeCurrent(GetDC(window), *context);
-    return 1;
-}
 
 static void path_at_exe(char* full_path, int32 buffer_size, char* fname)
 {
@@ -184,6 +92,28 @@ static void path_at_exe(char* full_path, int32 buffer_size, char* fname)
     }
 
     strcat(full_path, fname);
+}
+
+void win32_log(char *format, ...)
+{
+	char message[ 128 ];
+
+	int num_bytes_written = 0;
+
+	va_list args;
+
+	assert ( format );
+
+	va_start( args, format );
+
+	num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
+
+	if ( num_bytes_written > 0 )
+	{
+            OutputDebugStringA( message );
+	}
+
+	va_end( args );
 }
 
 static void win32_resize(Win32State* win_state)
@@ -229,16 +159,16 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
         {
         case WM_LBUTTONDOWN:
             {
-                g_gui_data.mouse_x   = GET_X_LPARAM(message.lParam);
-                g_gui_data.mouse_y   = GET_Y_LPARAM(message.lParam);
-                g_gui_data.left_down = 1;
+                g_gui_data.pointer_x   = GET_X_LPARAM(message.lParam);
+                g_gui_data.pointer_y   = GET_Y_LPARAM(message.lParam);
+                g_gui_data.is_stroking = true;
                 TRACKMOUSEEVENT track_mouse_event = { 0 };
                 {
                     track_mouse_event.cbSize = sizeof(TRACKMOUSEEVENT);
                     track_mouse_event.dwFlags = TME_LEAVE;
                     track_mouse_event.hwndTrack = win_state->window;
 
-              }
+                }
                 TrackMouseEvent(&track_mouse_event);
                 break;
             }
@@ -246,17 +176,17 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             // Fall-through
         case WM_LBUTTONUP:
             {
-                if (g_gui_data.left_down)
+                if (g_gui_data.is_stroking)
                 {
                     g_gui_msgs |= GuiMsg_END_STROKE;
                 }
-                g_gui_data.left_down = 0;
+                g_gui_data.is_stroking = false;
                 break;
             }
         case WM_MOUSEMOVE:
             {
-                g_gui_data.mouse_x = GET_X_LPARAM(message.lParam);
-                g_gui_data.mouse_y = GET_Y_LPARAM(message.lParam);
+                g_gui_data.pointer_x = GET_X_LPARAM(message.lParam);
+                g_gui_data.pointer_y = GET_Y_LPARAM(message.lParam);
                 break;
             }
         case WM_MOUSEWHEEL:
@@ -311,8 +241,94 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                     input.rotation = -5;
                 }
 #endif
-
             }
+        // Wacom support
+        case WT_PACKET:
+            {
+                HCTX hctx = (HCTX)message.lParam;
+                PACKET pkt;
+
+                // Wintab X/Y data is in screen coordinates. These will have to
+                // be converted to client coordinates in the WM_PAINT handler.
+                if (win_state->wacom.WTPacket(hctx, (UINT)message.wParam, &pkt))
+                {
+                    //win32_log("Render point for hctx: 0x%X\n", hctx);
+
+                    win_state->wacom_pt_old = win_state->wacom_pt_new;
+                    win_state->wacom_prs_old = win_state->wacom_prs_new;
+
+                    win_state->wacom_pt_new.x = pkt.pkX;
+                    win_state->wacom_pt_new.y = pkt.pkY;
+
+                    win_state->wacom_prs_new = pkt.pkNormalPressure;
+
+                    if (win_state->wacom_pt_new.x != win_state->wacom_pt_old.x ||
+                            win_state->wacom_pt_new.y != win_state->wacom_pt_old.y ||
+                            win_state->wacom_prs_new != win_state->wacom_prs_old)
+                    {
+                        OutputDebugStringA("stroking");
+                        //InvalidateRect(hWnd, NULL, FALSE);
+                    }
+                }
+                else
+                {
+                    win32_log("Oops - got pinged by an unknown context: 0x%X", hctx);
+                }
+                assert (win_state->wintab_handle);
+                break;
+            }
+        case WT_INFOCHANGE:
+            {
+#if 0
+                int num_attached_devices = 0;
+                win_state->wacom.WTInfoA(WTI_INTERFACE, IFC_NDEVICES, &num_attached_devices);
+
+                win32_log("WT_INFOCHANGE detected; number of connected tablets is now: %i\n", num_attached_devices);
+
+                if (num_attached_devices != win_state->wacom_num_attached_devices )
+                {
+                    // kill all current tablet contexts
+                    CloseTabletContexts();
+
+                    // Add some delay to give driver a chance to catch up in configuring
+                    // to the current attached tablets.
+                    // 1 second seems to work - your mileage may vary...
+                    ::Sleep(1000);
+
+                    // re-enumerate attached tablets
+                    OpenTabletContexts(hWnd);
+                }
+
+                if ( win_state->wacom_num_attached_devices == 0 )
+                {
+                    ShowError("No tablets found.");
+                    SendMessage(hWnd, WM_DESTROY, 0, 0L);
+                }
+#endif
+                break;
+            }
+        case WT_PROXIMITY:
+            {
+#if 0
+                hctx = (HCTX)wParam;
+
+                bool32 entering = (HIWORD(lParam) != 0);
+
+                if ( entering )
+                {
+                    if ( gContextMap.count(hctx) > 0 )
+                    {
+                        TabletInfo info = gContextMap[hctx];
+                    }
+                    else
+                    {
+                        win32_log("Oops - couldn't find context: 0x%X\n", hctx);
+                    }
+                }
+#endif
+                break;
+            }
+			break;
         default:
             {
                 TranslateMessage(&message);
@@ -333,15 +349,15 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             g_gui_msgs ^= GuiMsg_END_STROKE;
         }
     }
-    if (is_ctrl_down && g_gui_data.left_down)  // CTRL is down.
+    if (is_ctrl_down && g_gui_data.is_stroking)  // CTRL is down.
     {
         if (
-                win_state->input_pointer.x != g_gui_data.mouse_x ||
-                win_state->input_pointer.y != g_gui_data.mouse_y
+                win_state->input_pointer.x != g_gui_data.pointer_x ||
+                win_state->input_pointer.y != g_gui_data.pointer_y
                 )
         {
-            win_state->input_pointer.x = (int64)g_gui_data.mouse_x;
-            win_state->input_pointer.y = (int64)g_gui_data.mouse_y;
+            win_state->input_pointer.x = (int64)g_gui_data.pointer_x;
+            win_state->input_pointer.y = (int64)g_gui_data.pointer_y;
             v2i new_pan = win_state->input_pointer;
             // Just started panning.
             if (!g_gui_data.is_panning)
@@ -363,15 +379,15 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
         g_gui_data.is_panning = false;
     }
 
-    if (!is_ctrl_down && g_gui_data.left_down)
+    if (!is_ctrl_down && g_gui_data.is_stroking)
     {
         if (
-                win_state->input_pointer.x != g_gui_data.mouse_x ||
-                win_state->input_pointer.y != g_gui_data.mouse_y
+                win_state->input_pointer.x != g_gui_data.pointer_x ||
+                win_state->input_pointer.y != g_gui_data.pointer_y
                 )
         {
-            win_state->input_pointer.x = (int64)g_gui_data.mouse_x;
-            win_state->input_pointer.y = (int64)g_gui_data.mouse_y;
+            win_state->input_pointer.x = (int64)g_gui_data.pointer_x;
+            win_state->input_pointer.y = (int64)g_gui_data.pointer_y;
             input.point = &win_state->input_pointer;
         }
     }
@@ -562,6 +578,11 @@ int CALLBACK WinMain(
             (v2i) { 0 });
     SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
 
+    if (!load_wintab(&win_state))
+    {
+        OutputDebugStringA("No wintab.\n");
+    }
+
     bool32 modified = false;
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
@@ -598,4 +619,113 @@ int CALLBACK WinMain(
     }
 
     return TRUE;
+}
+
+static int milton_win32_setup_context(HWND window, HGLRC* context)
+{
+    int format_index = 0;
+
+    PIXELFORMATDESCRIPTOR pfd = { 0 };
+    {
+        pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+        pfd.nVersion = 1;
+        pfd.dwFlags =
+            PFD_DRAW_TO_WINDOW |   // support window
+            PFD_SUPPORT_OPENGL |   // support OpenGL
+            PFD_DOUBLEBUFFER;      // double buffered
+        pfd.iPixelType = PFD_TYPE_RGBA;
+        pfd.cColorBits = 32;
+        pfd.cDepthBits = 24;
+        pfd.cStencilBits = 8;
+        pfd.iLayerType = PFD_MAIN_PLANE;
+    }
+
+
+    // get the best available match of pixel format for the device context
+    format_index = ChoosePixelFormat(GetDC(window), &pfd);
+
+    // make that the pixel format of the device context
+    int succeeded = SetPixelFormat(GetDC(window), format_index, &pfd);
+
+    if (!succeeded)
+    {
+        OutputDebugStringA("Could not set pixel format\n");
+        return 0;
+    }
+
+    HGLRC dummy_context = wglCreateContext(GetDC(window));
+    if (!dummy_context)
+    {
+        OutputDebugStringA("Could not create GL context. Exiting");
+        return 0;
+    }
+    wglMakeCurrent(GetDC(window), dummy_context);
+    if (!succeeded)
+    {
+        OutputDebugStringA("Could not set current GL context. Exiting");
+        return 0;
+    }
+
+    GLenum glew_result = glewInit();
+    if (glew_result != GLEW_OK)
+    {
+        OutputDebugStringA("Could not init glew.\n");
+        return 0;
+    }
+
+    const int pixel_attribs[] =
+    {
+        WGL_ACCELERATION_ARB   , WGL_FULL_ACCELERATION_ARB           ,
+        WGL_DRAW_TO_WINDOW_ARB , GL_TRUE           ,
+        WGL_SUPPORT_OPENGL_ARB , GL_TRUE           ,
+        WGL_DOUBLE_BUFFER_ARB  , GL_TRUE           ,
+        WGL_PIXEL_TYPE_ARB     , WGL_TYPE_RGBA_ARB ,
+        WGL_COLOR_BITS_ARB     , 32                ,
+        WGL_DEPTH_BITS_ARB     , 24                ,
+        WGL_STENCIL_BITS_ARB   , 8                 ,
+        0                      ,
+    };
+    UINT num_formats = 0;
+
+    int format_indices[20];
+
+    wglChoosePixelFormatARB(GetDC(window),
+            pixel_attribs, NULL, 20 /*max_formats*/, format_indices, &num_formats);
+    if (!num_formats)
+    {
+        OutputDebugStringA("Could not choose pixel format. Exiting.");
+        return 0;
+    }
+
+    // The spec *guarantees* that this does not happen but nothing ever works...
+    if (num_formats > 20)
+    {
+        num_formats = 20;
+    }
+
+    succeeded = 0;
+    for (uint32_t i = 0; i < num_formats; ++i)
+    {
+        int local_index = format_indices[i];
+        succeeded = SetPixelFormat(GetDC(window), local_index, &pfd);
+        if (succeeded)
+            break;
+    }
+    if (!succeeded)
+    {
+        OutputDebugStringA("Could not set pixel format for final rendering context.\n");
+        return 0;
+    }
+
+    const int context_attribs[] =
+    {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
+    *context = wglCreateContextAttribsARB(GetDC(window), 0/*shareContext*/,
+            context_attribs);
+    wglMakeCurrent(GetDC(window), *context);
+    return 1;
 }
