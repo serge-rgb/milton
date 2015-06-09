@@ -419,12 +419,6 @@ LRESULT APIENTRY WndProc(
     LRESULT result = 0;
     switch (message)
     {
-    case WM_SIZE:
-        {
-            // Let win32_process_input handle it.
-            g_gui_msgs |= GuiMsg_RESIZED;
-            break;
-        }
     case WM_CREATE:
         {
             bool32 success = milton_win32_setup_context(window, &g_gl_context_handle);
@@ -440,6 +434,12 @@ LRESULT APIENTRY WndProc(
             platform_quit();
             break;
         }
+	case WM_SIZE:
+	{
+		// Let win32_process_input handle it.
+		g_gui_msgs |= GuiMsg_RESIZED;
+		break;
+	}
 #if 0
     case WM_PAINT:
         {
@@ -595,8 +595,8 @@ int CALLBACK WinMain(
     }
     win32_resize(&win_state);
     v2i screen_size = { win_state.width, win_state.height };
-    v2i screen_center = invscale_v2i(screen_size, 2);
-    milton_state->view->screen_center = screen_center;
+    milton_resize(milton_state, (v2i){0}, screen_size);
+
     platform_update_view(
             milton_state->view,
             screen_size,
@@ -606,6 +606,16 @@ int CALLBACK WinMain(
     bool32 modified = false;
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
+        v2i screen_size = { win_state.width, win_state.height };
+
+        if (screen_size.w != milton_state->view->screen_size.w ||
+            screen_size.h != milton_state->view->screen_size.h ||
+            input.pan_delta.w ||
+            input.pan_delta.h)
+        {
+            milton_resize(milton_state, input.pan_delta, screen_size);
+        }
+
         milton_update(milton_state, &input);
         if (g_gui_msgs & GuiMsg_GL_DRAW)
         {
@@ -626,13 +636,6 @@ int CALLBACK WinMain(
             input.full_refresh = true;
         }
 #endif
-
-        v2i screen_size = { win_state.width, win_state.height };
-
-        milton_state->view->screen_size = screen_size;
-        milton_state->view->pan_vector = add_v2i(
-                milton_state->view->pan_vector, scale_v2i(
-                    input.pan_delta, milton_state->view->scale));
 
         // Sleep until we need to.
         WaitMessage();

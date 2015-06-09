@@ -19,16 +19,16 @@ To-Do
     * :)
 
 * Application
-    * Basic wacom support
-    * Optimize: Opacity early-reject.
-    * ^--- freebie: Eraser
-    * Optimize: split view & reject strokes not in view
-    * Optimize: Progressive rendering
-    * Optimize: Threaded canvas update.
-    * Quadratic interpolation of strokes (intermediate points).
-    * Tiled canvas (inifite panning)
-    * Gamma correct blending
+    * Opacity early-reject.
+    * Eraser
+    * Tiled canvas render.
     * Basic saving / loading.
+    * SIMD-ify canvas rasterizer
+    * Threaded canvas update.
+    * Tiled canvas (inifite panning)
+    * Progressive rendering
+    * ? Quadratic interpolation of strokes (intermediate points).
+    * Gamma correct blending
     * UI: Basic IM buttons
 
 * Platforms

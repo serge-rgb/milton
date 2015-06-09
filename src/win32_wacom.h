@@ -136,7 +136,7 @@ static void win32_wacom_get_context(Win32State* win_state)
         {
             win_state->wacom_ctx = ctx;
             win_state->wacom_prs_max = pressure.axMax;
-            OutputDebugStringA("GREAT SUCCESS: Wacom context locked and loaded!");
+            OutputDebugStringA("GREAT SUCCESS: Wacom context locked and loaded!\n");
 
             // TODO: Samples does this. Is it necessary?
             if (!win_state->wacom.WTInfoA(0, 0, NULL))

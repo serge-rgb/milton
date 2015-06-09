@@ -45,10 +45,11 @@ typedef struct MiltonState_s
     int32_t     full_height;
     uint8_t     bytes_per_pixel;
     uint8_t*    raster_buffer;
-    size_t      raster_buffer_size;
 
-    // The canvas is rendered in blocks of size (block_size*block_size).
-    int32   block_size;
+    // The screen is rendered in tiles of `tile_dimensions`
+    // Each tile is rendered in blocks of size (block_width*block_width).
+    v2i     tile_dimensions;
+    int32   block_width;
 
     MiltonGLState* gl;
 
@@ -212,29 +213,21 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 static void milton_startup_tests()
 {
     v3f rgb = hsv_to_rgb((v3f){ 0 });
-    assert(
-            rgb.r == 0 &&
-            rgb.g == 0 &&
-            rgb.b == 0
-          );
+    assert(rgb.r == 0 &&
+           rgb.g == 0 &&
+           rgb.b == 0);
     rgb = hsv_to_rgb((v3f){ 0, 0, 1.0 });
-    assert(
-            rgb.r == 1 &&
-            rgb.g == 1 &&
-            rgb.b == 1
-          );
+    assert(rgb.r == 1 &&
+           rgb.g == 1 &&
+           rgb.b == 1);
     rgb = hsv_to_rgb((v3f){ 120, 1.0f, 0.5f });
-    assert(
-            rgb.r == 0 &&
-            rgb.g == 0.5 &&
-            rgb.b == 0
-          );
+    assert(rgb.r == 0 &&
+           rgb.g == 0.5 &&
+           rgb.b == 0);
     rgb = hsv_to_rgb((v3f){ 0, 1.0f, 1.0f });
-    assert(
-            rgb.r == 1.0 &&
-            rgb.g == 0 &&
-            rgb.b == 0
-          );
+    assert(rgb.r == 1.0 &&
+           rgb.g == 0 &&
+           rgb.b == 0);
 }
 #endif
 
@@ -245,14 +238,20 @@ static void milton_init(MiltonState* milton_state)
 #endif
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
-    milton_state->full_width      = 7680;
-    milton_state->full_height     = 4320;
-    milton_state->bytes_per_pixel = 4;
-    milton_state->num_strokes     = 0;  // Working stroke is index 0
+    milton_state->full_width         = 7680;
+    milton_state->full_height        = 4320;
+    milton_state->bytes_per_pixel    = 4;
+    milton_state->num_strokes        = 0;
+
+    int64 raster_buffer_size =
+        milton_state->full_width * milton_state->full_height * milton_state->bytes_per_pixel;
+    milton_state->raster_buffer =
+        arena_alloc_array(milton_state->root_arena, raster_buffer_size, uint8);
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
-    milton_state->block_size = 8;
+    milton_state->tile_dimensions = (v2i){ 0, 0 };  // This is reset when we get a resize call
+    milton_state->block_width = 16;
 
     color_init(&milton_state->cm);
 
@@ -308,12 +307,6 @@ static void milton_init(MiltonState* milton_state)
     }
     milton_state->brush = brush;
 
-    int closest_power_of_two = (1 << 27);  // Ceiling of log2(width * height * bpp)
-    milton_state->raster_buffer_size = closest_power_of_two;
-
-    milton_state->raster_buffer = arena_alloc_array(milton_state->root_arena,
-            milton_state->raster_buffer_size, uint8);
-
     milton_gl_backend_init(milton_state);
 }
 
@@ -323,6 +316,16 @@ inline bool32 is_user_drawing(MiltonState* milton_state)
 {
     bool32 result = milton_state->working_stroke.num_points > 0;
     return result;
+}
+
+static void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
+{
+    milton_state->view->screen_size = new_screen_size;
+    milton_state->view->screen_center = invscale_v2i(milton_state->view->screen_size, 2);
+
+    // Add delta to pan vector
+    milton_state->view->pan_vector = add_v2i(
+            milton_state->view->pan_vector, scale_v2i(pan_delta, milton_state->view->scale));
 }
 
 // Our "render loop" inner function.
