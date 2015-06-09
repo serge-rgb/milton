@@ -36,6 +36,8 @@ struct Win32State_s
     POINT wacom_pt_new;
     UINT wacom_prs_old;
     UINT wacom_prs_new;
+    UINT wacom_prs_max;
+    HCTX wacom_ctx;
     int wacom_num_attached_devices;
 };
 
@@ -144,11 +146,22 @@ static void win32_resize(Win32State* win_state)
     glViewport(0, 0, win_state->width, win_state->height);
 }
 
+
 static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 {
     MiltonInput input = { 0 };
     MSG message;
     bool32 is_ctrl_down = GetKeyState(VK_CONTROL) >> 1;
+#if 0
+    if (win_state->wintab_handle)
+    {
+        PACKET packet = { 0 };
+        while (win_state->wacom.WTPacketsGet(win_state->wacom_ctx, 1, &packet))
+        {
+
+        }
+    }
+#endif
     while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE))
     {
         if (message.message == WM_QUIT)
@@ -243,6 +256,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 #endif
             }
         // Wacom support
+#if 0
         case WT_PACKET:
             {
                 HCTX hctx = (HCTX)message.lParam;
@@ -252,7 +266,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 // be converted to client coordinates in the WM_PAINT handler.
                 if (win_state->wacom.WTPacket(hctx, (UINT)message.wParam, &pkt))
                 {
-                    //win32_log("Render point for hctx: 0x%X\n", hctx);
+                    win32_log("Render point for hctx: 0x%X\n", hctx);
 
                     win_state->wacom_pt_old = win_state->wacom_pt_new;
                     win_state->wacom_prs_old = win_state->wacom_prs_new;
@@ -266,19 +280,19 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                             win_state->wacom_pt_new.y != win_state->wacom_pt_old.y ||
                             win_state->wacom_prs_new != win_state->wacom_prs_old)
                     {
-                        OutputDebugStringA("stroking");
-                        //InvalidateRect(hWnd, NULL, FALSE);
+                        win_state->input_pointer.x = (int64)g_gui_data.pointer_x;
+                        win_state->input_pointer.y = (int64)g_gui_data.pointer_y;
                     }
                 }
                 else
                 {
                     win32_log("Oops - got pinged by an unknown context: 0x%X", hctx);
                 }
-                assert (win_state->wintab_handle);
                 break;
             }
         case WT_INFOCHANGE:
             {
+                assert (!"We don't support this yet");
 #if 0
                 int num_attached_devices = 0;
                 win_state->wacom.WTInfoA(WTI_INTERFACE, IFC_NDEVICES, &num_attached_devices);
@@ -329,6 +343,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 break;
             }
 			break;
+#endif
         default:
             {
                 TranslateMessage(&message);
@@ -417,6 +432,7 @@ LRESULT APIENTRY WndProc(
             {
                 platform_quit();
             }
+
             break;
         }
     case WM_DESTROY:
@@ -481,6 +497,14 @@ int CALLBACK WinMain(
         int nCmdShow
         )
 {
+    Win32State win_state = { 0 };
+
+    if (!win32_wacom_load_wintab(&win_state))
+    {
+        OutputDebugStringA("No wintab.\n");
+    }
+
+
     WNDCLASS window_class = { 0 };
 
     window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
@@ -524,11 +548,12 @@ int CALLBACK WinMain(
     {
         return FALSE;
     }
-
-    Win32State win_state = { 0 };
+    else
     {
         win_state.window = window;
     }
+
+    win32_wacom_get_context(&win_state);
 
     const size_t total_memory_size = 1 * 1024 * 1024 * 1024;  // Total memory requirement for Milton.
     const size_t frame_heap_in_MB = 32 * 1024 * 1024;         // Size of transient memory
@@ -577,11 +602,6 @@ int CALLBACK WinMain(
             screen_size,
             (v2i) { 0 });
     SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
-
-    if (!load_wintab(&win_state))
-    {
-        OutputDebugStringA("No wintab.\n");
-    }
 
     bool32 modified = false;
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
