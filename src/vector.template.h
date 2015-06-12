@@ -1,150 +1,150 @@
-typedef struct $<name_2>_s
+typedef struct $<Name2>_s
 {
     union
     {
         struct
         {
-            $<type> x;
-            $<type> y;
+            $<Type> x;
+            $<Type> y;
         };
         struct
         {
-            $<type> w;
-            $<type> h;
+            $<Type> w;
+            $<Type> h;
         };
-        $<type> d[2];
+        $<Type> d[2];
     };
-} $<name_2>;
+} $<Name2>;
 
-inline $<name_2> sub_$<name_2> ($<name_2> a, $<name_2> b)
+inline $<Name2> sub_$<Name2> ($<Name2> a, $<Name2> b)
 {
-    $<name_2> result;
+    $<Name2> result;
     result.x = a.x - b.x;
     result.y = a.y - b.y;
     return result;
 }
 
-inline $<name_2> add_$<name_2> ($<name_2> a, $<name_2> b)
+inline $<Name2> add_$<Name2> ($<Name2> a, $<Name2> b)
 {
-    $<name_2> result;
+    $<Name2> result;
     result.x = a.x + b.x;
     result.y = a.y + b.y;
     return result;
 }
 
-inline $<name_2> mul_$<name_2> ($<name_2> a, $<name_2> b)
+inline $<Name2> mul_$<Name2> ($<Name2> a, $<Name2> b)
 {
-    $<name_2> result;
+    $<Name2> result;
     result.x = a.x * b.x;
     result.y = a.y * b.y;
     return result;
 }
 
-inline $<name_2> scale_$<name_2> ($<name_2> v, $<type> factor)
+inline $<Name2> scale_$<Name2> ($<Name2> v, $<Type> factor)
 {
-    $<name_2> result;
+    $<Name2> result;
     result.x = factor * v.x;
     result.y = factor * v.y;
     return result;
 }
 
-inline $<name_2> invscale_$<name_2> ($<name_2> v, $<type> factor)
+inline $<Name2> invscale_$<Name2> ($<Name2> v, $<Type> factor)
 {
-    $<name_2> result;
+    $<Name2> result;
     result.x = v.x / factor;
     result.y = v.y / factor;
     return result;
 }
 
-typedef struct $<name_3>_s
+typedef struct $<Name3>_s
 {
     union
     {
         struct
         {
-            $<type> x;
-            $<type> y;
-            $<type> z;
+            $<Type> x;
+            $<Type> y;
+            $<Type> z;
         };
         struct
         {
-            $<type> r;
-            $<type> g;
-            $<type> b;
+            $<Type> r;
+            $<Type> g;
+            $<Type> b;
         };
         struct
         {
-            $<type> h;
-            $<type> s;
-            $<type> v;
+            $<Type> h;
+            $<Type> s;
+            $<Type> v;
         };
-        $<type> d[3];
+        $<Type> d[3];
     };
-} $<name_3>;
+} $<Name3>;
 
-inline $<name_3> sub_$<name_3> ($<name_3> a, $<name_3> b)
+inline $<Name3> sub_$<Name3> ($<Name3> a, $<Name3> b)
 {
-    $<name_3> result;
+    $<Name3> result;
     result.x = a.x - b.x;
     result.y = a.y - b.y;
     result.z = a.z - b.z;
     return result;
 }
 
-inline $<name_3> add_$<name_3> ($<name_3> a, $<name_3> b)
+inline $<Name3> add_$<Name3> ($<Name3> a, $<Name3> b)
 {
-    $<name_3> result;
+    $<Name3> result;
     result.x = a.x + b.x;
     result.y = a.y + b.y;
     result.z = a.z + b.z;
     return result;
 }
 
-inline $<name_3> mul_$<name_3> ($<name_3> a, $<name_3> b)
+inline $<Name3> mul_$<Name3> ($<Name3> a, $<Name3> b)
 {
-    $<name_3> result;
+    $<Name3> result;
     result.x = a.x * b.x;
     result.y = a.y * b.y;
     result.z = a.z * b.z;
     return result;
 }
 
-inline $<name_3> scale_$<name_3> ($<name_3> v, $<type> factor)
+inline $<Name3> scale_$<Name3> ($<Name3> v, $<Type> factor)
 {
-    $<name_3> result;
+    $<Name3> result;
     result.x = factor * v.x;
     result.y = factor * v.y;
     result.z = factor * v.z;
     return result;
 }
 
-inline $<name_3> invscale_$<name_3> ($<name_3> v, $<type> factor)
+inline $<Name3> invscale_$<Name3> ($<Name3> v, $<Type> factor)
 {
-    $<name_3> result;
+    $<Name3> result;
     result.x = v.x / factor;
     result.y = v.y / factor;
     result.z = v.z / factor;
     return result;
 }
 
-typedef struct $<name_4>_s
+typedef struct $<Name4>_s
 {
     union
     {
         struct
         {
-            $<type> x;
-            $<type> y;
-            $<type> z;
-            $<type> w;
+            $<Type> x;
+            $<Type> y;
+            $<Type> z;
+            $<Type> w;
         };
         struct
         {
-            $<type> r;
-            $<type> g;
-            $<type> b;
-            $<type> a;
+            $<Type> r;
+            $<Type> g;
+            $<Type> b;
+            $<Type> a;
         };
-        $<type> d[4];
+        $<Type> d[4];
     };
-} $<name_4>;
+} $<Name4>;
