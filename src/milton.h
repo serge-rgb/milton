@@ -302,7 +302,11 @@ static void milton_init(MiltonState* milton_state)
     Brush brush = { 0 };
     {
         brush.radius = milton_state->brush_size * milton_state->view->scale;
+#if 0
         brush.alpha = 0.5f;
+#else
+        brush.alpha = 1.0f;
+#endif
         brush.color = hsv_to_rgb(milton_state->picker.hsv);
     }
     milton_state->brush = brush;

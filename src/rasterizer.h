@@ -5,7 +5,7 @@
 typedef struct ClippedStroke_s ClippedStroke;
 struct ClippedStroke_s
 {
-    bool32  rect_filled;
+    bool32  fills_block;
     Brush   brush;
     int32   num_points;
     v2i*    points;
@@ -174,18 +174,33 @@ inline void render_canvas_in_block(Arena* render_arena,
         ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, stroke, enlarged_limits);
         if (clipped_stroke->num_points)
         {
-            ClippedStroke* list_elem = clipped_stroke;
-            list_elem->next = stroke_list;
+            ClippedStroke* list_head = clipped_stroke;
+            list_head->next = stroke_list;
             if (is_rect_filled_by_stroke(
                         canvas_limits,
-                        clipped_stroke->points, clipped_stroke->num_points, stroke->brush,
+                        clipped_stroke->points, clipped_stroke->num_points, clipped_stroke->brush,
                         view))
             {
-                list_elem->rect_filled = true;
-                // TODO: if brush is opaque, stahp
+                list_head->fills_block = true;
+                // Early reject if this brush fills the rect and is opaque
+                if (list_head->brush.alpha == 1.0f)
+                {
+                }
             }
-            stroke_list = list_elem;
+            stroke_list = list_head;
         }
+    }
+
+    // Set our `stroke_list` to begin at the first opaque stroke that fills
+    // this block.
+    ClippedStroke* list_iter = stroke_list;
+    while (list_iter)
+    {
+        if (list_iter->fills_block && list_iter->brush.alpha == 1.0f)
+        {
+            stroke_list = list_iter;
+        }
+        list_iter = list_iter->next;
     }
 
     for (int j = limits.top; j < limits.bottom; ++j)
@@ -199,7 +214,7 @@ inline void render_canvas_in_block(Arena* render_arena,
             float dr = 1.0f;
             float dg = 1.0f;
             float db = 1.0f;
-            float da = 1.0f;
+            float da = 0.0f;
 
             ClippedStroke* list_iter = stroke_list;
             while(list_iter)
@@ -209,12 +224,12 @@ inline void render_canvas_in_block(Arena* render_arena,
                 assert (clipped_stroke);
 
                 // Fast path.
-                if (list_iter->rect_filled)
+                if (list_iter->fills_block)
                 {
 #if 0  // Visualize it with black
-                    float sr = stroke->brush.color.r * 0;
-                    float sg = stroke->brush.color.g * 0;
-                    float sb = stroke->brush.color.b * 0;
+                    float sr = clipped_stroke->brush.color.r * 0;
+                    float sg = clipped_stroke->brush.color.g * 0;
+                    float sb = clipped_stroke->brush.color.b * 0;
 #else
                     float sr = clipped_stroke->brush.color.r;
                     float sg = clipped_stroke->brush.color.g;

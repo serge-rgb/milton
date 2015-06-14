@@ -19,7 +19,6 @@ To-Do
     * :)
 
 * Application
-    * Opacity early-reject.
     * Eraser
     * Tiled canvas render.
     * Basic saving / loading.
