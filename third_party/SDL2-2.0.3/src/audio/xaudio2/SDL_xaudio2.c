@@ -65,7 +65,8 @@
    The XAudio2 implementation available in the Windows 8 SDK targets Windows 8 and newer.
    If you want to build SDL with XAudio2 support you should install the DirectX SDK.
  */
-#include <dxsdkver.h>
+// [MILTON] Don't want to force everyone to install an ancient DirectX SDK to get Audio support.
+//#include <dxsdkver.h>
 #if (!defined(_DXSDK_BUILD_MAJOR) || (_DXSDK_BUILD_MAJOR < 1284))
 #  pragma message("Your DirectX SDK is too old. Disabling XAudio2 support.")
 #else
@@ -536,7 +537,6 @@ XAUDIO2_Init(SDL_AudioDriverImpl * impl)
 AudioBootStrap XAUDIO2_bootstrap = {
     "xaudio2", "XAudio2", XAUDIO2_Init, 0
 };
-
 #endif  /* SDL_AUDIO_DRIVER_XAUDIO2 */
 
 /* vi: set ts=4 sw=4 expandtab: */

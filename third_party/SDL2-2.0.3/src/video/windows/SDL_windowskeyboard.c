@@ -393,7 +393,15 @@ IME_GetReadingString(SDL_VideoData *videodata, HWND hwnd)
     videodata->ime_readingstring[0] = 0;
     if (!osversion.dwOSVersionInfoSize) {
         osversion.dwOSVersionInfoSize = sizeof(osversion);
+// [MILTON] : Ignore deprecation warning
+#if _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996)
+#endif
         GetVersionExA(&osversion);
+#if _MSC_VER
+#pragma warning(pop)
+#endif
     }
     id = IME_GetId(videodata, 0);
     if (!id)

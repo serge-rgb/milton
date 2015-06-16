@@ -19,7 +19,6 @@ To-Do
     * :)
 
 * Application
-    * Eraser
     * Tiled canvas render.
     * Basic saving / loading.
     * SIMD-ify canvas rasterizer
