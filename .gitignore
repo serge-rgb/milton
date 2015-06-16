@@ -1,5 +1,10 @@
 src/libserg
 src/metaprogram
-build
 src/*.generated.h
-third_party/SDL*
+
+# Visual Studio crap
+third_party/SDL2-2.0.3/VisualC/SDL
+build/X64
+*.vcxproj.user
+*.sdf
+*.opensdf
