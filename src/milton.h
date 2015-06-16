@@ -39,6 +39,14 @@ typedef struct MiltonGLState_s
     GLuint quad_vao;
 } MiltonGLState;
 
+typedef enum MiltonMode_s
+{
+    MiltonMode_NONE =       ( 0 ),
+
+    MiltonMode_ERASER =     ( 1 << 0 ),
+    MiltonMode_BRUSH =      ( 1 << 1 ),
+} MiltonMode;
+
 typedef struct MiltonState_s
 {
     int32_t     full_width;             // Dimensions of the raster
@@ -58,6 +66,7 @@ typedef struct MiltonState_s
     ColorPicker picker;
 
     Brush brush;
+    Brush eraser_brush;
     int32 brush_size;  // In screen pixels
 
     bool32 canvas_blocked;  // When interacting with the UI.
@@ -72,6 +81,8 @@ typedef struct MiltonState_s
 
     int32   num_redos;
 
+    MiltonMode current_mode;
+
     // Heap
     Arena*      root_arena;         // Persistent memory.
     Arena*      transient_arena;    // Gets reset after every call to milton_update().
@@ -81,11 +92,13 @@ typedef struct MiltonState_s
 typedef enum
 {
     MiltonInputFlags_NONE,
-    MiltonInputFlags_FULL_REFRESH = ( 1 << 1 ),
-    MiltonInputFlags_RESET =        ( 1 << 2 ),
-    MiltonInputFlags_END_STROKE =   ( 1 << 3 ),
-    MiltonInputFlags_UNDO =         ( 1 << 4 ),
-    MiltonInputFlags_REDO =         ( 1 << 5 ),
+    MiltonInputFlags_FULL_REFRESH =     ( 1 << 0 ),
+    MiltonInputFlags_RESET =            ( 1 << 1 ),
+    MiltonInputFlags_END_STROKE =       ( 1 << 2 ),
+    MiltonInputFlags_UNDO =             ( 1 << 3 ),
+    MiltonInputFlags_REDO =             ( 1 << 4 ),
+    MiltonInputFlags_SET_MODE_ERASER =  ( 1 << 5 ),
+    MiltonInputFlags_SET_MODE_BRUSH =   ( 1 << 6 ),
 } MiltonInputFlags;
 
 typedef struct MiltonInput_s
@@ -243,6 +256,8 @@ static void milton_init(MiltonState* milton_state)
     milton_state->bytes_per_pixel    = 4;
     milton_state->num_strokes        = 0;
 
+    milton_state->current_mode = MiltonMode_BRUSH;
+
     int64 raster_buffer_size =
         milton_state->full_width * milton_state->full_height * milton_state->bytes_per_pixel;
     milton_state->raster_buffer =
@@ -311,6 +326,13 @@ static void milton_init(MiltonState* milton_state)
     }
     milton_state->brush = brush;
 
+    milton_state->eraser_brush = (Brush)
+    {
+        .radius = milton_state->brush.radius,
+        .alpha = 1.0f,
+        .color = (v3f) { 1, 1, 1 },
+    };
+
     milton_gl_backend_init(milton_state);
 }
 
@@ -358,6 +380,16 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             milton_state->view->scale = (int32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
+        milton_state->eraser_brush.radius = milton_state->brush_size * milton_state->view->scale;
+    }
+
+    if (input->flags & MiltonInputFlags_SET_MODE_BRUSH)
+    {
+        milton_state->current_mode = MiltonMode_BRUSH;
+    }
+    if (input->flags & MiltonInputFlags_SET_MODE_ERASER)
+    {
+        milton_state->current_mode = MiltonMode_ERASER;
     }
 
     if (input->flags & MiltonInputFlags_UNDO)
@@ -413,15 +445,25 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         if (!is_user_drawing(milton_state) && is_inside_picker(&milton_state->picker, point))
         {
             ColorPickResult pick_result = picker_update(&milton_state->picker, point);
-            if (pick_result & ColorPickResult_change_color)
+            if ((pick_result & ColorPickResult_change_color) &&
+                (milton_state->current_mode == MiltonMode_BRUSH))
             {
                 milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
             }
             milton_state->canvas_blocked = true;
             render_flags |= MiltonRenderFlags_picker_updated;
         }
+        // Currently drawing
         else if (!milton_state->canvas_blocked)
         {
+            if (milton_state->current_mode == MiltonMode_BRUSH)
+            {
+                milton_state->working_stroke.brush = milton_state->brush;
+            }
+            else if (milton_state->current_mode == MiltonMode_ERASER)
+            {
+                milton_state->working_stroke.brush = milton_state->eraser_brush;
+            }
             v2i in_point = *input->point;
 
             // Avoid creating really large update rects when starting new strokes
@@ -437,7 +479,6 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             {
                 // Add to current stroke.
                 milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
-                milton_state->working_stroke.brush = milton_state->brush;
             }
 
             milton_state->last_raster_input = in_point;
@@ -453,8 +494,9 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
                 {
                     picker_wheel_deactivate(picker);
                 }
-                else
+                else if (milton_state->current_mode == MiltonMode_BRUSH)
                 {
+
                     picker_update_wheel(&milton_state->picker, fpoint);
                     milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
                 }

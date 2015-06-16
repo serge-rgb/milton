@@ -239,6 +239,14 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                     input.flags |= MiltonInputFlags_REDO;
                     input.flags |= MiltonInputFlags_FULL_REFRESH;
                 }
+                if (was_down && vkcode == 'E')
+                {
+                    input.flags |= MiltonInputFlags_SET_MODE_ERASER;
+                }
+                if (was_down && vkcode == 'B')
+                {
+                    input.flags |= MiltonInputFlags_SET_MODE_BRUSH;
+                }
                 if (was_down && vkcode == VK_SPACE)
 
                 {
