@@ -60,6 +60,12 @@
       <SubSystem>Windows</SubSystem>
       <AdditionalDependencies>..\third_party\glew32s.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>call ..\scripts\metapass.bat</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Meta-program pass</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -83,6 +89,12 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>..\third_party\glew32s.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>call ..\scripts\metapass.bat</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Meta-program pass</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\metaprogram.c" />

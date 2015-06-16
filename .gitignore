@@ -2,3 +2,4 @@ src/libserg
 src/metaprogram
 build
 src/*.generated.h
+third_party/SDL*
