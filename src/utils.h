@@ -192,6 +192,25 @@ static int32 rect_split(Arena* transient_arena,
     return i;
 }
 
+inline Rect rect_union(Rect a, Rect b)
+{
+    Rect result;
+    result.left = min(a.left, b.left);
+    result.right = max(a.right, b.right);
+
+    if (result.left > result.right)
+    {
+        result.left = result.right;
+    }
+    result.top = min(a.top, b.top);
+    result.bottom = max(a.bottom, b.bottom);
+    if (result.bottom < result.top)
+    {
+        result.bottom = result.top;
+    }
+    return result;
+}
+
 inline Rect rect_intersect(Rect a, Rect b)
 {
     Rect result;

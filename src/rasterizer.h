@@ -149,12 +149,11 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    int32   num_strokes,
                                    Stroke* working_stroke,
                                    uint32* pixels,
-                                   Rect limits)
+                                   Rect raster_limits)
 {
     Rect canvas_limits;
-    canvas_limits.top_left = raster_to_canvas(view, limits.top_left);
-    canvas_limits.bot_right = raster_to_canvas(view, limits.bot_right);
-
+    canvas_limits.top_left = raster_to_canvas(view, raster_limits.top_left);
+    canvas_limits.bot_right = raster_to_canvas(view, raster_limits.bot_right);
     ClippedStroke* stroke_list = NULL;
 
     // Go backwards so that list is in the correct older->newer order.
@@ -182,10 +181,6 @@ inline void render_canvas_in_block(Arena* render_arena,
                         view))
             {
                 list_head->fills_block = true;
-                // Early reject if this brush fills the rect and is opaque
-                if (list_head->brush.alpha == 1.0f)
-                {
-                }
             }
             stroke_list = list_head;
         }
@@ -203,9 +198,9 @@ inline void render_canvas_in_block(Arena* render_arena,
         list_iter = list_iter->next;
     }
 
-    for (int j = limits.top; j < limits.bottom; ++j)
+    for (int j = raster_limits.top; j < raster_limits.bottom; ++j)
     {
-        for (int i = limits.left; i < limits.right; ++i)
+        for (int i = raster_limits.left; i < raster_limits.right; ++i)
         {
             v2i raster_point = {i, j};
             v2i canvas_point = raster_to_canvas(view, raster_point);
@@ -350,22 +345,92 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
     Rect* blocks = NULL;
     int32 num_blocks = rect_split(milton_state->transient_arena,
             limits, milton_state->block_width, milton_state->block_width, &blocks);
-    for (int i = 0; i < num_blocks; ++i)
+
+    int32 blocks_per_tile = 512;
+
+    for (int i = 0; i < num_blocks; i += blocks_per_tile)
     {
-        blocks[i] = rect_clip_to_screen(blocks[i], milton_state->view->screen_size);
-        Arena render_arena = arena_push(milton_state->transient_arena,
-                arena_available_space(milton_state->transient_arena));
+        if (i >= num_blocks)
+        {
+            break;
+        }
 
-        render_canvas_in_block(&render_arena,
-                               milton_state->view,
-                               milton_state->cm,
-                               milton_state->strokes,
-                               milton_state->num_strokes,
-                               &milton_state->working_stroke,
-                               (uint32*)milton_state->raster_buffer,
-                               blocks[i]);
+        Rect raster_tile_rect = { 0 };
+        Rect canvas_tile_rect = { 0 };
 
-        arena_pop(&render_arena);
+        // Clip and move to canvas space.
+        // Derive tile_rect
+        for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
+        {
+            if (i + block_i >= num_blocks)
+            {
+                break;
+            }
+            blocks[i + block_i] = rect_clip_to_screen(blocks[i + block_i], milton_state->view->screen_size);
+            raster_tile_rect = rect_union(raster_tile_rect, blocks[i + block_i]);
+
+            canvas_tile_rect.top_left = raster_to_canvas(milton_state->view, raster_tile_rect.top_left);
+            canvas_tile_rect.bot_right = raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
+        }
+
+        Arena tile_arena = arena_push(milton_state->transient_arena,
+                                      arena_available_space(milton_state->transient_arena));
+        // Filter strokes to this tile.
+        bool32* stroke_masks = filter_strokes_to_rect(&tile_arena,
+                                                      milton_state->strokes,
+                                                      milton_state->num_strokes,
+                                                      canvas_tile_rect);
+
+        // Copy strokes to tile.
+        int32 num_strokes = 0;
+        for (int32 i = 0; i < milton_state->num_strokes; ++i)
+        {
+            if (stroke_masks[i])
+            {
+                num_strokes++;
+            }
+        }
+
+        Stroke* strokes = arena_alloc_array(&tile_arena, num_strokes, Stroke);
+        {
+            int32 j = 0;
+            for (int32 i = 0; i < milton_state->num_strokes; ++i)
+            {
+                if (stroke_masks[i])
+                {
+                    strokes[j++] = milton_state->strokes[i];
+                }
+            }
+        }
+
+
+        for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
+        {
+            if (i + block_i >= num_blocks)
+            {
+                break;
+            }
+            Arena block_arena = arena_push(&tile_arena,
+                                           arena_available_space(&tile_arena));
+
+            render_canvas_in_block(&block_arena,
+                                   milton_state->view,
+                                   milton_state->cm,
+#if 1
+                                   strokes,
+                                   num_strokes,
+#else
+                                   milton_state->strokes,
+                                   milton_state->num_strokes,
+#endif
+                                   &milton_state->working_stroke,
+                                   (uint32*)milton_state->raster_buffer,
+                                   blocks[i + block_i]);
+            arena_pop(&block_arena);
+        }
+
+        arena_pop(&tile_arena);
+
         ARENA_VALIDATE(milton_state->transient_arena);
     }
 }

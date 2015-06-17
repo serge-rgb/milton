@@ -92,3 +92,44 @@ inline v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 #endif
 }
 
+// Returns an array of `num_strokes` bool32's, masking strokes to the rect.
+static bool32* filter_strokes_to_rect(Arena* arena,
+                                      Stroke* strokes,
+                                      int32 num_strokes,
+                                      Rect rect)
+{
+    bool32* mask_array = arena_alloc_array(arena, num_strokes, bool32);
+    for (int32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
+    {
+        Stroke* stroke = &strokes[stroke_i];
+        Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
+        if (stroke->num_points == 1)
+        {
+            if (is_inside_rect(stroke_rect, stroke->points[0]))
+            {
+                mask_array[stroke_i] = true;
+            }
+        }
+        else
+        {
+            for (int32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
+            {
+                v2i a = stroke->points[point_i];
+                v2i b = stroke->points[point_i + 1];
+
+                bool32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
+                                  (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
+                                  (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
+                                  (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
+
+                if (inside)
+                {
+                    mask_array[stroke_i] = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    return mask_array;
+}
