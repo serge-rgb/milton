@@ -17,11 +17,11 @@ To-Do
 
 * Application
     * Basic saving / loading.
-    * SIMD-ify canvas rasterizer
     * Threaded canvas update.
+    * SIMD-ify canvas rasterizer
     * Tiled canvas (inifite panning)
-    * Progressive rendering
-    * ? Quadratic interpolation of strokes (intermediate points).
+    * ? Progressive rendering ?
+    * ? Quadratic interpolation of strokes (intermediate points). ?
     * Gamma correct blending
     * UI: Basic IM buttons
 

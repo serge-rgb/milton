@@ -6,11 +6,13 @@
 #include "libserg/memory.h"
 
 #ifdef _MSC_VER
-#if (_MSC_VER == 1800)
 //#define inline __inline
+#if 0
 #define inline __forceinline  // This don't do shit...
+#else
+#define inline static         // Mostly for ease of profiling
 #endif
-#endif
+#endif _MSC_VER
 
 #define snprintf sprintf_s
 

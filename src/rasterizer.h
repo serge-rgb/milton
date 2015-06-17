@@ -51,7 +51,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     return clipped_stroke;
 }
 
-// TODO: Micro-optimize this. Hottest part in canvas rendering.
 inline v2i closest_point_in_segment(
         v2i a, v2i b, v2f ab, float ab_magnitude_squared, v2i canvas_point)
 {
@@ -59,7 +58,6 @@ inline v2i closest_point_in_segment(
     float mag_ab = sqrtf(ab_magnitude_squared);
     float d_x = ab.x / mag_ab;
     float d_y = ab.y / mag_ab;
-    // TODO: Maybe store these and not do conversion in the hot loop?
     float ax_x = (float)(canvas_point.x - a.x);
     float ax_y = (float)(canvas_point.y - a.y);
     float disc = d_x * ax_x + d_y * ax_y;
@@ -341,12 +339,11 @@ inline void render_canvas_in_block(Arena* render_arena,
 
 static void render_canvas(MiltonState* milton_state, Rect limits)
 {
-    // TODO: split into tiles.
     Rect* blocks = NULL;
     int32 num_blocks = rect_split(milton_state->transient_arena,
             limits, milton_state->block_width, milton_state->block_width, &blocks);
 
-    int32 blocks_per_tile = 512;
+    int32 blocks_per_tile = 1024;
 
     for (int i = 0; i < num_blocks; i += blocks_per_tile)
     {
@@ -410,23 +407,16 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
             {
                 break;
             }
-            Arena block_arena = arena_push(&tile_arena,
-                                           arena_available_space(&tile_arena));
 
-            render_canvas_in_block(&block_arena,
+            render_canvas_in_block(&tile_arena,
+                                   //&block_arena,
                                    milton_state->view,
                                    milton_state->cm,
-#if 1
                                    strokes,
                                    num_strokes,
-#else
-                                   milton_state->strokes,
-                                   milton_state->num_strokes,
-#endif
                                    &milton_state->working_stroke,
                                    (uint32*)milton_state->raster_buffer,
                                    blocks[i + block_i]);
-            arena_pop(&block_arena);
         }
 
         arena_pop(&tile_arena);
