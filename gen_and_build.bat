@@ -9,8 +9,7 @@ metaprogram
 if errorlevel 1 goto end
 popd
 
-msbuild build\Milton.vcxproj /v:q
-
+call build.bat
 
 if errorlevel 1 goto end
 

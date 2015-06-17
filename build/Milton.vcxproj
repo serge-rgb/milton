@@ -54,6 +54,7 @@
       <UseFullPaths>true</UseFullPaths>
       <TreatWarningAsError>true</TreatWarningAsError>
       <AdditionalOptions>/I..\third_party %(AdditionalOptions)</AdditionalOptions>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

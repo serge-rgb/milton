@@ -2,9 +2,23 @@ src/libserg
 src/metaprogram
 src/*.generated.h
 
+third_party/build
+
 # Visual Studio crap
-third_party/SDL2-2.0.3/VisualC/SDL
+third_party/SDL2-2.0.3/VisualC
 build/X64
+build/Milton_metaprogram/X64
 *.vcxproj.user
 *.sdf
 *.opensdf
+*.psess
+*.vsp
+
+# SDL build
+third_party/SDL2-2.0.3/Makefile
+third_party/SDL2-2.0.3/Makefile.rules
+third_party/SDL2-2.0.3/config.log
+third_party/SDL2-2.0.3/config.status
+third_party/SDL2-2.0.3/libtool
+third_party/SDL2-2.0.3/sdl2-config
+third_party/SDL2-2.0.3/sdl2.pc

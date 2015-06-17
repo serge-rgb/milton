@@ -8,9 +8,8 @@ How to Compile (Windows x64)
 
 1. Open a Windows shell. cd to Milton's directory
 3. `scripts\vcvars.bat` to get Visual Studio's tools into the PATH. (Assumes VS is installed in the default dir.)
-2. `run setup.bat` to clone and build dependencies; and to do a necessary meta-programming pass.
-4. Open build\Milton.sln in VS 2013
-5. build.bat is available if you want to buid from a shell or from your text editor.
+2. `run setup.bat` to clone dependencies.
+4. Open build\Milton.sln in VS 2013 and build.
 
 To-Do
 =====

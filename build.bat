@@ -4,6 +4,6 @@ pushd build
 call ..\scripts\metapass.bat
 popd
 
-msbuild build\Milton.sln /v:q
+msbuild build\Milton.vcxproj /v:q
 
 :end
