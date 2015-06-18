@@ -139,7 +139,6 @@ inline bool32 is_rect_filled_by_stroke(
     return false;
 }
 
-// Filter strokes and render them. See `render_canvas` for the one that should be called
 inline void render_canvas_in_block(Arena* render_arena,
                                    CanvasView* view,
                                    ColorManagement cm,
@@ -150,8 +149,10 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    Rect raster_limits)
 {
     Rect canvas_limits;
-    canvas_limits.top_left = raster_to_canvas(view, raster_limits.top_left);
-    canvas_limits.bot_right = raster_to_canvas(view, raster_limits.bot_right);
+    {
+        canvas_limits.top_left = raster_to_canvas(view, raster_limits.top_left);
+        canvas_limits.bot_right = raster_to_canvas(view, raster_limits.bot_right);
+    }
     ClippedStroke* stroke_list = NULL;
 
     // Go backwards so that list is in the correct older->newer order.
@@ -213,11 +214,12 @@ inline void render_canvas_in_block(Arena* render_arena,
             while(list_iter)
             {
                 ClippedStroke* clipped_stroke = list_iter;
+                list_iter = list_iter->next;
 
                 assert (clipped_stroke);
 
                 // Fast path.
-                if (list_iter->fills_block)
+                if (clipped_stroke->fills_block)
                 {
 #if 0  // Visualize it with black
                     float sr = clipped_stroke->brush.color.r * 0;
@@ -230,10 +232,23 @@ inline void render_canvas_in_block(Arena* render_arena,
 #endif
                     float sa = clipped_stroke->brush.alpha;
 
-                    dr = (1 - sa) * dr + sa * sr;
-                    dg = (1 - sa) * dg + sa * sg;
-                    db = (1 - sa) * db + sa * sb;
+                    // Move to gamma space
+                    float g_dr = dr * dr;
+                    float g_dg = dg * dg;
+                    float g_db = db * db;
+                    sr = sr * sr;
+                    sg = sg * sg;
+                    sb = sb * sb;
+
+                    g_dr = (1 - sa) * g_dr + sa * sr;
+                    g_dg = (1 - sa) * g_dg + sa * sg;
+                    g_db = (1 - sa) * g_db + sa * sb;
                     da = sa + da * (1 - sa);
+
+                    // Back to linear space
+                    dr = sqrtf(g_dr);
+                    dg = sqrtf(g_dg);
+                    db = sqrtf(g_db);
 
                 }
                 // Slow path. There are pixels not inside.
@@ -256,7 +271,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-                        for (int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += 2)
+                        for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
                         {
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
@@ -265,7 +280,9 @@ inline void render_canvas_in_block(Arena* render_arena,
                             float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
                             if (mag_ab2 > 0)
                             {
-                                v2i point = closest_point_in_segment(a, b, ab, mag_ab2, canvas_point);
+                                v2i point = closest_point_in_segment(a, b,
+                                                                     ab, mag_ab2,
+                                                                     canvas_point);
 
                                 float test_dx = (float) (canvas_point.x - point.x);
                                 float test_dy = (float) (canvas_point.y - point.y);
@@ -317,15 +334,27 @@ inline void render_canvas_in_block(Arena* render_arena,
 
                             sa *= coverage;
 
-                            dr = (1 - sa) * dr + sa * sr;
-                            dg = (1 - sa) * dg + sa * sg;
-                            db = (1 - sa) * db + sa * sb;
+                            // Move to gamma space
+                            float g_dr = dr * dr;
+                            float g_dg = dg * dg;
+                            float g_db = db * db;
+                            sr = sr * sr;
+                            sg = sg * sg;
+                            sb = sb * sb;
+
+                            g_dr = (1 - sa) * g_dr + sa * sr;
+                            g_dg = (1 - sa) * g_dg + sa * sg;
+                            g_db = (1 - sa) * g_db + sa * sb;
                             da = sa + da * (1 - sa);
+
+                            // Back to linear space
+                            dr = sqrtf(g_dr);
+                            dg = sqrtf(g_dg);
+                            db = sqrtf(g_db);
                         }
                     }
 
                 }
-                list_iter = list_iter->next;
             }
             // From [0, 1] to [0, 255]
             v4f d = {
@@ -343,7 +372,8 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
     int32 num_blocks = rect_split(milton_state->transient_arena,
             limits, milton_state->block_width, milton_state->block_width, &blocks);
 
-    int32 blocks_per_tile = 1024;
+    int32 blocks_per_tile = 128;
+    //int32 blocks_per_tile = 4096;
 
     for (int i = 0; i < num_blocks; i += blocks_per_tile)
     {
@@ -363,11 +393,14 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
             {
                 break;
             }
-            blocks[i + block_i] = rect_clip_to_screen(blocks[i + block_i], milton_state->view->screen_size);
+            blocks[i + block_i] = rect_clip_to_screen(blocks[i + block_i],
+                                                      milton_state->view->screen_size);
             raster_tile_rect = rect_union(raster_tile_rect, blocks[i + block_i]);
 
-            canvas_tile_rect.top_left = raster_to_canvas(milton_state->view, raster_tile_rect.top_left);
-            canvas_tile_rect.bot_right = raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
+            canvas_tile_rect.top_left =
+                raster_to_canvas(milton_state->view, raster_tile_rect.top_left);
+            canvas_tile_rect.bot_right =
+                raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
         }
 
         Arena tile_arena = arena_push(milton_state->transient_arena,
@@ -445,7 +478,10 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            uint32 picker_i = (j - draw_rect.top) * (2*picker->bound_radius_px ) + (i - draw_rect.left);
+            int b =
+                3 * 3;
+            uint32 picker_i =
+                    (j - draw_rect.top) * (2*picker->bound_radius_px ) + (i - draw_rect.left);
             uint32 src = buffer_pixels[j * view->screen_size.w + i];
             picker->pixels[picker_i] = src;
         }
@@ -456,14 +492,23 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            uint32 picker_i =
+                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
             v4f dest = color_u32_to_v4f(cm, picker->pixels[picker_i]);
             float alpha = background_color.a;
+            // To gamma
+            background_color.r = background_color.r * background_color.r;
+            background_color.g = background_color.g * background_color.g;
+            background_color.b = background_color.b * background_color.b;
+            dest.r = dest.r * dest.r;
+            dest.g = dest.g * dest.g;
+            dest.b = dest.b * dest.b;
+            // Blend and move to linear
             v4f result =
             {
-                dest.r * (1 - alpha) + background_color.r * alpha,
-                dest.g * (1 - alpha) + background_color.g * alpha,
-                dest.b * (1 - alpha) + background_color.b * alpha,
+                sqrtf(dest.r * (1 - alpha) + background_color.r * alpha),
+                sqrtf(dest.g * (1 - alpha) + background_color.g * alpha),
+                sqrtf(dest.b * (1 - alpha) + background_color.b * alpha),
                 dest.a + (alpha * (1 - dest.a)),
             };
             picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
@@ -475,7 +520,8 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            uint32 picker_i =
+                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
             v2f point = {(float)i, (float)j};
             uint32 dest_color = picker->pixels[picker_i];
 
@@ -501,11 +547,19 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
 
                 v4f d = color_u32_to_v4f(cm, dest_color);
 
+                // To gamma
+                rgb.r = rgb.r * rgb.r;
+                rgb.g = rgb.g * rgb.g;
+                rgb.b = rgb.b * rgb.b;
+                d.r = d.r * d.r;
+                d.g = d.g * d.g;
+                d.b = d.b * d.b;
+                // Blend and move to linear
                 v4f result =
                 {
-                    ((1 - contrib) * (d.r)) + (contrib * (rgb.r)),
-                    ((1 - contrib) * (d.g)) + (contrib * (rgb.g)),
-                    ((1 - contrib) * (d.b)) + (contrib * (rgb.b)),
+                    sqrtf(((1 - contrib) * (d.r)) + (contrib * (rgb.r))),
+                    sqrtf(((1 - contrib) * (d.g)) + (contrib * (rgb.g))),
+                    sqrtf(((1 - contrib) * (d.b)) + (contrib * (rgb.b))),
                     d.a + (contrib * (1 - d.a)),
                 };
                 uint32 color = color_v4f_to_u32(cm, result);
@@ -520,7 +574,8 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             v2f point = { (float)i, (float)j };
-            uint32 picker_i = (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            uint32 picker_i =
+                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
             uint32 dest_color = picker->pixels[picker_i];
             // MSAA!!
             int samples = 0;
@@ -548,11 +603,26 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
 
                 v3f rgb = hsv_to_rgb(hsv);
 
+                /* v4f result = */
+                /* { */
+                /*     ((1 - contrib) * (d.r)) + (contrib * (rgb.r)), */
+                /*     ((1 - contrib) * (d.g)) + (contrib * (rgb.g)), */
+                /*     ((1 - contrib) * (d.b)) + (contrib * (rgb.b)), */
+                /*     d.a + (contrib * (1 - d.a)), */
+                /* }; */
+                // To gamma
+                rgb.r = rgb.r * rgb.r;
+                rgb.g = rgb.g * rgb.g;
+                rgb.b = rgb.b * rgb.b;
+                d.r = d.r * d.r;
+                d.g = d.g * d.g;
+                d.b = d.b * d.b;
+                // Blend and move to linear
                 v4f result =
                 {
-                    ((1 - contrib) * (d.r)) + (contrib * (rgb.r)),
-                    ((1 - contrib) * (d.g)) + (contrib * (rgb.g)),
-                    ((1 - contrib) * (d.b)) + (contrib * (rgb.b)),
+                    sqrtf(((1 - contrib) * (d.r)) + (contrib * (rgb.r))),
+                    sqrtf(((1 - contrib) * (d.g)) + (contrib * (rgb.g))),
+                    sqrtf(((1 - contrib) * (d.b)) + (contrib * (rgb.b))),
                     d.a + (contrib * (1 - d.a)),
                 };
 

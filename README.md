@@ -13,6 +13,7 @@ To-Do
 =====
 
 * Bugs
+    * Drawing crash! (Stomping?)
     * :)
 
 * Application
@@ -22,7 +23,6 @@ To-Do
     * Tiled canvas (inifite panning)
     * ? Progressive rendering ?
     * ? Quadratic interpolation of strokes (intermediate points). ?
-    * Gamma correct blending
     * UI: Basic IM buttons
 
 * Platforms
