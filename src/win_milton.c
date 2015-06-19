@@ -17,7 +17,6 @@
 #define snprintf sprintf_s
 
 #include "milton.h"
-#include "platform.h"
 
 typedef struct Win32State_s Win32State;
 
@@ -531,8 +530,7 @@ int CALLBACK WinMain(
 
     int32 x = 100;
     int32 y = 100;
-    //int32 width = 1920;
-    //int32 height = 1080;
+
     int32 width = 1280;
     int32 height = 800;
 
@@ -607,10 +605,8 @@ int CALLBACK WinMain(
     v2i screen_size = { win_state.width, win_state.height };
     milton_resize(milton_state, (v2i){0}, screen_size);
 
-    platform_update_view(
-            milton_state->view,
-            screen_size,
-            (v2i) { 0 });
+    milton_state->view->screen_size = screen_size;
+
     SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
 
     bool32 modified = false;

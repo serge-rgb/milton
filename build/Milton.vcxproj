@@ -113,7 +113,6 @@
     <ClInclude Include="..\src\libserg\serg_io.h" />
     <ClInclude Include="..\src\libserg\win_dirent.h" />
     <ClInclude Include="..\src\milton.h" />
-    <ClInclude Include="..\src\platform.h" />
     <ClInclude Include="..\src\rasterizer.h" />
     <ClInclude Include="..\src\system_includes.h" />
     <ClInclude Include="..\src\utils.h" />

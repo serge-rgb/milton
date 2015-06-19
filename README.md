@@ -13,20 +13,15 @@ To-Do
 =====
 
 * Bugs
-    * Drawing crash! (Stomping?)
     * :)
 
-* Application
+* Roadmap
+    * Progressive rendering
+    * iOS port
     * Basic saving / loading.
-    * Threaded canvas update.
+    * IMUI
+    * Threaded canvas rasterizer
     * SIMD-ify canvas rasterizer
-    * Tiled canvas (inifite panning)
-    * ? Progressive rendering ?
-    * ? Quadratic interpolation of strokes (intermediate points). ?
-    * UI: Basic IM buttons
-
-* Platforms
     * SDL version for Linux & Mac
-    * Android NDK OpenGL hello world
-    * iOS GL hello world
+    * ? Android port ?
 
