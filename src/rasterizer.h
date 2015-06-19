@@ -286,9 +286,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                             float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
                             if (mag_ab2 > 0)
                             {
-                                v2i point = closest_point_in_segment(a, b,
-                                                                     ab, mag_ab2,
-                                                                     canvas_point);
+                                v2i point = closest_point_in_segment(a, b, ab, mag_ab2, canvas_point);
 
                                 float test_dx = (float) (canvas_point.x - point.x);
                                 float test_dy = (float) (canvas_point.y - point.y);
@@ -416,31 +414,6 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
                                                       milton_state->strokes,
                                                       milton_state->num_strokes,
                                                       canvas_tile_rect);
-
-#if 0
-        // Copy strokes to tile.
-        int32 num_strokes = 0;
-        for (int32 i = 0; i < milton_state->num_strokes; ++i)
-        {
-            if (stroke_masks[i])
-            {
-                num_strokes++;
-            }
-        }
-
-        Stroke* strokes = arena_alloc_array(&tile_arena, num_strokes, Stroke);
-        {
-            int32 j = 0;
-            for (int32 i = 0; i < milton_state->num_strokes; ++i)
-            {
-                if (stroke_masks[i])
-                {
-                    strokes[j++] = milton_state->strokes[i];
-                }
-            }
-        }
-#endif
-
 
         for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
         {

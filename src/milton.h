@@ -265,8 +265,8 @@ static void milton_init(MiltonState* milton_state)
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
-    milton_state->blocks_per_tile = 32;
-    milton_state->block_width = 8;
+    milton_state->blocks_per_tile = 128;
+    milton_state->block_width = 16;
 
     color_init(&milton_state->cm);
 
