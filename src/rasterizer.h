@@ -29,7 +29,8 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     }
     else
     {
-        for (int32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
+        int32 num_points = stroke->num_points;
+        for (int32 point_i = 0; point_i < num_points - 1; ++point_i)
         {
             v2i a = stroke->points[point_i];
             v2i b = stroke->points[point_i + 1];
@@ -143,6 +144,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    CanvasView* view,
                                    ColorManagement cm,
                                    Stroke* strokes,
+                                   bool32* stroke_masks,
                                    int32   num_strokes,
                                    Stroke* working_stroke,
                                    uint32* pixels,
@@ -158,6 +160,10 @@ inline void render_canvas_in_block(Arena* render_arena,
     // Go backwards so that list is in the correct older->newer order.
     for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
     {
+        if (stroke_i < num_strokes && !stroke_masks[stroke_i])
+        {
+            continue;
+        }
         Stroke* stroke = NULL;
         if (stroke_i == num_strokes)
         {
@@ -372,8 +378,8 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
     int32 num_blocks = rect_split(milton_state->transient_arena,
             limits, milton_state->block_width, milton_state->block_width, &blocks);
 
-    int32 blocks_per_tile = 128;
-    //int32 blocks_per_tile = 4096;
+
+    const int32 blocks_per_tile = milton_state->blocks_per_tile;
 
     for (int i = 0; i < num_blocks; i += blocks_per_tile)
     {
@@ -411,6 +417,7 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
                                                       milton_state->num_strokes,
                                                       canvas_tile_rect);
 
+#if 0
         // Copy strokes to tile.
         int32 num_strokes = 0;
         for (int32 i = 0; i < milton_state->num_strokes; ++i)
@@ -432,6 +439,7 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
                 }
             }
         }
+#endif
 
 
         for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
@@ -445,8 +453,9 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
                                    //&block_arena,
                                    milton_state->view,
                                    milton_state->cm,
-                                   strokes,
-                                   num_strokes,
+                                   milton_state->strokes,
+                                   stroke_masks,
+                                   milton_state->num_strokes,
                                    &milton_state->working_stroke,
                                    (uint32*)milton_state->raster_buffer,
                                    blocks[i + block_i]);

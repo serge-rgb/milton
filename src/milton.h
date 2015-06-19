@@ -56,7 +56,7 @@ typedef struct MiltonState_s
 
     // The screen is rendered in tiles of `tile_dimensions`
     // Each tile is rendered in blocks of size (block_width*block_width).
-    v2i     tile_dimensions;
+    int32   blocks_per_tile;
     int32   block_width;
 
     MiltonGLState* gl;
@@ -265,8 +265,8 @@ static void milton_init(MiltonState* milton_state)
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
-    milton_state->tile_dimensions = (v2i){ 0, 0 };  // This is reset when we get a resize call
-    milton_state->block_width = 16;
+    milton_state->blocks_per_tile = 32;
+    milton_state->block_width = 8;
 
     color_init(&milton_state->cm);
 
