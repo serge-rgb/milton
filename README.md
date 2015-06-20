@@ -16,10 +16,10 @@ To-Do
     * :)
 
 * Roadmap
+    * Threaded canvas rasterizer
     * iOS port
     * Basic saving / loading.
     * IMUI
-    * Threaded canvas rasterizer
     * SIMD-ify canvas rasterizer
     * SDL version for Linux & Mac
     * ? Android port ?

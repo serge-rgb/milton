@@ -50,10 +50,11 @@ typedef enum MiltonMode_s
 
 typedef struct MiltonState_s
 {
-    int32_t     full_width;             // Dimensions of the raster
-    int32_t     full_height;
-    uint8_t     bytes_per_pixel;
-    uint8_t*    raster_buffer;
+    int32   max_width;              // Dimensions of the raster
+    int32   max_height;
+    uint8   bytes_per_pixel;
+    uint8*  raster_buffers[2];      // Double buffering, for render jobs that may not finish.
+    int32   raster_buffer_index;
 
     // The screen is rendered in tiles of `tile_dimensions`
     // Each tile is rendered in blocks of size (block_width*block_width).
@@ -121,10 +122,11 @@ typedef struct MiltonInput_s
 static void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;
+    uint8* raster_buffer = milton_state->raster_buffers[milton_state->raster_buffer_index];
     glTexImage2D(
             GL_TEXTURE_2D, 0, GL_RGBA,
             milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-            0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)milton_state->raster_buffer);
+            0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)raster_buffer);
     glUseProgram(gl->quad_program);
     glBindVertexArray(gl->quad_vao);
     GLCHK (glDrawArrays (GL_TRIANGLE_FAN, 0, 4) );
@@ -246,23 +248,25 @@ static void milton_startup_tests()
 }
 #endif
 
-static void milton_init(MiltonState* milton_state)
+static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_height)
 {
 #ifndef NDEBUG
     milton_startup_tests();
 #endif
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
-    milton_state->full_width         = 7680;
-    milton_state->full_height        = 4320;
+    milton_state->max_width         = max_width;
+    milton_state->max_height        = max_height;
     milton_state->bytes_per_pixel    = 4;
     milton_state->num_strokes        = 0;
 
     milton_state->current_mode = MiltonMode_BRUSH;
 
     int64 raster_buffer_size =
-        milton_state->full_width * milton_state->full_height * milton_state->bytes_per_pixel;
-    milton_state->raster_buffer =
+        milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
+    milton_state->raster_buffers[0] =
+        arena_alloc_array(milton_state->root_arena, raster_buffer_size, uint8);
+    milton_state->raster_buffers[1] =
         arena_alloc_array(milton_state->root_arena, raster_buffer_size, uint8);
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
@@ -349,12 +353,21 @@ inline bool32 is_user_drawing(MiltonState* milton_state)
 
 static void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
-    milton_state->view->screen_size = new_screen_size;
-    milton_state->view->screen_center = invscale_v2i(milton_state->view->screen_size, 2);
+    if (new_screen_size.w < milton_state->max_width &&
+        new_screen_size.h < milton_state->max_height)
+    {
 
-    // Add delta to pan vector
-    milton_state->view->pan_vector = add_v2i(
-            milton_state->view->pan_vector, scale_v2i(pan_delta, milton_state->view->scale));
+        milton_state->view->screen_size = new_screen_size;
+        milton_state->view->screen_center = invscale_v2i(milton_state->view->screen_size, 2);
+
+        // Add delta to pan vector
+        milton_state->view->pan_vector = add_v2i(milton_state->view->pan_vector,
+                                                 scale_v2i(pan_delta, milton_state->view->scale));
+    }
+    else
+    {
+        assert(!"DEBUG: new screen size is more than we can handle.");
+    }
 }
 
 // Our "render loop" inner function.

@@ -599,7 +599,7 @@ int CALLBACK WinMain(
         // can do this with a clear conscience.
         assert ( g_gl_context_handle != NULL );
 
-        milton_init(milton_state);
+        milton_init(milton_state, 2560, 1600);
     }
 
     MiltonInput input = { 0 };

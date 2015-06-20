@@ -380,7 +380,7 @@ inline void render_canvas_in_block(Arena* render_arena,
     }
 }
 
-static void render_canvas(MiltonState* milton_state, Rect limits)
+static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Rect limits)
 {
     Rect* blocks = NULL;
     int32 num_blocks = rect_split(milton_state->transient_arena,
@@ -389,12 +389,16 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
 
     const int32 blocks_per_tile = milton_state->blocks_per_tile;
 
+    // TODO: make this loop data parallel
     for (int i = 0; i < num_blocks; i += blocks_per_tile)
     {
         if (i >= num_blocks)
         {
             break;
         }
+
+        Arena tile_arena = arena_push(milton_state->transient_arena,
+                                      arena_available_space(milton_state->transient_arena));
 
         Rect raster_tile_rect = { 0 };
         Rect canvas_tile_rect = { 0 };
@@ -403,6 +407,7 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
         // Derive tile_rect
         for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
         {
+            assert (i + block_i < num_blocks);
             if (i + block_i >= num_blocks)
             {
                 break;
@@ -417,8 +422,6 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
                 raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
         }
 
-        Arena tile_arena = arena_push(milton_state->transient_arena,
-                                      arena_available_space(milton_state->transient_arena));
         // Filter strokes to this tile.
         bool32* stroke_masks = filter_strokes_to_rect(&tile_arena,
                                                       milton_state->strokes,
@@ -427,6 +430,7 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
 
         for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
         {
+            assert (i + block_i < num_blocks);
             if (i + block_i >= num_blocks)
             {
                 break;
@@ -440,7 +444,7 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
                                    stroke_masks,
                                    milton_state->num_strokes,
                                    &milton_state->working_stroke,
-                                   (uint32*)milton_state->raster_buffer,
+                                   raster_buffer,
                                    blocks[i + block_i]);
         }
 
@@ -448,6 +452,7 @@ static void render_canvas(MiltonState* milton_state, Rect limits)
 
         ARENA_VALIDATE(milton_state->transient_arena);
     }
+    return true;
 }
 
 static void render_picker(ColorPicker* picker, ColorManagement cm,
@@ -702,9 +707,13 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         }
     }
 
-    render_canvas(milton_state, limits);
+    int32 index = (milton_state->raster_buffer_index + 1) % 2;
+    uint32* raster_buffer = (uint32*)milton_state->raster_buffers[index];
+
+    bool32 completed = render_canvas(milton_state, raster_buffer, limits);
 
     // Render UI
+    if (completed)
     {
         Rect* split_rects = NULL;
         bool32 redraw = false;
@@ -717,10 +726,20 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
 
         if (redraw || (render_flags & MiltonRenderFlags_picker_updated))
         {
-            render_canvas(milton_state, picker_rect);
+            render_canvas(milton_state, raster_buffer, picker_rect);
             render_picker(&milton_state->picker, milton_state->cm,
-                    (uint32*)milton_state->raster_buffer,
-                    milton_state->view);
+                          raster_buffer,
+                          milton_state->view);
         }
+    }
+
+    // If not preempted, do a buffer swap.
+    if (completed)
+    {
+        int32 prev_index = milton_state->raster_buffer_index;
+        milton_state->raster_buffer_index = index;
+        memcpy(milton_state->raster_buffers[prev_index],
+               milton_state->raster_buffers[index],
+               milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel);
     }
 }
