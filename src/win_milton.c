@@ -207,6 +207,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             {
                 int delta = GET_WHEEL_DELTA_WPARAM(message.wParam);
                 input.scale = delta;
+                input.flags |= MiltonInputFlags_FAST_DRAW;
                 g_gui_msgs |= GuiMsg_CHANGE_SCALE_CENTER;
 
                 break;
@@ -233,11 +234,13 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 if (was_down && is_ctrl_down && vkcode == 'Z')
                 {
                     input.flags |= MiltonInputFlags_UNDO;
+                    input.flags |= MiltonInputFlags_FAST_DRAW;
                     input.flags |= MiltonInputFlags_FULL_REFRESH;
                 }
                 if (was_down && is_ctrl_down && vkcode == 'R')
                 {
                     input.flags |= MiltonInputFlags_REDO;
+                    input.flags |= MiltonInputFlags_FAST_DRAW;
                     input.flags |= MiltonInputFlags_FULL_REFRESH;
                 }
                 if (was_down && vkcode == 'E')
@@ -252,6 +255,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 
                 {
                     input.flags |= MiltonInputFlags_FULL_REFRESH;
+                    input.flags |= MiltonInputFlags_FAST_DRAW;
                 }
 #if 0
                 if (is_down && vkcode == VK_LEFT)
@@ -395,6 +399,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
             g_gui_data.is_panning = true;
             g_gui_data.old_pan = new_pan;
             input.flags |= MiltonInputFlags_FULL_REFRESH;
+            input.flags |= MiltonInputFlags_FAST_DRAW;
         }
 
     }

@@ -41,10 +41,11 @@ typedef struct MiltonGLState_s
 
 typedef enum MiltonMode_s
 {
-    MiltonMode_NONE =       ( 0 ),
+    MiltonMode_NONE =                   ( 0 ),
 
-    MiltonMode_ERASER =     ( 1 << 0 ),
-    MiltonMode_BRUSH =      ( 1 << 1 ),
+    MiltonMode_ERASER =                 ( 1 << 0 ),
+    MiltonMode_BRUSH =                  ( 1 << 1 ),
+    MiltonMode_REQUEST_QUALITY_REDRAW = ( 1 << 2 ),
 } MiltonMode;
 
 typedef struct MiltonState_s
@@ -74,6 +75,7 @@ typedef struct MiltonState_s
     CanvasView* view;
 
     v2i     last_raster_input;  // Last input point. Used to determine area to update.
+
     Stroke  working_stroke;
 
     Stroke  strokes[4096];  // TODO: Create a deque to store arbitrary number of strokes.
@@ -99,6 +101,7 @@ typedef enum
     MiltonInputFlags_REDO =             ( 1 << 4 ),
     MiltonInputFlags_SET_MODE_ERASER =  ( 1 << 5 ),
     MiltonInputFlags_SET_MODE_BRUSH =   ( 1 << 6 ),
+    MiltonInputFlags_FAST_DRAW      =   ( 1 << 7 ),
 } MiltonInputFlags;
 
 typedef struct MiltonInput_s
@@ -264,8 +267,8 @@ static void milton_init(MiltonState* milton_state)
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
-    milton_state->blocks_per_tile = 128;
-    milton_state->block_width = 16;
+    milton_state->blocks_per_tile = 64;
+    milton_state->block_width = 64;
 
     color_init(&milton_state->cm);
 
@@ -361,11 +364,26 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     MiltonRenderFlags render_flags = MiltonRenderFlags_none;
 
-    // TODO: this should go away from MiltonInput
+    if (input->flags & MiltonInputFlags_FAST_DRAW)
+    {
+        milton_state->view->downsampling_factor = 8;
+        milton_state->current_mode |= MiltonMode_REQUEST_QUALITY_REDRAW;
+    }
+    else
+    {
+        milton_state->view->downsampling_factor = 1;
+        if (milton_state->current_mode & MiltonMode_REQUEST_QUALITY_REDRAW)
+        {
+            milton_state->current_mode ^= MiltonMode_REQUEST_QUALITY_REDRAW;
+            render_flags |= MiltonRenderFlags_full_redraw;
+        }
+    }
+
     if (input->flags & MiltonInputFlags_FULL_REFRESH)
     {
         render_flags |= MiltonRenderFlags_full_redraw;
     }
+
     if (input->scale)
     {
         render_flags |= MiltonRenderFlags_full_redraw;

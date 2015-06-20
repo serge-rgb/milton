@@ -16,7 +16,6 @@ To-Do
     * :)
 
 * Roadmap
-    * Progressive rendering
     * iOS port
     * Basic saving / loading.
     * IMUI
