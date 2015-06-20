@@ -203,9 +203,11 @@ inline void render_canvas_in_block(Arena* render_arena,
         list_iter = list_iter->next;
     }
 
-    for (int j = raster_limits.top; j < raster_limits.bottom; ++j)
+    int pixel_jump = view->downsampling_factor;  // Different names for the same thing.
+
+    for (int j = raster_limits.top; j < raster_limits.bottom; j += pixel_jump)
     {
-        for (int i = raster_limits.left; i < raster_limits.right; ++i)
+        for (int i = raster_limits.left; i < raster_limits.right; i += pixel_jump)
         {
             v2i raster_point = {i, j};
             v2i canvas_point = raster_to_canvas(view, raster_point);
@@ -365,7 +367,15 @@ inline void render_canvas_in_block(Arena* render_arena,
                 dr, dg, db, da
             };
             uint32 pixel = color_v4f_to_u32(cm, d);
-            pixels[j * view->screen_size.w + i] = pixel;
+
+            // TODO: Bilinear sampling could be nice here
+            for (int jj = j; jj < j + pixel_jump; ++jj)
+            {
+                for (int ii = i; ii < i + pixel_jump; ++ii)
+                {
+                    pixels[jj * view->screen_size.w + ii] = pixel;
+                }
+            }
         }
     }
 }

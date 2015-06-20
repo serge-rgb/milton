@@ -22,6 +22,7 @@ typedef struct CanvasView_s
     int32   scale;          // Zoom
     v2i     screen_center;  // In pixels
     v2i     pan_vector;     // In canvas scale
+    int32   downsampling_factor;
 #if 0
     int     rotation;       // Rotation in radians
     float   cos_sin_table[360][2];  // First cosine, then sine.
@@ -58,38 +59,23 @@ inline v2i rotate_to_view(v2i p, CanvasView* view)
 
 inline v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
-#if 0
-    v2i raster_point = canvas_point;
-    raster_point = add_v2i       (raster_point, view->pan_vector);
-    raster_point = invscale_v2i  (raster_point, view->scale);
-    raster_point = add_v2i       (raster_point, view->screen_center);
-    return raster_point;
-#else
     v2i raster_point =
     {
         ((view->pan_vector.x + canvas_point.x) / view->scale) + view->screen_center.x,
         ((view->pan_vector.y + canvas_point.y) / view->scale) + view->screen_center.y,
     };
     return raster_point;
-#endif
 }
 
 inline v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 {
-#if 0
-    v2i canvas_point = raster_point;
-    canvas_point = sub_v2i       (canvas_point, view->screen_center);
-    canvas_point = scale_v2i     (canvas_point, view->scale);
-    canvas_point = sub_v2i       (canvas_point, view->pan_vector);
-    return canvas_point;
-#else
     v2i canvas_point =
     {
         ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x,
         ((raster_point.y - view->screen_center.y) * view->scale) - view->pan_vector.y,
     };
+
     return canvas_point;
-#endif
 }
 
 // Returns an array of `num_strokes` bool32's, masking strokes to the rect.

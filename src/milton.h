@@ -184,16 +184,15 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         GLCHK (glBindTexture   (GL_TEXTURE_2D, milton_state->gl->texture));
 
         // Note for the future: These are needed.
+#if 0
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+#else
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+#endif
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
-
-        // Pass a null pointer, texture will be filled by opencl ray tracer
-        GLCHK ( glTexImage2D(
-                    GL_TEXTURE_2D, 0, GL_RGBA,
-                    milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                    0, GL_RGBA, GL_FLOAT, NULL) );
     }
     // Create quad
     {
@@ -276,6 +275,7 @@ static void milton_init(MiltonState* milton_state)
         // view->screen_size is set by the platform abstraction layer.
         // view->screen_center is also set there.
         milton_state->view->scale = (1 << 12);
+        milton_state->view->downsampling_factor = 1;
 #if 0
         milton_state->view->rotation = 0;
         for (int d = 0; d < 360; d++)
