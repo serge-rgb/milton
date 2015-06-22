@@ -50,7 +50,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <DisableSpecificWarnings>4255;4820;4514;4505;4100;4189;4201;4204;4201</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4127;4255;4820;4514;4505;4100;4189;4201;4204;4201</DisableSpecificWarnings>
       <UseFullPaths>true</UseFullPaths>
       <TreatWarningAsError>true</TreatWarningAsError>
       <AdditionalOptions>/I..\third_party %(AdditionalOptions)</AdditionalOptions>
@@ -77,7 +77,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>third_party ..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <DisableSpecificWarnings>4255;4820;4514;4505;4100;4189;4201;4204;4201</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4127;4255;4820;4514;4505;4100;4189;4201;4204;4201</DisableSpecificWarnings>
       <UseFullPaths>true</UseFullPaths>
       <TreatWarningAsError>true</TreatWarningAsError>
       <AdditionalOptions>/I..\third_party %(AdditionalOptions)</AdditionalOptions>

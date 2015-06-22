@@ -738,6 +738,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
     {
         int32 prev_index = milton_state->raster_buffer_index;
         milton_state->raster_buffer_index = index;
+
         memcpy(milton_state->raster_buffers[prev_index],
                milton_state->raster_buffers[index],
                milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel);

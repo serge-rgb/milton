@@ -56,7 +56,7 @@ typedef struct MiltonState_s
     uint8*  raster_buffers[2];      // Double buffering, for render jobs that may not finish.
     int32   raster_buffer_index;
 
-    // The screen is rendered in tiles of `tile_dimensions`
+    // The screen is rendered in tiles
     // Each tile is rendered in blocks of size (block_width*block_width).
     int32   blocks_per_tile;
     int32   block_width;
@@ -271,7 +271,7 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
-    milton_state->blocks_per_tile = 64;
+    milton_state->blocks_per_tile = 16;
     milton_state->block_width = 64;
 
     color_init(&milton_state->cm);
@@ -379,7 +379,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (input->flags & MiltonInputFlags_FAST_DRAW)
     {
-        milton_state->view->downsampling_factor = 8;
+        milton_state->view->downsampling_factor = 4;
         milton_state->current_mode |= MiltonMode_REQUEST_QUALITY_REDRAW;
     }
     else

@@ -13,6 +13,7 @@ To-Do
 =====
 
 * Bugs
+    * canvas not really infinite
     * :)
 
 * Roadmap
