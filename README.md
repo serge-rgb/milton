@@ -13,7 +13,7 @@ To-Do
 =====
 
 * Bugs
-    * canvas not really infinite
+    * precision errors at edge of usable canvas
     * :)
 
 * Roadmap

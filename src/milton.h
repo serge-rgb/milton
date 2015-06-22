@@ -281,7 +281,7 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
         milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
         // view->screen_size is set by the platform abstraction layer.
         // view->screen_center is also set there.
-        milton_state->view->scale = (1 << 12);
+        milton_state->view->scale = (1 << 10);
         milton_state->view->downsampling_factor = 1;
         milton_state->view->canvas_tile_radius = 1024 * 1024 * 512;
 #if 0
@@ -423,14 +423,26 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (input->scale)
     {
         render_flags |= MiltonRenderFlags_full_redraw;
+// Sensible
+#if 0
+        static float scale_factor = 1.2f;
+        static int32 view_scale_limit = 10000;
+#else  // Debug
         static float scale_factor = 1.5f;
         static int32 view_scale_limit = 1000000;
-        if (input->scale > 0 && milton_state->view->scale > 2)
+#endif
+        static bool32 debug_scale_lock = false;
+        if (!debug_scale_lock && input->scale > 0 && milton_state->view->scale >= 2)
         {
             milton_state->view->scale = (int32)(milton_state->view->scale / scale_factor);
+            if (milton_state->view->scale == 1)
+            {
+                debug_scale_lock = true;
+            }
         }
-        else if (milton_state->view->scale < view_scale_limit)
+        else if (input->scale < 0 && milton_state->view->scale < view_scale_limit)
         {
+            debug_scale_lock = false;
             milton_state->view->scale = (int32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
@@ -493,7 +505,6 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 #endif
 
     bool32 finish_stroke = false;
-    v2i canvas_reference = { 0 };
     if (input->point)
     {
         v2i point = *input->point;
@@ -521,21 +532,12 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             }
             v2i in_point = *input->point;
 
-            v2i* canvas_reference = NULL;
-
             if (milton_state->working_stroke.num_points == 0)
             {
                 // Avoid creating really large update rects when starting new strokes
                 milton_state->last_raster_input = in_point;
-                // Set the stroke's reference point
-                canvas_reference = &milton_state->working_stroke.canvas_reference;
             }
-            v2i canvas_point = raster_to_canvas(milton_state->view, canvas_reference, in_point);
-            canvas_point.x -= milton_state->working_stroke.canvas_reference.x *
-                    milton_state->view->canvas_tile_radius;
-            canvas_point.y -= milton_state->working_stroke.canvas_reference.y *
-                    milton_state->view->canvas_tile_radius;
-
+            v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
             // TODO: make deque!!
             if (milton_state->working_stroke.num_points < LIMIT_STROKE_POINTS)

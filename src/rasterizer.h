@@ -20,7 +20,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
         clipped_stroke->brush = stroke->brush;
         clipped_stroke->num_points = 0;
         clipped_stroke->points = arena_alloc_array(render_arena, stroke->num_points * 2, v2i);
-        clipped_stroke->canvas_reference = stroke->canvas_reference;
     }
     if (stroke->num_points == 1)
     {
@@ -152,36 +151,17 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    uint32* pixels,
                                    Rect raster_limits)
 {
-
-    v2i canvas_reference = { 0 };
-
     Rect canvas_limits;
     {
-        canvas_limits.top_left = raster_to_canvas(view,  &canvas_reference, raster_limits.top_left);
-        v2i second_cr;
-        canvas_limits.bot_right = raster_to_canvas(view, &second_cr, raster_limits.bot_right);
-        assert (canvas_reference.x == second_cr.x &&
-                canvas_reference.y == second_cr.y);
+        canvas_limits.top_left = raster_to_canvas(view, raster_limits.top_left);
+        canvas_limits.bot_right = raster_to_canvas(view, raster_limits.bot_right);
     }
 
-    v2i diff =
-    {
-        (canvas_reference.x) * view->canvas_tile_radius,
-        (canvas_reference.y) * view->canvas_tile_radius,
-    };
-#if 0
-    if (canvas_limits.left    -diff.x < -view->canvas_tile_radius ||
-        canvas_limits.right   -diff.x > view->canvas_tile_radius ||
-        canvas_limits.top     -diff.y < -view->canvas_tile_radius ||
-        canvas_limits.bottom  -diff.y > view->canvas_tile_radius
-        )
-#else
     if (canvas_limits.left   < -view->canvas_tile_radius ||
         canvas_limits.right  > view->canvas_tile_radius ||
         canvas_limits.top    < -view->canvas_tile_radius ||
         canvas_limits.bottom > view->canvas_tile_radius
         )
-#endif
     {
         for (int j = raster_limits.top; j < raster_limits.bottom; j++)
         {
@@ -247,11 +227,7 @@ inline void render_canvas_in_block(Arena* render_arena,
         for (int i = raster_limits.left; i < raster_limits.right; i += pixel_jump)
         {
             v2i raster_point = {i, j};
-            v2i cr;
-            v2i canvas_point = raster_to_canvas(view, &cr, raster_point);
-            assert (cr.x == canvas_reference.x && cr.y == canvas_reference.y);
-            /* canvas_point.x -= canvas_reference.x * view->canvas_tile_radius; */
-            /* canvas_point.x -= canvas_reference.y * view->canvas_tile_radius; */
+            v2i canvas_point = raster_to_canvas(view, raster_point);
 
             // Clear color
             float dr = 1.0f;
@@ -325,12 +301,6 @@ inline void render_canvas_in_block(Arena* render_arena,
                         {
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
-#if 0
-                            a.x -= stroke_canvas_reference.x * view->canvas_tile_radius;
-                            a.y -= stroke_canvas_reference.x * view->canvas_tile_radius;
-                            b.x -= stroke_canvas_reference.x * view->canvas_tile_radius;
-                            b.y -= stroke_canvas_reference.x * view->canvas_tile_radius;
-#endif
 
                             v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
                             float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
@@ -466,9 +436,9 @@ static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Re
             raster_tile_rect = rect_union(raster_tile_rect, blocks[i + block_i]);
 
             canvas_tile_rect.top_left =
-                raster_to_canvas(milton_state->view, &canvas_reference, raster_tile_rect.top_left);
+                raster_to_canvas(milton_state->view, raster_tile_rect.top_left);
             canvas_tile_rect.bot_right =
-                raster_to_canvas(milton_state->view, &canvas_reference, raster_tile_rect.bot_right);
+                raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
         }
 
         // Filter strokes to this tile.
@@ -717,7 +687,6 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             Stroke* stroke = &milton_state->working_stroke;
             v2i new_point = canvas_to_raster(
                     milton_state->view,
-                    stroke->canvas_reference,
                     stroke->points[stroke->num_points - 2]);
 
             raster_limits.left =   min (milton_state->last_raster_input.x, new_point.x);
@@ -744,9 +713,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         else if (milton_state->working_stroke.num_points == 1)
         {
             Stroke* stroke = &milton_state->working_stroke;
-            v2i point = canvas_to_raster(milton_state->view,
-                                         stroke->canvas_reference,
-                                         stroke->points[0]);
+            v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
             int32 raster_radius = stroke->brush.radius / milton_state->view->scale;
             raster_radius = max(raster_radius, milton_state->block_width);
             raster_limits.left = -raster_radius  + point.x;
