@@ -283,6 +283,7 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
         // view->screen_center is also set there.
         milton_state->view->scale = (1 << 12);
         milton_state->view->downsampling_factor = 1;
+        milton_state->view->canvas_tile_radius = 1024 * 1024 * 512;
 #if 0
         milton_state->view->rotation = 0;
         for (int d = 0; d < 360; d++)
@@ -361,8 +362,30 @@ static void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_scre
         milton_state->view->screen_center = invscale_v2i(milton_state->view->screen_size, 2);
 
         // Add delta to pan vector
-        milton_state->view->pan_vector = add_v2i(milton_state->view->pan_vector,
-                                                 scale_v2i(pan_delta, milton_state->view->scale));
+        v2i pan_vector = add_v2i(milton_state->view->pan_vector,
+                                 scale_v2i(pan_delta, milton_state->view->scale));
+
+        while (pan_vector.x > milton_state->view->canvas_tile_radius)
+        {
+            milton_state->view->canvas_tile_focus.x++;
+            pan_vector.x -= milton_state->view->canvas_tile_radius;
+        }
+        while (pan_vector.x <= -milton_state->view->canvas_tile_radius)
+        {
+            milton_state->view->canvas_tile_focus.x--;
+            pan_vector.x += milton_state->view->canvas_tile_radius;
+        }
+        while (pan_vector.y > milton_state->view->canvas_tile_radius)
+        {
+            milton_state->view->canvas_tile_focus.y++;
+            pan_vector.y -= milton_state->view->canvas_tile_radius;
+        }
+        while (pan_vector.y <= -milton_state->view->canvas_tile_radius)
+        {
+            milton_state->view->canvas_tile_focus.y--;
+            pan_vector.y += milton_state->view->canvas_tile_radius;
+        }
+        milton_state->view->pan_vector = pan_vector;
     }
     else
     {
@@ -470,6 +493,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 #endif
 
     bool32 finish_stroke = false;
+    v2i canvas_reference = { 0 };
     if (input->point)
     {
         v2i point = *input->point;
@@ -497,19 +521,28 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             }
             v2i in_point = *input->point;
 
-            // Avoid creating really large update rects when starting new strokes
+            v2i* canvas_reference = NULL;
+
             if (milton_state->working_stroke.num_points == 0)
             {
+                // Avoid creating really large update rects when starting new strokes
                 milton_state->last_raster_input = in_point;
+                // Set the stroke's reference point
+                canvas_reference = &milton_state->working_stroke.canvas_reference;
             }
+            v2i canvas_point = raster_to_canvas(milton_state->view, canvas_reference, in_point);
+            canvas_point.x -= milton_state->working_stroke.canvas_reference.x *
+                    milton_state->view->canvas_tile_radius;
+            canvas_point.y -= milton_state->working_stroke.canvas_reference.y *
+                    milton_state->view->canvas_tile_radius;
 
-            v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
             // TODO: make deque!!
             if (milton_state->working_stroke.num_points < LIMIT_STROKE_POINTS)
             {
                 // Add to current stroke.
-                milton_state->working_stroke.points[milton_state->working_stroke.num_points++] = canvas_point;
+                int index = milton_state->working_stroke.num_points++;
+                milton_state->working_stroke.points[index] = canvas_point;
             }
 
             milton_state->last_raster_input = in_point;
@@ -552,6 +585,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             if (milton_state->num_strokes < 4096)
             {
                 // Copy current stroke.
+                // Note: Caution when moving points out of a stack array. This is a shallow copy
                 milton_state->strokes[milton_state->num_strokes++] = milton_state->working_stroke;
                 // Clear working_stroke
                 {

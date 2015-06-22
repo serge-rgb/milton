@@ -13,20 +13,20 @@ typedef struct Stroke_s
     // TODO turn this into a deque
     v2i     points[LIMIT_STROKE_POINTS];
 
+    v2i     canvas_reference;
+
     int32   num_points;
 } Stroke;
 
 typedef struct CanvasView_s
 {
-    v2i     screen_size;    // Size in pixels
-    int32   scale;          // Zoom
-    v2i     screen_center;  // In pixels
-    v2i     pan_vector;     // In canvas scale
+    v2i     canvas_tile_focus;      // Coordinates are relative to this.
+    v2i     screen_size;            // Size in pixels
+    int32   scale;                  // Zoom
+    v2i     screen_center;          // In pixels
+    v2i     pan_vector;             // In canvas scale
     int32   downsampling_factor;
-#if 0
-    int     rotation;       // Rotation in radians
-    float   cos_sin_table[360][2];  // First cosine, then sine.
-#endif
+    int32   canvas_tile_radius;
 } CanvasView;
 
 
@@ -57,22 +57,41 @@ inline v2i rotate_to_view(v2i p, CanvasView* view)
 }
 #endif
 
-inline v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
+inline v2i canvas_to_raster(CanvasView* view, v2i canvas_reference, v2i canvas_point)
 {
+    int32 tile_diff_x = view->canvas_tile_focus.x - canvas_reference.x;
+    int32 tile_diff_y = view->canvas_tile_focus.y - canvas_reference.y;
+
+    int32 diff_x = tile_diff_x * view->canvas_tile_radius;
+    int32 diff_y = tile_diff_y * view->canvas_tile_radius;
+
     v2i raster_point =
     {
-        ((view->pan_vector.x + canvas_point.x) / view->scale) + view->screen_center.x,
-        ((view->pan_vector.y + canvas_point.y) / view->scale) + view->screen_center.y,
+        ((view->pan_vector.x + canvas_point.x + diff_x) / view->scale) + view->screen_center.x,
+        ((view->pan_vector.y + canvas_point.y + diff_y) / view->scale) + view->screen_center.y,
     };
     return raster_point;
 }
 
-inline v2i raster_to_canvas(CanvasView* view, v2i raster_point)
+inline v2i raster_to_canvas(CanvasView* view, v2i* canvas_reference, v2i raster_point)
 {
+    int32 diff_x = 0;
+    int32 diff_y = 0;
+    if (canvas_reference)
+    {
+        int32 tile_diff_x = view->canvas_tile_focus.x - canvas_reference->x;
+        int32 tile_diff_y = view->canvas_tile_focus.y - canvas_reference->y;
+
+        canvas_reference->x += tile_diff_x;
+        canvas_reference->y += tile_diff_y;
+        diff_x = canvas_reference->x * view->canvas_tile_radius;
+        diff_y = canvas_reference->y * view->canvas_tile_radius;
+    }
+
     v2i canvas_point =
     {
-        ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x,
-        ((raster_point.y - view->screen_center.y) * view->scale) - view->pan_vector.y,
+        ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x - diff_x,
+        ((raster_point.y - view->screen_center.y) * view->scale) - view->pan_vector.y - diff_y,
     };
 
     return canvas_point;

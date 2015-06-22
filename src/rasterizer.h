@@ -8,6 +8,7 @@ struct ClippedStroke_s
     bool32  fills_block;
     Brush   brush;
     int32   num_points;
+    v2i     canvas_reference;
     v2i*    points;
     ClippedStroke* next;
 };
@@ -19,6 +20,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
         clipped_stroke->brush = stroke->brush;
         clipped_stroke->num_points = 0;
         clipped_stroke->points = arena_alloc_array(render_arena, stroke->num_points * 2, v2i);
+        clipped_stroke->canvas_reference = stroke->canvas_reference;
     }
     if (stroke->num_points == 1)
     {
@@ -150,10 +152,45 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    uint32* pixels,
                                    Rect raster_limits)
 {
+
+    v2i canvas_reference = { 0 };
+
     Rect canvas_limits;
     {
-        canvas_limits.top_left = raster_to_canvas(view, raster_limits.top_left);
-        canvas_limits.bot_right = raster_to_canvas(view, raster_limits.bot_right);
+        canvas_limits.top_left = raster_to_canvas(view,  &canvas_reference, raster_limits.top_left);
+        v2i second_cr;
+        canvas_limits.bot_right = raster_to_canvas(view, &second_cr, raster_limits.bot_right);
+        assert (canvas_reference.x == second_cr.x &&
+                canvas_reference.y == second_cr.y);
+    }
+
+    v2i diff =
+    {
+        (canvas_reference.x) * view->canvas_tile_radius,
+        (canvas_reference.y) * view->canvas_tile_radius,
+    };
+#if 0
+    if (canvas_limits.left    -diff.x < -view->canvas_tile_radius ||
+        canvas_limits.right   -diff.x > view->canvas_tile_radius ||
+        canvas_limits.top     -diff.y < -view->canvas_tile_radius ||
+        canvas_limits.bottom  -diff.y > view->canvas_tile_radius
+        )
+#else
+    if (canvas_limits.left   < -view->canvas_tile_radius ||
+        canvas_limits.right  > view->canvas_tile_radius ||
+        canvas_limits.top    < -view->canvas_tile_radius ||
+        canvas_limits.bottom > view->canvas_tile_radius
+        )
+#endif
+    {
+        for (int j = raster_limits.top; j < raster_limits.bottom; j++)
+        {
+            for (int i = raster_limits.left; i < raster_limits.right; i++)
+            {
+                pixels[j * view->screen_size.w + i] = 0xffff00ff;
+            }
+        }
+        return;
     }
     ClippedStroke* stroke_list = NULL;
 
@@ -210,7 +247,11 @@ inline void render_canvas_in_block(Arena* render_arena,
         for (int i = raster_limits.left; i < raster_limits.right; i += pixel_jump)
         {
             v2i raster_point = {i, j};
-            v2i canvas_point = raster_to_canvas(view, raster_point);
+            v2i cr;
+            v2i canvas_point = raster_to_canvas(view, &cr, raster_point);
+            assert (cr.x == canvas_reference.x && cr.y == canvas_reference.y);
+            /* canvas_point.x -= canvas_reference.x * view->canvas_tile_radius; */
+            /* canvas_point.x -= canvas_reference.y * view->canvas_tile_radius; */
 
             // Clear color
             float dr = 1.0f;
@@ -222,6 +263,7 @@ inline void render_canvas_in_block(Arena* render_arena,
             while(list_iter)
             {
                 ClippedStroke* clipped_stroke = list_iter;
+                /* v2i stroke_canvas_reference = clipped_stroke->canvas_reference; */
                 list_iter = list_iter->next;
 
                 assert (clipped_stroke);
@@ -283,12 +325,19 @@ inline void render_canvas_in_block(Arena* render_arena,
                         {
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
+#if 0
+                            a.x -= stroke_canvas_reference.x * view->canvas_tile_radius;
+                            a.y -= stroke_canvas_reference.x * view->canvas_tile_radius;
+                            b.x -= stroke_canvas_reference.x * view->canvas_tile_radius;
+                            b.y -= stroke_canvas_reference.x * view->canvas_tile_radius;
+#endif
 
                             v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
                             float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
                             if (mag_ab2 > 0)
                             {
-                                v2i point = closest_point_in_segment(a, b, ab, mag_ab2, canvas_point);
+                                v2i point = closest_point_in_segment(a, b,
+                                                                     ab, mag_ab2, canvas_point);
 
                                 float test_dx = (float) (canvas_point.x - point.x);
                                 float test_dy = (float) (canvas_point.y - point.y);
@@ -380,11 +429,12 @@ inline void render_canvas_in_block(Arena* render_arena,
     }
 }
 
-static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Rect limits)
+static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Rect raster_limits)
 {
+    v2i canvas_reference = { 0 };
     Rect* blocks = NULL;
     int32 num_blocks = rect_split(milton_state->transient_arena,
-            limits, milton_state->block_width, milton_state->block_width, &blocks);
+            raster_limits, milton_state->block_width, milton_state->block_width, &blocks);
 
 
     const int32 blocks_per_tile = milton_state->blocks_per_tile;
@@ -407,7 +457,6 @@ static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Re
         // Derive tile_rect
         for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
         {
-            assert (i + block_i < num_blocks);
             if (i + block_i >= num_blocks)
             {
                 break;
@@ -417,9 +466,9 @@ static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Re
             raster_tile_rect = rect_union(raster_tile_rect, blocks[i + block_i]);
 
             canvas_tile_rect.top_left =
-                raster_to_canvas(milton_state->view, raster_tile_rect.top_left);
+                raster_to_canvas(milton_state->view, &canvas_reference, raster_tile_rect.top_left);
             canvas_tile_rect.bot_right =
-                raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
+                raster_to_canvas(milton_state->view, &canvas_reference, raster_tile_rect.bot_right);
         }
 
         // Filter strokes to this tile.
@@ -430,7 +479,6 @@ static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Re
 
         for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
         {
-            assert (i + block_i < num_blocks);
             if (i + block_i >= num_blocks)
             {
                 break;
@@ -651,32 +699,34 @@ typedef enum
 
 static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 {
-    // `limits` is the part of the screen (in pixels) that should be updated
+    // `raster_limits` is the part of the screen (in pixels) that should be updated
     // with what's on the canvas.
-    Rect limits = { 0 };
+    Rect raster_limits = { 0 };
 
-    // Figure out what `limits` should be.
+    // Figure out what `raster_limits` should be.
     {
         if (render_flags & MiltonRenderFlags_full_redraw)
         {
-            limits.left = 0;
-            limits.right = milton_state->view->screen_size.w;
-            limits.top = 0;
-            limits.bottom = milton_state->view->screen_size.h;
+            raster_limits.left = 0;
+            raster_limits.right = milton_state->view->screen_size.w;
+            raster_limits.top = 0;
+            raster_limits.bottom = milton_state->view->screen_size.h;
         }
         else if (milton_state->working_stroke.num_points > 1)
         {
             Stroke* stroke = &milton_state->working_stroke;
             v2i new_point = canvas_to_raster(
-                    milton_state->view, stroke->points[stroke->num_points - 2]);
+                    milton_state->view,
+                    stroke->canvas_reference,
+                    stroke->points[stroke->num_points - 2]);
 
-            limits.left =   min (milton_state->last_raster_input.x, new_point.x);
-            limits.right =  max (milton_state->last_raster_input.x, new_point.x);
-            limits.top =    min (milton_state->last_raster_input.y, new_point.y);
-            limits.bottom = max (milton_state->last_raster_input.y, new_point.y);
+            raster_limits.left =   min (milton_state->last_raster_input.x, new_point.x);
+            raster_limits.right =  max (milton_state->last_raster_input.x, new_point.x);
+            raster_limits.top =    min (milton_state->last_raster_input.y, new_point.y);
+            raster_limits.bottom = max (milton_state->last_raster_input.y, new_point.y);
             int32 block_offset = 0;
-            int32 w = limits.right - limits.left;
-            int32 h = limits.bottom - limits.top;
+            int32 w = raster_limits.right - raster_limits.left;
+            int32 h = raster_limits.bottom - raster_limits.top;
             if (w < milton_state->block_width)
             {
                 block_offset = (milton_state->block_width - w) / 2;
@@ -685,32 +735,34 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             {
                 block_offset = max(block_offset, (milton_state->block_width - h) / 2);
             }
-            limits = rect_enlarge(limits,
+            raster_limits = rect_enlarge(raster_limits,
                     block_offset + (stroke->brush.radius / milton_state->view->scale));
-            limits = rect_clip_to_screen(limits, milton_state->view->screen_size);
-            assert (limits.right >= limits.left);
-            assert (limits.bottom >= limits.top);
+            raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
+            assert (raster_limits.right >= raster_limits.left);
+            assert (raster_limits.bottom >= raster_limits.top);
         }
         else if (milton_state->working_stroke.num_points == 1)
         {
             Stroke* stroke = &milton_state->working_stroke;
-            v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
+            v2i point = canvas_to_raster(milton_state->view,
+                                         stroke->canvas_reference,
+                                         stroke->points[0]);
             int32 raster_radius = stroke->brush.radius / milton_state->view->scale;
             raster_radius = max(raster_radius, milton_state->block_width);
-            limits.left = -raster_radius  + point.x;
-            limits.right = raster_radius  + point.x;
-            limits.top = -raster_radius   + point.y;
-            limits.bottom = raster_radius + point.y;
-            limits = rect_clip_to_screen(limits, milton_state->view->screen_size);
-            assert (limits.right >= limits.left);
-            assert (limits.bottom >= limits.top);
+            raster_limits.left = -raster_radius  + point.x;
+            raster_limits.right = raster_radius  + point.x;
+            raster_limits.top = -raster_radius   + point.y;
+            raster_limits.bottom = raster_radius + point.y;
+            raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
+            assert (raster_limits.right >= raster_limits.left);
+            assert (raster_limits.bottom >= raster_limits.top);
         }
     }
 
     int32 index = (milton_state->raster_buffer_index + 1) % 2;
     uint32* raster_buffer = (uint32*)milton_state->raster_buffers[index];
 
-    bool32 completed = render_canvas(milton_state, raster_buffer, limits);
+    bool32 completed = render_canvas(milton_state, raster_buffer, raster_limits);
 
     // Render UI
     if (completed)
@@ -718,7 +770,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         Rect* split_rects = NULL;
         bool32 redraw = false;
         Rect picker_rect = picker_get_bounds(&milton_state->picker);
-        Rect clipped = rect_intersect(picker_rect, limits);
+        Rect clipped = rect_intersect(picker_rect, raster_limits);
         if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
         {
             redraw = true;
