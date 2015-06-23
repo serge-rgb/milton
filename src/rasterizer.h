@@ -86,6 +86,8 @@ inline bool32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
                                        v2i* points, int32 num_points,
                                        Brush brush, CanvasView* view)
 {
+    // Perf note: With the current use, this is actually going to be zero.
+    // Maybe turn this into an assert and avoid extra computations?
     v2i rect_center =
     {
         ((rect.left + rect.right) / 2) - reference_point.x,
