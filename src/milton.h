@@ -423,14 +423,17 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (input->scale)
     {
         render_flags |= MiltonRenderFlags_full_redraw;
+
 // Sensible
-#if 0
-        static float scale_factor = 1.2f;
+#if 1
+        static float scale_factor = 1.3f;
         static int32 view_scale_limit = 10000;
-#else  // Debug
+// Debug
+#else
         static float scale_factor = 1.5f;
         static int32 view_scale_limit = 1000000;
 #endif
+
         static bool32 debug_scale_lock = false;
         if (!debug_scale_lock && input->scale > 0 && milton_state->view->scale >= 2)
         {

@@ -13,15 +13,16 @@ To-Do
 =====
 
 * Bugs
-    * precision errors at edge of usable canvas
     * :)
 
 * Roadmap
-    * Threaded canvas rasterizer
+    * 8x AA for canvas
     * iOS port
+    * Threaded canvas rasterizer
     * Basic saving / loading.
     * IMUI
     * SIMD-ify canvas rasterizer
     * SDL version for Linux & Mac
+    * ? 64-bit canvas ?
     * ? Android port ?
 

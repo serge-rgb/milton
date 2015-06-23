@@ -82,13 +82,14 @@ inline v2i closest_point_in_segment(
 }
 
 // NOTE: takes clipped points.
-inline bool32 is_rect_filled_by_stroke(
-        Rect rect, v2i* points, int32 num_points, Brush brush, CanvasView* view)
+inline bool32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
+                                       v2i* points, int32 num_points,
+                                       Brush brush, CanvasView* view)
 {
     v2i rect_center =
     {
-        (rect.left + rect.right) / 2,
-        (rect.top + rect.bottom) / 2,
+        ((rect.left + rect.right) / 2) - reference_point.x,
+        ((rect.top + rect.bottom) / 2) - reference_point.y,
     };
 
     if (num_points >= 2)
@@ -98,10 +99,16 @@ inline bool32 is_rect_filled_by_stroke(
             v2i a = points[point_i];
             v2i b = points[point_i + 1];
 
+            a = sub_v2i(points[point_i], reference_point);
+            b = sub_v2i(points[point_i + 1], reference_point);
+
             // Get closest point
             v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
             float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
             v2i p  = closest_point_in_segment( a, b, ab, mag_ab2, rect_center);
+
+            // Back to global coordinates
+            p = add_v2i(p, reference_point);
 
             // Half width of a rectangle contained by brush at point p.
             int32 rad = (int32)(brush.radius * 0.707106781f);  // cos(pi/4)
@@ -174,6 +181,12 @@ inline void render_canvas_in_block(Arena* render_arena,
     }
     ClippedStroke* stroke_list = NULL;
 
+    v2i reference_point =
+    {
+        (canvas_limits.left + canvas_limits.right) / 2,
+        (canvas_limits.top + canvas_limits.bottom) / 2,
+    };
+
     // Go backwards so that list is in the correct older->newer order.
     for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
     {
@@ -198,7 +211,7 @@ inline void render_canvas_in_block(Arena* render_arena,
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
             if (is_rect_filled_by_stroke(
-                        canvas_limits,
+                        canvas_limits, reference_point,
                         clipped_stroke->points, clipped_stroke->num_points, clipped_stroke->brush,
                         view))
             {
@@ -229,6 +242,8 @@ inline void render_canvas_in_block(Arena* render_arena,
             v2i raster_point = {i, j};
             v2i canvas_point = raster_to_canvas(view, raster_point);
 
+            canvas_point = sub_v2i(canvas_point, reference_point);
+
             // Clear color
             float dr = 1.0f;
             float dg = 1.0f;
@@ -247,7 +262,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
-#if 0  // Visualize it with black
+#if 1  // Visualize it with black
                     float sr = clipped_stroke->brush.color.r * 0;
                     float sg = clipped_stroke->brush.color.g * 0;
                     float sb = clipped_stroke->brush.color.b * 0;
@@ -289,7 +304,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                     //int64 radius_squared = stroke->brush.radius * stroke->brush.radius;
                     if (clipped_stroke->num_points == 1)
                     {
-                        min_point = points[0];
+                        min_point = sub_v2i(points[0], reference_point);
                         dx = (float) (canvas_point.x - min_point.x);
                         dy = (float) (canvas_point.y - min_point.y);
                         min_dist = dx * dx + dy * dy;
@@ -301,6 +316,8 @@ inline void render_canvas_in_block(Arena* render_arena,
                         {
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
+                            a = sub_v2i(a, reference_point);
+                            b = sub_v2i(b, reference_point);
 
                             v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
                             float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
