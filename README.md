@@ -16,9 +16,9 @@ To-Do
     * :)
 
 * Roadmap
-    * 8x AA for canvas
     * iOS port
     * Threaded canvas rasterizer
+    * Fix color picker controls.
     * Basic saving / loading.
     * IMUI
     * SIMD-ify canvas rasterizer

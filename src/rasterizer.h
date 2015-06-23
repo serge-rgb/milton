@@ -538,7 +538,6 @@ static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Re
             }
 
             render_canvas_in_block(&tile_arena,
-                                   //&block_arena,
                                    milton_state->view,
                                    milton_state->cm,
                                    milton_state->strokes,
