@@ -182,10 +182,15 @@ inline void render_canvas_in_block(Arena* render_arena,
     ClippedStroke* stroke_list = NULL;
 
     v2i reference_point =
+// Leaving this toggle-able for a quick way to show the cool precision error.
+#if 1
     {
         (canvas_limits.left + canvas_limits.right) / 2,
         (canvas_limits.top + canvas_limits.bottom) / 2,
     };
+#else
+    {0};
+#endif
 
     // Go backwards so that list is in the correct older->newer order.
     for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
@@ -262,7 +267,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
-#if 1  // Visualize it with black
+#if 0  // Visualize it with black
                     float sr = clipped_stroke->brush.color.r * 0;
                     float sg = clipped_stroke->brush.color.g * 0;
                     float sb = clipped_stroke->brush.color.b * 0;
@@ -342,8 +347,14 @@ inline void render_canvas_in_block(Arena* render_arena,
 
                     if (min_dist < FLT_MAX)
                     {
+#define MSAA_4X 1
+#if !MSAA_4X
+#define MSAA_ROTATED_GRID
+#endif
+
                         int samples = 0;
                         {
+#ifdef MSAA_ROTATED_GRID
                             float u = 0.223607f * view->scale;  // sin(arctan(1/2)) / 2
                             float v = 0.670820f * view->scale;  // cos(arctan(1/2)) / 2 + u
 
@@ -359,6 +370,55 @@ inline void render_canvas_in_block(Arena* render_arena,
                                     ++samples;
                                 }
                             }
+#elif defined(MSAA_4X)
+                            float dists[16];
+
+                            float f3 = 0.75f * view->scale;
+                            float f1 = 0.25f * view->scale;
+
+                            dists[0]  = (dx - f3) * (dx - f3) + (dy - f3) * (dy - f3);
+                            dists[1]  = (dx - f1) * (dx - f1) + (dy - f3) * (dy - f3);
+                            dists[2]  = (dx + f1) * (dx + f1) + (dy - f3) * (dy - f3);
+                            dists[3]  = (dx + f3) * (dx + f3) + (dy - f3) * (dy - f3);
+
+                            dists[4]  = (dx - f3) * (dx - f3) + (dy - f1) * (dy - f1);
+                            dists[5]  = (dx - f1) * (dx - f1) + (dy - f1) * (dy - f1);
+                            dists[6]  = (dx + f1) * (dx + f1) + (dy - f1) * (dy - f1);
+                            dists[7]  = (dx + f3) * (dx + f3) + (dy - f1) * (dy - f1);
+
+                            dists[8]  = (dx - f3) * (dx - f3) + (dy + f1) * (dy + f1);
+                            dists[9]  = (dx - f1) * (dx - f1) + (dy + f1) * (dy + f1);
+                            dists[10] = (dx + f1) * (dx + f1) + (dy + f1) * (dy + f1);
+                            dists[11] = (dx + f3) * (dx + f3) + (dy + f1) * (dy + f1);
+
+                            dists[12] = (dx - f3) * (dx - f3) + (dy + f3) * (dy + f3);
+                            dists[13] = (dx - f1) * (dx - f1) + (dy + f3) * (dy + f3);
+                            dists[14] = (dx + f1) * (dx + f1) + (dy + f3) * (dy + f3);
+                            dists[15] = (dx + f3) * (dx + f3) + (dy + f3) * (dy + f3);
+
+                            /* int32 square_rad = */
+                            /*         clipped_stroke->brush.radius * clipped_stroke->brush.radius; */
+
+                            // Perf note: It would be nice to remove the sqrtf call , but
+                            // we do get into precision errors at high zoom levels.
+
+                            samples += (sqrtf(dists[0]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[1]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[2]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[3]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[4]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[5]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[6]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[7]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[8]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[9]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[10]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[11]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[12]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[13]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[14]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[15]) < clipped_stroke->brush.radius);
+#endif
                         }
 
                         // If the stroke contributes to the pixel, do compositing.
@@ -367,7 +427,11 @@ inline void render_canvas_in_block(Arena* render_arena,
                             // Do compositing
                             // ---------------
 
+#ifdef MSAA_ROTATED_GRID
                             float coverage = (float)samples / 4.0f;
+#elif defined(MSAA_4X)
+                            float coverage = (float)samples / 16.0f;
+#endif
 
                             float sr = clipped_stroke->brush.color.r;
                             float sg = clipped_stroke->brush.color.g;
