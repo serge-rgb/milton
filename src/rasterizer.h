@@ -167,7 +167,7 @@ inline void render_canvas_in_block(Arena* render_arena,
     }
 
     if (canvas_limits.left   < -view->canvas_tile_radius ||
-        canvas_limits.right  > view->canvas_tile_radius ||
+        canvas_limits.right  > view->canvas_tile_radius  ||
         canvas_limits.top    < -view->canvas_tile_radius ||
         canvas_limits.bottom > view->canvas_tile_radius
         )

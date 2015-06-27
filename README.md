@@ -13,6 +13,7 @@ To-Do
 =====
 
 * Bugs
+    * pan doesn't work when maximized in 'classic' windows mode.
     * :)
 
 * Roadmap

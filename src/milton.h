@@ -344,8 +344,6 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
     milton_gl_backend_init(milton_state);
 }
 
-
-
 inline bool32 is_user_drawing(MiltonState* milton_state)
 {
     bool32 result = milton_state->working_stroke.num_points > 0;
