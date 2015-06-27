@@ -15,12 +15,12 @@ typedef struct ColorPicker_s
     v2f c;  // Points to chosen hue.         (full color)
 
     v2i     center;  // In screen pixel coordinates.
-    int32   bound_radius_px;
+    i32   bound_radius_px;
     Rect    bounds;
     float   wheel_radius;
     float   wheel_half_width;
 
-    uint32* pixels;  // BLit this to render picker
+    u32* pixels;  // BLit this to render picker
 
     v3f     hsv;
 
@@ -36,15 +36,15 @@ typedef enum
 
 typedef struct ColorManagement_s
 {
-    uint32 mask_a;
-    uint32 mask_r;
-    uint32 mask_g;
-    uint32 mask_b;
+    u32 mask_a;
+    u32 mask_r;
+    u32 mask_g;
+    u32 mask_b;
 
-    uint32 shift_a;
-    uint32 shift_r;
-    uint32 shift_g;
-    uint32 shift_b;
+    u32 shift_a;
+    u32 shift_r;
+    u32 shift_g;
+    u32 shift_b;
 } ColorManagement;
 
 static void color_init(ColorManagement* cm)
@@ -60,17 +60,17 @@ static void color_init(ColorManagement* cm)
     cm->shift_b = find_least_significant_set_bit(cm->mask_b).index;
 }
 
-inline uint32 color_v4f_to_u32(ColorManagement cm, v4f c)
+inline u32 color_v4f_to_u32(ColorManagement cm, v4f c)
 {
-    uint32 result =
-        ((uint8)(c.r * 255.0f) << cm.shift_r) |
-        ((uint8)(c.g * 255.0f) << cm.shift_g) |
-        ((uint8)(c.b * 255.0f) << cm.shift_b) |
-        ((uint8)(c.a * 255.0f) << cm.shift_a);
+    u32 result =
+        ((u8)(c.r * 255.0f) << cm.shift_r) |
+        ((u8)(c.g * 255.0f) << cm.shift_g) |
+        ((u8)(c.b * 255.0f) << cm.shift_b) |
+        ((u8)(c.a * 255.0f) << cm.shift_a);
     return result;
 }
 
-inline v4f color_u32_to_v4f(ColorManagement cm, uint32 color)
+inline v4f color_u32_to_v4f(ColorManagement cm, u32 color)
 {
     v4f result =
     {
@@ -208,7 +208,7 @@ inline v3f sRGB_to_linear(v3f rgb)
     return result;
 }
 
-static bool32 picker_wheel_active(ColorPicker* picker)
+static b32 picker_wheel_active(ColorPicker* picker)
 {
     return (picker->flags & ColorPickerFlags_wheel_active);
 }
@@ -231,7 +231,7 @@ static float picker_wheel_get_angle(ColorPicker* picker, v2f point)
     }
     return angle;
 }
-static bool32 picker_is_within_wheel(ColorPicker* picker, v2f point)
+static b32 picker_is_within_wheel(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
     v2f arrow = sub_v2f (point, center);
@@ -243,7 +243,7 @@ static bool32 picker_is_within_wheel(ColorPicker* picker, v2f point)
     return false;
 }
 
-static bool32 picker_hits_wheel(ColorPicker* picker, v2f point)
+static b32 picker_hits_wheel(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
     v2f arrow = sub_v2f (point, center);
@@ -259,7 +259,7 @@ static bool32 picker_hits_wheel(ColorPicker* picker, v2f point)
     return false;
 }
 
-static bool32 is_inside_picker(ColorPicker* picker, v2i point)
+static b32 is_inside_picker(ColorPicker* picker, v2i point)
 {
     return is_inside_rect(picker->bounds, point);
 }

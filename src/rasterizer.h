@@ -2,14 +2,17 @@
 // (c) Copyright 2015 by Sergio Gonzalez
 
 
+#define hello 3
+
 typedef struct ClippedStroke_s ClippedStroke;
 struct ClippedStroke_s
 {
-    bool32  fills_block;
+    b32     fills_block;
     Brush   brush;
-    int32   num_points;
+    i32     num_points;
     v2i     canvas_reference;
     v2i*    points;
+
     ClippedStroke* next;
 };
 
@@ -30,14 +33,14 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     }
     else
     {
-        int32 num_points = stroke->num_points;
-        for (int32 point_i = 0; point_i < num_points - 1; ++point_i)
+        i32 num_points = stroke->num_points;
+        for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
         {
             v2i a = stroke->points[point_i];
             v2i b = stroke->points[point_i + 1];
 
             // Very conservative...
-            bool32 inside = !((a.x > rect.right && b.x > rect.right) ||
+            b32 inside = !((a.x > rect.right && b.x > rect.right) ||
                               (a.x < rect.left && b.x < rect.left) ||
                               (a.y < rect.top && b.y < rect.top) ||
                               (a.y > rect.bottom && b.y > rect.bottom));
@@ -54,20 +57,20 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
 }
 
 inline v2i closest_point_in_segment(
-        v2i a, v2i b, v2f ab, float ab_magnitude_squared, v2i canvas_point)
+        v2i a, v2i b, v2f ab, f32 ab_magnitude_squared, v2i canvas_point)
 {
     v2i point;
-    float mag_ab = sqrtf(ab_magnitude_squared);
-    float d_x = ab.x / mag_ab;
-    float d_y = ab.y / mag_ab;
-    float ax_x = (float)(canvas_point.x - a.x);
-    float ax_y = (float)(canvas_point.y - a.y);
-    float disc = d_x * ax_x + d_y * ax_y;
+    f32 mag_ab = sqrtf(ab_magnitude_squared);
+    f32 d_x = ab.x / mag_ab;
+    f32 d_y = ab.y / mag_ab;
+    f32 ax_x = (f32)(canvas_point.x - a.x);
+    f32 ax_y = (f32)(canvas_point.y - a.y);
+    f32 disc = d_x * ax_x + d_y * ax_y;
     if (disc >= 0 && disc <= mag_ab)
     {
         point = (v2i)
         {
-            (int32)(a.x + disc * d_x), (int32)(a.y + disc * d_y),
+            (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
         };
     }
     else if (disc < 0)
@@ -82,8 +85,8 @@ inline v2i closest_point_in_segment(
 }
 
 // NOTE: takes clipped points.
-inline bool32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
-                                       v2i* points, int32 num_points,
+inline b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
+                                       v2i* points, i32 num_points,
                                        Brush brush, CanvasView* view)
 {
     // Perf note: With the current use, this is actually going to be zero.
@@ -96,7 +99,7 @@ inline bool32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 
     if (num_points >= 2)
     {
-        for (int32 point_i = 0; point_i < num_points; point_i += 2)
+        for (i32 point_i = 0; point_i < num_points; point_i += 2)
         {
             v2i a = points[point_i];
             v2i b = points[point_i + 1];
@@ -105,15 +108,15 @@ inline bool32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
             b = sub_v2i(points[point_i + 1], reference_point);
 
             // Get closest point
-            v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
-            float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
+            v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
+            f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
             v2i p  = closest_point_in_segment( a, b, ab, mag_ab2, rect_center);
 
             // Back to global coordinates
             p = add_v2i(p, reference_point);
 
             // Half width of a rectangle contained by brush at point p.
-            int32 rad = (int32)(brush.radius * 0.707106781f);  // cos(pi/4)
+            i32 rad = (i32)(brush.radius * 0.707106781f);  // cos(pi/4)
             Rect bounded_rect;
             {
                 bounded_rect.left   = p.x - rad;
@@ -133,7 +136,7 @@ inline bool32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
         v2i p  = points[0];
 
         // Half width of a rectangle contained by brush at point p.
-        int32 rad = (int32)(brush.radius * 0.707106781f);  // cos(pi/4)
+        i32 rad = (i32)(brush.radius * 0.707106781f);  // cos(pi/4)
         Rect bounded_rect;
         {
             bounded_rect.left   = p.x - rad;
@@ -154,10 +157,10 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    CanvasView* view,
                                    ColorManagement cm,
                                    Stroke* strokes,
-                                   bool32* stroke_masks,
-                                   int32   num_strokes,
+                                   b32* stroke_masks,
+                                   i32   num_strokes,
                                    Stroke* working_stroke,
-                                   uint32* pixels,
+                                   u32* pixels,
                                    Rect raster_limits)
 {
     Rect canvas_limits;
@@ -252,10 +255,10 @@ inline void render_canvas_in_block(Arena* render_arena,
             canvas_point = sub_v2i(canvas_point, reference_point);
 
             // Clear color
-            float dr = 1.0f;
-            float dg = 1.0f;
-            float db = 1.0f;
-            float da = 0.0f;
+            f32 dr = 1.0f;
+            f32 dg = 1.0f;
+            f32 db = 1.0f;
+            f32 da = 0.0f;
 
             ClippedStroke* list_iter = stroke_list;
             while(list_iter)
@@ -270,20 +273,20 @@ inline void render_canvas_in_block(Arena* render_arena,
                 if (clipped_stroke->fills_block)
                 {
 #if 0  // Visualize it with black
-                    float sr = clipped_stroke->brush.color.r * 0;
-                    float sg = clipped_stroke->brush.color.g * 0;
-                    float sb = clipped_stroke->brush.color.b * 0;
+                    f32 sr = clipped_stroke->brush.color.r * 0;
+                    f32 sg = clipped_stroke->brush.color.g * 0;
+                    f32 sb = clipped_stroke->brush.color.b * 0;
 #else
-                    float sr = clipped_stroke->brush.color.r;
-                    float sg = clipped_stroke->brush.color.g;
-                    float sb = clipped_stroke->brush.color.b;
+                    f32 sr = clipped_stroke->brush.color.r;
+                    f32 sg = clipped_stroke->brush.color.g;
+                    f32 sb = clipped_stroke->brush.color.b;
 #endif
-                    float sa = clipped_stroke->brush.alpha;
+                    f32 sa = clipped_stroke->brush.alpha;
 
                     // Move to gamma space
-                    float g_dr = dr * dr;
-                    float g_dg = dg * dg;
-                    float g_db = db * db;
+                    f32 g_dr = dr * dr;
+                    f32 g_dg = dg * dg;
+                    f32 g_db = db * db;
                     sr = sr * sr;
                     sg = sg * sg;
                     sb = sb * sb;
@@ -305,15 +308,15 @@ inline void render_canvas_in_block(Arena* render_arena,
                     v2i* points = clipped_stroke->points;
 
                     v2i min_point = {0};
-                    float min_dist = FLT_MAX;
-                    float dx = 0;
-                    float dy = 0;
+                    f32 min_dist = FLT_MAX;
+                    f32 dx = 0;
+                    f32 dy = 0;
                     //int64 radius_squared = stroke->brush.radius * stroke->brush.radius;
                     if (clipped_stroke->num_points == 1)
                     {
                         min_point = sub_v2i(points[0], reference_point);
-                        dx = (float) (canvas_point.x - min_point.x);
-                        dy = (float) (canvas_point.y - min_point.y);
+                        dx = (f32) (canvas_point.x - min_point.x);
+                        dy = (f32) (canvas_point.y - min_point.y);
                         min_dist = dx * dx + dy * dy;
                     }
                     else
@@ -326,16 +329,16 @@ inline void render_canvas_in_block(Arena* render_arena,
                             a = sub_v2i(a, reference_point);
                             b = sub_v2i(b, reference_point);
 
-                            v2f ab = {(float)(b.x - a.x), (float)(b.y - a.y)};
-                            float mag_ab2 = ab.x * ab.x + ab.y * ab.y;
+                            v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
+                            f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
                             if (mag_ab2 > 0)
                             {
                                 v2i point = closest_point_in_segment(a, b,
                                                                      ab, mag_ab2, canvas_point);
 
-                                float test_dx = (float) (canvas_point.x - point.x);
-                                float test_dy = (float) (canvas_point.y - point.y);
-                                float dist = test_dx * test_dx + test_dy * test_dy;
+                                f32 test_dx = (f32) (canvas_point.x - point.x);
+                                f32 test_dy = (f32) (canvas_point.y - point.y);
+                                f32 dist = test_dx * test_dx + test_dy * test_dy;
                                 if (dist < min_dist)
                                 {
                                     min_dist = dist;
@@ -357,10 +360,10 @@ inline void render_canvas_in_block(Arena* render_arena,
                         int samples = 0;
                         {
 #ifdef MSAA_ROTATED_GRID
-                            float u = 0.223607f * view->scale;  // sin(arctan(1/2)) / 2
-                            float v = 0.670820f * view->scale;  // cos(arctan(1/2)) / 2 + u
+                            f32 u = 0.223607f * view->scale;  // sin(arctan(1/2)) / 2
+                            f32 v = 0.670820f * view->scale;  // cos(arctan(1/2)) / 2 + u
 
-                            float dists[4];
+                            f32 dists[4];
                             dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);
                             dists[1] = (dx - v) * (dx - v) + (dy + u) * (dy + u);
                             dists[2] = (dx + u) * (dx + u) + (dy + v) * (dy + v);
@@ -373,10 +376,10 @@ inline void render_canvas_in_block(Arena* render_arena,
                                 }
                             }
 #elif defined(MSAA_4X)
-                            float dists[16];
+                            f32 dists[16];
 
-                            float f3 = 0.75f * view->scale;
-                            float f1 = 0.25f * view->scale;
+                            f32 f3 = 0.75f * view->scale;
+                            f32 f1 = 0.25f * view->scale;
 
                             dists[0]  = (dx - f3) * (dx - f3) + (dy - f3) * (dy - f3);
                             dists[1]  = (dx - f1) * (dx - f1) + (dy - f3) * (dy - f3);
@@ -398,7 +401,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                             dists[14] = (dx + f1) * (dx + f1) + (dy + f3) * (dy + f3);
                             dists[15] = (dx + f3) * (dx + f3) + (dy + f3) * (dy + f3);
 
-                            /* int32 square_rad = */
+                            /* i32 square_rad = */
                             /*         clipped_stroke->brush.radius * clipped_stroke->brush.radius; */
 
                             // Perf note: It would be nice to remove the sqrtf call , but
@@ -430,22 +433,22 @@ inline void render_canvas_in_block(Arena* render_arena,
                             // ---------------
 
 #ifdef MSAA_ROTATED_GRID
-                            float coverage = (float)samples / 4.0f;
+                            f32 coverage = (f32)samples / 4.0f;
 #elif defined(MSAA_4X)
-                            float coverage = (float)samples / 16.0f;
+                            f32 coverage = (f32)samples / 16.0f;
 #endif
 
-                            float sr = clipped_stroke->brush.color.r;
-                            float sg = clipped_stroke->brush.color.g;
-                            float sb = clipped_stroke->brush.color.b;
-                            float sa = clipped_stroke->brush.alpha;
+                            f32 sr = clipped_stroke->brush.color.r;
+                            f32 sg = clipped_stroke->brush.color.g;
+                            f32 sb = clipped_stroke->brush.color.b;
+                            f32 sa = clipped_stroke->brush.alpha;
 
                             sa *= coverage;
 
                             // Move to gamma space
-                            float g_dr = dr * dr;
-                            float g_dg = dg * dg;
-                            float g_db = db * db;
+                            f32 g_dr = dr * dr;
+                            f32 g_dg = dg * dg;
+                            f32 g_db = db * db;
                             sr = sr * sr;
                             sg = sg * sg;
                             sb = sb * sb;
@@ -468,7 +471,7 @@ inline void render_canvas_in_block(Arena* render_arena,
             v4f d = {
                 dr, dg, db, da
             };
-            uint32 pixel = color_v4f_to_u32(cm, d);
+            u32 pixel = color_v4f_to_u32(cm, d);
 
             // TODO: Bilinear sampling could be nice here
             for (int jj = j; jj < j + pixel_jump; ++jj)
@@ -482,15 +485,15 @@ inline void render_canvas_in_block(Arena* render_arena,
     }
 }
 
-static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Rect raster_limits)
+static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
 {
     v2i canvas_reference = { 0 };
     Rect* blocks = NULL;
-    int32 num_blocks = rect_split(milton_state->transient_arena,
+    i32 num_blocks = rect_split(milton_state->transient_arena,
             raster_limits, milton_state->block_width, milton_state->block_width, &blocks);
 
 
-    const int32 blocks_per_tile = milton_state->blocks_per_tile;
+    const i32 blocks_per_tile = milton_state->blocks_per_tile;
 
     // TODO: make this loop data parallel
     for (int i = 0; i < num_blocks; i += blocks_per_tile)
@@ -525,7 +528,7 @@ static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Re
         }
 
         // Filter strokes to this tile.
-        bool32* stroke_masks = filter_strokes_to_rect(&tile_arena,
+        b32* stroke_masks = filter_strokes_to_rect(&tile_arena,
                                                       milton_state->strokes,
                                                       milton_state->num_strokes,
                                                       canvas_tile_rect);
@@ -555,8 +558,9 @@ static bool32 render_canvas(MiltonState* milton_state, uint32* raster_buffer, Re
     return true;
 }
 
-static void render_picker(ColorPicker* picker, ColorManagement cm,
-        uint32* buffer_pixels, CanvasView* view)
+static void render_picker(ColorPicker* picker,
+                          ColorManagement cm,
+                          u32* buffer_pixels, CanvasView* view)
 {
     v2f baseline = {1,0};
 
@@ -577,9 +581,9 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
         {
             int b =
                 3 * 3;
-            uint32 picker_i =
+            u32 picker_i =
                     (j - draw_rect.top) * (2*picker->bound_radius_px ) + (i - draw_rect.left);
-            uint32 src = buffer_pixels[j * view->screen_size.w + i];
+            u32 src = buffer_pixels[j * view->screen_size.w + i];
             picker->pixels[picker_i] = src;
         }
     }
@@ -589,10 +593,10 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            uint32 picker_i =
+            u32 picker_i =
                     (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
             v4f dest = color_u32_to_v4f(cm, picker->pixels[picker_i]);
-            float alpha = background_color.a;
+            f32 alpha = background_color.a;
             // To gamma
             background_color.r = background_color.r * background_color.r;
             background_color.g = background_color.g * background_color.g;
@@ -617,15 +621,15 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            uint32 picker_i =
+            u32 picker_i =
                     (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
-            v2f point = {(float)i, (float)j};
-            uint32 dest_color = picker->pixels[picker_i];
+            v2f point = {(f32)i, (f32)j};
+            u32 dest_color = picker->pixels[picker_i];
 
             int samples = 0;
             {
-                float u = 0.223607f;
-                float v = 0.670820f;
+                f32 u = 0.223607f;
+                f32 v = 0.670820f;
 
                 samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){-u, -v}));
                 samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){-v, u}));
@@ -635,12 +639,12 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
 
             if (samples > 0)
             {
-                float angle = picker_wheel_get_angle(picker, point);
-                float degree = radians_to_degrees(angle);
+                f32 angle = picker_wheel_get_angle(picker, point);
+                f32 degree = radians_to_degrees(angle);
                 v3f hsv = { degree, 1.0f, 1.0f };
                 v3f rgb = hsv_to_rgb(hsv);
 
-                float contrib = samples / 4.0f;
+                f32 contrib = samples / 4.0f;
 
                 v4f d = color_u32_to_v4f(cm, dest_color);
 
@@ -659,7 +663,7 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
                     sqrtf(((1 - contrib) * (d.b)) + (contrib * (rgb.b))),
                     d.a + (contrib * (1 - d.a)),
                 };
-                uint32 color = color_v4f_to_u32(cm, result);
+                u32 color = color_v4f_to_u32(cm, result);
                 picker->pixels[picker_i] = color;
             }
         }
@@ -670,15 +674,15 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            v2f point = { (float)i, (float)j };
-            uint32 picker_i =
+            v2f point = { (f32)i, (f32)j };
+            u32 picker_i =
                     (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
-            uint32 dest_color = picker->pixels[picker_i];
+            u32 dest_color = picker->pixels[picker_i];
             // MSAA!!
             int samples = 0;
             {
-                float u = 0.223607f;
-                float v = 0.670820f;
+                f32 u = 0.223607f;
+                f32 v = 0.670820f;
 
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){-u, -v}),
                         picker->a, picker->b, picker->c);
@@ -694,19 +698,12 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
             {
                 v3f hsv = picker_hsv_from_point(picker, point);
 
-                float contrib = samples / 4.0f;
+                f32 contrib = samples / 4.0f;
 
                 v4f d = color_u32_to_v4f(cm, dest_color);
 
                 v3f rgb = hsv_to_rgb(hsv);
 
-                /* v4f result = */
-                /* { */
-                /*     ((1 - contrib) * (d.r)) + (contrib * (rgb.r)), */
-                /*     ((1 - contrib) * (d.g)) + (contrib * (rgb.g)), */
-                /*     ((1 - contrib) * (d.b)) + (contrib * (rgb.b)), */
-                /*     d.a + (contrib * (1 - d.a)), */
-                /* }; */
                 // To gamma
                 rgb.r = rgb.r * rgb.r;
                 rgb.g = rgb.g * rgb.g;
@@ -729,14 +726,14 @@ static void render_picker(ColorPicker* picker, ColorManagement cm,
     }
 
     // Blit picker pixels
-    uint32* to_blit = picker->pixels;
+    u32* to_blit = picker->pixels;
     for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            uint32 linear_color = *to_blit++;
+            u32 linear_color = *to_blit++;
             v4f sRGB = color_u32_to_v4f(cm, linear_color);
-            uint32 color = color_v4f_to_u32(cm, sRGB);
+            u32 color = color_v4f_to_u32(cm, sRGB);
             buffer_pixels[j * view->screen_size.w + i] = color;
         }
     }
@@ -775,9 +772,9 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             raster_limits.right =  max (milton_state->last_raster_input.x, new_point.x);
             raster_limits.top =    min (milton_state->last_raster_input.y, new_point.y);
             raster_limits.bottom = max (milton_state->last_raster_input.y, new_point.y);
-            int32 block_offset = 0;
-            int32 w = raster_limits.right - raster_limits.left;
-            int32 h = raster_limits.bottom - raster_limits.top;
+            i32 block_offset = 0;
+            i32 w = raster_limits.right - raster_limits.left;
+            i32 h = raster_limits.bottom - raster_limits.top;
             if (w < milton_state->block_width)
             {
                 block_offset = (milton_state->block_width - w) / 2;
@@ -796,7 +793,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         {
             Stroke* stroke = &milton_state->working_stroke;
             v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
-            int32 raster_radius = stroke->brush.radius / milton_state->view->scale;
+            i32 raster_radius = stroke->brush.radius / milton_state->view->scale;
             raster_radius = max(raster_radius, milton_state->block_width);
             raster_limits.left = -raster_radius  + point.x;
             raster_limits.right = raster_radius  + point.x;
@@ -808,16 +805,16 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         }
     }
 
-    int32 index = (milton_state->raster_buffer_index + 1) % 2;
-    uint32* raster_buffer = (uint32*)milton_state->raster_buffers[index];
+    i32 index = (milton_state->raster_buffer_index + 1) % 2;
+    u32* raster_buffer = (u32*)milton_state->raster_buffers[index];
 
-    bool32 completed = render_canvas(milton_state, raster_buffer, raster_limits);
+    b32 completed = render_canvas(milton_state, raster_buffer, raster_limits);
 
     // Render UI
     if (completed)
     {
         Rect* split_rects = NULL;
-        bool32 redraw = false;
+        b32 redraw = false;
         Rect picker_rect = picker_get_bounds(&milton_state->picker);
         Rect clipped = rect_intersect(picker_rect, raster_limits);
         if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
@@ -837,7 +834,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
     // If not preempted, do a buffer swap.
     if (completed)
     {
-        int32 prev_index = milton_state->raster_buffer_index;
+        i32 prev_index = milton_state->raster_buffer_index;
         milton_state->raster_buffer_index = index;
 
         memcpy(milton_state->raster_buffers[prev_index],

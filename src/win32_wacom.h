@@ -11,7 +11,7 @@
     return false; \
 }
 
-static bool32 win32_wacom_load_wintab(Win32State* win_state)
+static b32 win32_wacom_load_wintab(Win32State* win_state)
 {
     win_state->wintab_handle = LoadLibraryA( "Wintab32.dll" );
 

@@ -56,11 +56,11 @@ typedef enum
 typedef struct
 {
     // Mouse info
-    int32 pointer_x;
-    int32 pointer_y;
-    bool32 is_stroking;
-    bool32 right_down;
-    bool32 is_panning;
+    i32 pointer_x;
+    i32 pointer_y;
+    b32 is_stroking;
+    b32 right_down;
+    b32 is_panning;
     v2i old_pan;
 } GuiData;
 
@@ -78,12 +78,12 @@ void platform_quit()
 static int milton_win32_setup_context(HWND window, HGLRC* context);
 
 
-static void path_at_exe(char* full_path, int32 buffer_size, char* fname)
+static void path_at_exe(char* full_path, i32 buffer_size, char* fname)
 {
     GetModuleFileName(NULL, full_path, (DWORD)buffer_size);
     {  // Trim to backslash
-        int32 len = 0;
-        for(int32 i = 0; i < buffer_size; ++i)
+        i32 len = 0;
+        for(i32 i = 0; i < buffer_size; ++i)
         {
             char c = full_path[i];
             if (!c)
@@ -152,7 +152,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 {
     MiltonInput input = { 0 };
     MSG message;
-    bool32 is_ctrl_down = GetKeyState(VK_CONTROL) >> 1;
+    b32 is_ctrl_down = GetKeyState(VK_CONTROL) >> 1;
 #if 0
     if (win_state->wintab_handle)
     {
@@ -218,9 +218,9 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
         case WM_KEYDOWN:
             {
                 uint32_t vkcode = (uint32_t)message.wParam;
-                bool32 was_down = ((message.lParam & (1 << 30)) != 0);
-                bool32 is_down  = ((message.lParam & ((uint64_t)1 << 31)) == 0);
-                bool32 alt_key_was_down     = (message.lParam & (1 << 29));
+                b32 was_down = ((message.lParam & (1 << 30)) != 0);
+                b32 is_down  = ((message.lParam & ((uint64_t)1 << 31)) == 0);
+                b32 alt_key_was_down     = (message.lParam & (1 << 29));
                 if (was_down && vkcode == VK_ESCAPE)
                 {
                     platform_quit();
@@ -293,8 +293,8 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                             win_state->wacom_pt_new.y != win_state->wacom_pt_old.y ||
                             win_state->wacom_prs_new != win_state->wacom_prs_old)
                     {
-                        win_state->input_pointer.x = (int64)g_gui_data.pointer_x;
-                        win_state->input_pointer.y = (int64)g_gui_data.pointer_y;
+                        win_state->input_pointer.x = (i64)g_gui_data.pointer_x;
+                        win_state->input_pointer.y = (i64)g_gui_data.pointer_y;
                     }
                 }
                 else
@@ -339,7 +339,7 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
 #if 0
                 hctx = (HCTX)wParam;
 
-                bool32 entering = (HIWORD(lParam) != 0);
+                b32 entering = (HIWORD(lParam) != 0);
 
                 if ( entering )
                 {
@@ -384,8 +384,8 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 win_state->input_pointer.y != g_gui_data.pointer_y
                 )
         {
-            win_state->input_pointer.x = (int64)g_gui_data.pointer_x;
-            win_state->input_pointer.y = (int64)g_gui_data.pointer_y;
+            win_state->input_pointer.x = (i64)g_gui_data.pointer_x;
+            win_state->input_pointer.y = (i64)g_gui_data.pointer_y;
             v2i new_pan = win_state->input_pointer;
             // Just started panning.
             if (!g_gui_data.is_panning)
@@ -415,8 +415,8 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 win_state->input_pointer.y != g_gui_data.pointer_y
                 )
         {
-            win_state->input_pointer.x = (int64)g_gui_data.pointer_x;
-            win_state->input_pointer.y = (int64)g_gui_data.pointer_y;
+            win_state->input_pointer.x = (i64)g_gui_data.pointer_x;
+            win_state->input_pointer.y = (i64)g_gui_data.pointer_y;
             input.point = &win_state->input_pointer;
         }
     }
@@ -435,7 +435,7 @@ LRESULT APIENTRY WndProc(
     {
     case WM_CREATE:
         {
-            bool32 success = milton_win32_setup_context(window, &g_gl_context_handle);
+            b32 success = milton_win32_setup_context(window, &g_gl_context_handle);
             if (!success)
             {
                 platform_quit();
@@ -484,7 +484,7 @@ void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id, DWORD 
 
 static void win32_display_raster_buffer(
         Win32State* win_state,
-        uint8_t* bytes, int32_t full_width, int32_t full_height, uint8_t bytes_per_pixel)
+        u8* bytes, int32_t full_width, int32_t full_height, u8 bytes_per_pixel)
 {
     // Make sure we have allocated enough memory for the current window.
     assert(full_width > win_state->width);
@@ -533,11 +533,11 @@ int CALLBACK WinMain(
         return FALSE;
     }
 
-    int32 x = 100;
-    int32 y = 100;
+    i32 x = 100;
+    i32 y = 100;
 
-    int32 width = 1280;
-    int32 height = 800;
+    i32 width = 1280;
+    i32 height = 800;
 
     HWND window = CreateWindowExA(
             0, //WS_EX_TOPMOST ,  // dwExStyle
@@ -614,7 +614,7 @@ int CALLBACK WinMain(
 
     SetTimer(window, 42, 16/*ms*/, win32_fire_timer);
 
-    bool32 modified = false;
+    b32 modified = false;
     while (!(g_gui_msgs & GuiMsg_SHOULD_QUIT))
     {
         v2i screen_size = { win_state.width, win_state.height };

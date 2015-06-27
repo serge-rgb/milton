@@ -2,6 +2,10 @@
 
 if [ ! -d src/libserg ]; then
     git clone https://github.com/bigmonachus/libserg.git src/libserg
+else
+    pushd src/libserg
+    git pull
+    popd
 fi
 
 cd third_party/

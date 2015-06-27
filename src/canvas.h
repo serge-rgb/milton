@@ -1,9 +1,9 @@
 
 typedef struct Brush_s
 {
-    int32 radius;  // This should be replaced by a BrushType and some union containing brush info.
+    i32 radius;  // This should be replaced by a BrushType and some union containing brush info.
     v3f   color;
-    float alpha;
+    f32 alpha;
 } Brush;
 
 #define LIMIT_STROKE_POINTS 1024
@@ -13,18 +13,18 @@ typedef struct Stroke_s
     // TODO turn this into a deque
     v2i     points[LIMIT_STROKE_POINTS];
 
-    int32   num_points;
+    i32   num_points;
 } Stroke;
 
 typedef struct CanvasView_s
 {
     v2i     canvas_tile_focus;      // Coordinates are relative to this.
     v2i     screen_size;            // Size in pixels
-    int32   scale;                  // Zoom
+    i32   scale;                  // Zoom
     v2i     screen_center;          // In pixels
     v2i     pan_vector;             // In canvas scale
-    int32   downsampling_factor;
-    int32   canvas_tile_radius;
+    i32   downsampling_factor;
+    i32   canvas_tile_radius;
 } CanvasView;
 
 
@@ -42,14 +42,14 @@ typedef struct CanvasView_s
 inline v2i rotate_to_view(v2i p, CanvasView* view)
 {
     int d = view->rotation;
-    float c = view->cos_sin_table[d][0];
-    float s = view->cos_sin_table[d][1];
-    float x = (float)p.x;
-    float y = (float)p.y;
+    f32 c = view->cos_sin_table[d][0];
+    f32 s = view->cos_sin_table[d][1];
+    f32 x = (f32)p.x;
+    f32 y = (f32)p.y;
     v2i r =
     {
-        (int32)(x * c - y * s),
-        (int32)(x * s + y * c),
+        (i32)(x * c - y * s),
+        (i32)(x * s + y * c),
     };
     return r;
 }
@@ -76,14 +76,14 @@ inline v2i raster_to_canvas(CanvasView* view, v2i raster_point)
     return canvas_point;
 }
 
-// Returns an array of `num_strokes` bool32's, masking strokes to the rect.
-static bool32* filter_strokes_to_rect(Arena* arena,
+// Returns an array of `num_strokes` b32's, masking strokes to the rect.
+static b32* filter_strokes_to_rect(Arena* arena,
                                       Stroke* strokes,
-                                      int32 num_strokes,
+                                      i32 num_strokes,
                                       Rect rect)
 {
-    bool32* mask_array = arena_alloc_array(arena, num_strokes, bool32);
-    for (int32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
+    b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
+    for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
     {
         Stroke* stroke = &strokes[stroke_i];
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
@@ -96,12 +96,12 @@ static bool32* filter_strokes_to_rect(Arena* arena,
         }
         else
         {
-            for (int32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
+            for (i32 point_i = 0; point_i < stroke->num_points - 1; ++point_i)
             {
                 v2i a = stroke->points[point_i];
                 v2i b = stroke->points[point_i + 1];
 
-                bool32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
+                b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
                                   (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
                                   (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
                                   (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));

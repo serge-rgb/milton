@@ -11,7 +11,7 @@ int main()
             "Name2", "v2f",
             "Name3", "v3f",
             "Name4", "v4f",
-            "Type", "float");
+            "Type", "f32");
     meta_expand(
             "vector.generated.h",
             "vector.template.h",
@@ -20,7 +20,7 @@ int main()
             "Name2", "v2i",
             "Name3", "v3i",
             "Name4", "v4i",
-            "Type", "int32");
+            "Type", "i32");
     meta_expand(
             "vector.generated.h",
             "vector.template.h",
@@ -29,5 +29,5 @@ int main()
             "Name2", "v2l",
             "Name3", "v3l",
             "Name4", "v4l",
-            "Type", "int64");
+            "Type", "i64");
 }

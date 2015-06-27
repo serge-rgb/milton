@@ -50,16 +50,16 @@ typedef enum MiltonMode_s
 
 typedef struct MiltonState_s
 {
-    int32   max_width;              // Dimensions of the raster
-    int32   max_height;
-    uint8   bytes_per_pixel;
-    uint8*  raster_buffers[2];      // Double buffering, for render jobs that may not finish.
-    int32   raster_buffer_index;
+    i32     max_width;              // Dimensions of the raster
+    i32     max_height;
+    u8      bytes_per_pixel;
+    u8*     raster_buffers[2];      // Double buffering, for render jobs that may not finish.
+    i32     raster_buffer_index;
 
     // The screen is rendered in tiles
     // Each tile is rendered in blocks of size (block_width*block_width).
-    int32   blocks_per_tile;
-    int32   block_width;
+    i32     blocks_per_tile;
+    i32     block_width;
 
     MiltonGLState* gl;
 
@@ -67,11 +67,11 @@ typedef struct MiltonState_s
 
     ColorPicker picker;
 
-    Brush brush;
-    Brush eraser_brush;
-    int32 brush_size;  // In screen pixels
+    Brush   brush;
+    Brush   eraser_brush;
+    i32     brush_size;  // In screen pixels
 
-    bool32 canvas_blocked;  // When interacting with the UI.
+    b32 canvas_blocked;  // When interacting with the UI.
 
     CanvasView* view;
 
@@ -80,9 +80,9 @@ typedef struct MiltonState_s
     Stroke  working_stroke;
 
     Stroke  strokes[4096];  // TODO: Create a deque to store arbitrary number of strokes.
-    int32   num_strokes;
+    i32     num_strokes;
 
-    int32   num_redos;
+    i32     num_redos;
 
     MiltonMode current_mode;
 
@@ -122,7 +122,7 @@ typedef struct MiltonInput_s
 static void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;
-    uint8* raster_buffer = milton_state->raster_buffers[milton_state->raster_buffer_index];
+    u8* raster_buffer = milton_state->raster_buffers[milton_state->raster_buffer_index];
     glTexImage2D(
             GL_TEXTURE_2D, 0, GL_RGBA,
             milton_state->view->screen_size.w, milton_state->view->screen_size.h,
@@ -248,7 +248,7 @@ static void milton_startup_tests()
 }
 #endif
 
-static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_height)
+static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_height)
 {
 #ifndef NDEBUG
     milton_startup_tests();
@@ -262,12 +262,12 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
 
     milton_state->current_mode = MiltonMode_BRUSH;
 
-    int64 raster_buffer_size =
+    i64 raster_buffer_size =
         milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
     milton_state->raster_buffers[0] =
-        arena_alloc_array(milton_state->root_arena, raster_buffer_size, uint8);
+        arena_alloc_array(milton_state->root_arena, raster_buffer_size, u8);
     milton_state->raster_buffers[1] =
-        arena_alloc_array(milton_state->root_arena, raster_buffer_size, uint8);
+        arena_alloc_array(milton_state->root_arena, raster_buffer_size, u8);
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
@@ -288,9 +288,9 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
         milton_state->view->rotation = 0;
         for (int d = 0; d < 360; d++)
         {
-            float r = deegrees_to_radians(d);
-            float c = cosf(r);
-            float s = sinf(r);
+            f32 r = deegrees_to_radians(d);
+            f32 c = cosf(r);
+            f32 s = sinf(r);
             milton_state->view->cos_sin_table[d][0] = c;
             milton_state->view->cos_sin_table[d][1] = s;
         }
@@ -299,12 +299,12 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
 
     // Init picker
     {
-        int32 bound_radius_px = 100;
-        float wheel_half_width = 12;
+        i32 bound_radius_px = 100;
+        f32 wheel_half_width = 12;
         milton_state->picker.center = (v2i){ 120, 120 };
         milton_state->picker.bound_radius_px = bound_radius_px;
         milton_state->picker.wheel_half_width = wheel_half_width;
-        milton_state->picker.wheel_radius = (float)bound_radius_px - 5.0f - wheel_half_width;
+        milton_state->picker.wheel_radius = (f32)bound_radius_px - 5.0f - wheel_half_width;
         milton_state->picker.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
         Rect bounds;
         bounds.left = milton_state->picker.center.x - bound_radius_px;
@@ -313,7 +313,7 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
         bounds.bottom = milton_state->picker.center.y + bound_radius_px;
         milton_state->picker.bounds = bounds;
         milton_state->picker.pixels = arena_alloc_array(
-                milton_state->root_arena, (4 * bound_radius_px * bound_radius_px), uint32);
+                milton_state->root_arena, (4 * bound_radius_px * bound_radius_px), u32);
         picker_update(&milton_state->picker,
                 (v2i){
                 milton_state->picker.center.x + (int)(milton_state->picker.wheel_radius),
@@ -344,9 +344,9 @@ static void milton_init(MiltonState* milton_state, int32 max_width , int32 max_h
     milton_gl_backend_init(milton_state);
 }
 
-inline bool32 is_user_drawing(MiltonState* milton_state)
+inline b32 is_user_drawing(MiltonState* milton_state)
 {
-    bool32 result = milton_state->working_stroke.num_points > 0;
+    b32 result = milton_state->working_stroke.num_points > 0;
     return result;
 }
 
@@ -424,18 +424,18 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
 // Sensible
 #if 1
-        static float scale_factor = 1.3f;
-        static int32 view_scale_limit = 10000;
+        static f32 scale_factor = 1.3f;
+        static i32 view_scale_limit = 10000;
 // Debug
 #else
-        static float scale_factor = 1.5f;
-        static int32 view_scale_limit = 1000000;
+        static f32 scale_factor = 1.5f;
+        static i32 view_scale_limit = 1000000;
 #endif
 
-        static bool32 debug_scale_lock = false;
+        static b32 debug_scale_lock = false;
         if (!debug_scale_lock && input->scale > 0 && milton_state->view->scale >= 2)
         {
-            milton_state->view->scale = (int32)(milton_state->view->scale / scale_factor);
+            milton_state->view->scale = (i32)(milton_state->view->scale / scale_factor);
             if (milton_state->view->scale == 1)
             {
                 debug_scale_lock = true;
@@ -444,7 +444,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         else if (input->scale < 0 && milton_state->view->scale < view_scale_limit)
         {
             debug_scale_lock = false;
-            milton_state->view->scale = (int32)(milton_state->view->scale * scale_factor) + 1;
+            milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
         milton_state->eraser_brush.radius = milton_state->brush_size * milton_state->view->scale;
@@ -505,7 +505,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 #endif
 
-    bool32 finish_stroke = false;
+    b32 finish_stroke = false;
     if (input->point)
     {
         v2i point = *input->point;
