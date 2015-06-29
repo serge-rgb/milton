@@ -360,8 +360,8 @@ inline void render_canvas_in_block(Arena* render_arena,
                         int samples = 0;
                         {
 #ifdef MSAA_ROTATED_GRID
-                            f32 u = 0.223607f * view->scale;  // sin(arctan(1/2)) / 2
-                            f32 v = 0.670820f * view->scale;  // cos(arctan(1/2)) / 2 + u
+                            f32 u = (0.223607f * view->scale) * pixel_jump;  // sin(arctan(1/2)) / 2
+                            f32 v = (0.670820f * view->scale) * pixel_jump;  // cos(arctan(1/2)) / 2 + u
 
                             f32 dists[4];
                             dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);
@@ -378,8 +378,8 @@ inline void render_canvas_in_block(Arena* render_arena,
 #elif defined(MSAA_4X)
                             f32 dists[16];
 
-                            f32 f3 = 0.75f * view->scale;
-                            f32 f1 = 0.25f * view->scale;
+                            f32 f3 = (0.75f * view->scale) * pixel_jump;
+                            f32 f1 = (0.25f * view->scale) * pixel_jump;
 
                             dists[0]  = (dx - f3) * (dx - f3) + (dy - f3) * (dy - f3);
                             dists[1]  = (dx - f1) * (dx - f1) + (dy - f3) * (dy - f3);
@@ -407,16 +407,16 @@ inline void render_canvas_in_block(Arena* render_arena,
                             // Perf note: It would be nice to remove the sqrtf call , but
                             // we do get into precision errors at high zoom levels.
 
-                            samples += (sqrtf(dists[0]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[1]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[2]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[3]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[4]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[5]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[6]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[7]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[8]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[9]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 0]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 1]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 2]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 3]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 4]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 5]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 6]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 7]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 8]) < clipped_stroke->brush.radius);
+                            samples += (sqrtf(dists[ 9]) < clipped_stroke->brush.radius);
                             samples += (sqrtf(dists[10]) < clipped_stroke->brush.radius);
                             samples += (sqrtf(dists[11]) < clipped_stroke->brush.radius);
                             samples += (sqrtf(dists[12]) < clipped_stroke->brush.radius);

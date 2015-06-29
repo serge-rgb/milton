@@ -400,7 +400,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (input->flags & MiltonInputFlags_FAST_DRAW)
     {
-        milton_state->view->downsampling_factor = 4;
+        milton_state->view->downsampling_factor = 8;
         milton_state->current_mode |= MiltonMode_REQUEST_QUALITY_REDRAW;
     }
     else
