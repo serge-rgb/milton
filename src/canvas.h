@@ -78,14 +78,14 @@ inline v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 static b32* filter_strokes_to_rect(Arena* arena,
-                                      Stroke* strokes,
-                                      i32 num_strokes,
-                                      Rect rect)
+                                   const Stroke* strokes,
+                                   const i32 num_strokes,
+                                   const Rect rect)
 {
     b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
     for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
     {
-        Stroke* stroke = &strokes[stroke_i];
+        const Stroke* stroke = &strokes[stroke_i];
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
         if (stroke->num_points == 1)
         {

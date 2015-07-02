@@ -48,6 +48,8 @@ typedef enum MiltonMode_s
     MiltonMode_REQUEST_QUALITY_REDRAW = ( 1 << 2 ),
 } MiltonMode;
 
+typedef struct RenderQueue_s RenderQueue;
+
 typedef struct MiltonState_s
 {
     i32     max_width;              // Dimensions of the raster
@@ -85,6 +87,9 @@ typedef struct MiltonState_s
     i32     num_redos;
 
     MiltonMode current_mode;
+
+    RenderQueue* render_queue;
+
 
     // Heap
     Arena*      root_arena;         // Persistent memory.
@@ -250,6 +255,20 @@ static void milton_startup_tests()
 
 static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_height)
 {
+
+    // Initialize render queue
+    milton_state->render_queue = arena_alloc_elem(milton_state->root_arena, RenderQueue);
+    {
+        milton_state->render_queue->semaphore = SDL_CreateSemaphore(0);
+    }
+
+
+    for (i32 i = 0; i < NUM_RENDER_WORKERS; ++i)
+    {
+        SDL_CreateThread((SDL_ThreadFunction)render_worker, "Worker Thread", (void*)milton_state);
+    }
+
+
 #ifndef NDEBUG
     milton_startup_tests();
 #endif

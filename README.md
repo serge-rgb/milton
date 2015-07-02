@@ -17,8 +17,8 @@ To-Do
     * :)
 
 * Roadmap
+    * (Finish) threaded canvas rasterizer
     * iOS port
-    * Threaded canvas rasterizer
     * Fix color picker controls.
     * Basic saving / loading.
     * IMUI

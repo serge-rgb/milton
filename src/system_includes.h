@@ -16,6 +16,7 @@
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GL/wglew.h>
+#include <SDL.h>
 
 #ifdef _WIN32
 #pragma warning(pop)

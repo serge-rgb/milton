@@ -503,6 +503,12 @@ static void win32_display_raster_buffer(
             SRCCOPY);
 }
 
+void SDLCALL funcion_feliz()
+{
+    OutputDebugStringA("hola, soy feliz!!!\n");
+    OutputDebugStringA("ahora he de morir\n");
+}
+
 #pragma warning(suppress: 28251)
 int CALLBACK WinMain(
         HINSTANCE hInstance,
@@ -568,7 +574,7 @@ int CALLBACK WinMain(
 
     win32_wacom_get_context(&win_state);
 
-    const size_t total_memory_size = 1 * 1024 * 1024 * 1024;  // Total memory requirement for Milton.
+    const size_t total_memory_size = 1 * 1024 * 1024 * 1024;  // Total memory requirement for Milton
     const size_t frame_heap_in_MB = 32 * 1024 * 1024;         // Size of transient memory
 
     // Create root arena

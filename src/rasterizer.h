@@ -2,7 +2,7 @@
 // (c) Copyright 2015 by Sergio Gonzalez
 
 
-#define hello 3
+#define NUM_RENDER_WORKERS 4
 
 typedef struct ClippedStroke_s ClippedStroke;
 struct ClippedStroke_s
@@ -485,6 +485,97 @@ inline void render_canvas_in_block(Arena* render_arena,
     }
 }
 
+// Render Workers:
+//    We have a bunch of workers running on threads, who wait on a lockless
+//    queue to take TileRenderData structures.
+//    When there is work available, they call tile_render_thread with the
+//    appropriate parameters.
+
+typedef struct TileRenderData_s
+{
+    Rect*   blocks;
+    i32     block_start;
+    i32     num_blocks;
+    u32*    raster_buffer;
+} TileRenderData;
+
+
+#define RENDER_QUEUE_SIZE 16
+
+typedef struct RenderQueue_s
+{
+    SDL_sem* semaphore;
+    TileRenderData tile_render_data[RENDER_QUEUE_SIZE];
+
+    SDL_mutex* mutex;
+    i32 read_index;
+    i32 write_index;
+} RenderQueue;
+
+void SDLCALL render_worker(void* data)
+{
+    MiltonState* milton_state = (MiltonState*)data;
+    for (;;)
+    {
+        OutputDebugStringA("Hola Mundooooo\n");
+        SDL_SemWait(milton_state->render_queue->semaphore);
+        // DRAW
+    }
+}
+
+static void render_tile(MiltonState* milton_state,
+                        Arena* tile_arena,
+                        Rect* blocks,
+                        i32 block_start, i32 num_blocks,
+                        u32* raster_buffer)
+{
+    Rect raster_tile_rect = { 0 };
+    Rect canvas_tile_rect = { 0 };
+
+    const i32 blocks_per_tile = milton_state->blocks_per_tile;
+    // Clip and move to canvas space.
+    // Derive tile_rect
+    for (i32 block_i = 0; block_i < blocks_per_tile; ++block_i)
+    {
+        if (block_start + block_i >= num_blocks)
+        {
+            break;
+        }
+        blocks[block_start + block_i] = rect_clip_to_screen(blocks[block_start + block_i],
+                                                  milton_state->view->screen_size);
+        raster_tile_rect = rect_union(raster_tile_rect, blocks[block_start + block_i]);
+
+        canvas_tile_rect.top_left =
+                raster_to_canvas(milton_state->view, raster_tile_rect.top_left);
+        canvas_tile_rect.bot_right =
+                raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
+    }
+
+    // Filter strokes to this tile.
+    b32* stroke_masks = filter_strokes_to_rect(tile_arena,
+                                               milton_state->strokes,
+                                               milton_state->num_strokes,
+                                               canvas_tile_rect);
+
+    for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
+    {
+        if (block_start + block_i >= num_blocks)
+        {
+            break;
+        }
+
+        render_canvas_in_block(tile_arena,
+                               milton_state->view,
+                               milton_state->cm,
+                               milton_state->strokes,
+                               stroke_masks,
+                               milton_state->num_strokes,
+                               &milton_state->working_stroke,
+                               raster_buffer,
+                               blocks[block_start + block_i]);
+    }
+}
+
 static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
 {
     v2i canvas_reference = { 0 };
@@ -496,62 +587,28 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
     const i32 blocks_per_tile = milton_state->blocks_per_tile;
 
     // TODO: make this loop data parallel
-    for (int i = 0; i < num_blocks; i += blocks_per_tile)
+    for (int block_i = 0; block_i < num_blocks; block_i += blocks_per_tile)
     {
-        if (i >= num_blocks)
+        if (block_i >= num_blocks)
         {
             break;
         }
 
+
+#if 0
+        // Mandar trabajo:
+#else
         Arena tile_arena = arena_push(milton_state->transient_arena,
                                       arena_available_space(milton_state->transient_arena));
-
-        Rect raster_tile_rect = { 0 };
-        Rect canvas_tile_rect = { 0 };
-
-        // Clip and move to canvas space.
-        // Derive tile_rect
-        for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
-        {
-            if (i + block_i >= num_blocks)
-            {
-                break;
-            }
-            blocks[i + block_i] = rect_clip_to_screen(blocks[i + block_i],
-                                                      milton_state->view->screen_size);
-            raster_tile_rect = rect_union(raster_tile_rect, blocks[i + block_i]);
-
-            canvas_tile_rect.top_left =
-                raster_to_canvas(milton_state->view, raster_tile_rect.top_left);
-            canvas_tile_rect.bot_right =
-                raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
-        }
-
-        // Filter strokes to this tile.
-        b32* stroke_masks = filter_strokes_to_rect(&tile_arena,
-                                                      milton_state->strokes,
-                                                      milton_state->num_strokes,
-                                                      canvas_tile_rect);
-
-        for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
-        {
-            if (i + block_i >= num_blocks)
-            {
-                break;
-            }
-
-            render_canvas_in_block(&tile_arena,
-                                   milton_state->view,
-                                   milton_state->cm,
-                                   milton_state->strokes,
-                                   stroke_masks,
-                                   milton_state->num_strokes,
-                                   &milton_state->working_stroke,
-                                   raster_buffer,
-                                   blocks[i + block_i]);
-        }
+        render_tile(milton_state,
+                    &tile_arena,
+                    blocks,
+                    block_i, num_blocks,
+                    raster_buffer);
 
         arena_pop(&tile_arena);
+#endif
+
 
         ARENA_VALIDATE(milton_state->transient_arena);
     }
@@ -805,7 +862,8 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         }
     }
 
-    i32 index = (milton_state->raster_buffer_index + 1) % 2;
+    //i32 index = (milton_state->raster_buffer_index + 1) % 2;
+    i32 index = (milton_state->raster_buffer_index + 0);
     u32* raster_buffer = (u32*)milton_state->raster_buffers[index];
 
     b32 completed = render_canvas(milton_state, raster_buffer, raster_limits);
@@ -832,7 +890,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
     }
 
     // If not preempted, do a buffer swap.
-    if (completed)
+    if (false && completed)
     {
         i32 prev_index = milton_state->raster_buffer_index;
         milton_state->raster_buffer_index = index;
