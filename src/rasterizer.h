@@ -2,8 +2,6 @@
 // (c) Copyright 2015 by Sergio Gonzalez
 
 
-#define NUM_RENDER_WORKERS 4
-
 typedef struct ClippedStroke_s ClippedStroke;
 struct ClippedStroke_s
 {
@@ -499,7 +497,6 @@ typedef struct TileRenderData_s
     u32*    raster_buffer;
 } TileRenderData;
 
-
 #define RENDER_QUEUE_SIZE 16
 
 typedef struct RenderQueue_s
@@ -512,23 +509,16 @@ typedef struct RenderQueue_s
     i32 write_index;
 } RenderQueue;
 
-void SDLCALL render_worker(void* data)
-{
-    MiltonState* milton_state = (MiltonState*)data;
-    for (;;)
-    {
-        OutputDebugStringA("Hola Mundooooo\n");
-        SDL_SemWait(milton_state->render_queue->semaphore);
-        // DRAW
-    }
-}
-
 static void render_tile(MiltonState* milton_state,
                         Arena* tile_arena,
                         Rect* blocks,
                         i32 block_start, i32 num_blocks,
                         u32* raster_buffer)
 {
+    if (!tile_arena)
+    {
+        return;
+    }
     Rect raster_tile_rect = { 0 };
     Rect canvas_tile_rect = { 0 };
 
@@ -576,6 +566,60 @@ static void render_tile(MiltonState* milton_state,
     }
 }
 
+static void render_post_tile(MiltonState* milton_state, TileRenderData tile_render_data)
+{
+    RenderQueue* queue = milton_state->render_queue;
+    i32 lock_result = SDL_LockMutex(milton_state->render_queue->mutex);
+    if (lock_result == 0)
+    {
+        queue->tile_render_data[queue->write_index] = tile_render_data;
+        queue->write_index = (queue->write_index + 1) % RENDER_QUEUE_SIZE;
+        SDL_UnlockMutex(queue->mutex);
+    }
+    SDL_SemPost(queue->semaphore);
+}
+
+typedef struct
+{
+    MiltonState* milton_state;
+    i32 worker_id;
+} WorkerParams;
+
+static void SDLCALL render_worker(void* data)
+{
+    WorkerParams* params = (WorkerParams*) data;
+    MiltonState* milton_state = params->milton_state;
+    i32 id = params->worker_id;
+
+    for (;;)
+    {
+        OutputDebugStringA("Hola Mundooooo\n");
+        SDL_SemWait(milton_state->render_queue->semaphore);
+        OutputDebugStringA("Caught it!\n");
+        // Atomic
+        i32 lock_result = SDL_LockMutex(milton_state->render_queue->mutex);
+        i32 read_index = -1;
+        if (lock_result == 0)
+        {
+            read_index = milton_state->render_queue->read_index;
+            milton_state->render_queue->read_index =
+                    (milton_state->render_queue->read_index + 1) % RENDER_QUEUE_SIZE;
+            SDL_UnlockMutex(milton_state->render_queue->mutex);
+        }
+
+        assert (read_index >= 0);
+
+        TileRenderData tile_render_data = milton_state->render_queue->tile_render_data[read_index - 1];
+        render_tile(milton_state, &milton_state->render_worker_arenas[id],
+                    tile_render_data.blocks,
+                    tile_render_data.block_start,
+                    tile_render_data.num_blocks,
+                    tile_render_data.raster_buffer);
+        arena_reset(&milton_state->render_worker_arenas[id]);
+    }
+}
+
+
 static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
 {
     v2i canvas_reference = { 0 };
@@ -595,8 +639,17 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         }
 
 
-#if 0
+#if 1
         // Mandar trabajo:
+        TileRenderData data =
+        {
+           .blocks = blocks,
+           .block_start = block_i,
+           .num_blocks = num_blocks,
+           .raster_buffer = raster_buffer,
+        };
+
+        render_post_tile(milton_state, data);
 #else
         Arena tile_arena = arena_push(milton_state->transient_arena,
                                       arena_available_space(milton_state->transient_arena));
@@ -605,6 +658,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
                     blocks,
                     block_i, num_blocks,
                     raster_buffer);
+
 
         arena_pop(&tile_arena);
 #endif

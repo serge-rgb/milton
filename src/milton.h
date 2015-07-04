@@ -32,6 +32,9 @@
 #include "color.h"
 #include "canvas.h"
 
+#define NUM_RENDER_WORKERS 1
+
+
 typedef struct MiltonGLState_s
 {
     GLuint quad_program;
@@ -94,6 +97,7 @@ typedef struct MiltonState_s
     // Heap
     Arena*      root_arena;         // Persistent memory.
     Arena*      transient_arena;    // Gets reset after every call to milton_update().
+    Arena       render_worker_arenas[NUM_RENDER_WORKERS];
 
 } MiltonState;
 
@@ -260,12 +264,23 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
     milton_state->render_queue = arena_alloc_elem(milton_state->root_arena, RenderQueue);
     {
         milton_state->render_queue->semaphore = SDL_CreateSemaphore(0);
+        milton_state->render_queue->mutex = SDL_CreateMutex();
     }
 
 
     for (i32 i = 0; i < NUM_RENDER_WORKERS; ++i)
     {
-        SDL_CreateThread((SDL_ThreadFunction)render_worker, "Worker Thread", (void*)milton_state);
+        WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
+        {
+            *params = (WorkerParams) { milton_state, i };
+        }
+
+        static const size_t render_worker_memory = 32 * 1024 * 1024;
+        milton_state->render_worker_arenas[i] = arena_spawn(milton_state->root_arena,
+                                                            render_worker_memory);
+
+        SDL_CreateThread((SDL_ThreadFunction)render_worker, "Worker Thread",
+                         (void*)params);
     }
 
 
