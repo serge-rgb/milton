@@ -32,8 +32,6 @@
 #include "color.h"
 #include "canvas.h"
 
-#define NUM_RENDER_WORKERS 1
-
 
 typedef struct MiltonGLState_s
 {
@@ -91,13 +89,14 @@ typedef struct MiltonState_s
 
     MiltonMode current_mode;
 
-    RenderQueue* render_queue;
+    i32             num_render_workers;
+    RenderQueue*    render_queue;
 
 
     // Heap
     Arena*      root_arena;         // Persistent memory.
     Arena*      transient_arena;    // Gets reset after every call to milton_update().
-    Arena       render_worker_arenas[NUM_RENDER_WORKERS];
+    Arena*      render_worker_arenas;
 
 } MiltonState;
 
@@ -263,24 +262,34 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
     // Initialize render queue
     milton_state->render_queue = arena_alloc_elem(milton_state->root_arena, RenderQueue);
     {
-        milton_state->render_queue->semaphore = SDL_CreateSemaphore(0);
-        milton_state->render_queue->mutex = SDL_CreateMutex();
+        milton_state->render_queue->work_available      = SDL_CreateSemaphore(0);
+        milton_state->render_queue->completed_semaphore = SDL_CreateSemaphore(0);
+        milton_state->render_queue->mutex               = SDL_CreateMutex();
     }
 
+    // Even with hyper-threading, it's better to have extra workers.
+    milton_state->num_render_workers = SDL_GetCPUCount() * 2;
 
-    for (i32 i = 0; i < NUM_RENDER_WORKERS; ++i)
+    milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
+
+    milton_state->render_worker_arenas = arena_alloc_array(milton_state->root_arena,
+                                                           milton_state->num_render_workers,
+                                                           Arena);
+
+    assert (milton_state->num_render_workers);
+
+    for (i32 i = 0; i < milton_state->num_render_workers; ++i)
     {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
         {
             *params = (WorkerParams) { milton_state, i };
         }
 
-        static const size_t render_worker_memory = 32 * 1024 * 1024;
+        static const size_t render_worker_memory = 1 * 1024 * 1024;
         milton_state->render_worker_arenas[i] = arena_spawn(milton_state->root_arena,
                                                             render_worker_memory);
 
-        SDL_CreateThread((SDL_ThreadFunction)render_worker, "Worker Thread",
-                         (void*)params);
+        SDL_CreateThread((SDL_ThreadFunction)render_worker, "Worker Thread", (void*)params);
     }
 
 
@@ -291,8 +300,8 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->max_width         = max_width;
     milton_state->max_height        = max_height;
-    milton_state->bytes_per_pixel    = 4;
-    milton_state->num_strokes        = 0;
+    milton_state->bytes_per_pixel   = 4;
+    milton_state->num_strokes       = 0;
 
     milton_state->current_mode = MiltonMode_BRUSH;
 
@@ -306,7 +315,7 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
     milton_state->blocks_per_tile = 16;
-    milton_state->block_width = 64;
+    milton_state->block_width = 32;
 
     color_init(&milton_state->cm);
 
@@ -434,7 +443,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (input->flags & MiltonInputFlags_FAST_DRAW)
     {
-        milton_state->view->downsampling_factor = 8;
+        milton_state->view->downsampling_factor = 2;
         milton_state->current_mode |= MiltonMode_REQUEST_QUALITY_REDRAW;
     }
     else

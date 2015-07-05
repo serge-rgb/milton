@@ -16,6 +16,9 @@
 
 #define snprintf sprintf_s
 
+void win32_log(char *format, ...);
+#define milton_log win32_log
+
 #include "milton.h"
 
 typedef struct Win32State_s Win32State;

@@ -158,7 +158,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    b32* stroke_masks,
                                    i32   num_strokes,
                                    Stroke* working_stroke,
-                                   u32* pixels,
+                                   volatile u32* pixels,
                                    Rect raster_limits)
 {
     Rect canvas_limits;
@@ -405,22 +405,52 @@ inline void render_canvas_in_block(Arena* render_arena,
                             // Perf note: It would be nice to remove the sqrtf call , but
                             // we do get into precision errors at high zoom levels.
 
-                            samples += (sqrtf(dists[ 0]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 1]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 2]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 3]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 4]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 5]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 6]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 7]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 8]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[ 9]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[10]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[11]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[12]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[13]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[14]) < clipped_stroke->brush.radius);
-                            samples += (sqrtf(dists[15]) < clipped_stroke->brush.radius);
+                            // We have to call a bunch of sqrtf's because squaring the radius
+                            // woud overflow a 32-bit integer
+                            if (clipped_stroke->brush.radius >= (1 << 16))
+                            {
+                                samples += (sqrtf(dists[ 0]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 1]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 2]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 3]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 4]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 5]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 6]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 7]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 8]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 9]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[10]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[11]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[12]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[13]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[14]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[15]) < clipped_stroke->brush.radius);
+                            }
+                            else
+                            {
+                                assert ( clipped_stroke->brush.radius > 0);
+
+                                u32 sq_radius =
+                                        (u32)clipped_stroke->brush.radius *
+                                        (u32)clipped_stroke->brush.radius;
+                                samples += (dists[ 0] < sq_radius);
+                                samples += (dists[ 1] < sq_radius);
+                                samples += (dists[ 2] < sq_radius);
+                                samples += (dists[ 3] < sq_radius);
+                                samples += (dists[ 4] < sq_radius);
+                                samples += (dists[ 5] < sq_radius);
+                                samples += (dists[ 6] < sq_radius);
+                                samples += (dists[ 7] < sq_radius);
+                                samples += (dists[ 8] < sq_radius);
+                                samples += (dists[ 9] < sq_radius);
+                                samples += (dists[10] < sq_radius);
+                                samples += (dists[11] < sq_radius);
+                                samples += (dists[12] < sq_radius);
+                                samples += (dists[13] < sq_radius);
+                                samples += (dists[14] < sq_radius);
+                                samples += (dists[15] < sq_radius);
+                            }
+
 #endif
                         }
 
@@ -483,40 +513,16 @@ inline void render_canvas_in_block(Arena* render_arena,
     }
 }
 
-// Render Workers:
-//    We have a bunch of workers running on threads, who wait on a lockless
-//    queue to take TileRenderData structures.
-//    When there is work available, they call tile_render_thread with the
-//    appropriate parameters.
-
-typedef struct TileRenderData_s
-{
-    Rect*   blocks;
-    i32     block_start;
-    i32     num_blocks;
-    u32*    raster_buffer;
-} TileRenderData;
-
-#define RENDER_QUEUE_SIZE 16
-
-typedef struct RenderQueue_s
-{
-    SDL_sem* semaphore;
-    TileRenderData tile_render_data[RENDER_QUEUE_SIZE];
-
-    SDL_mutex* mutex;
-    i32 read_index;
-    i32 write_index;
-} RenderQueue;
-
 static void render_tile(MiltonState* milton_state,
                         Arena* tile_arena,
-                        Rect* blocks,
+                        volatile Rect* blocks,
                         i32 block_start, i32 num_blocks,
-                        u32* raster_buffer)
+                        volatile u32* raster_buffer)
 {
     if (!tile_arena)
     {
+        int foo =42;
+        assert (!"WTF Tile arena is wrong\n");
         return;
     }
     Rect raster_tile_rect = { 0 };
@@ -566,18 +572,34 @@ static void render_tile(MiltonState* milton_state,
     }
 }
 
-static void render_post_tile(MiltonState* milton_state, TileRenderData tile_render_data)
+
+// Render Workers:
+//    We have a bunch of workers running on threads, who wait on a lockless
+//    queue to take TileRenderData structures.
+//    When there is work available, they call tile_render_thread with the
+//    appropriate parameters.
+
+typedef struct TileRenderData_s
 {
-    RenderQueue* queue = milton_state->render_queue;
-    i32 lock_result = SDL_LockMutex(milton_state->render_queue->mutex);
-    if (lock_result == 0)
-    {
-        queue->tile_render_data[queue->write_index] = tile_render_data;
-        queue->write_index = (queue->write_index + 1) % RENDER_QUEUE_SIZE;
-        SDL_UnlockMutex(queue->mutex);
-    }
-    SDL_SemPost(queue->semaphore);
-}
+    i32     block_start;
+} TileRenderData;
+
+#define RENDER_QUEUE_SIZE 1024
+
+typedef struct RenderQueue_s
+{
+    volatile Rect*   blocks;  // Screen areas to render.
+    i32              num_blocks;
+    volatile u32*    raster_buffer;
+
+    // FIFO work queue
+    SDL_mutex*              mutex;
+    volatile TileRenderData tile_render_data[RENDER_QUEUE_SIZE];
+    volatile i32            index;
+
+    SDL_sem*    work_available;
+    SDL_sem*    completed_semaphore;
+} RenderQueue;
 
 typedef struct
 {
@@ -590,33 +612,50 @@ static void SDLCALL render_worker(void* data)
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;
     i32 id = params->worker_id;
+    RenderQueue* render_queue = milton_state->render_queue;
 
     for (;;)
     {
-        OutputDebugStringA("Hola Mundooooo\n");
-        SDL_SemWait(milton_state->render_queue->semaphore);
-        OutputDebugStringA("Caught it!\n");
-        // Atomic
-        i32 lock_result = SDL_LockMutex(milton_state->render_queue->mutex);
-        i32 read_index = -1;
-        if (lock_result == 0)
+        SDL_SemWait(render_queue->work_available);
+        i32 lock_err = SDL_LockMutex(render_queue->mutex);
+        i32 index = -1;
+        TileRenderData tile_data = { 0 };
+        if (!lock_err)
         {
-            read_index = milton_state->render_queue->read_index;
-            milton_state->render_queue->read_index =
-                    (milton_state->render_queue->read_index + 1) % RENDER_QUEUE_SIZE;
-            SDL_UnlockMutex(milton_state->render_queue->mutex);
+            index = --render_queue->index;
+            assert (index >= 0);
+            assert (index <  RENDER_QUEUE_SIZE);
+            tile_data = render_queue->tile_render_data[index];
+            SDL_UnlockMutex(render_queue->mutex);
         }
+        else { assert (!"Render worker not handling lock error"); }
 
-        assert (read_index >= 0);
+        assert (index >= 0);
 
-        TileRenderData tile_render_data = milton_state->render_queue->tile_render_data[read_index - 1];
-        render_tile(milton_state, &milton_state->render_worker_arenas[id],
-                    tile_render_data.blocks,
-                    tile_render_data.block_start,
-                    tile_render_data.num_blocks,
-                    tile_render_data.raster_buffer);
+        render_tile(milton_state,
+                    &milton_state->render_worker_arenas[id],
+                    render_queue->blocks,
+                    tile_data.block_start, render_queue->num_blocks,
+                    render_queue->raster_buffer);
+
         arena_reset(&milton_state->render_worker_arenas[id]);
+
+        SDL_SemPost(render_queue->completed_semaphore);
     }
+}
+
+static void produce_render_work(MiltonState* milton_state, TileRenderData tile_render_data)
+{
+    RenderQueue* render_queue = milton_state->render_queue;
+    i32 lock_err = SDL_LockMutex(milton_state->render_queue->mutex);
+    if (!lock_err)
+    {
+        render_queue->tile_render_data[render_queue->index++] = tile_render_data;
+        SDL_UnlockMutex(render_queue->mutex);
+    }
+    else { assert (!"Lock failure not handled"); }
+
+    SDL_SemPost(render_queue->work_available);
 }
 
 
@@ -627,10 +666,16 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
     i32 num_blocks = rect_split(milton_state->transient_arena,
             raster_limits, milton_state->block_width, milton_state->block_width, &blocks);
 
+    RenderQueue* render_queue = milton_state->render_queue;
+    {
+        render_queue->blocks = blocks;
+        render_queue->num_blocks = num_blocks;
+        render_queue->raster_buffer = raster_buffer;
+    }
 
     const i32 blocks_per_tile = milton_state->blocks_per_tile;
 
-    // TODO: make this loop data parallel
+    i32 tile_acc = 0;
     for (int block_i = 0; block_i < num_blocks; block_i += blocks_per_tile)
     {
         if (block_i >= num_blocks)
@@ -638,18 +683,15 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
             break;
         }
 
-
-#if 1
-        // Mandar trabajo:
+#define RENDER_MULTITHREADED 1
+#if RENDER_MULTITHREADED
         TileRenderData data =
         {
-           .blocks = blocks,
-           .block_start = block_i,
-           .num_blocks = num_blocks,
-           .raster_buffer = raster_buffer,
+            .block_start = block_i,
         };
 
-        render_post_tile(milton_state, data);
+        produce_render_work(milton_state, data);
+        tile_acc += 1;
 #else
         Arena tile_arena = arena_push(milton_state->transient_arena,
                                       arena_available_space(milton_state->transient_arena));
@@ -662,10 +704,25 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
 
         arena_pop(&tile_arena);
 #endif
-
-
         ARENA_VALIDATE(milton_state->transient_arena);
     }
+
+#if RENDER_MULTITHREADED
+    // Wait for workers to finish.
+
+    while(tile_acc)
+    {
+        i32 waited_err = SDL_SemWait(milton_state->render_queue->completed_semaphore);
+        if (!waited_err)
+        {
+            --tile_acc;
+        }
+        else { assert ( !"Not handling completion semaphore wait error" ); }
+    }
+#endif
+
+    ARENA_VALIDATE(milton_state->transient_arena);
+
     return true;
 }
 
@@ -919,6 +976,16 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
     //i32 index = (milton_state->raster_buffer_index + 1) % 2;
     i32 index = (milton_state->raster_buffer_index + 0);
     u32* raster_buffer = (u32*)milton_state->raster_buffers[index];
+
+#if 0
+    // DEBUG always render the whole thing.
+    {
+        raster_limits.left = 0;
+        raster_limits.right = milton_state->view->screen_size.w;
+        raster_limits.top = 0;
+        raster_limits.bottom = milton_state->view->screen_size.h;
+    }
+#endif
 
     b32 completed = render_canvas(milton_state, raster_buffer, raster_limits);
 

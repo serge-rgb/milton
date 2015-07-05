@@ -13,17 +13,17 @@ To-Do
 =====
 
 * Bugs
+    * The subtraction trick introduced a new precision bug
     * pan doesn't work when maximized in 'classic' windows mode.
     * :)
 
 * Roadmap
-    * (Finish) threaded canvas rasterizer
-    * iOS port
+    * Android port
     * Fix color picker controls.
     * Basic saving / loading.
     * IMUI
     * SIMD-ify canvas rasterizer
     * SDL version for Linux & Mac
     * ? 64-bit canvas ?
-    * ? Android port ?
+    * ? iOS port ?
 
