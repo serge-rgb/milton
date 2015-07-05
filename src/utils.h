@@ -107,10 +107,10 @@ inline f32 orientation(v2f a, v2f b, v2f c)
 
 inline b32 is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
 {
-    b32 is_inside =
-        (orientation(a, b, point) <= 0) &&
-        (orientation(b, c, point) <= 0) &&
-        (orientation(c, a, point) <= 0);
+   b32 is_inside =
+           (orientation(a, b, point) <= 0) &&
+           (orientation(b, c, point) <= 0) &&
+           (orientation(c, a, point) <= 0);
     return is_inside;
 }
 

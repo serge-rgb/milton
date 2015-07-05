@@ -54,8 +54,9 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     return clipped_stroke;
 }
 
-inline v2i closest_point_in_segment(
-        v2i a, v2i b, v2f ab, f32 ab_magnitude_squared, v2i canvas_point)
+inline v2i closest_point_in_segment(v2i a, v2i b,
+                                    v2f ab, f32 ab_magnitude_squared,
+                                    v2i canvas_point)
 {
     v2i point;
     f32 mag_ab = sqrtf(ab_magnitude_squared);
@@ -158,7 +159,7 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    b32* stroke_masks,
                                    i32   num_strokes,
                                    Stroke* working_stroke,
-                                   volatile u32* pixels,
+                                   u32* pixels,
                                    Rect raster_limits)
 {
     Rect canvas_limits;
@@ -515,9 +516,9 @@ inline void render_canvas_in_block(Arena* render_arena,
 
 static void render_tile(MiltonState* milton_state,
                         Arena* tile_arena,
-                        volatile Rect* blocks,
+                        Rect* blocks,
                         i32 block_start, i32 num_blocks,
-                        volatile u32* raster_buffer)
+                        u32* raster_buffer)
 {
     if (!tile_arena)
     {
@@ -588,14 +589,14 @@ typedef struct TileRenderData_s
 
 typedef struct RenderQueue_s
 {
-    volatile Rect*   blocks;  // Screen areas to render.
-    i32              num_blocks;
-    volatile u32*    raster_buffer;
+    Rect*   blocks;  // Screen areas to render.
+    i32     num_blocks;
+    u32*    raster_buffer;
 
     // FIFO work queue
-    SDL_mutex*              mutex;
-    volatile TileRenderData tile_render_data[RENDER_QUEUE_SIZE];
-    volatile i32            index;
+    SDL_mutex*      mutex;
+    TileRenderData  tile_render_data[RENDER_QUEUE_SIZE];
+    i32    index;
 
     SDL_sem*    work_available;
     SDL_sem*    completed_semaphore;
@@ -747,8 +748,6 @@ static void render_picker(ColorPicker* picker,
     {
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            int b =
-                3 * 3;
             u32 picker_i =
                     (j - draw_rect.top) * (2*picker->bound_radius_px ) + (i - draw_rect.left);
             u32 src = buffer_pixels[j * view->screen_size.w + i];
@@ -936,9 +935,9 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
                     milton_state->view,
                     stroke->points[stroke->num_points - 2]);
 
-            raster_limits.left =   min (milton_state->last_raster_input.x, new_point.x);
-            raster_limits.right =  max (milton_state->last_raster_input.x, new_point.x);
-            raster_limits.top =    min (milton_state->last_raster_input.y, new_point.y);
+            raster_limits.left   = min (milton_state->last_raster_input.x, new_point.x);
+            raster_limits.right  = max (milton_state->last_raster_input.x, new_point.x);
+            raster_limits.top    = min (milton_state->last_raster_input.y, new_point.y);
             raster_limits.bottom = max (milton_state->last_raster_input.y, new_point.y);
             i32 block_offset = 0;
             i32 w = raster_limits.right - raster_limits.left;

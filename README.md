@@ -13,7 +13,7 @@ To-Do
 =====
 
 * Bugs
-    * The subtraction trick introduced a new precision bug
+    * FP precision problems at very small scales
     * pan doesn't work when maximized in 'classic' windows mode.
     * :)
 

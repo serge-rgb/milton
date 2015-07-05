@@ -23,7 +23,9 @@ void win32_log(char *format, ...);
 
 typedef struct Win32State_s Win32State;
 
+#pragma warning(push, 0)
 #include "win32_wacom_defines.h"
+#pragma warning(pop)
 
 struct Win32State_s
 {
@@ -47,7 +49,7 @@ struct Win32State_s
 
 #include "win32_wacom.h"
 
-typedef enum
+typedef enum GuiMsg_s
 {
     GuiMsg_RESIZED              = (1 << 0),
     GuiMsg_SHOULD_QUIT          = (1 << 1),
@@ -56,7 +58,7 @@ typedef enum
     GuiMsg_CHANGE_SCALE_CENTER  = (1 << 4),
 } GuiMsg;
 
-typedef struct
+typedef struct GuiData_s
 {
     // Mouse info
     i32 pointer_x;
@@ -475,7 +477,7 @@ LRESULT APIENTRY WndProc(
     return result;
 }
 
-void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id, DWORD time)
+static void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id, DWORD time)
 {
     if (event_id == 42)
     {
@@ -485,9 +487,10 @@ void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id, DWORD 
     g_gui_msgs |= GuiMsg_GL_DRAW;
 }
 
-static void win32_display_raster_buffer(
-        Win32State* win_state,
-        u8* bytes, int32_t full_width, int32_t full_height, u8 bytes_per_pixel)
+// Vestigial function from the pre-opengl days
+static void win32_display_raster_buffer(Win32State* win_state, u8* bytes,
+                                        int32_t full_width, int32_t full_height,
+                                        u8 bytes_per_pixel)
 {
     // Make sure we have allocated enough memory for the current window.
     assert(full_width > win_state->width);
@@ -504,12 +507,6 @@ static void win32_display_raster_buffer(
             &win_state->bitmap_info,
             DIB_RGB_COLORS,
             SRCCOPY);
-}
-
-void SDLCALL funcion_feliz()
-{
-    OutputDebugStringA("hola, soy feliz!!!\n");
-    OutputDebugStringA("ahora he de morir\n");
 }
 
 #pragma warning(suppress: 28251)

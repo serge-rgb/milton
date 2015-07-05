@@ -103,14 +103,14 @@ typedef struct MiltonState_s
 typedef enum
 {
     MiltonInputFlags_NONE,
-    MiltonInputFlags_FULL_REFRESH =     ( 1 << 0 ),
-    MiltonInputFlags_RESET =            ( 1 << 1 ),
-    MiltonInputFlags_END_STROKE =       ( 1 << 2 ),
-    MiltonInputFlags_UNDO =             ( 1 << 3 ),
-    MiltonInputFlags_REDO =             ( 1 << 4 ),
-    MiltonInputFlags_SET_MODE_ERASER =  ( 1 << 5 ),
-    MiltonInputFlags_SET_MODE_BRUSH =   ( 1 << 6 ),
-    MiltonInputFlags_FAST_DRAW      =   ( 1 << 7 ),
+    MiltonInputFlags_FULL_REFRESH    = ( 1 << 0 ),
+    MiltonInputFlags_RESET           = ( 1 << 1 ),
+    MiltonInputFlags_END_STROKE      = ( 1 << 2 ),
+    MiltonInputFlags_UNDO            = ( 1 << 3 ),
+    MiltonInputFlags_REDO            = ( 1 << 4 ),
+    MiltonInputFlags_SET_MODE_ERASER = ( 1 << 5 ),
+    MiltonInputFlags_SET_MODE_BRUSH  = ( 1 << 6 ),
+    MiltonInputFlags_FAST_DRAW       = ( 1 << 7 ),
 } MiltonInputFlags;
 
 typedef struct MiltonInput_s
@@ -119,9 +119,6 @@ typedef struct MiltonInput_s
 
     v2i* point;
     int scale;
-#if 0
-    int rotation;
-#endif
     v2i pan_delta;
 } MiltonInput;
 
@@ -197,27 +194,21 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         GLCHK (glBindTexture   (GL_TEXTURE_2D, milton_state->gl->texture));
 
         // Note for the future: These are needed.
-#if 0
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-#else
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-#endif
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
     }
     // Create quad
     {
-        //const GLfloat u = 1.0f;
 #define u -1.0f
         // full
         GLfloat vert_data[] =
         {
-            -u, u,
+            -u, +u,
             -u, -u,
-            u, -u,
-            u, u,
+            +u, -u,
+            +u, +u,
         };
 #undef u
         GLCHK (glGenVertexArrays(1, &milton_state->gl->quad_vao));
@@ -247,10 +238,10 @@ static void milton_startup_tests()
            rgb.b == 1);
     rgb = hsv_to_rgb((v3f){ 120, 1.0f, 0.5f });
     assert(rgb.r == 0 &&
-           rgb.g == 0.5 &&
+           rgb.g == 0.5f &&
            rgb.b == 0);
     rgb = hsv_to_rgb((v3f){ 0, 1.0f, 1.0f });
-    assert(rgb.r == 1.0 &&
+    assert(rgb.r == 1.0f &&
            rgb.g == 0 &&
            rgb.b == 0);
 }
