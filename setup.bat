@@ -1,5 +1,6 @@
 @echo off
 
+IF NOT EXIST build mkdir build
 IF EXIST src\libserg goto pull
 goto clone
 :pull
