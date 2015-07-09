@@ -7,7 +7,7 @@ How to Compile (Windows x64)
 ============================
 
 1. Run `setup.bat` to clone dependencies.
-2. Open build\Milton.sln in VS 2013.
+2. Build with `build.bat`
 
 To-Do
 =====

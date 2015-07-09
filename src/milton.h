@@ -276,7 +276,7 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
             *params = (WorkerParams) { milton_state, i };
         }
 
-        static const size_t render_worker_memory = 1 * 1024 * 1024;
+        static const size_t render_worker_memory = 16 * 1024 * 1024;
         milton_state->render_worker_arenas[i] = arena_spawn(milton_state->root_arena,
                                                             render_worker_memory);
 

@@ -85,8 +85,8 @@ inline v2i closest_point_in_segment(v2i a, v2i b,
 
 // NOTE: takes clipped points.
 inline b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
-                                       v2i* points, i32 num_points,
-                                       Brush brush, CanvasView* view)
+                                    v2i* points, i32 num_points,
+                                    Brush brush, CanvasView* view)
 {
     // Perf note: With the current use, this is actually going to be zero.
     // Maybe turn this into an assert and avoid extra computations?
@@ -520,12 +520,6 @@ static void render_tile(MiltonState* milton_state,
                         i32 block_start, i32 num_blocks,
                         u32* raster_buffer)
 {
-    if (!tile_arena)
-    {
-        int foo =42;
-        assert (!"WTF Tile arena is wrong\n");
-        return;
-    }
     Rect raster_tile_rect = { 0 };
     Rect canvas_tile_rect = { 0 };
 
