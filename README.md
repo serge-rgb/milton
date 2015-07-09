@@ -6,8 +6,19 @@ Milton is a paint package. You know MS Paint? Like that.
 How to Compile (Windows x64)
 ============================
 
-1. Run `setup.bat` to clone dependencies.
+Requirements
+------------
+Visual Studio 2013 needs to be installed
+
+0. If needed, run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH.
+1. Run `setup.bat` to clone dependencies and build SDL.
 2. Build with `build.bat`
+
+Workflow
+========
+
+You can use build.bat to build from your favorite editor/IDE. If you want to
+debug, I recommend doing `devenv build\win_milton.exe` and hitting F11.
 
 To-Do
 =====
