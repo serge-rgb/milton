@@ -2,12 +2,11 @@
 // (c) Copyright 2015 by Sergio Gonzalez
 
 #include "system_includes.h"
-
 #include "libserg/memory.h"
 
 #ifdef _MSC_VER
 //#define inline __inline
-#if 0
+#if 1
 #define inline __forceinline  // This don't do shit...
 #else
 #define inline static         // Mostly for ease of profiling

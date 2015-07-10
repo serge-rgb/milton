@@ -605,7 +605,6 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             }
         }
 
-
         // Clear redo stack
         milton_state->num_redos = 0;
     }
