@@ -162,6 +162,12 @@ inline void render_canvas_in_block(Arena* render_arena,
                                    u32* pixels,
                                    Rect raster_limits)
 {
+    // The ninetales factor, named after Roberto Lapuente and Ruben Bañuelos
+    // for staying with me on twitch while solving this problem, is a floating
+    // point precision hack for really close.
+    // Zoom levels, to make things larger
+    i32 ninetales = (view->scale <= 8) ? 4 : 1;
+
     Rect canvas_limits;
     {
         canvas_limits.top_left = raster_to_canvas(view, raster_limits.top_left);
@@ -230,6 +236,12 @@ inline void render_canvas_in_block(Arena* render_arena,
         }
     }
 
+    {
+        reference_point.x *= ninetales;
+        reference_point.y *= ninetales;
+    }
+
+
     // Set our `stroke_list` to begin at the first opaque stroke that fills
     // this block.
     ClippedStroke* list_iter = stroke_list;
@@ -250,8 +262,12 @@ inline void render_canvas_in_block(Arena* render_arena,
         {
             v2i raster_point = {i, j};
             v2i canvas_point = raster_to_canvas(view, raster_point);
-
+            {
+                canvas_point.x *= ninetales;
+                canvas_point.y *= ninetales;
+            }
             canvas_point = sub_v2i(canvas_point, reference_point);
+
 
             // Clear color
             f32 dr = 1.0f;
@@ -313,7 +329,12 @@ inline void render_canvas_in_block(Arena* render_arena,
                     //int64 radius_squared = stroke->brush.radius * stroke->brush.radius;
                     if (clipped_stroke->num_points == 1)
                     {
-                        min_point = sub_v2i(points[0], reference_point);
+                        v2i first_point = points[0];
+                        {
+                            first_point.x *= ninetales;
+                            first_point.y *= ninetales;
+                        }
+                        min_point = sub_v2i(first_point, reference_point);
                         dx = (f32) (canvas_point.x - min_point.x);
                         dy = (f32) (canvas_point.y - min_point.y);
                         min_dist = dx * dx + dy * dy;
@@ -325,8 +346,16 @@ inline void render_canvas_in_block(Arena* render_arena,
                         {
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
+                            {
+                                a.x *= ninetales;
+                                a.y *= ninetales;
+                                b.x *= ninetales;
+                                b.y *= ninetales;
+                            }
                             a = sub_v2i(a, reference_point);
                             b = sub_v2i(b, reference_point);
+
+
 
                             v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
                             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
@@ -359,8 +388,8 @@ inline void render_canvas_in_block(Arena* render_arena,
                         int samples = 0;
                         {
 #ifdef MSAA_ROTATED_GRID
-                            f32 u = (0.223607f * view->scale) * pixel_jump;  // sin(arctan(1/2)) / 2
-                            f32 v = (0.670820f * view->scale) * pixel_jump;  // cos(arctan(1/2)) / 2 + u
+                            f32 u = (0.223607f * view->scale) * pixel_jump * ninetales;  // sin(arctan(1/2)) / 2
+                            f32 v = (0.670820f * view->scale) * pixel_jump * ninetales;  // cos(arctan(1/2)) / 2 + u
 
                             f32 dists[4];
                             dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);
@@ -377,8 +406,8 @@ inline void render_canvas_in_block(Arena* render_arena,
 #elif defined(MSAA_4X)
                             f32 dists[16];
 
-                            f32 f3 = (0.75f * view->scale) * pixel_jump;
-                            f32 f1 = (0.25f * view->scale) * pixel_jump;
+                            f32 f3 = (0.75f * view->scale) * pixel_jump * ninetales;
+                            f32 f1 = (0.25f * view->scale) * pixel_jump * ninetales;
 
                             dists[0]  = (dx - f3) * (dx - f3) + (dy - f3) * (dy - f3);
                             dists[1]  = (dx - f1) * (dx - f1) + (dy - f3) * (dy - f3);
@@ -408,32 +437,32 @@ inline void render_canvas_in_block(Arena* render_arena,
 
                             // We have to call a bunch of sqrtf's because squaring the radius
                             // woud overflow a 32-bit integer
-                            if (clipped_stroke->brush.radius >= (1 << 16))
+                            assert (clipped_stroke->brush.radius > 0);
+                            u32 radius = clipped_stroke->brush.radius * ninetales;
+
+                            if (radius >= (1 << 16))
                             {
-                                samples += (sqrtf(dists[ 0]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 1]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 2]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 3]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 4]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 5]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 6]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 7]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 8]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[ 9]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[10]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[11]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[12]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[13]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[14]) < clipped_stroke->brush.radius);
-                                samples += (sqrtf(dists[15]) < clipped_stroke->brush.radius);
+                                samples += (sqrtf(dists[ 0]) < radius);
+                                samples += (sqrtf(dists[ 1]) < radius);
+                                samples += (sqrtf(dists[ 2]) < radius);
+                                samples += (sqrtf(dists[ 3]) < radius);
+                                samples += (sqrtf(dists[ 4]) < radius);
+                                samples += (sqrtf(dists[ 5]) < radius);
+                                samples += (sqrtf(dists[ 6]) < radius);
+                                samples += (sqrtf(dists[ 7]) < radius);
+                                samples += (sqrtf(dists[ 8]) < radius);
+                                samples += (sqrtf(dists[ 9]) < radius);
+                                samples += (sqrtf(dists[10]) < radius);
+                                samples += (sqrtf(dists[11]) < radius);
+                                samples += (sqrtf(dists[12]) < radius);
+                                samples += (sqrtf(dists[13]) < radius);
+                                samples += (sqrtf(dists[14]) < radius);
+                                samples += (sqrtf(dists[15]) < radius);
                             }
                             else
                             {
-                                assert ( clipped_stroke->brush.radius > 0);
+                                u32 sq_radius = radius * radius;
 
-                                u32 sq_radius =
-                                        (u32)clipped_stroke->brush.radius *
-                                        (u32)clipped_stroke->brush.radius;
                                 samples += (dists[ 0] < sq_radius);
                                 samples += (dists[ 1] < sq_radius);
                                 samples += (dists[ 2] < sq_radius);

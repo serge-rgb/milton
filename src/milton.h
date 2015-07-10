@@ -118,8 +118,8 @@ typedef struct MiltonInput_s
     MiltonInputFlags flags;
 
     v2i* point;
-    int scale;
-    v2i pan_delta;
+    int  scale;
+    v2i  pan_delta;
 } MiltonInput;
 
 #include "rasterizer.h"
@@ -289,10 +289,10 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
 #endif
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
-    milton_state->max_width         = max_width;
-    milton_state->max_height        = max_height;
-    milton_state->bytes_per_pixel   = 4;
-    milton_state->num_strokes       = 0;
+    milton_state->max_width        = max_width;
+    milton_state->max_height       = max_height;
+    milton_state->bytes_per_pixel  = 4;
+    milton_state->num_strokes      = 0;
 
     milton_state->current_mode = MiltonMode_BRUSH;
 
