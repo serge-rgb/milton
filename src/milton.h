@@ -245,6 +245,14 @@ static void milton_startup_tests()
            rgb.g == 0 &&
            rgb.b == 0);
 }
+
+static void milton_blend_tests()
+{
+    v4f a = { 1,0,0, 0.5f };
+    v4f b = { 0,1,0, 0.5f };
+    v4f blend = blend_v4f(a, b);
+    assert (blend.r > 0);
+}
 #endif
 
 static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_height)
@@ -286,6 +294,8 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
 
 #ifndef NDEBUG
     milton_startup_tests();
+    milton_blend_tests();
+
 #endif
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.

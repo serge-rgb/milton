@@ -164,15 +164,17 @@ inline void blend_f32(f32* dr, f32* dg, f32* db, f32* da,
     sg = sg * sg;
     sb = sb * sb;
 
-    g_dr = (1 - sa) * g_dr + sa * sr;
-    g_dg = (1 - sa) * g_dg + sa * sg;
-    g_db = (1 - sa) * g_db + sa * sb;
+    f32 alpha = 1 - ((1 - sa) * (1 - (*da)));
+
+    g_dr = (1 - sa) * g_dr * (*da) + sa * sr;
+    g_dg = (1 - sa) * g_dg * (*da) + sa * sg;
+    g_db = (1 - sa) * g_db * (*da) + sa * sb;
 
     // Back to linear space
     *dr = sqrtf(g_dr);
     *dg = sqrtf(g_dg);
     *db = sqrtf(g_db);
-    *da = sa + (*da) * (1 - sa);
+    *da = alpha;
 }
 
 inline v4f blend_v4f(v4f dst, v4f src)
@@ -187,12 +189,14 @@ inline v4f blend_v4f(v4f dst, v4f src)
     dst.b = dst.b * dst.b;
 
     // Blend and move to linear
+    f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
+
     v4f result =
     {
-        sqrtf(dst.r * (1 - src.a) + src.r * src.a),
-        sqrtf(dst.g * (1 - src.a) + src.g * src.a),
-        sqrtf(dst.b * (1 - src.a) + src.b * src.a),
-        dst.a + (src.a * (1 - dst.a)),
+        sqrtf(dst.r * dst.a * (1 - src.a) + src.r * src.a),
+        sqrtf(dst.g * dst.a * (1 - src.a) + src.g * src.a),
+        sqrtf(dst.b * dst.a * (1 - src.a) + src.b * src.a),
+        alpha
     };
 
     return result;
