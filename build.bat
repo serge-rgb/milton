@@ -10,7 +10,7 @@ cl /Od /Oi /Zi /GR- /Gm- /W4 /Wall /fp:fast /nologo /wd4127 /wd4255 /wd4820 /wd4
 
 if %errorlevel% neq 0 goto fail
 
-rem win_milton
+win_milton
 
 :fail
 

@@ -145,6 +145,11 @@ typedef struct $<Name4>_s
             $<Type> b;
             $<Type> a;
         };
+        union
+        {
+            $<Name3> rgb;
+            $<Type>  _pad__a;
+        };
         $<Type> d[4];
     };
 } $<Name4>;

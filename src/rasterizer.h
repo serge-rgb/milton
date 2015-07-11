@@ -152,6 +152,52 @@ inline b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
     return false;
 }
 
+inline void blend_f32(f32* dr, f32* dg, f32* db, f32* da,
+                      f32 sr, f32 sg, f32 sb, f32 sa)
+{
+    // Move to gamma space
+    f32 g_dr = (*dr) * (*dr);
+    f32 g_dg = (*dg) * (*dg);
+    f32 g_db = (*db) * (*db);
+
+    sr = sr * sr;
+    sg = sg * sg;
+    sb = sb * sb;
+
+    g_dr = (1 - sa) * g_dr + sa * sr;
+    g_dg = (1 - sa) * g_dg + sa * sg;
+    g_db = (1 - sa) * g_db + sa * sb;
+
+    // Back to linear space
+    *dr = sqrtf(g_dr);
+    *dg = sqrtf(g_dg);
+    *db = sqrtf(g_db);
+    *da = sa + (*da) * (1 - sa);
+}
+
+inline v4f blend_v4f(v4f dst, v4f src)
+{
+    // To gamma
+    src.r = src.r * src.r;
+    src.g = src.g * src.g;
+    src.b = src.b * src.b;
+
+    dst.r = dst.r * dst.r;
+    dst.g = dst.g * dst.g;
+    dst.b = dst.b * dst.b;
+
+    // Blend and move to linear
+    v4f result =
+    {
+        sqrtf(dst.r * (1 - src.a) + src.r * src.a),
+        sqrtf(dst.g * (1 - src.a) + src.g * src.a),
+        sqrtf(dst.b * (1 - src.a) + src.b * src.a),
+        dst.a + (src.a * (1 - dst.a)),
+    };
+
+    return result;
+}
+
 inline void render_canvas_in_block(Arena* render_arena,
                                    CanvasView* view,
                                    ColorManagement cm,
@@ -273,7 +319,7 @@ inline void render_canvas_in_block(Arena* render_arena,
             f32 dr = 1.0f;
             f32 dg = 1.0f;
             f32 db = 1.0f;
-            f32 da = 0.0f;
+            f32 da = 1.0f;
 
             ClippedStroke* list_iter = stroke_list;
             while(list_iter)
@@ -298,23 +344,8 @@ inline void render_canvas_in_block(Arena* render_arena,
 #endif
                     f32 sa = clipped_stroke->brush.alpha;
 
-                    // Move to gamma space
-                    f32 g_dr = dr * dr;
-                    f32 g_dg = dg * dg;
-                    f32 g_db = db * db;
-                    sr = sr * sr;
-                    sg = sg * sg;
-                    sb = sb * sb;
-
-                    g_dr = (1 - sa) * g_dr + sa * sr;
-                    g_dg = (1 - sa) * g_dg + sa * sg;
-                    g_db = (1 - sa) * g_db + sa * sb;
-                    da = sa + da * (1 - sa);
-
-                    // Back to linear space
-                    dr = sqrtf(g_dr);
-                    dg = sqrtf(g_dg);
-                    db = sqrtf(g_db);
+                    blend_f32(&dr, &dg, &db, &da,
+                              sr, sg, sb, sa);
 
                 }
                 // Slow path. There are pixels not inside.
@@ -503,23 +534,8 @@ inline void render_canvas_in_block(Arena* render_arena,
 
                             sa *= coverage;
 
-                            // Move to gamma space
-                            f32 g_dr = dr * dr;
-                            f32 g_dg = dg * dg;
-                            f32 g_db = db * db;
-                            sr = sr * sr;
-                            sg = sg * sg;
-                            sb = sb * sb;
-
-                            g_dr = (1 - sa) * g_dr + sa * sr;
-                            g_dg = (1 - sa) * g_dg + sa * sg;
-                            g_db = (1 - sa) * g_db + sa * sb;
-                            da = sa + da * (1 - sa);
-
-                            // Back to linear space
-                            dr = sqrtf(g_dr);
-                            dg = sqrtf(g_dg);
-                            db = sqrtf(g_db);
+                            blend_f32(&dr, &dg, &db, &da,
+                                      sr, sg, sb, sa);
                         }
                     }
 
@@ -786,22 +802,9 @@ static void render_picker(ColorPicker* picker,
             u32 picker_i =
                     (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
             v4f dest = color_u32_to_v4f(cm, picker->pixels[picker_i]);
-            f32 alpha = background_color.a;
-            // To gamma
-            background_color.r = background_color.r * background_color.r;
-            background_color.g = background_color.g * background_color.g;
-            background_color.b = background_color.b * background_color.b;
-            dest.r = dest.r * dest.r;
-            dest.g = dest.g * dest.g;
-            dest.b = dest.b * dest.b;
-            // Blend and move to linear
-            v4f result =
-            {
-                sqrtf(dest.r * (1 - alpha) + background_color.r * alpha),
-                sqrtf(dest.g * (1 - alpha) + background_color.g * alpha),
-                sqrtf(dest.b * (1 - alpha) + background_color.b * alpha),
-                dest.a + (alpha * (1 - dest.a)),
-            };
+
+            v4f result = blend_v4f(dest, background_color);
+
             picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
         }
     }
@@ -832,27 +835,15 @@ static void render_picker(ColorPicker* picker,
                 f32 angle = picker_wheel_get_angle(picker, point);
                 f32 degree = radians_to_degrees(angle);
                 v3f hsv = { degree, 1.0f, 1.0f };
-                v3f rgb = hsv_to_rgb(hsv);
 
-                f32 contrib = samples / 4.0f;
+                v4f rgba;
+
+                rgba.rgb = hsv_to_rgb(hsv);
+                rgba.a = samples / 4.0f;
 
                 v4f d = color_u32_to_v4f(cm, dest_color);
 
-                // To gamma
-                rgb.r = rgb.r * rgb.r;
-                rgb.g = rgb.g * rgb.g;
-                rgb.b = rgb.b * rgb.b;
-                d.r = d.r * d.r;
-                d.g = d.g * d.g;
-                d.b = d.b * d.b;
-                // Blend and move to linear
-                v4f result =
-                {
-                    sqrtf(((1 - contrib) * (d.r)) + (contrib * (rgb.r))),
-                    sqrtf(((1 - contrib) * (d.g)) + (contrib * (rgb.g))),
-                    sqrtf(((1 - contrib) * (d.b)) + (contrib * (rgb.b))),
-                    d.a + (contrib * (1 - d.a)),
-                };
+                v4f result = blend_v4f(d, rgba);
                 u32 color = color_v4f_to_u32(cm, result);
                 picker->pixels[picker_i] = color;
             }
@@ -892,23 +883,11 @@ static void render_picker(ColorPicker* picker,
 
                 v4f d = color_u32_to_v4f(cm, dest_color);
 
-                v3f rgb = hsv_to_rgb(hsv);
+                v4f rgba;
+                rgba.rgb = hsv_to_rgb(hsv);
+                rgba.a = contrib;
 
-                // To gamma
-                rgb.r = rgb.r * rgb.r;
-                rgb.g = rgb.g * rgb.g;
-                rgb.b = rgb.b * rgb.b;
-                d.r = d.r * d.r;
-                d.g = d.g * d.g;
-                d.b = d.b * d.b;
-                // Blend and move to linear
-                v4f result =
-                {
-                    sqrtf(((1 - contrib) * (d.r)) + (contrib * (rgb.r))),
-                    sqrtf(((1 - contrib) * (d.g)) + (contrib * (rgb.g))),
-                    sqrtf(((1 - contrib) * (d.b)) + (contrib * (rgb.b))),
-                    d.a + (contrib * (1 - d.a)),
-                };
+                v4f result = blend_v4f(d, rgba);
 
                 picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
             }
