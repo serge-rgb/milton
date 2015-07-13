@@ -13,7 +13,10 @@ model {
     }
     android.ndk {
         moduleName = "milton"
-        cppFlags  += "-Werror"
+        CFlags += "-std=c99"
+        CFlags += "-Werror"
+        CFlags += "-I${file("../../src")}".toString()
+        CFlags += "-I${file("../../third_party/SDL2-2.0.3/include")}".toString()
         ldLibs    += ["log", "GLESv2"]
     }
 

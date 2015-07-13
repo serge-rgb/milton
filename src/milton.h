@@ -1,6 +1,10 @@
 // milton.h
 // (c) Copyright 2015 by Sergio Gonzalez
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #include "libserg/defaults.h"
 
@@ -643,3 +647,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     milton_render(milton_state, render_flags);
 }
+
+#ifdef __cplusplus
+}
+#endif

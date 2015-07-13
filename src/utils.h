@@ -1,11 +1,18 @@
 // utils.h
 // (c) Copyright 2015 by Sergio Gonzalez.
 
-// -------------
-// Useful macros
-// -------------
+#pragma once
 
-#define stack_count(arr) (sizeof((arr)) / sizeof((arr)[0]))
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#ifdef get_array_length
+#error "get_array_length is already defined"
+#else
+#define get_array_length(arr) (sizeof((arr)) / sizeof((arr)[0]))
+#endif
 
 #ifndef min
 #define min(a, b) (((a) < (b)) ? a : b)
@@ -295,3 +302,6 @@ inline b32 is_rect_within_rect(Rect a, Rect b)
    return true;
 }
 
+#ifdef __cplusplus
+}
+#endif

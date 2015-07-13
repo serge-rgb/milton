@@ -13,9 +13,12 @@
 #include <stdio.h>
 
 // Local includes
+#ifdef MILTON_DESKTOP
+// Only include GLEW in Desktop build
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GL/wglew.h>
+#endif // MILTON_DESKTOP
 #include <SDL.h>
 
 #ifdef _WIN32

@@ -1,6 +1,7 @@
 // win_milton.h
 // (c) Copyright 2015 by Sergio Gonzalez
 
+#define MILTON_DESKTOP
 #include "system_includes.h"
 #include "libserg/memory.h"
 

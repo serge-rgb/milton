@@ -1,5 +1,9 @@
 // android_milton.cpp
 // (c) Copyright 2015 by Sergio Gonzalez
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #include <jni.h>
 #include <android/log.h>
@@ -10,6 +14,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
+
+#define milton_log printf
+
+#include "system_includes.h"
+#include "libserg/memory.h"
+#include "milton.h"
 
 #define  LOG_TAG    "libmilton"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
@@ -106,7 +117,7 @@ GLuint createProgram(const char* pVertexSource, const char* pFragmentSource) {
 GLuint gProgram;
 GLuint gvPositionHandle;
 
-bool setupGraphics(int w, int h) {
+b32 setupGraphics(int w, int h) {
     printGLString("Version", GL_VERSION);
     printGLString("Vendor", GL_VENDOR);
     printGLString("Renderer", GL_RENDERER);
@@ -153,11 +164,6 @@ void renderFrame() {
     checkGlError("glDrawArrays");
 }
 
-extern "C" {
-    JNIEXPORT void JNICALL Java_com_nuwen_milton_MiltonJNILib_init(JNIEnv * env, jobject obj,  jint width, jint height);
-    JNIEXPORT void JNICALL Java_com_nuwen_milton_MiltonJNILib_step(JNIEnv * env, jobject obj);
-};
-
 JNIEXPORT void JNICALL Java_com_nuwen_milton_MiltonJNILib_init(JNIEnv * env, jobject obj,  jint width, jint height)
 {
     setupGraphics(width, height);
@@ -167,3 +173,7 @@ JNIEXPORT void JNICALL Java_com_nuwen_milton_MiltonJNILib_step(JNIEnv * env, job
 {
     renderFrame();
 }
+
+#ifdef __cplusplus
+}
+#endif

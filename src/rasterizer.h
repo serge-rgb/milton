@@ -14,7 +14,7 @@ struct ClippedStroke_s
     ClippedStroke* next;
 };
 
-static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect rect)
+inline ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect rect)
 {
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
     {
