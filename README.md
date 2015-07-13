@@ -15,10 +15,18 @@ Visual Studio 2013 needs to be installed
 2. Build with `build.bat`
 
 Workflow
-========
+--------
 
 You can use build.bat to build from your favorite editor/IDE. If you want to
 debug, I recommend doing `devenv build\win_milton.exe` and hitting F11.
+
+Android
+=======
+Currently keeping up with Google moving everything to Gradle & Android Studio.
+
+1. `cd android`
+2. `gradle installAllDebug`
+
 
 To-Do
 =====
