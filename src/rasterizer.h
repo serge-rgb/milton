@@ -212,12 +212,6 @@ static void render_canvas_in_block(Arena* render_arena,
                                    u32* pixels,
                                    Rect raster_limits)
 {
-    // The ninetales factor, named after Roberto Lapuente and Ruben Bañuelos
-    // for staying with me on twitch while solving this problem, is a floating
-    // point precision hack for really close.
-    // Zoom levels, to make things larger
-    i32 ninetales = (view->scale <= 8) ? 4 : 1;
-
     Rect canvas_limits;
     {
         canvas_limits.top_left = raster_to_canvas(view, raster_limits.top_left);
@@ -286,11 +280,16 @@ static void render_canvas_in_block(Arena* render_arena,
         }
     }
 
+    // The ninetales factor, named after Roberto Lapuente and Ruben Bañuelos
+    // for staying with me on twitch while solving this problem, is a floating
+    // point precision hack for really close.
+    // Zoom levels, to make things larger
+    i32 ninetales = (view->scale <= 8) ? 4 : 1;
+
     {
         reference_point.x *= ninetales;
         reference_point.y *= ninetales;
     }
-
 
     // Set our `stroke_list` to begin at the first opaque stroke that fills
     // this block.
@@ -477,17 +476,12 @@ static void render_canvas_in_block(Arena* render_arena,
                                 dists[15] = a4 + b4;
 
                             }
-                            /* i32 square_rad = */
-                            /*         clipped_stroke->brush.radius * clipped_stroke->brush.radius; */
 
-                            // Perf note: It would be nice to remove the sqrtf call , but
-                            // we do get into precision errors at high zoom levels.
-
-                            // We have to call a bunch of sqrtf's because squaring the radius
-                            // woud overflow a 32-bit integer
                             assert (clipped_stroke->brush.radius > 0);
                             u32 radius = clipped_stroke->brush.radius * ninetales;
 
+                            // Perf note: We remove the sqrtf call when it's
+                            // safe to square the radius
                             if (radius >= (1 << 16))
                             {
                                 samples += (sqrtf(dists[ 0]) < radius);
@@ -1029,7 +1023,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
     }
 
     // If not preempted, do a buffer swap.
-    if (false && completed)
+    if (completed)
     {
         i32 prev_index = milton_state->raster_buffer_index;
         milton_state->raster_buffer_index = index;

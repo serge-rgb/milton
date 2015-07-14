@@ -36,7 +36,7 @@ To-Do
     * :)
 
 * Roadmap
-    * [WIP!] Android port
+    * Android: Port SDL
     * Fix color picker controls.
     * Basic saving / loading.
     * IMUI
