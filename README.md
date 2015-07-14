@@ -36,7 +36,7 @@ To-Do
     * :)
 
 * Roadmap
-    * Android port
+    * [WIP!] Android port
     * Fix color picker controls.
     * Basic saving / loading.
     * IMUI

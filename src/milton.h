@@ -36,12 +36,16 @@ extern "C"
 #include "color.h"
 #include "canvas.h"
 
+#define MILTON_USE_VAO 0
 
 typedef struct MiltonGLState_s
 {
     GLuint quad_program;
     GLuint texture;
+    GLuint vbo;
+#if MILTON_USE_VAO
     GLuint quad_vao;
+#endif
 } MiltonGLState;
 
 typedef enum MiltonMode_s
@@ -132,12 +136,25 @@ static void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;
     u8* raster_buffer = milton_state->raster_buffers[milton_state->raster_buffer_index];
-    glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGBA,
-            milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-            0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)raster_buffer);
-    glUseProgram(gl->quad_program);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                 milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)raster_buffer);
+
+    GLCHK (glUseProgram(gl->quad_program));
+#if MILTON_USE_VAO
     glBindVertexArray(gl->quad_vao);
+#else
+    GLint pos_loc     = glGetAttribLocation(gl->quad_program, "position");
+    GLint sampler_loc = glGetUniformLocation(gl->quad_program, "buffer");
+    assert (pos_loc     >= 0);
+    assert (sampler_loc >= 0);
+    GLCHK (glUniform1i(sampler_loc, 0 /*GL_TEXTURE0*/));
+    GLCHK (glVertexAttribPointer(/*attrib location*/pos_loc,
+                                 /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                 /*stride*/0, /*ptr*/0));
+
+    GLCHK (glEnableVertexAttribArray(pos_loc));
+#endif
     GLCHK (glDrawArrays (GL_TRIANGLE_FAN, 0, 4) );
 }
 
@@ -149,8 +166,7 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 
         shader_contents[0] =
             "#version 330\n"
-            "#extension GL_ARB_explicit_uniform_location : enable\n"
-            "layout(location = 0) in vec2 position;\n"
+            "in vec2 position;\n"
             "\n"
             "out vec2 coord;\n"
             "\n"
@@ -165,9 +181,8 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 
         shader_contents[1] =
             "#version 330\n"
-            "#extension GL_ARB_explicit_uniform_location : enable\n"
             "\n"
-            "layout(location = 1) uniform sampler2D buffer;\n"
+            "uniform sampler2D buffer;\n"
             "in vec2 coord;\n"
             "out vec4 out_color;\n"
             "\n"
@@ -186,13 +201,12 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         milton_state->gl->quad_program = glCreateProgram();
         gl_link_program(milton_state->gl->quad_program, shader_objects, 2);
 
-        glUseProgram(milton_state->gl->quad_program);
-        glUniform1i(1, 0 /*GL_TEXTURE0*/);
+        GLCHK (glUseProgram(milton_state->gl->quad_program));
     }
 
     // Create texture
     {
-        GLCHK (glActiveTexture (GL_TEXTURE0) );
+         GLCHK (glActiveTexture (GL_TEXTURE0) );
         // Create texture
         GLCHK (glGenTextures   (1, &milton_state->gl->texture));
         GLCHK (glBindTexture   (GL_TEXTURE_2D, milton_state->gl->texture));
@@ -200,8 +214,8 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         // Note for the future: These are needed.
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
     }
     // Create quad
     {
@@ -215,17 +229,25 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             +u, +u,
         };
 #undef u
+#if MILTON_USE_VAO
         GLCHK (glGenVertexArrays(1, &milton_state->gl->quad_vao));
         GLCHK (glBindVertexArray(milton_state->gl->quad_vao));
+#endif
 
-        GLuint vbo;
-        GLCHK (glGenBuffers(1, &vbo));
-        GLCHK (glBindBuffer(GL_ARRAY_BUFFER, vbo));
+        GLCHK (glGenBuffers(1, &milton_state->gl->vbo));
+        assert (milton_state->gl->vbo > 0);
+        GLCHK (glBindBuffer(GL_ARRAY_BUFFER, milton_state->gl->vbo));
 
+        GLint pos_loc     = glGetAttribLocation(milton_state->gl->quad_program, "position");
+        GLint sampler_loc = glGetUniformLocation(milton_state->gl->quad_program, "buffer");
+        assert (pos_loc     >= 0);
+        assert (sampler_loc >= 0);
         GLCHK (glBufferData (GL_ARRAY_BUFFER, sizeof(vert_data), vert_data, GL_STATIC_DRAW));
-        GLCHK (glEnableVertexAttribArray (0) );
-        GLCHK (glVertexAttribPointer     (/*attrib location*/0,
+#if MILTON_USE_VAO
+        GLCHK (glVertexAttribPointer     (/*attrib location*/pos_loc,
                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE, /*stride*/0, /*ptr*/0));
+        GLCHK (glEnableVertexAttribArray (pos_loc) );
+#endif
     }
 }
 
