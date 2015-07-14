@@ -431,6 +431,7 @@ static void render_canvas_in_block(Arena* render_arena,
                             dists[1] = (dx - v) * (dx - v) + (dy + u) * (dy + u);
                             dists[2] = (dx + u) * (dx + u) + (dy + v) * (dy + v);
                             dists[3] = (dx + v) * (dx + v) + (dy + u) * (dy + u);
+
                             for (int i = 0; i < 4; ++i)
                             {
                                 if (sqrtf(dists[i]) < clipped_stroke->brush.radius)
@@ -444,26 +445,38 @@ static void render_canvas_in_block(Arena* render_arena,
                             f32 f3 = (0.75f * view->scale) * pixel_jump * ninetales;
                             f32 f1 = (0.25f * view->scale) * pixel_jump * ninetales;
 
-                            dists[0]  = (dx - f3) * (dx - f3) + (dy - f3) * (dy - f3);
-                            dists[1]  = (dx - f1) * (dx - f1) + (dy - f3) * (dy - f3);
-                            dists[2]  = (dx + f1) * (dx + f1) + (dy - f3) * (dy - f3);
-                            dists[3]  = (dx + f3) * (dx + f3) + (dy - f3) * (dy - f3);
+                            {
+                                f32 a1 = (dx - f3) * (dx - f3);
+                                f32 a2 = (dx - f1) * (dx - f1);
+                                f32 a3 = (dx + f1) * (dx + f1);
+                                f32 a4 = (dx + f3) * (dx + f3);
 
-                            dists[4]  = (dx - f3) * (dx - f3) + (dy - f1) * (dy - f1);
-                            dists[5]  = (dx - f1) * (dx - f1) + (dy - f1) * (dy - f1);
-                            dists[6]  = (dx + f1) * (dx + f1) + (dy - f1) * (dy - f1);
-                            dists[7]  = (dx + f3) * (dx + f3) + (dy - f1) * (dy - f1);
+                                f32 b1 = (dy - f3) * (dy - f3);
+                                f32 b2 = (dy - f1) * (dy - f1);
+                                f32 b3 = (dy + f1) * (dy + f1);
+                                f32 b4 = (dy + f3) * (dy + f3);
 
-                            dists[8]  = (dx - f3) * (dx - f3) + (dy + f1) * (dy + f1);
-                            dists[9]  = (dx - f1) * (dx - f1) + (dy + f1) * (dy + f1);
-                            dists[10] = (dx + f1) * (dx + f1) + (dy + f1) * (dy + f1);
-                            dists[11] = (dx + f3) * (dx + f3) + (dy + f1) * (dy + f1);
+                                dists[0]  = a1 + b1;
+                                dists[1]  = a2 + b1;
+                                dists[2]  = a3 + b1;
+                                dists[3]  = a4 + b1;
 
-                            dists[12] = (dx - f3) * (dx - f3) + (dy + f3) * (dy + f3);
-                            dists[13] = (dx - f1) * (dx - f1) + (dy + f3) * (dy + f3);
-                            dists[14] = (dx + f1) * (dx + f1) + (dy + f3) * (dy + f3);
-                            dists[15] = (dx + f3) * (dx + f3) + (dy + f3) * (dy + f3);
+                                dists[4]  = a1 + b2;
+                                dists[5]  = a2 + b2;
+                                dists[6]  = a3 + b2;
+                                dists[7]  = a4 + b2;
 
+                                dists[8]  = a1 + b3;
+                                dists[9]  = a2 + b3;
+                                dists[10] = a3 + b3;
+                                dists[11] = a4 + b3;
+
+                                dists[12] = a1 + b4;
+                                dists[13] = a2 + b4;
+                                dists[14] = a3 + b4;
+                                dists[15] = a4 + b4;
+
+                            }
                             /* i32 square_rad = */
                             /*         clipped_stroke->brush.radius * clipped_stroke->brush.radius; */
 
