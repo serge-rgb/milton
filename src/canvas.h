@@ -1,3 +1,5 @@
+// canvas.h
+// (c) Copyright 2015 by Sergio Gonzalez.
 
 typedef struct Brush_s
 {

@@ -310,7 +310,7 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
             *params = (WorkerParams) { milton_state, i };
         }
 
-        static const size_t render_worker_memory = 16 * 1024 * 1024;
+        const size_t render_worker_memory = 16 * 1024 * 1024;
         milton_state->render_worker_arenas[i] = arena_spawn(milton_state->root_arena,
                                                             render_worker_memory);
 
@@ -494,12 +494,12 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
 // Sensible
 #if 1
-        static f32 scale_factor = 1.3f;
-        static i32 view_scale_limit = 10000;
+        f32 scale_factor = 1.3f;
+        i32 view_scale_limit = 10000;
 // Debug
 #else
-        static f32 scale_factor = 1.5f;
-        static i32 view_scale_limit = 1000000;
+        f32 scale_factor = 1.5f;
+        i32 view_scale_limit = 1000000;
 #endif
 
         static b32 debug_scale_lock = false;

@@ -14,7 +14,7 @@ struct ClippedStroke_s
     ClippedStroke* next;
 };
 
-inline ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect rect)
+static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect rect)
 {
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
     {
@@ -202,7 +202,7 @@ inline v4f blend_v4f(v4f dst, v4f src)
     return result;
 }
 
-inline void render_canvas_in_block(Arena* render_arena,
+static void render_canvas_in_block(Arena* render_arena,
                                    CanvasView* view,
                                    ColorManagement cm,
                                    Stroke* strokes,

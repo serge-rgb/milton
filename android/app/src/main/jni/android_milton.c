@@ -20,7 +20,11 @@ extern "C"
 
 #include "system_includes.h"
 #include "libserg/memory.h"
+
+// Inline functions give linker errors when trying to compile shared library
+#define inline static
 #include "milton.h"
+#undef inline
 
 #define  LOG_TAG    "libmilton"
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
