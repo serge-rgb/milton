@@ -158,18 +158,29 @@ inline v4f blend_v4f(v4f dst, v4f src)
 
     // TODO: enable gamma again.
 #if 0
-    src.r = src.r * src.r;
-    src.g = src.g * src.g;
-    src.b = src.b * src.b;
-
-    dst.r = dst.r * dst.r;
-    dst.g = dst.g * dst.g;
-    dst.b = dst.b * dst.b;
+    if (src.a != 0)
+    {
+        src.r = (src.r  * src.r) / src.a;
+        src.g = (src.g  * src.g) / src.a;
+        src.b = (src.b  * src.b) / src.a;
+    }
+    else
+    {
+    }
+    if (dst.a != 0)
+    {
+        dst.r = (dst.r  * dst.r) / dst.a;
+        dst.g = (dst.g  * dst.g) / dst.a;
+        dst.b = (dst.b  * dst.b) / dst.a;
+    }
+    else
+    {
+    }
 #endif
 
     // Blend and move to linear
 
-#if 0   // non-premultiplied alpha
+#if 0  // non-premultiplied alpha
     f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
     v4f result =
     {
@@ -189,7 +200,7 @@ inline v4f blend_v4f(v4f dst, v4f src)
     //f32 alpha = src.a + dst.a * ( 1 - src.a );
     v4f result =
     {
-#if 0
+#if 0  // gamma
         sqrtf(src.r + dst.r * (1 - src.a)),
         sqrtf(src.g + dst.g * (1 - src.a)),
         sqrtf(src.b + dst.b * (1 - src.a)),
@@ -276,7 +287,6 @@ static void render_canvas_in_block(Arena* render_arena,
         {
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
-#if 0
             if (is_rect_filled_by_stroke(
                         canvas_limits, reference_point,
                         clipped_stroke->points, clipped_stroke->num_points, clipped_stroke->brush,
@@ -284,7 +294,6 @@ static void render_canvas_in_block(Arena* render_arena,
             {
                 list_head->fills_block = true;
             }
-#endif
             stroke_list = list_head;
         }
     }
@@ -328,7 +337,7 @@ static void render_canvas_in_block(Arena* render_arena,
 
 
             // Clear color
-            v4f dest_color = { 1,1,1,0 };
+            v4f dest_color = { 1, 1, 1, 0 };
 
             ClippedStroke* list_iter = stroke_list;
             while(list_iter)
@@ -347,7 +356,8 @@ static void render_canvas_in_block(Arena* render_arena,
 #else
                     v4f src = clipped_stroke->brush.color;
 #endif
-                    dest_color = blend_v4f(dest_color, src);
+                    v4f prev_dest_color = dest_color;
+                    dest_color = blend_v4f(prev_dest_color, src);
                 }
 
                 // Slow path. There are pixels not inside.
@@ -545,7 +555,8 @@ static void render_canvas_in_block(Arena* render_arena,
 
                             src.a *= coverage;
 
-                            dest_color = blend_v4f(dest_color, src);
+                            v4f prev_dest_color = dest_color;
+                            dest_color = blend_v4f(prev_dest_color, src);
                         }
                     }
 
@@ -555,6 +566,7 @@ static void render_canvas_in_block(Arena* render_arena,
                     break;
                 }
             }
+
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(cm, dest_color);
 
@@ -1019,6 +1031,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
         if (redraw || (render_flags & MiltonRenderFlags_picker_updated))
         {
             render_canvas(milton_state, raster_buffer, picker_rect);
+
             render_picker(&milton_state->picker, milton_state->cm,
                           raster_buffer,
                           milton_state->view);
