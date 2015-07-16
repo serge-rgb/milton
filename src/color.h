@@ -179,8 +179,18 @@ v4f to_premultiplied(v3f rgb, f32 a)
     return rgba;
 }
 
+#define FAST_GAMMA 1
 inline v4f linear_to_sRGB_v4(v4f rgb)
 {
+#if FAST_GAMMA
+    v4f srgb =
+    {
+        sqrtf(rgb.r),
+        sqrtf(rgb.g),
+        sqrtf(rgb.b),
+        rgb.a,
+    };
+#else
     v4f srgb =
     {
         powf(rgb.r, 1/2.22f),
@@ -188,22 +198,40 @@ inline v4f linear_to_sRGB_v4(v4f rgb)
         powf(rgb.b, 1/2.22f),
         rgb.a,
     };
+#endif
     return srgb;
 }
 
 inline v3f linear_to_sRGB(v3f rgb)
 {
+#if FAST_GAMMA
+    v3f srgb =
+    {
+        sqrtf(rgb.r),
+        sqrtf(rgb.g),
+        sqrtf(rgb.b),
+    };
+#else
     v3f srgb =
     {
         powf(rgb.r, 1/2.22f),
         powf(rgb.g, 1/2.22f),
         powf(rgb.b, 1/2.22f),
     };
+#endif
     return srgb;
 }
 
 inline v3f sRGB_to_linear(v3f rgb)
 {
+#if FAST_GAMMA
+    v3f result =
+    {
+        rgb.r * rgb.r,
+        rgb.g * rgb.g,
+        rgb.b * rgb.b,
+    };
+#else
     v3f result = rgb;
     float* d = result.d;
     for (int i = 0; i < 3; ++i)
@@ -218,6 +246,7 @@ inline v3f sRGB_to_linear(v3f rgb)
         }
         ++d;
     }
+#endif
     return result;
 }
 

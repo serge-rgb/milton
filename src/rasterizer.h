@@ -154,64 +154,15 @@ inline b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 
 inline v4f blend_v4f(v4f dst, v4f src)
 {
-    // To gamma
-
-    // TODO: enable gamma again.
-#if 0
-    if (src.a != 0)
-    {
-        src.r = (src.r  * src.r) / src.a;
-        src.g = (src.g  * src.g) / src.a;
-        src.b = (src.b  * src.b) / src.a;
-    }
-    else
-    {
-    }
-    if (dst.a != 0)
-    {
-        dst.r = (dst.r  * dst.r) / dst.a;
-        dst.g = (dst.g  * dst.g) / dst.a;
-        dst.b = (dst.b  * dst.b) / dst.a;
-    }
-    else
-    {
-    }
-#endif
-
-    // Blend and move to linear
-
-#if 0  // non-premultiplied alpha
-    f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
+    //f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
+    f32 alpha = src.a + dst.a - (src.a * dst.a);
     v4f result =
     {
-#if 0
-        sqrtf(dst.r * dst.a * (1 - src.a) + src.r * src.a),
-        sqrtf(dst.g * dst.a * (1 - src.a) + src.g * src.a),
-        sqrtf(dst.b * dst.a * (1 - src.a) + src.b * src.a),
-#else
-        dst.r * dst.a * (1 - src.a) + src.r * src.a,
-        dst.g * dst.a * (1 - src.a) + src.g * src.a,
-        dst.b * dst.a * (1 - src.a) + src.b * src.a,
-#endif
-        alpha
-    };
-#else
-    f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
-    //f32 alpha = src.a + dst.a * ( 1 - src.a );
-    v4f result =
-    {
-#if 0  // gamma
-        sqrtf(src.r + dst.r * (1 - src.a)),
-        sqrtf(src.g + dst.g * (1 - src.a)),
-        sqrtf(src.b + dst.b * (1 - src.a)),
-#else
         src.r + dst.r * (1 - src.a),
         src.g + dst.g * (1 - src.a),
         src.b + dst.b * (1 - src.a),
-#endif
         alpha
     };
-#endif
 
     return result;
 }
@@ -567,6 +518,9 @@ static void render_canvas_in_block(Arena* render_arena,
                 }
             }
 
+            // Brushes are stored and operated in linear space, move to srgb
+            // before blitting
+            dest_color.rgb = linear_to_sRGB(dest_color.rgb);
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(cm, dest_color);
 
@@ -925,9 +879,9 @@ static void render_picker(ColorPicker* picker,
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             u32 linear_color = *to_blit++;
-            v4f sRGB = color_u32_to_v4f(cm, linear_color);
+            v4f rgba = color_u32_to_v4f(cm, linear_color);
             //sRGB = to_premultiplied(sRGB.rgb, sRGB.a);
-            u32 color = color_v4f_to_u32(cm, sRGB);
+            u32 color = color_v4f_to_u32(cm, rgba);
 
             buffer_pixels[j * view->screen_size.w + i] = color;
         }

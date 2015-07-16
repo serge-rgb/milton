@@ -32,8 +32,7 @@ To-Do
 =====
 
 * Bugs
-    * re-add gamma correction with premultiplied alpha
-    * pan doesn't work when maximized in 'classic' windows mode.
+    * [WONT-FIX] pan doesn't work when maximized in 'classic' windows mode.
     * :)
 
 * Roadmap

@@ -400,7 +400,9 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
 #else
         brush.alpha = 1.0f;
 #endif
-        brush.color = to_premultiplied(hsv_to_rgb(milton_state->picker.hsv), brush.alpha);
+        v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
+        rgb = sRGB_to_linear(rgb);
+        brush.color = to_premultiplied(rgb, brush.alpha);
     }
     milton_state->brush = brush;
 
