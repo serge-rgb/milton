@@ -3,9 +3,9 @@
 
 typedef struct Brush_s
 {
-    i32 radius;  // This should be replaced by a BrushType and some union containing brush info.
-    v3f   color;
-    f32 alpha;
+    i32     radius;  // This should be replaced by a BrushType and some union containing brush info.
+    v4f     color;
+    f32     alpha;
 } Brush;
 
 #define LIMIT_STROKE_POINTS 1024

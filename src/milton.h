@@ -400,15 +400,14 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
 #else
         brush.alpha = 1.0f;
 #endif
-        brush.color = hsv_to_rgb(milton_state->picker.hsv);
+        brush.color = to_premultiplied(hsv_to_rgb(milton_state->picker.hsv), brush.alpha);
     }
     milton_state->brush = brush;
 
     milton_state->eraser_brush = (Brush)
     {
         .radius = milton_state->brush.radius,
-        .alpha = 1.0f,
-        .color = (v3f) { 1, 1, 1 },
+        .color = (v4f) { 1, 1, 1, 1 },
     };
 
     milton_gl_backend_init(milton_state);
@@ -585,7 +584,8 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             if ((pick_result & ColorPickResult_change_color) &&
                 (milton_state->current_mode == MiltonMode_BRUSH))
             {
-                milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
+                v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
+                milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
             }
             milton_state->canvas_blocked = true;
             render_flags |= MiltonRenderFlags_picker_updated;
@@ -635,7 +635,8 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
                 {
 
                     picker_update_wheel(&milton_state->picker, fpoint);
-                    milton_state->brush.color = hsv_to_rgb(milton_state->picker.hsv);
+                    v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
+                    milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
                 }
                 render_flags |= MiltonRenderFlags_picker_updated;
             }

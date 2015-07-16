@@ -152,34 +152,12 @@ inline b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
     return false;
 }
 
-inline void blend_f32(f32* dr, f32* dg, f32* db, f32* da,
-                      f32 sr, f32 sg, f32 sb, f32 sa)
-{
-    // Move to gamma space
-    f32 g_dr = (*dr) * (*dr);
-    f32 g_dg = (*dg) * (*dg);
-    f32 g_db = (*db) * (*db);
-
-    sr = sr * sr;
-    sg = sg * sg;
-    sb = sb * sb;
-
-    f32 alpha = 1 - ((1 - sa) * (1 - (*da)));
-
-    g_dr = (1 - sa) * g_dr * (*da) + sa * sr;
-    g_dg = (1 - sa) * g_dg * (*da) + sa * sg;
-    g_db = (1 - sa) * g_db * (*da) + sa * sb;
-
-    // Back to linear space
-    *dr = sqrtf(g_dr);
-    *dg = sqrtf(g_dg);
-    *db = sqrtf(g_db);
-    *da = alpha;
-}
-
 inline v4f blend_v4f(v4f dst, v4f src)
 {
     // To gamma
+
+    // TODO: enable gamma again.
+#if 0
     src.r = src.r * src.r;
     src.g = src.g * src.g;
     src.b = src.b * src.b;
@@ -187,17 +165,42 @@ inline v4f blend_v4f(v4f dst, v4f src)
     dst.r = dst.r * dst.r;
     dst.g = dst.g * dst.g;
     dst.b = dst.b * dst.b;
+#endif
 
     // Blend and move to linear
-    f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
 
+#if 0   // non-premultiplied alpha
+    f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
     v4f result =
     {
+#if 0
         sqrtf(dst.r * dst.a * (1 - src.a) + src.r * src.a),
         sqrtf(dst.g * dst.a * (1 - src.a) + src.g * src.a),
         sqrtf(dst.b * dst.a * (1 - src.a) + src.b * src.a),
+#else
+        dst.r * dst.a * (1 - src.a) + src.r * src.a,
+        dst.g * dst.a * (1 - src.a) + src.g * src.a,
+        dst.b * dst.a * (1 - src.a) + src.b * src.a,
+#endif
         alpha
     };
+#else
+    f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
+    //f32 alpha = src.a + dst.a * ( 1 - src.a );
+    v4f result =
+    {
+#if 0
+        sqrtf(src.r + dst.r * (1 - src.a)),
+        sqrtf(src.g + dst.g * (1 - src.a)),
+        sqrtf(src.b + dst.b * (1 - src.a)),
+#else
+        src.r + dst.r * (1 - src.a),
+        src.g + dst.g * (1 - src.a),
+        src.b + dst.b * (1 - src.a),
+#endif
+        alpha
+    };
+#endif
 
     return result;
 }
@@ -247,7 +250,10 @@ static void render_canvas_in_block(Arena* render_arena,
 #endif
 
     // Go backwards so that list is in the correct older->newer order.
-    for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
+    // for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
+    // == Nope!
+    // Go forwards so we can do early reject with premultiplied alpha!
+    for (int stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
     {
         if (stroke_i < num_strokes && !stroke_masks[stroke_i])
         {
@@ -265,10 +271,12 @@ static void render_canvas_in_block(Arena* render_arena,
         assert(stroke);
         Rect enlarged_limits = rect_enlarge(canvas_limits, stroke->brush.radius);
         ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, stroke, enlarged_limits);
+
         if (clipped_stroke->num_points)
         {
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
+#if 0
             if (is_rect_filled_by_stroke(
                         canvas_limits, reference_point,
                         clipped_stroke->points, clipped_stroke->num_points, clipped_stroke->brush,
@@ -276,6 +284,7 @@ static void render_canvas_in_block(Arena* render_arena,
             {
                 list_head->fills_block = true;
             }
+#endif
             stroke_list = list_head;
         }
     }
@@ -296,7 +305,7 @@ static void render_canvas_in_block(Arena* render_arena,
     ClippedStroke* list_iter = stroke_list;
     while (list_iter)
     {
-        if (list_iter->fills_block && list_iter->brush.alpha == 1.0f)
+        if (list_iter->fills_block && list_iter->brush.color.a == 1.0f)
         {
             stroke_list = list_iter;
         }
@@ -319,10 +328,7 @@ static void render_canvas_in_block(Arena* render_arena,
 
 
             // Clear color
-            f32 dr = 1.0f;
-            f32 dg = 1.0f;
-            f32 db = 1.0f;
-            f32 da = 1.0f;
+            v4f dest_color = { 1,1,1,0 };
 
             ClippedStroke* list_iter = stroke_list;
             while(list_iter)
@@ -337,20 +343,13 @@ static void render_canvas_in_block(Arena* render_arena,
                 if (clipped_stroke->fills_block)
                 {
 #if 0  // Visualize it with black
-                    f32 sr = clipped_stroke->brush.color.r * 0;
-                    f32 sg = clipped_stroke->brush.color.g * 0;
-                    f32 sb = clipped_stroke->brush.color.b * 0;
+                    v4f src = {0};
 #else
-                    f32 sr = clipped_stroke->brush.color.r;
-                    f32 sg = clipped_stroke->brush.color.g;
-                    f32 sb = clipped_stroke->brush.color.b;
+                    v4f src = clipped_stroke->brush.color;
 #endif
-                    f32 sa = clipped_stroke->brush.alpha;
-
-                    blend_f32(&dr, &dg, &db, &da,
-                              sr, sg, sb, sa);
-
+                    dest_color = blend_v4f(dest_color, src);
                 }
+
                 // Slow path. There are pixels not inside.
                 else
                 {
@@ -538,25 +537,26 @@ static void render_canvas_in_block(Arena* render_arena,
                             f32 coverage = (f32)samples / 16.0f;
 #endif
 
-                            f32 sr = clipped_stroke->brush.color.r;
-                            f32 sg = clipped_stroke->brush.color.g;
-                            f32 sb = clipped_stroke->brush.color.b;
-                            f32 sa = clipped_stroke->brush.alpha;
+                            v4f src = clipped_stroke->brush.color;
 
-                            sa *= coverage;
+                            src.r *= coverage;
+                            src.g *= coverage;
+                            src.b *= coverage;
 
-                            blend_f32(&dr, &dg, &db, &da,
-                                      sr, sg, sb, sa);
+                            src.a *= coverage;
+
+                            dest_color = blend_v4f(dest_color, src);
                         }
                     }
 
                 }
+                if (dest_color.a > 0.99)
+                {
+                    break;
+                }
             }
             // From [0, 1] to [0, 255]
-            v4f d = {
-                dr, dg, db, da
-            };
-            u32 pixel = color_v4f_to_u32(cm, d);
+            u32 pixel = color_v4f_to_u32(cm, dest_color);
 
             // TODO: Bilinear sampling could be nice here
             for (int jj = j; jj < j + pixel_jump; ++jj)
@@ -790,6 +790,7 @@ static void render_picker(ColorPicker* picker,
         0.55f,
         0.4f,
     };
+    background_color = to_premultiplied(background_color.rgb, background_color.a);
 
     Rect draw_rect = picker_get_bounds(picker);
 
@@ -812,6 +813,9 @@ static void render_picker(ColorPicker* picker,
         {
             u32 picker_i =
                     (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+
+
+            // TODO: Premultiplied?
             v4f dest = color_u32_to_v4f(cm, picker->pixels[picker_i]);
 
             v4f result = blend_v4f(dest, background_color);
@@ -847,10 +851,8 @@ static void render_picker(ColorPicker* picker,
                 f32 degree = radians_to_degrees(angle);
                 v3f hsv = { degree, 1.0f, 1.0f };
 
-                v4f rgba;
-
-                rgba.rgb = hsv_to_rgb(hsv);
-                rgba.a = samples / 4.0f;
+                f32 alpha = samples / 4.0f;
+                v4f rgba  = to_premultiplied(hsv_to_rgb(hsv), alpha);
 
                 v4f d = color_u32_to_v4f(cm, dest_color);
 
@@ -894,9 +896,8 @@ static void render_picker(ColorPicker* picker,
 
                 v4f d = color_u32_to_v4f(cm, dest_color);
 
-                v4f rgba;
-                rgba.rgb = hsv_to_rgb(hsv);
-                rgba.a = contrib;
+                f32 alpha = contrib;
+                v4f rgba  = to_premultiplied(hsv_to_rgb(hsv), alpha);
 
                 v4f result = blend_v4f(d, rgba);
 
@@ -913,7 +914,9 @@ static void render_picker(ColorPicker* picker,
         {
             u32 linear_color = *to_blit++;
             v4f sRGB = color_u32_to_v4f(cm, linear_color);
+            //sRGB = to_premultiplied(sRGB.rgb, sRGB.a);
             u32 color = color_v4f_to_u32(cm, sRGB);
+
             buffer_pixels[j * view->screen_size.w + i] = color;
         }
     }

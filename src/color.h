@@ -160,10 +160,23 @@ v3f hsv_to_rgb(v3f hsv)
     rgb.r += m;
     rgb.g += m;
     rgb.b += m;
+
     assert (rgb.r >= 0.0f && rgb.r <= 1.0f);
     assert (rgb.g >= 0.0f && rgb.g <= 1.0f);
     assert (rgb.b >= 0.0f && rgb.b <= 1.0f);
     return rgb;
+}
+
+v4f to_premultiplied(v3f rgb, f32 a)
+{
+    v4f rgba =
+    {
+        .r = rgb.r * a,
+        .g = rgb.g * a,
+        .b = rgb.b * a,
+        .a = a
+    };
+    return rgba;
 }
 
 inline v4f linear_to_sRGB_v4(v4f rgb)
