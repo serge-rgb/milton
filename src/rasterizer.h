@@ -263,6 +263,7 @@ static void render_canvas_in_block(Arena* render_arena,
 
     // Set our `stroke_list` to begin at the first opaque stroke that fills
     // this block.
+#if 0 // RECHECK THIS
     ClippedStroke* list_iter = stroke_list;
     while (list_iter)
     {
@@ -272,6 +273,7 @@ static void render_canvas_in_block(Arena* render_arena,
         }
         list_iter = list_iter->next;
     }
+#endif
 
     int pixel_jump = view->downsampling_factor;  // Different names for the same thing.
 
@@ -289,31 +291,38 @@ static void render_canvas_in_block(Arena* render_arena,
 
 
             // Clear color
-            v4f dest_color = { 1, 1, 1, 0 };
+            v4f background_color = { 1, 1, 1, 1 };
+
+            // Cumulative blending
+            v4f acc_color = { 0 };
 
             ClippedStroke* list_iter = stroke_list;
+
             while(list_iter)
             {
-                ClippedStroke* clipped_stroke = list_iter;
-                /* v2i stroke_canvas_reference = clipped_stroke->canvas_reference; */
+                ClippedStroke* clipped_stroke      = list_iter;
+                ClippedStroke* next_clipped_stroke = list_iter->next;
                 list_iter = list_iter->next;
 
                 assert (clipped_stroke);
 
+// Re-add block-filling.
+#if 1
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
 #if 0  // Visualize it with black
-                    v4f src = {0};
+                    v4f dst = {0};
 #else
-                    v4f src = clipped_stroke->brush.color;
+                    v4f dst = clipped_stroke->brush.color;
 #endif
-                    v4f prev_dest_color = dest_color;
-                    dest_color = blend_v4f(prev_dest_color, src);
+                    acc_color = blend_v4f(dst, acc_color);
                 }
+
 
                 // Slow path. There are pixels not inside.
                 else
+#endif
                 {
                     v2i* points = clipped_stroke->points;
 
@@ -349,8 +358,6 @@ static void render_canvas_in_block(Arena* render_arena,
                             }
                             a = sub_v2i(a, reference_point);
                             b = sub_v2i(b, reference_point);
-
-
 
                             v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
                             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
@@ -490,7 +497,7 @@ static void render_canvas_in_block(Arena* render_arena,
                         // If the stroke contributes to the pixel, do compositing.
                         if (samples > 0)
                         {
-                            // Do compositing
+                            // Do blending
                             // ---------------
 
 #ifdef MSAA_ROTATED_GRID
@@ -499,33 +506,33 @@ static void render_canvas_in_block(Arena* render_arena,
                             f32 coverage = (f32)samples / 16.0f;
 #endif
 
-                            v4f src = clipped_stroke->brush.color;
+                            v4f dst = clipped_stroke->brush.color;
+                            {
+                                dst.r *= coverage;
+                                dst.g *= coverage;
+                                dst.b *= coverage;
+                                dst.a *= coverage;
+                            }
 
-                            src.r *= coverage;
-                            src.g *= coverage;
-                            src.b *= coverage;
-
-                            src.a *= coverage;
-
-                            v4f prev_dest_color = dest_color;
-                            dest_color = blend_v4f(prev_dest_color, src);
+                            acc_color = blend_v4f(dst, acc_color);
                         }
                     }
 
                 }
-#if 0
-                if (dest_color.a == 1.0)
+                if (acc_color.a > 0.99)
                 {
                     break;
                 }
-#endif
             }
+
+            // Blend onto the background whatever is accumulated.
+            acc_color = blend_v4f(background_color, acc_color);
 
             // Brushes are stored and operated in linear space, move to srgb
             // before blitting
-            dest_color.rgb = linear_to_sRGB(dest_color.rgb);
+            acc_color.rgb = linear_to_sRGB(acc_color.rgb);
             // From [0, 1] to [0, 255]
-            u32 pixel = color_v4f_to_u32(cm, dest_color);
+            u32 pixel = color_v4f_to_u32(cm, acc_color);
 
             // TODO: Bilinear sampling could be nice here
             for (int jj = j; jj < j + pixel_jump; ++jj)
