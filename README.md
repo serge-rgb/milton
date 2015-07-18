@@ -32,6 +32,7 @@ To-Do
 =====
 
 * Bugs
+    * I'm rendering strokes backwards because I'm stupid
     * [WONT-FIX] pan doesn't work when maximized in 'classic' windows mode.
     * :)
 

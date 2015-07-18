@@ -154,8 +154,9 @@ inline b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 
 inline v4f blend_v4f(v4f dst, v4f src)
 {
-    //f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
-    f32 alpha = src.a + dst.a - (src.a * dst.a);
+    f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
+
+    //f32 alpha = src.a + dst.a - (src.a * dst.a);
     v4f result =
     {
         src.r + dst.r * (1 - src.a),
@@ -212,7 +213,7 @@ static void render_canvas_in_block(Arena* render_arena,
 #endif
 
     // Go backwards so that list is in the correct older->newer order.
-    // for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
+    //for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
     // == Nope!
     // Go forwards so we can do early reject with premultiplied alpha!
     for (int stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
@@ -512,10 +513,12 @@ static void render_canvas_in_block(Arena* render_arena,
                     }
 
                 }
-                if (dest_color.a > 0.99)
+#if 0
+                if (dest_color.a == 1.0)
                 {
                     break;
                 }
+#endif
             }
 
             // Brushes are stored and operated in linear space, move to srgb

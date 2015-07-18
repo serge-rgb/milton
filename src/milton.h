@@ -396,7 +396,7 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
     {
         brush.radius = milton_state->brush_size * milton_state->view->scale;
 #if 1
-        brush.alpha = 0.5f;
+        brush.alpha = 0.8f;
 #else
         brush.alpha = 1.0f;
 #endif
