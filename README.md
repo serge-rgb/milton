@@ -36,7 +36,9 @@ To-Do
     * :)
 
 * Roadmap
-    * Android: Port SDL
+    * android / libserg: Add pthreads wrapper
+    * android: Compile w/NDK
+    * android: Draw canvas
     * Fix color picker controls.
     * Basic saving / loading.
     * IMUI

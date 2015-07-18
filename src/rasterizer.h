@@ -173,7 +173,7 @@ static void render_canvas_in_block(Arena* render_arena,
                                    ColorManagement cm,
                                    Stroke* strokes,
                                    b32* stroke_masks,
-                                   i32   num_strokes,
+                                   i32 num_strokes,
                                    Stroke* working_stroke,
                                    u32* pixels,
                                    Rect raster_limits)
@@ -620,12 +620,12 @@ typedef struct RenderQueue_s
     u32*    raster_buffer;
 
     // FIFO work queue
-    SDL_mutex*      mutex;
+    SglMutex*       mutex;
     TileRenderData  tile_render_data[RENDER_QUEUE_SIZE];
-    i32    index;
+    i32             index;
 
-    SDL_sem*    work_available;
-    SDL_sem*    completed_semaphore;
+    SglSemaphore*   work_available;
+    SglSemaphore*   completed_semaphore;
 } RenderQueue;
 
 typedef struct
@@ -634,7 +634,7 @@ typedef struct
     i32 worker_id;
 } WorkerParams;
 
-static void SDLCALL render_worker(void* data)
+static void render_worker(void* data)
 {
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;
@@ -643,8 +643,8 @@ static void SDLCALL render_worker(void* data)
 
     for (;;)
     {
-        SDL_SemWait(render_queue->work_available);
-        i32 lock_err = SDL_LockMutex(render_queue->mutex);
+        sgl_semaphore_wait(render_queue->work_available);
+        i32 lock_err = sgl_mutex_lock(render_queue->mutex);
         i32 index = -1;
         TileRenderData tile_data = { 0 };
         if (!lock_err)
@@ -653,7 +653,7 @@ static void SDLCALL render_worker(void* data)
             assert (index >= 0);
             assert (index <  RENDER_QUEUE_SIZE);
             tile_data = render_queue->tile_render_data[index];
-            SDL_UnlockMutex(render_queue->mutex);
+            sgl_mutex_unlock(render_queue->mutex);
         }
         else { assert (!"Render worker not handling lock error"); }
 
@@ -667,22 +667,22 @@ static void SDLCALL render_worker(void* data)
 
         arena_reset(&milton_state->render_worker_arenas[id]);
 
-        SDL_SemPost(render_queue->completed_semaphore);
+        sgl_semaphore_signal(render_queue->completed_semaphore);
     }
 }
 
 static void produce_render_work(MiltonState* milton_state, TileRenderData tile_render_data)
 {
     RenderQueue* render_queue = milton_state->render_queue;
-    i32 lock_err = SDL_LockMutex(milton_state->render_queue->mutex);
+    i32 lock_err = sgl_mutex_lock(milton_state->render_queue->mutex);
     if (!lock_err)
     {
         render_queue->tile_render_data[render_queue->index++] = tile_render_data;
-        SDL_UnlockMutex(render_queue->mutex);
+        sgl_mutex_unlock(render_queue->mutex);
     }
     else { assert (!"Lock failure not handled"); }
 
-    SDL_SemPost(render_queue->work_available);
+    sgl_semaphore_signal(render_queue->work_available);
 }
 
 
@@ -739,7 +739,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
 
     while(tile_acc)
     {
-        i32 waited_err = SDL_SemWait(milton_state->render_queue->completed_semaphore);
+        i32 waited_err = sgl_semaphore_wait(milton_state->render_queue->completed_semaphore);
         if (!waited_err)
         {
             --tile_acc;

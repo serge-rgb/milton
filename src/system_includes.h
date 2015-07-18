@@ -19,7 +19,6 @@
 #include <GL/glew.h>
 #include <GL/wglew.h>
 #endif // MILTON_DESKTOP
-#include <SDL.h>
 
 #ifdef _WIN32
 #pragma warning(pop)
