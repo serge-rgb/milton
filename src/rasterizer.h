@@ -599,35 +599,6 @@ static void render_tile(MiltonState* milton_state,
     }
 }
 
-
-// Render Workers:
-//    We have a bunch of workers running on threads, who wait on a lockless
-//    queue to take TileRenderData structures.
-//    When there is work available, they call tile_render_thread with the
-//    appropriate parameters.
-
-typedef struct TileRenderData_s
-{
-    i32     block_start;
-} TileRenderData;
-
-#define RENDER_QUEUE_SIZE 1024
-
-typedef struct RenderQueue_s
-{
-    Rect*   blocks;  // Screen areas to render.
-    i32     num_blocks;
-    u32*    raster_buffer;
-
-    // FIFO work queue
-    SglMutex*       mutex;
-    TileRenderData  tile_render_data[RENDER_QUEUE_SIZE];
-    i32             index;
-
-    SglSemaphore*   work_available;
-    SglSemaphore*   completed_semaphore;
-} RenderQueue;
-
 typedef struct
 {
     MiltonState* milton_state;

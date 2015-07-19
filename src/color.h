@@ -105,7 +105,7 @@ v3f hsv_to_rgb(v3f hsv)
     int hi = (int)(floor(hh));
     float cr = v * s;
     float rem = fmodf(hh, 2.0f);
-    float x = cr * (1.0f - absf(rem - 1.0f));
+    float x = cr * (1.0f - fabsf(rem - 1.0f));
     float m = v - cr;
 
     switch (hi)
