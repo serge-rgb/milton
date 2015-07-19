@@ -216,7 +216,7 @@ static void render_canvas_in_block(Arena* render_arena,
     //for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
     // == Nope!
     // Go forwards so we can do early reject with premultiplied alpha!
-    for (int stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
+    for (i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
     {
         if (stroke_i < num_strokes && !stroke_masks[stroke_i])
         {
@@ -275,11 +275,11 @@ static void render_canvas_in_block(Arena* render_arena,
     }
 #endif
 
-    int pixel_jump = view->downsampling_factor;  // Different names for the same thing.
+    i32 pixel_jump = view->downsampling_factor;  // Different names for the same thing.
 
-    for (int j = raster_limits.top; j < raster_limits.bottom; j += pixel_jump)
+    for (i32 j = raster_limits.top; j < raster_limits.bottom; j += pixel_jump)
     {
-        for (int i = raster_limits.left; i < raster_limits.right; i += pixel_jump)
+        for (i32 i = raster_limits.left; i < raster_limits.right; i += pixel_jump)
         {
             v2i raster_point = {i, j};
             v2i canvas_point = raster_to_canvas(view, raster_point);
@@ -535,9 +535,9 @@ static void render_canvas_in_block(Arena* render_arena,
             u32 pixel = color_v4f_to_u32(cm, acc_color);
 
             // TODO: Bilinear sampling could be nice here
-            for (int jj = j; jj < j + pixel_jump; ++jj)
+            for (i32 jj = j; jj < j + pixel_jump; ++jj)
             {
-                for (int ii = i; ii < i + pixel_jump; ++ii)
+                for (i32 ii = i; ii < i + pixel_jump; ++ii)
                 {
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }

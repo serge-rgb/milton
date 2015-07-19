@@ -36,14 +36,12 @@ To-Do
     * :)
 
 * Roadmap
-    * android / libserg: Add pthreads wrapper
+    * SDL version for Linux & Mac
+    * SIMD-ify canvas rasterizer (SSE)
     * android: Compile w/NDK
     * android: Draw canvas
     * Fix color picker controls.
+    * ui: animated sprite.
     * Basic saving / loading.
-    * IMUI
-    * SIMD-ify canvas rasterizer
-    * SDL version for Linux & Mac
-    * ? 64-bit canvas ?
     * ? iOS port ?
 
