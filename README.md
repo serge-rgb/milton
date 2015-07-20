@@ -32,16 +32,18 @@ To-Do
 =====
 
 * Bugs
+    * Windows: going to sleep sends an invalid size to milton!
     * [WONT-FIX] pan doesn't work when maximized in 'classic' windows mode.
     * :)
 
 * Roadmap
+    * Wacom: Support for pan & rotate.
+    * Undo: Only redraw necessary area.
     * SDL version for Linux & Mac
     * SIMD-ify canvas rasterizer (SSE)
     * android: Compile w/NDK
     * android: Draw canvas
     * Fix color picker controls.
     * ui: animated sprite.
-    * Basic saving / loading.
     * ? iOS port ?
 

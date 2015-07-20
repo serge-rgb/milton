@@ -15,18 +15,18 @@ typedef struct Stroke_s
     // TODO turn this into a deque
     v2i     points[LIMIT_STROKE_POINTS];
 
-    i32   num_points;
+    i32     num_points;
 } Stroke;
 
 typedef struct CanvasView_s
 {
     v2i     canvas_tile_focus;      // Coordinates are relative to this.
     v2i     screen_size;            // Size in pixels
-    i32   scale;                  // Zoom
+    i32     scale;                  // Zoom
     v2i     screen_center;          // In pixels
     v2i     pan_vector;             // In canvas scale
-    i32   downsampling_factor;
-    i32   canvas_tile_radius;
+    i32     downsampling_factor;
+    i32     canvas_tile_radius;
 } CanvasView;
 
 

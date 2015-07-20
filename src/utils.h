@@ -8,10 +8,10 @@ extern "C"
 {
 #endif
 
-#ifdef get_array_length
-#error "get_array_length is already defined"
+#ifdef array_length
+#error "array_length is already defined"
 #else
-#define get_array_length(arr) (sizeof((arr)) / sizeof((arr)[0]))
+#define array_length(arr) (sizeof((arr)) / sizeof((arr)[0]))
 #endif
 
 #ifndef min

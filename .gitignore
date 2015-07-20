@@ -1,3 +1,6 @@
+# Milton saves
+*.mlt
+
 src/libserg
 src/metaprogram
 src/*.generated.h

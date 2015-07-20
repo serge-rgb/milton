@@ -180,7 +180,7 @@ static void render_canvas_in_block(Arena* render_arena,
 {
     Rect canvas_limits;
     {
-        canvas_limits.top_left = raster_to_canvas(view, raster_limits.top_left);
+        canvas_limits.top_left  = raster_to_canvas(view, raster_limits.top_left);
         canvas_limits.bot_right = raster_to_canvas(view, raster_limits.bot_right);
     }
 
@@ -263,7 +263,8 @@ static void render_canvas_in_block(Arena* render_arena,
 
     // Set our `stroke_list` to begin at the first opaque stroke that fills
     // this block.
-#if 0 // RECHECK THIS
+    // TODO: RECHECK THIS
+#if 0
     ClippedStroke* list_iter = stroke_list;
     while (list_iter)
     {
@@ -390,8 +391,10 @@ static void render_canvas_in_block(Arena* render_arena,
                         int samples = 0;
                         {
 #ifdef MSAA_ROTATED_GRID
-                            f32 u = (0.223607f * view->scale) * pixel_jump * ninetales;  // sin(arctan(1/2)) / 2
-                            f32 v = (0.670820f * view->scale) * pixel_jump * ninetales;  // cos(arctan(1/2)) / 2 + u
+                            // sin(arctan(1/2)) / 2
+                            f32 u = (0.223607f * view->scale) * pixel_jump * ninetales;
+                            // cos(arctan(1/2)) / 2 + u
+                            f32 v = (0.670820f * view->scale) * pixel_jump * ninetales;
 
                             f32 dists[4];
                             dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);

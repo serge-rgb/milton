@@ -159,6 +159,7 @@ typedef struct MiltonInput_s
 } MiltonInput;
 
 #include "rasterizer.h"
+#include "persist.h"
 
 static void milton_gl_backend_draw(MiltonState* milton_state)
 {
@@ -441,6 +442,7 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
     };
 
     milton_gl_backend_init(milton_state);
+    milton_load(milton_state);
 }
 
 inline b32 is_user_drawing(MiltonState* milton_state)
@@ -493,6 +495,14 @@ static void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_scre
 // Our "render loop" inner function.
 static void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
+    // TODO: Save redo point?
+    b32 should_save =
+            //(input->point != NULL) ||
+            (input->flags & MiltonInputFlags_END_STROKE) ||
+            (input->flags & MiltonInputFlags_RESET) ||
+            (input->flags & MiltonInputFlags_UNDO) ||
+            (input->flags & MiltonInputFlags_REDO);
+
     arena_reset(milton_state->transient_arena);
 
     MiltonRenderFlags render_flags = MiltonRenderFlags_none;
@@ -699,6 +709,11 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     milton_render(milton_state, render_flags);
+
+    if (should_save)
+    {
+        milton_save(milton_state);
+    }
 }
 
 #ifdef __cplusplus
