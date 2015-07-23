@@ -39,9 +39,9 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
 
             // Very conservative...
             b32 inside = !((a.x > rect.right && b.x > rect.right) ||
-                              (a.x < rect.left && b.x < rect.left) ||
-                              (a.y < rect.top && b.y < rect.top) ||
-                              (a.y > rect.bottom && b.y > rect.bottom));
+                           (a.x < rect.left && b.x < rect.left) ||
+                           (a.y < rect.top && b.y < rect.top) ||
+                           (a.y > rect.bottom && b.y > rect.bottom));
 
             // We can add the segment
             if (inside)

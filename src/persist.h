@@ -36,6 +36,9 @@ static void milton_load(MiltonState* milton_state)
 
     u32 milton_magic = (u32)-1;
     fread(&milton_magic, sizeof(u32), 1, fd);
+
+    fread(milton_state->view, sizeof(CanvasView), 1, fd);
+
     milton_magic = word_swap_memory_order(milton_magic);
 
     if (milton_magic != MILTON_MAGIC_NUMBER)
@@ -81,6 +84,8 @@ static void milton_save(MiltonState* milton_state)
     u32 milton_magic = word_swap_memory_order(MILTON_MAGIC_NUMBER);
 
     fwrite(&milton_magic, sizeof(u32), 1, fd);
+
+    fwrite(milton_state->view, sizeof(CanvasView), 1, fd);
 
     fwrite(&num_strokes, sizeof(i32), 1, fd);
 
