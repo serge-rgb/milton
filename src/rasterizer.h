@@ -169,6 +169,7 @@ inline v4f blend_v4f(v4f dst, v4f src)
     return result;
 }
 
+#define USE_SSE 1
 static u64 g_total_ccount = 0;
 static u64 g_total_calls  = 0;
 static void render_canvas_in_block(Arena* render_arena,
@@ -331,7 +332,7 @@ static void render_canvas_in_block(Arena* render_arena,
 
                     i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
 
-                    v2i min_points[4] = {0};
+                    v2f min_points[4] = {0};
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
                     f32 dy = 0;
@@ -343,7 +344,7 @@ static void render_canvas_in_block(Arena* render_arena,
                             first_point.x *= ninetales;
                             first_point.y *= ninetales;
                         }
-                        min_points[0] = sub_v2i(first_point, reference_point);
+                        min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
                         dx = (f32) (canvas_point.x - min_points[0].x);
                         dy = (f32) (canvas_point.y - min_points[0].y);
                         min_dist = dx * dx + dy * dy;
@@ -351,7 +352,6 @@ static void render_canvas_in_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-#define USE_SSE 1
 #if !USE_SSE
                         batch_size = 1;
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
@@ -371,8 +371,9 @@ static void render_canvas_in_block(Arena* render_arena,
                             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
                             if (mag_ab2 > 0)
                             {
-                                v2i point = closest_point_in_segment(a, b,
-                                                                     ab, mag_ab2, canvas_point);
+                                v2f point = v2i_to_v2f(closest_point_in_segment(a, b,
+                                                                                ab, mag_ab2,
+                                                                                canvas_point));
 
                                 f32 test_dx = (f32) (canvas_point.x - point.x);
                                 f32 test_dy = (f32) (canvas_point.y - point.y);
@@ -387,16 +388,25 @@ static void render_canvas_in_block(Arena* render_arena,
                             }
                         }
 #else
+#define SSE_M(wide, i) ((f32 *)&(wide) + i)
+                        __m128 test_dx = _mm_set_ps1(0.0f);
+                        __m128 test_dy = _mm_set_ps1(0.0f);
+                        __m128 ab_x    = _mm_set_ps1(0.0f);
+                        __m128 ab_y    = _mm_set_ps1(0.0f);
+                        __m128 mag_ab  = _mm_set_ps1(0.0f);
+                        __m128 d_x     = _mm_set_ps1(0.0f);
+                        __m128 d_y     = _mm_set_ps1(0.0f);
+                        __m128 ax_x    = _mm_set_ps1(0.0f);
+                        __m128 ax_y    = _mm_set_ps1(0.0f);
+                        __m128 disc    = _mm_set_ps1(0.0f);
 
-                        for (int point_i = 0;
-                             point_i < clipped_stroke->num_points - 1;
-                             point_i += 8)
+                        for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 8)
 
                         {
-                            // Load points
-                            v2i as[4] = { 0 };
-                            v2i bs[4] = { 0 };
-
+                            f32 axs[4] = { 0 };
+                            f32 ays[4] = { 0 };
+                            f32 bxs[4] = { 0 };
+                            f32 bys[4] = { 0 };
                             batch_size = 0;
                             for (i32 i = 0; i < 4; i++)
                             {
@@ -405,97 +415,120 @@ static void render_canvas_in_block(Arena* render_arena,
                                 {
                                     break;
                                 }
-                                as[i] = points[index    ];
-                                bs[i] = points[index + 1];
+                                axs[i] = (f32)(points[index    ].x - reference_point.x);
+                                ays[i] = (f32)(points[index    ].y - reference_point.y);
+                                bxs[i] = (f32)(points[index + 1].x - reference_point.x);
+                                bys[i] = (f32)(points[index + 1].y - reference_point.y);
                                 batch_size++;
                             }
 
-#define SSE_M(wide, i) ((f32 *)&(wide) + i)
-#define M SSE_M
-                            // Subtract to reference point (to keep floats from being too big)
-                            __m128 test_dx = _mm_set_ps1(0.0f);
-                            //f32 test_dx[4] = { 0 };
-                            __m128 test_dy = _mm_set_ps1(0.0f);
-                            //f32 test_dy[4] = { 0 };
-                            f32 ab_x[4] = { 0 };
-                            f32 ab_y[4] = { 0 };
-                            f32 mag_ab2[4] = { 0 };
-                            f32 mag_ab[4] = { 0 };
-                            f32 d_x[4] = { 0 };
-                            f32 d_y[4] = { 0 };
-                            f32 ax_x[4] = { 0 };
-                            f32 ax_y[4] = { 0 };
-                            f32 disc[4] = { 0 };
 
-                            //v2i closest_points[4] = { 0 };
+                            __m128 a_x = _mm_set_ps((axs[3] ),
+                                                    (axs[2] ),
+                                                    (axs[1] ),
+                                                    (axs[0] ));
+
+                            __m128 b_x = _mm_set_ps((bxs[3] ),
+                                                    (bxs[2] ),
+                                                    (bxs[1] ),
+                                                    (bxs[0] ));
+
+                            __m128 a_y = _mm_set_ps((ays[3] ),
+                                                    (ays[2] ),
+                                                    (ays[1] ),
+                                                    (ays[0] ));
+
+                            __m128 b_y = _mm_set_ps((bys[3] ),
+                                                    (bys[2] ),
+                                                    (bys[1] ),
+                                                    (bys[0] ));
+
+                            ab_x = _mm_sub_ps(b_x, a_x);
+                            ab_y = _mm_sub_ps(b_y, a_y);
+
+
+                            // It's ok to fail the sqrt.
+                            mag_ab = _mm_sqrt_ps(_mm_add_ps(_mm_mul_ps(ab_x, ab_x),
+                                                            _mm_mul_ps(ab_y, ab_y)));
+
+                            d_x = _mm_div_ps(ab_x, mag_ab);
+                            d_y = _mm_div_ps(ab_y, mag_ab);
+
+                            __m128 canvas_point_x4 = _mm_set_ps1((f32)canvas_point.x);
+                            __m128 canvas_point_y4 = _mm_set_ps1((f32)canvas_point.y);
+
+                            ax_x = _mm_sub_ps(canvas_point_x4, a_x);
+                            ax_y = _mm_sub_ps(canvas_point_y4, a_y);
+                            disc =  _mm_add_ps(_mm_mul_ps(d_x, ax_x),
+                                               _mm_mul_ps(d_y, ax_y));
+
+
+                            v2f candidate_points[4];
+                            // TODO. Just clamp disc to [0, mag_ab] and avoid the branches!
                             for (i32 i = 0; i < batch_size; ++i)
                             {
-                                //a = sub_v2i(a, reference_point);
-                                as[i].x = as[i].x - reference_point.x;
-                                as[i].y = as[i].y - reference_point.y;
-                                // b = sub_v2i(b, reference_point);
-                                bs[i].x = bs[i].x - reference_point.x;
-                                bs[i].y = bs[i].y - reference_point.y;
-
-                                // Convert to floating point
-
+                                v2f point;
                                 // v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
-                                ab_x[i] = (f32)(bs[i].x - as[i].x);
-                                ab_y[i] = (f32)(bs[i].y - as[i].y);
+                                //ab_x[i] = (f32)(bs[i].x - as[i].x);
 
                                 // Calculate magnitude of segment
-                                mag_ab2[i] = ab_x[i] * ab_x[i] + ab_y[i] * ab_y[i];
+                                f32 disc_i = *SSE_M(disc,i);
 
-                                if (mag_ab2[i] > 0)
+                                if (disc_i >= 0 && disc_i <= *SSE_M(mag_ab,i))
                                 {
-                                    mag_ab[i] = sqrtf(mag_ab2[i]);
-                                    d_x[i]    = ab_x[i] / mag_ab[i];
-                                    d_y[i]    = ab_y[i] / mag_ab[i];
-                                    ax_x[i]   = (f32)(canvas_point.x - as[i].x);
-                                    ax_y[i]   = (f32)(canvas_point.y - as[i].y);
-                                    disc[i]   = d_x[i] * ax_x[i] + d_y[i] * ax_y[i];
-                                    v2i point;
-                                    if (disc[i] >= 0 && disc[i] <= mag_ab[i])
+                                    //closest_points[i] = (v2i)
+                                    point = (v2f)
                                     {
-                                        //closest_points[i] = (v2i)
-                                        point = (v2i)
-                                        {
-                                            (i32)(as[i].x + disc[i] * d_x[i]),
-                                            (i32)(as[i].y + disc[i] * d_y[i]),
-                                        };
-                                    }
-                                    else if (disc[i] < 0)
-                                    {
-                                        //closest_points[i] = as[i];
-                                        point = as[i];
-                                    }
-                                    else
-                                    {
-                                        //closest_points[i] = bs[i];
-                                        point = bs[i];
-                                    }
-
-                                    //test_dx[i] = (f32) (canvas_point.x - closest_points[i].x);
-                                    //test_dy[i] = (f32) (canvas_point.y - closest_points[i].y);
-
-                                    *M(test_dx, i) = (f32) (canvas_point.x - point.x);
-                                    *M(test_dy, i) = (f32) (canvas_point.y - point.y);
-                                    __m128 dist4 = _mm_add_ps(
-                                                              _mm_mul_ps(test_dx, test_dx),
-                                                              _mm_mul_ps(test_dy, test_dy)
-                                                             );
-                                    f32 dist = *M(dist4, i);
-                                    if (dist < min_dist)
-                                    {
-                                        min_dist = dist;
-                                        //min_points[i] = closest_points[i];
-                                        min_points[i] = point;
-                                        dx = *M(test_dx, i);
-                                        dy = *M(test_dy, i);
-                                    }
+                                        (axs[i] + disc_i * *SSE_M(d_x,i)),
+                                        (ays[i] + disc_i * *SSE_M(d_y,i)),
+                                    };
                                 }
+                                else if (disc_i < 0)
+                                {
+                                    //closest_points[i] = as[i];
+                                    point.x = axs[i];
+                                    point.y = ays[i];
+                                }
+                                else
+                                {
+                                    //closest_points[i] = bs[i];
+                                    point.x = bxs[i];
+                                    point.y = bys[i];
+                                }
+                                candidate_points[i] = point;
                             }
 
+                            __m128 point_x_4 = _mm_set_ps(candidate_points[3].x,
+                                                          candidate_points[2].x,
+                                                          candidate_points[1].x,
+                                                          candidate_points[0].x);
+
+                            __m128 point_y_4 = _mm_set_ps(candidate_points[3].y,
+                                                          candidate_points[2].y,
+                                                          candidate_points[1].y,
+                                                          candidate_points[0].y);
+
+
+                            test_dx = _mm_sub_ps(canvas_point_x4, point_x_4);
+                            test_dy = _mm_sub_ps(canvas_point_y4, point_y_4);
+
+                            __m128 dist4 = _mm_add_ps(
+                                                      _mm_mul_ps(test_dx, test_dx),
+                                                      _mm_mul_ps(test_dy, test_dy)
+                                                     );
+
+                            for (i32 i = 0; i < batch_size; ++i)
+                            {
+                                f32 dist = *SSE_M(dist4, i);
+                                if (dist < min_dist)
+                                {
+                                    min_dist = dist;
+                                    //min_points[i] = closest_points[i];
+                                    min_points[i] = candidate_points[i];
+                                    dx = *SSE_M(test_dx, i);
+                                    dy = *SSE_M(test_dy, i);
+                                }
+                            }
                         }
 #endif
                     }
