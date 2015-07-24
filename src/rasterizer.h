@@ -32,6 +32,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     else
     {
         i32 num_points = stroke->num_points;
+        b32 added_previous = false;
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
         {
             v2i a = stroke->points[point_i];
@@ -168,6 +169,8 @@ inline v4f blend_v4f(v4f dst, v4f src)
     return result;
 }
 
+static u64 g_total_ccount = 0;
+static u64 g_total_calls  = 0;
 static void render_canvas_in_block(Arena* render_arena,
                                    CanvasView* view,
                                    ColorManagement cm,
@@ -308,22 +311,17 @@ static void render_canvas_in_block(Arena* render_arena,
                 assert (clipped_stroke);
 
 // Re-add block-filling.
-#if 1
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
-#if 0  // Visualize it with black
+#if 1  // Visualize it with black
                     v4f dst = {0};
 #else
                     v4f dst = clipped_stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 }
-
-
                 // Slow path. There are pixels not inside.
-                else
-#endif
                 {
                     v2i* points = clipped_stroke->points;
 
@@ -347,6 +345,9 @@ static void render_canvas_in_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
+                        u64 ccount_begin = __rdtsc();
+#define USE_SSE 1
+#if !USE_SSE
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
                         {
                             v2i a = points[point_i];
@@ -379,7 +380,191 @@ static void render_canvas_in_block(Arena* render_arena,
                                 }
                             }
                         }
+#else
+                        v2i min_points[4] = {0};
+                        f32 min_dists[4]; for (i32 i = 0; i < 4; ++i) min_dists[i] = FLT_MAX;
+
+                        for (int point_i = 0;
+                             point_i < clipped_stroke->num_points - 1;
+                             point_i += 2 * 4)
+                        {
+                            // Load points
+                            // v2i a = points[point_i];
+                            // v2i b = points[point_i + 1];
+
+                            b32 mask[4] = { 0 }; // Which points got loaded
+                            i32 ax[4] = { 0 };
+                            i32 ay[4] = { 0 };
+                            i32 bx[4] = { 0 };
+                            i32 by[4] = { 0 };
+                            f32 mag_ab2s[4] = {0};
+
+                            for (i32 i = 0; i < 4; i++)
+                            {
+                                if (2*i + point_i >= clipped_stroke->num_points - 1)
+                                {
+                                    break;
+                                }
+                                ax[i] = points[2*i + point_i    ].x;
+                                ay[i] = points[2*i + point_i    ].y;
+                                bx[i] = points[2*i + point_i + 1].x;
+                                by[i] = points[2*i + point_i + 1].y;
+
+                                mask[i] = true;
+                            }
+                            // ===================
+                            v2i a = points[point_i];
+                            v2i b = points[point_i + 1];
+
+                            // Multiply by ninetales to get precision at smallest zoom levels
+                            for (int i = 0; i < 4; i++)
+                            {
+                                if (!mask[i]) break;
+                                ax[i] *= ninetales;
+                                ay[i] *= ninetales;
+                                bx[i] *= ninetales;
+                                by[i] *= ninetales;
+                            }
+                            // ======================
+                            a.x *= ninetales;
+                            a.y *= ninetales;
+                            b.x *= ninetales;
+                            b.y *= ninetales;
+                            for (int i = 0; i < 4; i++)
+                            {
+                                if (!mask[i]) break;
+                            }
+
+                            // Subtract to reference point (to keep floats from being too big)
+
+                            for (int i = 0; i < 4; i++)
+                            {
+                                if (!mask[i]) break;
+                                ax[i] = ax[i] - reference_point.x;
+                                ay[i] = ay[i] - reference_point.y;
+                                bx[i] = bx[i] - reference_point.x;
+                                by[i] = by[i] - reference_point.y;
+                            }
+                            //a = sub_v2i(a, reference_point);
+                            a.x = a.x - reference_point.x;
+                            a.y = a.y - reference_point.y;
+                            // b = sub_v2i(b, reference_point);
+                            b.x = b.x - reference_point.x;
+                            b.y = b.y - reference_point.y;
+
+                            // Convert to floating point
+
+                            f32 ab_xs[4] = { 0 };
+                            f32 ab_ys[4] = { 0 };
+
+                            for (int i = 0; i < 4; i++)
+                            {
+                                ab_xs[i] = (f32)(bx[i] - ax[i]);
+                                ab_ys[i] = (f32)(by[i] - ay[i]);
+                            }
+                            // v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
+                            f32 ab_x = (f32)(b.x - a.x);
+                            f32 ab_y = (f32)(b.y - a.y);
+
+                            for (int i = 0; i < 4; i++)
+                            {
+                                f32 abx2 = ab_xs[i] * ab_xs[i];
+                                f32 aby2 = ab_ys[i] * ab_ys[i];
+                                mag_ab2s[i] = abx2 + aby2;
+                            }
+                            // Calculate magnitude of segment
+                            f32 mag_ab2 = ab_x * ab_x + ab_y * ab_y;
+
+                            f32 ax_xs[4] = { 0 };
+                            f32 ax_ys[4] = { 0 };
+                            f32 d_xs[4];
+                            f32 d_ys[4];
+                            f32 mag_abs[4];
+                            f32 discs[4];
+                            v2i closest_points[4];
+                            for (int i = 0; i < 4; ++i)
+                            {
+                                if (!mask[i]) break;
+                                if (mag_ab2s[i] > 0)
+                                {
+                                    v2i point;
+                                    mag_abs[i] = sqrtf(mag_ab2s[i]);
+                                    d_xs[i] = ab_xs[i] / mag_abs[i];
+                                    d_ys[i] = ab_ys[i] / mag_abs[i];
+                                    ax_xs[i] = (f32)(canvas_point.x - ax[i]);
+                                    ax_ys[i] = (f32)(canvas_point.y - ay[i]);
+                                    discs[i] = d_xs[i] * ax_xs[i] + d_ys[i] * ax_ys[i];
+                                    if (discs[i] >= 0 && discs[i] <= mag_abs[i])
+                                    {
+                                        point = (v2i)
+                                        {
+                                            (i32)(ax[i] + discs[i] * d_xs[i]), (i32)(ay[i] + discs[i] * d_ys[i]),
+                                        };
+                                    }
+                                    else if (discs[i] < 0)
+                                    {
+                                        point = a;
+                                    }
+                                    else
+                                    {
+                                        point = b;
+                                    }
+
+                                    f32 test_dx = (f32) (canvas_point.x - closest_points[i].x);
+                                    f32 test_dy = (f32) (canvas_point.y - closest_points[i].y);
+                                    f32 dist = test_dx * test_dx + test_dy * test_dy;
+                                    if (dist < min_dist)
+                                    {
+                                        min_dists[i] = dist;
+                                        min_points[i] = point;
+                                        dx = test_dx;
+                                        dy = test_dy;
+                                    }
+                                }
+                            }
+
+                            if (mag_ab2 > 0)
+                            {
+                                v2i point;
+                                f32 mag_ab = sqrtf(mag_ab2);
+                                f32 d_x = ab_x / mag_ab;
+                                f32 d_y = ab_y / mag_ab;
+                                f32 ax_x = (f32)(canvas_point.x - a.x);
+                                f32 ax_y = (f32)(canvas_point.y - a.y);
+                                f32 disc = d_x * ax_x + d_y * ax_y;
+                                if (disc >= 0 && disc <= mag_ab)
+                                {
+                                    point = (v2i)
+                                    {
+                                        (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
+                                    };
+                                }
+                                else if (disc < 0)
+                                {
+                                    point = a;
+                                }
+                                else
+                                {
+                                    point = b;
+                                }
+
+                                f32 test_dx = (f32) (canvas_point.x - point.x);
+                                f32 test_dy = (f32) (canvas_point.y - point.y);
+                                f32 dist = test_dx * test_dx + test_dy * test_dy;
+                                if (dist < min_dist)
+                                {
+                                    min_dist = dist;
+                                    min_point = point;
+                                    dx = test_dx;
+                                    dy = test_dy;
+                                }
+                            }
+                        }
+#endif
+                        g_total_ccount += __rdtsc() - ccount_begin;
+                        g_total_calls++;
                     }
+
 
                     if (min_dist < FLT_MAX)
                     {
@@ -662,6 +847,14 @@ static void produce_render_work(MiltonState* milton_state, TileRenderData tile_r
 
 static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
 {
+    static u64 total = 0;
+    static u64 ncalls = 0;
+    g_total_calls = 0;
+    g_total_ccount = 0;
+    static u64 block_avg_sum = 0;
+
+    u64 ccount_begin = __rdtsc();
+
     v2i canvas_reference = { 0 };
     Rect* blocks = NULL;
     i32 num_blocks = rect_split(milton_state->transient_arena,
@@ -684,7 +877,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
             break;
         }
 
-#define RENDER_MULTITHREADED 1
+#define RENDER_MULTITHREADED 0
 #if RENDER_MULTITHREADED
         TileRenderData data =
         {
@@ -706,6 +899,13 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         arena_pop(&tile_arena);
 #endif
         ARENA_VALIDATE(milton_state->transient_arena);
+        u64 ccount_total = __rdtsc() - ccount_begin;
+        total += ccount_total;
+        ncalls++;
+        milton_log("[MEASURE] render_canvas total: %lu. Avg: %lu\n", ccount_total, total / ncalls);
+        milton_log("[MEASURE] block render avg: %lu\n", g_total_ccount / g_total_calls);
+        block_avg_sum += (g_total_ccount / g_total_calls);
+        milton_log("[MEASURE] block render meta avg: %lu\n", block_avg_sum / ncalls);
     }
 
 #if RENDER_MULTITHREADED

@@ -539,11 +539,18 @@ int CALLBACK WinMain(
         return FALSE;
     }
 
+#if 0
     i32 x = 100;
     i32 y = 100;
 
     i32 width = 1280;
     i32 height = 800;
+#else
+    i32 x = 0;
+    i32 y = 0;
+    i32 width = 2560;
+    i32 height = 1600;
+#endif
 
     HWND window = CreateWindowExA(
             0, //WS_EX_TOPMOST ,  // dwExStyle
@@ -633,6 +640,7 @@ int CALLBACK WinMain(
             milton_resize(milton_state, input.pan_delta, screen_size);
         }
 
+        input.flags |= MiltonInputFlags_FULL_REFRESH;
         milton_update(milton_state, &input);
         if (g_gui_msgs & GuiMsg_GL_DRAW)
         {

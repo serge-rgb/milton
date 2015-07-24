@@ -38,7 +38,7 @@ extern "C"
 #include "color.h"
 #include "canvas.h"
 
-#define MILTON_USE_VAO 0
+#define MILTON_USE_VAO 1
 
 typedef struct MiltonGLState_s
 {
