@@ -314,15 +314,17 @@ static void render_canvas_in_block(Arena* render_arena,
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
-#if 1  // Visualize it with black
+#if 0  // Visualize it with black
                     v4f dst = {0};
 #else
                     v4f dst = clipped_stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 }
+                else
                 // Slow path. There are pixels not inside.
                 {
+                    u64 ccount_begin = __rdtsc();
                     v2i* points = clipped_stroke->points;
 
                     v2i min_point = {0};
@@ -345,13 +347,12 @@ static void render_canvas_in_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-                        u64 ccount_begin = __rdtsc();
-#define USE_SSE 1
+#define USE_SSE 0
 #if !USE_SSE
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
                         {
-                            v2i a = points[point_i];
-                            v2i b = points[point_i + 1];
+                            v2i a[4] = points[point_i];
+                            v2i b[4] = points[point_i + 1];
                             {
                                 a.x *= ninetales;
                                 a.y *= ninetales;
@@ -381,70 +382,24 @@ static void render_canvas_in_block(Arena* render_arena,
                             }
                         }
 #else
-                        v2i min_points[4] = {0};
-                        f32 min_dists[4]; for (i32 i = 0; i < 4; ++i) min_dists[i] = FLT_MAX;
-
                         for (int point_i = 0;
                              point_i < clipped_stroke->num_points - 1;
-                             point_i += 2 * 4)
+                             point_i += 2 * 1)
                         {
                             // Load points
                             // v2i a = points[point_i];
                             // v2i b = points[point_i + 1];
 
-                            b32 mask[4] = { 0 }; // Which points got loaded
-                            i32 ax[4] = { 0 };
-                            i32 ay[4] = { 0 };
-                            i32 bx[4] = { 0 };
-                            i32 by[4] = { 0 };
-                            f32 mag_ab2s[4] = {0};
-
-                            for (i32 i = 0; i < 4; i++)
-                            {
-                                if (2*i + point_i >= clipped_stroke->num_points - 1)
-                                {
-                                    break;
-                                }
-                                ax[i] = points[2*i + point_i    ].x;
-                                ay[i] = points[2*i + point_i    ].y;
-                                bx[i] = points[2*i + point_i + 1].x;
-                                by[i] = points[2*i + point_i + 1].y;
-
-                                mask[i] = true;
-                            }
-                            // ===================
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
 
-                            // Multiply by ninetales to get precision at smallest zoom levels
-                            for (int i = 0; i < 4; i++)
-                            {
-                                if (!mask[i]) break;
-                                ax[i] *= ninetales;
-                                ay[i] *= ninetales;
-                                bx[i] *= ninetales;
-                                by[i] *= ninetales;
-                            }
-                            // ======================
                             a.x *= ninetales;
                             a.y *= ninetales;
                             b.x *= ninetales;
                             b.y *= ninetales;
-                            for (int i = 0; i < 4; i++)
-                            {
-                                if (!mask[i]) break;
-                            }
 
                             // Subtract to reference point (to keep floats from being too big)
 
-                            for (int i = 0; i < 4; i++)
-                            {
-                                if (!mask[i]) break;
-                                ax[i] = ax[i] - reference_point.x;
-                                ay[i] = ay[i] - reference_point.y;
-                                bx[i] = bx[i] - reference_point.x;
-                                by[i] = by[i] - reference_point.y;
-                            }
                             //a = sub_v2i(a, reference_point);
                             a.x = a.x - reference_point.x;
                             a.y = a.y - reference_point.y;
@@ -454,74 +409,12 @@ static void render_canvas_in_block(Arena* render_arena,
 
                             // Convert to floating point
 
-                            f32 ab_xs[4] = { 0 };
-                            f32 ab_ys[4] = { 0 };
-
-                            for (int i = 0; i < 4; i++)
-                            {
-                                ab_xs[i] = (f32)(bx[i] - ax[i]);
-                                ab_ys[i] = (f32)(by[i] - ay[i]);
-                            }
                             // v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
                             f32 ab_x = (f32)(b.x - a.x);
                             f32 ab_y = (f32)(b.y - a.y);
 
-                            for (int i = 0; i < 4; i++)
-                            {
-                                f32 abx2 = ab_xs[i] * ab_xs[i];
-                                f32 aby2 = ab_ys[i] * ab_ys[i];
-                                mag_ab2s[i] = abx2 + aby2;
-                            }
                             // Calculate magnitude of segment
                             f32 mag_ab2 = ab_x * ab_x + ab_y * ab_y;
-
-                            f32 ax_xs[4] = { 0 };
-                            f32 ax_ys[4] = { 0 };
-                            f32 d_xs[4];
-                            f32 d_ys[4];
-                            f32 mag_abs[4];
-                            f32 discs[4];
-                            v2i closest_points[4];
-                            for (int i = 0; i < 4; ++i)
-                            {
-                                if (!mask[i]) break;
-                                if (mag_ab2s[i] > 0)
-                                {
-                                    v2i point;
-                                    mag_abs[i] = sqrtf(mag_ab2s[i]);
-                                    d_xs[i] = ab_xs[i] / mag_abs[i];
-                                    d_ys[i] = ab_ys[i] / mag_abs[i];
-                                    ax_xs[i] = (f32)(canvas_point.x - ax[i]);
-                                    ax_ys[i] = (f32)(canvas_point.y - ay[i]);
-                                    discs[i] = d_xs[i] * ax_xs[i] + d_ys[i] * ax_ys[i];
-                                    if (discs[i] >= 0 && discs[i] <= mag_abs[i])
-                                    {
-                                        point = (v2i)
-                                        {
-                                            (i32)(ax[i] + discs[i] * d_xs[i]), (i32)(ay[i] + discs[i] * d_ys[i]),
-                                        };
-                                    }
-                                    else if (discs[i] < 0)
-                                    {
-                                        point = a;
-                                    }
-                                    else
-                                    {
-                                        point = b;
-                                    }
-
-                                    f32 test_dx = (f32) (canvas_point.x - closest_points[i].x);
-                                    f32 test_dy = (f32) (canvas_point.y - closest_points[i].y);
-                                    f32 dist = test_dx * test_dx + test_dy * test_dy;
-                                    if (dist < min_dist)
-                                    {
-                                        min_dists[i] = dist;
-                                        min_points[i] = point;
-                                        dx = test_dx;
-                                        dy = test_dy;
-                                    }
-                                }
-                            }
 
                             if (mag_ab2 > 0)
                             {
@@ -561,40 +454,13 @@ static void render_canvas_in_block(Arena* render_arena,
                             }
                         }
 #endif
-                        g_total_ccount += __rdtsc() - ccount_begin;
-                        g_total_calls++;
                     }
 
 
                     if (min_dist < FLT_MAX)
                     {
-#define MSAA_4X 1
-#if !MSAA_4X
-#define MSAA_ROTATED_GRID
-#endif
-
                         int samples = 0;
                         {
-#ifdef MSAA_ROTATED_GRID
-                            // sin(arctan(1/2)) / 2
-                            f32 u = (0.223607f * view->scale) * pixel_jump * ninetales;
-                            // cos(arctan(1/2)) / 2 + u
-                            f32 v = (0.670820f * view->scale) * pixel_jump * ninetales;
-
-                            f32 dists[4];
-                            dists[0] = (dx - u) * (dx - u) + (dy - v) * (dy - v);
-                            dists[1] = (dx - v) * (dx - v) + (dy + u) * (dy + u);
-                            dists[2] = (dx + u) * (dx + u) + (dy + v) * (dy + v);
-                            dists[3] = (dx + v) * (dx + v) + (dy + u) * (dy + u);
-
-                            for (int i = 0; i < 4; ++i)
-                            {
-                                if (sqrtf(dists[i]) < clipped_stroke->brush.radius)
-                                {
-                                    ++samples;
-                                }
-                            }
-#elif defined(MSAA_4X)
                             f32 dists[16];
 
                             f32 f3 = (0.75f * view->scale) * pixel_jump * ninetales;
@@ -679,7 +545,6 @@ static void render_canvas_in_block(Arena* render_arena,
                                 samples += (dists[15] < sq_radius);
                             }
 
-#endif
                         }
 
                         // If the stroke contributes to the pixel, do compositing.
@@ -688,11 +553,7 @@ static void render_canvas_in_block(Arena* render_arena,
                             // Do blending
                             // ---------------
 
-#ifdef MSAA_ROTATED_GRID
-                            f32 coverage = (f32)samples / 4.0f;
-#elif defined(MSAA_4X)
                             f32 coverage = (f32)samples / 16.0f;
-#endif
 
                             v4f dst = clipped_stroke->brush.color;
                             {
@@ -705,7 +566,8 @@ static void render_canvas_in_block(Arena* render_arena,
                             acc_color = blend_v4f(dst, acc_color);
                         }
                     }
-
+                    g_total_ccount += __rdtsc() - ccount_begin;
+                    g_total_calls++;
                 }
                 if (acc_color.a > 0.99)
                 {
