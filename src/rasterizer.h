@@ -169,9 +169,14 @@ inline v4f blend_v4f(v4f dst, v4f src)
     return result;
 }
 
-#define USE_SSE 1
 static u64 g_total_ccount = 0;
 static u64 g_total_calls  = 0;
+
+static u64 g_abs_ccount = 0;
+static u64 g_abs_calls  = 0;
+
+static u64 g_kk_ccount = 0;
+static u64 g_kk_calls  = 0;
 static void render_canvas_in_block(Arena* render_arena,
                                    CanvasView* view,
                                    ColorManagement cm,
@@ -182,6 +187,7 @@ static void render_canvas_in_block(Arena* render_arena,
                                    u32* pixels,
                                    Rect raster_limits)
 {
+    u64 pre_ccount_begin = __rdtsc();
     Rect canvas_limits;
     {
         canvas_limits.top_left  = raster_to_canvas(view, raster_limits.top_left);
@@ -286,6 +292,7 @@ static void render_canvas_in_block(Arena* render_arena,
     {
         for (i32 i = raster_limits.left; i < raster_limits.right; i += pixel_jump)
         {
+            u64 ccount_begin = __rdtsc();
             v2i raster_point = {i, j};
             v2i canvas_point = raster_to_canvas(view, raster_point);
             {
@@ -327,12 +334,11 @@ static void render_canvas_in_block(Arena* render_arena,
                 else
                 // Slow path. There are pixels not inside.
                 {
-                    u64 ccount_begin = __rdtsc();
                     v2i* points = clipped_stroke->points;
 
                     i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
 
-                    v2f min_points[4] = {0};
+                    //v2f min_points[4] = {0};
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
                     f32 dy = 0;
@@ -344,14 +350,16 @@ static void render_canvas_in_block(Arena* render_arena,
                             first_point.x *= ninetales;
                             first_point.y *= ninetales;
                         }
-                        min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
-                        dx = (f32) (canvas_point.x - min_points[0].x);
-                        dy = (f32) (canvas_point.y - min_points[0].y);
+                        //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
+                        v2i min_point = sub_v2i(first_point, reference_point);
+                        dx = (f32) (canvas_point.x - min_point.x);
+                        dy = (f32) (canvas_point.y - min_point.y);
                         min_dist = dx * dx + dy * dy;
                     }
                     else
                     {
                         // Find closest point.
+#define USE_SSE 1
 #if !USE_SSE
                         batch_size = 1;
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
@@ -381,14 +389,13 @@ static void render_canvas_in_block(Arena* render_arena,
                                 if (dist < min_dist)
                                 {
                                     min_dist = dist;
-                                    min_points[0] = point;
                                     dx = test_dx;
                                     dy = test_dy;
                                 }
                             }
                         }
 #else
-#define SSE_M(wide, i) ((f32 *)&(wide) + i)
+//#define SSE_M(wide, i) ((f32 *)&(wide) + i)
                         __m128 test_dx = _mm_set_ps1(0.0f);
                         __m128 test_dy = _mm_set_ps1(0.0f);
                         __m128 ab_x    = _mm_set_ps1(0.0f);
@@ -408,6 +415,7 @@ static void render_canvas_in_block(Arena* render_arena,
                             f32 bxs[4] = { 0 };
                             f32 bys[4] = { 0 };
                             batch_size = 0;
+
                             for (i32 i = 0; i < 4; i++)
                             {
                                 i32 index = point_i + 2*i;
@@ -415,37 +423,38 @@ static void render_canvas_in_block(Arena* render_arena,
                                 {
                                     break;
                                 }
-                                axs[i] = (f32)(points[index    ].x - reference_point.x);
-                                ays[i] = (f32)(points[index    ].y - reference_point.y);
-                                bxs[i] = (f32)(points[index + 1].x - reference_point.x);
-                                bys[i] = (f32)(points[index + 1].y - reference_point.y);
+                                // The point of reference point is to do the subtraction with
+                                // integer arithmetic
+                                axs[i] = (f32)(points[index    ].x * ninetales - reference_point.x);
+                                ays[i] = (f32)(points[index    ].y * ninetales - reference_point.y);
+                                bxs[i] = (f32)(points[index + 1].x * ninetales - reference_point.x);
+                                bys[i] = (f32)(points[index + 1].y * ninetales - reference_point.y);
                                 batch_size++;
                             }
 
 
-                            __m128 a_x = _mm_set_ps((axs[3] ),
-                                                    (axs[2] ),
-                                                    (axs[1] ),
-                                                    (axs[0] ));
+                            __m128 a_x = _mm_set_ps((axs[3]),
+                                                    (axs[2]),
+                                                    (axs[1]),
+                                                    (axs[0]));
 
-                            __m128 b_x = _mm_set_ps((bxs[3] ),
-                                                    (bxs[2] ),
-                                                    (bxs[1] ),
-                                                    (bxs[0] ));
+                            __m128 b_x = _mm_set_ps((bxs[3]),
+                                                    (bxs[2]),
+                                                    (bxs[1]),
+                                                    (bxs[0]));
 
-                            __m128 a_y = _mm_set_ps((ays[3] ),
-                                                    (ays[2] ),
-                                                    (ays[1] ),
-                                                    (ays[0] ));
+                            __m128 a_y = _mm_set_ps((ays[3]),
+                                                    (ays[2]),
+                                                    (ays[1]),
+                                                    (ays[0]));
 
-                            __m128 b_y = _mm_set_ps((bys[3] ),
-                                                    (bys[2] ),
-                                                    (bys[1] ),
-                                                    (bys[0] ));
+                            __m128 b_y = _mm_set_ps((bys[3]),
+                                                    (bys[2]),
+                                                    (bys[1]),
+                                                    (bys[0]));
 
                             ab_x = _mm_sub_ps(b_x, a_x);
                             ab_y = _mm_sub_ps(b_y, a_y);
-
 
                             // It's ok to fail the sqrt.
                             mag_ab = _mm_sqrt_ps(_mm_add_ps(_mm_mul_ps(ab_x, ab_x),
@@ -459,90 +468,59 @@ static void render_canvas_in_block(Arena* render_arena,
 
                             ax_x = _mm_sub_ps(canvas_point_x4, a_x);
                             ax_y = _mm_sub_ps(canvas_point_y4, a_y);
-                            disc =  _mm_add_ps(_mm_mul_ps(d_x, ax_x),
-                                               _mm_mul_ps(d_y, ax_y));
 
+                            disc = _mm_add_ps(_mm_mul_ps(d_x, ax_x),
+                                              _mm_mul_ps(d_y, ax_y));
 
-                            v2f candidate_points[4];
-                            // TODO. Just clamp disc to [0, mag_ab] and avoid the branches!
-                            for (i32 i = 0; i < batch_size; ++i)
+                            // Clamp discriminant so that point lies in [a, b]
                             {
-                                v2f point;
-                                // v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
-                                //ab_x[i] = (f32)(bs[i].x - as[i].x);
-
-                                // Calculate magnitude of segment
-                                f32 disc_i = *SSE_M(disc,i);
-
-                                if (disc_i >= 0 && disc_i <= *SSE_M(mag_ab,i))
-                                {
-                                    //closest_points[i] = (v2i)
-                                    point = (v2f)
-                                    {
-                                        (axs[i] + disc_i * *SSE_M(d_x,i)),
-                                        (ays[i] + disc_i * *SSE_M(d_y,i)),
-                                    };
-                                }
-                                else if (disc_i < 0)
-                                {
-                                    //closest_points[i] = as[i];
-                                    point.x = axs[i];
-                                    point.y = ays[i];
-                                }
-                                else
-                                {
-                                    //closest_points[i] = bs[i];
-                                    point.x = bxs[i];
-                                    point.y = bys[i];
-                                }
-                                candidate_points[i] = point;
+                                __m128 low  = _mm_set_ps1(0);
+                                __m128 high = mag_ab;
+                                disc = _mm_min_ps(_mm_max_ps(low, disc), high);
                             }
 
-                            __m128 point_x_4 = _mm_set_ps(candidate_points[3].x,
-                                                          candidate_points[2].x,
-                                                          candidate_points[1].x,
-                                                          candidate_points[0].x);
-
-                            __m128 point_y_4 = _mm_set_ps(candidate_points[3].y,
-                                                          candidate_points[2].y,
-                                                          candidate_points[1].y,
-                                                          candidate_points[0].y);
+                            // (axs[i] + disc_i * (d_x[i],
+                            __m128 point_x_4 = _mm_add_ps(a_x, _mm_mul_ps(disc, d_x));
+                            __m128 point_y_4 = _mm_add_ps(a_y, _mm_mul_ps(disc, d_y));
 
 
                             test_dx = _mm_sub_ps(canvas_point_x4, point_x_4);
                             test_dy = _mm_sub_ps(canvas_point_y4, point_y_4);
 
-                            __m128 dist4 = _mm_add_ps(
-                                                      _mm_mul_ps(test_dx, test_dx),
-                                                      _mm_mul_ps(test_dy, test_dy)
-                                                     );
+                            __m128 dist4 = _mm_add_ps(_mm_mul_ps(test_dx, test_dx),
+                                                      _mm_mul_ps(test_dy, test_dy));
 
+                            f32 dists[4];
+                            f32 tests_dx[4];
+                            f32 tests_dy[4];
+                            _mm_store_ps(dists, dist4);
+                            _mm_store_ps(tests_dx, test_dx);
+                            _mm_store_ps(tests_dy, test_dy);
                             for (i32 i = 0; i < batch_size; ++i)
                             {
-                                f32 dist = *SSE_M(dist4, i);
+                                f32 dist = dists[i];
                                 if (dist < min_dist)
                                 {
                                     min_dist = dist;
-                                    //min_points[i] = closest_points[i];
-                                    min_points[i] = candidate_points[i];
-                                    dx = *SSE_M(test_dx, i);
-                                    dy = *SSE_M(test_dy, i);
+                                    dx = tests_dx[i];
+                                    dy = tests_dy[i];
                                 }
                             }
                         }
 #endif
                     }
 
-
                     if (min_dist < FLT_MAX)
                     {
+                        u64 kk_ccount_begin = __rdtsc();
                         int samples = 0;
                         {
-                            f32 dists[16];
-
                             f32 f3 = (0.75f * view->scale) * pixel_jump * ninetales;
                             f32 f1 = (0.25f * view->scale) * pixel_jump * ninetales;
-
+                            u32 radius = clipped_stroke->brush.radius * ninetales;
+#define USE_SAMPLING_SSE 1
+#if USE_SSE && !USE_SAMPLING_SSE
+                            f32 fdists[16];
                             {
                                 f32 a1 = (dx - f3) * (dx - f3);
                                 f32 a2 = (dx - f1) * (dx - f1);
@@ -554,73 +532,137 @@ static void render_canvas_in_block(Arena* render_arena,
                                 f32 b3 = (dy + f1) * (dy + f1);
                                 f32 b4 = (dy + f3) * (dy + f3);
 
-                                dists[0]  = a1 + b1;
-                                dists[1]  = a2 + b1;
-                                dists[2]  = a3 + b1;
-                                dists[3]  = a4 + b1;
+                                fdists[0]  = a1 + b1;
+                                fdists[1]  = a2 + b1;
+                                fdists[2]  = a3 + b1;
+                                fdists[3]  = a4 + b1;
 
-                                dists[4]  = a1 + b2;
-                                dists[5]  = a2 + b2;
-                                dists[6]  = a3 + b2;
-                                dists[7]  = a4 + b2;
+                                fdists[4]  = a1 + b2;
+                                fdists[5]  = a2 + b2;
+                                fdists[6]  = a3 + b2;
+                                fdists[7]  = a4 + b2;
 
-                                dists[8]  = a1 + b3;
-                                dists[9]  = a2 + b3;
-                                dists[10] = a3 + b3;
-                                dists[11] = a4 + b3;
+                                fdists[8]  = a1 + b3;
+                                fdists[9]  = a2 + b3;
+                                fdists[10] = a3 + b3;
+                                fdists[11] = a4 + b3;
 
-                                dists[12] = a1 + b4;
-                                dists[13] = a2 + b4;
-                                dists[14] = a3 + b4;
-                                dists[15] = a4 + b4;
+                                fdists[12] = a1 + b4;
+                                fdists[13] = a2 + b4;
+                                fdists[14] = a3 + b4;
+                                fdists[15] = a4 + b4;
 
                             }
 
-                            assert (clipped_stroke->brush.radius > 0);
-                            u32 radius = clipped_stroke->brush.radius * ninetales;
 
                             // Perf note: We remove the sqrtf call when it's
                             // safe to square the radius
                             if (radius >= (1 << 16))
                             {
-                                samples += (sqrtf(dists[ 0]) < radius);
-                                samples += (sqrtf(dists[ 1]) < radius);
-                                samples += (sqrtf(dists[ 2]) < radius);
-                                samples += (sqrtf(dists[ 3]) < radius);
-                                samples += (sqrtf(dists[ 4]) < radius);
-                                samples += (sqrtf(dists[ 5]) < radius);
-                                samples += (sqrtf(dists[ 6]) < radius);
-                                samples += (sqrtf(dists[ 7]) < radius);
-                                samples += (sqrtf(dists[ 8]) < radius);
-                                samples += (sqrtf(dists[ 9]) < radius);
-                                samples += (sqrtf(dists[10]) < radius);
-                                samples += (sqrtf(dists[11]) < radius);
-                                samples += (sqrtf(dists[12]) < radius);
-                                samples += (sqrtf(dists[13]) < radius);
-                                samples += (sqrtf(dists[14]) < radius);
-                                samples += (sqrtf(dists[15]) < radius);
+                                samples += (sqrtf(fdists[ 0]) < radius);
+                                samples += (sqrtf(fdists[ 1]) < radius);
+                                samples += (sqrtf(fdists[ 2]) < radius);
+                                samples += (sqrtf(fdists[ 3]) < radius);
+                                samples += (sqrtf(fdists[ 4]) < radius);
+                                samples += (sqrtf(fdists[ 5]) < radius);
+                                samples += (sqrtf(fdists[ 6]) < radius);
+                                samples += (sqrtf(fdists[ 7]) < radius);
+                                samples += (sqrtf(fdists[ 8]) < radius);
+                                samples += (sqrtf(fdists[ 9]) < radius);
+                                samples += (sqrtf(fdists[10]) < radius);
+                                samples += (sqrtf(fdists[11]) < radius);
+                                samples += (sqrtf(fdists[12]) < radius);
+                                samples += (sqrtf(fdists[13]) < radius);
+                                samples += (sqrtf(fdists[14]) < radius);
+                                samples += (sqrtf(fdists[15]) < radius);
                             }
                             else
                             {
                                 u32 sq_radius = radius * radius;
 
-                                samples += (dists[ 0] < sq_radius);
-                                samples += (dists[ 1] < sq_radius);
-                                samples += (dists[ 2] < sq_radius);
-                                samples += (dists[ 3] < sq_radius);
-                                samples += (dists[ 4] < sq_radius);
-                                samples += (dists[ 5] < sq_radius);
-                                samples += (dists[ 6] < sq_radius);
-                                samples += (dists[ 7] < sq_radius);
-                                samples += (dists[ 8] < sq_radius);
-                                samples += (dists[ 9] < sq_radius);
-                                samples += (dists[10] < sq_radius);
-                                samples += (dists[11] < sq_radius);
-                                samples += (dists[12] < sq_radius);
-                                samples += (dists[13] < sq_radius);
-                                samples += (dists[14] < sq_radius);
-                                samples += (dists[15] < sq_radius);
+                                samples += (fdists[ 0] < sq_radius);
+                                samples += (fdists[ 1] < sq_radius);
+                                samples += (fdists[ 2] < sq_radius);
+                                samples += (fdists[ 3] < sq_radius);
+                                samples += (fdists[ 4] < sq_radius);
+                                samples += (fdists[ 5] < sq_radius);
+                                samples += (fdists[ 6] < sq_radius);
+                                samples += (fdists[ 7] < sq_radius);
+                                samples += (fdists[ 8] < sq_radius);
+                                samples += (fdists[ 9] < sq_radius);
+                                samples += (fdists[10] < sq_radius);
+                                samples += (fdists[11] < sq_radius);
+                                samples += (fdists[12] < sq_radius);
+                                samples += (fdists[13] < sq_radius);
+                                samples += (fdists[14] < sq_radius);
+                                samples += (fdists[15] < sq_radius);
                             }
+                            if (samples > 12)
+                            {
+                                int asdf =1;
+                            }
+#else
+                            __m128 dists[4];
+
+                            {
+                                __m128 a = _mm_set_ps((dx + f3) * (dx + f3),
+                                                      (dx + f1) * (dx + f1),
+                                                      (dx - f1) * (dx - f1),
+                                                      (dx - f3) * (dx - f3));
+
+                                __m128 b1 = _mm_set_ps1((dy - f3) * (dy - f3));
+                                __m128 b2 = _mm_set_ps1((dy - f1) * (dy - f1));
+                                __m128 b3 = _mm_set_ps1((dy + f1) * (dy + f1));
+                                __m128 b4 = _mm_set_ps1((dy + f3) * (dy + f3));
+
+                                dists[0] = _mm_add_ps(a, b1);
+                                dists[1] = _mm_add_ps(a, b2);
+                                dists[2] = _mm_add_ps(a, b3);
+                                dists[3] = _mm_add_ps(a, b4);
+                            }
+                            //u32 radius = clipped_stroke->brush.radius;
+                            assert (radius > 0);
+                            assert (radius < sqrtf((FLT_MAX)));
+
+                            __m128 radius4 = _mm_set_ps1((f32)clipped_stroke->brush.radius *
+                                                         ninetales);
+
+                            // Perf note: We remove the sqrtf call when it's
+                            // safe to square the radius
+                            __m128 comparisons[4];
+                            __m128 ones = _mm_set_ps1(1.0f);
+                            if (radius >= (1 << 16))
+                            {
+                                dists[0] = _mm_sqrt_ps(dists[0]);
+                                dists[1] = _mm_sqrt_ps(dists[1]);
+                                dists[2] = _mm_sqrt_ps(dists[2]);
+                                dists[3] = _mm_sqrt_ps(dists[3]);
+                                comparisons[0] = _mm_cmplt_ps(dists[0], radius4);
+                                comparisons[1] = _mm_cmplt_ps(dists[1], radius4);
+                                comparisons[2] = _mm_cmplt_ps(dists[2], radius4);
+                                comparisons[3] = _mm_cmplt_ps(dists[3], radius4);
+                            }
+                            else
+                            {
+                                __m128 sq_radius = _mm_mul_ps(radius4, radius4);
+                                comparisons[0] = _mm_cmplt_ps(dists[0], sq_radius);
+                                comparisons[1] = _mm_cmplt_ps(dists[1], sq_radius);
+                                comparisons[2] = _mm_cmplt_ps(dists[2], sq_radius);
+                                comparisons[3] = _mm_cmplt_ps(dists[3], sq_radius);
+                            }
+                            __m128 sum = _mm_set_ps1(0);
+                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[0]));
+                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[1]));
+                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[2]));
+                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[3]));
+
+                            sum = _mm_add_ps(sum, _mm_movehl_ps(sum, sum));
+                            sum = _mm_add_ss(sum, _mm_shuffle_ps(sum, sum, 1));
+
+                            float fsamples;
+                            _mm_store_ss(&fsamples, sum);
+                            samples = (u32)fsamples;
+#endif
                         }
 
                         // If the stroke contributes to the pixel, do compositing.
@@ -641,9 +683,10 @@ static void render_canvas_in_block(Arena* render_arena,
 
                             acc_color = blend_v4f(dst, acc_color);
                         }
+
+                        /* g_kk_ccount += __rdtsc() - kk_ccount_begin; */
+                        /* g_kk_calls++; */
                     }
-                    g_total_ccount += __rdtsc() - ccount_begin;
-                    g_total_calls++;
                 }
                 if (acc_color.a > 0.99)
                 {
@@ -668,8 +711,12 @@ static void render_canvas_in_block(Arena* render_arena,
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }
             }
+            /* g_total_ccount += __rdtsc() - ccount_begin; */
+            /* g_total_calls++; */
         }
     }
+    /* g_abs_ccount += __rdtsc() - pre_ccount_begin; */
+    /* g_abs_calls ++; */
 }
 
 static void render_tile(MiltonState* milton_state,
@@ -787,11 +834,15 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
 {
     static u64 total = 0;
     static u64 ncalls = 0;
-    g_total_calls = 0;
-    g_total_ccount = 0;
+    /* g_total_calls = 0; */
+    /* g_total_ccount = 0; */
+    /* g_kk_calls = 0; */
+    /* g_kk_ccount = 0; */
     static u64 block_avg_sum = 0;
+    static u64 extra_avg_sum = 0;
+    static u64 abs_avg_sum = 0;
 
-    u64 ccount_begin = __rdtsc();
+    //u64 ccount_begin = __rdtsc();
 
     v2i canvas_reference = { 0 };
     Rect* blocks = NULL;
@@ -815,7 +866,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
             break;
         }
 
-#define RENDER_MULTITHREADED 0
+#define RENDER_MULTITHREADED 1
 #if RENDER_MULTITHREADED
         TileRenderData data =
         {
@@ -837,14 +888,34 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         arena_pop(&tile_arena);
 #endif
         ARENA_VALIDATE(milton_state->transient_arena);
-#if !RENDER_MULTITHREADED
+#if  0
         u64 ccount_total = __rdtsc() - ccount_begin;
         total += ccount_total;
         ncalls++;
-        milton_log("[MEASURE] render_canvas total: %lu. Avg: %lu\n", ccount_total, total / ncalls);
-        milton_log("[MEASURE] block render avg: %lu\n", g_total_ccount / g_total_calls);
-        block_avg_sum += (g_total_ccount / g_total_calls);
-        milton_log("[MEASURE] block render meta avg: %lu\n", block_avg_sum / ncalls);
+
+        if (ncalls)
+            milton_log("[MEASURE] render_canvas total: %lu. Avg: %lu\n", ccount_total, total / ncalls);
+        if (g_abs_ccount && ncalls)
+        {
+            abs_avg_sum += g_abs_ccount / g_abs_calls;
+            milton_log("[MEASURE] total meta avg: %lu (%lu)\n", abs_avg_sum / ncalls,
+                       g_abs_ccount / g_abs_calls);
+        }
+        if (g_total_calls)
+        {
+            //milton_log("[MEASURE] block render avg: %lu\n", g_total_ccount / g_total_calls);
+            block_avg_sum += (g_total_ccount / g_total_calls);
+        }
+        if (g_kk_calls)
+        {
+            //milton_log("[MEASURE] extra render avg: %lu\n", g_kk_ccount / g_kk_calls);
+            extra_avg_sum += (g_kk_ccount / g_kk_calls);
+        }
+        if (ncalls)
+        {
+            milton_log("[MEASURE] block render meta avg: %lu\n", block_avg_sum / ncalls);
+            milton_log("[MEASURE] extra render meta avg: %lu\n", extra_avg_sum / ncalls);
+        }
 #endif
     }
 

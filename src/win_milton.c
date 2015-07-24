@@ -581,7 +581,7 @@ int CALLBACK WinMain(
 
     win32_wacom_get_context(&win_state);
 
-    const size_t total_memory_size = 1 * 1024 * 1024 * 1024;  // Total memory requirement for Milton
+    const size_t total_memory_size = (size_t)2 * 1024 * 1024 * 1024;  // Total memory requirement for Milton
     const size_t frame_heap_in_MB = 32 * 1024 * 1024;         // Size of transient memory
 
     // Create root arena
@@ -640,7 +640,7 @@ int CALLBACK WinMain(
             milton_resize(milton_state, input.pan_delta, screen_size);
         }
 
-        input.flags |= MiltonInputFlags_FULL_REFRESH;
+        //input.flags |= MiltonInputFlags_FULL_REFRESH;
         milton_update(milton_state, &input);
         if (g_gui_msgs & GuiMsg_GL_DRAW)
         {

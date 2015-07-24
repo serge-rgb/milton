@@ -69,7 +69,7 @@ typedef struct TileRenderData_s
     i32     block_start;
 } TileRenderData;
 
-#define RENDER_QUEUE_SIZE 1024
+#define RENDER_QUEUE_SIZE 4096
 
 //typedef struct RenderQueue_s RenderQueue;
 typedef struct RenderQueue_s
@@ -339,7 +339,7 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
             *params = (WorkerParams) { milton_state, i };
         }
 
-        const size_t render_worker_memory = 16 * 1024 * 1024;
+        const size_t render_worker_memory = 64 * 1024 * 1024;
         milton_state->render_worker_arenas[i] = arena_spawn(milton_state->root_arena,
                                                             render_worker_memory);
 
@@ -370,8 +370,13 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
+#if 0
     milton_state->blocks_per_tile = 16;
     milton_state->block_width = 32;
+#else
+    milton_state->blocks_per_tile = 4;
+    milton_state->block_width = 32;
+#endif
 
     color_init(&milton_state->cm);
 
@@ -509,7 +514,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (input->flags & MiltonInputFlags_FAST_DRAW)
     {
-        milton_state->view->downsampling_factor = 2;
+        milton_state->view->downsampling_factor = (1 << 1);  // Forcing a power of two
         milton_state->current_mode |= MiltonMode_REQUEST_QUALITY_REDRAW;
     }
     else
