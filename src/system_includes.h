@@ -14,6 +14,7 @@
 
 // Local includes
 #ifdef MILTON_DESKTOP
+#include <xmmintrin.h>
 // Only include GLEW in Desktop build
 #define GLEW_STATIC
 #include <GL/glew.h>

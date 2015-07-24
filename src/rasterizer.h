@@ -310,11 +310,13 @@ static void render_canvas_in_block(Arena* render_arena,
 
                 assert (clipped_stroke);
 
+                assert (clipped_stroke->num_points % 2 == 0 || clipped_stroke->num_points <= 1);
+
 // Re-add block-filling.
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
-#if 0  // Visualize it with black
+#if 0 // Visualize it with black
                     v4f dst = {0};
 #else
                     v4f dst = clipped_stroke->brush.color;
@@ -327,11 +329,13 @@ static void render_canvas_in_block(Arena* render_arena,
                     u64 ccount_begin = __rdtsc();
                     v2i* points = clipped_stroke->points;
 
-                    v2i min_point = {0};
+                    i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
+
+                    v2i min_points[4] = {0};
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
                     f32 dy = 0;
-                    //int64 radius_squared = stroke->brush.radius * stroke->brush.radius;
+
                     if (clipped_stroke->num_points == 1)
                     {
                         v2i first_point = points[0];
@@ -339,20 +343,21 @@ static void render_canvas_in_block(Arena* render_arena,
                             first_point.x *= ninetales;
                             first_point.y *= ninetales;
                         }
-                        min_point = sub_v2i(first_point, reference_point);
-                        dx = (f32) (canvas_point.x - min_point.x);
-                        dy = (f32) (canvas_point.y - min_point.y);
+                        min_points[0] = sub_v2i(first_point, reference_point);
+                        dx = (f32) (canvas_point.x - min_points[0].x);
+                        dy = (f32) (canvas_point.y - min_points[0].y);
                         min_dist = dx * dx + dy * dy;
                     }
                     else
                     {
                         // Find closest point.
-#define USE_SSE 0
+#define USE_SSE 1
 #if !USE_SSE
+                        batch_size = 1;
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
                         {
-                            v2i a[4] = points[point_i];
-                            v2i b[4] = points[point_i + 1];
+                            v2i a = points[point_i];
+                            v2i b = points[point_i + 1];
                             {
                                 a.x *= ninetales;
                                 a.y *= ninetales;
@@ -375,83 +380,122 @@ static void render_canvas_in_block(Arena* render_arena,
                                 if (dist < min_dist)
                                 {
                                     min_dist = dist;
-                                    min_point = point;
+                                    min_points[0] = point;
                                     dx = test_dx;
                                     dy = test_dy;
                                 }
                             }
                         }
 #else
+
                         for (int point_i = 0;
                              point_i < clipped_stroke->num_points - 1;
-                             point_i += 2 * 1)
+                             point_i += 8)
+
                         {
                             // Load points
-                            // v2i a = points[point_i];
-                            // v2i b = points[point_i + 1];
+                            v2i as[4] = { 0 };
+                            v2i bs[4] = { 0 };
 
-                            v2i a = points[point_i];
-                            v2i b = points[point_i + 1];
-
-                            a.x *= ninetales;
-                            a.y *= ninetales;
-                            b.x *= ninetales;
-                            b.y *= ninetales;
-
-                            // Subtract to reference point (to keep floats from being too big)
-
-                            //a = sub_v2i(a, reference_point);
-                            a.x = a.x - reference_point.x;
-                            a.y = a.y - reference_point.y;
-                            // b = sub_v2i(b, reference_point);
-                            b.x = b.x - reference_point.x;
-                            b.y = b.y - reference_point.y;
-
-                            // Convert to floating point
-
-                            // v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
-                            f32 ab_x = (f32)(b.x - a.x);
-                            f32 ab_y = (f32)(b.y - a.y);
-
-                            // Calculate magnitude of segment
-                            f32 mag_ab2 = ab_x * ab_x + ab_y * ab_y;
-
-                            if (mag_ab2 > 0)
+                            batch_size = 0;
+                            for (i32 i = 0; i < 4; i++)
                             {
-                                v2i point;
-                                f32 mag_ab = sqrtf(mag_ab2);
-                                f32 d_x = ab_x / mag_ab;
-                                f32 d_y = ab_y / mag_ab;
-                                f32 ax_x = (f32)(canvas_point.x - a.x);
-                                f32 ax_y = (f32)(canvas_point.y - a.y);
-                                f32 disc = d_x * ax_x + d_y * ax_y;
-                                if (disc >= 0 && disc <= mag_ab)
+                                i32 index = point_i + 2*i;
+                                if (index + 1 >= clipped_stroke->num_points)
                                 {
-                                    point = (v2i)
-                                    {
-                                        (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
-                                    };
+                                    break;
                                 }
-                                else if (disc < 0)
-                                {
-                                    point = a;
-                                }
-                                else
-                                {
-                                    point = b;
-                                }
+                                as[i] = points[index    ];
+                                bs[i] = points[index + 1];
+                                batch_size++;
+                            }
 
-                                f32 test_dx = (f32) (canvas_point.x - point.x);
-                                f32 test_dy = (f32) (canvas_point.y - point.y);
-                                f32 dist = test_dx * test_dx + test_dy * test_dy;
-                                if (dist < min_dist)
+#define SSE_M(wide, i) ((f32 *)&(wide) + i)
+#define M SSE_M
+                            // Subtract to reference point (to keep floats from being too big)
+                            __m128 test_dx = _mm_set_ps1(0.0f);
+                            //f32 test_dx[4] = { 0 };
+                            __m128 test_dy = _mm_set_ps1(0.0f);
+                            //f32 test_dy[4] = { 0 };
+                            f32 ab_x[4] = { 0 };
+                            f32 ab_y[4] = { 0 };
+                            f32 mag_ab2[4] = { 0 };
+                            f32 mag_ab[4] = { 0 };
+                            f32 d_x[4] = { 0 };
+                            f32 d_y[4] = { 0 };
+                            f32 ax_x[4] = { 0 };
+                            f32 ax_y[4] = { 0 };
+                            f32 disc[4] = { 0 };
+
+                            //v2i closest_points[4] = { 0 };
+                            for (i32 i = 0; i < batch_size; ++i)
+                            {
+                                //a = sub_v2i(a, reference_point);
+                                as[i].x = as[i].x - reference_point.x;
+                                as[i].y = as[i].y - reference_point.y;
+                                // b = sub_v2i(b, reference_point);
+                                bs[i].x = bs[i].x - reference_point.x;
+                                bs[i].y = bs[i].y - reference_point.y;
+
+                                // Convert to floating point
+
+                                // v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
+                                ab_x[i] = (f32)(bs[i].x - as[i].x);
+                                ab_y[i] = (f32)(bs[i].y - as[i].y);
+
+                                // Calculate magnitude of segment
+                                mag_ab2[i] = ab_x[i] * ab_x[i] + ab_y[i] * ab_y[i];
+
+                                if (mag_ab2[i] > 0)
                                 {
-                                    min_dist = dist;
-                                    min_point = point;
-                                    dx = test_dx;
-                                    dy = test_dy;
+                                    mag_ab[i] = sqrtf(mag_ab2[i]);
+                                    d_x[i]    = ab_x[i] / mag_ab[i];
+                                    d_y[i]    = ab_y[i] / mag_ab[i];
+                                    ax_x[i]   = (f32)(canvas_point.x - as[i].x);
+                                    ax_y[i]   = (f32)(canvas_point.y - as[i].y);
+                                    disc[i]   = d_x[i] * ax_x[i] + d_y[i] * ax_y[i];
+                                    v2i point;
+                                    if (disc[i] >= 0 && disc[i] <= mag_ab[i])
+                                    {
+                                        //closest_points[i] = (v2i)
+                                        point = (v2i)
+                                        {
+                                            (i32)(as[i].x + disc[i] * d_x[i]),
+                                            (i32)(as[i].y + disc[i] * d_y[i]),
+                                        };
+                                    }
+                                    else if (disc[i] < 0)
+                                    {
+                                        //closest_points[i] = as[i];
+                                        point = as[i];
+                                    }
+                                    else
+                                    {
+                                        //closest_points[i] = bs[i];
+                                        point = bs[i];
+                                    }
+
+                                    //test_dx[i] = (f32) (canvas_point.x - closest_points[i].x);
+                                    //test_dy[i] = (f32) (canvas_point.y - closest_points[i].y);
+
+                                    *M(test_dx, i) = (f32) (canvas_point.x - point.x);
+                                    *M(test_dy, i) = (f32) (canvas_point.y - point.y);
+                                    __m128 dist4 = _mm_add_ps(
+                                                              _mm_mul_ps(test_dx, test_dx),
+                                                              _mm_mul_ps(test_dy, test_dy)
+                                                             );
+                                    f32 dist = *M(dist4, i);
+                                    if (dist < min_dist)
+                                    {
+                                        min_dist = dist;
+                                        //min_points[i] = closest_points[i];
+                                        min_points[i] = point;
+                                        dx = *M(test_dx, i);
+                                        dy = *M(test_dy, i);
+                                    }
                                 }
                             }
+
                         }
 #endif
                     }
@@ -544,7 +588,6 @@ static void render_canvas_in_block(Arena* render_arena,
                                 samples += (dists[14] < sq_radius);
                                 samples += (dists[15] < sq_radius);
                             }
-
                         }
 
                         // If the stroke contributes to the pixel, do compositing.
@@ -761,6 +804,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         arena_pop(&tile_arena);
 #endif
         ARENA_VALIDATE(milton_state->transient_arena);
+#if !RENDER_MULTITHREADED
         u64 ccount_total = __rdtsc() - ccount_begin;
         total += ccount_total;
         ncalls++;
@@ -768,6 +812,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         milton_log("[MEASURE] block render avg: %lu\n", g_total_ccount / g_total_calls);
         block_avg_sum += (g_total_ccount / g_total_calls);
         milton_log("[MEASURE] block render meta avg: %lu\n", block_avg_sum / ncalls);
+#endif
     }
 
 #if RENDER_MULTITHREADED
