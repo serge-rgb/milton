@@ -7,6 +7,11 @@ It is intended to be a reinvention from first principles of what a program for p
 
 Milton Paint is pre-alpha, currently in active development.
 
+Latest release
+--------------
+
+Milton [pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha001)
+
 Features
 --------
 
@@ -64,16 +69,18 @@ What Milton is not:
 
 Milton is not an image editor or a vector graphics editor. It's a program that lets you draw.
 
-How to Compile (Windows x64)
-============================
+How to Compile
+==============
 
-Requirements
-------------
+Windows x64
+-----------
+
 Visual Studio 2013 needs to be installed
 
 0. If needed, run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH.
 1. Run `setup.bat` to clone libNuwen, which is essentially the MIT-licensed part of Milton
 2. Build with `build.bat`
+3. Milton is compiled to `build\win_milton.exe`
 
 Workflow
 --------
@@ -81,8 +88,17 @@ Workflow
 You can use build.bat to build from your favorite editor/IDE. If you want to
 debug, I recommend doing `devenv build\win_milton.exe` and hitting F11.
 
+
+SDL (Linux and OSX)
+-------------------
+
+Currently only supporing Ubuntu or other Debian based systems. (Compiled on Ubuntu 15.04)
+
+0. `./setup.sh`
+1. `./build.sh`
+
 Android
-=======
+-------
 
 There's nothing to see here, just a GL triangle...
 
@@ -98,12 +114,12 @@ Thank You
 =========
 
 * Inspiration / Education
-    * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero 
-    
+    * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero
+
 * Rubber-ducking / Whiteboarding
     * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)
     * Luis Eduardo Pérez
-    * Mom 
+    * Mom
 
 * The "Jueves Sensual" team :)
     * Axel Becerril
@@ -116,7 +132,7 @@ Thank You
     * Santiago Montesinos
     * Aarón Reyes García
     * Vane Ugalde
-    
+
 
 To-Do
 =====

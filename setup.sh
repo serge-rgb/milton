@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ ! -d src/libserg ]; then
-    git clone https://github.com/bigmonachus/libserg.git src/libserg
+if [ ! -d src/libnuwen ]; then
+    git clone https://github.com/bigmonachus/libnuwen.git src/libnuwen
 else
-    pushd src/libserg
+    pushd src/libnuwen
     git pull
     popd
 fi
