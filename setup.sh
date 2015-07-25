@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ ! -d src/libnuwen ]; then
-    git clone https://github.com/bigmonachus/libnuwen.git src/libnuwen
+    git clone https://github.com/serge-rgb/libnuwen.git src/libnuwen
 else
     pushd src/libnuwen
     git pull

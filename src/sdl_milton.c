@@ -25,7 +25,7 @@
 
 #include "SDL.h"
 
-#include "libserg/memory.h"
+#include "libnuwen/memory.h"
 
 #define milton_log printf
 

@@ -33,3 +33,6 @@ third_party/SDL2-2.0.3/config.status
 third_party/SDL2-2.0.3/libtool
 third_party/SDL2-2.0.3/sdl2-config
 third_party/SDL2-2.0.3/sdl2.pc
+
+# Linux build
+milton

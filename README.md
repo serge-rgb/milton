@@ -92,10 +92,13 @@ debug, I recommend doing `devenv build\win_milton.exe` and hitting F11.
 SDL (Linux and OSX)
 -------------------
 
+Extremely early-stage. All it does is open a Window and close it after 3 seconds.
+
 Currently only supporing Ubuntu or other Debian based systems. (Compiled on Ubuntu 15.04)
 
 0. `./setup.sh`
 1. `./build.sh`
+2. Milton is compiled to `./milton`
 
 Android
 -------
