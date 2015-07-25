@@ -72,7 +72,7 @@ Requirements
 Visual Studio 2013 needs to be installed
 
 0. If needed, run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH.
-1. Run `setup.bat` to clone dependencies and build SDL.
+1. Run `setup.bat` to clone libNuwen, which is essentially the MIT-licensed part of Milton
 2. Build with `build.bat`
 
 Workflow
@@ -90,6 +90,34 @@ There's nothing to see here, just a GL triangle...
 2. `gradle installAllDebug`
 
 
+Contributing
+============
+Constructive criticisim is always welcome; especially if it comes with a pull request!
+
+Thank You
+=========
+
+* Inspiration / Education
+    * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero 
+    
+* Rubber-ducking / Whiteboarding
+    * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)
+    * Luis Eduardo Pérez
+    * Mom 
+
+* The "Jueves Sensual" team :)
+    * Axel Becerril
+    * Ruben Bañuelos
+    * Caro Barberena
+    * Carlos Chilazo
+    * Roberto Lapuente
+    * Joshua Mendoza
+    * Maximiliano Monterrubio
+    * Santiago Montesinos
+    * Aarón Reyes García
+    * Vane Ugalde
+    
+
 To-Do
 =====
 
@@ -102,11 +130,12 @@ To-Do
 
 * Roadmap
     * Fix color picker controls.
+    * Simple UI for brush size & opacity / eraser
+    * Wacom: Pressure levels
     * Wacom: Support for pan & rotate.
     * Undo: Only redraw necessary area.
     * SDL version for Linux & Mac
     * android: Compile w/NDK
     * android: Draw canvas
-    * ui: animated sprite.
     * ? iOS port ?
 
