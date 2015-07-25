@@ -1,7 +1,7 @@
 # Milton saves
 *.mlt
 
-src/libserg
+src/libnuwen
 src/metaprogram
 src/*.generated.h
 
