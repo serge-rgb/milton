@@ -169,6 +169,8 @@ inline v4f blend_v4f(v4f dst, v4f src)
     return result;
 }
 
+// Some globals I used to profile. Leaving them here for a while in case they
+// are called into action once more
 static u64 g_total_ccount = 0;
 static u64 g_total_calls  = 0;
 
@@ -684,8 +686,8 @@ static void render_canvas_in_block(Arena* render_arena,
                             acc_color = blend_v4f(dst, acc_color);
                         }
 
-                        /* g_kk_ccount += __rdtsc() - kk_ccount_begin; */
-                        /* g_kk_calls++; */
+                        g_kk_ccount += __rdtsc() - kk_ccount_begin;
+                        g_kk_calls++;
                     }
                 }
                 if (acc_color.a > 0.99)
@@ -711,12 +713,12 @@ static void render_canvas_in_block(Arena* render_arena,
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }
             }
-            /* g_total_ccount += __rdtsc() - ccount_begin; */
-            /* g_total_calls++; */
+            g_total_ccount += __rdtsc() - ccount_begin;
+            g_total_calls++;
         }
     }
-    /* g_abs_ccount += __rdtsc() - pre_ccount_begin; */
-    /* g_abs_calls ++; */
+    g_abs_ccount += __rdtsc() - pre_ccount_begin;
+    g_abs_calls ++;
 }
 
 static void render_tile(MiltonState* milton_state,
@@ -834,15 +836,15 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
 {
     static u64 total = 0;
     static u64 ncalls = 0;
-    /* g_total_calls = 0; */
-    /* g_total_ccount = 0; */
-    /* g_kk_calls = 0; */
-    /* g_kk_ccount = 0; */
+    g_total_calls = 0;
+    g_total_ccount = 0;
+    g_kk_calls = 0;
+    g_kk_ccount = 0;
     static u64 block_avg_sum = 0;
     static u64 extra_avg_sum = 0;
     static u64 abs_avg_sum = 0;
 
-    //u64 ccount_begin = __rdtsc();
+    u64 ccount_begin = __rdtsc();
 
     v2i canvas_reference = { 0 };
     Rect* blocks = NULL;
@@ -866,7 +868,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
             break;
         }
 
-#define RENDER_MULTITHREADED 1
+#define RENDER_MULTITHREADED 0
 #if RENDER_MULTITHREADED
         TileRenderData data =
         {
@@ -888,7 +890,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         arena_pop(&tile_arena);
 #endif
         ARENA_VALIDATE(milton_state->transient_arena);
-#if  0
+#if  1
         u64 ccount_total = __rdtsc() - ccount_begin;
         total += ccount_total;
         ncalls++;

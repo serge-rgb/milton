@@ -14,23 +14,25 @@ Features
 
     ![zoooom](http://i.imgur.com/fqOhPlr.gif)
 
-    With Milton, you don't pick a resolution, and you don't work with pixels.
-    Your work is stored as a sequence of commands, and rendered on the fly.
-    This means that you can export your work to bitmaps of arbitrary size.
+    You don't pick a resolution, and you don't work with pixels.  Your work is
+    stored as a sequence of commands, and rendered on the fly. Once it's
+    implemented, you will be able to export your work to bitmaps of arbitrary
+    size.
 
 - Simple
 
-    Milton solves a simple problem: Draw without pixels. It doesn't pretend to be
+    Milton solves a single problem: draw without pixels. It doesn't pretend to be
     something more than that. The UI will be simple, with a "no-manual-needed" motto.
 
 - Persistent
 
     No save button. Ctrl-S is *so* 1980's
 
-- Old-school software rasterizer.
+- Software rasterizer.
 
-    Milton doesn't use the GPU to do the heavy lifting. This gives us more
-    flexibility and less headaches than we would have by doing GPGPU programming.
+    Milton doesn't use the GPU to do the heavy lifting. This gives us the
+    flexibility to implement more complex functionality than we would if we were
+    using GPGPU. It also means a lot less headaches.
 
 - Fast and light-weight
 
@@ -40,12 +42,17 @@ Features
 
 - Gamma-correct alpha blending and 32-bit floating point per channel
 
-    You get the quality blending you would expect of a high-end product.
+    You get the quality you would expect of a high-end product.
+
+- Wacom support
+
+    It currently has basic support for Wacom, there will be support for pressure
+    sensitiviry and other good stuff
 
 - Multi-platform
 
-    Milton is developed on Windows, so that's what works right now. But there won't be an alpha until
-    it works on OSX and Linux. It will probably also end up on Android.
+    Milton is developed on Windows, so that's what works right now; but there won't be an alpha until
+    it works on OSX and Linux. Mobile support is planned
 
 - Open Source
 
@@ -76,7 +83,8 @@ debug, I recommend doing `devenv build\win_milton.exe` and hitting F11.
 
 Android
 =======
-Currently keeping up with Google moving everything to Gradle & Android Studio.
+
+There's nothing to see here, just a GL triangle...
 
 1. `cd android`
 2. `gradle installAllDebug`
@@ -89,17 +97,16 @@ To-Do
 
 * Bugs
     * Windows: going to sleep sends an invalid size!
-    * [WONT-FIX] pan doesn't work when maximized in 'classic' windows mode.
+    * pan doesn't work when maximized in 'classic' windows mode.
     * :)
 
 * Roadmap
+    * Fix color picker controls.
     * Wacom: Support for pan & rotate.
     * Undo: Only redraw necessary area.
     * SDL version for Linux & Mac
-    * SIMD-ify canvas rasterizer (SSE)
     * android: Compile w/NDK
     * android: Draw canvas
-    * Fix color picker controls.
     * ui: animated sprite.
     * ? iOS port ?
 

@@ -3,7 +3,7 @@
 
 #define MILTON_DESKTOP
 #include "system_includes.h"
-#include "libserg/memory.h"
+#include "libnuwen/memory.h"
 
 #ifdef _MSC_VER
 //#define inline __inline
@@ -539,7 +539,7 @@ int CALLBACK WinMain(
         return FALSE;
     }
 
-#if 0
+#if 1
     i32 x = 100;
     i32 y = 100;
 

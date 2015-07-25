@@ -1,22 +1,17 @@
 @echo off
 
 IF NOT EXIST build mkdir build
-IF EXIST src\libserg goto pull
+IF EXIST src\libnuwen goto pull
 goto clone
 :pull
-pushd src\libserg
+pushd src\libnuwen
 git pull
 popd
-goto sdl
+goto end
 
 :clone
-IF NOT EXIST src/libserg git clone https://github.com/bigmonachus/libserg.git src/libserg
+IF NOT EXIST src/libnuwen git clone https://github.com/serge-rgb/libnuwen.git src/libnuwen
 
-:sdl
-echo "==== Building SDL"
-pushd third_party
-msbuild SDL2-2.0.3\VisualC\SDL_VS2013.sln
-popd
-echo "==== Finished building SDL2. Hopefully went OK"
+:end
 @echo off
 
