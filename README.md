@@ -119,6 +119,9 @@ Thank You
 * Inspiration / Education
     * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero
 
+* Code contributions
+    * [https://github.com/jomendoz](Joshua Mendoza) - Linux build
+
 * Rubber-ducking / Whiteboarding
     * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)
     * Luis Eduardo Pérez
