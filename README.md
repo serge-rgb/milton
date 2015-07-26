@@ -120,7 +120,7 @@ Thank You
     * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero
 
 * Code contributions
-    * [https://github.com/jomendoz](Joshua Mendoza) - Linux build
+    * [Joshua Mendoza](https://github.com/jomendoz) - Linux build
 
 * Rubber-ducking / Whiteboarding
     * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)
