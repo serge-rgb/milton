@@ -7,10 +7,7 @@ It is intended to be a reinvention from first principles of what a program for p
 
 Milton Paint is pre-alpha, currently in active development.
 
-Latest release
---------------
-
-Milton [pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha001)
+### [Latest release (2015-07-25) pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha001)
 
 Features
 --------
@@ -80,13 +77,13 @@ Visual Studio 2013 needs to be installed
 0. If needed, run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH.
 1. Run `setup.bat` to clone libNuwen, which is essentially the MIT-licensed part of Milton
 2. Build with `build.bat`
-3. Milton is compiled to `build\win_milton.exe`
+3. Milton is compiled to `build\Milton.exe`
 
 Workflow
 --------
 
 You can use build.bat to build from your favorite editor/IDE. If you want to
-debug, I recommend doing `devenv build\win_milton.exe` and hitting F11.
+debug, I recommend doing `devenv build\Milton.exe` and hitting F11.
 
 
 SDL (Linux and OSX)
@@ -143,21 +140,28 @@ Thank You
 To-Do
 =====
 
-* Move this to github bug tracker :)
-
 * Bugs
     * Windows: going to sleep sends an invalid size!
     * pan doesn't work when maximized in 'classic' windows mode.
-    * :)
 
-* Roadmap
-    * Fix color picker controls.
-    * Simple UI for brush size & opacity / eraser
+* UI
+    * Fix color picker controls
+    * Brush / Eraser brushes.
+    * For brush size & opacity / eraser
+    * Milton icon.
+
+* Platforms
+    * Finish SDL port
+
+* Engine:
     * Wacom: Pressure levels
+    * Async rendering
     * Wacom: Support for pan & rotate.
     * Undo: Only redraw necessary area.
-    * SDL version for Linux & Mac
-    * android: Compile w/NDK
-    * android: Draw canvas
-    * ? iOS port ?
+    * Perf: Optimize small strokes away
+    * Perf: Stroke clipping
+    * Brush: Add elliptical brush
+    * Brush: Support for general, implicitly defined brushes
 
+* Mobile
+    * android: Init milton & draw

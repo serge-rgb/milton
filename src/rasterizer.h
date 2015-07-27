@@ -516,6 +516,7 @@ static void render_canvas_in_block(Arena* render_arena,
                             _mm_store_ps(dists, dist4);
                             _mm_store_ps(tests_dx, test_dx);
                             _mm_store_ps(tests_dy, test_dy);
+
                             for (i32 i = 0; i < batch_size; ++i)
                             {
                                 f32 dist = dists[i];
@@ -732,12 +733,8 @@ static void render_canvas_in_block(Arena* render_arena,
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }
             }
-            /* g_total_ccount += __rdtsc() - ccount_begin; */
-            /* g_total_calls++; */
         }
     }
-    /* g_abs_ccount += __rdtsc() - pre_ccount_begin; */
-    /* g_abs_calls ++; */
 }
 
 static void render_tile(MiltonState* milton_state,
@@ -855,10 +852,6 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
 {
     static u64 total = 0;
     static u64 ncalls = 0;
-    /* g_total_calls = 0; */
-    /* g_total_ccount = 0; */
-    /* g_kk_calls = 0; */
-    /* g_kk_ccount = 0; */
     static u64 block_avg_sum = 0;
     static u64 extra_avg_sum = 0;
     static u64 abs_avg_sum = 0;
@@ -909,35 +902,6 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         arena_pop(&tile_arena);
 #endif
         ARENA_VALIDATE(milton_state->transient_arena);
-#if  0
-        u64 ccount_total = __rdtsc() - ccount_begin;
-        total += ccount_total;
-        ncalls++;
-
-        if (ncalls)
-            milton_log("[MEASURE] render_canvas total: %lu. Avg: %lu\n", ccount_total, total / ncalls);
-        if (g_abs_ccount && ncalls)
-        {
-            abs_avg_sum += g_abs_ccount / g_abs_calls;
-            milton_log("[MEASURE] total meta avg: %lu (%lu)\n", abs_avg_sum / ncalls,
-                       g_abs_ccount / g_abs_calls);
-        }
-        if (g_total_calls)
-        {
-            //milton_log("[MEASURE] block render avg: %lu\n", g_total_ccount / g_total_calls);
-            block_avg_sum += (g_total_ccount / g_total_calls);
-        }
-        if (g_kk_calls)
-        {
-            //milton_log("[MEASURE] extra render avg: %lu\n", g_kk_ccount / g_kk_calls);
-            extra_avg_sum += (g_kk_ccount / g_kk_calls);
-        }
-        if (ncalls)
-        {
-            milton_log("[MEASURE] block render meta avg: %lu\n", block_avg_sum / ncalls);
-            milton_log("[MEASURE] extra render meta avg: %lu\n", extra_avg_sum / ncalls);
-        }
-#endif
     }
 
 #if RENDER_MULTITHREADED

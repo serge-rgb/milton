@@ -613,6 +613,7 @@ int CALLBACK WinMain(
                 PAGE_READWRITE//  flProtect
                 );
 
+
     assert (big_chunk_of_memory);
     Arena root_arena = arena_init(big_chunk_of_memory, total_memory_size);
     // Create a transient arena, called once per update

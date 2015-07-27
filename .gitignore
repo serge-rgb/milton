@@ -8,7 +8,7 @@ src/*.generated.h
 third_party/build
 
 # Visual Studio crap
-build/win_milton.sln
+build/Milton.sln
 third_party/SDL2-2.0.3/VisualC
 *.vcxproj.user
 *.sdf
