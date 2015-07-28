@@ -189,7 +189,7 @@ static void milton_gl_backend_draw(MiltonState* milton_state)
     glBindVertexArray(gl->quad_vao);
 #else
     GLint pos_loc     = glGetAttribLocation(gl->quad_program, "position");
-    GLint sampler_loc = glGetUniformLocation(gl->quad_program, "buffer");
+    GLint sampler_loc = glGetUniformLocation(gl->quad_program, "raster_buffer");
     assert (pos_loc     >= 0);
     assert (sampler_loc >= 0);
     GLCHK (glUniform1i(sampler_loc, 0 /*GL_TEXTURE0*/));
@@ -226,14 +226,14 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         shader_contents[1] =
             "#version 330\n"
             "\n"
-            "uniform sampler2D buffer;\n"
+            "uniform sampler2D raster_buffer;\n"
             "in vec2 coord;\n"
             "out vec4 out_color;\n"
             "\n"
             "void main(void)\n"
             "{\n"
             // TODO: Why RGB to BGR?
-            "   out_color = texture(buffer, coord).bgra;"
+            "   out_color = texture(raster_buffer, coord).bgra;"
             "}\n";
 
         GLuint shader_objects[2] = {0};
@@ -283,7 +283,7 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         GLCHK (glBindBuffer(GL_ARRAY_BUFFER, milton_state->gl->vbo));
 
         GLint pos_loc     = glGetAttribLocation(milton_state->gl->quad_program, "position");
-        GLint sampler_loc = glGetUniformLocation(milton_state->gl->quad_program, "buffer");
+        GLint sampler_loc = glGetUniformLocation(milton_state->gl->quad_program, "raster_buffer");
         assert (pos_loc     >= 0);
         assert (sampler_loc >= 0);
         GLCHK (glBufferData (GL_ARRAY_BUFFER, sizeof(vert_data), vert_data, GL_STATIC_DRAW));
