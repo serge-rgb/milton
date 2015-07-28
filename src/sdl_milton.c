@@ -16,22 +16,23 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-#include <stdlib.h>
-#include <stdio.h>
-
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-
 #include "SDL.h"
+
+#define MILTON_DESKTOP
+#include "system_includes.h"
+
+int milton_main();
+
+#if defined(_WIN32)
+#include "platform_windows.h"
+#elif defined(__linux__)
+#endif
 
 #include "libnuwen/memory.h"
 
-#define milton_log printf
-
 #include "milton.h"
 
-int main()
+int milton_main()
 {
     // Note: Possible crash regarind SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
@@ -50,4 +51,6 @@ int main()
     }
     SDL_Delay(3000);
     SDL_Quit();
+
+    return 0;
 }

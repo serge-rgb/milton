@@ -8,7 +8,8 @@ goto end
 
 :err
 
-set errorlevel=1
+rem ERRORLEVEL = 1
+(call)
 
 :end
 popd

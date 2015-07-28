@@ -15,55 +15,43 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#ifdef _WIN32
-#pragma warning(push, 0)
 
+// The returns value mean different things, but other than that, we're ok
 #ifdef _MSC_VER
-
-#if 1
-#define inline __forceinline
-#else
-#define inline static         // Mostly for ease of profiling
-#endif
-#endif // _MSC_VER
-
-#endif  // _WIN32
-
-#ifdef _WIN32
-#include <windows.h>
-#include <windowsx.h>
+#define snprintf sprintf_s
 #endif
 
-// Platform independent includes:
-#include <assert.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
+void win32_log(char *format, ...);
+#define milton_log win32_log
 
-// Local includes
-#ifdef MILTON_DESKTOP
+void win32_log(char *format, ...)
+{
+	char message[ 128 ];
 
-#include <xmmintrin.h>
-#include <emmintrin.h>
+	int num_bytes_written = 0;
 
-#ifdef _WIN32
-// Only include GLEW in Desktop build
-#define GLEW_STATIC
-#include <GL/glew.h>
-#include <GL/wglew.h>
+	va_list args;
 
-#elif defined(__linux__)
+	assert ( format );
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
+	va_start( args, format );
 
-// __linux__
-#endif // defined(platform)
+	num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
 
-#endif // MILTON_DESKTOP
+	if ( num_bytes_written > 0 )
+	{
+            OutputDebugStringA( message );
+	}
 
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
+	va_end( args );
+}
 
+int CALLBACK WinMain(
+        HINSTANCE hInstance,
+        HINSTANCE hPrevInstance,
+        LPSTR lpCmdLine,
+        int nCmdShow
+        )
+{
+	milton_main();
+}

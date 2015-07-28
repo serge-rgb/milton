@@ -20,14 +20,6 @@
 #include "system_includes.h"
 #include "libnuwen/memory.h"
 
-#ifdef _MSC_VER
-//#define inline __inline
-#if 1
-#define inline __forceinline  // This don't do shit...
-#else
-#define inline static         // Mostly for ease of profiling
-#endif
-#endif _MSC_VER
 
 #define snprintf sprintf_s
 
@@ -288,8 +280,17 @@ static MiltonInput win32_process_input(Win32State* win_state, HWND window)
                 }
 #endif
             }
-        // Wacom support
 #if 0
+        // Wacom support
+        case WT_PACKET:
+            {
+                LONG pkt;
+                if (win_state->wacom.WTPacket(win_state->wacom_ctx, (UINT)message.wParam, &pkt))
+                {
+
+                }
+                break;
+            }
         case WT_PACKET:
             {
                 HCTX hctx = (HCTX)message.lParam;
