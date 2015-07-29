@@ -142,8 +142,7 @@ To-Do
 =====
 
 * Bugs
-    * Windows: going to sleep sends an invalid size!
-    * pan doesn't work when maximized in 'classic' windows mode.
+    * :)
 
 * UI
     * Fix color picker controls
@@ -152,11 +151,12 @@ To-Do
     * Milton icon.
 
 * Platforms
-    * Finish SDL port
+    * Finish Linux port
     * Figure out Wacom on linux
     * Figure out Wacom on OSX
 
 * Engine:
+    * Memory: remove all fixed limits
     * Wacom: Pressure levels
     * Async rendering
     * Wacom: Support for pan & rotate.

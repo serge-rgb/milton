@@ -205,7 +205,7 @@ static void render_canvas_in_block(Arena* render_arena,
                                    u32* pixels,
                                    Rect raster_limits)
 {
-    u64 pre_ccount_begin = __rdtsc();
+    //u64 pre_ccount_begin = __rdtsc();
     Rect canvas_limits;
     {
         canvas_limits.top_left  = raster_to_canvas(view, raster_limits.top_left);
@@ -310,7 +310,7 @@ static void render_canvas_in_block(Arena* render_arena,
     {
         for (i32 i = raster_limits.left; i < raster_limits.right; i += pixel_jump)
         {
-            u64 ccount_begin = __rdtsc();
+            //u64 ccount_begin = __rdtsc();
             v2i raster_point = {i, j};
             v2i canvas_point = raster_to_canvas(view, raster_point);
             {
@@ -1070,9 +1070,9 @@ static void render_picker(ColorPicker* picker,
 
 typedef enum
 {
-    MiltonRenderFlags_none              = 0,
-    MiltonRenderFlags_picker_updated    = (1 << 0),
-    MiltonRenderFlags_full_redraw       = (1 << 1),
+    MiltonRenderFlags_NONE              = 0,
+    MiltonRenderFlags_PICKER_UPDATED    = (1 << 0),
+    MiltonRenderFlags_FULL_REDRAW       = (1 << 1),
 } MiltonRenderFlags;
 
 static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
@@ -1083,7 +1083,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
 
     // Figure out what `raster_limits` should be.
     {
-        if (render_flags & MiltonRenderFlags_full_redraw)
+        if (render_flags & MiltonRenderFlags_FULL_REDRAW)
         {
             raster_limits.left = 0;
             raster_limits.right = milton_state->view->screen_size.w;
@@ -1162,7 +1162,7 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
             redraw = true;
         }
 
-        if (redraw || (render_flags & MiltonRenderFlags_picker_updated))
+        if (redraw || (render_flags & MiltonRenderFlags_PICKER_UPDATED))
         {
             render_canvas(milton_state, raster_buffer, picker_rect);
 
