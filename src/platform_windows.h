@@ -21,6 +21,16 @@
 #define snprintf sprintf_s
 #endif
 
+#define HEAP_BEGIN_ADDRESS NULL
+#ifndef NDEBUG
+#undef HEAP_BEGIN_ADDRESS
+#define HEAP_BEGIN_ADDRESS (LPVOID)(1024LL * 1024 * 1024 * 1024)
+#endif
+#define allocate_big_chunk_of_memory(total_memory_size) VirtualAlloc(HEAP_BEGIN_ADDRESS, \
+								     (total_memory_size),\
+								     MEM_COMMIT | MEM_RESERVE, \
+								     PAGE_READWRITE) \
+
 void win32_log(char *format, ...);
 #define milton_log win32_log
 

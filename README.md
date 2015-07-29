@@ -89,7 +89,7 @@ debug, I recommend doing `devenv build\Milton.exe` and hitting F11.
 SDL (Linux and OSX)
 -------------------
 
-Extremely early-stage. All it does is open a Window and close it after 3 seconds.
+### Currently not working.
 
 Currently only supporing Ubuntu or other Debian based systems. (Compiled on Ubuntu 15.04)
 
@@ -153,6 +153,8 @@ To-Do
 
 * Platforms
     * Finish SDL port
+    * Figure out Wacom on linux
+    * Figure out Wacom on OSX
 
 * Engine:
     * Wacom: Pressure levels
