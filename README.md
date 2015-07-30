@@ -136,35 +136,3 @@ Thank You
     * Santiago Montesinos
     * Aarón Reyes García
     * Vane Ugalde
-
-
-To-Do
-=====
-
-* Bugs
-    * :)
-
-* UI
-    * Fix color picker controls
-    * Brush / Eraser brushes.
-    * For brush size & opacity / eraser
-    * Milton icon.
-
-* Platforms
-    * Finish Linux port
-    * Figure out Wacom on linux
-    * Figure out Wacom on OSX
-
-* Engine:
-    * Memory: remove all fixed limits
-    * Wacom: Pressure levels
-    * Async rendering
-    * Wacom: Support for pan & rotate.
-    * Undo: Only redraw necessary area.
-    * Perf: Optimize small strokes away
-    * Perf: Stroke clipping
-    * Brush: Add elliptical brush
-    * Brush: Support for general, implicitly defined brushes
-
-* Mobile
-    * android: Init milton & draw

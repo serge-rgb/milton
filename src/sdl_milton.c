@@ -103,7 +103,7 @@ int milton_main()
         milton_state->root_arena = &root_arena;
         milton_state->transient_arena = &transient_arena;
 
-        milton_init(milton_state, 4000, 2000);
+        milton_init(milton_state);
     }
 
     PlatformInput platform_input = { 0 };

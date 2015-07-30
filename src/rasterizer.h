@@ -28,7 +28,7 @@ struct ClippedStroke_s
     ClippedStroke* next;
 };
 
-static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect rect)
+static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect canvas_rect)
 {
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
     {
@@ -38,7 +38,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     }
     if (stroke->num_points == 1)
     {
-        if (is_inside_rect(rect, stroke->points[0]))
+        if (is_inside_rect(canvas_rect, stroke->points[0]))
         {
             clipped_stroke->points[clipped_stroke->num_points++] = stroke->points[0];
         }
@@ -53,10 +53,10 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
             v2i b = stroke->points[point_i + 1];
 
             // Very conservative...
-            b32 inside = !((a.x > rect.right && b.x > rect.right) ||
-                           (a.x < rect.left && b.x < rect.left) ||
-                           (a.y < rect.top && b.y < rect.top) ||
-                           (a.y > rect.bottom && b.y > rect.bottom));
+            b32 inside = !((a.x > canvas_rect.right && b.x > canvas_rect.right) ||
+                           (a.x < canvas_rect.left && b.x < canvas_rect.left) ||
+                           (a.y < canvas_rect.top && b.y < canvas_rect.top) ||
+                           (a.y > canvas_rect.bottom && b.y > canvas_rect.bottom));
 
             // We can add the segment
             if (inside)
@@ -860,6 +860,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
 
     v2i canvas_reference = { 0 };
     Rect* blocks = NULL;
+
     i32 num_blocks = rect_split(milton_state->transient_arena,
             raster_limits, milton_state->block_width, milton_state->block_width, &blocks);
 

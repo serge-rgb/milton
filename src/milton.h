@@ -104,9 +104,9 @@ typedef struct RenderQueue_s
 
 typedef struct MiltonState_s
 {
-    i32     max_width;              // Dimensions of the raster
-    i32     max_height;
     u8      bytes_per_pixel;
+    i32     max_width;
+    i32     max_height;
     u8*     raster_buffers[2];      // Double buffering, for render jobs that may not finish.
     i32     raster_buffer_index;
 
@@ -344,7 +344,7 @@ static void milton_set_default_brush(MiltonState* milton_state)
     milton_state->brush = brush;
 }
 
-static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_height)
+static void milton_init(MiltonState* milton_state)
 {
 
     // Initialize render queue
@@ -388,19 +388,13 @@ static void milton_init(MiltonState* milton_state, i32 max_width , i32 max_heigh
 #endif
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
-    milton_state->max_width        = max_width;
-    milton_state->max_height       = max_height;
     milton_state->bytes_per_pixel  = 4;
     milton_state->num_strokes      = 0;
 
     milton_state->current_mode = MiltonMode_BRUSH;
 
-    i64 raster_buffer_size =
-        milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
-    milton_state->raster_buffers[0] =
-        arena_alloc_array(milton_state->root_arena, raster_buffer_size, u8);
-    milton_state->raster_buffers[1] =
-        arena_alloc_array(milton_state->root_arena, raster_buffer_size, u8);
+    milton_state->raster_buffers[0] = NULL;
+    milton_state->raster_buffers[1] = NULL;
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
@@ -480,6 +474,43 @@ inline b32 is_user_drawing(MiltonState* milton_state)
 
 static void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
+    if (new_screen_size.w > 8000 ||
+        new_screen_size.h > 8000 ||
+        new_screen_size.w <= 0 ||
+        new_screen_size.h <= 0 )
+    {
+        return;
+    }
+
+    b32 do_realloc = false;
+    if (milton_state->max_width <= new_screen_size.w)
+    {
+        milton_state->max_width = new_screen_size.w + 256;
+        do_realloc = true;
+    }
+    if (milton_state->max_height <= new_screen_size.h)
+    {
+        milton_state->max_height = new_screen_size.h + 256;
+        do_realloc = true;
+    }
+
+    size_t buffer_size =
+            milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
+
+    if (do_realloc)
+    {
+        for (i32 i = 0; i < 2; ++i)
+        {
+            void* raster_buffer = (void*)milton_state->raster_buffers[i];
+            if (raster_buffer)
+            {
+                free(raster_buffer);
+            }
+            milton_state->raster_buffers[i] = (u8*)malloc( buffer_size );
+            assert(milton_state->raster_buffers[i]);
+        }
+    }
+
     if (new_screen_size.w < milton_state->max_width &&
         new_screen_size.h < milton_state->max_height)
     {
@@ -530,7 +561,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             (input->flags & MiltonInputFlags_UNDO) ||
             (input->flags & MiltonInputFlags_REDO);
 
-    arena_reset(milton_state->transient_arena);
+    //arena_reset(milton_state->transient_arena);
 
     MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
 
