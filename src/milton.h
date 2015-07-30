@@ -85,6 +85,7 @@ typedef struct TileRenderData_s
 } TileRenderData;
 
 #define RENDER_QUEUE_SIZE 4096
+#define STROKE_MAX_POINTS 2048
 
 //typedef struct RenderQueue_s RenderQueue;
 typedef struct RenderQueue_s
@@ -389,12 +390,12 @@ static void milton_init(MiltonState* milton_state)
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->bytes_per_pixel  = 4;
+
+    milton_state->working_stroke.points = arena_alloc_array(milton_state->root_arena,
+                                                            STROKE_MAX_POINTS, v2i);
     milton_state->num_strokes      = 0;
 
     milton_state->current_mode = MiltonMode_BRUSH;
-
-    milton_state->raster_buffers[0] = NULL;
-    milton_state->raster_buffers[1] = NULL;
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
@@ -713,7 +714,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
             // TODO: make deque!!
-            if (milton_state->working_stroke.num_points < LIMIT_STROKE_POINTS)
+            if (milton_state->working_stroke.num_points < STROKE_MAX_POINTS)
             {
                 // Add to current stroke.
                 int index = milton_state->working_stroke.num_points++;
@@ -761,8 +762,18 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
                 milton_state->num_strokes < 4096)
             {
                 // Copy current stroke.
-                // Note: Caution when moving points out of a stack array. This is a shallow copy
-                milton_state->strokes[milton_state->num_strokes++] = milton_state->working_stroke;
+                Stroke new_stroke =
+                {
+                    .brush = milton_state->working_stroke.brush,
+                    .points = arena_alloc_array(milton_state->root_arena,
+                                                milton_state->working_stroke.num_points,
+                                                v2i),
+                    .num_points = milton_state->working_stroke.num_points,
+                };
+                memcpy(new_stroke.points,
+                       milton_state->working_stroke.points,
+                       milton_state->working_stroke.num_points * sizeof(v2i));
+                milton_state->strokes[milton_state->num_strokes++] = new_stroke;
                 // Clear working_stroke
                 {
                     milton_state->working_stroke.num_points = 0;

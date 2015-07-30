@@ -73,6 +73,7 @@ static void milton_load(MiltonState* milton_state)
         Stroke* stroke = &milton_state->strokes[stroke_i];
         fread(&stroke->brush, sizeof(Brush), 1, fd);
         fread(&stroke->num_points, sizeof(i32), 1, fd);
+        stroke->points = arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);
         fread(stroke->points, sizeof(v2i), stroke->num_points, fd);
     }
 

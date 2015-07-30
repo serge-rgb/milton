@@ -1,0 +1,43 @@
+To-Do
+=====
+
+- Bugs
+    - :)
+
+- To-Do
+
+    - Finish Linux port
+
+    - Memory: Less stupid solutions
+        - Strokes: Resizeable arrays
+        - ClippedStrokes: Per worker, arena alloc'd
+        - Render Queue: Figure out what to do on emergency?
+
+    - Remove libnuwen?
+        - Remove threads
+        - Arena?
+
+    - Fix color picker controls
+        - Only rotate when inside geometry
+        - Highlight choice w/circle
+        - Disappearing wheel?
+
+    - Figure out the GUI situation
+    - Brush / Eraser buttons
+    - Sliders for brush size & opacity / eraser
+
+    - Figure out Wacom on linux
+    - Figure out Wacom on OSX
+
+    - Wacom: Pressure levels
+    - Async rendering
+    - Wacom: Support for pan & rotate.
+    - Undo: Only redraw necessary area.
+    - Perf: Optimize small strokes away
+    - Perf: Stroke clipping
+
+    - Brush: Add elliptical brush
+    - Brush: Support for general, implicitly defined brushes
+
+    - "Layers". History viewer?
+

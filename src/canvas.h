@@ -23,13 +23,10 @@ typedef struct Brush_s
     f32     alpha;
 } Brush;
 
-#define LIMIT_STROKE_POINTS 1024
 typedef struct Stroke_s
 {
     Brush   brush;
-    // TODO turn this into a deque
-    v2i     points[LIMIT_STROKE_POINTS];
-
+    v2i*    points;
     i32     num_points;
 } Stroke;
 

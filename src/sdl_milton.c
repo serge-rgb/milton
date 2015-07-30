@@ -145,6 +145,11 @@ int milton_main()
                         {
                             platform_input.pan_start = (v2i) { event.button.x, event.button.y };
                         }
+                        else
+                        {
+                            input_point = (v2i){ event.motion.x, event.motion.y };
+                            milton_input.point = &input_point;
+                        }
                     }
                     break;
                 }
