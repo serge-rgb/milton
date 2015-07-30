@@ -22,7 +22,6 @@ struct ClippedStroke_s
     b32     fills_block;
     Brush   brush;
     i32     num_points;
-    v2i     canvas_reference;
     v2i*    points;
 
     ClippedStroke* next;
@@ -240,9 +239,6 @@ static void render_canvas_in_block(Arena* render_arena,
     {0};
 #endif
 
-    // Go backwards so that list is in the correct older->newer order.
-    //for (int stroke_i = num_strokes; stroke_i >= 0; --stroke_i)
-    // == Nope!
     // Go forwards so we can do early reject with premultiplied alpha!
     for (i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
     {
@@ -905,7 +901,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         ARENA_VALIDATE(milton_state->transient_arena);
     }
 
-#if RENDER_MULTITHREADED
+#if RENDER_MULTITHREADED && 1
     // Wait for workers to finish.
 
     while(tile_acc)

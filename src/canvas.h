@@ -32,7 +32,6 @@ typedef struct Stroke_s
 
 typedef struct CanvasView_s
 {
-    v2i     canvas_tile_focus;      // Coordinates are relative to this.
     v2i     screen_size;            // Size in pixels
     i32     scale;                  // Zoom
     v2i     screen_center;          // In pixels

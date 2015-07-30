@@ -8,10 +8,9 @@ To-Do
 
     - Finish Linux port
 
-    - Memory: Less stupid solutions
-        - Strokes: Resizeable arrays
-        - ClippedStrokes: Per worker, arena alloc'd
-        - Render Queue: Figure out what to do on emergency?
+    - Memory:
+        - Remove ClippedStrokes. How?
+        - Render Queue: Fail gracefully
 
     - Remove libnuwen?
         - Remove threads

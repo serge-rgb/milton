@@ -38,14 +38,13 @@ inline u32 word_swap_memory_order(u32 word)
             (u32)(hhi);
 }
 
-// TODO: handle failures gracefully.
 static void milton_load(MiltonState* milton_state)
 {
     FILE* fd = fopen("MiltonPersist.mlt", "rb");
     if (!fd)
     {
         milton_log("Warning. Did not find persist file.\n");
-        return;
+        goto end;
     }
 
     u32 milton_magic = (u32)-1;
@@ -58,7 +57,7 @@ static void milton_load(MiltonState* milton_state)
     if (milton_magic != MILTON_MAGIC_NUMBER)
     {
         assert (!"Magic number not found");
-        return;
+        goto end;
     }
 
     i32 num_strokes = -1;
@@ -73,11 +72,18 @@ static void milton_load(MiltonState* milton_state)
         Stroke* stroke = &milton_state->strokes[stroke_i];
         fread(&stroke->brush, sizeof(Brush), 1, fd);
         fread(&stroke->num_points, sizeof(i32), 1, fd);
+        if (stroke->num_points >= STROKE_MAX_POINTS ||
+            stroke->num_points <= 0)
+        {
+            // Corrupt file. Avoid this read
+            stroke_i--;     // Pretend this never happened
+            continue;       // Do not allocate, just move on.
+        }
         stroke->points = arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);
         fread(stroke->points, sizeof(v2i), stroke->num_points, fd);
     }
 
-
+end:
     fclose(fd);
 }
 

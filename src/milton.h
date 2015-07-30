@@ -412,8 +412,6 @@ static void milton_init(MiltonState* milton_state)
     // Set the view
     {
         milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
-        // view->screen_size is set by the platform abstraction layer.
-        // view->screen_center is also set there.
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         milton_state->view->downsampling_factor = 1;
         milton_state->view->canvas_tile_radius = 1024 * 1024 * 512;
@@ -508,6 +506,7 @@ static void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_scre
                 free(raster_buffer);
             }
             milton_state->raster_buffers[i] = (u8*)malloc( buffer_size );
+            // TODO: handle this failure gracefully.
             assert(milton_state->raster_buffers[i]);
         }
     }
@@ -525,22 +524,18 @@ static void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_scre
 
         while (pan_vector.x > milton_state->view->canvas_tile_radius)
         {
-            milton_state->view->canvas_tile_focus.x++;
             pan_vector.x -= milton_state->view->canvas_tile_radius;
         }
         while (pan_vector.x <= -milton_state->view->canvas_tile_radius)
         {
-            milton_state->view->canvas_tile_focus.x--;
             pan_vector.x += milton_state->view->canvas_tile_radius;
         }
         while (pan_vector.y > milton_state->view->canvas_tile_radius)
         {
-            milton_state->view->canvas_tile_focus.y++;
             pan_vector.y -= milton_state->view->canvas_tile_radius;
         }
         while (pan_vector.y <= -milton_state->view->canvas_tile_radius)
         {
-            milton_state->view->canvas_tile_focus.y--;
             pan_vector.y += milton_state->view->canvas_tile_radius;
         }
         milton_state->view->pan_vector = pan_vector;
