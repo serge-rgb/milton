@@ -116,9 +116,12 @@ Thank You
 * Inspiration / Education
     * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero
 
-* Code contributions
+* Code
     * [Michael Freundorfer](https://github.com/mordecai154)
     * [Joshua Mendoza](https://github.com/jomendoz)
+
+* Art & Feedback
+    * [Perla Fierro](http://portafolio.eclat-studio.com/)
 
 * Rubber-ducking / Whiteboarding
     * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)

@@ -33,9 +33,10 @@ int milton_main();
 #include "milton.h"
 
 
-typedef struct PlatformInput
+typedef struct PlatformInput_s
 {
     b32 is_ctrl_down;
+    b32 is_space_down;
     b32 is_pointer_down;  // Left click or wacom input
     v2i pan_start;
     v2i pan_point;
@@ -141,7 +142,7 @@ int milton_main()
                     if (event.button.button == SDL_BUTTON_LEFT)
                     {
                         platform_input.is_pointer_down = true;
-                        if (platform_input.is_ctrl_down)
+                        if (platform_input.is_space_down)
                         {
                             platform_input.pan_start = (v2i) { event.button.x, event.button.y };
                         }
@@ -172,23 +173,25 @@ int milton_main()
                     {
                         break;
                     }
-                    if (platform_input.is_pointer_down && !platform_input.is_ctrl_down)
+                    if (platform_input.is_pointer_down)
                     {
-                        input_point = (v2i){ event.motion.x, event.motion.y };
-                        milton_input.point = &input_point;
-                    }
-                    else if (platform_input.is_pointer_down && platform_input.is_ctrl_down)
-                    {
-                        platform_input.pan_point = (v2i){ event.motion.x, event.motion.y };
+                        if (!platform_input.is_space_down)
+                        {
+                            input_point = (v2i){ event.motion.x, event.motion.y };
+                            milton_input.point = &input_point;
+                        }
+                        else if (platform_input.is_space_down)
+                        {
+                            platform_input.pan_point = (v2i){ event.motion.x, event.motion.y };
 
-                        milton_input.flags |= MiltonInputFlags_FAST_DRAW;
-                        milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
+                            milton_input.flags |= MiltonInputFlags_FAST_DRAW;
+                            milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
+                        }
                     }
                     break;
                 }
             case SDL_MOUSEWHEEL:
                 {
-
                     if (event.wheel.windowID != window_id)
                     {
                         break;
@@ -201,6 +204,11 @@ int milton_main()
                 }
             case SDL_KEYDOWN:
                 {
+                    if (event.wheel.windowID != window_id)
+                    {
+                        break;
+                    }
+
                     if (event.key.repeat)
                     {
                         break;
@@ -209,6 +217,10 @@ int milton_main()
                     if (keycode == SDLK_ESCAPE)
                     {
                         should_quit = true;
+                    }
+                    if (keycode == SDLK_SPACE)
+                    {
+                        platform_input.is_space_down = true;
                     }
                     if (platform_input.is_ctrl_down)
                     {
@@ -237,6 +249,21 @@ int milton_main()
                         }
                     }
 
+                    break;
+                }
+            case SDL_KEYUP:
+                {
+                    if (event.wheel.windowID != window_id)
+                    {
+                        break;
+                    }
+
+                    SDL_Keycode keycode = event.key.keysym.sym;
+
+                    if (keycode == SDLK_SPACE)
+                    {
+                        platform_input.is_space_down = false;
+                    }
                     break;
                 }
             case SDL_WINDOWEVENT:
