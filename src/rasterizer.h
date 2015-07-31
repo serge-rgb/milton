@@ -285,20 +285,18 @@ static void render_canvas_in_block(Arena* render_arena,
         reference_point.y *= ninetales;
     }
 
-    // Set our `stroke_list` to begin at the first opaque stroke that fills
+    // Set our `stroke_list` to end at the first opaque stroke that fills
     // this block.
-    // TODO: RECHECK THIS
-#if 0
     ClippedStroke* list_iter = stroke_list;
     while (list_iter)
     {
         if (list_iter->fills_block && list_iter->brush.color.a == 1.0f)
         {
-            stroke_list = list_iter;
+            list_iter->next = NULL;
+            break;
         }
         list_iter = list_iter->next;
     }
-#endif
 
     i32 pixel_jump = view->downsampling_factor;  // Different names for the same thing.
 
