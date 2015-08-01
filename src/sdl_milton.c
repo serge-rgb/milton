@@ -57,12 +57,10 @@ int milton_main()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
     SDL_GL_SetSwapInterval(0);
 
     SDL_Window* window = SDL_CreateWindow("Milton",
-                                          0,0,
-                                 //SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                          SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                           width, height,
                                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
