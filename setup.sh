@@ -3,9 +3,9 @@
 if [ ! -d src/libnuwen ]; then
     git clone https://github.com/serge-rgb/libnuwen.git src/libnuwen
 else
-    pushd src/libnuwen
+    cd src/libnuwen
     git pull
-    popd
+    cd ../..
 fi
 
 cd third_party/
@@ -32,7 +32,7 @@ else
     echo "Couldn't find installer. Exiting..."
     exit 1
 fi
-    
+
 
 if [ ! -d build ]; then
     mkdir build

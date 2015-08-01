@@ -56,6 +56,18 @@ void win32_log(char *format, ...)
 	va_end( args );
 }
 
+void platform_load_gl_func_pointers()
+{
+    GLenum glew_err = glewInit();
+
+    if (glew_err != GLEW_OK)
+    {
+        milton_log("glewInit failed with error: %s\nExiting.\n",
+                   glewGetErrorString(glew_err));
+        exit(EXIT_FAILURE);
+    }
+}
+
 int CALLBACK WinMain(
         HINSTANCE hInstance,
         HINSTANCE hPrevInstance,

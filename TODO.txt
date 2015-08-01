@@ -6,8 +6,6 @@ To-Do
 
 - To-Do
 
-    - Finish Linux port
-
     - Fix color picker controls
         - Only rotate when inside geometry
         - Highlight choice w/circle

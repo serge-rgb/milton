@@ -527,7 +527,7 @@ static void render_canvas_in_block(Arena* render_arena,
 
                     if (min_dist < FLT_MAX)
                     {
-                        u64 kk_ccount_begin = __rdtsc();
+                        //u64 kk_ccount_begin = __rdtsc();
                         int samples = 0;
                         {
                             f32 f3 = (0.75f * view->scale) * pixel_jump * ninetales;
@@ -850,7 +850,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
     static u64 extra_avg_sum = 0;
     static u64 abs_avg_sum = 0;
 
-    u64 ccount_begin = __rdtsc();
+    //u64 ccount_begin = __rdtsc();
 
     v2i canvas_reference = { 0 };
     Rect* blocks = NULL;
