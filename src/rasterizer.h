@@ -1072,6 +1072,16 @@ typedef enum
 
 static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 {
+    size_t space_available = arena_available_space(milton_state->root_arena);
+
+    size_t render_worker_memory = space_available / milton_state->num_render_workers;
+
+    for (i32 i = 0; i < milton_state->num_render_workers; ++i)
+    {
+        milton_state->render_worker_arenas[i] = arena_push(milton_state->root_arena,
+                                                            render_worker_memory);
+    }
+
     // `raster_limits` is the part of the screen (in pixels) that should be updated
     // with what's on the canvas.
     Rect raster_limits = { 0 };
@@ -1177,4 +1187,10 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
                milton_state->raster_buffers[index],
                milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel);
     }
+
+    for (i32 i = milton_state->num_render_workers - 1; i >= 0; --i)
+    {
+        arena_pop(&milton_state->render_worker_arenas[i]);
+    }
+    ARENA_VALIDATE(milton_state->root_arena);
 }

@@ -88,7 +88,7 @@ int milton_main()
 
     // ==== Intialize milton
     //  Total memory requirement for Milton
-    size_t total_memory_size = (size_t)2 * 1024 * 1024 * 1024;
+    size_t total_memory_size = (size_t)4 * 1024 * 1024 * 1024;
     //  Size of frame heap
     size_t frame_heap_in_MB  = 32 * 1024 * 1024;
 

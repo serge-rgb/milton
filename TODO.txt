@@ -8,14 +8,6 @@ To-Do
 
     - Finish Linux port
 
-    - Memory:
-        - Remove ClippedStrokes. How?
-        - Render Queue: Fail gracefully
-
-    - Remove libnuwen?
-        - Remove threads
-        - Arena?
-
     - Fix color picker controls
         - Only rotate when inside geometry
         - Highlight choice w/circle
@@ -34,6 +26,10 @@ To-Do
     - Undo: Only redraw necessary area.
     - Perf: Optimize small strokes away
     - Perf: Stroke clipping
+
+    - Quality
+        - Handle allocation errors gracefully
+        - Catch threading errors
 
     - Brush: Add elliptical brush
     - Brush: Support for general, implicitly defined brushes

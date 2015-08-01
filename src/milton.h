@@ -356,8 +356,7 @@ static void milton_init(MiltonState* milton_state)
         milton_state->render_queue->mutex               = sgl_create_mutex();
     }
 
-    // Even with hyper-threading, it's better to have extra workers.
-    milton_state->num_render_workers = sgl_cpu_count() * 2;
+    milton_state->num_render_workers = sgl_cpu_count();
 
     milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
 
@@ -366,21 +365,6 @@ static void milton_init(MiltonState* milton_state)
                                                            Arena);
 
     assert (milton_state->num_render_workers);
-
-    for (i32 i = 0; i < milton_state->num_render_workers; ++i)
-    {
-        WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
-        {
-            *params = (WorkerParams) { milton_state, i };
-        }
-
-        const size_t render_worker_memory = 64 * 1024 * 1024;
-        milton_state->render_worker_arenas[i] = arena_spawn(milton_state->root_arena,
-                                                            render_worker_memory);
-
-        sgl_create_thread(render_worker, (void*)params);
-    }
-
 
 #ifndef NDEBUG
     milton_startup_tests();
@@ -463,6 +447,18 @@ static void milton_init(MiltonState* milton_state)
     milton_gl_backend_init(milton_state);
     milton_load(milton_state);
     milton_set_default_brush(milton_state);
+
+    for (i32 i = 0; i < milton_state->num_render_workers; ++i)
+    {
+        WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
+        {
+            *params = (WorkerParams) { milton_state, i };
+        }
+
+        sgl_create_thread(render_worker, (void*)params);
+    }
+
+
 }
 
 inline b32 is_user_drawing(MiltonState* milton_state)
@@ -557,7 +553,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             (input->flags & MiltonInputFlags_UNDO) ||
             (input->flags & MiltonInputFlags_REDO);
 
-    //arena_reset(milton_state->transient_arena);
+    arena_reset(milton_state->transient_arena);
 
     MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
 
