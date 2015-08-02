@@ -4,13 +4,15 @@ cd src
 cd ..
 
 # Comment-out -Wno-unused-variable to clean up code
-clang -Ithird_party -Ithird_party/SDL2-2.0.3/include \
+    #-lm -lpthread -ldl\
+clang -Ithird_party \
+    -std=c99\
     -Wall -Werror \
     -Wno-missing-braces \
     -Wno-unused-function \
     -Wno-unused-variable \
-    -lm -lpthread -ldl\
-    -std=c99\
+    `pkg-config --cflags sdl2` \
     -O2 -g\
-    src/sdl_milton.c -Lthird_party/build/ -lSDL2 -lGL -lm\
+    src/sdl_milton.c -lGL -lm -lpthread\
+    `pkg-config --libs sdl2` \
     -o milton

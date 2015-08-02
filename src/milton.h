@@ -356,7 +356,7 @@ static void milton_init(MiltonState* milton_state)
         milton_state->render_queue->mutex               = sgl_create_mutex();
     }
 
-    milton_state->num_render_workers = sgl_cpu_count();
+    milton_state->num_render_workers = SDL_GetCPUCount();
 
     milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
 
