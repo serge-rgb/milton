@@ -467,9 +467,6 @@ static void milton_init(MiltonState* milton_state)
         }
 
         SDL_CreateThread(render_worker, "Milton Render Worker", (void*)params);
-        void* worker_chunk = allocate_big_chunk_of_memory(worker_chunk_size);
-        assert (worker_chunk);
-        milton_state->render_worker_arenas[i] = arena_init(worker_chunk, worker_chunk_size);
     }
 }
 

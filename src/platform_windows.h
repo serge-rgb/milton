@@ -36,24 +36,24 @@ void win32_log(char *format, ...);
 
 void win32_log(char *format, ...)
 {
-	char message[ 128 ];
+    char message[ 128 ];
 
-	int num_bytes_written = 0;
+    int num_bytes_written = 0;
 
-	va_list args;
+    va_list args;
 
-	assert ( format );
+    assert ( format );
 
-	va_start( args, format );
+    va_start( args, format );
 
-	num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
+    num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
 
-	if ( num_bytes_written > 0 )
-	{
-            OutputDebugStringA( message );
-	}
+    if ( num_bytes_written > 0 )
+    {
+	OutputDebugStringA( message );
+    }
 
-	va_end( args );
+    va_end( args );
 }
 
 void platform_load_gl_func_pointers()
@@ -75,5 +75,5 @@ int CALLBACK WinMain(
         int nCmdShow
         )
 {
-	milton_main();
+    milton_main();
 }

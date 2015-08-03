@@ -838,7 +838,6 @@ static int render_worker(void* data)
 
         SDL_SemPost(render_queue->completed_semaphore);
     }
-    return 0;
 }
 
 static void produce_render_work(MiltonState* milton_state, TileRenderData tile_render_data)
@@ -880,6 +879,22 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
     }
 
     const i32 blocks_per_tile = milton_state->blocks_per_tile;
+
+    // Ceil up
+    i32 num_tiles = 1 + (num_blocks - 1) / blocks_per_tile;
+
+    size_t render_memory_cap =
+            blocks_per_tile * (milton_state->num_strokes + 1) *
+            ( (STROKE_MAX_POINTS * 2 * sizeof(v2i) + sizeof(ClippedStroke)) +
+              num_tiles * sizeof(b32));
+
+    for (int i = 0; i < milton_state->num_render_workers; ++i)
+    {
+        assert(milton_state->render_worker_arenas[i].ptr == NULL);
+        milton_state->render_worker_arenas[i] = arena_init(malloc(render_memory_cap),
+                                                           render_memory_cap);
+        assert(milton_state->render_worker_arenas[i].ptr != NULL);
+    }
 
     i32 tile_acc = 0;
     for (int block_i = 0; block_i < num_blocks; block_i += blocks_per_tile)
@@ -926,6 +941,13 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
         else { assert ( !"Not handling completion semaphore wait error" ); }
     }
 #endif
+
+	for (int i = 0; i < milton_state->num_render_workers; ++i)
+	{
+
+		free(milton_state->render_worker_arenas[i].ptr);
+		milton_state->render_worker_arenas[i] = (Arena){ 0 };
+	}
 
     ARENA_VALIDATE(milton_state->transient_arena);
 
