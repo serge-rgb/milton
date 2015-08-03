@@ -300,20 +300,22 @@ static void render_canvas_in_block(Arena* render_arena,
 
     i32 pixel_jump = view->downsampling_factor;  // Different names for the same thing.
 
-    for (i32 j = raster_limits.top; j < raster_limits.bottom; j += pixel_jump)
+    // This is the distance between two adjacent canvas pixels. Derived to
+    // avoid expensive raster_to_canvas computations in the inner loop
+    i32 canvas_jump = pixel_jump * view->scale * ninetales;
+
+    // i and j are the canvas point
+    i32 i = (((raster_limits.left - view->screen_center.x) *
+              view->scale) - view->pan_vector.x) * ninetales - reference_point.x;
+    i32 j = (((raster_limits.top - view->screen_center.y) *
+              view->scale) - view->pan_vector.y) * ninetales - reference_point.y;
+
+    for (i32 pixel_j = raster_limits.top; pixel_j < raster_limits.bottom; pixel_j += pixel_jump)
     {
-        for (i32 i = raster_limits.left; i < raster_limits.right; i += pixel_jump)
+        i = (((raster_limits.left - view->screen_center.x) *
+                view->scale) - view->pan_vector.x) * ninetales - reference_point.x;
+        for (i32 pixel_i = raster_limits.left; pixel_i < raster_limits.right; pixel_i += pixel_jump)
         {
-            //u64 ccount_begin = __rdtsc();
-            v2i raster_point = {i, j};
-            v2i canvas_point = raster_to_canvas(view, raster_point);
-            {
-                canvas_point.x *= ninetales;
-                canvas_point.y *= ninetales;
-            }
-            canvas_point = sub_v2i(canvas_point, reference_point);
-
-
             // Clear color
             v4f background_color = { 1, 1, 1, 1 };
 
@@ -364,8 +366,8 @@ static void render_canvas_in_block(Arena* render_arena,
                         }
                         //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
                         v2i min_point = sub_v2i(first_point, reference_point);
-                        dx = (f32) (canvas_point.x - min_point.x);
-                        dy = (f32) (canvas_point.y - min_point.y);
+                        dx = (f32) (i - min_point.x);
+                        dy = (f32) (j - min_point.y);
                         min_dist = dx * dx + dy * dy;
                     }
                     else
@@ -391,12 +393,13 @@ static void render_canvas_in_block(Arena* render_arena,
                             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
                             if (mag_ab2 > 0)
                             {
+
                                 v2f point = v2i_to_v2f(closest_point_in_segment(a, b,
                                                                                 ab, mag_ab2,
-                                                                                canvas_point));
+                                                                                (v2i){i,j}));
 
-                                f32 test_dx = (f32) (canvas_point.x - point.x);
-                                f32 test_dy = (f32) (canvas_point.y - point.y);
+                                f32 test_dx = (f32) (i - point.x);
+                                f32 test_dy = (f32) (j - point.y);
                                 f32 dist = test_dx * test_dx + test_dy * test_dy;
                                 if (dist < min_dist)
                                 {
@@ -477,8 +480,8 @@ static void render_canvas_in_block(Arena* render_arena,
                             d_x = _mm_div_ps(ab_x, mag_ab);
                             d_y = _mm_div_ps(ab_y, mag_ab);
 
-                            __m128 canvas_point_x4 = _mm_set_ps1((f32)canvas_point.x);
-                            __m128 canvas_point_y4 = _mm_set_ps1((f32)canvas_point.y);
+                            __m128 canvas_point_x4 = _mm_set_ps1((f32)i);
+                            __m128 canvas_point_y4 = _mm_set_ps1((f32)j);
 
                             ax_x = _mm_sub_ps(canvas_point_x4, a_x);
                             ax_y = _mm_sub_ps(canvas_point_y4, a_y);
@@ -720,14 +723,16 @@ static void render_canvas_in_block(Arena* render_arena,
             u32 pixel = color_v4f_to_u32(cm, acc_color);
 
             // TODO: Bilinear sampling could be nice here
-            for (i32 jj = j; jj < j + pixel_jump; ++jj)
+            for (i32 jj = pixel_j; jj < pixel_j + pixel_jump; ++jj)
             {
-                for (i32 ii = i; ii < i + pixel_jump; ++ii)
+                for (i32 ii = pixel_i; ii < pixel_i + pixel_jump; ++ii)
                 {
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }
             }
+            i += canvas_jump;
         }
+        j += canvas_jump;
     }
 }
 
