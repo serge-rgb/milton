@@ -790,7 +790,7 @@ typedef struct
     i32 worker_id;
 } WorkerParams;
 
-static void render_worker(void* data)
+static int render_worker(void* data)
 {
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;
@@ -799,17 +799,25 @@ static void render_worker(void* data)
 
     for (;;)
     {
-        sgl_semaphore_wait(render_queue->work_available);
-        i32 lock_err = sgl_mutex_lock(render_queue->mutex);
+        int err = SDL_SemWait(render_queue->work_available);
+        if (err != 0)
+        {
+            milton_fatal("Failure obtaining semaphore inside render worker");
+        }
+        err = SDL_LockMutex(render_queue->mutex);
+        if (err != 0)
+        {
+            milton_fatal("Failure locking render queue mutex");
+        }
         i32 index = -1;
         TileRenderData tile_data = { 0 };
-        if (!lock_err)
+        if (!err)
         {
             index = --render_queue->index;
             assert (index >= 0);
             assert (index <  RENDER_QUEUE_SIZE);
             tile_data = render_queue->tile_render_data[index];
-            sgl_mutex_unlock(render_queue->mutex);
+            SDL_UnlockMutex(render_queue->mutex);
         }
         else { assert (!"Render worker not handling lock error"); }
 
@@ -823,22 +831,23 @@ static void render_worker(void* data)
 
         arena_reset(&milton_state->render_worker_arenas[id]);
 
-        sgl_semaphore_signal(render_queue->completed_semaphore);
+        SDL_SemPost(render_queue->completed_semaphore);
     }
+    return 0;
 }
 
 static void produce_render_work(MiltonState* milton_state, TileRenderData tile_render_data)
 {
     RenderQueue* render_queue = milton_state->render_queue;
-    i32 lock_err = sgl_mutex_lock(milton_state->render_queue->mutex);
+    i32 lock_err = SDL_LockMutex(milton_state->render_queue->mutex);
     if (!lock_err)
     {
         render_queue->tile_render_data[render_queue->index++] = tile_render_data;
-        sgl_mutex_unlock(render_queue->mutex);
+        SDL_UnlockMutex(render_queue->mutex);
     }
     else { assert (!"Lock failure not handled"); }
 
-    sgl_semaphore_signal(render_queue->work_available);
+    SDL_SemPost(render_queue->work_available);
 }
 
 
@@ -904,7 +913,7 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
 
     while(tile_acc)
     {
-        i32 waited_err = sgl_semaphore_wait(milton_state->render_queue->completed_semaphore);
+        i32 waited_err = SDL_SemWait(milton_state->render_queue->completed_semaphore);
         if (!waited_err)
         {
             --tile_acc;

@@ -4,23 +4,21 @@ To-Do
 - Bugs
     - :)
 
-- To-Do
-
+- UI
     - Fix color picker controls
         - Only rotate when inside geometry
         - Highlight choice w/circle
         - Disappearing wheel?
 
-    - Figure out the GUI situation
+    - Keyboard shortcuts
+    - Figure out the GUI library situation
     - Brush / Eraser buttons
     - Sliders for brush size & opacity / eraser
 
-    - Figure out Wacom on linux
-    - Figure out Wacom on OSX
-
-    - Wacom: Pressure levels
+- Engine
+    - Wacom: Pressure levels (all platformsj)
     - Async rendering
-    - Wacom: Support for pan & rotate.
+    - Wacom: Support for pan & rotate. (all platforms)
     - Undo: Only redraw necessary area.
     - Perf: Optimize small strokes away
     - Perf: Stroke clipping
