@@ -336,7 +336,7 @@ static void milton_blend_tests()
 
 #define MILTON_DEFAULT_SCALE (1 << 10)
 
-static void milton_set_default_brush(MiltonState* milton_state)
+static void milton_update_brushes(MiltonState* milton_state)
 {
     Brush brush = { 0 };
     {
@@ -351,6 +351,13 @@ static void milton_set_default_brush(MiltonState* milton_state)
         brush.color = to_premultiplied(rgb, brush.alpha);
     }
     milton_state->brush = brush;
+    milton_state->eraser_brush = (Brush)
+    {
+        .radius = milton_state->brush.radius,
+        .color = (v4f) { 1, 1, 1, 1 },
+        .alpha = 1,
+    };
+
 }
 
 static void milton_init(MiltonState* milton_state)
@@ -446,15 +453,9 @@ static void milton_init(MiltonState* milton_state)
     milton_state->brush_size = 10;
 
 
-    milton_state->eraser_brush = (Brush)
-    {
-        .radius = milton_state->brush.radius,
-        .color = (v4f) { 1, 1, 1, 1 },
-    };
-
     milton_gl_backend_init(milton_state);
     milton_load(milton_state);
-    milton_set_default_brush(milton_state);
+    milton_update_brushes(milton_state);
 
     for (i32 i = 0; i < milton_state->num_render_workers; ++i)
     {
@@ -613,8 +614,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
             debug_scale_lock = false;
             milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
-        milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
-        milton_state->eraser_brush.radius = milton_state->brush_size * milton_state->view->scale;
+        milton_update_brushes(milton_state);
     }
 
     if (input->flags & MiltonInputFlags_SET_MODE_BRUSH)
@@ -657,7 +657,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->num_strokes = 0;
         milton_state->strokes[0].num_points = 0;
         milton_state->working_stroke.num_points = 0;
-        milton_set_default_brush(milton_state);
+        milton_update_brushes(milton_state);
     }
 #if 0
     // ==== Rotate ======
