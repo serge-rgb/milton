@@ -276,13 +276,23 @@ int milton_main()
                             glViewport(0, 0, width, height);
                             break;
                         }
+                    case SDL_WINDOWEVENT_LEAVE:
+                        {
+                            if (event.window.windowID != window_id)
+                            {
+                                break;
+                            }
+                            if (platform_input.is_pointer_down)
+                            {
+                                platform_input.is_pointer_down = false;
+                                milton_input.flags |= MiltonInputFlags_END_STROKE;
+                            }
+                            break;
+                        }
                     default:
                         break;
                     }
-
                 }
-                // TODO: Handle
-                //      - reset
             default:
                 break;
             }

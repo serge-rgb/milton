@@ -43,7 +43,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     }
     if (!clipped_stroke->points)
     {
-        milton_log("[DEBUG] could not allocate points\n");
         return NULL;
     }
 
