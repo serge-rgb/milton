@@ -30,11 +30,23 @@ struct ClippedStroke_s
 static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect canvas_rect)
 {
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
+
+    if (clipped_stroke)
     {
         clipped_stroke->brush = stroke->brush;
         clipped_stroke->num_points = 0;
         clipped_stroke->points = arena_alloc_array(render_arena, stroke->num_points * 2, v2i);
     }
+    else
+    {
+        return NULL;
+    }
+    if (!clipped_stroke->points)
+    {
+        milton_log("[DEBUG] could not allocate points\n");
+        return NULL;
+    }
+
     if (stroke->num_points == 1)
     {
         if (is_inside_rect(canvas_rect, stroke->points[0]))
@@ -194,7 +206,9 @@ static u64 g_abs_calls  = 0;
 static u64 g_kk_ccount = 0;
 static u64 g_kk_calls  = 0;
 */
-static void render_canvas_in_block(Arena* render_arena,
+
+// returns false if allocation failed
+static b32 render_canvas_in_block(Arena* render_arena,
                                    CanvasView* view,
                                    ColorManagement cm,
                                    Stroke* strokes,
@@ -204,6 +218,7 @@ static void render_canvas_in_block(Arena* render_arena,
                                    u32* pixels,
                                    Rect raster_limits)
 {
+    b32 allocation_ok = true;
     //u64 pre_ccount_begin = __rdtsc();
     Rect canvas_limits;
     {
@@ -224,7 +239,7 @@ static void render_canvas_in_block(Arena* render_arena,
                 pixels[j * view->screen_size.w + i] = 0xffff00ff;
             }
         }
-        return;
+        return allocation_ok;
     }
     ClippedStroke* stroke_list = NULL;
 
@@ -258,6 +273,12 @@ static void render_canvas_in_block(Arena* render_arena,
         assert(stroke);
         Rect enlarged_limits = rect_enlarge(canvas_limits, stroke->brush.radius);
         ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, stroke, enlarged_limits);
+        if (!clipped_stroke)
+        {
+            milton_log("[WARNING] Not enough memory for clipped stroke. Rendering what we have\n");
+            allocation_ok = false;
+            break;
+        }
 
         if (clipped_stroke->num_points)
         {
@@ -734,9 +755,11 @@ static void render_canvas_in_block(Arena* render_arena,
         }
         j += canvas_jump;
     }
+    return allocation_ok;
 }
 
-static void render_tile(MiltonState* milton_state,
+// Returns false if there were allocation errors
+static b32 render_tile(MiltonState* milton_state,
                         Arena* tile_arena,
                         Rect* blocks,
                         i32 block_start, i32 num_blocks,
@@ -769,7 +792,13 @@ static void render_tile(MiltonState* milton_state,
                                                milton_state->strokes,
                                                milton_state->num_strokes,
                                                canvas_tile_rect);
+    if (!stroke_masks)
+    {
+        milton_log("[WARNING] arena full when masking strokes to tile\n");
+        return false;
+    }
 
+    b32 allocation_ok = true;
     for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
     {
         if (block_start + block_i >= num_blocks)
@@ -777,16 +806,22 @@ static void render_tile(MiltonState* milton_state,
             break;
         }
 
-        render_canvas_in_block(tile_arena,
-                               milton_state->view,
-                               milton_state->cm,
-                               milton_state->strokes,
-                               stroke_masks,
-                               milton_state->num_strokes,
-                               &milton_state->working_stroke,
-                               raster_buffer,
-                               blocks[block_start + block_i]);
+        allocation_ok =
+                render_canvas_in_block(tile_arena,
+                                       milton_state->view,
+                                       milton_state->cm,
+                                       milton_state->strokes,
+                                       stroke_masks,
+                                       milton_state->num_strokes,
+                                       &milton_state->working_stroke,
+                                       raster_buffer,
+                                       blocks[block_start + block_i]);
+        if (!allocation_ok)
+        {
+            return false;
+        }
     }
+    return true;
 }
 
 typedef struct
@@ -828,11 +863,16 @@ static int render_worker(void* data)
 
         assert (index >= 0);
 
-        render_tile(milton_state,
-                    &milton_state->render_worker_arenas[id],
-                    render_queue->blocks,
-                    tile_data.block_start, render_queue->num_blocks,
-                    render_queue->raster_buffer);
+        b32 allocation_ok =
+                render_tile(milton_state,
+                            &milton_state->render_worker_arenas[id],
+                            render_queue->blocks,
+                            tile_data.block_start, render_queue->num_blocks,
+                            render_queue->raster_buffer);
+        if (!allocation_ok)
+        {
+            milton_state->worker_needs_memory = true;
+        }
 
         arena_reset(&milton_state->render_worker_arenas[id]);
 
@@ -855,6 +895,7 @@ static void produce_render_work(MiltonState* milton_state, TileRenderData tile_r
 }
 
 
+// Returns true if operation was completed.
 static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
 {
     static u64 total = 0;
@@ -869,7 +910,14 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
     Rect* blocks = NULL;
 
     i32 num_blocks = rect_split(milton_state->transient_arena,
-            raster_limits, milton_state->block_width, milton_state->block_width, &blocks);
+                                raster_limits,
+                                milton_state->block_width, milton_state->block_width, &blocks);
+
+    if (num_blocks < 0)
+    {
+        milton_log ("[ERROR] Transient arena did not have enough memory for canvas block.\n");
+        milton_fatal("Not handling this error.");
+    }
 
     RenderQueue* render_queue = milton_state->render_queue;
     {
@@ -883,15 +931,12 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
     // Ceil up
     i32 num_tiles = 1 + (num_blocks - 1) / blocks_per_tile;
 
-    size_t render_memory_cap =
-            blocks_per_tile * (milton_state->num_strokes + 1) *
-            ( (STROKE_MAX_POINTS * 2 * sizeof(v2i) + sizeof(ClippedStroke)) +
-              num_tiles * sizeof(b32));
+    size_t render_memory_cap = milton_state->worker_memory_size;
 
     for (int i = 0; i < milton_state->num_render_workers; ++i)
     {
         assert(milton_state->render_worker_arenas[i].ptr == NULL);
-        milton_state->render_worker_arenas[i] = arena_init(malloc(render_memory_cap),
+        milton_state->render_worker_arenas[i] = arena_init(calloc(render_memory_cap, 1),
                                                            render_memory_cap);
         assert(milton_state->render_worker_arenas[i].ptr != NULL);
     }

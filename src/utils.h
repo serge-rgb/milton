@@ -200,6 +200,10 @@ static i32 rect_split(Arena* transient_arena,
 
     i32 max_num_rects = (n_width + 1) * (n_height + 1);
     *dest_rects = arena_alloc_array(transient_arena, max_num_rects, Rect);
+    if (!*dest_rects)
+    {
+       return -1;
+    }
 
     i32 i = 0;
     for (int h = src_rect.top; h < src_rect.bottom; h += height)

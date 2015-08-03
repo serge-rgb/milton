@@ -82,7 +82,7 @@ int milton_main()
     //  Total memory requirement for Milton
     size_t total_memory_size = min((size_t)2 * 1024 * 1024 * 1024, get_system_RAM() / 2);
     //  Size of frame heap
-    size_t frame_heap_in_MB  = 32 * 1024 * 1024;
+    size_t frame_heap_in_MB  = 128 * 1024 * 1024;
 
     void* big_chunk_of_memory = allocate_big_chunk_of_memory(total_memory_size);
 

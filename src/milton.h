@@ -149,6 +149,9 @@ typedef struct MiltonState_s
     Arena*      transient_arena;    // Gets reset after every call to milton_update().
     Arena*      render_worker_arenas;
 
+    size_t      worker_memory_size;
+    b32         worker_needs_memory;
+
 } MiltonState;
 
 typedef enum
@@ -206,7 +209,7 @@ static void milton_gl_backend_draw(MiltonState* milton_state)
 
 static void milton_fatal(char* message)
 {
-    milton_log("Fatal error: \t");
+    milton_log("*** [FATAL] ***: \n\t");
     puts(message);
     exit(EXIT_FAILURE);
 }
@@ -378,6 +381,8 @@ static void milton_init(MiltonState* milton_state)
     milton_state->render_worker_arenas = arena_alloc_array(milton_state->root_arena,
                                                            milton_state->num_render_workers,
                                                            Arena);
+    milton_state->worker_memory_size = 1024 * 64;
+    milton_state->worker_needs_memory = false;
 
     assert (milton_state->num_render_workers);
 
@@ -565,6 +570,14 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     arena_reset(milton_state->transient_arena);
 
     MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
+
+    if (milton_state->worker_needs_memory)
+    {
+        milton_log("[DEBUG] Assigning more memory per worker.\n");
+        milton_state->worker_memory_size *= 2;
+        milton_state->worker_needs_memory = false;
+        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+    }
 
     if (input->flags & MiltonInputFlags_FAST_DRAW)
     {

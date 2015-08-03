@@ -96,6 +96,10 @@ static b32* filter_strokes_to_rect(Arena* arena,
                                    const Rect rect)
 {
     b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
+    if (!mask_array)
+    {
+        return NULL;
+    }
     for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
     {
         const Stroke* stroke = &strokes[stroke_i];
