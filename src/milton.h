@@ -218,26 +218,26 @@ static void milton_gl_backend_init(MiltonState* milton_state)
         const char* shader_contents[2];
 
         shader_contents[0] =
-            "#version 330\n"
-            "in vec2 position;\n"
+            "#version 300 es\n"
+            "in highp vec2 position;\n"
             "\n"
-            "out vec2 coord;\n"
+            "out highp vec2 coord;\n"
             "\n"
             "void main()\n"
             "{\n"
-            "   coord = (position + vec2(1,1))/2;\n"
-            "   coord.y = 1 - coord.y;"
+            "   coord = (position + vec2(1.0,1.0))/2.0;\n"
+            "   coord.y = 1.0 - coord.y;"
             "   // direct to clip space. must be in [-1, 1]^2\n"
             "   gl_Position = vec4(position, 0.0, 1.0);\n"
             "}\n";
 
 
         shader_contents[1] =
-            "#version 330\n"
+            "#version 300 es\n"
             "\n"
             "uniform sampler2D raster_buffer;\n"
-            "in vec2 coord;\n"
-            "out vec4 out_color;\n"
+            "in highp vec2 coord;\n"
+            "out highp vec4 out_color;\n"
             "\n"
             "void main(void)\n"
             "{\n"
