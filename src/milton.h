@@ -457,6 +457,8 @@ static void milton_init(MiltonState* milton_state)
     milton_load(milton_state);
     milton_update_brushes(milton_state);
 
+    size_t worker_chunk_size = min((size_t)8 * 1024 * 1024 * 1024, get_system_RAM() / 2);
+
     for (i32 i = 0; i < milton_state->num_render_workers; ++i)
     {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
@@ -465,9 +467,10 @@ static void milton_init(MiltonState* milton_state)
         }
 
         SDL_CreateThread(render_worker, "Milton Render Worker", (void*)params);
+        void* worker_chunk = allocate_big_chunk_of_memory(worker_chunk_size);
+        assert (worker_chunk);
+        milton_state->render_worker_arenas[i] = arena_init(worker_chunk, worker_chunk_size);
     }
-
-
 }
 
 inline b32 is_user_drawing(MiltonState* milton_state)

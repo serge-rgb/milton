@@ -19,8 +19,9 @@
 
 #ifdef __linux__
 #define _GNU_SOURCE  // To get MAP_ANONYMOUS on linux
-#include <asm-generic/mman-common.h>
+#define __USE_MISC 1  // MAP_ANONYMOUS and MAP_NORESERVE dont' get defined without this
 #include <sys/mman.h>
+#undef __USE_MISC
 #else
 #error "This is not the Unix you're looking for"
 #endif
@@ -44,12 +45,17 @@
 
 #endif // MAP_ANONYMOUS
 
+#if 1
 #define allocate_big_chunk_of_memory(total_memory_size) mmap(HEAP_BEGIN_ADDRESS, \
                                                              total_memory_size, \
                                                              PROT_WRITE | PROT_READ, \
-                                                             MAP_PRIVATE | MAP_ANONYMOUS, \
+                                                             MAP_NORESERVE | MAP_PRIVATE | \
+                                                             MAP_ANONYMOUS, \
                                                              -1, \
                                                              0)
+#else
+#define allocate_big_chunk_of_memory(total_memory_size) malloc(total_memory_size)
+#endif
 #define platform_load_gl_func_pointers()
 
 #define milton_log printf

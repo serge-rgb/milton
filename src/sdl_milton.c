@@ -57,7 +57,7 @@ int milton_main()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    SDL_GL_SetSwapInterval(0);
+    SDL_GL_SetSwapInterval(1);
 
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -80,7 +80,7 @@ int milton_main()
 
     // ==== Intialize milton
     //  Total memory requirement for Milton
-    size_t total_memory_size = (size_t)1 * 1024 * 1024 * 1024;
+    size_t total_memory_size = min((size_t)8 * 1024 * 1024 * 1024, get_system_RAM() / 2);
     //  Size of frame heap
     size_t frame_heap_in_MB  = 32 * 1024 * 1024;
 
@@ -291,6 +291,13 @@ int milton_main()
                 break;
             }
         }
+
+        // The extra point would be ignored by the renderer, causing artifacts.
+        if (milton_input.flags & MiltonInputFlags_END_STROKE)
+        {
+            milton_input.point = NULL;
+        }
+
         v2i pan_delta = sub_v2i(platform_input.pan_point, platform_input.pan_start);
         if (pan_delta.x != 0 ||
             pan_delta.y != 0 ||

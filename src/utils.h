@@ -66,6 +66,12 @@ inline BitScanResult find_least_significant_set_bit(u32 value)
     return result;
 }
 
+// total RAM in bytes
+static size_t get_system_RAM()
+{
+   return (size_t)SDL_GetSystemRAM() * 1024 * 1024;
+}
+
 inline v2i v2f_to_v2i(v2f p)
 {
     return (v2i){(i32)p.x, (i32)p.y};
