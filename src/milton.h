@@ -449,11 +449,7 @@ static void milton_init(MiltonState* milton_state)
         milton_state->picker.bounds = bounds;
         milton_state->picker.pixels = arena_alloc_array(
                 milton_state->root_arena, (4 * bound_radius_px * bound_radius_px), u32);
-        picker_update(&milton_state->picker,
-                (v2i){
-                milton_state->picker.center.x + (int)(milton_state->picker.wheel_radius),
-                milton_state->picker.center.y
-                });
+        picker_init(&milton_state->picker);
     }
     milton_state->brush_size = 10;
 
@@ -693,17 +689,20 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (input->point)
     {
         v2i point = *input->point;
-        if (!is_user_drawing(milton_state) && is_inside_picker(&milton_state->picker, point))
+        if (!is_user_drawing(milton_state) && is_inside_picker_rect(&milton_state->picker, point))
         {
-            ColorPickResult pick_result = picker_update(&milton_state->picker, point);
-            if ((pick_result & ColorPickResult_change_color) &&
-                (milton_state->current_mode == MiltonMode_BRUSH))
+            //if (is_inside_picker_active_area(&milton_state->picker, point))
             {
-                v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
-                milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
+                ColorPickResult pick_result = picker_update(&milton_state->picker, point);
+                if ((pick_result & ColorPickResult_change_color) &&
+                    (milton_state->current_mode == MiltonMode_BRUSH))
+                {
+                    v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
+                    milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
+                }
+                render_flags |= MiltonRenderFlags_PICKER_UPDATED;
             }
             milton_state->canvas_blocked = true;
-            render_flags |= MiltonRenderFlags_PICKER_UPDATED;
         }
         // Currently drawing
         else if (!milton_state->canvas_blocked)
@@ -739,19 +738,20 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             v2f fpoint = v2i_to_v2f(point);
             ColorPicker* picker = &milton_state->picker;
-            if  (picker_wheel_active(picker))
+            if  (is_picker_wheel_active(picker))
             {
                 //if (picker_is_within_wheel(picker, fpoint))
-                if (is_inside_triangle(fpoint, picker->a, picker->b, picker->c))
+                if (picker_hits_triangle(picker, fpoint))
                 {
                     picker_wheel_deactivate(picker);
                 }
                 else if (milton_state->current_mode == MiltonMode_BRUSH)
                 {
-
-                    picker_update_wheel(&milton_state->picker, fpoint);
-                    v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
-                    milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
+                    if (picker_try_activate(picker, fpoint))
+                    {
+                        v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
+                        milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
+                    }
                 }
                 render_flags |= MiltonRenderFlags_PICKER_UPDATED;
             }
