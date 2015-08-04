@@ -47,7 +47,7 @@ typedef struct BitScanResult_s
     b32 found;
 } BitScanResult;
 
-inline BitScanResult find_least_significant_set_bit(u32 value)
+static BitScanResult find_least_significant_set_bit(u32 value)
 {
     BitScanResult result = { 0 };
 #if defined(_MSC_VER)
@@ -72,17 +72,17 @@ static size_t get_system_RAM()
    return (size_t)SDL_GetSystemRAM() * 1024 * 1024;
 }
 
-inline v2i v2f_to_v2i(v2f p)
+static v2i v2f_to_v2i(v2f p)
 {
     return (v2i){(i32)p.x, (i32)p.y};
 }
 
-inline v2f v2i_to_v2f(v2i p)
+static v2f v2i_to_v2f(v2i p)
 {
     return (v2f){(f32)p.x, (f32)p.y};
 }
 
-inline v3f v4f_to_v3f(v4f v)
+static v3f v4f_to_v3f(v4f v)
 {
     return (v3f){v.r, v.g, v.b};
 }
@@ -94,32 +94,32 @@ inline v3f v4f_to_v3f(v4f v)
 #define kPi 3.14152654f
 
 
-inline f32 absf(f32 a)
+static f32 absf(f32 a)
 {
     return a < 0 ? -a : a;
 }
 
-inline i32 absi(i32 a)
+static i32 absi(i32 a)
 {
     return a < 0 ? -a : a;
 }
 
-inline f32 dot(v2f a, v2f b)
+static f32 dot(v2f a, v2f b)
 {
    return a.x * b.x + a.y * b.y;
 }
 
-inline f32 magnitude(v2f a)
+static f32 magnitude(v2f a)
 {
     return sqrtf(dot(a, a));
 }
 
-inline f32 deegrees_to_radians(int d)
+static f32 deegrees_to_radians(int d)
 {
     assert (0 <= d && d < 360);
     return kPi * ((f32)(d) / 180.0f);
 }
-inline f32 radians_to_degrees(f32 r)
+static f32 radians_to_degrees(f32 r)
 {
     return (180 * r) / kPi;
 }
@@ -128,12 +128,12 @@ inline f32 radians_to_degrees(f32 r)
 // triangle.
 // If positive, c is to the left of ab. Negative: right of ab. 0 if
 // colinear.
-inline f32 orientation(v2f a, v2f b, v2f c)
+static f32 orientation(v2f a, v2f b, v2f c)
 {
     return (b.x - a.x)*(c.y - a.y) - (c.x - a.x)*(b.y - a.y);
 }
 
-inline b32 is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
+static b32 is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
 {
    b32 is_inside =
            (orientation(a, b, point) <= 0) &&
@@ -142,7 +142,7 @@ inline b32 is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
     return is_inside;
 }
 
-inline v2f polar_to_cartesian(f32 angle, f32 radius)
+static v2f polar_to_cartesian(f32 angle, f32 radius)
 {
     v2f result =
     {
@@ -152,7 +152,7 @@ inline v2f polar_to_cartesian(f32 angle, f32 radius)
     return result;
 }
 
-inline v2i rotate_v2i(v2i p, f32 angle)
+static v2i rotate_v2i(v2i p, f32 angle)
 {
     v2i r =
     {
@@ -224,7 +224,7 @@ static i32 rect_split(Arena* transient_arena,
     return i;
 }
 
-inline Rect rect_union(Rect a, Rect b)
+static Rect rect_union(Rect a, Rect b)
 {
     Rect result;
     result.left = min(a.left, b.left);
@@ -243,7 +243,7 @@ inline Rect rect_union(Rect a, Rect b)
     return result;
 }
 
-inline Rect rect_intersect(Rect a, Rect b)
+static Rect rect_intersect(Rect a, Rect b)
 {
     Rect result;
     result.left = max(a.left, b.left);
@@ -262,7 +262,7 @@ inline Rect rect_intersect(Rect a, Rect b)
     return result;
 }
 
-inline Rect rect_clip_to_screen(Rect limits, v2i screen_size)
+static Rect rect_clip_to_screen(Rect limits, v2i screen_size)
 {
     if (limits.left < 0) limits.left = 0;
     if (limits.right > screen_size.w) limits.right = screen_size.w;
@@ -271,7 +271,7 @@ inline Rect rect_clip_to_screen(Rect limits, v2i screen_size)
     return limits;
 }
 
-inline Rect rect_enlarge(Rect src, i32 offset)
+static Rect rect_enlarge(Rect src, i32 offset)
 {
     Rect result;
     result.left = src.left - offset;
@@ -301,12 +301,12 @@ static Rect bounding_rect_for_points(v2i points[], i32 num_points)
     return rect;
 }
 
-inline i32 rect_area(Rect rect)
+static i32 rect_area(Rect rect)
 {
     return (rect.right - rect.left) * (rect.bottom - rect.top);
 }
 
-inline b32 is_inside_rect(Rect bounds, v2i point)
+static b32 is_inside_rect(Rect bounds, v2i point)
 {
     return
         point.x >= bounds.left &&
@@ -315,7 +315,7 @@ inline b32 is_inside_rect(Rect bounds, v2i point)
         point.y <  bounds.bottom;
 }
 
-inline b32 is_rect_within_rect(Rect a, Rect b)
+static b32 is_rect_within_rect(Rect a, Rect b)
 {
    if ((a.left   < b.left)    ||
        (a.right  > b.right)   ||

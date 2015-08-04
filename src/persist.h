@@ -25,7 +25,7 @@ extern "C"
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
-inline u32 word_swap_memory_order(u32 word)
+static u32 word_swap_memory_order(u32 word)
 {
     u8 llo = (u8) (word & 0x000000ff);
     u8 lhi = (u8)((word & 0x0000ff00) >> 8);

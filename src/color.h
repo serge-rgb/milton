@@ -75,7 +75,7 @@ static void color_init(ColorManagement* cm)
     cm->shift_b = find_least_significant_set_bit(cm->mask_b).index;
 }
 
-inline u32 color_v4f_to_u32(ColorManagement cm, v4f c)
+static u32 color_v4f_to_u32(ColorManagement cm, v4f c)
 {
     u32 result =
         ((u8)(c.r * 255.0f) << cm.shift_r) |
@@ -85,7 +85,7 @@ inline u32 color_v4f_to_u32(ColorManagement cm, v4f c)
     return result;
 }
 
-inline v4f color_u32_to_v4f(ColorManagement cm, u32 color)
+static v4f color_u32_to_v4f(ColorManagement cm, u32 color)
 {
     v4f result =
     {
@@ -98,7 +98,7 @@ inline v4f color_u32_to_v4f(ColorManagement cm, u32 color)
     return result;
 }
 
-inline v4f color_rgb_to_rgba(v3f rgb, float a)
+static v4f color_rgb_to_rgba(v3f rgb, float a)
 {
     return (v4f)
     {
@@ -195,7 +195,7 @@ v4f to_premultiplied(v3f rgb, f32 a)
 }
 
 #define FAST_GAMMA 1
-inline v4f linear_to_sRGB_v4(v4f rgb)
+static v4f linear_to_sRGB_v4(v4f rgb)
 {
 #if FAST_GAMMA
     v4f srgb =
@@ -217,7 +217,7 @@ inline v4f linear_to_sRGB_v4(v4f rgb)
     return srgb;
 }
 
-inline v3f linear_to_sRGB(v3f rgb)
+static v3f linear_to_sRGB(v3f rgb)
 {
 #if FAST_GAMMA
     v3f srgb =
@@ -237,7 +237,7 @@ inline v3f linear_to_sRGB(v3f rgb)
     return srgb;
 }
 
-inline v3f sRGB_to_linear(v3f rgb)
+static v3f sRGB_to_linear(v3f rgb)
 {
 #if FAST_GAMMA
     v3f result =
@@ -362,7 +362,7 @@ static void picker_update_wheel(ColorPicker* picker, v2f point)
     }
 }
 
-inline v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
+static v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
 {
     float area = orientation(picker->a, picker->b, picker->c);
     assert (area != 0);

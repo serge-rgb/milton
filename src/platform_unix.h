@@ -26,9 +26,6 @@
 #error "This is not the Unix you're looking for"
 #endif
 
-
-#define inline extern inline
-
 #define HEAP_BEGIN_ADDRESS NULL
 #ifndef NDEBUG
 #undef HEAP_BEGIN_ADDRESS

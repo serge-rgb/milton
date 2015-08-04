@@ -79,7 +79,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     return clipped_stroke;
 }
 
-inline v2i closest_point_in_segment(v2i a, v2i b,
+static v2i closest_point_in_segment(v2i a, v2i b,
                                     v2f ab, f32 ab_magnitude_squared,
                                     v2i canvas_point)
 {
@@ -109,7 +109,7 @@ inline v2i closest_point_in_segment(v2i a, v2i b,
 }
 
 // NOTE: takes clipped points.
-inline b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
+static b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
                                     v2i* points, i32 num_points,
                                     Brush brush, CanvasView* view)
 {
@@ -177,7 +177,7 @@ inline b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
     return false;
 }
 
-inline v4f blend_v4f(v4f dst, v4f src)
+static v4f blend_v4f(v4f dst, v4f src)
 {
     f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
 

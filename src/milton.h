@@ -475,7 +475,7 @@ static void milton_init(MiltonState* milton_state)
     }
 }
 
-inline b32 is_user_drawing(MiltonState* milton_state)
+static b32 is_user_drawing(MiltonState* milton_state)
 {
     b32 result = milton_state->working_stroke.num_points > 0;
     return result;

@@ -15,19 +15,10 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#ifdef _WIN32
+
+#if defined(_WIN32) && defined(_MSC_VER)
 #pragma warning(push, 0)
-
-#ifdef _MSC_VER
-
-#if 1
-#define inline __forceinline
-#else
-#define inline static         // Mostly for ease of profiling
-#endif
-#endif // _MSC_VER
-
-#endif  // _WIN32
+#endif  // _WIN32 && _MSC_VER
 
 #ifdef _WIN32
 #include <windows.h>
@@ -62,7 +53,7 @@
 
 #endif // MILTON_DESKTOP
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
 #pragma warning(pop)
-#endif
+#endif  // _WIN32 && _MSC_VER
 

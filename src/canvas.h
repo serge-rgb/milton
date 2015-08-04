@@ -52,7 +52,7 @@ typedef struct CanvasView_s
 // This feature is fundamentally different to rotation on a raster-based paint
 // package.
 #if 0
-inline v2i rotate_to_view(v2i p, CanvasView* view)
+static v2i rotate_to_view(v2i p, CanvasView* view)
 {
     int d = view->rotation;
     f32 c = view->cos_sin_table[d][0];
@@ -68,7 +68,7 @@ inline v2i rotate_to_view(v2i p, CanvasView* view)
 }
 #endif
 
-inline v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
+static v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
     v2i raster_point =
     {
@@ -78,7 +78,7 @@ inline v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
     return raster_point;
 }
 
-inline v2i raster_to_canvas(CanvasView* view, v2i raster_point)
+static v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 {
     v2i canvas_point =
     {
