@@ -89,7 +89,6 @@ static void milton_save(MiltonState* milton_state)
 {
     i32 num_strokes = milton_state->num_strokes;
     Stroke* strokes = milton_state->strokes;
-    Stroke* working_stroke = &milton_state->working_stroke;
     FILE* fd = fopen("MiltonPersist.mlt", "wb");
 
     if (!fd)

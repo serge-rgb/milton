@@ -381,7 +381,7 @@ static void milton_init(MiltonState* milton_state)
     milton_state->render_worker_arenas = arena_alloc_array(milton_state->root_arena,
                                                            milton_state->num_render_workers,
                                                            Arena);
-    milton_state->worker_memory_size = 1024 * 64;
+    milton_state->worker_memory_size = 65536;
     milton_state->worker_needs_memory = false;
 
     assert (milton_state->num_render_workers);
@@ -418,7 +418,7 @@ static void milton_init(MiltonState* milton_state)
         milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         milton_state->view->downsampling_factor = 1;
-        milton_state->view->canvas_tile_radius = 1024 * 1024 * 512;
+        milton_state->view->canvas_radius_limit = 1024 * 1024 * 512;
 #if 0
         milton_state->view->rotation = 0;
         for (int d = 0; d < 360; d++)
@@ -447,8 +447,9 @@ static void milton_init(MiltonState* milton_state)
         bounds.top = milton_state->picker.center.y - bound_radius_px;
         bounds.bottom = milton_state->picker.center.y + bound_radius_px;
         milton_state->picker.bounds = bounds;
-        milton_state->picker.pixels = arena_alloc_array(
-                milton_state->root_arena, (4 * bound_radius_px * bound_radius_px), u32);
+        milton_state->picker.pixels = arena_alloc_array(milton_state->root_arena,
+                                                        (4 * bound_radius_px * bound_radius_px),
+                                                        u32);
         picker_init(&milton_state->picker);
     }
     milton_state->brush_size = 10;
@@ -457,8 +458,6 @@ static void milton_init(MiltonState* milton_state)
     milton_gl_backend_init(milton_state);
     milton_load(milton_state);
     milton_update_brushes(milton_state);
-
-    size_t worker_chunk_size = min((size_t)8 * 1024 * 1024 * 1024, get_system_RAM() / 2);
 
     for (i32 i = 0; i < milton_state->num_render_workers; ++i)
     {
@@ -528,21 +527,21 @@ static void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_scre
         v2i pan_vector = add_v2i(milton_state->view->pan_vector,
                                  scale_v2i(pan_delta, milton_state->view->scale));
 
-        while (pan_vector.x > milton_state->view->canvas_tile_radius)
+        while (pan_vector.x > milton_state->view->canvas_radius_limit)
         {
-            pan_vector.x -= milton_state->view->canvas_tile_radius;
+            pan_vector.x -= milton_state->view->canvas_radius_limit;
         }
-        while (pan_vector.x <= -milton_state->view->canvas_tile_radius)
+        while (pan_vector.x <= -milton_state->view->canvas_radius_limit)
         {
-            pan_vector.x += milton_state->view->canvas_tile_radius;
+            pan_vector.x += milton_state->view->canvas_radius_limit;
         }
-        while (pan_vector.y > milton_state->view->canvas_tile_radius)
+        while (pan_vector.y > milton_state->view->canvas_radius_limit)
         {
-            pan_vector.y -= milton_state->view->canvas_tile_radius;
+            pan_vector.y -= milton_state->view->canvas_radius_limit;
         }
-        while (pan_vector.y <= -milton_state->view->canvas_tile_radius)
+        while (pan_vector.y <= -milton_state->view->canvas_radius_limit)
         {
-            pan_vector.y += milton_state->view->canvas_tile_radius;
+            pan_vector.y += milton_state->view->canvas_radius_limit;
         }
         milton_state->view->pan_vector = pan_vector;
     }
@@ -567,17 +566,27 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
 
+    b32 do_fast_draw = false;
     if (milton_state->worker_needs_memory)
     {
-        milton_log("[DEBUG] Assigning more memory per worker.\n");
+        milton_log("[DEBUG] Assigning more memory per worker. From %li to %li\n",
+                   milton_state->worker_memory_size,
+                   milton_state->worker_memory_size * 2);
+
         milton_state->worker_memory_size *= 2;
         milton_state->worker_needs_memory = false;
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        do_fast_draw = true;
     }
 
     if (input->flags & MiltonInputFlags_FAST_DRAW)
     {
-        milton_state->view->downsampling_factor = (1 << 1);  // Forcing a power of two
+        do_fast_draw = true;
+    }
+
+    if (do_fast_draw)
+    {
+        milton_state->view->downsampling_factor = 2;
         milton_state->current_mode |= MiltonMode_REQUEST_QUALITY_REDRAW;
     }
     else
@@ -685,24 +694,25 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 #endif
 
-    b32 finish_stroke = false;
     if (input->point)
     {
         v2i point = *input->point;
-        if (!is_user_drawing(milton_state) && is_inside_picker_rect(&milton_state->picker, point))
+        if (!is_user_drawing(milton_state) &&
+            is_picker_accepting_input(&milton_state->picker, point))
+            //is_inside_picker_rect(&milton_state->picker, point))
         {
-            //if (is_inside_picker_active_area(&milton_state->picker, point))
+            milton_log("Hullo\n");
             {
                 ColorPickResult pick_result = picker_update(&milton_state->picker, point);
-                if ((pick_result & ColorPickResult_change_color) &&
+                if ((pick_result & ColorPickResult_CHANGE_COLOR) &&
                     (milton_state->current_mode == MiltonMode_BRUSH))
                 {
                     v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
                     milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
                 }
                 render_flags |= MiltonRenderFlags_PICKER_UPDATED;
+                milton_state->canvas_blocked = true;
             }
-            milton_state->canvas_blocked = true;
         }
         // Currently drawing
         else if (!milton_state->canvas_blocked)
@@ -734,28 +744,6 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
 
             milton_state->last_raster_input = in_point;
         }
-        if (milton_state->canvas_blocked)
-        {
-            v2f fpoint = v2i_to_v2f(point);
-            ColorPicker* picker = &milton_state->picker;
-            if  (is_picker_wheel_active(picker))
-            {
-                //if (picker_is_within_wheel(picker, fpoint))
-                if (picker_hits_triangle(picker, fpoint))
-                {
-                    picker_wheel_deactivate(picker);
-                }
-                else if (milton_state->current_mode == MiltonMode_BRUSH)
-                {
-                    if (picker_try_activate(picker, fpoint))
-                    {
-                        v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
-                        milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
-                    }
-                }
-                render_flags |= MiltonRenderFlags_PICKER_UPDATED;
-            }
-        }
 
         // Clear redo stack
         milton_state->num_redos = 0;
@@ -765,7 +753,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         if (milton_state->canvas_blocked)
         {
-            picker_wheel_deactivate(&milton_state->picker);
+            picker_deactivate(&milton_state->picker);
             milton_state->canvas_blocked = false;
         }
         else

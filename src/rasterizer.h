@@ -56,7 +56,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, R
     else
     {
         i32 num_points = stroke->num_points;
-        b32 added_previous = false;
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
         {
             v2i a = stroke->points[point_i];
@@ -225,10 +224,10 @@ static b32 render_canvas_in_block(Arena* render_arena,
         canvas_limits.bot_right = raster_to_canvas(view, raster_limits.bot_right);
     }
 
-    if (canvas_limits.left   < -view->canvas_tile_radius ||
-        canvas_limits.right  > view->canvas_tile_radius  ||
-        canvas_limits.top    < -view->canvas_tile_radius ||
-        canvas_limits.bottom > view->canvas_tile_radius
+    if (canvas_limits.left   < -view->canvas_radius_limit ||
+        canvas_limits.right  > view->canvas_radius_limit  ||
+        canvas_limits.top    < -view->canvas_radius_limit ||
+        canvas_limits.bottom > view->canvas_radius_limit
         )
     {
         for (int j = raster_limits.top; j < raster_limits.bottom; j++)
@@ -272,9 +271,10 @@ static b32 render_canvas_in_block(Arena* render_arena,
         assert(stroke);
         Rect enlarged_limits = rect_enlarge(canvas_limits, stroke->brush.radius);
         ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, stroke, enlarged_limits);
+        // ALlocation failed.
+        // Handle this gracefully; this will cause more memory for render workers.
         if (!clipped_stroke)
         {
-            milton_log("[WARNING] Not enough memory for clipped stroke. Rendering what we have\n");
             allocation_ok = false;
             break;
         }
@@ -347,7 +347,6 @@ static b32 render_canvas_in_block(Arena* render_arena,
             while(list_iter)
             {
                 ClippedStroke* clipped_stroke      = list_iter;
-                ClippedStroke* next_clipped_stroke = list_iter->next;
                 list_iter = list_iter->next;
 
                 assert (clipped_stroke);
@@ -793,7 +792,6 @@ static b32 render_tile(MiltonState* milton_state,
                                                canvas_tile_rect);
     if (!stroke_masks)
     {
-        milton_log("[WARNING] arena full when masking strokes to tile\n");
         return false;
     }
 
@@ -897,15 +895,6 @@ static void produce_render_work(MiltonState* milton_state, TileRenderData tile_r
 // Returns true if operation was completed.
 static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
 {
-    static u64 total = 0;
-    static u64 ncalls = 0;
-    static u64 block_avg_sum = 0;
-    static u64 extra_avg_sum = 0;
-    static u64 abs_avg_sum = 0;
-
-    //u64 ccount_begin = __rdtsc();
-
-    v2i canvas_reference = { 0 };
     Rect* blocks = NULL;
 
     i32 num_blocks = rect_split(milton_state->transient_arena,
@@ -926,9 +915,6 @@ static b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ras
     }
 
     const i32 blocks_per_tile = milton_state->blocks_per_tile;
-
-    // Ceil up
-    i32 num_tiles = 1 + (num_blocks - 1) / blocks_per_tile;
 
     size_t render_memory_cap = milton_state->worker_memory_size;
 
@@ -1002,8 +988,6 @@ static void render_picker(ColorPicker* picker,
                           ColorManagement cm,
                           u32* buffer_pixels, CanvasView* view)
 {
-    v2f baseline = {1,0};
-
     v4f background_color =
     {
         0.5f,
@@ -1228,7 +1212,6 @@ static void milton_render(MiltonState* milton_state, MiltonRenderFlags render_fl
     // Render UI
     if (completed)
     {
-        Rect* split_rects = NULL;
         b32 redraw = false;
         Rect picker_rect = picker_get_bounds(&milton_state->picker);
         Rect clipped = rect_intersect(picker_rect, raster_limits);

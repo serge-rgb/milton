@@ -18,9 +18,10 @@
 
 typedef enum
 {
-    ColorPickerFlags_none,
+    ColorPickerFlags_NOTHING = 0,
 
-    ColorPickerFlags_wheel_active   = (1 << 1),
+    ColorPickerFlags_WHEEL_ACTIVE    = (1 << 1),
+    ColorPickerFlags_TRIANGLE_ACTIVE = (1 << 2)
 } ColorPickerFlags;
 
 typedef struct ColorPicker_s
@@ -44,9 +45,8 @@ typedef struct ColorPicker_s
 
 typedef enum
 {
-    ColorPickResult_nothing         = 0,
-    ColorPickResult_change_color    = (1 << 1),
-    ColorPickResult_redraw_picker   = (1 << 2),
+    ColorPickResult_NOTHING         = 0,
+    ColorPickResult_CHANGE_COLOR    = (1 << 1),
 } ColorPickResult;
 
 typedef struct ColorManagement_s
@@ -270,12 +270,9 @@ static b32 picker_hits_wheel(ColorPicker* picker, v2f point)
     v2f center = v2i_to_v2f(picker->center);
     v2f arrow = sub_v2f (point, center);
     float dist = magnitude(arrow);
-    if (
-            (dist <= picker->wheel_radius + picker->wheel_half_width ) &&
-            (dist >= picker->wheel_radius - picker->wheel_half_width )
-       )
+    if ((dist <= picker->wheel_radius + picker->wheel_half_width ) &&
+        (dist >= picker->wheel_radius - picker->wheel_half_width ))
     {
-        picker->flags |= ColorPickerFlags_wheel_active;
         return true;
     }
     return false;
@@ -328,26 +325,9 @@ static b32 picker_hits_triangle(ColorPicker* picker, v2f fpoint)
     return result;
 }
 
-static b32 picker_try_activate(ColorPicker* picker, v2f fpoint)
+static void picker_deactivate(ColorPicker* picker)
 {
-    if (picker_hits_wheel(picker, fpoint) ||
-        picker_hits_triangle(picker, fpoint))
-    {
-        picker_update_wheel(picker, fpoint);
-        picker->flags |= ColorPickerFlags_wheel_active;
-        return true;
-    }
-    return false;
-}
-
-static b32 is_picker_wheel_active(ColorPicker* picker)
-{
-    return (picker->flags & ColorPickerFlags_wheel_active);
-}
-
-static void picker_wheel_deactivate(ColorPicker* picker)
-{
-    picker->flags &= ~ColorPickerFlags_wheel_active;
+    picker->flags = ColorPickerFlags_NOTHING;
 }
 
 static b32 is_inside_picker_rect(ColorPicker* picker, v2i point)
@@ -361,6 +341,19 @@ static b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
     b32 result = picker_hits_wheel(picker, fpoint) ||
             is_inside_triangle(fpoint, picker->a, picker->b, picker->c);
     return result;
+}
+
+static b32 is_picker_accepting_input(ColorPicker* picker, v2i point)
+{
+    // If wheel is active, yes! Gimme input.
+    if (picker->flags & ColorPickerFlags_WHEEL_ACTIVE)
+    {
+        return true;
+    }
+    else
+    {
+        return is_inside_picker_active_area(picker, point);
+    }
 }
 
 static Rect picker_get_bounds(ColorPicker* picker)
@@ -401,20 +394,31 @@ static v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
 
 static ColorPickResult picker_update(ColorPicker* picker, v2i point)
 {
-    ColorPickResult result = ColorPickResult_nothing;
+    ColorPickResult result = ColorPickResult_NOTHING;
     v2f fpoint = v2i_to_v2f(point);
-    if (picker->flags & ColorPickerFlags_wheel_active)
+    if (picker->flags == ColorPickResult_NOTHING)
     {
         if (picker_hits_wheel(picker, fpoint))
         {
+            picker->flags |= ColorPickerFlags_WHEEL_ACTIVE;
+        }
+    }
+    if (picker->flags & ColorPickerFlags_WHEEL_ACTIVE)
+    {
+        if (!(picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
+        {
             picker_update_wheel(picker, fpoint);
-            result |= ColorPickResult_change_color;
+            result |= ColorPickResult_CHANGE_COLOR;
         }
     }
     if (picker_hits_triangle(picker, fpoint))
     {
-        picker->hsv = picker_hsv_from_point(picker, fpoint);
-        result |= ColorPickResult_change_color;
+        if (!(picker->flags & ColorPickerFlags_WHEEL_ACTIVE))
+        {
+            picker->flags |= ColorPickerFlags_TRIANGLE_ACTIVE;
+            picker->hsv = picker_hsv_from_point(picker, fpoint);
+            result |= ColorPickResult_CHANGE_COLOR;
+        }
     }
 
     return result;

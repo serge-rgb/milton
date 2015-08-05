@@ -37,7 +37,7 @@ typedef struct CanvasView_s
     v2i     screen_center;          // In pixels
     v2i     pan_vector;             // In canvas scale
     i32     downsampling_factor;
-    i32     canvas_tile_radius;
+    i32     canvas_radius_limit;
 } CanvasView;
 
 

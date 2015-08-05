@@ -43,6 +43,23 @@ typedef struct PlatformInput_s
     v2i pan_point;
 } PlatformInput;
 
+// Called periodically to force updates that don't depend on user input.
+u32 timer_callback(u32 interval, void *param)
+{
+    SDL_Event event;
+    SDL_UserEvent userevent;
+
+    userevent.type = SDL_USEREVENT;
+    userevent.code = 0;
+    userevent.data1 = NULL;
+    userevent.data2 = NULL;
+
+    event.type = SDL_USEREVENT;
+    event.user = userevent;
+
+    SDL_PushEvent(&event);
+    return(interval);
+}
 
 int milton_main()
 {
@@ -108,6 +125,8 @@ int milton_main()
 
     u32 window_id = SDL_GetWindowID(window);
     v2i input_point = { 0 };
+
+    SDL_TimerID periodical = SDL_AddTimer(100, timer_callback, NULL);
 
     while(!should_quit)
     {
@@ -321,6 +340,7 @@ int milton_main()
         milton_update(milton_state, &milton_input);
         milton_gl_backend_draw(milton_state);
         SDL_GL_SwapWindow(window);
+        SDL_WaitEvent(NULL);
 
         milton_input = (MiltonInput){0};
     }
