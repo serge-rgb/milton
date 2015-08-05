@@ -18,10 +18,10 @@
 
 // Returns false if there were allocation errors
 func b32 render_tile(MiltonState* milton_state,
-                        Arena* tile_arena,
-                        Rect* blocks,
-                        i32 block_start, i32 num_blocks,
-                        u32* raster_buffer)
+                     Arena* tile_arena,
+                     Rect* blocks,
+                     i32 block_start, i32 num_blocks,
+                     u32* raster_buffer)
 {
     Rect raster_tile_rect = { 0 };
     Rect canvas_tile_rect = { 0 };
@@ -244,8 +244,8 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
 }
 
 func void render_picker(ColorPicker* picker,
-                          ColorManagement cm,
-                          u32* buffer_pixels, CanvasView* view)
+                        ColorManagement cm,
+                        u32* buffer_pixels, CanvasView* view)
 {
     v4f background_color =
     {
@@ -288,87 +288,7 @@ func void render_picker(ColorPicker* picker,
         }
     }
 
-    // render wheel
-    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
-    {
-        for (int i = draw_rect.left; i < draw_rect.right; ++i)
-        {
-            u32 picker_i =
-                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
-            v2f point = {(f32)i, (f32)j};
-            u32 dest_color = picker->pixels[picker_i];
-
-            int samples = 0;
-            {
-                f32 u = 0.223607f;
-                f32 v = 0.670820f;
-
-                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){-u, -v}));
-                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){-v, u}));
-                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){u, v}));
-                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){v, u}));
-            }
-
-            if (samples > 0)
-            {
-                f32 angle = picker_wheel_get_angle(picker, point);
-                f32 degree = radians_to_degrees(angle);
-                v3f hsv = { degree, 1.0f, 1.0f };
-
-                f32 alpha = samples / 4.0f;
-                v4f rgba  = to_premultiplied(hsv_to_rgb(hsv), alpha);
-
-                v4f d = color_u32_to_v4f(cm, dest_color);
-
-                v4f result = blend_v4f(d, rgba);
-                u32 color = color_v4f_to_u32(cm, result);
-                picker->pixels[picker_i] = color;
-            }
-        }
-    }
-
-    // Render triangle
-    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
-    {
-        for (int i = draw_rect.left; i < draw_rect.right; ++i)
-        {
-            v2f point = { (f32)i, (f32)j };
-            u32 picker_i =
-                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
-            u32 dest_color = picker->pixels[picker_i];
-            // MSAA!!
-            int samples = 0;
-            {
-                f32 u = 0.223607f;
-                f32 v = 0.670820f;
-
-                samples += (int)is_inside_triangle(add_v2f(point, (v2f){-u, -v}),
-                        picker->a, picker->b, picker->c);
-                samples += (int)is_inside_triangle(add_v2f(point, (v2f){-v, u}),
-                        picker->a, picker->b, picker->c);
-                samples += (int)is_inside_triangle(add_v2f(point, (v2f){u, v}),
-                        picker->a, picker->b, picker->c);
-                samples += (int)is_inside_triangle(add_v2f(point, (v2f){v, u}),
-                        picker->a, picker->b, picker->c);
-            }
-
-            if (samples > 0)
-            {
-                v3f hsv = picker_hsv_from_point(picker, point);
-
-                f32 contrib = samples / 4.0f;
-
-                v4f d = color_u32_to_v4f(cm, dest_color);
-
-                f32 alpha = contrib;
-                v4f rgba  = to_premultiplied(hsv_to_rgb(hsv), alpha);
-
-                v4f result = blend_v4f(d, rgba);
-
-                picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
-            }
-        }
-    }
+    rasterize_color_picker(picker, cm, draw_rect);
 
     // Blit picker pixels
     u32* to_blit = picker->pixels;

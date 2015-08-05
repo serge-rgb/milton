@@ -194,32 +194,32 @@ func v4f blend_v4f(v4f dst, v4f src)
 
 // returns false if allocation failed
 func b32 rasterize_canvas_block(Arena* render_arena,
-                                  CanvasView* view,
-                                  ColorManagement cm,
-                                  Stroke* strokes,
-                                  b32* stroke_masks,
-                                  i32 num_strokes,
-                                  Stroke* working_stroke,
-                                  u32* pixels,
-                                  Rect raster_limits)
+                                CanvasView* view,
+                                ColorManagement cm,
+                                Stroke* strokes,
+                                b32* stroke_masks,
+                                i32 num_strokes,
+                                Stroke* working_stroke,
+                                u32* pixels,
+                                Rect raster_block)
 {
     b32 allocation_ok = true;
     //u64 pre_ccount_begin = __rdtsc();
-    Rect canvas_limits;
+    Rect canvas_block;
     {
-        canvas_limits.top_left  = raster_to_canvas(view, raster_limits.top_left);
-        canvas_limits.bot_right = raster_to_canvas(view, raster_limits.bot_right);
+        canvas_block.top_left  = raster_to_canvas(view, raster_block.top_left);
+        canvas_block.bot_right = raster_to_canvas(view, raster_block.bot_right);
     }
 
-    if (canvas_limits.left   < -view->canvas_radius_limit ||
-        canvas_limits.right  > view->canvas_radius_limit  ||
-        canvas_limits.top    < -view->canvas_radius_limit ||
-        canvas_limits.bottom > view->canvas_radius_limit
+    if (canvas_block.left   < -view->canvas_radius_limit ||
+        canvas_block.right  > view->canvas_radius_limit  ||
+        canvas_block.top    < -view->canvas_radius_limit ||
+        canvas_block.bottom > view->canvas_radius_limit
         )
     {
-        for (int j = raster_limits.top; j < raster_limits.bottom; j++)
+        for (int j = raster_block.top; j < raster_block.bottom; j++)
         {
-            for (int i = raster_limits.left; i < raster_limits.right; i++)
+            for (int i = raster_block.left; i < raster_block.right; i++)
             {
                 pixels[j * view->screen_size.w + i] = 0xffff00ff;
             }
@@ -232,8 +232,8 @@ func b32 rasterize_canvas_block(Arena* render_arena,
 // Leaving this toggle-able for a quick way to show the cool precision error.
 #if 1
     {
-        (canvas_limits.left + canvas_limits.right) / 2,
-        (canvas_limits.top + canvas_limits.bottom) / 2,
+        (canvas_block.left + canvas_block.right) / 2,
+        (canvas_block.top + canvas_block.bottom) / 2,
     };
 #else
     {0};
@@ -256,8 +256,8 @@ func b32 rasterize_canvas_block(Arena* render_arena,
             stroke = &strokes[stroke_i];
         }
         assert(stroke);
-        Rect enlarged_limits = rect_enlarge(canvas_limits, stroke->brush.radius);
-        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, stroke, enlarged_limits);
+        Rect enlarged_block = rect_enlarge(canvas_block, stroke->brush.radius);
+        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, stroke, enlarged_block);
         // ALlocation failed.
         // Handle this gracefully; this will cause more memory for render workers.
         if (!clipped_stroke)
@@ -271,7 +271,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
             if (is_rect_filled_by_stroke(
-                        canvas_limits, reference_point,
+                        canvas_block, reference_point,
                         clipped_stroke->points, clipped_stroke->num_points, clipped_stroke->brush,
                         view))
             {
@@ -312,16 +312,16 @@ func b32 rasterize_canvas_block(Arena* render_arena,
     i32 canvas_jump = pixel_jump * view->scale * ninetales;
 
     // i and j are the canvas point
-    i32 i = (((raster_limits.left - view->screen_center.x) *
+    i32 i = (((raster_block.left - view->screen_center.x) *
               view->scale) - view->pan_vector.x) * ninetales - reference_point.x;
-    i32 j = (((raster_limits.top - view->screen_center.y) *
+    i32 j = (((raster_block.top - view->screen_center.y) *
               view->scale) - view->pan_vector.y) * ninetales - reference_point.y;
 
-    for (i32 pixel_j = raster_limits.top; pixel_j < raster_limits.bottom; pixel_j += pixel_jump)
+    for (i32 pixel_j = raster_block.top; pixel_j < raster_block.bottom; pixel_j += pixel_jump)
     {
-        i = (((raster_limits.left - view->screen_center.x) *
+        i = (((raster_block.left - view->screen_center.x) *
                 view->scale) - view->pan_vector.x) * ninetales - reference_point.x;
-        for (i32 pixel_i = raster_limits.left; pixel_i < raster_limits.right; pixel_i += pixel_jump)
+        for (i32 pixel_i = raster_block.left; pixel_i < raster_block.right; pixel_i += pixel_jump)
         {
             // Clear color
             v4f background_color = { 1, 1, 1, 1 };
@@ -740,5 +740,92 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         j += canvas_jump;
     }
     return allocation_ok;
+}
+
+func void rasterize_color_picker(ColorPicker* picker,
+                                 ColorManagement cm,
+                                 Rect draw_rect)
+{
+    // Wheel
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
+    {
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
+        {
+            u32 picker_i =
+                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            v2f point = {(f32)i, (f32)j};
+            u32 dest_color = picker->pixels[picker_i];
+
+            int samples = 0;
+            {
+                f32 u = 0.223607f;
+                f32 v = 0.670820f;
+
+                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){-u, -v}));
+                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){-v, u}));
+                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){u, v}));
+                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){v, u}));
+            }
+
+            if (samples > 0)
+            {
+                f32 angle = picker_wheel_get_angle(picker, point);
+                f32 degree = radians_to_degrees(angle);
+                v3f hsv = { degree, 1.0f, 1.0f };
+
+                f32 alpha = samples / 4.0f;
+                v4f rgba  = to_premultiplied(hsv_to_rgb(hsv), alpha);
+
+                v4f d = color_u32_to_v4f(cm, dest_color);
+
+                v4f result = blend_v4f(d, rgba);
+                u32 color = color_v4f_to_u32(cm, result);
+                picker->pixels[picker_i] = color;
+            }
+        }
+    }
+
+    // Triangle
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
+    {
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
+        {
+            v2f point = { (f32)i, (f32)j };
+            u32 picker_i =
+                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+            u32 dest_color = picker->pixels[picker_i];
+            // MSAA!!
+            int samples = 0;
+            {
+                f32 u = 0.223607f;
+                f32 v = 0.670820f;
+
+                samples += (int)is_inside_triangle(add_v2f(point, (v2f){-u, -v}),
+                        picker->a, picker->b, picker->c);
+                samples += (int)is_inside_triangle(add_v2f(point, (v2f){-v, u}),
+                        picker->a, picker->b, picker->c);
+                samples += (int)is_inside_triangle(add_v2f(point, (v2f){u, v}),
+                        picker->a, picker->b, picker->c);
+                samples += (int)is_inside_triangle(add_v2f(point, (v2f){v, u}),
+                        picker->a, picker->b, picker->c);
+            }
+
+            if (samples > 0)
+            {
+                v3f hsv = picker_hsv_from_point(picker, point);
+
+                f32 contrib = samples / 4.0f;
+
+                v4f d = color_u32_to_v4f(cm, dest_color);
+
+                f32 alpha = contrib;
+                v4f rgba  = to_premultiplied(hsv_to_rgb(hsv), alpha);
+
+                v4f result = blend_v4f(d, rgba);
+
+                picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
+            }
+        }
+    }
 }
 
