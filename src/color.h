@@ -62,7 +62,7 @@ typedef struct ColorManagement_s
     u32 shift_b;
 } ColorManagement;
 
-static void color_init(ColorManagement* cm)
+func void color_init(ColorManagement* cm)
 {
     // TODO: This is platform dependant
     cm->mask_a = 0xff000000;
@@ -75,7 +75,7 @@ static void color_init(ColorManagement* cm)
     cm->shift_b = find_least_significant_set_bit(cm->mask_b).index;
 }
 
-static u32 color_v4f_to_u32(ColorManagement cm, v4f c)
+func u32 color_v4f_to_u32(ColorManagement cm, v4f c)
 {
     u32 result =
         ((u8)(c.r * 255.0f) << cm.shift_r) |
@@ -85,7 +85,7 @@ static u32 color_v4f_to_u32(ColorManagement cm, v4f c)
     return result;
 }
 
-static v4f color_u32_to_v4f(ColorManagement cm, u32 color)
+func v4f color_u32_to_v4f(ColorManagement cm, u32 color)
 {
     v4f result =
     {
@@ -98,7 +98,7 @@ static v4f color_u32_to_v4f(ColorManagement cm, u32 color)
     return result;
 }
 
-static v4f color_rgb_to_rgba(v3f rgb, float a)
+func v4f color_rgb_to_rgba(v3f rgb, float a)
 {
     return (v4f)
     {
@@ -109,7 +109,7 @@ static v4f color_rgb_to_rgba(v3f rgb, float a)
     };
 }
 
-static v3f hsv_to_rgb(v3f hsv)
+func v3f hsv_to_rgb(v3f hsv)
 {
     v3f rgb = { 0 };
 
@@ -182,7 +182,7 @@ static v3f hsv_to_rgb(v3f hsv)
     return rgb;
 }
 
-static v4f to_premultiplied(v3f rgb, f32 a)
+func v4f to_premultiplied(v3f rgb, f32 a)
 {
     v4f rgba =
     {
@@ -195,7 +195,7 @@ static v4f to_premultiplied(v3f rgb, f32 a)
 }
 
 #define FAST_GAMMA 1
-static v4f linear_to_sRGB_v4(v4f rgb)
+func v4f linear_to_sRGB_v4(v4f rgb)
 {
 #if FAST_GAMMA
     v4f srgb =
@@ -217,7 +217,7 @@ static v4f linear_to_sRGB_v4(v4f rgb)
     return srgb;
 }
 
-static v3f linear_to_sRGB(v3f rgb)
+func v3f linear_to_sRGB(v3f rgb)
 {
 #if FAST_GAMMA
     v3f srgb =
@@ -237,7 +237,7 @@ static v3f linear_to_sRGB(v3f rgb)
     return srgb;
 }
 
-static v3f sRGB_to_linear(v3f rgb)
+func v3f sRGB_to_linear(v3f rgb)
 {
 #if FAST_GAMMA
     v3f result =
@@ -265,7 +265,7 @@ static v3f sRGB_to_linear(v3f rgb)
     return result;
 }
 
-static b32 picker_hits_wheel(ColorPicker* picker, v2f point)
+func b32 picker_hits_wheel(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
     v2f arrow = sub_v2f (point, center);
@@ -278,7 +278,7 @@ static b32 picker_hits_wheel(ColorPicker* picker, v2f point)
     return false;
 }
 
-static float picker_wheel_get_angle(ColorPicker* picker, v2f point)
+func float picker_wheel_get_angle(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
     v2f arrow = sub_v2f (point, center);
@@ -292,7 +292,7 @@ static float picker_wheel_get_angle(ColorPicker* picker, v2f point)
     return angle;
 }
 
-static void picker_update_wheel(ColorPicker* picker, v2f point)
+func void picker_update_wheel(ColorPicker* picker, v2f point)
 {
     float angle = picker_wheel_get_angle(picker, point);
     picker->hsv.h = radians_to_degrees(angle);
@@ -319,23 +319,23 @@ static void picker_update_wheel(ColorPicker* picker, v2f point)
 }
 
 
-static b32 picker_hits_triangle(ColorPicker* picker, v2f fpoint)
+func b32 picker_hits_triangle(ColorPicker* picker, v2f fpoint)
 {
     b32 result = is_inside_triangle(fpoint, picker->a, picker->b, picker->c);
     return result;
 }
 
-static void picker_deactivate(ColorPicker* picker)
+func void picker_deactivate(ColorPicker* picker)
 {
     picker->flags = ColorPickerFlags_NOTHING;
 }
 
-static b32 is_inside_picker_rect(ColorPicker* picker, v2i point)
+func b32 is_inside_picker_rect(ColorPicker* picker, v2i point)
 {
     return is_inside_rect(picker->bounds, point);
 }
 
-static b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
+func b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
 {
     v2f fpoint = v2i_to_v2f(point);
     b32 result = picker_hits_wheel(picker, fpoint) ||
@@ -343,7 +343,7 @@ static b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
     return result;
 }
 
-static b32 is_picker_accepting_input(ColorPicker* picker, v2i point)
+func b32 is_picker_accepting_input(ColorPicker* picker, v2i point)
 {
     // If wheel is active, yes! Gimme input.
     if (picker->flags & ColorPickerFlags_WHEEL_ACTIVE)
@@ -356,7 +356,7 @@ static b32 is_picker_accepting_input(ColorPicker* picker, v2i point)
     }
 }
 
-static Rect picker_get_bounds(ColorPicker* picker)
+func Rect picker_get_bounds(ColorPicker* picker)
 {
     Rect picker_rect;
     {
@@ -371,7 +371,7 @@ static Rect picker_get_bounds(ColorPicker* picker)
     return picker_rect;
 }
 
-static v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
+func v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
 {
     float area = orientation(picker->a, picker->b, picker->c);
     assert (area != 0);
@@ -392,7 +392,7 @@ static v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
     return hsv;
 }
 
-static ColorPickResult picker_update(ColorPicker* picker, v2i point)
+func ColorPickResult picker_update(ColorPicker* picker, v2i point)
 {
     ColorPickResult result = ColorPickResult_NOTHING;
     v2f fpoint = v2i_to_v2f(point);
@@ -424,7 +424,7 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
     return result;
 }
 
-static void picker_init(ColorPicker* picker)
+func void picker_init(ColorPicker* picker)
 {
 
     picker_update_wheel(picker, (v2f)

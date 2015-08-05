@@ -52,7 +52,7 @@ typedef struct CanvasView_s
 // This feature is fundamentally different to rotation on a raster-based paint
 // package.
 #if 0
-static v2i rotate_to_view(v2i p, CanvasView* view)
+func v2i rotate_to_view(v2i p, CanvasView* view)
 {
     int d = view->rotation;
     f32 c = view->cos_sin_table[d][0];
@@ -68,7 +68,7 @@ static v2i rotate_to_view(v2i p, CanvasView* view)
 }
 #endif
 
-static v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
+func v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
     v2i raster_point =
     {
@@ -78,7 +78,7 @@ static v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
     return raster_point;
 }
 
-static v2i raster_to_canvas(CanvasView* view, v2i raster_point)
+func v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 {
     v2i canvas_point =
     {
@@ -90,7 +90,7 @@ static v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 }
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
-static b32* filter_strokes_to_rect(Arena* arena,
+func b32* filter_strokes_to_rect(Arena* arena,
                                    const Stroke* strokes,
                                    const i32 num_strokes,
                                    const Rect rect)

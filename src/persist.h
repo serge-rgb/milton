@@ -25,7 +25,7 @@ extern "C"
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
-static u32 word_swap_memory_order(u32 word)
+func u32 word_swap_memory_order(u32 word)
 {
     u8 llo = (u8) (word & 0x000000ff);
     u8 lhi = (u8)((word & 0x0000ff00) >> 8);
@@ -38,7 +38,7 @@ static u32 word_swap_memory_order(u32 word)
             (u32)(hhi);
 }
 
-static void milton_load(MiltonState* milton_state)
+func void milton_load(MiltonState* milton_state)
 {
     FILE* fd = fopen("MiltonPersist.mlt", "rb");
     if (fd)
@@ -85,7 +85,7 @@ close:
 }
 
 // TODO: handle failures gracefully.
-static void milton_save(MiltonState* milton_state)
+func void milton_save(MiltonState* milton_state)
 {
     i32 num_strokes = milton_state->num_strokes;
     Stroke* strokes = milton_state->strokes;

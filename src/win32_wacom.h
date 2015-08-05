@@ -29,7 +29,7 @@
     return false; \
 }
 
-static b32 win32_wacom_load_wintab(Win32State* win_state)
+func b32 win32_wacom_load_wintab(Win32State* win_state)
 {
     win_state->wintab_handle = LoadLibraryA( "Wintab32.dll" );
 
@@ -86,7 +86,7 @@ static b32 win32_wacom_load_wintab(Win32State* win_state)
     return true;
 }
 
-static void win32_wacom_get_context(Win32State* win_state)
+func void win32_wacom_get_context(Win32State* win_state)
 {
     if ( !win_state->wintab_handle )
     {

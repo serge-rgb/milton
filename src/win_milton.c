@@ -87,10 +87,10 @@ void platform_quit()
 
 // Copied from libserg.
 // Defined below.
-static int milton_win32_setup_context(HWND window, HGLRC* context);
+func int milton_win32_setup_context(HWND window, HGLRC* context);
 
 
-static void path_at_exe(char* full_path, i32 buffer_size, char* fname)
+func void path_at_exe(char* full_path, i32 buffer_size, char* fname)
 {
     GetModuleFileName(NULL, full_path, (DWORD)buffer_size);
     {  // Trim to backslash
@@ -131,7 +131,7 @@ void win32_log(char *format, ...)
 	va_end( args );
 }
 
-static void win32_resize(Win32State* win_state)
+func void win32_resize(Win32State* win_state)
 {
     // NOTE: here we would free the raster buffer
 
@@ -160,7 +160,7 @@ static void win32_resize(Win32State* win_state)
 }
 
 
-static MiltonInput win32_process_input(Win32State* win_state, HWND window)
+func MiltonInput win32_process_input(Win32State* win_state, HWND window)
 {
     MiltonInput input = { 0 };
     MSG message;
@@ -493,7 +493,7 @@ LRESULT APIENTRY WndProc(
     return result;
 }
 
-static void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id, DWORD time)
+func void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id, DWORD time)
 {
     if (event_id == 42)
     {
@@ -504,7 +504,7 @@ static void CALLBACK win32_fire_timer(HWND window, UINT uMsg, UINT_PTR event_id,
 }
 
 // Vestigial function from the pre-opengl days
-static void win32_display_raster_buffer(Win32State* win_state, u8* bytes,
+func void win32_display_raster_buffer(Win32State* win_state, u8* bytes,
                                         int32_t full_width, int32_t full_height,
                                         u8 bytes_per_pixel)
 {
@@ -686,7 +686,7 @@ int CALLBACK WinMain(
     return TRUE;
 }
 
-static int milton_win32_setup_context(HWND window, HGLRC* context)
+func int milton_win32_setup_context(HWND window, HGLRC* context)
 {
     int format_index = 0;
 

@@ -44,7 +44,7 @@ typedef struct PlatformInput_s
 } PlatformInput;
 
 // Called periodically to force updates that don't depend on user input.
-u32 timer_callback(u32 interval, void *param)
+func u32 timer_callback(u32 interval, void *param)
 {
     SDL_Event event;
     SDL_UserEvent userevent;
@@ -61,7 +61,7 @@ u32 timer_callback(u32 interval, void *param)
     return(interval);
 }
 
-int milton_main()
+func int milton_main()
 {
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default

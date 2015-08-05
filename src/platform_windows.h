@@ -31,10 +31,10 @@
 								     MEM_COMMIT | MEM_RESERVE, \
 								     PAGE_READWRITE) \
 
-void win32_log(char *format, ...);
+func void win32_log(char *format, ...);
 #define milton_log win32_log
 
-void win32_log(char *format, ...)
+func void win32_log(char *format, ...)
 {
     char message[ 128 ];
 
@@ -56,7 +56,7 @@ void win32_log(char *format, ...)
     va_end( args );
 }
 
-void platform_load_gl_func_pointers()
+func void platform_load_gl_func_pointers()
 {
     GLenum glew_err = glewInit();
 
