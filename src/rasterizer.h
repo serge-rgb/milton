@@ -353,12 +353,11 @@ static b32 render_canvas_in_block(Arena* render_arena,
 
                 assert (clipped_stroke->num_points % 2 == 0 || clipped_stroke->num_points <= 1);
 
-// Re-add block-filling.
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
 #if 0 // Visualize it with black
-                    v4f dst = {0};
+                    v4f dst = {0,0,0,1};
 #else
                     v4f dst = clipped_stroke->brush.color;
 #endif
@@ -726,7 +725,7 @@ static b32 render_canvas_in_block(Arena* render_arena,
                         /* g_kk_calls++; */
                     }
                 }
-                if (acc_color.a > 0.99)
+                if (acc_color.a > 0.9999)
                 {
                     break;
                 }

@@ -4,11 +4,13 @@ To-Do
 - Bugs
     - :)
 
+- Docs
+    - Write a manual
+
 - UI
     - Fix color picker controls
-        - Only rotate when inside geometry
         - Highlight choice w/circle
-        - Disappearing wheel?
+    - Brush overlay
 
     - Keyboard shortcuts
     - Figure out the GUI library situation
@@ -17,6 +19,7 @@ To-Do
     - "Layers". History viewer?
 
 - Engine
+    - Draw ring shape (for picker)
     - Wacom: Pressure levels (all platformsj)
     - Async rendering
     - Wacom: Support for pan & rotate. (all platforms)

@@ -154,6 +154,8 @@ typedef struct MiltonState_s
 
 } MiltonState;
 
+#define MILTON_DEFAULT_SCALE (1 << 10)
+
 typedef enum
 {
     MiltonInputFlags_NONE,
@@ -337,30 +339,53 @@ static void milton_blend_tests()
 }
 #endif
 
-#define MILTON_DEFAULT_SCALE (1 << 10)
-
 static void milton_update_brushes(MiltonState* milton_state)
 {
-    Brush brush = { 0 };
+    // Set brush
     {
-        brush.radius = milton_state->brush_size * milton_state->view->scale;
-#if 1
-        brush.alpha = 0.8f;
-#else
-        brush.alpha = 1.0f;
-#endif
+        milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
         v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
         rgb = sRGB_to_linear(rgb);
-        brush.color = to_premultiplied(rgb, brush.alpha);
+        milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
     }
-    milton_state->brush = brush;
     milton_state->eraser_brush = (Brush)
     {
         .radius = milton_state->brush.radius,
         .color = (v4f) { 1, 1, 1, 1 },
         .alpha = 1,
     };
+}
 
+// For keyboard shortcut.
+static void milton_increase_brush_size(MiltonState* milton_state)
+{
+    if (milton_state->brush_size < 40)
+    {
+        milton_state->brush_size++;
+    }
+    milton_update_brushes(milton_state);
+}
+
+// For keyboard shortcut.
+static void milton_decrease_brush_size(MiltonState* milton_state)
+{
+    if (milton_state->brush_size > 1)
+    {
+        milton_state->brush_size--;
+    }
+    milton_update_brushes(milton_state);
+}
+
+static void milton_set_brush_size(MiltonState* milton_state, i32 size)
+{
+    milton_state->brush_size = size;
+    milton_update_brushes(milton_state);
+}
+
+static void milton_set_brush_alpha(MiltonState* milton_state, float alpha)
+{
+    milton_state->brush.alpha = alpha;
+    milton_update_brushes(milton_state);
 }
 
 static void milton_init(MiltonState* milton_state)
@@ -452,11 +477,12 @@ static void milton_init(MiltonState* milton_state)
                                                         u32);
         picker_init(&milton_state->picker);
     }
-    milton_state->brush_size = 10;
 
 
     milton_gl_backend_init(milton_state);
     milton_load(milton_state);
+    milton_set_brush_size(milton_state, 10);
+    milton_set_brush_alpha(milton_state, 0.8f);
     milton_update_brushes(milton_state);
 
     for (i32 i = 0; i < milton_state->num_render_workers; ++i)
@@ -699,9 +725,7 @@ static void milton_update(MiltonState* milton_state, MiltonInput* input)
         v2i point = *input->point;
         if (!is_user_drawing(milton_state) &&
             is_picker_accepting_input(&milton_state->picker, point))
-            //is_inside_picker_rect(&milton_state->picker, point))
         {
-            milton_log("Hullo\n");
             {
                 ColorPickResult pick_result = picker_update(&milton_state->picker, point);
                 if ((pick_result & ColorPickResult_CHANGE_COLOR) &&

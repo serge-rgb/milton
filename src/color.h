@@ -109,7 +109,7 @@ static v4f color_rgb_to_rgba(v3f rgb, float a)
     };
 }
 
-v3f hsv_to_rgb(v3f hsv)
+static v3f hsv_to_rgb(v3f hsv)
 {
     v3f rgb = { 0 };
 
@@ -182,7 +182,7 @@ v3f hsv_to_rgb(v3f hsv)
     return rgb;
 }
 
-v4f to_premultiplied(v3f rgb, f32 a)
+static v4f to_premultiplied(v3f rgb, f32 a)
 {
     v4f rgba =
     {
