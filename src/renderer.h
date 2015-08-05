@@ -65,7 +65,6 @@ func b32 render_tile(MiltonState* milton_state,
 
         allocation_ok = rasterize_canvas_block(tile_arena,
                                                milton_state->view,
-                                               milton_state->cm,
                                                milton_state->strokes,
                                                stroke_masks,
                                                milton_state->num_strokes,
@@ -244,7 +243,6 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
 }
 
 func void render_picker(ColorPicker* picker,
-                        ColorManagement cm,
                         u32* buffer_pixels, CanvasView* view)
 {
     v4f background_color =
@@ -264,7 +262,7 @@ func void render_picker(ColorPicker* picker,
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             u32 picker_i =
-                    (j - draw_rect.top) * (2*picker->bound_radius_px ) + (i - draw_rect.left);
+                    (j - draw_rect.top) * (2*picker->bounds_radius_px ) + (i - draw_rect.left);
             u32 src = buffer_pixels[j * view->screen_size.w + i];
             picker->pixels[picker_i] = src;
         }
@@ -276,19 +274,19 @@ func void render_picker(ColorPicker* picker,
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             u32 picker_i =
-                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+                    (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
 
 
             // TODO: Premultiplied?
-            v4f dest = color_u32_to_v4f(cm, picker->pixels[picker_i]);
+            v4f dest = color_u32_to_v4f(picker->pixels[picker_i]);
 
             v4f result = blend_v4f(dest, background_color);
 
-            picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
+            picker->pixels[picker_i] = color_v4f_to_u32(result);
         }
     }
 
-    rasterize_color_picker(picker, cm, draw_rect);
+    rasterize_color_picker(picker, draw_rect);
 
     // Blit picker pixels
     u32* to_blit = picker->pixels;
@@ -297,9 +295,9 @@ func void render_picker(ColorPicker* picker,
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             u32 linear_color = *to_blit++;
-            v4f rgba = color_u32_to_v4f(cm, linear_color);
+            v4f rgba = color_u32_to_v4f(linear_color);
             //sRGB = to_premultiplied(sRGB.rgb, sRGB.a);
-            u32 color = color_v4f_to_u32(cm, rgba);
+            u32 color = color_v4f_to_u32(rgba);
 
             buffer_pixels[j * view->screen_size.w + i] = color;
         }
@@ -403,7 +401,7 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
         {
             render_canvas(milton_state, raster_buffer, picker_rect);
 
-            render_picker(&milton_state->picker, milton_state->cm,
+            render_picker(&milton_state->picker,
                           raster_buffer,
                           milton_state->view);
         }

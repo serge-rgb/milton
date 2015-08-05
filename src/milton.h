@@ -122,8 +122,6 @@ typedef struct MiltonState_s
 
     MiltonGLState* gl;
 
-    ColorManagement cm;
-
     ColorPicker picker;
 
     Brush   brush;
@@ -441,8 +439,6 @@ func void milton_init(MiltonState* milton_state)
     milton_state->block_width = 32;
 #endif
 
-    color_init(&milton_state->cm);
-
     // Set the view
     {
         milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
@@ -464,21 +460,21 @@ func void milton_init(MiltonState* milton_state)
 
     // Init picker
     {
-        i32 bound_radius_px = 100;
+        i32 bounds_radius_px = 100;
         f32 wheel_half_width = 12;
         milton_state->picker.center = (v2i){ 120, 120 };
-        milton_state->picker.bound_radius_px = bound_radius_px;
+        milton_state->picker.bounds_radius_px = bounds_radius_px;
         milton_state->picker.wheel_half_width = wheel_half_width;
-        milton_state->picker.wheel_radius = (f32)bound_radius_px - 5.0f - wheel_half_width;
+        milton_state->picker.wheel_radius = (f32)bounds_radius_px - 5.0f - wheel_half_width;
         milton_state->picker.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
         Rect bounds;
-        bounds.left = milton_state->picker.center.x - bound_radius_px;
-        bounds.right = milton_state->picker.center.x + bound_radius_px;
-        bounds.top = milton_state->picker.center.y - bound_radius_px;
-        bounds.bottom = milton_state->picker.center.y + bound_radius_px;
+        bounds.left = milton_state->picker.center.x - bounds_radius_px;
+        bounds.right = milton_state->picker.center.x + bounds_radius_px;
+        bounds.top = milton_state->picker.center.y - bounds_radius_px;
+        bounds.bottom = milton_state->picker.center.y + bounds_radius_px;
         milton_state->picker.bounds = bounds;
         milton_state->picker.pixels = arena_alloc_array(milton_state->root_arena,
-                                                        (4 * bound_radius_px * bound_radius_px),
+                                                        (4 * bounds_radius_px * bounds_radius_px),
                                                         u32);
         picker_init(&milton_state->picker);
     }

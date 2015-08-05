@@ -31,12 +31,12 @@ typedef struct ColorPicker_s
     v2f c;  // Points to chosen hue.         (full color)
 
     v2i     center;  // In screen pixel coordinates.
-    i32   bound_radius_px;
+    i32     bounds_radius_px;
     Rect    bounds;
     float   wheel_radius;
     float   wheel_half_width;
 
-    u32* pixels;  // BLit this to render picker
+    u32*    pixels;  // Blit this to render picker
 
     v3f     hsv;
 
@@ -49,50 +49,24 @@ typedef enum
     ColorPickResult_CHANGE_COLOR    = (1 << 1),
 } ColorPickResult;
 
-typedef struct ColorManagement_s
-{
-    u32 mask_a;
-    u32 mask_r;
-    u32 mask_g;
-    u32 mask_b;
-
-    u32 shift_a;
-    u32 shift_r;
-    u32 shift_g;
-    u32 shift_b;
-} ColorManagement;
-
-func void color_init(ColorManagement* cm)
-{
-    // TODO: This is platform dependant
-    cm->mask_a = 0xff000000;
-    cm->mask_r = 0x00ff0000;
-    cm->mask_g = 0x0000ff00;
-    cm->mask_b = 0x000000ff;
-    cm->shift_a = find_least_significant_set_bit(cm->mask_a).index;
-    cm->shift_r = find_least_significant_set_bit(cm->mask_r).index;
-    cm->shift_g = find_least_significant_set_bit(cm->mask_g).index;
-    cm->shift_b = find_least_significant_set_bit(cm->mask_b).index;
-}
-
-func u32 color_v4f_to_u32(ColorManagement cm, v4f c)
+func u32 color_v4f_to_u32(v4f c)
 {
     u32 result =
-        ((u8)(c.r * 255.0f) << cm.shift_r) |
-        ((u8)(c.g * 255.0f) << cm.shift_g) |
-        ((u8)(c.b * 255.0f) << cm.shift_b) |
-        ((u8)(c.a * 255.0f) << cm.shift_a);
+        ((u8)(c.r * 255.0f) << 16) |
+        ((u8)(c.g * 255.0f) << 8) |
+        ((u8)(c.b * 255.0f) << 0) |
+        ((u8)(c.a * 255.0f) << 24);
     return result;
 }
 
-func v4f color_u32_to_v4f(ColorManagement cm, u32 color)
+func v4f color_u32_to_v4f(u32 color)
 {
     v4f result =
     {
-        (float)(0xff & (color >> cm.shift_r)) / 255,
-        (float)(0xff & (color >> cm.shift_g)) / 255,
-        (float)(0xff & (color >> cm.shift_b)) / 255,
-        (float)(0xff & (color >> cm.shift_a)) / 255,
+        (float)(0xff & (color >> 16)) / 255,
+        (float)(0xff & (color >> 8)) / 255,
+        (float)(0xff & (color >> 0)) / 255,
+        (float)(0xff & (color >> 24)) / 255,
     };
 
     return result;
@@ -360,10 +334,10 @@ func Rect picker_get_bounds(ColorPicker* picker)
 {
     Rect picker_rect;
     {
-        picker_rect.left = picker->center.x - picker->bound_radius_px;
-        picker_rect.right = picker->center.x + picker->bound_radius_px;
-        picker_rect.bottom = picker->center.y + picker->bound_radius_px;
-        picker_rect.top = picker->center.y - picker->bound_radius_px;
+        picker_rect.left   = picker->center.x - picker->bounds_radius_px;
+        picker_rect.right  = picker->center.x + picker->bounds_radius_px;
+        picker_rect.bottom = picker->center.y + picker->bounds_radius_px;
+        picker_rect.top    = picker->center.y - picker->bounds_radius_px;
     }
     assert (picker_rect.left >= 0);
     assert (picker_rect.top >= 0);
