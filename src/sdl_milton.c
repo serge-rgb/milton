@@ -61,7 +61,7 @@ func u32 timer_callback(u32 interval, void *param)
     return(interval);
 }
 
-func int milton_main()
+int milton_main()
 {
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
@@ -220,11 +220,24 @@ func int milton_main()
                         break;
                     }
 
+                    SDL_Keycode keycode = event.key.keysym.sym;
+                    // Actions accepting key repeats.
+                    {
+                        if (keycode == SDLK_LEFTBRACKET)
+                        {
+                            milton_decrease_brush_size(milton_state);
+                        }
+                        else if (keycode == SDLK_RIGHTBRACKET)
+                        {
+                            milton_increase_brush_size(milton_state);
+                        }
+                    }
+
                     if (event.key.repeat)
                     {
                         break;
                     }
-                    SDL_Keycode keycode = event.key.keysym.sym;
+
                     if (keycode == SDLK_ESCAPE)
                     {
                         should_quit = true;
@@ -297,14 +310,6 @@ func int milton_main()
                         else if (keycode == SDLK_0)
                         {
                             milton_set_brush_alpha(milton_state, 1.0f);
-                        }
-                        else if (keycode == SDLK_LEFTBRACKET)
-                        {
-                            milton_decrease_brush_size(milton_state);
-                        }
-                        else if (keycode == SDLK_RIGHTBRACKET)
-                        {
-                            milton_increase_brush_size(milton_state);
                         }
                     }
 

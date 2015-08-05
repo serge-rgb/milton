@@ -4,9 +4,6 @@ To-Do
 - Bugs
     - :)
 
-- Docs
-    - Write a manual
-
 - UI
     - Fix color picker controls
         - Highlight choice w/circle

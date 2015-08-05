@@ -54,7 +54,12 @@ extern "C"
 #include "color.h"
 #include "canvas.h"
 
-#define MILTON_USE_VAO 1
+#define MILTON_USE_VAO          1
+#define RENDER_QUEUE_SIZE       4096
+#define STROKE_MAX_POINTS       2048
+#define MAX_BRUSH_SIZE          80
+#define MILTON_DEFAULT_SCALE    (1 << 10)
+
 
 typedef struct MiltonGLState_s
 {
@@ -85,8 +90,6 @@ typedef struct TileRenderData_s
     i32     block_start;
 } TileRenderData;
 
-#define RENDER_QUEUE_SIZE 4096
-#define STROKE_MAX_POINTS 2048
 
 //typedef struct RenderQueue_s RenderQueue;
 typedef struct RenderQueue_s
@@ -156,8 +159,6 @@ typedef struct MiltonState_s
 
 } MiltonState;
 
-#define MILTON_DEFAULT_SCALE (1 << 10)
-
 typedef enum
 {
     MiltonInputFlags_NONE,
@@ -183,6 +184,7 @@ typedef struct MiltonInput_s
 func void milton_fatal(char* message);
 
 #include "rasterizer.h"
+#include "renderer.h"
 #include "persist.h"
 
 func void milton_gl_backend_draw(MiltonState* milton_state)
@@ -302,7 +304,7 @@ func void milton_gl_backend_init(MiltonState* milton_state)
         GLint sampler_loc = glGetUniformLocation(milton_state->gl->quad_program, "raster_buffer");
         assert (pos_loc     >= 0);
         assert (sampler_loc >= 0);
-        GLCHK (glBufferData (GL_ARRAY_BUFFER, sizeof(vert_data), vert_data, GL_func_DRAW));
+        GLCHK (glBufferData (GL_ARRAY_BUFFER, sizeof(vert_data), vert_data, GL_STATIC_DRAW));
 #if MILTON_USE_VAO
         GLCHK (glVertexAttribPointer     (/*attrib location*/pos_loc,
                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE, /*stride*/0, /*ptr*/0));
@@ -361,7 +363,7 @@ func void milton_update_brushes(MiltonState* milton_state)
 // For keyboard shortcut.
 func void milton_increase_brush_size(MiltonState* milton_state)
 {
-    if (milton_state->brush_size < 40)
+    if (milton_state->brush_size < MAX_BRUSH_SIZE)
     {
         milton_state->brush_size++;
     }
@@ -380,6 +382,7 @@ func void milton_decrease_brush_size(MiltonState* milton_state)
 
 func void milton_set_brush_size(MiltonState* milton_state, i32 size)
 {
+    assert (size < MAX_BRUSH_SIZE);
     milton_state->brush_size = size;
     milton_update_brushes(milton_state);
 }

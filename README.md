@@ -66,6 +66,18 @@ What Milton is not:
 
 Milton is not an image editor or a vector graphics editor. It's a program that lets you draw.
 
+Keyboard Shortcuts
+==================
+
+| Input                | Action                |
+| ------------------   | --------------------: |
+| `Space + Mouse Drag` | Drag Canvas           |
+| `0 - 9`              | Change brush opacity  |
+| `[`                  | Make brush smaller    |
+| `]`                  | Make brush larger     |
+
+
+
 How to Compile
 ==============
 
