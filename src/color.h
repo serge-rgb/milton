@@ -401,9 +401,10 @@ func ColorPickResult picker_update(ColorPicker* picker, v2i point)
 func void picker_init(ColorPicker* picker)
 {
 
-    picker_update_wheel(picker, (v2f)
-                        {
-                        (f32)picker->center.x + (int)(picker->wheel_radius),
-                        (f32)picker->center.y
-                        });
+    v2f fpoint =
+    {
+        (f32)picker->center.x + (int)(picker->wheel_radius),
+        (f32)picker->center.y
+    };
+    picker_update_wheel(picker, fpoint);
 }

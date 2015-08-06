@@ -195,7 +195,6 @@ func v4f blend_v4f(v4f dst, v4f src)
 // returns false if allocation failed
 func b32 rasterize_canvas_block(Arena* render_arena,
                                 CanvasView* view,
-                                ColorManagement cm,
                                 Stroke* strokes,
                                 b32* stroke_masks,
                                 i32 num_strokes,
@@ -707,9 +706,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
 
                             acc_color = blend_v4f(dst, acc_color);
                         }
-
-                        /* g_kk_ccount += __rdtsc() - kk_ccount_begin; */
-                        /* g_kk_calls++; */
                     }
                 }
                 if (acc_color.a > 0.9999)
@@ -725,9 +721,8 @@ func b32 rasterize_canvas_block(Arena* render_arena,
             // before blitting
             acc_color.rgb = linear_to_sRGB(acc_color.rgb);
             // From [0, 1] to [0, 255]
-            u32 pixel = color_v4f_to_u32(cm, acc_color);
+            u32 pixel = color_v4f_to_u32(acc_color);
 
-            // TODO: Bilinear sampling could be nice here
             for (i32 jj = pixel_j; jj < pixel_j + pixel_jump; ++jj)
             {
                 for (i32 ii = pixel_i; ii < pixel_i + pixel_jump; ++ii)
@@ -742,8 +737,53 @@ func b32 rasterize_canvas_block(Arena* render_arena,
     return allocation_ok;
 }
 
+func void rasterize_ring(u32* pixels,
+                         i32 width, i32 height,
+                         i32 center_x, i32 center_y,
+                         i32 ring_radius, i32 ring_girth,
+                         v4f color)
+{
+#define compare(dist) \
+    dist < square(ring_radius + ring_girth) / 2 && \
+    dist > square(ring_radius - ring_girth) / 2
+#define distance(i, j) \
+    ((i) - center_x) * ((i) - center_x) + ((j) - center_y) * ((j) - center_y)
+
+    i32 samples = 0;
+    for (i32 j = 0; j < height; ++j)
+    {
+        for (i32 i = 0; i < width; ++i)
+        {
+            // Rotated grid AA
+            int samples = 0;
+            {
+                f32 u = 0.223607f;
+                f32 v = 0.670820f;
+
+                f32 fi = i;
+                f32 fj = j;
+
+                samples += compare(distance(fi - u, fj - v));
+                samples += compare(distance(fi - v, fj + u));
+                samples += compare(distance(fi + u, fj + v));
+                samples += compare(distance(fi + v, fj + u));
+            }
+
+            if (samples > 0)
+            {
+                f32 contrib = (f32)samples / 4.0f;
+                v4f aa_color = to_premultiplied(color.rgb, contrib);
+                v4f dst = color_u32_to_v4f(pixels[j*width + i]);
+                v4f blended = blend_v4f(dst, aa_color);
+                pixels[j*width + i] = color_v4f_to_u32(blended);
+            }
+        }
+    }
+#undef compare
+#undef distance
+}
+
 func void rasterize_color_picker(ColorPicker* picker,
-                                 ColorManagement cm,
                                  Rect draw_rect)
 {
     // Wheel
@@ -752,7 +792,7 @@ func void rasterize_color_picker(ColorPicker* picker,
         for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
             u32 picker_i =
-                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+                    (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
             v2f point = {(f32)i, (f32)j};
             u32 dest_color = picker->pixels[picker_i];
 
@@ -776,10 +816,10 @@ func void rasterize_color_picker(ColorPicker* picker,
                 f32 alpha = samples / 4.0f;
                 v4f rgba  = to_premultiplied(hsv_to_rgb(hsv), alpha);
 
-                v4f d = color_u32_to_v4f(cm, dest_color);
+                v4f d = color_u32_to_v4f(dest_color);
 
                 v4f result = blend_v4f(d, rgba);
-                u32 color = color_v4f_to_u32(cm, result);
+                u32 color = color_v4f_to_u32(result);
                 picker->pixels[picker_i] = color;
             }
         }
@@ -792,7 +832,7 @@ func void rasterize_color_picker(ColorPicker* picker,
         {
             v2f point = { (f32)i, (f32)j };
             u32 picker_i =
-                    (j - draw_rect.top) *( 2*picker->bound_radius_px ) + (i - draw_rect.left);
+                    (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
             u32 dest_color = picker->pixels[picker_i];
             // MSAA!!
             int samples = 0;
@@ -801,13 +841,13 @@ func void rasterize_color_picker(ColorPicker* picker,
                 f32 v = 0.670820f;
 
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){-u, -v}),
-                        picker->a, picker->b, picker->c);
+                                                   picker->a, picker->b, picker->c);
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){-v, u}),
-                        picker->a, picker->b, picker->c);
+                                                   picker->a, picker->b, picker->c);
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){u, v}),
-                        picker->a, picker->b, picker->c);
+                                                   picker->a, picker->b, picker->c);
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){v, u}),
-                        picker->a, picker->b, picker->c);
+                                                   picker->a, picker->b, picker->c);
             }
 
             if (samples > 0)
@@ -816,16 +856,51 @@ func void rasterize_color_picker(ColorPicker* picker,
 
                 f32 contrib = samples / 4.0f;
 
-                v4f d = color_u32_to_v4f(cm, dest_color);
+                v4f d = color_u32_to_v4f(dest_color);
 
                 f32 alpha = contrib;
                 v4f rgba  = to_premultiplied(hsv_to_rgb(hsv), alpha);
 
                 v4f result = blend_v4f(d, rgba);
 
-                picker->pixels[picker_i] = color_v4f_to_u32(cm, result);
+                picker->pixels[picker_i] = color_v4f_to_u32(result);
             }
         }
+    }
+
+    // Black ring around the chosen color.
+    {
+        i32 ring_radius = 10;
+        i32 ring_girth = 1;
+        if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE)
+        {
+            ring_radius = 20;
+            ring_girth  =  2;
+        }
+        v4f color = { 0.2f, 0.2f, 0.25f, 1 };
+
+        v3f hsv = picker->hsv;
+
+        // Barycentric to cartesian
+        f32 a = hsv.s;
+        f32 b = 1 - hsv.v;
+        f32 c = 1 - a - b;
+
+        v2f point = add_v2f(scale_v2f(picker->c, a),
+                            add_v2f(scale_v2f(picker->b, b),
+                                    scale_v2f(picker->a, c)));
+
+        // De-center
+        point.x -= picker->center.x - picker->bounds_radius_px;
+        point.y -= picker->center.y - picker->bounds_radius_px;
+
+        i32 width = picker->bounds_radius_px * 2;
+        i32 height = picker->bounds_radius_px * 2;
+
+        rasterize_ring(picker->pixels, width, height,
+                       point.x, point.y,
+                       ring_radius, ring_girth,
+                       color);
     }
 }
 

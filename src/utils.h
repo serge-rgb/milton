@@ -124,6 +124,9 @@ func f32 radians_to_degrees(f32 r)
     return (180 * r) / kPi;
 }
 
+#define square(x) ((x) * (x))
+
+
 // Could be called a signed area. `orientation(a, b, c) / 2` is the area of the
 // triangle.
 // If positive, c is to the left of ab. Negative: right of ab. 0 if

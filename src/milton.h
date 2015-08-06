@@ -462,7 +462,7 @@ func void milton_init(MiltonState* milton_state)
     {
         i32 bounds_radius_px = 100;
         f32 wheel_half_width = 12;
-        milton_state->picker.center = (v2i){ 120, 120 };
+        milton_state->picker.center = (v2i){ bounds_radius_px + 20, bounds_radius_px + 20 };
         milton_state->picker.bounds_radius_px = bounds_radius_px;
         milton_state->picker.wheel_half_width = wheel_half_width;
         milton_state->picker.wheel_radius = (f32)bounds_radius_px - 5.0f - wheel_half_width;
@@ -780,6 +780,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             picker_deactivate(&milton_state->picker);
             milton_state->canvas_blocked = false;
+            render_flags |= MiltonRenderFlags_PICKER_UPDATED;
         }
         else
         {
