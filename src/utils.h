@@ -104,10 +104,7 @@ func i32 absi(i32 a)
     return a < 0 ? -a : a;
 }
 
-func f32 dot(v2f a, v2f b)
-{
-   return a.x * b.x + a.y * b.y;
-}
+#define dot(a, b)  ((a).x * (b).x + (a).y * (b).y)
 
 func f32 magnitude(v2f a)
 {
@@ -163,6 +160,58 @@ func v2i rotate_v2i(v2i p, f32 angle)
         (i32)((p.x * sinf(angle)) + (p.y * cosf(angle))),
     };
     return r;
+}
+
+func v2i closest_point_in_segment(v2i a, v2i b,
+                                  v2f ab, f32 ab_magnitude_squared,
+                                  v2i point)
+{
+    v2i result;
+    f32 mag_ab = sqrtf(ab_magnitude_squared);
+    f32 d_x = ab.x / mag_ab;
+    f32 d_y = ab.y / mag_ab;
+    f32 ax_x = (f32)(point.x - a.x);
+    f32 ax_y = (f32)(point.y - a.y);
+    f32 disc = d_x * ax_x + d_y * ax_y;
+    if (disc >= 0 && disc <= mag_ab)
+    {
+        result = (v2i)
+        {
+            (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
+        };
+    }
+    else if (disc < 0)
+    {
+        result = a;
+    }
+    else
+    {
+        result = b;
+    }
+    return result;
+}
+
+func b32 intersect_line_segments(v2i a, v2i b,
+                                 v2i u, v2i v,
+                                 v2f* out_intersection)
+{
+    b32 hit = false;
+    v2i perp = perp_v2i(sub_v2i(v, u));
+    i32 det = dot(sub_v2i(b, a), perp);
+    if (det != 0)
+    {
+        f32 t = (f32)dot(sub_v2i(u, a), perp) / (f32)det;
+        if (t > 1 && t < 1.001) t = 1;
+        if (t < 0 && t > -0.001) t = 1;
+
+        if (t >= 0 && t <= 1)
+        {
+            hit = true;
+            out_intersection->x = a.x + t * (b.x - a.x);
+            out_intersection->y = a.y + t * (b.y - a.y);
+        }
+    }
+    return hit;
 }
 
 

@@ -326,7 +326,8 @@ func b32 is_picker_accepting_input(ColorPicker* picker, v2i point)
     }
     else
     {
-        return is_inside_picker_active_area(picker, point);
+        //return is_inside_picker_active_area(picker, point);
+        return is_inside_picker_rect(picker, point);
     }
 }
 
@@ -394,6 +395,42 @@ func ColorPickResult picker_update(ColorPicker* picker, v2i point)
             result |= ColorPickResult_CHANGE_COLOR;
         }
     }
+    // We don't want the chooser to "stick" if go outside the triangle
+    // (i.e. picking black should be easy)
+    else if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE)
+    {
+        v2f segments[] =
+        {
+            picker->a, picker->b,
+            picker->b, picker->c,
+            picker->c, picker->a,
+        };
+        v2i closest = {0};
+        v2i center =
+        {
+            picker->bounds_radius_px / 2,
+            picker->bounds_radius_px / 2,
+        };
+        b32 did_hit = false;
+        for (i32 segment_i = 0; segment_i < 6; segment_i += 2)
+        {
+            v2i a = v2f_to_v2i(segments[segment_i    ]);
+            v2i b = v2f_to_v2i(segments[segment_i + 1]);
+            v2f intersection = { 0 };
+            b32 hit = intersect_line_segments(
+                                              //picker->center, point,
+                                              point, picker->center,
+                                              a, b,
+                                              &intersection);
+            if (hit)
+            {
+                did_hit = true;
+                picker->hsv = picker_hsv_from_point(picker, intersection);
+                result |= ColorPickResult_CHANGE_COLOR;
+                break;
+            }
+        }
+    }
 
     return result;
 }
@@ -407,4 +444,5 @@ func void picker_init(ColorPicker* picker)
         (f32)picker->center.y
     };
     picker_update_wheel(picker, fpoint);
+    picker->hsv = (v3f){ 0, 1, 1 };
 }

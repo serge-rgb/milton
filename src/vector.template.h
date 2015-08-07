@@ -48,6 +48,16 @@ func $<Name2> scale_$<Name2> ($<Name2> v, $<Type> factor)
     return result;
 }
 
+func $<Name2> perp_$<Name2> ($<Name2> a)
+{
+    $<Name2> result =
+    {
+        -a.y,
+        a.x
+    };
+    return result;
+}
+
 func $<Name2> invscale_$<Name2> ($<Name2> v, $<Type> factor)
 {
     $<Name2> result;

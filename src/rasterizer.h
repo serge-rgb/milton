@@ -78,35 +78,6 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rec
     return clipped_stroke;
 }
 
-func v2i closest_point_in_segment(v2i a, v2i b,
-                                    v2f ab, f32 ab_magnitude_squared,
-                                    v2i canvas_point)
-{
-    v2i point;
-    f32 mag_ab = sqrtf(ab_magnitude_squared);
-    f32 d_x = ab.x / mag_ab;
-    f32 d_y = ab.y / mag_ab;
-    f32 ax_x = (f32)(canvas_point.x - a.x);
-    f32 ax_y = (f32)(canvas_point.y - a.y);
-    f32 disc = d_x * ax_x + d_y * ax_y;
-    if (disc >= 0 && disc <= mag_ab)
-    {
-        point = (v2i)
-        {
-            (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
-        };
-    }
-    else if (disc < 0)
-    {
-        point = a;
-    }
-    else
-    {
-        point = b;
-    }
-    return point;
-}
-
 // NOTE: takes clipped points.
 func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
                                     v2i* points, i32 num_points,
@@ -872,14 +843,25 @@ func void rasterize_color_picker(ColorPicker* picker,
     {
         i32 ring_radius = 10;
         i32 ring_girth = 1;
+
+        v3f hsv = picker->hsv;
+
+        v3f rgb = hsv_to_rgb(hsv);
+
+        v4f color =
+        {
+            1 - rgb.r,
+            1 - rgb.g,
+            1 - rgb.b,
+            1,
+        };
+
         if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE)
         {
             ring_radius = 20;
-            ring_girth  =  2;
+            ring_girth  = 2;
+            color       = (v4f){0};
         }
-        v4f color = { 0.2f, 0.2f, 0.25f, 1 };
-
-        v3f hsv = picker->hsv;
 
         // Barycentric to cartesian
         f32 a = hsv.s;
