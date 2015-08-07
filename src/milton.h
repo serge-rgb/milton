@@ -225,7 +225,11 @@ func void milton_gl_backend_init(MiltonState* milton_state)
         const char* shader_contents[2];
 
         shader_contents[0] =
+#if defined(__MACH__)
+            "#version 330\n"
+#elif defined(__linux__) || defined(_WIN32)
             "#version 300 es\n"
+#endif
             "in highp vec2 position;\n"
             "\n"
             "out highp vec2 coord;\n"
@@ -240,7 +244,11 @@ func void milton_gl_backend_init(MiltonState* milton_state)
 
 
         shader_contents[1] =
+#if defined(__MACH__)
+            "#version 330\n"
+#elif defined(__linux__) || defined(_WIN32)
             "#version 300 es\n"
+#endif
             "\n"
             "uniform sampler2D raster_buffer;\n"
             "in highp vec2 coord;\n"

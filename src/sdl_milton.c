@@ -74,8 +74,6 @@ int milton_main()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    SDL_GL_SetSwapInterval(1);
-
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                           width, height,
@@ -94,6 +92,11 @@ int milton_main()
     }
 
     platform_load_gl_func_pointers();
+
+    {
+        milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
+        milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    }
 
     // ==== Intialize milton
     //  Total memory requirement for Milton

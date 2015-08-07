@@ -61,8 +61,6 @@
 #elif __MACH__
 
 #define platform_load_gl_func_pointers()
-#define glBindVertexArray glBindVertexArrayAPPLE
-#define glGenVertexArrays glGenVertexArraysAPPLE
 #endif
 
 #define milton_log printf
