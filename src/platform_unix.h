@@ -22,6 +22,8 @@
 #define __USE_MISC 1  // MAP_ANONYMOUS and MAP_NORESERVE dont' get defined without this
 #include <sys/mman.h>
 #undef __USE_MISC
+#elif defined(__MACH__)
+#include <sys/mman.h>
 #else
 #error "This is not the Unix you're looking for"
 #endif
@@ -53,7 +55,15 @@
 #else
 #define allocate_big_chunk_of_memory(total_memory_size) malloc(total_memory_size)
 #endif
+
+#ifdef __linux__
 #define platform_load_gl_func_pointers()
+#elif __MACH__
+
+#define platform_load_gl_func_pointers()
+#define glBindVertexArray glBindVertexArrayAPPLE
+#define glGenVertexArrays glGenVertexArraysAPPLE
+#endif
 
 #define milton_log printf
 

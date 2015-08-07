@@ -25,7 +25,7 @@ int milton_main();
 
 #if defined(_WIN32)
 #include "platform_windows.h"
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__MACH__)
 #include "platform_unix.h"
 #endif
 

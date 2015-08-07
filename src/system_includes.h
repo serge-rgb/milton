@@ -48,6 +48,12 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
+#elif defined (__MACH__)
+
+#define GL_GLEXT_PROTOTYPES
+#include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+
 // __linux__
 #endif // defined(platform)
 
