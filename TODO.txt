@@ -2,21 +2,18 @@ To-Do
 =====
 
 - Bugs
+    - Windows: Wacom lag
     - :)
 
 - UI
-    - Fix color picker controls
-        - Highlight choice w/circle
     - Brush overlay
 
-    - Keyboard shortcuts
     - Figure out the GUI library situation
     - Brush / Eraser buttons
     - Sliders for brush size & opacity / eraser
     - "Layers". History viewer?
 
 - Engine
-    - Draw ring shape (for picker)
     - Wacom: Pressure levels (all platformsj)
     - Async rendering
     - Wacom: Support for pan & rotate. (all platforms)

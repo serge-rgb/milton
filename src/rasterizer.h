@@ -731,8 +731,8 @@ func void rasterize_ring(u32* pixels,
                 f32 u = 0.223607f;
                 f32 v = 0.670820f;
 
-                f32 fi = i;
-                f32 fj = j;
+                f32 fi = (f32)i;
+                f32 fj = (f32)j;
 
                 samples += compare(distance(fi - u, fj - v));
                 samples += compare(distance(fi - v, fj + u));
@@ -880,7 +880,7 @@ func void rasterize_color_picker(ColorPicker* picker,
         i32 height = picker->bounds_radius_px * 2;
 
         rasterize_ring(picker->pixels, width, height,
-                       point.x, point.y,
+                       (i32)point.x, (i32)point.y,
                        ring_radius, ring_girth,
                        color);
     }
