@@ -44,7 +44,6 @@
 
 #endif // MAP_ANONYMOUS
 
-#if 1
 #define allocate_big_chunk_of_memory(total_memory_size) mmap(HEAP_BEGIN_ADDRESS, \
                                                              total_memory_size, \
                                                              PROT_WRITE | PROT_READ, \
@@ -52,9 +51,8 @@
                                                              MAP_ANONYMOUS, \
                                                              -1, \
                                                              0)
-#else
-#define allocate_big_chunk_of_memory(total_memory_size) malloc(total_memory_size)
-#endif
+
+#define milton_log printf
 
 #ifdef __linux__
 #define platform_load_gl_func_pointers()
@@ -63,7 +61,12 @@
 #define platform_load_gl_func_pointers()
 #endif
 
-#define milton_log printf
+struct TabletState_s {
+    // TODO: Implement
+};
+
+void platform_wacom_init(TabletState* tablet_state, SDL_Window* window) {  }
+
 
 int main(int argc, char** argv)
 {

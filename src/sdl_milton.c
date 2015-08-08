@@ -17,17 +17,25 @@
 
 
 #include "SDL.h"
+#include "SDL_syswm.h"
 
 #define MILTON_DESKTOP
 #include "system_includes.h"
 
 int milton_main();
 
+
+#include "libnuwen/defaults.h"
+#define func static
+
+typedef struct TabletState_s TabletState;
+
 #if defined(_WIN32)
 #include "platform_windows.h"
 #elif defined(__linux__) || defined(__MACH__)
 #include "platform_unix.h"
 #endif
+
 
 #include "libnuwen/memory.h"
 
@@ -92,6 +100,9 @@ int milton_main()
     }
 
     platform_load_gl_func_pointers();
+
+    TabletState tablet_state = { 0 };
+    platform_wacom_init(&tablet_state, window);
 
     {
         milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));

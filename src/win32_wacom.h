@@ -19,21 +19,21 @@
 #pragma once
 
 #define GETPROCADDRESS(type, func) \
-	win_state->wacom.func = (type)GetProcAddress(win_state->wintab_handle, #func); \
-        if (!win_state->wacom.func) { \
+	tablet_state->wacom.func = (type)GetProcAddress(tablet_state->wintab_handle, #func); \
+        if (!tablet_state->wacom.func) { \
                 assert(!"Could not load function pointer from dll"); return false; }
 
 #define wacom_func_check(f) if (!f) {\
     OutputDebugStringA("WARNING: Wacom API incomplete\n."); \
-    win_state->wintab_handle = 0; \
+    tablet_state->wintab_handle = 0; \
     return false; \
 }
 
-func b32 win32_wacom_load_wintab(Win32State* win_state)
+func b32 win32_wacom_load_wintab(TabletState* tablet_state)
 {
-    win_state->wintab_handle = LoadLibraryA( "Wintab32.dll" );
+    tablet_state->wintab_handle = LoadLibraryA( "Wintab32.dll" );
 
-    if ( !win_state->wintab_handle )
+    if ( !tablet_state->wintab_handle )
     {
         OutputDebugStringA("WARNING: Wacom DLL not found. Proceeding.");
         return false;
@@ -62,38 +62,38 @@ func b32 win32_wacom_load_wintab(Win32State* win_state)
     GETPROCADDRESS( WTMGRDEFCONTEXT, WTMgrDefContext );
     GETPROCADDRESS( WTMGRDEFCONTEXTEX, WTMgrDefContextEx );
 
-    wacom_func_check (win_state->wacom.WTInfoA);
-    wacom_func_check (win_state->wacom.WTOpenA);
-    wacom_func_check (win_state->wacom.WTGetA);
-    wacom_func_check (win_state->wacom.WTSetA);
-    wacom_func_check (win_state->wacom.WTClose);
-    wacom_func_check (win_state->wacom.WTPacket);
-    wacom_func_check (win_state->wacom.WTEnable);
-    wacom_func_check (win_state->wacom.WTOverlap);
-    wacom_func_check (win_state->wacom.WTSave);
-    wacom_func_check (win_state->wacom.WTConfig);
-    wacom_func_check (win_state->wacom.WTRestore);
-    wacom_func_check (win_state->wacom.WTExtSet);
-    wacom_func_check (win_state->wacom.WTExtGet);
-    wacom_func_check (win_state->wacom.WTQueueSizeSet);
-    wacom_func_check (win_state->wacom.WTDataPeek);
-    wacom_func_check (win_state->wacom.WTPacketsGet);
-    wacom_func_check (win_state->wacom.WTMgrOpen);
-    wacom_func_check (win_state->wacom.WTMgrClose);
-    wacom_func_check (win_state->wacom.WTMgrDefContext);
-    wacom_func_check (win_state->wacom.WTMgrDefContextEx);
+    wacom_func_check (tablet_state->wacom.WTInfoA);
+    wacom_func_check (tablet_state->wacom.WTOpenA);
+    wacom_func_check (tablet_state->wacom.WTGetA);
+    wacom_func_check (tablet_state->wacom.WTSetA);
+    wacom_func_check (tablet_state->wacom.WTClose);
+    wacom_func_check (tablet_state->wacom.WTPacket);
+    wacom_func_check (tablet_state->wacom.WTEnable);
+    wacom_func_check (tablet_state->wacom.WTOverlap);
+    wacom_func_check (tablet_state->wacom.WTSave);
+    wacom_func_check (tablet_state->wacom.WTConfig);
+    wacom_func_check (tablet_state->wacom.WTRestore);
+    wacom_func_check (tablet_state->wacom.WTExtSet);
+    wacom_func_check (tablet_state->wacom.WTExtGet);
+    wacom_func_check (tablet_state->wacom.WTQueueSizeSet);
+    wacom_func_check (tablet_state->wacom.WTDataPeek);
+    wacom_func_check (tablet_state->wacom.WTPacketsGet);
+    wacom_func_check (tablet_state->wacom.WTMgrOpen);
+    wacom_func_check (tablet_state->wacom.WTMgrClose);
+    wacom_func_check (tablet_state->wacom.WTMgrDefContext);
+    wacom_func_check (tablet_state->wacom.WTMgrDefContextEx);
 
     return true;
 }
 
-func void win32_wacom_get_context(Win32State* win_state)
+func void win32_wacom_get_context(TabletState* tablet_state)
 {
-    if ( !win_state->wintab_handle )
+    if ( !tablet_state->wintab_handle )
     {
         return;
     }
 
-    WacomAPI* wacom = &win_state->wacom;
+    WacomAPI* wacom = &tablet_state->wacom;
 
     AXIS range_x           = { 0 };
     AXIS range_y           = { 0 };
@@ -148,25 +148,25 @@ func void win32_wacom_get_context(Win32State* win_state)
         log_context.lcOutExtY = -GetSystemMetrics( SM_CYVIRTUALSCREEN );
 #endif
 
-        HCTX ctx = wacom->WTOpenA(win_state->window, &log_context, TRUE);
+        HCTX ctx = wacom->WTOpenA(tablet_state->window, &log_context, TRUE);
 
         if ( ctx )
         {
-            win_state->wacom_ctx = ctx;
-            win_state->wacom_prs_max = pressure.axMax;
-            OutputDebugStringA("GREAT SUCCESS: Wacom context locked and loaded!\n");
+            tablet_state->wacom_ctx = ctx;
+            tablet_state->wacom_prs_max = pressure.axMax;
+            milton_log("[DEBUG]: Wacom context locked and loaded!\n");
 
             // TODO: Samples does this. Is it necessary?
-            if (!win_state->wacom.WTInfoA(0, 0, NULL))
+            if (!tablet_state->wacom.WTInfoA(0, 0, NULL))
             {
-                win_state->wintab_handle = 0;
+                tablet_state->wintab_handle = 0;
             }
 
             return;
         }
     }
 
-    win_state->wintab_handle = 0;
+    tablet_state->wintab_handle = 0;
 }
 
 #undef GETPROCADDRESS

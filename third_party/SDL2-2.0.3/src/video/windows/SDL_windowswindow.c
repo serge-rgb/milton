@@ -639,7 +639,8 @@ SDL_bool
 WIN_GetWindowWMInfo(_THIS, SDL_Window * window, SDL_SysWMinfo * info)
 {
     HWND hwnd = ((SDL_WindowData *) window->driverdata)->hwnd;
-    if (info->version.major <= SDL_MAJOR_VERSION) {
+	// MILTON: Commented out SDL_MAJOR_VERSION because we are building our own SDL and we really don't care about being clean
+    if (/*info->version.major <= SDL_MAJOR_VERSION*/info) {
         info->subsystem = SDL_SYSWM_WINDOWS;
         info->info.win.window = hwnd;
         return SDL_TRUE;

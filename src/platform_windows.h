@@ -31,6 +31,7 @@
 								     MEM_COMMIT | MEM_RESERVE, \
 								     PAGE_READWRITE) \
 
+func void milton_fatal(char* message);
 void win32_log(char *format, ...);
 #define milton_log win32_log
 
@@ -66,6 +67,45 @@ void platform_load_gl_func_pointers()
                    glewGetErrorString(glew_err));
         exit(EXIT_FAILURE);
     }
+}
+
+#include "win32_wacom_defines.h"
+struct TabletState_s {
+    HWND window;
+    // Window dimensions:
+    int32_t width;
+    int32_t height;
+    BITMAPINFO bitmap_info;
+
+    HINSTANCE wintab_handle;
+    WacomAPI wacom;
+    POINT wacom_pt_old;
+    POINT wacom_pt_new;
+    UINT wacom_prs_old;
+    UINT wacom_prs_new;
+    UINT wacom_prs_max;
+    HCTX wacom_ctx;
+    int wacom_num_attached_devices;
+};
+
+#include "win32_wacom.h"
+
+void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
+{
+    SDL_SysWMinfo wminfo;
+    SDL_bool wminfo_ok = SDL_GetWindowWMInfo(window, &wminfo);
+    if (!wminfo_ok)
+    {
+        milton_fatal("Could not get WM info from SDL");
+    }
+    tablet_state->window = wminfo.info.win.window;
+
+    if (!win32_wacom_load_wintab(tablet_state))
+    {
+        OutputDebugStringA("No wintab.\n");
+    }
+
+    win32_wacom_get_context(tablet_state);
 }
 
 int CALLBACK WinMain(
