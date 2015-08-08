@@ -13,7 +13,7 @@ My latest masterpiece: An alpaca
 
 ![alpaca](http://i.imgur.com/fJJZ0Bj.png)
 
-![alpacaGif](http://i.imgur.com/QR8TPDJ.gifv)
+![alpacaGif](http://i.imgur.com/QR8TPDJ.gif)
 
 
 Features
