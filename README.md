@@ -9,6 +9,13 @@ Milton Paint is pre-alpha, currently in active development.
 
 ### [Latest release (2015-07-25) pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha001)
 
+My latest masterpiece: An alpaca
+
+![alpaca](http://i.imgur.com/fJJZ0Bj.png)
+
+![alpacaGif](http://i.imgur.com/QR8TPDJ.gifv)
+
+
 Features
 --------
 
