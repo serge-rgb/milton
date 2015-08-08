@@ -30,31 +30,20 @@ Features
 
     No save button. Ctrl-S is *so* 1980's
 
-- Software rasterizer.
-
-    Milton doesn't use the GPU to do the heavy lifting. This gives us the
-    flexibility to implement more complex functionality than we would if we were
-    using GPGPU. It also means a lot less headaches.
-
-- Fast and light-weight
-
-    Milton only consumes what it needs. It will squeeze all the juice it can from your
-    CPU cores to make your experience as smooth as possible, but it is coded
-    with care and love to be performant and efficient.
-
-- Gamma-correct alpha blending and 32-bit floating point per channel
-
-    You get the quality you would expect of a high-end product.
-
 - Wacom support
 
     It currently has basic support for Wacom, there will be support for pressure
     sensitivity and other good stuff
 
+- Gamma-correct alpha blending and 32-bit floating point per channel
+
+- Software rendered.
+
+- Fast and light-weight
+
 - Multi-platform
 
-    Milton is developed on Windows, so that's what works right now; but there won't be an alpha until
-    it works on OSX and Linux. Mobile support is planned
+    Windows, Linux, OSX
 
 - Open Source
 
@@ -80,8 +69,8 @@ Keyboard Shortcuts
 | `0 - 9`                | Change brush opacity  |
 | `[`                    | Make brush smaller    |
 | `]`                    | Make brush larger     |
-| `ctrl+z`               | Undo                  |
-| `ctrl+r`               | Redo                  |
+| `ctrl + z`             | Undo                  |
+| `ctrl + y`             | Redo                  |
 | `ctrl + backspace`     | Clear (not undoable!) |
 
 Your work is kept in a file called MiltonPersist.mlt
@@ -109,10 +98,10 @@ machine, please let me know.
 Windows x64
 -----------
 
-Requirements
+Requirements:
 
-* CMake (for SDL)
-* Visual Studio 2013 (I'm using VS Ultimate with Surround Sound, but Community Edition should be fine)
+- CMake (for SDL)
+- Visual Studio 2013 (I'm using VS Ultimate with Surround Sound, but Community Edition should be fine)
 
 0. If needed, run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH.
 1. Run `setup.bat` to clone libnuwen, which is essentially the MIT-licensed part of Milton, and build SDL
@@ -133,7 +122,7 @@ OSX
 
 Requirements:
 
-* CMake (for building SDL)
+- CMake (for building SDL)
 
 0. `./setup_osx.sh` to build SDL
 1. `./build_osx.sh` to build milton
