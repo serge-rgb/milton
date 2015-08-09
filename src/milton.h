@@ -129,6 +129,7 @@ typedef struct MiltonState_s
     b32 canvas_blocked;  // When interacting with the UI.
 
     CanvasView* view;
+    v2i     hover_point;  // Track the pointer when not stroking..
 
     v2i     last_raster_input;  // Last input point. Used to determine area to update.
 
@@ -173,6 +174,7 @@ typedef struct MiltonInput_s
     MiltonInputFlags flags;
 
     v2i* point;
+    v2i* hover_point;
     int  scale;
     v2i  pan_delta;
 } MiltonInput;
@@ -325,6 +327,9 @@ func void milton_update_brushes(MiltonState* milton_state)
         rgb = sRGB_to_linear(rgb);
         milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
     }
+
+    milton_state->working_stroke.brush = milton_state->brush;
+
     milton_state->eraser_brush = (Brush)
     {
         .radius = milton_state->brush.radius,
@@ -743,8 +748,17 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 #endif
 
+//    assert (!(input->hover_point && input->point));
+
+    render_flags |= MiltonRenderFlags_BRUSH_OVERLAY;
+    if (input->hover_point)
+    {
+        milton_state->hover_point = *(input->hover_point);
+    }
+
     if (input->point)
     {
+        render_flags ^= MiltonRenderFlags_BRUSH_OVERLAY;
         v2i point = *input->point;
         if (!is_user_drawing(milton_state) &&
             is_picker_accepting_input(&milton_state->picker, point))

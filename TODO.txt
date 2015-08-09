@@ -2,7 +2,8 @@ To-Do
 =====
 
 - Bugs
-    - Windows: Wacom lag
+    - 0-radius stroke
+    - calloc crashes after a while
     - :)
 
 - UI
@@ -14,7 +15,7 @@ To-Do
     - "Layers". History viewer?
 
 - Engine
-    - Wacom: Pressure levels (all platformsj)
+    - Wacom: Pressure levels (all platforms)
     - Async rendering
     - Wacom: Support for pan & rotate. (all platforms)
     - Undo: Only redraw necessary area.

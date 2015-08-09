@@ -233,7 +233,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         if (!clipped_stroke)
         {
             allocation_ok = false;
-            break;
+            return allocation_ok;
         }
 
         if (clipped_stroke->num_points)
@@ -308,7 +308,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
 
                 assert (clipped_stroke);
 
-                assert (clipped_stroke->num_points % 2 == 0 || clipped_stroke->num_points <= 1);
+                assert (clipped_stroke->num_points % 2 == 0 || clipped_stroke->num_points == 1);
 
                 // Fast path.
                 if (clipped_stroke->fills_block)
@@ -348,7 +348,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-#define USE_SSE 1
+#define USE_SSE 0
 #if !USE_SSE
                         batch_size = 1;
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
@@ -614,7 +614,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                 dists[3] = _mm_add_ps(a, b4);
                             }
                             //u32 radius = clipped_stroke->brush.radius;
-                            assert (radius > 0);
+                            //assert (radius > 0);
                             assert (radius < sqrtf((FLT_MAX)));
 
                             __m128 radius4 = _mm_set_ps1((f32)clipped_stroke->brush.radius *
@@ -715,12 +715,16 @@ func void rasterize_ring(u32* pixels,
                          v4f color)
 {
 #define compare(dist) \
-    dist < square(ring_radius + ring_girth) / 2 && \
-    dist > square(ring_radius - ring_girth) / 2
+    dist < square(ring_radius + ring_girth) && \
+    dist > square(ring_radius - ring_girth)
 #define distance(i, j) \
     ((i) - center_x) * ((i) - center_x) + ((j) - center_y) * ((j) - center_y)
 
+    assert(ring_radius < (1 << 16));
+
     i32 samples = 0;
+    // TODO: Compute bounding box(es) for ring.
+
     for (i32 j = 0; j < height; ++j)
     {
         for (i32 i = 0; i < width; ++i)
@@ -841,7 +845,7 @@ func void rasterize_color_picker(ColorPicker* picker,
 
     // Black ring around the chosen color.
     {
-        i32 ring_radius = 10;
+        i32 ring_radius = 5;
         i32 ring_girth = 1;
 
         v3f hsv = picker->hsv;
@@ -858,7 +862,7 @@ func void rasterize_color_picker(ColorPicker* picker,
 
         if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE)
         {
-            ring_radius = 20;
+            ring_radius = 10;
             ring_girth  = 2;
             color       = (v4f){0};
         }

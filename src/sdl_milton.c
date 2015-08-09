@@ -87,6 +87,8 @@ int milton_main()
                                           width, height,
                                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
+    //SDL_MaximizeWindow(window);
+
     if (!window)
     {
         milton_log("[ERROR] -- Exiting. SDL could not create window\n");
@@ -198,11 +200,12 @@ int milton_main()
                     {
                         break;
                     }
+
+                    input_point = (v2i){ event.motion.x, event.motion.y };
                     if (platform_input.is_pointer_down)
                     {
                         if (!platform_input.is_space_down)
                         {
-                            input_point = (v2i){ event.motion.x, event.motion.y };
                             milton_input.point = &input_point;
                         }
                         else if (platform_input.is_space_down)
@@ -212,6 +215,10 @@ int milton_main()
                             milton_input.flags |= MiltonInputFlags_FAST_DRAW;
                             milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
                         }
+                    }
+                    else if (!milton_input.point)
+                    {
+                        milton_input.hover_point = &input_point;
                     }
                     break;
                 }
@@ -235,6 +242,7 @@ int milton_main()
                     }
 
                     SDL_Keycode keycode = event.key.keysym.sym;
+
                     // Actions accepting key repeats.
                     {
                         if (keycode == SDLK_LEFTBRACKET)
@@ -244,6 +252,17 @@ int milton_main()
                         else if (keycode == SDLK_RIGHTBRACKET)
                         {
                             milton_increase_brush_size(milton_state);
+                        }
+                        if (platform_input.is_ctrl_down)
+                        {
+                            if (keycode == SDLK_z)
+                            {
+                                milton_input.flags |= MiltonInputFlags_UNDO;
+                            }
+                            if (keycode == SDLK_y)
+                            {
+                                milton_input.flags |= MiltonInputFlags_REDO;
+                            }
                         }
                     }
 
@@ -262,14 +281,6 @@ int milton_main()
                     }
                     if (platform_input.is_ctrl_down)
                     {
-                        if (keycode == SDLK_z)
-                        {
-                            milton_input.flags |= MiltonInputFlags_UNDO;
-                        }
-                        if (keycode == SDLK_y)
-                        {
-                            milton_input.flags |= MiltonInputFlags_REDO;
-                        }
                         if (keycode == SDLK_BACKSPACE)
                         {
                             milton_input.flags |= MiltonInputFlags_RESET;

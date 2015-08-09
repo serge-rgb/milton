@@ -210,13 +210,12 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
                     block_i, num_blocks,
                     raster_buffer);
 
-
         arena_pop(&tile_arena);
 #endif
         ARENA_VALIDATE(milton_state->transient_arena);
     }
 
-#if RENDER_MULTITHREADED && 1
+#if RENDER_MULTITHREADED
     // Wait for workers to finish.
 
     while(tile_acc)
@@ -230,12 +229,12 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
     }
 #endif
 
-	for (int i = 0; i < milton_state->num_render_workers; ++i)
-	{
+    for (int i = 0; i < milton_state->num_render_workers; ++i)
+    {
 
-		free(milton_state->render_worker_arenas[i].ptr);
-		milton_state->render_worker_arenas[i] = (Arena){ 0 };
-	}
+        //free(milton_state->render_worker_arenas[i].ptr);
+        milton_state->render_worker_arenas[i] = (Arena){ 0 };
+    }
 
     ARENA_VALIDATE(milton_state->transient_arena);
 
@@ -304,11 +303,41 @@ func void render_picker(ColorPicker* picker,
     }
 }
 
+func void render_brush_overlay(MiltonState* milton_state, v2i hover_point)
+{
+    // Brush size is in pixels, stroke brushes are in canvas units.
+    i32 width = milton_state->brush_size;
+    i32 height = width;
+
+
+    // TODO: Remove the two buffers. Async will not need it.
+    u32* buffer = (u32*)milton_state->raster_buffers[milton_state->raster_buffer_index];
+
+    i32 girth = 2;
+
+    if (milton_state->brush_size <= girth / 2)
+    {
+        return;
+    }
+
+    i32 radius = milton_state->brush_size;
+    assert(radius == milton_state->working_stroke.brush.radius / milton_state->view->scale);
+
+    rasterize_ring(buffer,
+                   milton_state->view->screen_size.w,
+                   milton_state->view->screen_size.h,
+                   //width, height,
+                   hover_point.x, hover_point.y,
+                   radius, girth,
+                   (v4f) { 0 });
+}
+
 typedef enum
 {
     MiltonRenderFlags_NONE              = 0,
     MiltonRenderFlags_PICKER_UPDATED    = (1 << 0),
     MiltonRenderFlags_FULL_REDRAW       = (1 << 1),
+    MiltonRenderFlags_BRUSH_OVERLAY     = (1 << 2),
 } MiltonRenderFlags;
 
 func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
@@ -360,10 +389,10 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
             v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
             i32 raster_radius = stroke->brush.radius / milton_state->view->scale;
             raster_radius = max(raster_radius, milton_state->block_width);
-            raster_limits.left = -raster_radius  + point.x;
-            raster_limits.right = raster_radius  + point.x;
-            raster_limits.top = -raster_radius   + point.y;
-            raster_limits.bottom = raster_radius + point.y;
+            raster_limits.left   = -raster_radius + point.x;
+            raster_limits.right  = raster_radius  + point.x;
+            raster_limits.top    = -raster_radius + point.y;
+            raster_limits.bottom = raster_radius  + point.y;
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
             assert (raster_limits.right >= raster_limits.left);
             assert (raster_limits.bottom >= raster_limits.top);
@@ -405,6 +434,11 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
                           raster_buffer,
                           milton_state->view);
         }
+    }
+
+    if (render_flags & MiltonRenderFlags_BRUSH_OVERLAY)
+    {
+        render_brush_overlay(milton_state, milton_state->hover_point);
     }
 
     // If not preempted, do a buffer swap.
