@@ -181,7 +181,6 @@ typedef struct MiltonInput_s
 
 
 #include "rasterizer.h"
-#include "renderer.h"
 #include "persist.h"
 
 func void milton_gl_backend_draw(MiltonState* milton_state)
