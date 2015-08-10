@@ -990,7 +990,7 @@ func int render_worker(void* data)
 
         assert (index >= 0);
 
-       b32 allocation_ok = render_tile(milton_state,
+        b32 allocation_ok = render_tile(milton_state,
                                         &milton_state->render_worker_arenas[id],
                                         render_queue->blocks,
                                         tile_data.block_start, render_queue->num_blocks,
