@@ -109,6 +109,7 @@ func void milton_save(MiltonState* milton_state)
     for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
     {
         Stroke* stroke = &strokes[stroke_i];
+        assert(stroke->num_points > 0);
         fwrite(&stroke->brush, sizeof(Brush), 1, fd);
         fwrite(&stroke->num_points, sizeof(i32), 1, fd);
         fwrite(stroke->points, sizeof(v2i), stroke->num_points, fd);
