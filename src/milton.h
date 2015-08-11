@@ -428,7 +428,7 @@ func void milton_init(MiltonState* milton_state)
         milton_state->render_queue->mutex               = SDL_CreateMutex();
     }
 
-    milton_state->num_render_workers = SDL_GetCPUCount();
+    milton_state->num_render_workers = SDL_GetCPUCount() * 8;
 
     milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
 
@@ -436,7 +436,7 @@ func void milton_init(MiltonState* milton_state)
                                                            milton_state->num_render_workers,
                                                            Arena);
     milton_state->worker_memory_size = 65536;
-    milton_state->worker_needs_memory = false;
+    milton_state->worker_needs_memory = true;
 
     assert (milton_state->num_render_workers);
 
@@ -622,6 +622,19 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     b32 do_fast_draw = false;
     if (milton_state->worker_needs_memory)
     {
+        size_t render_memory_cap = milton_state->worker_memory_size;
+
+        for (int i = 0; i < milton_state->num_render_workers; ++i)
+        {
+            if (milton_state->render_worker_arenas[i].ptr != NULL)
+            {
+                free(milton_state->render_worker_arenas[i].ptr);
+            }
+            milton_state->render_worker_arenas[i] = arena_init(calloc(render_memory_cap, 1),
+                                                               render_memory_cap);
+            assert(milton_state->render_worker_arenas[i].ptr != NULL);
+        }
+
         milton_log("[DEBUG] Assigning more memory per worker. From %li to %li\n",
                    milton_state->worker_memory_size,
                    milton_state->worker_memory_size * 2);

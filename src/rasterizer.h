@@ -348,7 +348,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-#define USE_SSE 0
+#define USE_SSE 1
 #if !USE_SSE
                         batch_size = 1;
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
@@ -1045,16 +1045,6 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
 
     const i32 blocks_per_tile = milton_state->blocks_per_tile;
 
-    size_t render_memory_cap = milton_state->worker_memory_size;
-
-    for (int i = 0; i < milton_state->num_render_workers; ++i)
-    {
-        assert(milton_state->render_worker_arenas[i].ptr == NULL);
-        milton_state->render_worker_arenas[i] = arena_init(calloc(render_memory_cap, 1),
-                                                           render_memory_cap);
-        assert(milton_state->render_worker_arenas[i].ptr != NULL);
-    }
-
     i32 tile_acc = 0;
     for (int block_i = 0; block_i < num_blocks; block_i += blocks_per_tile)
     {
@@ -1099,13 +1089,6 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
         else { assert ( !"Not handling completion semaphore wait error" ); }
     }
 #endif
-
-    for (int i = 0; i < milton_state->num_render_workers; ++i)
-    {
-
-        //free(milton_state->render_worker_arenas[i].ptr);
-        milton_state->render_worker_arenas[i] = (Arena){ 0 };
-    }
 
     ARENA_VALIDATE(milton_state->transient_arena);
 

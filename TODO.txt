@@ -2,9 +2,8 @@ To-Do
 =====
 
 - Bugs
-    - 0-radius stroke
-    - calloc crashes after a while
     - use older GLSL version.
+    - Win10: CPU under-utilized?
     - :)
 
 - UI
