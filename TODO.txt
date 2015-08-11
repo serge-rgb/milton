@@ -17,6 +17,7 @@ To-Do
 - Engine
     - Wacom: Pressure levels (all platforms)
     - Async rendering
+    - Perf: Amdahl's curse... Parallelize color picker rendering
     - Wacom: Support for pan & rotate. (all platforms)
     - Undo: Only redraw necessary area.
     - Perf: Optimize small strokes away

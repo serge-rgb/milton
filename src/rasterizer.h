@@ -1290,10 +1290,12 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
         }
     }
 
+#if 0
     if (render_flags & MiltonRenderFlags_BRUSH_OVERLAY)
     {
         render_brush_overlay(milton_state, milton_state->hover_point);
     }
+#endif
 
     // If not preempted, do a buffer swap.
     if (completed)
