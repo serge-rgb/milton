@@ -1,5 +1,4 @@
-Milton
-======
+![MiltonLogo](http://i.imgur.com/hXxloIS.png)
 
 Milton is a modern paint package.
 
@@ -157,12 +156,12 @@ Thank You
 * Inspiration / Education
     * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero
 
+* Art
+    * Milton's logo by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/) 
+    
 * Code
     * [Michael Freundorfer](https://github.com/mordecai154)
     * [Joshua Mendoza](https://github.com/jomendoz)
-
-* Art & Feedback
-    * [Perla Fierro](http://portafolio.eclat-studio.com/)
 
 * Rubber-ducking / Whiteboarding
     * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)
