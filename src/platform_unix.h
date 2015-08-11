@@ -51,7 +51,7 @@
                                                              MAP_ANONYMOUS, \
                                                              -1, \
                                                              0)
-
+func void milton_fatal(char* message);
 #define milton_log printf
 
 #ifdef __linux__
@@ -62,6 +62,7 @@
 #endif
 
 struct TabletState_s {
+    int foo;  // So that { 0 } initalization doesn't fail.
     // TODO: Implement
 };
 

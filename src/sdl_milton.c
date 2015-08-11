@@ -36,7 +36,6 @@ typedef struct TabletState_s TabletState;
 #include "platform_unix.h"
 #endif
 
-
 #include "libnuwen/memory.h"
 
 #include "milton.h"

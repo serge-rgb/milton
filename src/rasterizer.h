@@ -897,6 +897,8 @@ func b32 render_tile(MiltonState* milton_state,
                      i32 block_start, i32 num_blocks,
                      u32* raster_buffer)
 {
+    b32 allocation_ok = true;
+
     Rect raster_tile_rect = { 0 };
     Rect canvas_tile_rect = { 0 };
 
@@ -924,13 +926,13 @@ func b32 render_tile(MiltonState* milton_state,
                                                milton_state->strokes,
                                                milton_state->num_strokes,
                                                canvas_tile_rect);
+
     if (!stroke_masks)
     {
-        return false;
+        allocation_ok = false;
     }
 
-    b32 allocation_ok = true;
-    for (int block_i = 0; block_i < blocks_per_tile; ++block_i)
+    for (int block_i = 0; block_i < blocks_per_tile && allocation_ok; ++block_i)
     {
         if (block_start + block_i >= num_blocks)
         {
@@ -945,12 +947,8 @@ func b32 render_tile(MiltonState* milton_state,
                                                &milton_state->working_stroke,
                                                raster_buffer,
                                                blocks[block_start + block_i]);
-        if (!allocation_ok)
-        {
-            return false;
-        }
     }
-    return true;
+    return allocation_ok;
 }
 
 typedef struct

@@ -428,7 +428,7 @@ func void milton_init(MiltonState* milton_state)
         milton_state->render_queue->mutex               = SDL_CreateMutex();
     }
 
-    milton_state->num_render_workers = SDL_GetCPUCount() * 8;
+    milton_state->num_render_workers = SDL_GetCPUCount();
 
     milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
 
