@@ -400,10 +400,10 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 8)
 
                         {
-                            f32 axs[4] = { 0 };
-                            f32 ays[4] = { 0 };
-                            f32 bxs[4] = { 0 };
-                            f32 bys[4] = { 0 };
+                            f32 axs[4];
+                            f32 ays[4];
+                            f32 bxs[4];
+                            f32 bys[4];
                             batch_size = 0;
 
                             for (i32 i = 0; i < 4; i++)
