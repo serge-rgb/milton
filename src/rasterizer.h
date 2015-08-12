@@ -390,12 +390,12 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                         __m128 test_dy = _mm_set_ps1(0.0f);
                         __m128 ab_x    = _mm_set_ps1(0.0f);
                         __m128 ab_y    = _mm_set_ps1(0.0f);
-                        __m128 mag_ab  = _mm_set_ps1(0.0f);
                         __m128 d_x     = _mm_set_ps1(0.0f);
                         __m128 d_y     = _mm_set_ps1(0.0f);
                         __m128 ax_x    = _mm_set_ps1(0.0f);
                         __m128 ax_y    = _mm_set_ps1(0.0f);
                         __m128 disc    = _mm_set_ps1(0.0f);
+                        __m128 one4    = _mm_set_ps1(1.0f);
 
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 8)
 
@@ -446,14 +446,11 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             ab_x = _mm_sub_ps(b_x, a_x);
                             ab_y = _mm_sub_ps(b_y, a_y);
 
-                            mag_ab = _mm_add_ps(_mm_mul_ps(ab_x, ab_x),
-                                                _mm_mul_ps(ab_y, ab_y));
-                            // It's ok to fail the sqrt.
-                            // sqrt slow. rsqrt fast
-                            mag_ab = _mm_mul_ps(mag_ab, _mm_rsqrt_ps(mag_ab));
+                            __m128 inv_mag_ab = _mm_add_ps(_mm_mul_ps(ab_x, ab_x), _mm_mul_ps(ab_y, ab_y));
+                            inv_mag_ab = _mm_rsqrt_ps(inv_mag_ab);
 
-                            d_x = _mm_div_ps(ab_x, mag_ab);
-                            d_y = _mm_div_ps(ab_y, mag_ab);
+                            d_x = _mm_mul_ps(ab_x, inv_mag_ab);
+                            d_y = _mm_mul_ps(ab_y, inv_mag_ab);
 
                             __m128 canvas_point_x4 = _mm_set_ps1((f32)i);
                             __m128 canvas_point_y4 = _mm_set_ps1((f32)j);
@@ -467,7 +464,8 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             // Clamp discriminant so that point lies in [a, b]
                             {
                                 __m128 low  = _mm_set_ps1(0);
-                                __m128 high = mag_ab;
+                                __m128 high = _mm_div_ps(one4, inv_mag_ab);
+
                                 disc = _mm_min_ps(_mm_max_ps(low, disc), high);
                             }
 
