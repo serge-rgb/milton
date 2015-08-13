@@ -218,6 +218,51 @@ func void milton_fatal(char* message)
     exit(EXIT_FAILURE);
 }
 
+func void milton_gl_update_brush_hover(MiltonGLState* gl, CanvasView* view, i32 radius)
+{
+    f32 radiusf = (f32)radius / (f32)view->screen_size.w;
+    glUseProgram(gl->quad_program);
+    GLint loc_radius_sq = glGetUniformLocation(gl->quad_program, "radiusf");
+    assert ( loc_radius_sq >= 0 );
+    glUniform1f(loc_radius_sq, radiusf);
+}
+
+func void milton_gl_set_brush_hover(MiltonGLState* gl,
+                                    CanvasView* view,
+                                    int radius,
+                                    f32 x, f32 y)
+{
+    glUseProgram(gl->quad_program);
+
+    i32 width = view->screen_size.w;
+
+    f32 radiusf = (f32)radius / (f32)width;
+
+    GLint loc_hover_on  = glGetUniformLocation(gl->quad_program, "hover_on");
+    GLint loc_radius_sq = glGetUniformLocation(gl->quad_program, "radiusf");
+    GLint loc_pointer   = glGetUniformLocation(gl->quad_program, "pointer");
+    GLint loc_aspect    = glGetUniformLocation(gl->quad_program, "aspect_ratio");
+    assert ( loc_hover_on >= 0 );
+    assert ( loc_radius_sq >= 0 );
+    assert ( loc_pointer >= 0 );
+    assert ( loc_aspect >= 0 );
+
+    glUniform1i(loc_hover_on, 1);
+    glUniform1f(loc_radius_sq, radiusf);
+    glUniform2f(loc_pointer, x, y);
+    glUniform1f(loc_aspect, view->aspect_ratio);
+}
+
+func void milton_gl_unset_brush_hover(MiltonGLState* gl)
+{
+    glUseProgram(gl->quad_program);
+
+    GLint loc_hover_on = glGetUniformLocation(gl->quad_program, "hover_on");
+    assert ( loc_hover_on >= 0 );
+
+    glUniform1i(loc_hover_on, 0);
+}
+
 func void milton_gl_backend_init(MiltonState* milton_state)
 {
     // Init quad program
@@ -225,14 +270,10 @@ func void milton_gl_backend_init(MiltonState* milton_state)
         const char* shader_contents[2];
 
         shader_contents[0] =
-#if defined(__MACH__)
-            "#version 330\n"
-#elif defined(__linux__) || defined(_WIN32)
-            "#version 300 es\n"
-#endif
-            "in highp vec2 position;\n"
+            "#version 120\n"
+            "attribute vec2 position;\n"
             "\n"
-            "out highp vec2 coord;\n"
+            "varying vec2 coord;\n"
             "\n"
             "void main()\n"
             "{\n"
@@ -242,22 +283,31 @@ func void milton_gl_backend_init(MiltonState* milton_state)
             "   gl_Position = vec4(position, 0.0, 1.0);\n"
             "}\n";
 
-
         shader_contents[1] =
-#if defined(__MACH__)
-            "#version 330\n"
-#elif defined(__linux__) || defined(_WIN32)
-            "#version 300 es\n"
-#endif
+            "#version 120\n"
             "\n"
             "uniform sampler2D raster_buffer;\n"
-            "in highp vec2 coord;\n"
-            "out highp vec4 out_color;\n"
+            "uniform bool hover_on;\n"
+            "uniform vec2 pointer;\n"
+            "uniform float radiusf;\n"
+            "uniform float aspect_ratio;\n"
+            "varying vec2 coord;\n"
             "\n"
             "void main(void)\n"
             "{\n"
-            // TODO: Why RGB to BGR?
-            "   out_color = texture(raster_buffer, coord).bgra;"
+            "   vec4 color = texture2D(raster_buffer, coord).bgra; \n"
+            "   if (hover_on)\n"
+            "   { \n"
+            "       float girth = 0.001; \n"
+            "       float dx = (coord.x - pointer.x); \n"
+            "       float dy = (coord.y / aspect_ratio - pointer.y); \n"
+            "       float dist = sqrt(dx * dx + dy * dy); \n"
+            "       bool test1 = ( dist < radiusf + girth ); \n"
+            "       bool test2 = ( dist > radiusf - girth ); \n"
+            "       float t = float(test1 && test2); \n"
+            "       color = t * vec4(0,0,0,1) + (1 - t) * color; \n"
+            "   } \n"
+            "   gl_FragColor = color; \n"
             "}\n";
 
         GLuint shader_objects[2] = {0};
@@ -324,6 +374,9 @@ func void milton_update_brushes(MiltonState* milton_state)
     // Set brush
     {
         milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
+        milton_gl_update_brush_hover(milton_state->gl, milton_state->view,
+                                     milton_state->brush_size);
+
         v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
         rgb = sRGB_to_linear(rgb);
         milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
@@ -576,6 +629,7 @@ func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen
     {
 
         milton_state->view->screen_size = new_screen_size;
+        milton_state->view->aspect_ratio = (f32)new_screen_size.w / (f32)new_screen_size.h;
         milton_state->view->screen_center = invscale_v2i(milton_state->view->screen_size, 2);
 
         // Add delta to pan vector
@@ -762,16 +816,22 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 #endif
 
-//    assert (!(input->hover_point && input->point));
 
     render_flags |= MiltonRenderFlags_BRUSH_OVERLAY;
     if (input->hover_point)
     {
         milton_state->hover_point = *(input->hover_point);
+        f32 x = input->hover_point->x / (f32)milton_state->view->screen_size.w;
+        f32 y = input->hover_point->y / (f32)milton_state->view->screen_size.w;
+        milton_gl_set_brush_hover(milton_state->gl, milton_state->view,
+                                  milton_state->brush_size, x, y);
     }
 
     if (input->point)
     {
+        // Don't draw brush outline.
+        milton_gl_unset_brush_hover(milton_state->gl);
+
         render_flags ^= MiltonRenderFlags_BRUSH_OVERLAY;
         v2i point = *input->point;
         if (!is_user_drawing(milton_state) &&

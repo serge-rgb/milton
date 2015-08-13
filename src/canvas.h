@@ -33,6 +33,7 @@ typedef struct Stroke_s
 typedef struct CanvasView_s
 {
     v2i     screen_size;            // Size in pixels
+    f32     aspect_ratio;
     i32     scale;                  // Zoom
     v2i     screen_center;          // In pixels
     v2i     pan_vector;             // In canvas scale

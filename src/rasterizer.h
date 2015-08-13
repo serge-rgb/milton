@@ -80,8 +80,8 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rec
 
 // NOTE: takes clipped points.
 func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
-                                    v2i* points, i32 num_points,
-                                    Brush brush, CanvasView* view)
+                                  v2i* points, i32 num_points,
+                                  Brush brush, CanvasView* view)
 {
     // Perf note: With the current use, this is actually going to be zero.
     // Maybe turn this into an assert and avoid extra computations?
@@ -1144,7 +1144,6 @@ func void render_picker(ColorPicker* picker,
         {
             u32 linear_color = *to_blit++;
             v4f rgba = color_u32_to_v4f(linear_color);
-            //sRGB = to_premultiplied(sRGB.rgb, sRGB.a);
             u32 color = color_v4f_to_u32(rgba);
 
             buffer_pixels[j * view->screen_size.w + i] = color;
@@ -1279,12 +1278,10 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
         }
     }
 
-#if 0
-    if (render_flags & MiltonRenderFlags_BRUSH_OVERLAY)
-    {
-        render_brush_overlay(milton_state, milton_state->hover_point);
-    }
-#endif
+    /* if (render_flags & MiltonRenderFlags_BRUSH_OVERLAY) */
+    /* { */
+    /*     render_brush_overlay(milton_state, milton_state->hover_point); */
+    /* } */
 
     // If not preempted, do a buffer swap.
     if (completed)

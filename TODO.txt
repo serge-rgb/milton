@@ -2,13 +2,10 @@ To-Do
 =====
 
 - Bugs
-    - use older GLSL version.
     - Win10: CPU under-utilized?
     - :)
 
 - UI
-    - Brush overlay
-
     - Figure out the GUI library situation
     - Brush / Eraser buttons
     - Sliders for brush size & opacity / eraser
