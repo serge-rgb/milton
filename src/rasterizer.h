@@ -720,7 +720,6 @@ func void rasterize_ring(u32* pixels,
 
     assert(ring_radius < (1 << 16));
 
-    i32 samples = 0;
     // TODO: Compute bounding box(es) for ring.
 
     for (i32 j = 0; j < height; ++j)
@@ -1155,11 +1154,6 @@ func void render_picker(ColorPicker* picker,
 
 func void render_brush_overlay(MiltonState* milton_state, v2i hover_point)
 {
-    // Brush size is in pixels, stroke brushes are in canvas units.
-    i32 width = milton_state->brush_size;
-    i32 height = width;
-
-
     // TODO: Remove the two buffers. Async will not need it.
     u32* buffer = (u32*)milton_state->raster_buffers[milton_state->raster_buffer_index];
 
@@ -1176,7 +1170,6 @@ func void render_brush_overlay(MiltonState* milton_state, v2i hover_point)
     rasterize_ring(buffer,
                    milton_state->view->screen_size.w,
                    milton_state->view->screen_size.h,
-                   //width, height,
                    hover_point.x, hover_point.y,
                    radius, girth,
                    (v4f) { 0 });

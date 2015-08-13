@@ -405,12 +405,6 @@ func ColorPickResult picker_update(ColorPicker* picker, v2i point)
             picker->b, picker->c,
             picker->c, picker->a,
         };
-        v2i closest = {0};
-        v2i center =
-        {
-            picker->bounds_radius_px / 2,
-            picker->bounds_radius_px / 2,
-        };
         b32 did_hit = false;
         for (i32 segment_i = 0; segment_i < 6; segment_i += 2)
         {

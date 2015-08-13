@@ -25,7 +25,6 @@
 int milton_main();
 
 
-#include "libnuwen/defaults.h"
 #define func static
 
 typedef struct TabletState_s TabletState;
@@ -36,7 +35,7 @@ typedef struct TabletState_s TabletState;
 #include "platform_unix.h"
 #endif
 
-#include "libnuwen/memory.h"
+#include "memory.h"
 
 #include "milton.h"
 
@@ -141,7 +140,8 @@ int milton_main()
     u32 window_id = SDL_GetWindowID(window);
     v2i input_point = { 0 };
 
-    SDL_TimerID periodical = SDL_AddTimer(100, timer_callback, NULL);
+    // Every 100ms, call this callback to send us an event so we don't wait for user input.
+    SDL_AddTimer(100, timer_callback, NULL);
 
     while(!should_quit)
     {

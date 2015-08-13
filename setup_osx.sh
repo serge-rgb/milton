@@ -1,13 +1,5 @@
 #!/bin/sh
 
-if [ ! -d src/libnuwen ]; then
-    git clone https://github.com/serge-rgb/libnuwen.git src/libnuwen
-else
-    cd src/libnuwen
-    git pull
-    cd ../..
-fi
-
 cd third_party/
 
 echo "==== Installing dependencies ===="

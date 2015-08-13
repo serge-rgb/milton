@@ -1,10 +1,4 @@
-clang src/metaprogram.c -o src/metaprogram
-cd src
-./metaprogram
-cd ..
-
-# Comment-out -Wno-unused-variable to clean up code
-    #-lm -lpthread -ldl\
+# Comment-out -Wno-unused-(variable|function) to clean up code
 clang -Ithird_party \
     -std=c99\
     -Wall -Werror \

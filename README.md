@@ -110,16 +110,16 @@ Requirements:
 - Visual Studio 2013 (I'm using VS Ultimate with Surround Sound, but Community Edition should be fine)
 
 0. If needed, run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH.
-1. Run `setup.bat` to clone libnuwen, which is essentially the MIT-licensed part of Milton, and build SDL
+1. Run `setup.bat` to build SDL
 2. Build with `build.bat`
 3. Milton is compiled to `build\Milton.exe`
 
 Linux
 -----
 
-The setup script will try and get libsdl. I'm on Ubuntu and a friend added Arch. Patches welcome!
+Note: If setup.sh fails, just install the equivalents of clang and libsdl-dev for your distribution.
 
-0. `./setup.sh`
+0. `./setup.sh` The setup script will try and get libsdl. I'm on Ubuntu and a friend added Arch. Patches welcome!
 1. `./build.sh`
 2. Milton is compiled to `./milton`
 
@@ -134,12 +134,9 @@ Requirements:
 1. `./build_osx.sh` to build milton
 2. Milton is compiled to `./milton`
 
-Problems compiling?
--------------------
-
-If Milton doesn't compile. First thing to try is to run the setup script to get
-libnuwen up-to-date. This bites me all the time, so a better solution is
-needed. Git submodules are terrifying.
+Roadmap
+-------
+See TODO.txt
 
 Workflow
 --------
@@ -157,8 +154,8 @@ Thank You
     * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero
 
 * Art
-    * Milton's logo by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/) 
-    
+    * Milton's logo by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
+
 * Code
     * [Michael Freundorfer](https://github.com/mordecai154)
     * [Joshua Mendoza](https://github.com/jomendoz)

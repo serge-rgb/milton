@@ -1,8 +1,3 @@
-clang src/metaprogram.c -o src/metaprogram
-cd src
-./metaprogram
-cd ..
-
 # Comment-out -Wno-unused-variable to clean up code
     #-lm -lpthread -ldl\
 # Linux flags
