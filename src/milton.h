@@ -268,12 +268,11 @@ func void milton_gl_backend_init(MiltonState* milton_state)
     // Init quad program
     {
         const char* shader_contents[2];
-
         shader_contents[0] =
-            "#version 120\n"
-            "attribute vec2 position;\n"
+            "#version 150\n"
+            "in vec2 position;\n"
             "\n"
-            "varying vec2 coord;\n"
+            "out vec2 coord;\n"
             "\n"
             "void main()\n"
             "{\n"
@@ -284,18 +283,19 @@ func void milton_gl_backend_init(MiltonState* milton_state)
             "}\n";
 
         shader_contents[1] =
-            "#version 120\n"
+            "#version 150\n"
             "\n"
             "uniform sampler2D raster_buffer;\n"
             "uniform bool hover_on;\n"
             "uniform vec2 pointer;\n"
             "uniform float radiusf;\n"
             "uniform float aspect_ratio;\n"
-            "varying vec2 coord;\n"
+            "in vec2 coord;\n"
+            "out vec4 out_color;\n"
             "\n"
             "void main(void)\n"
             "{\n"
-            "   vec4 color = texture2D(raster_buffer, coord).bgra; \n"
+            "   vec4 color = texture(raster_buffer, coord).bgra; \n"
             "   if (hover_on)\n"
             "   { \n"
             "       float girth = 0.001; \n"
@@ -307,7 +307,8 @@ func void milton_gl_backend_init(MiltonState* milton_state)
             "       float t = float(test1 && test2); \n"
             "       color = t * vec4(0,0,0,1) + (1 - t) * color; \n"
             "   } \n"
-            "   gl_FragColor = color; \n"
+            //"   gl_FragColor = color; \n"
+            "   out_color = color; \n"
             "}\n";
 
         GLuint shader_objects[2] = {0};

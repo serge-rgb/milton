@@ -96,7 +96,7 @@ int milton_main()
 
     if (!gl_context)
     {
-        milton_log("Could not create OpenGL context\n");
+        milton_fatal("Could not create OpenGL context\n");
     }
 
     platform_load_gl_func_pointers();
