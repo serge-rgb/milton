@@ -44,13 +44,10 @@
 
 #endif // MAP_ANONYMOUS
 
-#define allocate_big_chunk_of_memory(total_memory_size) mmap(HEAP_BEGIN_ADDRESS, \
-                                                             total_memory_size, \
-                                                             PROT_WRITE | PROT_READ, \
-                                                             MAP_NORESERVE | MAP_PRIVATE | \
-                                                             MAP_ANONYMOUS, \
-                                                             -1, \
-                                                             0)
+#define platform_allocate(size) unix_allocate((size))
+
+#define platform_deallocate(pointer) unix_deallocate((pointer)); {(pointer) = NULL;}
+
 func void milton_fatal(char* message);
 #define milton_log printf
 
@@ -65,6 +62,36 @@ struct TabletState_s {
     int foo;  // So that { 0 } initalization doesn't fail.
     // TODO: Implement
 };
+
+typedef struct UnixMemoryHeader_s
+{
+    size_t size;
+} UnixMemoryHeader;
+
+func void* unix_allocate(size_t size)
+{
+    void* ptr = mmap(HEAP_BEGIN_ADDRESS, size + sizeof(UnixMemoryHeader),
+                     PROT_WRITE | PROT_READ,
+                     MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS,
+                     -1, 0);
+    if (ptr)
+    {
+        *((UnixMemoryHeader*)ptr) = (UnixMemoryHeader)
+        {
+            .size = size,
+        };
+        ptr += sizeof(UnixMemoryHeader);
+    }
+    return ptr;
+}
+
+func void unix_deallocate(void* ptr)
+{
+    assert(ptr);
+    void* begin = ptr - sizeof(UnixMemoryHeader);
+    size_t size = *((size_t*)begin);
+    munmap(ptr, size);
+}
 
 void platform_wacom_init(TabletState* tablet_state, SDL_Window* window) {  }
 

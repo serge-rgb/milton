@@ -26,10 +26,11 @@
 #undef HEAP_BEGIN_ADDRESS
 #define HEAP_BEGIN_ADDRESS (LPVOID)(1024LL * 1024 * 1024 * 1024)
 #endif
-#define allocate_big_chunk_of_memory(total_memory_size) VirtualAlloc(HEAP_BEGIN_ADDRESS, \
-								     (total_memory_size),\
-								     MEM_COMMIT | MEM_RESERVE, \
-								     PAGE_READWRITE) \
+#define platform_allocate(total_memory_size) VirtualAlloc(HEAP_BEGIN_ADDRESS, \
+                                                          (total_memory_size),\
+                                                          MEM_COMMIT | MEM_RESERVE, \
+                                                          PAGE_READWRITE) \
+#define platform_deallocate(pointer) VirtualFree((pointer), 0, MEM_RELEASE)
 
 func void milton_fatal(char* message);
 void win32_log(char *format, ...);

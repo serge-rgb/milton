@@ -2,7 +2,7 @@ To-Do
 =====
 
 - Bugs
-    - Win10: CPU under-utilized?
+    - Windows: wacom packages dropped (?)
     - :)
 
 - UI

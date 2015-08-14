@@ -71,8 +71,6 @@ static void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 static void arena_reset(Arena* arena);
 
 
-
-
 // =========================================
 //        Implementation
 // =========================================

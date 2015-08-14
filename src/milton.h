@@ -684,10 +684,11 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             if (milton_state->render_worker_arenas[i].ptr != NULL)
             {
-                free(milton_state->render_worker_arenas[i].ptr);
+                platform_deallocate(milton_state->render_worker_arenas[i].ptr);
             }
-            milton_state->render_worker_arenas[i] = arena_init(calloc(render_memory_cap, 1),
-                                                               render_memory_cap);
+            milton_state->render_worker_arenas[i] =
+                    arena_init(platform_allocate(render_memory_cap),
+                               render_memory_cap);
             assert(milton_state->render_worker_arenas[i].ptr != NULL);
         }
 

@@ -115,7 +115,7 @@ int milton_main()
     //  Size of frame heap
     size_t frame_heap_in_MB  = 128 * 1024 * 1024;
 
-    void* big_chunk_of_memory = allocate_big_chunk_of_memory(total_memory_size);
+    void* big_chunk_of_memory = platform_allocate(total_memory_size);
 
     assert (big_chunk_of_memory);
 
@@ -421,6 +421,10 @@ int milton_main()
 
         milton_input = (MiltonInput){0};
     }
+
+    // Release pages. Not really necessary but we don't want to piss off leak
+    // detectors, do we?
+    platform_deallocate(big_chunk_of_memory);
 
     SDL_Quit();
 
