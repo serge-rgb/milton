@@ -22,15 +22,13 @@
 #endif
 
 #define HEAP_BEGIN_ADDRESS NULL
-#ifndef NDEBUG
-#undef HEAP_BEGIN_ADDRESS
-#define HEAP_BEGIN_ADDRESS (LPVOID)(1024LL * 1024 * 1024 * 1024)
-#endif
+
 #define platform_allocate(total_memory_size) VirtualAlloc(HEAP_BEGIN_ADDRESS, \
                                                           (total_memory_size),\
                                                           MEM_COMMIT | MEM_RESERVE, \
-                                                          PAGE_READWRITE) \
-#define platform_deallocate(pointer) VirtualFree((pointer), 0, MEM_RELEASE)
+                                                          PAGE_READWRITE)
+
+#define platform_deallocate(pointer) VirtualFree((pointer), 0, MEM_RELEASE); { (pointer) = 0; }
 
 func void milton_fatal(char* message);
 void win32_log(char *format, ...);

@@ -21,8 +21,6 @@ extern "C"
 {
 #endif
 
-#include "define_types.h"
-
 #define stack_count(a) (sizeof((a)) / sizeof((a)[0]))
 
 // ==== Order matters. ====

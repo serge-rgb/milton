@@ -29,9 +29,11 @@
 #endif
 
 #define HEAP_BEGIN_ADDRESS NULL
+#if 0
 #ifndef NDEBUG
 #undef HEAP_BEGIN_ADDRESS
 #define HEAP_BEGIN_ADDRESS (void*)(1024LL * 1024 * 1024 * 1024)
+#endif
 #endif
 
 #ifndef MAP_ANONYMOUS

@@ -72,7 +72,6 @@ func void milton_load(MiltonState* milton_state)
                 stroke->num_points <= 0)
             {
                 // Corrupt file. Avoid this read
-                stroke_i--;     // Pretend this never happened
                 continue;       // Do not allocate, just move on.
             }
             stroke->points = arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);

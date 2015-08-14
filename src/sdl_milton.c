@@ -26,6 +26,8 @@ int milton_main();
 
 
 #define func static
+#include "define_types.h"
+
 
 typedef struct TabletState_s TabletState;
 
