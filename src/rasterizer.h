@@ -1158,12 +1158,12 @@ func void render_brush_overlay(MiltonState* milton_state, v2i hover_point)
 
     i32 girth = 2;
 
-    if (milton_state->brush_size <= girth / 2)
+    if (milton_get_brush_size(milton_state) <= girth / 2)
     {
         return;
     }
 
-    i32 radius = milton_state->brush_size;
+    i32 radius = milton_get_brush_size(milton_state);
     assert(radius == milton_state->working_stroke.brush.radius / milton_state->view->scale);
 
     rasterize_ring(buffer,

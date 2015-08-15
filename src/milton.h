@@ -74,7 +74,7 @@ typedef enum MiltonMode_s
     MiltonMode_NONE =                   ( 0 ),
 
     MiltonMode_ERASER =                 ( 1 << 0 ),
-    MiltonMode_BRUSH =                  ( 1 << 1 ),
+    MiltonMode_PEN =                  ( 1 << 1 ),
     MiltonMode_REQUEST_QUALITY_REDRAW = ( 1 << 2 ),
 } MiltonMode;
 
@@ -105,6 +105,14 @@ typedef struct RenderQueue_s
     SDL_sem*   completed_semaphore;
 } RenderQueue;
 
+enum
+{
+    BrushEnum_PEN,
+    BrushEnum_ERASER,
+
+    BrushEnum_COUNT,
+};
+
 typedef struct MiltonState_s
 {
     u8      bytes_per_pixel;
@@ -122,11 +130,10 @@ typedef struct MiltonState_s
 
     ColorPicker picker;
 
-    Brush   brush;
-    Brush   eraser_brush;
-    i32     brush_size;  // In screen pixels
+    Brush   brushes[BrushEnum_COUNT];
+    i32     brush_sizes[BrushEnum_COUNT];  // In screen pixels
 
-    b32 canvas_blocked;  // When interacting with the UI.
+    b32 is_ui_active;  // When interacting with the UI.
 
     CanvasView* view;
     v2i     hover_point;  // Track the pointer when not stroking..
@@ -178,9 +185,12 @@ typedef struct MiltonInput_s
     i32  scale;
     f32  pressure;
     v2i  pan_delta;
-
+    b32  is_panning;
 } MiltonInput;
 
+
+// Defined below. Used in rasterizer.h
+func i32 milton_get_brush_size(MiltonState* milton_state);
 
 #include "rasterizer.h"
 #include "persist.h"
@@ -305,7 +315,7 @@ func void milton_gl_backend_init(MiltonState* milton_state)
             "       bool test1 = ( dist < radiusf + girth ); \n"
             "       bool test2 = ( dist > radiusf - girth ); \n"
             "       float t = float(test1 && test2); \n"
-            "       color = t * vec4(0,0,0,1) + (1 - t) * color; \n"
+            "       color = t * vec4(0.5,0.5,0.5,1) + (1 - t) * color; \n"
             "   } \n"
             //"   gl_FragColor = color; \n"
             "   out_color = color; \n"
@@ -370,35 +380,89 @@ func void milton_gl_backend_init(MiltonState* milton_state)
     }
 }
 
+func i32 milton_get_brush_size(MiltonState* milton_state)
+{
+    i32 brush_size = 0;
+    if (milton_state->current_mode & MiltonMode_PEN)
+    {
+        brush_size = milton_state->brush_sizes[BrushEnum_PEN];
+    }
+    else if (milton_state->current_mode & MiltonMode_ERASER)
+    {
+        brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
+    }
+    else
+    {
+        assert (! "milton_get_brush_size called when in invalid mode.");
+    }
+    return brush_size;
+}
+
 func void milton_update_brushes(MiltonState* milton_state)
 {
-    // Set brush
+    for (int i = 0; i < BrushEnum_COUNT; ++i )
     {
-        milton_state->brush.radius = milton_state->brush_size * milton_state->view->scale;
-        milton_gl_update_brush_hover(milton_state->gl, milton_state->view,
-                                     milton_state->brush_size);
-
-        v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
-        rgb = sRGB_to_linear(rgb);
-        milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
+        Brush* brush = &milton_state->brushes[i];
+        i32 size = milton_state->brush_sizes[i];
+        brush->radius = size * milton_state->view->scale;
+        if (i == BrushEnum_PEN)
+        {
+            // Alpha is set by the UI
+            brush->color = to_premultiplied(sRGB_to_linear(hsv_to_rgb(milton_state->picker.hsv)),
+                                            brush->alpha);
+        }
+        else if (i == BrushEnum_ERASER)
+        {
+            brush->color = (v4f) { 1, 1, 1, 1, };
+            brush->alpha = 1;
+        }
     }
+    milton_gl_update_brush_hover(milton_state->gl, milton_state->view,
+                                 milton_get_brush_size(milton_state));
 
-    milton_state->working_stroke.brush = milton_state->brush;
 
-    milton_state->eraser_brush = (Brush)
+    milton_state->working_stroke.brush = milton_state->brushes[BrushEnum_PEN];
+}
+
+func Brush milton_get_brush(MiltonState* milton_state)
+{
+    Brush brush = { 0 };
+    if (milton_state->current_mode & MiltonMode_PEN)
     {
-        .radius = milton_state->brush.radius,
-        .color = (v4f) { 1, 1, 1, 1 },
-        .alpha = 1,
-    };
+        brush = milton_state->brushes[BrushEnum_PEN];
+    }
+    else if (milton_state->current_mode & MiltonMode_ERASER)
+    {
+        brush = milton_state->brushes[BrushEnum_ERASER];
+    }
+    else
+    {
+        assert (!"Picking brush in invalid mode");
+    }
+    return brush;
+}
+
+func i32* pointer_to_brush_size(MiltonState* milton_state)
+{
+    i32* ptr = NULL;
+
+    if (milton_state->current_mode & MiltonMode_PEN)
+    {
+        ptr = &milton_state->brush_sizes[BrushEnum_PEN];
+    }
+    else if (milton_state->current_mode & MiltonMode_ERASER)
+    {
+        ptr = &milton_state->brush_sizes[BrushEnum_ERASER];
+    }
+    return ptr;
 }
 
 // For keyboard shortcut.
 func void milton_increase_brush_size(MiltonState* milton_state)
 {
-    if (milton_state->brush_size < MAX_BRUSH_SIZE)
+    if (milton_get_brush_size(milton_state) < MAX_BRUSH_SIZE)
     {
-        milton_state->brush_size++;
+        (*pointer_to_brush_size(milton_state))++;
     }
     milton_update_brushes(milton_state);
 }
@@ -406,9 +470,9 @@ func void milton_increase_brush_size(MiltonState* milton_state)
 // For keyboard shortcut.
 func void milton_decrease_brush_size(MiltonState* milton_state)
 {
-    if (milton_state->brush_size > 1)
+    if (milton_get_brush_size(milton_state) > 1)
     {
-        milton_state->brush_size--;
+        (*pointer_to_brush_size(milton_state))--;
     }
     milton_update_brushes(milton_state);
 }
@@ -416,13 +480,13 @@ func void milton_decrease_brush_size(MiltonState* milton_state)
 func void milton_set_brush_size(MiltonState* milton_state, i32 size)
 {
     assert (size < MAX_BRUSH_SIZE);
-    milton_state->brush_size = size;
+    (*pointer_to_brush_size(milton_state)) = size;
     milton_update_brushes(milton_state);
 }
 
-func void milton_set_brush_alpha(MiltonState* milton_state, float alpha)
+func void milton_set_pen_alpha(MiltonState* milton_state, float alpha)
 {
-    milton_state->brush.alpha = alpha;
+    milton_state->brushes[BrushEnum_PEN].alpha = alpha;
     milton_update_brushes(milton_state);
 }
 
@@ -504,12 +568,11 @@ func void milton_init(MiltonState* milton_state)
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->bytes_per_pixel  = 4;
-
+    milton_state->num_strokes      = 0;
     milton_state->working_stroke.points = arena_alloc_array(milton_state->root_arena,
                                                             STROKE_MAX_POINTS, v2i);
-    milton_state->num_strokes      = 0;
 
-    milton_state->current_mode = MiltonMode_BRUSH;
+    milton_state->current_mode = MiltonMode_PEN;
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
@@ -564,8 +627,31 @@ func void milton_init(MiltonState* milton_state)
 
     milton_gl_backend_init(milton_state);
     milton_load(milton_state);
-    milton_set_brush_size(milton_state, 10);
-    milton_set_brush_alpha(milton_state, 0.8f);
+
+    // Set default brush sizes.
+    for (int i = 0; i < BrushEnum_COUNT; ++i)
+    {
+        switch (i)
+        {
+        case BrushEnum_PEN:
+            {
+                milton_state->brush_sizes[i] = 10;
+                break;
+            }
+        case BrushEnum_ERASER:
+            {
+                milton_state->brush_sizes[i] = 40;
+                break;
+            }
+        default:
+            {
+                assert(!"New brush has not been given a default size");
+                break;
+            }
+        }
+    }
+
+    milton_set_pen_alpha(milton_state, 0.8f);
     milton_update_brushes(milton_state);
 
     for (i32 i = 0; i < milton_state->num_render_workers; ++i)
@@ -584,6 +670,12 @@ func b32 is_user_drawing(MiltonState* milton_state)
     b32 result = milton_state->working_stroke.num_points > 0;
     return result;
 }
+
+func b32 is_user_panning(MiltonInput* input)
+{
+    return input->is_panning;
+}
+
 
 func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
@@ -761,11 +853,13 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (input->flags & MiltonInputFlags_SET_MODE_BRUSH)
     {
-        milton_state->current_mode = MiltonMode_BRUSH;
+        milton_state->current_mode = MiltonMode_PEN;
+        milton_update_brushes(milton_state);
     }
     if (input->flags & MiltonInputFlags_SET_MODE_ERASER)
     {
         milton_state->current_mode = MiltonMode_ERASER;
+        milton_update_brushes(milton_state);
     }
 
     if (input->flags & MiltonInputFlags_UNDO)
@@ -826,7 +920,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         f32 x = input->hover_point->x / (f32)milton_state->view->screen_size.w;
         f32 y = input->hover_point->y / (f32)milton_state->view->screen_size.w;
         milton_gl_set_brush_hover(milton_state->gl, milton_state->view,
-                                  milton_state->brush_size, x, y);
+                                  milton_get_brush_size(milton_state), x, y);
     }
 
     if (input->point)
@@ -842,26 +936,21 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
             {
                 ColorPickResult pick_result = picker_update(&milton_state->picker, point);
                 if ((pick_result & ColorPickResult_CHANGE_COLOR) &&
-                    (milton_state->current_mode == MiltonMode_BRUSH))
+                    (milton_state->current_mode == MiltonMode_PEN))
                 {
                     v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
-                    milton_state->brush.color = to_premultiplied(rgb, milton_state->brush.alpha);
+                    milton_state->brushes[BrushEnum_PEN].color =
+                            to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha);
                 }
                 render_flags |= MiltonRenderFlags_PICKER_UPDATED;
-                milton_state->canvas_blocked = true;
+                milton_state->is_ui_active = true;
             }
         }
         // Currently drawing
-        else if (!milton_state->canvas_blocked)
+        else if (!milton_state->is_ui_active)
         {
-            if (milton_state->current_mode == MiltonMode_BRUSH)
-            {
-                milton_state->working_stroke.brush = milton_state->brush;
-            }
-            else if (milton_state->current_mode == MiltonMode_ERASER)
-            {
-                milton_state->working_stroke.brush = milton_state->eraser_brush;
-            }
+            milton_state->working_stroke.brush = milton_get_brush(milton_state);
+
             v2i in_point = *input->point;
 
             if (milton_state->working_stroke.num_points == 0)
@@ -888,10 +977,10 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (input->flags & MiltonInputFlags_END_STROKE)
     {
-        if (milton_state->canvas_blocked)
+        if (milton_state->is_ui_active)
         {
             picker_deactivate(&milton_state->picker);
-            milton_state->canvas_blocked = false;
+            milton_state->is_ui_active = false;
             render_flags |= MiltonRenderFlags_PICKER_UPDATED;
         }
         else
@@ -918,6 +1007,12 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
                 }
             }
         }
+    }
+
+    // Disable hover if panning.
+    if (is_user_panning(input))
+    {
+        milton_gl_unset_brush_hover(milton_state->gl);
     }
 
     milton_render(milton_state, render_flags);

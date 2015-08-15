@@ -302,43 +302,43 @@ int milton_main()
                         }
                         else if (keycode == SDLK_1)
                         {
-                            milton_set_brush_alpha(milton_state, 0.1f);
+                            milton_set_pen_alpha(milton_state, 0.1f);
                         }
                         else if (keycode == SDLK_2)
                         {
-                            milton_set_brush_alpha(milton_state, 0.2f);
+                            milton_set_pen_alpha(milton_state, 0.2f);
                         }
                         else if (keycode == SDLK_3)
                         {
-                            milton_set_brush_alpha(milton_state, 0.3f);
+                            milton_set_pen_alpha(milton_state, 0.3f);
                         }
                         else if (keycode == SDLK_4)
                         {
-                            milton_set_brush_alpha(milton_state, 0.4f);
+                            milton_set_pen_alpha(milton_state, 0.4f);
                         }
                         else if (keycode == SDLK_5)
                         {
-                            milton_set_brush_alpha(milton_state, 0.5f);
+                            milton_set_pen_alpha(milton_state, 0.5f);
                         }
                         else if (keycode == SDLK_6)
                         {
-                            milton_set_brush_alpha(milton_state, 0.6f);
+                            milton_set_pen_alpha(milton_state, 0.6f);
                         }
                         else if (keycode == SDLK_7)
                         {
-                            milton_set_brush_alpha(milton_state, 0.7f);
+                            milton_set_pen_alpha(milton_state, 0.7f);
                         }
                         else if (keycode == SDLK_8)
                         {
-                            milton_set_brush_alpha(milton_state, 0.8f);
+                            milton_set_pen_alpha(milton_state, 0.8f);
                         }
                         else if (keycode == SDLK_9)
                         {
-                            milton_set_brush_alpha(milton_state, 0.9f);
+                            milton_set_pen_alpha(milton_state, 0.9f);
                         }
                         else if (keycode == SDLK_0)
                         {
-                            milton_set_brush_alpha(milton_state, 1.0f);
+                            milton_set_pen_alpha(milton_state, 1.0f);
                         }
                     }
 
@@ -414,6 +414,8 @@ int milton_main()
                 break;
             }
         }
+
+        milton_input.is_panning = platform_input.is_space_down;
 
         // The extra point would be ignored by the renderer, causing artifacts.
         if (milton_input.flags & MiltonInputFlags_END_STROKE)

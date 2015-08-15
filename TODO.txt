@@ -12,7 +12,8 @@ To-Do
     - "Layers". History viewer?
 
 - Engine
-    - Wacom: Pressure levels (all platforms)
+    - Wacom: Pressure levels (Windows && OSX)
+    - Add pressure info to strokes
     - Async rendering
     - Perf: Amdahl's curse... Parallelize color picker rendering
     - Undo: Only redraw necessary area.
