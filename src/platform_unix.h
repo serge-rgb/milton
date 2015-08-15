@@ -22,6 +22,14 @@
 #define __USE_MISC 1  // MAP_ANONYMOUS and MAP_NORESERVE dont' get defined without this
 #include <sys/mman.h>
 #undef __USE_MISC
+
+#include <X11/Xlib.h>
+#include <X11/extensions/XInput.h>
+#if 0
+#include <X11/extensions/XIproto.h>
+#include <X11/keysym.h>
+#endif
+
 #elif defined(__MACH__)
 #include <sys/mman.h>
 #else
@@ -61,8 +69,11 @@ func void milton_fatal(char* message);
 #endif
 
 struct TabletState_s {
-    int foo;  // So that { 0 } initalization doesn't fail.
-    // TODO: Implement
+    // List of all input devices for window.
+    XDeviceInfoPtr input_devices;
+
+    // Pointer to wacom device.
+    XDeviceInfoPtr wacom_device;
 };
 
 typedef struct UnixMemoryHeader_s
@@ -95,7 +106,67 @@ func void unix_deallocate(void* ptr)
     munmap(ptr, size);
 }
 
-void platform_wacom_init(TabletState* tablet_state, SDL_Window* window) {  }
+// References:
+//  - GDK gdkinput-x11.c
+//  - Wine winex11.drv/wintab.c
+void unix_find_wacom(TabletState* tablet_state, Display* disp)
+{
+    assert (disp);
+
+    milton_log("Scanning for wacom device\n");
+    i32 count;
+    XDeviceInfoPtr devices = (XDeviceInfoPtr) XListInputDevices(disp, &count);
+    if (devices)
+    {
+        tablet_state->input_devices = devices;
+        for (int i = 0; i < count; ++i)
+        {
+            milton_log("Device[%d] -- %s\n", i, devices[i].name);
+            if (strstr(devices[i].name, "stylus"))
+            {
+                milton_log("[FOUND] ^--This one seems to be the one.\n");
+                tablet_state->wacom_device = &devices[i];
+            }
+        }
+        if (tablet_state->wacom_device)
+        {
+            XAnyClassPtr class_ptr = tablet_state->wacom_device->inputclassinfo;
+            for (int i = 0; i < tablet_state->wacom_device->num_classes; ++i)
+            {
+                switch(class_ptr->class)
+                {
+                case ValuatorClass:
+                    {
+                        XValuatorInfo *xvi = (XValuatorInfo *)class_ptr;
+                        break;
+                    }
+                }
+                class_ptr = (XAnyClassPtr) ((u8*)class_ptr + class_ptr->length);
+            }
+        }
+    }
+}
+
+void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
+{
+    {
+        SDL_SysWMinfo sysinfo;
+        SDL_GetVersion(&sysinfo.version);
+        if (SDL_GetWindowWMInfo(window, &sysinfo))
+        {
+            Display* disp = sysinfo.info.x11.display;
+            unix_find_wacom(tablet_state, disp);
+        }
+    }
+}
+
+void platform_wacom_deinit(TabletState* tablet_state)
+{
+    if (tablet_state->input_devices)
+    {
+        XFreeDeviceList(tablet_state->input_devices);
+    }
+}
 
 
 int main(int argc, char** argv)

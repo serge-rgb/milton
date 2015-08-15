@@ -424,6 +424,8 @@ int milton_main()
         milton_input = (MiltonInput){0};
     }
 
+    platform_wacom_deinit(&tablet_state);
+
     // Release pages. Not really necessary but we don't want to piss off leak
     // detectors, do we?
     platform_deallocate(big_chunk_of_memory);

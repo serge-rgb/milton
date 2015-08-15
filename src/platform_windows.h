@@ -107,6 +107,11 @@ void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
     win32_wacom_get_context(tablet_state);
 }
 
+void platform_wacom_deinit(TabletState* tablet_state)
+{
+    // *tumbleweed*...
+}
+
 int CALLBACK WinMain(
         HINSTANCE hInstance,
         HINSTANCE hPrevInstance,
