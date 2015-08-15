@@ -175,8 +175,10 @@ typedef struct MiltonInput_s
 
     v2i* point;
     v2i* hover_point;
-    int  scale;
+    i32  scale;
+    f32  pressure;
     v2i  pan_delta;
+
 } MiltonInput;
 
 

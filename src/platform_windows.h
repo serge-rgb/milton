@@ -107,6 +107,12 @@ void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
     win32_wacom_get_context(tablet_state);
 }
 
+f32 platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event)
+{
+    // Not used on windows because wacom is handled differently.
+    return -1;
+}
+
 void platform_wacom_deinit(TabletState* tablet_state)
 {
     // *tumbleweed*...

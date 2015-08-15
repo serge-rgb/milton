@@ -9,4 +9,5 @@ clang -Ithird_party \
     -O2 -g\
     src/sdl_milton.c -lGL -lm -lpthread\
     `pkg-config --libs sdl2` \
+    -lX11 -lXi \
     -o milton

@@ -69,11 +69,24 @@ func void milton_fatal(char* message);
 #endif
 
 struct TabletState_s {
+    // Handle to the X11 window
+    Display* display;
+
     // List of all input devices for window.
     XDeviceInfoPtr input_devices;
 
-    // Pointer to wacom device.
-    XDeviceInfoPtr wacom_device;
+    // Wacom X11 Device
+    XDevice*        wacom_device;
+    XDeviceInfoPtr  wacom_device_info;
+
+    u32             motion_type;
+    XEventClass     motion_classes[1024];
+    u32             class_index;
+
+
+    i32 min_pressure;
+    i32 max_pressure;
+
 };
 
 typedef struct UnixMemoryHeader_s
@@ -106,14 +119,65 @@ func void unix_deallocate(void* ptr)
     munmap(ptr, size);
 }
 
+f32 platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event)
+{
+    if (event.type == SDL_SYSWMEVENT)
+    {
+        if (event.msg)
+        {
+            SDL_SysWMmsg msg = *event.msg;
+            if (msg.subsystem == SDL_SYSWM_X11)
+            {
+                XEvent xevent = msg.msg.x11.event;
+                XAnyEvent* any = (XAnyEvent*)&xevent;
+                if (any->type == tablet_state->motion_type)
+                {
+                    XDeviceMotionEvent* dme = (XDeviceMotionEvent*)(&any);
+#if 0
+                    milton_log("========\n");
+                    milton_log ("xevent type %d\n", any->type);
+                    milton_log ("xevent axis[0] %d\n", dme->axis_data[0]);
+                    milton_log ("xevent axis[1] %d\n", dme->axis_data[1]);
+                    milton_log ("xevent axis[2] %d\n", dme->axis_data[2]);
+                    milton_log ("xevent axis[3] %d\n", dme->axis_data[3]);
+                    milton_log ("xevent axis[4] %d\n", dme->axis_data[4]);
+                    milton_log ("xevent axis[5] %d\n", dme->axis_data[5]);
+#endif
+                    return dme->axis_data[4] /
+                            (f32)(tablet_state->max_pressure - tablet_state->min_pressure);
+                }
+            }
+        }
+    }
+    return -1;
+}
+
 // References:
 //  - GDK gdkinput-x11.c
 //  - Wine winex11.drv/wintab.c
-void unix_find_wacom(TabletState* tablet_state, Display* disp)
+//  - http://www.x.org/archive/X11R7.5/doc/man/man3/XOpenDevice.3.html
+void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
 {
-    assert (disp);
+    // Tell SDL we want system events, to get the pressure
+    SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 
-    milton_log("Scanning for wacom device\n");
+    SDL_SysWMinfo sysinfo;
+    SDL_GetVersion(&sysinfo.version);
+
+    Display* disp = NULL;
+
+    if (SDL_GetWindowWMInfo(window, &sysinfo))
+    {
+        disp = sysinfo.info.x11.display;
+    }
+    else
+    {
+        return;
+    }
+
+    tablet_state->display = disp;
+
+    milton_log("Scanning for wacom device...\n");
     i32 count;
     XDeviceInfoPtr devices = (XDeviceInfoPtr) XListInputDevices(disp, &count);
     if (devices)
@@ -122,40 +186,62 @@ void unix_find_wacom(TabletState* tablet_state, Display* disp)
         for (int i = 0; i < count; ++i)
         {
             milton_log("Device[%d] -- %s\n", i, devices[i].name);
-            if (strstr(devices[i].name, "stylus"))
+            if (strstr(devices[i].name, "stylus")
+                || strstr(devices[i].name, "wacom")
+                || strstr(devices[i].name, "Wacom")
+                )
             {
                 milton_log("[FOUND] ^--This one seems to be the one.\n");
-                tablet_state->wacom_device = &devices[i];
-            }
-        }
-        if (tablet_state->wacom_device)
-        {
-            XAnyClassPtr class_ptr = tablet_state->wacom_device->inputclassinfo;
-            for (int i = 0; i < tablet_state->wacom_device->num_classes; ++i)
-            {
-                switch(class_ptr->class)
+                tablet_state->wacom_device_info = &devices[i];
+                if (tablet_state->wacom_device_info)
                 {
-                case ValuatorClass:
-                    {
-                        XValuatorInfo *xvi = (XValuatorInfo *)class_ptr;
-                        break;
-                    }
-                }
-                class_ptr = (XAnyClassPtr) ((u8*)class_ptr + class_ptr->length);
-            }
-        }
-    }
-}
+                    tablet_state->wacom_device =
+                            XOpenDevice(disp, tablet_state->wacom_device_info->id);
 
-void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
-{
-    {
-        SDL_SysWMinfo sysinfo;
-        SDL_GetVersion(&sysinfo.version);
-        if (SDL_GetWindowWMInfo(window, &sysinfo))
-        {
-            Display* disp = sysinfo.info.x11.display;
-            unix_find_wacom(tablet_state, disp);
+                    // This reeeealy shouldn't fail at this point...
+                    assert (tablet_state->wacom_device);
+
+                    XAnyClassPtr class_ptr = tablet_state->wacom_device_info->inputclassinfo;
+                    for (int i = 0; i < tablet_state->wacom_device_info->num_classes; ++i)
+                    {
+                        switch(class_ptr->class)
+                        {
+                        case ValuatorClass:
+                            {
+                                XValuatorInfo *xvi = (XValuatorInfo *)class_ptr;
+                                for (int axis = 0; axis < xvi->num_axes; axis++)
+                                {
+                                    if (axis == 2)  // We only care about pressure for now
+                                    {
+                                        tablet_state->min_pressure = xvi->axes[i].min_value;
+                                        tablet_state->max_pressure = xvi->axes[i].max_value;
+                                        break;
+                                    }
+                                }
+                                milton_log("[DEBUG] Wacom pressure range: [%d, %d]\n",
+                                           tablet_state->min_pressure,
+                                           tablet_state->max_pressure);
+                                XEventClass cls;
+                                DeviceMotionNotify(tablet_state->wacom_device,
+                                                   tablet_state->motion_type,
+                                                   cls);
+                                if (cls)
+                                {
+                                    tablet_state->motion_classes[tablet_state->class_index++] = cls;
+                                }
+                                milton_log("[DEBUG] Registered motion type %d\n",
+                                           tablet_state->motion_type);
+                                break;
+                            }
+                        }
+                        class_ptr = (XAnyClassPtr) ((u8*)class_ptr + class_ptr->length);
+                    }
+                    XSelectExtensionEvent(tablet_state->display,
+                                          DefaultRootWindow(tablet_state->display),
+                                          tablet_state->motion_classes,
+                                          tablet_state->class_index);
+                }
+            }
         }
     }
 }

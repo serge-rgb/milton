@@ -111,7 +111,7 @@ int milton_main()
         milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
     }
 
-    // ==== Intialize milton
+    // ==== Initialize milton
     //  Total memory requirement for Milton
     size_t total_memory_size = min((size_t)2 * 1024 * 1024 * 1024, get_system_RAM() / 2);
     //  Size of frame heap
@@ -148,6 +148,9 @@ int milton_main()
     while(!should_quit)
     {
         // ==== Handle events
+
+        milton_input.pressure = 1.0f;  // Reset until we receive something else
+
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -390,6 +393,18 @@ int milton_main()
                     default:
                         break;
                     }
+                }
+            case SDL_SYSWMEVENT:
+                {
+                    if (milton_input.point)
+                    {
+                        f32 pressure = platform_sdl_wmevent(&tablet_state, event.syswm);
+                        if (pressure > 0)
+                        {
+                            milton_input.pressure = pressure;
+                        }
+                    }
+                    break;
                 }
             default:
                 break;
