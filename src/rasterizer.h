@@ -282,15 +282,13 @@ func b32 rasterize_canvas_block(Arena* render_arena,
     i32 canvas_jump = pixel_jump * view->scale * ninetales;
 
     // i and j are the canvas point
-    i32 i = (((raster_block.left - view->screen_center.x) *
-              view->scale) - view->pan_vector.x) * ninetales - reference_point.x;
     i32 j = (((raster_block.top - view->screen_center.y) *
               view->scale) - view->pan_vector.y) * ninetales - reference_point.y;
 
     for (i32 pixel_j = raster_block.top; pixel_j < raster_block.bottom; pixel_j += pixel_jump)
     {
-        i = (((raster_block.left - view->screen_center.x) *
-                view->scale) - view->pan_vector.x) * ninetales - reference_point.x;
+        i32 i =  (((raster_block.left - view->screen_center.x) *
+                    view->scale) - view->pan_vector.x) * ninetales - reference_point.x;
         for (i32 pixel_i = raster_block.left; pixel_i < raster_block.right; pixel_i += pixel_jump)
         {
             // Clear color
@@ -303,7 +301,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
 
             while(list_iter)
             {
-                ClippedStroke* clipped_stroke      = list_iter;
+                ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
 
                 assert (clipped_stroke);

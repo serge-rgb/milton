@@ -402,6 +402,7 @@ int milton_main()
                         if (pressure > 0)
                         {
                             milton_input.pressure = pressure;
+                            milton_log("setting pressure %f\n", milton_input.pressure);
                         }
                     }
                     break;

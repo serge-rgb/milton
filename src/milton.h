@@ -966,6 +966,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
                 // Add to current stroke.
                 int index = milton_state->working_stroke.num_points++;
                 milton_state->working_stroke.points[index] = canvas_point;
+                //milton_log("Added point with pressure %f\n", input->pressure);
             }
 
             milton_state->last_raster_input = in_point;
