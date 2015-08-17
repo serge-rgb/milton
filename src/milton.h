@@ -57,6 +57,7 @@ extern "C"
 #define STROKE_MAX_POINTS       2048
 #define MAX_BRUSH_SIZE          80
 #define MILTON_DEFAULT_SCALE    (1 << 10)
+#define NO_PRESSURE_INFO        -1.0f
 
 
 typedef struct MiltonGLState_s
@@ -71,12 +72,13 @@ typedef struct MiltonGLState_s
 
 typedef enum MiltonMode_s
 {
-    MiltonMode_NONE =                   ( 0 ),
+    MiltonMode_NONE                   = ( 0 ),
 
-    MiltonMode_ERASER =                 ( 1 << 0 ),
-    MiltonMode_PEN =                  ( 1 << 1 ),
+    MiltonMode_ERASER                 = ( 1 << 0 ),
+    MiltonMode_PEN                    = ( 1 << 1 ),
     MiltonMode_REQUEST_QUALITY_REDRAW = ( 1 << 2 ),
 } MiltonMode;
+
 
 // Render Workers:
 //    We have a bunch of workers running on threads, who wait on a lockless
@@ -88,8 +90,6 @@ typedef struct TileRenderData_s
     i32     block_start;
 } TileRenderData;
 
-
-//typedef struct RenderQueue_s RenderQueue;
 typedef struct RenderQueue_s
 {
     Rect*   blocks;  // Screen areas to render.
@@ -569,8 +569,11 @@ func void milton_init(MiltonState* milton_state)
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->bytes_per_pixel  = 4;
     milton_state->num_strokes      = 0;
-    milton_state->working_stroke.points = arena_alloc_array(milton_state->root_arena,
-                                                            STROKE_MAX_POINTS, v2i);
+
+    milton_state->working_stroke.points     = arena_alloc_array(milton_state->root_arena,
+                                                                STROKE_MAX_POINTS, v2i);
+    milton_state->working_stroke.metadata   = arena_alloc_array(milton_state->root_arena,
+                                                                STROKE_MAX_POINTS, PointMetadata);
 
     milton_state->current_mode = MiltonMode_PEN;
 
@@ -626,7 +629,8 @@ func void milton_init(MiltonState* milton_state)
 
 
     milton_gl_backend_init(milton_state);
-    milton_load(milton_state);
+    // TODO: fix persist
+    //milton_load(milton_state);
 
     // Set default brush sizes.
     for (int i = 0; i < BrushEnum_COUNT; ++i)
@@ -675,7 +679,6 @@ func b32 is_user_panning(MiltonInput* input)
 {
     return input->is_panning;
 }
-
 
 func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
@@ -966,7 +969,19 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
                 // Add to current stroke.
                 int index = milton_state->working_stroke.num_points++;
                 milton_state->working_stroke.points[index] = canvas_point;
-                //milton_log("Added point with pressure %f\n", input->pressure);
+
+                // Pressure calculation
+                f32 pressure_min = 0.20f;
+
+                f32 pressure = pressure_min + input->pressure * (1.0f - pressure_min);
+
+                if (input->pressure == NO_PRESSURE_INFO)
+                {
+                    // This will be a very visible glitch if the tablet handling goes wrong
+                    pressure = 1.0f;
+                }
+                milton_state->working_stroke.metadata[index] =
+                        (PointMetadata) { .pressure = pressure };
             }
 
             milton_state->last_raster_input = in_point;
@@ -996,11 +1011,18 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
                     .points = arena_alloc_array(milton_state->root_arena,
                                                 milton_state->working_stroke.num_points,
                                                 v2i),
+                    .metadata = arena_alloc_array(milton_state->root_arena,
+                                                  milton_state->working_stroke.num_points,
+                                                  PointMetadata),
                     .num_points = milton_state->working_stroke.num_points,
                 };
                 memcpy(new_stroke.points,
                        milton_state->working_stroke.points,
                        milton_state->working_stroke.num_points * sizeof(v2i));
+                memcpy(new_stroke.metadata,
+                       milton_state->working_stroke.metadata,
+                       milton_state->working_stroke.num_points * sizeof(PointMetadata));
+
                 milton_state->strokes[milton_state->num_strokes++] = new_stroke;
                 // Clear working_stroke
                 {
@@ -1020,7 +1042,8 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (should_save)
     {
-        milton_save(milton_state);
+        // TODO: fix persist.
+        // milton_save(milton_state);
     }
 }
 

@@ -149,8 +149,8 @@ int milton_main()
     {
         // ==== Handle events
 
-        milton_input.pressure = 1.0f;  // Reset until we receive something else
 
+        milton_input.pressure = NO_PRESSURE_INFO;  // If stroke had pressure info before, use previous value.
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -223,6 +223,16 @@ int milton_main()
                     else if (!milton_input.point)
                     {
                         milton_input.hover_point = &input_point;
+                    }
+                    break;
+                }
+            case SDL_SYSWMEVENT:
+                {
+                    f32 pressure = NO_PRESSURE_INFO;
+                    platform_sdl_wmevent(&tablet_state, event.syswm, &pressure);
+                    if (pressure != NO_PRESSURE_INFO)
+                    {
+                        milton_input.pressure = pressure;
                     }
                     break;
                 }
@@ -393,19 +403,6 @@ int milton_main()
                     default:
                         break;
                     }
-                }
-            case SDL_SYSWMEVENT:
-                {
-                    if (milton_input.point)
-                    {
-                        f32 pressure = platform_sdl_wmevent(&tablet_state, event.syswm);
-                        if (pressure > 0)
-                        {
-                            milton_input.pressure = pressure;
-                            milton_log("setting pressure %f\n", milton_input.pressure);
-                        }
-                    }
-                    break;
                 }
             default:
                 break;

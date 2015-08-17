@@ -119,7 +119,7 @@ func void unix_deallocate(void* ptr)
     munmap(ptr, size);
 }
 
-f32 platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event)
+func void platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event, f32* out_pressure)
 {
     if (event.type == SDL_SYSWMEVENT)
     {
@@ -178,21 +178,19 @@ f32 platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event)
                         milton_log ("xevent axis[%d] %d\n", i, dme->axis_data[i]);
                     }
 #endif
-                    i32 pressure = dme->axis_data[2];
-                    return (f32)pressure /
+                    *out_pressure = (f32)dme->axis_data[2] /
                             (f32)(tablet_state->max_pressure - tablet_state->min_pressure);
                 }
             }
         }
     }
-    return -1;
 }
 
 // References:
 //  - GDK gdkinput-x11.c
 //  - Wine winex11.drv/wintab.c
 //  - http://www.x.org/archive/X11R7.5/doc/man/man3/XOpenDevice.3.html
-void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
+func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
 {
     // Tell SDL we want system events, to get the pressure
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);

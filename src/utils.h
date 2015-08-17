@@ -164,7 +164,7 @@ func v2i rotate_v2i(v2i p, f32 angle)
 
 func v2i closest_point_in_segment(v2i a, v2i b,
                                   v2f ab, f32 ab_magnitude_squared,
-                                  v2i point)
+                                  v2i point, f32* out_t)
 {
     v2i result;
     f32 mag_ab = sqrtf(ab_magnitude_squared);
@@ -173,21 +173,17 @@ func v2i closest_point_in_segment(v2i a, v2i b,
     f32 ax_x = (f32)(point.x - a.x);
     f32 ax_y = (f32)(point.y - a.y);
     f32 disc = d_x * ax_x + d_y * ax_y;
-    if (disc >= 0 && disc <= mag_ab)
+    if (disc < 0) disc = 0;
+    if (disc > mag_ab) disc = mag_ab;
+    if (out_t)
     {
-        result = (v2i)
-        {
-            (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
-        };
+        *out_t = disc / mag_ab;
     }
-    else if (disc < 0)
+    f32 t = disc / mag_ab;
+    result = (v2i)
     {
-        result = a;
-    }
-    else
-    {
-        result = b;
-    }
+       (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
+    };
     return result;
 }
 

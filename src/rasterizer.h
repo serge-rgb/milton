@@ -19,12 +19,13 @@
 typedef struct ClippedStroke_s ClippedStroke;
 struct ClippedStroke_s
 {
-    b32     fills_block;
-    Brush   brush;
-    i32     num_points;
-    v2i*    points;
+    b32             fills_block;
+    Brush           brush;
+    i32             num_points;
+    v2i*            points;
+    PointMetadata*  metadata;
 
-    ClippedStroke* next;
+    ClippedStroke*  next;
 };
 
 func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect canvas_rect)
@@ -33,15 +34,18 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rec
 
     if (clipped_stroke)
     {
-        clipped_stroke->brush = stroke->brush;
+        clipped_stroke->brush      = stroke->brush;
         clipped_stroke->num_points = 0;
-        clipped_stroke->points = arena_alloc_array(render_arena, stroke->num_points * 2, v2i);
+        clipped_stroke->points     = arena_alloc_array(render_arena,
+                                                       stroke->num_points * 2, v2i);
+        clipped_stroke->metadata   = arena_alloc_array(render_arena,
+                                                       stroke->num_points * 2, PointMetadata);
+        if (!clipped_stroke->points || !clipped_stroke->metadata)
+        {
+            return NULL;
+        }
     }
     else
-    {
-        return NULL;
-    }
-    if (!clipped_stroke->points)
     {
         return NULL;
     }
@@ -61,6 +65,9 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rec
             v2i a = stroke->points[point_i];
             v2i b = stroke->points[point_i + 1];
 
+            PointMetadata metadata_a = stroke->metadata[point_i];
+            PointMetadata metadata_b = stroke->metadata[point_i + 1];
+
             // Very conservative...
             b32 inside = !((a.x > canvas_rect.right && b.x > canvas_rect.right) ||
                            (a.x < canvas_rect.left && b.x < canvas_rect.left) ||
@@ -70,8 +77,12 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rec
             // We can add the segment
             if (inside)
             {
-                clipped_stroke->points[clipped_stroke->num_points++] = a;
-                clipped_stroke->points[clipped_stroke->num_points++] = b;
+                clipped_stroke->points  [clipped_stroke->num_points] = a;
+                clipped_stroke->metadata[clipped_stroke->num_points] = metadata_a;
+                clipped_stroke->num_points++;
+                clipped_stroke->points  [clipped_stroke->num_points] = b;
+                clipped_stroke->metadata[clipped_stroke->num_points] = metadata_b;
+                clipped_stroke->num_points++;
             }
         }
     }
@@ -81,6 +92,7 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rec
 // NOTE: takes clipped points.
 func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
                                   v2i* points, i32 num_points,
+                                  PointMetadata* metadata,
                                   Brush brush, CanvasView* view)
 {
     // Perf note: With the current use, this is actually going to be zero.
@@ -104,13 +116,18 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
             // Get closest point
             v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-            v2i p  = closest_point_in_segment( a, b, ab, mag_ab2, rect_center);
+            v2i p  = closest_point_in_segment( a, b, ab, mag_ab2, rect_center, NULL);
+
+            f32 p_a = metadata[point_i    ].pressure;
+            f32 p_b = metadata[point_i + 1].pressure;
+
+            f32 pressure = min(p_a, p_b);
 
             // Back to global coordinates
             p = add_v2i(p, reference_point);
 
             // Half width of a rectangle contained by brush at point p.
-            i32 rad = (i32)(brush.radius * 0.707106781f);  // cos(pi/4)
+            i32 rad = (i32)(brush.radius  * 0.707106781f * pressure);  // cos(pi/4)
             Rect bounded_rect;
             {
                 bounded_rect.left   = p.x - rad;
@@ -242,7 +259,8 @@ func b32 rasterize_canvas_block(Arena* render_arena,
             list_head->next = stroke_list;
             if (is_rect_filled_by_stroke(
                         canvas_block, reference_point,
-                        clipped_stroke->points, clipped_stroke->num_points, clipped_stroke->brush,
+                        clipped_stroke->points, clipped_stroke->num_points,
+                        clipped_stroke->metadata, clipped_stroke->brush,
                         view))
             {
                 list_head->fills_block = true;
@@ -312,7 +330,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                 if (clipped_stroke->fills_block)
                 {
 #if 0 // Visualize it with black
-                    v4f dst = {0,0,0,1};
+                    v4f dst = {0,0,0,clipped_stroke->brush.color.a};
 #else
                     v4f dst = clipped_stroke->brush.color;
 #endif
@@ -329,6 +347,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
                     f32 dy = 0;
+                    f32 pressure = 0.0f;
 
                     if (clipped_stroke->num_points == 1)
                     {
@@ -346,7 +365,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-#define USE_SSE 1
+#define USE_SSE 0
 #if !USE_SSE
                         batch_size = 1;
                         for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
@@ -367,9 +386,10 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             if (mag_ab2 > 0)
                             {
 
+                                f32 t;
                                 v2f point = v2i_to_v2f(closest_point_in_segment(a, b,
                                                                                 ab, mag_ab2,
-                                                                                (v2i){i,j}));
+                                                                                (v2i){i,j}, &t));
 
                                 f32 test_dx = (f32) (i - point.x);
                                 f32 test_dy = (f32) (j - point.y);
@@ -379,10 +399,14 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                     min_dist = dist;
                                     dx = test_dx;
                                     dy = test_dy;
+                                    f32 p_a = clipped_stroke->metadata[point_i    ].pressure;
+                                    f32 p_b = clipped_stroke->metadata[point_i + 1].pressure;
+                                    pressure = (1 - t) * p_a + t * p_b;
                                 }
                             }
                         }
 #else
+#error TESTING
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
                         __m128 test_dx = _mm_set_ps1(0.0f);
                         __m128 test_dy = _mm_set_ps1(0.0f);
@@ -507,8 +531,8 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             f32 f3 = (0.75f * view->scale) * pixel_jump * ninetales;
                             f32 f1 = (0.25f * view->scale) * pixel_jump * ninetales;
                             u32 radius = clipped_stroke->brush.radius * ninetales;
-#define USE_SAMPLING_SSE 1
-#if USE_SSE && !USE_SAMPLING_SSE
+                            radius *= pressure;
+#if !USE_SSE
                             f32 fdists[16];
                             {
                                 f32 a1 = (dx - f3) * (dx - f3);
@@ -586,11 +610,8 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                 samples += (fdists[14] < sq_radius);
                                 samples += (fdists[15] < sq_radius);
                             }
-                            if (samples > 12)
-                            {
-                                int asdf =1;
-                            }
 #else
+#error TESTING
                             __m128 dists[4];
 
                             {

@@ -23,11 +23,17 @@ typedef struct Brush_s
     f32     alpha;
 } Brush;
 
+typedef struct PointMetadata_s
+{
+    f32 pressure;
+} PointMetadata;
+
 typedef struct Stroke_s
 {
-    Brush   brush;
-    v2i*    points;
-    i32     num_points;
+    Brush           brush;
+    v2i*            points;
+    PointMetadata*  metadata;
+    i32             num_points;
 } Stroke;
 
 typedef struct CanvasView_s

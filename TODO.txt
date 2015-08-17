@@ -2,6 +2,7 @@ To-Do
 =====
 
 - Bugs
+    - Pressure: closest-point approach breaks down
     - Windows: wacom packages dropped (?)
     - :)
 
@@ -12,8 +13,9 @@ To-Do
     - "Layers". History viewer?
 
 - Engine
+    - Re-add save & load after pressure metadata is fixed
+
     - Wacom: Pressure levels (Windows && OSX)
-    - Add pressure info to strokes
     - Async rendering
     - Perf: Amdahl's curse... Parallelize color picker rendering
     - Undo: Only redraw necessary area.
