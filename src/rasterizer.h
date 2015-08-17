@@ -530,8 +530,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                         {
                             f32 f3 = (0.75f * view->scale) * pixel_jump * ninetales;
                             f32 f1 = (0.25f * view->scale) * pixel_jump * ninetales;
-                            u32 radius = clipped_stroke->brush.radius * ninetales;
-                            radius *= pressure;
+                            u32 radius = (u32)(clipped_stroke->brush.radius * ninetales * pressure);
 #if !USE_SSE
                             f32 fdists[16];
                             {

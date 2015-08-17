@@ -4,6 +4,7 @@ To-Do
 - Bugs
     - Pressure: closest-point approach breaks down
     - Windows: wacom packages dropped (?)
+    - Redraw overlay after pan
     - :)
 
 - UI
