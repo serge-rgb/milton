@@ -129,7 +129,6 @@ func void win32_wacom_get_context(TabletState* tablet_state)
             continue;
         }
         log_context.lcPktData = PACKETDATA;
-        log_context.lcOptions |= CXO_MESSAGES;
         log_context.lcOptions |= CXO_SYSTEM;
         log_context.lcPktMode = PACKETMODE;
         log_context.lcMoveMask = PACKETDATA;

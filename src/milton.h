@@ -52,13 +52,6 @@ extern "C"
 #include "color.h"
 #include "canvas.h"
 
-#define MILTON_USE_VAO          1
-#define RENDER_QUEUE_SIZE       4096
-#define STROKE_MAX_POINTS       2048
-#define MAX_BRUSH_SIZE          80
-#define MILTON_DEFAULT_SCALE    (1 << 10)
-#define NO_PRESSURE_INFO        -1.0f
-
 
 typedef struct MiltonGLState_s
 {
@@ -419,7 +412,6 @@ func void milton_update_brushes(MiltonState* milton_state)
     }
     milton_gl_update_brush_hover(milton_state->gl, milton_state->view,
                                  milton_get_brush_size(milton_state));
-
 
     milton_state->working_stroke.brush = milton_state->brushes[BrushEnum_PEN];
 }
@@ -874,7 +866,6 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
         else if (milton_state->working_stroke.num_points > 0)
         {
-            // Commit working stroke.
             assert(!"NPE");
         }
         render_flags |= MiltonRenderFlags_FULL_REDRAW;

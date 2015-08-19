@@ -29,6 +29,13 @@ int milton_main();
 #include "define_types.h"
 
 
+#define MILTON_USE_VAO          1
+#define RENDER_QUEUE_SIZE       4096
+#define STROKE_MAX_POINTS       2048
+#define MAX_BRUSH_SIZE          80
+#define MILTON_DEFAULT_SCALE    (1 << 10)
+#define NO_PRESSURE_INFO        -1.0f
+
 typedef struct TabletState_s TabletState;
 
 #if defined(_WIN32)
@@ -103,13 +110,8 @@ int milton_main()
 
     platform_load_gl_func_pointers();
 
-    TabletState tablet_state = { 0 };
-    platform_wacom_init(&tablet_state, window);
-
-    {
-        milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
-        milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    }
+    milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
+    milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // ==== Initialize milton
     //  Total memory requirement for Milton
@@ -131,6 +133,9 @@ int milton_main()
 
         milton_init(milton_state);
     }
+    TabletState* tablet_state = arena_alloc_elem(&root_arena, TabletState);
+    platform_wacom_init(tablet_state, window);
+
 
     PlatformInput platform_input = { 0 };
 
@@ -148,9 +153,14 @@ int milton_main()
     while(!should_quit)
     {
         // ==== Handle events
-
-
         milton_input.pressure = NO_PRESSURE_INFO;  // If stroke had pressure info before, use previous value.
+
+        f32 polled_pressure = platform_wacom_poll(tablet_state);
+        if (polled_pressure != NO_PRESSURE_INFO)
+        {
+            milton_input.pressure = polled_pressure;
+        }
+
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -228,8 +238,9 @@ int milton_main()
                 }
             case SDL_SYSWMEVENT:
                 {
+                    // This codepath is only taken on X11 (i.e. Linux).
                     f32 pressure = NO_PRESSURE_INFO;
-                    platform_sdl_wmevent(&tablet_state, event.syswm, &pressure);
+                    platform_sdl_wmevent(tablet_state, event.syswm, &pressure);
                     if (pressure != NO_PRESSURE_INFO)
                     {
                         milton_input.pressure = pressure;
@@ -439,7 +450,7 @@ int milton_main()
         milton_input = (MiltonInput){0};
     }
 
-    platform_wacom_deinit(&tablet_state);
+    platform_wacom_deinit(tablet_state);
 
     // Release pages. Not really necessary but we don't want to piss off leak
     // detectors, do we?

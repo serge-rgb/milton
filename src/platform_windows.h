@@ -69,7 +69,11 @@ void platform_load_gl_func_pointers()
 }
 
 #include "win32_wacom_defines.h"
-struct TabletState_s {
+
+#define WIN_MAX_WACOM_PACKETS 1024
+
+struct TabletState_s
+{
     HWND window;
     // Window dimensions:
     int32_t width;
@@ -85,9 +89,31 @@ struct TabletState_s {
     UINT wacom_prs_max;
     HCTX wacom_ctx;
     int wacom_num_attached_devices;
+
+    PACKET packet_buffer[WIN_MAX_WACOM_PACKETS];
 };
 
 #include "win32_wacom.h"
+
+func f32 platform_wacom_poll(TabletState* tablet_state)
+{
+    f32 pressure = NO_PRESSURE_INFO;
+    WacomAPI* wacom = &tablet_state->wacom;
+
+    i32 num_packets = wacom->WTPacketsGet(tablet_state->wacom_ctx,
+                                          WIN_MAX_WACOM_PACKETS,
+                                          (LPVOID)tablet_state->packet_buffer);
+
+    f32 range = (f32)(tablet_state->wacom_prs_max);
+    for (i32 i = 0; i < num_packets; ++i)
+    {
+        PACKET pkt = tablet_state->packet_buffer[i];
+        //milton_log ("Wacom packet X: %d, Y: %d, P: %d", pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
+        pressure = (f32)pkt.pkNormalPressure / range;
+    }
+
+    return pressure;
+}
 
 void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
 {

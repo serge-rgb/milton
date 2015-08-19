@@ -186,6 +186,12 @@ func void platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event, 
     }
 }
 
+func f32 platform_wacom_poll(TabletState* tablet_state)
+{
+    f32 pressure = NO_PRESSURE_INFO;
+    return pressure;
+}
+
 // References:
 //  - GDK gdkinput-x11.c
 //  - Wine winex11.drv/wintab.c

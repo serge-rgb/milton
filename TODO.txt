@@ -3,7 +3,6 @@ To-Do
 
 - Bugs
     - Pressure: closest-point approach breaks down
-    - Windows: wacom packages dropped (?)
     - Redraw overlay after pan
     - :)
 
@@ -14,9 +13,10 @@ To-Do
     - "Layers". History viewer?
 
 - Engine
+    - Re-enable SSE after adding pressure code
     - Re-add save & load after pressure metadata is fixed
 
-    - Wacom: Pressure levels (Windows && OSX)
+    - Wacom: Pressure levels (only OSX left)
     - Async rendering
     - Perf: Amdahl's curse... Parallelize color picker rendering
     - Undo: Only redraw necessary area.
