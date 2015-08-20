@@ -1,10 +1,17 @@
 To-Do
 =====
 
+
 - Bugs
     - Pressure: closest-point approach breaks down
+        *** New brush engine needed ***
     - Redraw overlay after pan
     - :)
+
+- Engine (urgent)
+    - Re-enable SSE after adding pressure code
+    - Re-add save & load after pressure metadata is fixed
+    - Stop dropping input packets
 
 - UI
     - Figure out the GUI library situation
@@ -13,9 +20,6 @@ To-Do
     - "Layers". History viewer?
 
 - Engine
-    - Re-enable SSE after adding pressure code
-    - Re-add save & load after pressure metadata is fixed
-
     - Wacom: Pressure levels (only OSX left)
     - Async rendering
     - Perf: Amdahl's curse... Parallelize color picker rendering
@@ -29,3 +33,6 @@ To-Do
     - Robust save
     - Async file saving
 
+============================================================
+====                   1.0 Beta Milestone               ====
+============================================================

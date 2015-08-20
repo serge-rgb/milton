@@ -224,7 +224,7 @@ int milton_main()
                         }
                         else if (platform_input.is_space_down)
                         {
-                            platform_input.pan_point = (v2i){ event.motion.x, event.motion.y };
+                            platform_input.pan_point = input_point;
 
                             milton_input.flags |= MiltonInputFlags_FAST_DRAW;
                             milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
@@ -367,7 +367,7 @@ int milton_main()
                 }
             case SDL_KEYUP:
                 {
-                    if (event.wheel.windowID != window_id)
+                    if (event.key.windowID != window_id)
                     {
                         break;
                     }
