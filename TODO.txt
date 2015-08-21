@@ -11,21 +11,24 @@ To-Do
 
 - UI
     - Brush / Eraser buttons
+    - Color picker
     - Sliders for brush size & opacity / eraser
+    - LRU color list
     - "Layers". History viewer?
 
 - Engine
     - Wacom: Pressure levels (only OSX left)
-    - Perf: Amdahl's curse... Parallelize color picker rendering
-    - Undo: Only redraw necessary area.
-    - Perf: Optimize small strokes away
-    - Perf: Faster eraser and/or opacity rejection.
-
-    - Brush: Add elliptical brush
-    - Brush: Support for general, implicitly defined brushes
-
+    - Performance:
+        - Undo: Only redraw necessary area.
+        - Amdahl's curse... Parallelize color picker rendering
+        - Optimize small strokes away
+        - Faster eraser and/or opacity rejection.
+        - memcpy when Panning
+    - Decrease worker memory usage (don't allocate num_points for clipped strokes!)
+    - Stress the renderer with a huge drawing.
+    - Brush
+        - Support for general, implicitly defined brushes
     - Robust save
-    - Async file saving
 
 ============================================================
 ====                   1.0 Beta Milestone               ====

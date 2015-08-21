@@ -30,7 +30,7 @@ int milton_main();
 
 
 #define MILTON_USE_VAO          1
-#define RENDER_QUEUE_SIZE       4096
+#define RENDER_QUEUE_SIZE       (1 << 13)
 #define STROKE_MAX_POINTS       2048
 #define MAX_BRUSH_SIZE          80
 #define MILTON_DEFAULT_SCALE    (1 << 10)

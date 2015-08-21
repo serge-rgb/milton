@@ -302,14 +302,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         }
     }
 
-    // Avoid losing floating point precission at very close zoom levels.
-    i32 local_scale = (view->scale <= 8) ? 4 : 1;
-
-    {
-        reference_point.x *= local_scale;
-        reference_point.y *= local_scale;
-    }
-
     // Set our `stroke_list` to end at the first opaque stroke that fills
     // this block.
     ClippedStroke* list_iter = stroke_list;
@@ -328,18 +320,18 @@ func b32 rasterize_canvas_block(Arena* render_arena,
 
     // This is the distance between two adjacent canvas pixels. Derived to
     // avoid expensive raster_to_canvas computations in the inner loop
-    i32 canvas_jump = downsample_factor * view->scale * local_scale;
+    i32 canvas_jump = downsample_factor * view->scale;
 
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
-              view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
+              view->scale) - view->pan_vector.y) - reference_point.y;
 
     for (i32 pixel_j = raster_block.top;
          pixel_j < raster_block.bottom;
          pixel_j += downsample_factor)
     {
         i32 i =  (((raster_block.left - view->screen_center.x) *
-                    view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
+                    view->scale) - view->pan_vector.x) - reference_point.x;
 
         for (i32 pixel_i = raster_block.left;
              pixel_i < raster_block.right;
@@ -389,10 +381,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     if (stroke->num_points == 1)
                     {
                         v2i first_point = points[0];
-                        {
-                            first_point.x *= local_scale;
-                            first_point.y *= local_scale;
-                        }
                         //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
                         v2i min_point = sub_v2i(first_point, reference_point);
                         dx = (f32)(i - min_point.x);
@@ -417,12 +405,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
 
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
-                            {
-                                a.x *= local_scale;
-                                a.y *= local_scale;
-                                b.x *= local_scale;
-                                b.y *= local_scale;
-                            }
                             a = sub_v2i(a, reference_point);
                             b = sub_v2i(b, reference_point);
 
@@ -493,13 +475,13 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                 // The point of reference point is to do the subtraction with
                                 // integer arithmetic
                                 axs[batch_size] =
-                                        (f32)(points[index  ].x * local_scale - reference_point.x);
+                                        (f32)(points[index  ].x - reference_point.x);
                                 ays[batch_size] =
-                                        (f32)(points[index  ].y * local_scale - reference_point.y);
+                                        (f32)(points[index  ].y - reference_point.y);
                                 bxs[batch_size] =
-                                        (f32)(points[index+1].x * local_scale - reference_point.x);
+                                        (f32)(points[index+1].x - reference_point.x);
                                 bys[batch_size] =
-                                        (f32)(points[index+1].y * local_scale - reference_point.y);
+                                        (f32)(points[index+1].y - reference_point.y);
                                 aps[batch_size] = stroke->metadata[index  ].pressure;
                                 bps[batch_size] = stroke->metadata[index+1].pressure;
                                 batch_size++;
@@ -614,10 +596,10 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                         //u64 kk_ccount_begin = __rdtsc();
                         int samples = 0;
                         {
-                            f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
-                            f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
-                            u32 radius = (u32)(stroke->brush.radius * local_scale * pressure);
-#if 1
+                            f32 f3 = (0.75f * view->scale) * downsample_factor;
+                            f32 f1 = (0.25f * view->scale) * downsample_factor;
+                            u32 radius = (u32)(stroke->brush.radius * pressure);
+#if 0
                             f32 fdists[16];
                             {
                                 f32 a1 = (dx - f3) * (dx - f3);
@@ -696,7 +678,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                 samples += (fdists[15] < sq_radius);
                             }
 #else
-#error TESTING
                             __m128 dists[4];
 
                             {
@@ -719,8 +700,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             //assert (radius > 0);
                             assert (radius < sqrtf((FLT_MAX)));
 
-                            __m128 radius4 = _mm_set_ps1((f32)stroke->brush.radius *
-                                                         local_scale);
+                            __m128 radius4 = _mm_set_ps1((f32)radius);
 
                             // Perf note: We remove the sqrtf call when it's
                             // safe to square the radius
@@ -992,55 +972,55 @@ func void rasterize_color_picker(ColorPicker* picker,
 }
 
 // Returns false if there were allocation errors
-func b32 render_tile(MiltonState* milton_state,
-                     Arena* tile_arena,
-                     Rect* blocks,
-                     i32 block_start, i32 num_blocks,
-                     u32* raster_buffer)
+func b32 render_blockgroup(MiltonState* milton_state,
+                           Arena* blockgroup_arena,
+                           Rect* blocks,
+                           i32 block_start, i32 num_blocks,
+                           u32* raster_buffer)
 {
     b32 allocation_ok = true;
 
-    Rect raster_tile_rect = { 0 };
-    Rect canvas_tile_rect = { 0 };
+    Rect raster_blockgroup_rect = { 0 };
+    Rect canvas_blockgroup_rect = { 0 };
 
-    const i32 blocks_per_tile = milton_state->blocks_per_tile;
+    const i32 blocks_per_blockgroup = milton_state->blocks_per_blockgroup;
     // Clip and move to canvas space.
-    // Derive tile_rect
-    for (i32 block_i = 0; block_i < blocks_per_tile; ++block_i)
+    // Derive blockgroup_rect
+    for (i32 block_i = 0; block_i < blocks_per_blockgroup; ++block_i)
     {
         if (block_start + block_i >= num_blocks)
         {
             break;
         }
         blocks[block_start + block_i] = rect_clip_to_screen(blocks[block_start + block_i],
-                                                  milton_state->view->screen_size);
-        raster_tile_rect = rect_union(raster_tile_rect, blocks[block_start + block_i]);
+                                                            milton_state->view->screen_size);
+        raster_blockgroup_rect = rect_union(raster_blockgroup_rect, blocks[block_start + block_i]);
 
-        canvas_tile_rect.top_left =
-                raster_to_canvas(milton_state->view, raster_tile_rect.top_left);
-        canvas_tile_rect.bot_right =
-                raster_to_canvas(milton_state->view, raster_tile_rect.bot_right);
+        canvas_blockgroup_rect.top_left =
+                raster_to_canvas(milton_state->view, raster_blockgroup_rect.top_left);
+        canvas_blockgroup_rect.bot_right =
+                raster_to_canvas(milton_state->view, raster_blockgroup_rect.bot_right);
     }
 
-    // Filter strokes to this tile.
-    b32* stroke_masks = filter_strokes_to_rect(tile_arena,
+    // Filter strokes to this blockgroup.
+    b32* stroke_masks = filter_strokes_to_rect(blockgroup_arena,
                                                milton_state->strokes,
                                                milton_state->num_strokes,
-                                               canvas_tile_rect);
+                                               canvas_blockgroup_rect);
 
     if (!stroke_masks)
     {
         allocation_ok = false;
     }
 
-    for (int block_i = 0; block_i < blocks_per_tile && allocation_ok; ++block_i)
+    for (int block_i = 0; block_i < blocks_per_blockgroup && allocation_ok; ++block_i)
     {
         if (block_start + block_i >= num_blocks)
         {
             break;
         }
 
-        allocation_ok = rasterize_canvas_block(tile_arena,
+        allocation_ok = rasterize_canvas_block(blockgroup_arena,
                                                milton_state->view,
                                                milton_state->strokes,
                                                stroke_masks,
@@ -1078,22 +1058,22 @@ func int render_worker(void* data)
             milton_fatal("Failure locking render queue mutex");
         }
         i32 index = -1;
-        TileRenderData tile_data = { 0 };
+        BlockgroupRenderData blockgroup_data = { 0 };
         {
             index = --render_queue->index;
             assert (index >= 0);
             assert (index <  RENDER_QUEUE_SIZE);
-            tile_data = render_queue->tile_render_data[index];
+            blockgroup_data = render_queue->blockgroup_render_data[index];
             SDL_UnlockMutex(render_queue->mutex);
         }
 
         assert (index >= 0);
 
-        b32 allocation_ok = render_tile(milton_state,
-                                        &milton_state->render_worker_arenas[id],
-                                        render_queue->blocks,
-                                        tile_data.block_start, render_queue->num_blocks,
-                                        render_queue->raster_buffer);
+        b32 allocation_ok = render_blockgroup(milton_state,
+                                              &milton_state->render_worker_arenas[id],
+                                              render_queue->blocks,
+                                              blockgroup_data.block_start, render_queue->num_blocks,
+                                              render_queue->raster_buffer);
         if (!allocation_ok)
         {
             milton_state->worker_needs_memory = true;
@@ -1105,13 +1085,14 @@ func int render_worker(void* data)
     }
 }
 
-func void produce_render_work(MiltonState* milton_state, TileRenderData tile_render_data)
+func void produce_render_work(MiltonState* milton_state,
+                              BlockgroupRenderData blockgroup_render_data)
 {
     RenderQueue* render_queue = milton_state->render_queue;
     i32 lock_err = SDL_LockMutex(milton_state->render_queue->mutex);
     if (!lock_err)
     {
-        render_queue->tile_render_data[render_queue->index++] = tile_render_data;
+        render_queue->blockgroup_render_data[render_queue->index++] = blockgroup_render_data;
         SDL_UnlockMutex(render_queue->mutex);
     }
     else { assert (!"Lock failure not handled"); }
@@ -1142,10 +1123,10 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
         render_queue->raster_buffer = raster_buffer;
     }
 
-    const i32 blocks_per_tile = milton_state->blocks_per_tile;
+    const i32 blocks_per_blockgroup = milton_state->blocks_per_blockgroup;
 
-    i32 tile_acc = 0;
-    for (int block_i = 0; block_i < num_blocks; block_i += blocks_per_tile)
+    i32 blockgroup_acc = 0;
+    for (int block_i = 0; block_i < num_blocks; block_i += blocks_per_blockgroup)
     {
         if (block_i >= num_blocks)
         {
@@ -1154,23 +1135,23 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
 
 #define RENDER_MULTITHREADED 1
 #if RENDER_MULTITHREADED
-        TileRenderData data =
+        BlockgroupRenderData data =
         {
             .block_start = block_i,
         };
 
         produce_render_work(milton_state, data);
-        tile_acc += 1;
+        blockgroup_acc += 1;
 #else
-        Arena tile_arena = arena_push(milton_state->transient_arena,
-                                      arena_available_space(milton_state->transient_arena));
-        render_tile(milton_state,
-                    &tile_arena,
-                    blocks,
-                    block_i, num_blocks,
-                    raster_buffer);
+        Arena blockgroup_arena = arena_push(milton_state->transient_arena,
+                                            arena_available_space(milton_state->transient_arena));
+        render_blockgroup(milton_state,
+                          &blockgroup_arena,
+                          blocks,
+                          block_i, num_blocks,
+                          raster_buffer);
 
-        arena_pop(&tile_arena);
+        arena_pop(&blockgroup_arena);
 #endif
         ARENA_VALIDATE(milton_state->transient_arena);
     }
@@ -1178,12 +1159,12 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
 #if RENDER_MULTITHREADED
     // Wait for workers to finish.
 
-    while(tile_acc)
+    while(blockgroup_acc)
     {
         i32 waited_err = SDL_SemWait(milton_state->render_queue->completed_semaphore);
         if (!waited_err)
         {
-            --tile_acc;
+            --blockgroup_acc;
         }
         else { assert ( !"Not handling completion semaphore wait error" ); }
     }

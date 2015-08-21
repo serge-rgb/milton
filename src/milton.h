@@ -75,13 +75,13 @@ typedef enum MiltonMode_s
 
 // Render Workers:
 //    We have a bunch of workers running on threads, who wait on a lockless
-//    queue to take TileRenderData structures.
-//    When there is work available, they call tile_render_thread with the
+//    queue to take BlockgroupRenderData structures.
+//    When there is work available, they call blockgroup_render_thread with the
 //    appropriate parameters.
-typedef struct TileRenderData_s
+typedef struct BlockgroupRenderData_s
 {
     i32     block_start;
-} TileRenderData;
+} BlockgroupRenderData;
 
 typedef struct RenderQueue_s
 {
@@ -91,7 +91,7 @@ typedef struct RenderQueue_s
 
     // FIFO work queue
     SDL_mutex*      mutex;
-    TileRenderData  tile_render_data[RENDER_QUEUE_SIZE];
+    BlockgroupRenderData  blockgroup_render_data[RENDER_QUEUE_SIZE];
     i32             index;
 
     SDL_sem*   work_available;
@@ -114,9 +114,9 @@ typedef struct MiltonState_s
     u8*     raster_buffers[2];      // Double buffering, for render jobs that may not finish.
     i32     raster_buffer_index;
 
-    // The screen is rendered in tiles
-    // Each tile is rendered in blocks of size (block_width*block_width).
-    i32     blocks_per_tile;
+    // The screen is rendered in blockgroups
+    // Each blockgroup is rendered in blocks of size (block_width*block_width).
+    i32     blocks_per_blockgroup;
     i32     block_width;
 
     MiltonGLState* gl;
@@ -571,11 +571,11 @@ func void milton_init(MiltonState* milton_state)
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
-#if 0
-    milton_state->blocks_per_tile = 16;
+#if 1
+    milton_state->blocks_per_blockgroup = 16;
     milton_state->block_width = 32;
 #else
-    milton_state->blocks_per_tile = 4;
+    milton_state->blocks_per_blockgroup = 4;
     milton_state->block_width = 32;
 #endif
 
