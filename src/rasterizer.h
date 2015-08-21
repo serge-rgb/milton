@@ -340,7 +340,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         list_iter = list_iter->next;
     }
 
-    i32 downsample_factor = view->downsampling_factor;  // Different names for the same thing.
+    i32 downsample_factor = view->downsampling_factor;
 
     // This is the distance between two adjacent canvas pixels. Derived to
     // avoid expensive raster_to_canvas computations in the inner loop
@@ -382,7 +382,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
-#if 1 // Visualize it with black
+#if 0 // Visualize it with black
                     v4f dst = {0, 0, 0, stroke->brush.color.a};
 #else
                     v4f dst = stroke->brush.color;
@@ -418,7 +418,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-#define USE_SSE 0
+#define USE_SSE 1
 #if !USE_SSE
                         batch_size = 1;
                         for (int point_i = 0; point_i < stroke->num_points-1; point_i++)
@@ -467,7 +467,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             }
                         }
 #else
-#error TESTING
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
                         __m128 test_dx = _mm_set_ps1(0.0f);
                         __m128 test_dy = _mm_set_ps1(0.0f);
@@ -480,28 +479,45 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                         __m128 disc    = _mm_set_ps1(0.0f);
                         __m128 one4    = _mm_set_ps1(1.0f);
 
-                        for (int point_i = 0; point_i < stroke->num_points-1; point_i += 8)
+                        for (int point_i = 0; point_i < stroke->num_points - 1; point_i += 4)
 
                         {
                             f32 axs[4];
                             f32 ays[4];
                             f32 bxs[4];
                             f32 bys[4];
+                            f32 aps[4];
+                            f32 bps[4];
                             batch_size = 0;
 
                             for (i32 i = 0; i < 4; i++)
                             {
-                                i32 index = point_i + 2*i;
+                                i32 index = point_i + i;
                                 if (index + 1 >= stroke->num_points)
                                 {
                                     break;
                                 }
+
+                                i32 index_a = clipped_stroke->indices[index];
+                                i32 index_b = clipped_stroke->indices[index + 1];
+
+                                // Not a segment
+                                if (index_a + 1 != index_b)
+                                {
+                                    continue;
+                                }
                                 // The point of reference point is to do the subtraction with
                                 // integer arithmetic
-                                axs[i] = (f32)(points[index    ].x * local_scale - reference_point.x);
-                                ays[i] = (f32)(points[index    ].y * local_scale - reference_point.y);
-                                bxs[i] = (f32)(points[index + 1].x * local_scale - reference_point.x);
-                                bys[i] = (f32)(points[index + 1].y * local_scale - reference_point.y);
+                                axs[batch_size] =
+                                        (f32)(points[index  ].x * local_scale - reference_point.x);
+                                ays[batch_size] =
+                                        (f32)(points[index  ].y * local_scale - reference_point.y);
+                                bxs[batch_size] =
+                                        (f32)(points[index+1].x * local_scale - reference_point.x);
+                                bys[batch_size] =
+                                        (f32)(points[index+1].y * local_scale - reference_point.y);
+                                aps[batch_size] = stroke->metadata[index  ].pressure;
+                                bps[batch_size] = stroke->metadata[index+1].pressure;
                                 batch_size++;
                             }
 
@@ -526,10 +542,21 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                                     (bys[1]),
                                                     (bys[0]));
 
+                            __m128 pressure_a = _mm_set_ps(aps[3],
+                                                           aps[2],
+                                                           aps[1],
+                                                           aps[0]);
+
+                            __m128 pressure_b = _mm_set_ps(bps[3],
+                                                           bps[2],
+                                                           bps[1],
+                                                           bps[0]);
+
                             ab_x = _mm_sub_ps(b_x, a_x);
                             ab_y = _mm_sub_ps(b_y, a_y);
 
-                            __m128 inv_mag_ab = _mm_add_ps(_mm_mul_ps(ab_x, ab_x), _mm_mul_ps(ab_y, ab_y));
+                            __m128 inv_mag_ab = _mm_add_ps(_mm_mul_ps(ab_x, ab_x),
+                                                           _mm_mul_ps(ab_y, ab_y));
                             inv_mag_ab = _mm_rsqrt_ps(inv_mag_ab);
 
                             d_x = _mm_mul_ps(ab_x, inv_mag_ab);
@@ -563,12 +590,22 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             __m128 dist4 = _mm_add_ps(_mm_mul_ps(test_dx, test_dx),
                                                       _mm_mul_ps(test_dy, test_dy));
 
+                            // Between 0 and 1 in the AB segment
+                            __m128 t4 = _mm_mul_ps(disc, inv_mag_ab);
+
                             f32 dists[4];
                             f32 tests_dx[4];
                             f32 tests_dy[4];
+                            f32 t_values[4];
+                            f32 pressures_a[4];
+                            f32 pressures_b[4];
+
                             _mm_store_ps(dists, dist4);
                             _mm_store_ps(tests_dx, test_dx);
                             _mm_store_ps(tests_dy, test_dy);
+                            _mm_store_ps(t_values, t4);
+                            _mm_store_ps(pressures_a, pressure_a);
+                            _mm_store_ps(pressures_b, pressure_b);
 
                             for (i32 i = 0; i < batch_size; ++i)
                             {
@@ -578,6 +615,10 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                     min_dist = dist;
                                     dx = tests_dx[i];
                                     dy = tests_dy[i];
+                                    f32 t = t_values[i];
+                                    f32 p_a = pressures_a[i];
+                                    f32 p_b = pressures_b[i];
+                                    pressure = (1 - t) * p_a + t * p_b;
                                 }
                             }
                         }
@@ -592,7 +633,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
                             f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
                             u32 radius = (u32)(stroke->brush.radius * local_scale * pressure);
-#if !USE_SSE
+#if 1
                             f32 fdists[16];
                             {
                                 f32 a1 = (dx - f3) * (dx - f3);
@@ -1127,7 +1168,7 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
             break;
         }
 
-#define RENDER_MULTITHREADED 0
+#define RENDER_MULTITHREADED 1
 #if RENDER_MULTITHREADED
         TileRenderData data =
         {
