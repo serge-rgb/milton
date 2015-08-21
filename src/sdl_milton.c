@@ -361,6 +361,12 @@ int milton_main()
                         {
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
+#ifndef NDEBUG
+                        else if (keycode == SDLK_F4)
+                        {
+                            milton_state->cpu_has_sse2 = !milton_state->cpu_has_sse2;
+                        }
+#endif
                     }
 
                     break;

@@ -109,6 +109,7 @@ enum
 typedef struct MiltonState_s
 {
     u8      bytes_per_pixel;
+
     i32     max_width;
     i32     max_height;
     u8*     raster_buffers[2];      // Double buffering, for render jobs that may not finish.
@@ -153,6 +154,8 @@ typedef struct MiltonState_s
 
     size_t      worker_memory_size;
     b32         worker_needs_memory;
+
+    b32         cpu_has_sse2;
 
 } MiltonState;
 
@@ -531,6 +534,7 @@ func void milton_math_tests()
 
 func void milton_init(MiltonState* milton_state)
 {
+    milton_state->cpu_has_sse2 = SDL_HasSSE2();
 
     // Initialize render queue
     milton_state->render_queue = arena_alloc_elem(milton_state->root_arena, RenderQueue);

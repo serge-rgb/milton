@@ -10,6 +10,7 @@ To-Do
     - Stop dropping input packets
 
 - UI
+    - Brush size keys ignore key repeat.
     - Brush / Eraser buttons
     - Color picker
     - Sliders for brush size & opacity / eraser

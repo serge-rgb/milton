@@ -25,7 +25,7 @@ struct ClippedStroke_s
     // as long as the render work lasts.
     Stroke          stroke;
     // We store indices into clipped points to delineate segments.
-    // i.e. We know that ab is a segment if index(a) == index(b) + 1
+    // i.e. We know that ab is a segment if index(a) + 1 == index(b)
     i32*            indices;
 
     ClippedStroke*  next;
@@ -212,51 +212,20 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
     return false;
 }
 
-// returns false if allocation failed
-func b32 rasterize_canvas_block(Arena* render_arena,
-                                CanvasView* view,
-                                Stroke* strokes,
-                                b32* stroke_masks,
-                                i32 num_strokes,
-                                Stroke* working_stroke,
-                                u32* pixels,
-                                Rect raster_block)
+// Fills a linked list of strokes that this block needs to render.
+// Returns true if allocation succeeded, false if not.
+func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
+                                          CanvasView* view,
+                                          Stroke* strokes,
+                                          b32* stroke_masks,
+                                          i32 num_strokes,
+                                          Stroke* working_stroke,
+                                          Rect canvas_block,
+                                          v2i reference_point,
+                                          b32* allocation_ok)
 {
-    b32 allocation_ok = true;
-    //u64 pre_ccount_begin = __rdtsc();
-    Rect canvas_block;
-    {
-        canvas_block.top_left  = raster_to_canvas(view, raster_block.top_left);
-        canvas_block.bot_right = raster_to_canvas(view, raster_block.bot_right);
-    }
-
-    if (canvas_block.left   < -view->canvas_radius_limit ||
-        canvas_block.right  > view->canvas_radius_limit  ||
-        canvas_block.top    < -view->canvas_radius_limit ||
-        canvas_block.bottom > view->canvas_radius_limit
-        )
-    {
-        for (int j = raster_block.top; j < raster_block.bottom; j++)
-        {
-            for (int i = raster_block.left; i < raster_block.right; i++)
-            {
-                pixels[j * view->screen_size.w + i] = 0xffff00ff;
-            }
-        }
-        return allocation_ok;
-    }
     ClippedStroke* stroke_list = NULL;
-
-    v2i reference_point =
-// Leaving this toggle-able for a quick way to show the cool precision error.
-#if 1
-    {
-        (canvas_block.left + canvas_block.right) / 2,
-        (canvas_block.top + canvas_block.bottom) / 2,
-    };
-#else
-    {0};
-#endif
+    *allocation_ok = true;
 
     // Fill linked list with strokes clipped to this block
     for (i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
@@ -282,8 +251,8 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         // Handle this gracefully; this will cause more memory for render workers.
         if (!clipped_stroke)
         {
-            allocation_ok = false;
-            return allocation_ok;
+            *allocation_ok = false;
+            return NULL;
         }
         Stroke* stroke = &clipped_stroke->stroke;
 
@@ -291,6 +260,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         {
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
+            //list_head->next = (*out_list);
             if (is_rect_filled_by_stroke(canvas_block, reference_point,
                                          stroke->points, stroke->num_points,
                                          stroke->metadata, stroke->brush,
@@ -299,12 +269,14 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                 list_head->fills_block = true;
             }
             stroke_list = list_head;
+            //(*out_list) = list_head;
         }
     }
 
     // Set our `stroke_list` to end at the first opaque stroke that fills
     // this block.
     ClippedStroke* list_iter = stroke_list;
+    //ClippedStroke* list_iter = (*out_list);
 
     while (list_iter)
     {
@@ -316,11 +288,72 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         list_iter = list_iter->next;
     }
 
+    return stroke_list;
+}
+
+// returns false if allocation failed
+func b32 rasterize_canvas_block_slow(Arena* render_arena,
+                                     CanvasView* view,
+                                     Stroke* strokes,
+                                     b32* stroke_masks,
+                                     i32 num_strokes,
+                                     Stroke* working_stroke,
+                                     u32* pixels,
+                                     Rect raster_block)
+{
+    //u64 pre_ccount_begin = __rdtsc();
+    Rect canvas_block;
+    {
+        canvas_block.top_left  = raster_to_canvas(view, raster_block.top_left);
+        canvas_block.bot_right = raster_to_canvas(view, raster_block.bot_right);
+    }
+
+    if (canvas_block.left   < -view->canvas_radius_limit ||
+        canvas_block.right  > view->canvas_radius_limit  ||
+        canvas_block.top    < -view->canvas_radius_limit ||
+        canvas_block.bottom > view->canvas_radius_limit
+        )
+    {
+        for (int j = raster_block.top; j < raster_block.bottom; j++)
+        {
+            for (int i = raster_block.left; i < raster_block.right; i++)
+            {
+                pixels[j * view->screen_size.w + i] = 0xffff00ff;
+            }
+        }
+        return true;
+    }
+
+    v2i reference_point =
+// Leaving this toggle-able for a quick way to show the cool precision error.
+#if 1
+    {
+        (canvas_block.left + canvas_block.right) / 2,
+        (canvas_block.top + canvas_block.bottom) / 2,
+    };
+#else
+    {0};
+#endif
+
+    // Get the linked list of clipped strokes.
+    b32 allocation_ok = true;
+    ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
+                                                       strokes, stroke_masks, num_strokes,
+                                                       working_stroke,
+                                                       canvas_block, reference_point,
+                                                       &allocation_ok);
+    if (!allocation_ok)
+    {
+        // Request more memory
+        return false;
+    }
+
     i32 downsample_factor = view->downsampling_factor;
 
     // This is the distance between two adjacent canvas pixels. Derived to
     // avoid expensive raster_to_canvas computations in the inner loop
     i32 canvas_jump = downsample_factor * view->scale;
+
 
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
@@ -390,8 +423,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-#define USE_SSE 1
-#if !USE_SSE
                         batch_size = 1;
                         for (int point_i = 0; point_i < stroke->num_points-1; point_i++)
                         {
@@ -432,7 +463,251 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                 }
                             }
                         }
+                    }
+
+                    if (min_dist < FLT_MAX)
+                    {
+                        //u64 kk_ccount_begin = __rdtsc();
+                        int samples = 0;
+                        {
+                            f32 f3 = (0.75f * view->scale) * downsample_factor;
+                            f32 f1 = (0.25f * view->scale) * downsample_factor;
+                            u32 radius = (u32)(stroke->brush.radius * pressure);
+                            f32 fdists[16];
+                            {
+                                f32 a1 = (dx - f3) * (dx - f3);
+                                f32 a2 = (dx - f1) * (dx - f1);
+                                f32 a3 = (dx + f1) * (dx + f1);
+                                f32 a4 = (dx + f3) * (dx + f3);
+
+                                f32 b1 = (dy - f3) * (dy - f3);
+                                f32 b2 = (dy - f1) * (dy - f1);
+                                f32 b3 = (dy + f1) * (dy + f1);
+                                f32 b4 = (dy + f3) * (dy + f3);
+
+                                fdists[0]  = a1 + b1;
+                                fdists[1]  = a2 + b1;
+                                fdists[2]  = a3 + b1;
+                                fdists[3]  = a4 + b1;
+
+                                fdists[4]  = a1 + b2;
+                                fdists[5]  = a2 + b2;
+                                fdists[6]  = a3 + b2;
+                                fdists[7]  = a4 + b2;
+
+                                fdists[8]  = a1 + b3;
+                                fdists[9]  = a2 + b3;
+                                fdists[10] = a3 + b3;
+                                fdists[11] = a4 + b3;
+
+                                fdists[12] = a1 + b4;
+                                fdists[13] = a2 + b4;
+                                fdists[14] = a3 + b4;
+                                fdists[15] = a4 + b4;
+
+                            }
+
+
+                            // Perf note: We remove the sqrtf call when it's
+                            // safe to square the radius
+                            if (radius >= (1 << 16))
+                            {
+                                for (int i = 0; i < 16; ++i)
+                                {
+                                    samples += (sqrtf(fdists[i]) < radius);
+                                }
+                            }
+                            else
+                            {
+                                u32 sq_radius = radius * radius;
+
+                                for (int i = 0; i < 16; ++i)
+                                {
+                                    samples += (fdists[i] < sq_radius);
+                                }
+                            }
+                        }
+
+                        // If the stroke contributes to the pixel, do compositing.
+                        if (samples > 0)
+                        {
+                            // Do blending
+                            // ---------------
+
+                            f32 coverage = (f32)samples / 16.0f;
+
+                            v4f dst = stroke->brush.color;
+                            {
+                                dst.r *= coverage;
+                                dst.g *= coverage;
+                                dst.b *= coverage;
+                                dst.a *= coverage;
+                            }
+
+                            acc_color = blend_v4f(dst, acc_color);
+                        }
+                    }
+                }
+                if (acc_color.a > 0.999999)
+                {
+                    break;
+                }
+            }
+
+            // Blend onto the background whatever is accumulated.
+            acc_color = blend_v4f(background_color, acc_color);
+
+            // Brushes are stored and operated in linear space, move to srgb
+            // before blitting
+            acc_color.rgb = linear_to_sRGB(acc_color.rgb);
+            // From [0, 1] to [0, 255]
+            u32 pixel = color_v4f_to_u32(acc_color);
+
+            for (i32 jj = pixel_j; jj < pixel_j + downsample_factor; ++jj)
+            {
+                for (i32 ii = pixel_i; ii < pixel_i + downsample_factor; ++ii)
+                {
+                    pixels[jj * view->screen_size.w + ii] = pixel;
+                }
+            }
+            i += canvas_jump;
+        }
+        j += canvas_jump;
+    }
+    return true;
+}
+
+func b32 rasterize_canvas_block_sse2(Arena* render_arena,
+                                     CanvasView* view,
+                                     Stroke* strokes,
+                                     b32* stroke_masks,
+                                     i32 num_strokes,
+                                     Stroke* working_stroke,
+                                     u32* pixels,
+                                     Rect raster_block)
+{
+    //u64 pre_ccount_begin = __rdtsc();
+    Rect canvas_block;
+    {
+        canvas_block.top_left  = raster_to_canvas(view, raster_block.top_left);
+        canvas_block.bot_right = raster_to_canvas(view, raster_block.bot_right);
+    }
+
+    if (canvas_block.left   < -view->canvas_radius_limit ||
+        canvas_block.right  > view->canvas_radius_limit  ||
+        canvas_block.top    < -view->canvas_radius_limit ||
+        canvas_block.bottom > view->canvas_radius_limit
+        )
+    {
+        for (int j = raster_block.top; j < raster_block.bottom; j++)
+        {
+            for (int i = raster_block.left; i < raster_block.right; i++)
+            {
+                pixels[j * view->screen_size.w + i] = 0xffff00ff;
+            }
+        }
+        return true;
+    }
+
+    v2i reference_point =
+// Leaving this toggle-able for a quick way to show the cool precision error.
+#if 1
+    {
+        (canvas_block.left + canvas_block.right) / 2,
+        (canvas_block.top + canvas_block.bottom) / 2,
+    };
 #else
+    {0};
+#endif
+
+    // Get the linked list of clipped strokes.
+    b32 allocation_ok = true;
+    ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
+                                                       strokes, stroke_masks, num_strokes,
+                                                       working_stroke,
+                                                       canvas_block, reference_point,
+                                                       &allocation_ok);
+    if (!allocation_ok)
+    {
+        // Request more memory
+        return false;
+    }
+
+    i32 downsample_factor = view->downsampling_factor;
+
+    // This is the distance between two adjacent canvas pixels. Derived to
+    // avoid expensive raster_to_canvas computations in the inner loop
+    i32 canvas_jump = downsample_factor * view->scale;
+
+
+    // i and j are the canvas point
+    i32 j = (((raster_block.top - view->screen_center.y) *
+              view->scale) - view->pan_vector.y) - reference_point.y;
+
+    for (i32 pixel_j = raster_block.top;
+         pixel_j < raster_block.bottom;
+         pixel_j += downsample_factor)
+    {
+        i32 i =  (((raster_block.left - view->screen_center.x) *
+                    view->scale) - view->pan_vector.x) - reference_point.x;
+
+        for (i32 pixel_i = raster_block.left;
+             pixel_i < raster_block.right;
+             pixel_i += downsample_factor)
+        {
+            // Clear color
+            v4f background_color = { 1, 1, 1, 1 };
+
+            // Cumulative blending
+            v4f acc_color = { 0 };
+
+            ClippedStroke* list_iter = stroke_list;
+
+            while(list_iter)
+            {
+                ClippedStroke* clipped_stroke = list_iter;
+                Stroke* stroke = &clipped_stroke->stroke;
+                list_iter = list_iter->next;
+
+                assert (clipped_stroke);
+
+                assert (stroke->num_points > 0);
+
+                // Fast path.
+                if (clipped_stroke->fills_block)
+                {
+#if 0 // Visualize it with black
+                    v4f dst = {0, 0, 0, stroke->brush.color.a};
+#else
+                    v4f dst = stroke->brush.color;
+#endif
+                    acc_color = blend_v4f(dst, acc_color);
+                }
+                else
+                // Slow path. There are pixels not inside.
+                {
+                    v2i* points = stroke->points;
+
+                    i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
+
+                    //v2f min_points[4] = {0};
+                    f32 min_dist = FLT_MAX;
+                    f32 dx = 0;
+                    f32 dy = 0;
+                    f32 pressure = 0.0f;
+
+                    if (stroke->num_points == 1)
+                    {
+                        v2i first_point = points[0];
+                        //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
+                        v2i min_point = sub_v2i(first_point, reference_point);
+                        dx = (f32)(i - min_point.x);
+                        dy = (f32)(j - min_point.y);
+                        min_dist = dx * dx + dy * dy;
+                    }
+                    else
+                    {
+                        // Find closest point.
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
                         __m128 test_dx = _mm_set_ps1(0.0f);
                         __m128 test_dy = _mm_set_ps1(0.0f);
@@ -588,7 +863,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                 }
                             }
                         }
-#endif
                     }
 
                     if (min_dist < FLT_MAX)
@@ -599,85 +873,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             f32 f3 = (0.75f * view->scale) * downsample_factor;
                             f32 f1 = (0.25f * view->scale) * downsample_factor;
                             u32 radius = (u32)(stroke->brush.radius * pressure);
-#if 0
-                            f32 fdists[16];
-                            {
-                                f32 a1 = (dx - f3) * (dx - f3);
-                                f32 a2 = (dx - f1) * (dx - f1);
-                                f32 a3 = (dx + f1) * (dx + f1);
-                                f32 a4 = (dx + f3) * (dx + f3);
-
-                                f32 b1 = (dy - f3) * (dy - f3);
-                                f32 b2 = (dy - f1) * (dy - f1);
-                                f32 b3 = (dy + f1) * (dy + f1);
-                                f32 b4 = (dy + f3) * (dy + f3);
-
-                                fdists[0]  = a1 + b1;
-                                fdists[1]  = a2 + b1;
-                                fdists[2]  = a3 + b1;
-                                fdists[3]  = a4 + b1;
-
-                                fdists[4]  = a1 + b2;
-                                fdists[5]  = a2 + b2;
-                                fdists[6]  = a3 + b2;
-                                fdists[7]  = a4 + b2;
-
-                                fdists[8]  = a1 + b3;
-                                fdists[9]  = a2 + b3;
-                                fdists[10] = a3 + b3;
-                                fdists[11] = a4 + b3;
-
-                                fdists[12] = a1 + b4;
-                                fdists[13] = a2 + b4;
-                                fdists[14] = a3 + b4;
-                                fdists[15] = a4 + b4;
-
-                            }
-
-
-                            // Perf note: We remove the sqrtf call when it's
-                            // safe to square the radius
-                            if (radius >= (1 << 16))
-                            {
-                                samples += (sqrtf(fdists[ 0]) < radius);
-                                samples += (sqrtf(fdists[ 1]) < radius);
-                                samples += (sqrtf(fdists[ 2]) < radius);
-                                samples += (sqrtf(fdists[ 3]) < radius);
-                                samples += (sqrtf(fdists[ 4]) < radius);
-                                samples += (sqrtf(fdists[ 5]) < radius);
-                                samples += (sqrtf(fdists[ 6]) < radius);
-                                samples += (sqrtf(fdists[ 7]) < radius);
-                                samples += (sqrtf(fdists[ 8]) < radius);
-                                samples += (sqrtf(fdists[ 9]) < radius);
-                                samples += (sqrtf(fdists[10]) < radius);
-                                samples += (sqrtf(fdists[11]) < radius);
-                                samples += (sqrtf(fdists[12]) < radius);
-                                samples += (sqrtf(fdists[13]) < radius);
-                                samples += (sqrtf(fdists[14]) < radius);
-                                samples += (sqrtf(fdists[15]) < radius);
-                            }
-                            else
-                            {
-                                u32 sq_radius = radius * radius;
-
-                                samples += (fdists[ 0] < sq_radius);
-                                samples += (fdists[ 1] < sq_radius);
-                                samples += (fdists[ 2] < sq_radius);
-                                samples += (fdists[ 3] < sq_radius);
-                                samples += (fdists[ 4] < sq_radius);
-                                samples += (fdists[ 5] < sq_radius);
-                                samples += (fdists[ 6] < sq_radius);
-                                samples += (fdists[ 7] < sq_radius);
-                                samples += (fdists[ 8] < sq_radius);
-                                samples += (fdists[ 9] < sq_radius);
-                                samples += (fdists[10] < sq_radius);
-                                samples += (fdists[11] < sq_radius);
-                                samples += (fdists[12] < sq_radius);
-                                samples += (fdists[13] < sq_radius);
-                                samples += (fdists[14] < sq_radius);
-                                samples += (fdists[15] < sq_radius);
-                            }
-#else
                             __m128 dists[4];
 
                             {
@@ -738,7 +933,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             float fsamples;
                             _mm_store_ss(&fsamples, sum);
                             samples = (u32)fsamples;
-#endif
                         }
 
                         // If the stroke contributes to the pixel, do compositing.
@@ -787,7 +981,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         }
         j += canvas_jump;
     }
-    return allocation_ok;
+    return true;
 }
 
 func void rasterize_ring(u32* pixels,
@@ -1020,14 +1214,28 @@ func b32 render_blockgroup(MiltonState* milton_state,
             break;
         }
 
-        allocation_ok = rasterize_canvas_block(blockgroup_arena,
-                                               milton_state->view,
-                                               milton_state->strokes,
-                                               stroke_masks,
-                                               milton_state->num_strokes,
-                                               &milton_state->working_stroke,
-                                               raster_buffer,
-                                               blocks[block_start + block_i]);
+        if (milton_state->cpu_has_sse2)
+        {
+            allocation_ok = rasterize_canvas_block_sse2(blockgroup_arena,
+                                                        milton_state->view,
+                                                        milton_state->strokes,
+                                                        stroke_masks,
+                                                        milton_state->num_strokes,
+                                                        &milton_state->working_stroke,
+                                                        raster_buffer,
+                                                        blocks[block_start + block_i]);
+        }
+        else
+        {
+            allocation_ok = rasterize_canvas_block_slow(blockgroup_arena,
+                                                        milton_state->view,
+                                                        milton_state->strokes,
+                                                        stroke_masks,
+                                                        milton_state->num_strokes,
+                                                        &milton_state->working_stroke,
+                                                        raster_buffer,
+                                                        blocks[block_start + block_i]);
+        }
     }
     return allocation_ok;
 }
