@@ -20,76 +20,110 @@ typedef struct ClippedStroke_s ClippedStroke;
 struct ClippedStroke_s
 {
     b32             fills_block;
-    Brush           brush;
-    i32             num_points;
-    v2i*            points;
-    PointMetadata*  metadata;
+
+    // This stroke is clipped to a particular block and its pointers only live
+    // as long as the render work lasts.
+    Stroke          stroke;
 
     ClippedStroke*  next;
 };
 
-func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* stroke, Rect canvas_rect)
+func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, Rect canvas_rect)
 {
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
-
-    if (clipped_stroke)
-    {
-        clipped_stroke->brush      = stroke->brush;
-        clipped_stroke->num_points = 0;
-        clipped_stroke->points     = arena_alloc_array(render_arena,
-                                                       stroke->num_points * 2, v2i);
-        clipped_stroke->metadata   = arena_alloc_array(render_arena,
-                                                       stroke->num_points * 2, PointMetadata);
-        if (!clipped_stroke->points || !clipped_stroke->metadata)
-        {
-            return NULL;
-        }
-    }
-    else
+    if (!clipped_stroke)
     {
         return NULL;
     }
 
-    if (stroke->num_points == 1)
+    clipped_stroke->fills_block = false;
+    clipped_stroke->next = NULL;
+    clipped_stroke->stroke = *in_stroke;  // Copy everything except:
+
+    // ... now substitute the point data with an array of our own.
+    //
+    // TODO: To save memory, it would make sense to use a different data
+    // structure here.  A deque would have the advantages of a stretchy
+    // array without asking too much from our humble arena.
+    if (in_stroke->num_points > 0)
     {
-        if (is_inside_rect(canvas_rect, stroke->points[0]))
+        clipped_stroke->stroke.num_points = 0;
+        clipped_stroke->stroke.points = arena_alloc_array(render_arena,
+                                                          in_stroke->num_points, v2i);
+        clipped_stroke->stroke.metadata = arena_alloc_array(render_arena,
+                                                            in_stroke->num_points, PointMetadata);
+    }
+    else
+    {
+        return clipped_stroke;
+    }
+
+
+    if (!clipped_stroke->stroke.points || !clipped_stroke->stroke.metadata)
+    {
+        // We need more memory. Return gracefully
+        return NULL;
+    }
+    if (in_stroke->num_points == 1)
+    {
+        if (is_inside_rect(canvas_rect, in_stroke->points[0]))
         {
-            clipped_stroke->points[clipped_stroke->num_points++] = stroke->points[0];
+            Stroke* stroke = &clipped_stroke->stroke;
+            stroke->points[stroke->num_points++] = in_stroke->points[0];
         }
     }
     else
     {
-        i32 num_points = stroke->num_points;
+        i32 num_points = in_stroke->num_points;
+        b32 added_previous_segment = false;
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
         {
-            v2i a = stroke->points[point_i];
-            v2i b = stroke->points[point_i + 1];
+            v2i a = in_stroke->points[point_i];
+            v2i b = in_stroke->points[point_i + 1];
 
-            PointMetadata metadata_a = stroke->metadata[point_i];
-            PointMetadata metadata_b = stroke->metadata[point_i + 1];
+            PointMetadata metadata_a = in_stroke->metadata[point_i];
+            PointMetadata metadata_b = in_stroke->metadata[point_i + 1];
 
             // Very conservative...
-            b32 inside = !((a.x > canvas_rect.right && b.x > canvas_rect.right) ||
-                           (a.x < canvas_rect.left && b.x < canvas_rect.left) ||
-                           (a.y < canvas_rect.top && b.y < canvas_rect.top) ||
-                           (a.y > canvas_rect.bottom && b.y > canvas_rect.bottom));
+            b32 inside = !((a.x > canvas_rect.right     && b.x > canvas_rect.right) ||
+                           (a.x < canvas_rect.left      && b.x < canvas_rect.left) ||
+                           (a.y < canvas_rect.top       && b.y < canvas_rect.top) ||
+                           (a.y > canvas_rect.bottom    && b.y > canvas_rect.bottom));
 
             // We can add the segment
             if (inside)
             {
-                clipped_stroke->points  [clipped_stroke->num_points] = a;
-                clipped_stroke->metadata[clipped_stroke->num_points] = metadata_a;
-                clipped_stroke->num_points++;
-                clipped_stroke->points  [clipped_stroke->num_points] = b;
-                clipped_stroke->metadata[clipped_stroke->num_points] = metadata_b;
-                clipped_stroke->num_points++;
+                Stroke* stroke = &clipped_stroke->stroke;
+                // XA AB<- CD
+                // We need to add AB to out clipped stroke.
+                // Based on the previous iteration:
+                //  If we added, XA, then A is already inside; so for AB, we only need to add B.
+                //  If XA was discarded, we haven't added A; both points need to be added.
+                if (!added_previous_segment)
+                {
+                    stroke->points  [stroke->num_points] = a;
+                    stroke->metadata[stroke->num_points] = metadata_a;
+                    stroke->points  [stroke->num_points + 1] = b;
+                    stroke->metadata[stroke->num_points + 1] = metadata_b;
+                    stroke->num_points += 2;
+                }
+                else if (added_previous_segment)
+                {
+                    stroke->points  [stroke->num_points] = b;
+                    stroke->metadata[stroke->num_points] = metadata_b;
+                    stroke->num_points += 1;
+                }
+                added_previous_segment = true;
+            }
+            else
+            {
+                added_previous_segment = false;
             }
         }
     }
     return clipped_stroke;
 }
 
-// NOTE: takes clipped points.
 func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
                                   v2i* points, i32 num_points,
                                   PointMetadata* metadata,
@@ -105,7 +139,7 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 
     if (num_points >= 2)
     {
-        for (i32 point_i = 0; point_i < num_points; point_i += 2)
+        for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
         {
             v2i a = points[point_i];
             v2i b = points[point_i + 1];
@@ -114,6 +148,7 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
             b = sub_v2i(points[point_i + 1], reference_point);
 
             // Get closest point
+            // TODO: Refactor into something clearer after we're done.
             v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
             v2i p  = closest_point_in_segment( a, b, ab, mag_ab2, rect_center, NULL);
@@ -180,6 +215,71 @@ func v4f blend_v4f(v4f dst, v4f src)
     return result;
 }
 
+// Sample dx, dy, which are distances from the sampling point to the center of
+// the circle, with 4x4 MSAA
+// Returns the number of samples gathered.
+func u32 sample_circle(CanvasView* view,
+                       i32 downsample_factor, i32 local_scale,
+                       f32 dx, f32 dy, u32 radius)
+{
+    u32 samples = 0;
+    f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
+    f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
+    f32 fdists[16];
+    {
+        f32 a1 = (dx - f3) * (dx - f3);
+        f32 a2 = (dx - f1) * (dx - f1);
+        f32 a3 = (dx + f1) * (dx + f1);
+        f32 a4 = (dx + f3) * (dx + f3);
+
+        f32 b1 = (dy - f3) * (dy - f3);
+        f32 b2 = (dy - f1) * (dy - f1);
+        f32 b3 = (dy + f1) * (dy + f1);
+        f32 b4 = (dy + f3) * (dy + f3);
+
+        fdists[0]  = a1 + b1;
+        fdists[1]  = a2 + b1;
+        fdists[2]  = a3 + b1;
+        fdists[3]  = a4 + b1;
+
+        fdists[4]  = a1 + b2;
+        fdists[5]  = a2 + b2;
+        fdists[6]  = a3 + b2;
+        fdists[7]  = a4 + b2;
+
+        fdists[8]  = a1 + b3;
+        fdists[9]  = a2 + b3;
+        fdists[10] = a3 + b3;
+        fdists[11] = a4 + b3;
+
+        fdists[12] = a1 + b4;
+        fdists[13] = a2 + b4;
+        fdists[14] = a3 + b4;
+        fdists[15] = a4 + b4;
+
+    }
+    // Perf note: We remove the sqrtf call when it's
+    // safe to square the radius
+    if (radius >= (1 << 16))
+    {
+        for (int i = 0; i < 16; ++i)
+        {
+            samples += (sqrtf(fdists[i]) < radius);
+        }
+    }
+    else
+    {
+        u32 sq_radius = radius * radius;
+
+
+        for (int i = 0; i < 16; ++i)
+        {
+            samples += (fdists[i] < sq_radius);
+        }
+    }
+    return samples;
+}
+
 // returns false if allocation failed
 func b32 rasterize_canvas_block(Arena* render_arena,
                                 CanvasView* view,
@@ -190,7 +290,6 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                                 u32* pixels,
                                 Rect raster_block)
 {
-    b32 allocation_ok = true;
     //u64 pre_ccount_begin = __rdtsc();
     Rect canvas_block;
     {
@@ -198,6 +297,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         canvas_block.bot_right = raster_to_canvas(view, raster_block.bot_right);
     }
 
+    // Not actually infinite! Draw programmer magenta when outside of bounds.
     if (canvas_block.left   < -view->canvas_radius_limit ||
         canvas_block.right  > view->canvas_radius_limit  ||
         canvas_block.top    < -view->canvas_radius_limit ||
@@ -211,8 +311,9 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                 pixels[j * view->screen_size.w + i] = 0xffff00ff;
             }
         }
-        return allocation_ok;
+        return true;
     }
+
     ClippedStroke* stroke_list = NULL;
 
     v2i reference_point =
@@ -226,88 +327,99 @@ func b32 rasterize_canvas_block(Arena* render_arena,
     {0};
 #endif
 
-    // Go forwards so we can do early reject with premultiplied alpha!
+    // Fill a linked list, filtering input strokes and clipping them to the current block.
     for (i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
     {
         if (stroke_i < num_strokes && !stroke_masks[stroke_i])
         {
             continue;
         }
-        Stroke* stroke = NULL;
+        Stroke* complete_stroke = NULL;
         if (stroke_i == num_strokes)
         {
-            stroke = working_stroke;
+            complete_stroke = working_stroke;
         }
         else
         {
-            stroke = &strokes[stroke_i];
+            complete_stroke = &strokes[stroke_i];
         }
-        assert(stroke);
-        Rect enlarged_block = rect_enlarge(canvas_block, stroke->brush.radius);
-        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, stroke, enlarged_block);
+        assert(complete_stroke);
+        Rect enlarged_block = rect_enlarge(canvas_block, complete_stroke->brush.radius);
+        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena,
+                                                            complete_stroke, enlarged_block);
         // ALlocation failed.
         // Handle this gracefully; this will cause more memory for render workers.
         if (!clipped_stroke)
         {
-            allocation_ok = false;
-            return allocation_ok;
+            return false;
         }
 
-        if (clipped_stroke->num_points)
+        Stroke* stroke = &clipped_stroke->stroke;
+
+        if (stroke->num_points)
         {
+            assert (stroke->brush.radius > 0);
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
+        // TODO enable
+#if 0
             if (is_rect_filled_by_stroke(
                         canvas_block, reference_point,
-                        clipped_stroke->points, clipped_stroke->num_points,
-                        clipped_stroke->metadata, clipped_stroke->brush,
+                        stroke->points, stroke->num_points,
+                        stroke->metadata, stroke->brush,
                         view))
             {
-                list_head->fills_block = true;
+                //list_head->fills_block = true;
             }
+#endif
             stroke_list = list_head;
         }
     }
 
-    // The ninetales factor, named after Roberto Lapuente and Ruben Bañuelos
-    // for staying with me on twitch while solving this problem, is a floating
-    // point precision hack for really close.
-    // Zoom levels, to make things larger
-    i32 ninetales = (view->scale <= 8) ? 4 : 1;
+    // Avoid losing floating point precission at very close zoom levels.
+    i32 local_scale = (view->scale <= 8) ? 4 : 1;
 
     {
-        reference_point.x *= ninetales;
-        reference_point.y *= ninetales;
+        reference_point.x *= local_scale;
+        reference_point.y *= local_scale;
     }
 
+    // TODO enable
     // Set our `stroke_list` to end at the first opaque stroke that fills
     // this block.
+#if 0
     ClippedStroke* list_iter = stroke_list;
     while (list_iter)
     {
-        if (list_iter->fills_block && list_iter->brush.color.a == 1.0f)
+        if (list_iter->fills_block && list_iter->stroke.brush.color.a == 1.0f)
         {
             list_iter->next = NULL;
             break;
         }
         list_iter = list_iter->next;
     }
+#endif
 
-    i32 pixel_jump = view->downsampling_factor;  // Different names for the same thing.
+    i32 downsample_factor = view->downsampling_factor;  // Different names for the same thing.
 
     // This is the distance between two adjacent canvas pixels. Derived to
     // avoid expensive raster_to_canvas computations in the inner loop
-    i32 canvas_jump = pixel_jump * view->scale * ninetales;
+    i32 canvas_jump = downsample_factor * view->scale * local_scale;
 
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
-              view->scale) - view->pan_vector.y) * ninetales - reference_point.y;
+              view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
 
-    for (i32 pixel_j = raster_block.top; pixel_j < raster_block.bottom; pixel_j += pixel_jump)
+    for (i32 pixel_j = raster_block.top;
+         pixel_j < raster_block.bottom;
+         pixel_j += downsample_factor)
     {
         i32 i =  (((raster_block.left - view->screen_center.x) *
-                    view->scale) - view->pan_vector.x) * ninetales - reference_point.x;
-        for (i32 pixel_i = raster_block.left; pixel_i < raster_block.right; pixel_i += pixel_jump)
+                    view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
+
+        for (i32 pixel_i = raster_block.left;
+             pixel_i < raster_block.right;
+             pixel_i += downsample_factor)
         {
             // Clear color
             v4f background_color = { 1, 1, 1, 1 };
@@ -321,25 +433,26 @@ func b32 rasterize_canvas_block(Arena* render_arena,
             {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
+                Stroke* stroke = &clipped_stroke->stroke;
 
                 assert (clipped_stroke);
 
-                assert (clipped_stroke->num_points % 2 == 0 || clipped_stroke->num_points == 1);
+                assert (stroke->num_points > 0);
 
                 // Fast path.
                 if (clipped_stroke->fills_block)
                 {
-#if 0 // Visualize it with black
-                    v4f dst = {0,0,0,clipped_stroke->brush.color.a};
+#if 1 // Visualize it with black
+                    v4f dst = {0,0,0,stroke->brush.color.a};
 #else
-                    v4f dst = clipped_stroke->brush.color;
+                    v4f dst = stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 }
                 else
                 // Slow path. There are pixels not inside.
                 {
-                    v2i* points = clipped_stroke->points;
+                    v2i* points = stroke->points;
 
                     i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
 
@@ -349,12 +462,12 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     f32 dy = 0;
                     f32 pressure = 0.0f;
 
-                    if (clipped_stroke->num_points == 1)
+                    if (stroke->num_points == 1)
                     {
                         v2i first_point = points[0];
                         {
-                            first_point.x *= ninetales;
-                            first_point.y *= ninetales;
+                            first_point.x *= local_scale;
+                            first_point.y *= local_scale;
                         }
                         //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
                         v2i min_point = sub_v2i(first_point, reference_point);
@@ -364,316 +477,53 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                     }
                     else
                     {
-                        // Find closest point.
-#define USE_SSE 0
-#if !USE_SSE
                         batch_size = 1;
-                        for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 2)
+                        for (int point_i = 0; point_i < stroke->num_points-1; ++point_i)
                         {
-                            v2i a = points[point_i];
-                            v2i b = points[point_i + 1];
+                            v2i point = points[point_i];
                             {
-                                a.x *= ninetales;
-                                a.y *= ninetales;
-                                b.x *= ninetales;
-                                b.y *= ninetales;
+                                point.x *= local_scale;
+                                point.y *= local_scale;
                             }
-                            a = sub_v2i(a, reference_point);
-                            b = sub_v2i(b, reference_point);
+                            point = sub_v2i(point, reference_point);
 
-                            v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
-                            f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-                            if (mag_ab2 > 0)
+                            f32 test_dx = (f32) (i - point.x);
+                            f32 test_dy = (f32) (j - point.y);
+                            f32 dist = test_dx * test_dx + test_dy * test_dy;
+                            if (dist < min_dist)
                             {
-
-                                f32 t;
-                                v2f point = v2i_to_v2f(closest_point_in_segment(a, b,
-                                                                                ab, mag_ab2,
-                                                                                (v2i){i,j}, &t));
-
-                                f32 test_dx = (f32) (i - point.x);
-                                f32 test_dy = (f32) (j - point.y);
-                                f32 dist = test_dx * test_dx + test_dy * test_dy;
-                                if (dist < min_dist)
-                                {
-                                    min_dist = dist;
-                                    dx = test_dx;
-                                    dy = test_dy;
-                                    f32 p_a = clipped_stroke->metadata[point_i    ].pressure;
-                                    f32 p_b = clipped_stroke->metadata[point_i + 1].pressure;
-                                    pressure = (1 - t) * p_a + t * p_b;
-                                }
+                                min_point_i = point_i;
+                                min_dist = dist;
+                                dx = test_dx;
+                                dy = test_dy;
+                                pressure = stroke->metadata[point_i].pressure;
                             }
                         }
-#else
-#error TESTING
-//#define SSE_M(wide, i) ((f32 *)&(wide) + i)
-                        __m128 test_dx = _mm_set_ps1(0.0f);
-                        __m128 test_dy = _mm_set_ps1(0.0f);
-                        __m128 ab_x    = _mm_set_ps1(0.0f);
-                        __m128 ab_y    = _mm_set_ps1(0.0f);
-                        __m128 d_x     = _mm_set_ps1(0.0f);
-                        __m128 d_y     = _mm_set_ps1(0.0f);
-                        __m128 ax_x    = _mm_set_ps1(0.0f);
-                        __m128 ax_y    = _mm_set_ps1(0.0f);
-                        __m128 disc    = _mm_set_ps1(0.0f);
-                        __m128 one4    = _mm_set_ps1(1.0f);
-
-                        for (int point_i = 0; point_i < clipped_stroke->num_points-1; point_i += 8)
-
-                        {
-                            f32 axs[4];
-                            f32 ays[4];
-                            f32 bxs[4];
-                            f32 bys[4];
-                            batch_size = 0;
-
-                            for (i32 i = 0; i < 4; i++)
-                            {
-                                i32 index = point_i + 2*i;
-                                if (index + 1 >= clipped_stroke->num_points)
-                                {
-                                    break;
-                                }
-                                // The point of reference point is to do the subtraction with
-                                // integer arithmetic
-                                axs[i] = (f32)(points[index    ].x * ninetales - reference_point.x);
-                                ays[i] = (f32)(points[index    ].y * ninetales - reference_point.y);
-                                bxs[i] = (f32)(points[index + 1].x * ninetales - reference_point.x);
-                                bys[i] = (f32)(points[index + 1].y * ninetales - reference_point.y);
-                                batch_size++;
-                            }
-
-
-                            __m128 a_x = _mm_set_ps((axs[3]),
-                                                    (axs[2]),
-                                                    (axs[1]),
-                                                    (axs[0]));
-
-                            __m128 b_x = _mm_set_ps((bxs[3]),
-                                                    (bxs[2]),
-                                                    (bxs[1]),
-                                                    (bxs[0]));
-
-                            __m128 a_y = _mm_set_ps((ays[3]),
-                                                    (ays[2]),
-                                                    (ays[1]),
-                                                    (ays[0]));
-
-                            __m128 b_y = _mm_set_ps((bys[3]),
-                                                    (bys[2]),
-                                                    (bys[1]),
-                                                    (bys[0]));
-
-                            ab_x = _mm_sub_ps(b_x, a_x);
-                            ab_y = _mm_sub_ps(b_y, a_y);
-
-                            __m128 inv_mag_ab = _mm_add_ps(_mm_mul_ps(ab_x, ab_x), _mm_mul_ps(ab_y, ab_y));
-                            inv_mag_ab = _mm_rsqrt_ps(inv_mag_ab);
-
-                            d_x = _mm_mul_ps(ab_x, inv_mag_ab);
-                            d_y = _mm_mul_ps(ab_y, inv_mag_ab);
-
-                            __m128 canvas_point_x4 = _mm_set_ps1((f32)i);
-                            __m128 canvas_point_y4 = _mm_set_ps1((f32)j);
-
-                            ax_x = _mm_sub_ps(canvas_point_x4, a_x);
-                            ax_y = _mm_sub_ps(canvas_point_y4, a_y);
-
-                            disc = _mm_add_ps(_mm_mul_ps(d_x, ax_x),
-                                              _mm_mul_ps(d_y, ax_y));
-
-                            // Clamp discriminant so that point lies in [a, b]
-                            {
-                                __m128 low  = _mm_set_ps1(0);
-                                __m128 high = _mm_div_ps(one4, inv_mag_ab);
-
-                                disc = _mm_min_ps(_mm_max_ps(low, disc), high);
-                            }
-
-                            // (axs[i] + disc_i * (d_x[i],
-                            __m128 point_x_4 = _mm_add_ps(a_x, _mm_mul_ps(disc, d_x));
-                            __m128 point_y_4 = _mm_add_ps(a_y, _mm_mul_ps(disc, d_y));
-
-
-                            test_dx = _mm_sub_ps(canvas_point_x4, point_x_4);
-                            test_dy = _mm_sub_ps(canvas_point_y4, point_y_4);
-
-                            __m128 dist4 = _mm_add_ps(_mm_mul_ps(test_dx, test_dx),
-                                                      _mm_mul_ps(test_dy, test_dy));
-
-                            f32 dists[4];
-                            f32 tests_dx[4];
-                            f32 tests_dy[4];
-                            _mm_store_ps(dists, dist4);
-                            _mm_store_ps(tests_dx, test_dx);
-                            _mm_store_ps(tests_dy, test_dy);
-
-                            for (i32 i = 0; i < batch_size; ++i)
-                            {
-                                f32 dist = dists[i];
-                                if (dist < min_dist)
-                                {
-                                    min_dist = dist;
-                                    dx = tests_dx[i];
-                                    dy = tests_dy[i];
-                                }
-                            }
-                        }
-#endif
                     }
 
                     if (min_dist < FLT_MAX)
                     {
                         //u64 kk_ccount_begin = __rdtsc();
-                        int samples = 0;
+                        u32 radius = (u32)(stroke->brush.radius * local_scale * pressure);
+
+                        // Sample the brush at the closest point.
+                        u32 joint_samples = sample_circle(view, downsample_factor, local_scale,
+                                                          dx, dy, radius);
+
+
+                        // Now sample the frustums between points, interpolating.
+
+                        // We have a left-segment
+                        if (min_point_i > 0)
                         {
-                            f32 f3 = (0.75f * view->scale) * pixel_jump * ninetales;
-                            f32 f1 = (0.25f * view->scale) * pixel_jump * ninetales;
-                            u32 radius = (u32)(clipped_stroke->brush.radius * ninetales * pressure);
-#if !USE_SSE
-                            f32 fdists[16];
-                            {
-                                f32 a1 = (dx - f3) * (dx - f3);
-                                f32 a2 = (dx - f1) * (dx - f1);
-                                f32 a3 = (dx + f1) * (dx + f1);
-                                f32 a4 = (dx + f3) * (dx + f3);
 
-                                f32 b1 = (dy - f3) * (dy - f3);
-                                f32 b2 = (dy - f1) * (dy - f1);
-                                f32 b3 = (dy + f1) * (dy + f1);
-                                f32 b4 = (dy + f3) * (dy + f3);
-
-                                fdists[0]  = a1 + b1;
-                                fdists[1]  = a2 + b1;
-                                fdists[2]  = a3 + b1;
-                                fdists[3]  = a4 + b1;
-
-                                fdists[4]  = a1 + b2;
-                                fdists[5]  = a2 + b2;
-                                fdists[6]  = a3 + b2;
-                                fdists[7]  = a4 + b2;
-
-                                fdists[8]  = a1 + b3;
-                                fdists[9]  = a2 + b3;
-                                fdists[10] = a3 + b3;
-                                fdists[11] = a4 + b3;
-
-                                fdists[12] = a1 + b4;
-                                fdists[13] = a2 + b4;
-                                fdists[14] = a3 + b4;
-                                fdists[15] = a4 + b4;
-
-                            }
-
-
-                            // Perf note: We remove the sqrtf call when it's
-                            // safe to square the radius
-                            if (radius >= (1 << 16))
-                            {
-                                samples += (sqrtf(fdists[ 0]) < radius);
-                                samples += (sqrtf(fdists[ 1]) < radius);
-                                samples += (sqrtf(fdists[ 2]) < radius);
-                                samples += (sqrtf(fdists[ 3]) < radius);
-                                samples += (sqrtf(fdists[ 4]) < radius);
-                                samples += (sqrtf(fdists[ 5]) < radius);
-                                samples += (sqrtf(fdists[ 6]) < radius);
-                                samples += (sqrtf(fdists[ 7]) < radius);
-                                samples += (sqrtf(fdists[ 8]) < radius);
-                                samples += (sqrtf(fdists[ 9]) < radius);
-                                samples += (sqrtf(fdists[10]) < radius);
-                                samples += (sqrtf(fdists[11]) < radius);
-                                samples += (sqrtf(fdists[12]) < radius);
-                                samples += (sqrtf(fdists[13]) < radius);
-                                samples += (sqrtf(fdists[14]) < radius);
-                                samples += (sqrtf(fdists[15]) < radius);
-                            }
-                            else
-                            {
-                                u32 sq_radius = radius * radius;
-
-                                samples += (fdists[ 0] < sq_radius);
-                                samples += (fdists[ 1] < sq_radius);
-                                samples += (fdists[ 2] < sq_radius);
-                                samples += (fdists[ 3] < sq_radius);
-                                samples += (fdists[ 4] < sq_radius);
-                                samples += (fdists[ 5] < sq_radius);
-                                samples += (fdists[ 6] < sq_radius);
-                                samples += (fdists[ 7] < sq_radius);
-                                samples += (fdists[ 8] < sq_radius);
-                                samples += (fdists[ 9] < sq_radius);
-                                samples += (fdists[10] < sq_radius);
-                                samples += (fdists[11] < sq_radius);
-                                samples += (fdists[12] < sq_radius);
-                                samples += (fdists[13] < sq_radius);
-                                samples += (fdists[14] < sq_radius);
-                                samples += (fdists[15] < sq_radius);
-                            }
-#else
-#error TESTING
-                            __m128 dists[4];
-
-                            {
-                                __m128 a = _mm_set_ps((dx + f3) * (dx + f3),
-                                                      (dx + f1) * (dx + f1),
-                                                      (dx - f1) * (dx - f1),
-                                                      (dx - f3) * (dx - f3));
-
-                                __m128 b1 = _mm_set_ps1((dy - f3) * (dy - f3));
-                                __m128 b2 = _mm_set_ps1((dy - f1) * (dy - f1));
-                                __m128 b3 = _mm_set_ps1((dy + f1) * (dy + f1));
-                                __m128 b4 = _mm_set_ps1((dy + f3) * (dy + f3));
-
-                                dists[0] = _mm_add_ps(a, b1);
-                                dists[1] = _mm_add_ps(a, b2);
-                                dists[2] = _mm_add_ps(a, b3);
-                                dists[3] = _mm_add_ps(a, b4);
-                            }
-                            //u32 radius = clipped_stroke->brush.radius;
-                            //assert (radius > 0);
-                            assert (radius < sqrtf((FLT_MAX)));
-
-                            __m128 radius4 = _mm_set_ps1((f32)clipped_stroke->brush.radius *
-                                                         ninetales);
-
-                            // Perf note: We remove the sqrtf call when it's
-                            // safe to square the radius
-                            __m128 comparisons[4];
-                            __m128 ones = _mm_set_ps1(1.0f);
-                            if (radius >= (1 << 16))
-                            {
-                                // sqrt slow. rsqrt fast
-                                dists[0] = _mm_mul_ps(dists[0], _mm_rsqrt_ps(dists[0]));
-                                dists[1] = _mm_mul_ps(dists[1], _mm_rsqrt_ps(dists[1]));
-                                dists[2] = _mm_mul_ps(dists[2], _mm_rsqrt_ps(dists[2]));
-                                dists[3] = _mm_mul_ps(dists[3], _mm_rsqrt_ps(dists[3]));
-                                comparisons[0] = _mm_cmplt_ps(dists[0], radius4);
-                                comparisons[1] = _mm_cmplt_ps(dists[1], radius4);
-                                comparisons[2] = _mm_cmplt_ps(dists[2], radius4);
-                                comparisons[3] = _mm_cmplt_ps(dists[3], radius4);
-                            }
-                            else
-                            {
-                                __m128 sq_radius = _mm_mul_ps(radius4, radius4);
-                                comparisons[0] = _mm_cmplt_ps(dists[0], sq_radius);
-                                comparisons[1] = _mm_cmplt_ps(dists[1], sq_radius);
-                                comparisons[2] = _mm_cmplt_ps(dists[2], sq_radius);
-                                comparisons[3] = _mm_cmplt_ps(dists[3], sq_radius);
-                            }
-                            __m128 sum = _mm_set_ps1(0);
-                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[0]));
-                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[1]));
-                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[2]));
-                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[3]));
-
-                            sum = _mm_add_ps(sum, _mm_movehl_ps(sum, sum));
-                            sum = _mm_add_ss(sum, _mm_shuffle_ps(sum, sum, 1));
-
-                            float fsamples;
-                            _mm_store_ss(&fsamples, sum);
-                            samples = (u32)fsamples;
-#endif
                         }
+                        // We have a segment to the right
+                        if (min_point_i < stroke->num_points)
+                        {
+
+                        }
+                        u32 samples = joint_samples;
 
                         // If the stroke contributes to the pixel, do compositing.
                         if (samples > 0)
@@ -681,9 +531,9 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                             // Do blending
                             // ---------------
 
-                            f32 coverage = (f32)samples / 16.0f;
+                            f32 coverage = (f32)joint_samples / 16.0f;
 
-                            v4f dst = clipped_stroke->brush.color;
+                            v4f dst = stroke->brush.color;
                             {
                                 dst.r *= coverage;
                                 dst.g *= coverage;
@@ -710,9 +560,9 @@ func b32 rasterize_canvas_block(Arena* render_arena,
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 
-            for (i32 jj = pixel_j; jj < pixel_j + pixel_jump; ++jj)
+            for (i32 jj = pixel_j; jj < pixel_j + downsample_factor; ++jj)
             {
-                for (i32 ii = pixel_i; ii < pixel_i + pixel_jump; ++ii)
+                for (i32 ii = pixel_i; ii < pixel_i + downsample_factor; ++ii)
                 {
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }
@@ -721,7 +571,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
         }
         j += canvas_jump;
     }
-    return allocation_ok;
+    return true;
 }
 
 func void rasterize_ring(u32* pixels,
@@ -1066,7 +916,7 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
             break;
         }
 
-#define RENDER_MULTITHREADED 1
+#define RENDER_MULTITHREADED 0
 #if RENDER_MULTITHREADED
         TileRenderData data =
         {
