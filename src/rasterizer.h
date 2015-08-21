@@ -212,22 +212,6 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
     return false;
 }
 
-func v4f blend_v4f(v4f dst, v4f src)
-{
-    f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
-
-    //f32 alpha = src.a + dst.a - (src.a * dst.a);
-    v4f result =
-    {
-        src.r + dst.r * (1 - src.a),
-        src.g + dst.g * (1 - src.a),
-        src.b + dst.b * (1 - src.a),
-        alpha
-    };
-
-    return result;
-}
-
 // returns false if allocation failed
 func b32 rasterize_canvas_block(Arena* render_arena,
                                 CanvasView* view,
@@ -274,7 +258,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
     {0};
 #endif
 
-    // Go forwards so we can do early reject with premultiplied alpha!
+    // Fill linked list with strokes clipped to this block
     for (i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
     {
         if (stroke_i < num_strokes && !stroke_masks[stroke_i])
@@ -797,7 +781,7 @@ func b32 rasterize_canvas_block(Arena* render_arena,
                         }
                     }
                 }
-                if (acc_color.a > 0.9999)
+                if (acc_color.a > 0.999999)
                 {
                     break;
                 }

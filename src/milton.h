@@ -621,8 +621,7 @@ func void milton_init(MiltonState* milton_state)
 
 
     milton_gl_backend_init(milton_state);
-    // TODO: fix persist
-    //milton_load(milton_state);
+    milton_load(milton_state);
 
     // Set default brush sizes.
     for (int i = 0; i < BrushEnum_COUNT; ++i)
@@ -1038,8 +1037,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (should_save)
     {
-        // TODO: fix persist.
-        // milton_save(milton_state);
+        milton_save(milton_state);
     }
 }
 

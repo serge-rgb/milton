@@ -4,28 +4,22 @@ To-Do
 
 - Bugs
     - Pressure: closest-point approach breaks down
-        *** New brush engine needed ***
-    - Redraw overlay after pan
     - :)
 
 - Engine (urgent)
-    - Re-enable SSE after adding pressure code
-    - Re-add save & load after pressure metadata is fixed
     - Stop dropping input packets
 
 - UI
-    - Figure out the GUI library situation
     - Brush / Eraser buttons
     - Sliders for brush size & opacity / eraser
     - "Layers". History viewer?
 
 - Engine
     - Wacom: Pressure levels (only OSX left)
-    - Async rendering
     - Perf: Amdahl's curse... Parallelize color picker rendering
     - Undo: Only redraw necessary area.
     - Perf: Optimize small strokes away
-    - Wacom: Support for pan & rotate. (all platforms)
+    - Perf: Faster eraser and/or opacity rejection.
 
     - Brush: Add elliptical brush
     - Brush: Support for general, implicitly defined brushes
@@ -36,3 +30,6 @@ To-Do
 ============================================================
 ====                   1.0 Beta Milestone               ====
 ============================================================
+
+- Future
+    - Wacom: (?) Support for pan & rotate.

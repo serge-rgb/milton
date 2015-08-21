@@ -45,6 +45,10 @@ func void milton_load(MiltonState* milton_state)
     {
         u32 milton_magic = (u32)-1;
         fread(&milton_magic, sizeof(u32), 1, fd);
+        u32 milton_binary_version = (u32)-1;
+        fread(&milton_binary_version, sizeof(u32), 1, fd);
+
+        assert (milton_binary_version == 1);
 
         fread(milton_state->view, sizeof(CanvasView), 1, fd);
 
@@ -71,11 +75,16 @@ func void milton_load(MiltonState* milton_state)
             if (stroke->num_points >= STROKE_MAX_POINTS ||
                 stroke->num_points <= 0)
             {
+                milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
                 // Corrupt file. Avoid this read
                 continue;       // Do not allocate, just move on.
             }
-            stroke->points = arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);
+            stroke->points =
+                    arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);
+            stroke->metadata =
+                    arena_alloc_array(milton_state->root_arena, stroke->num_points, PointMetadata);
             fread(stroke->points, sizeof(v2i), stroke->num_points, fd);
+            fread(stroke->metadata, sizeof(PointMetadata), stroke->num_points, fd);
         }
 
 close:
@@ -101,6 +110,9 @@ func void milton_save(MiltonState* milton_state)
 
     fwrite(&milton_magic, sizeof(u32), 1, fd);
 
+    u32 milton_binary_version = 1;
+    fwrite(&milton_binary_version, sizeof(u32), 1, fd);
+
     fwrite(milton_state->view, sizeof(CanvasView), 1, fd);
 
     fwrite(&num_strokes, sizeof(i32), 1, fd);
@@ -112,6 +124,7 @@ func void milton_save(MiltonState* milton_state)
         fwrite(&stroke->brush, sizeof(Brush), 1, fd);
         fwrite(&stroke->num_points, sizeof(i32), 1, fd);
         fwrite(stroke->points, sizeof(v2i), stroke->num_points, fd);
+        fwrite(stroke->metadata, sizeof(PointMetadata), stroke->num_points, fd);
     }
 
     fclose(fd);
