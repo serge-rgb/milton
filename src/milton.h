@@ -947,24 +947,29 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 
             v2i in_point = *input->point;
 
+
             if (milton_state->working_stroke.num_points == 0)
             {
                 // Avoid creating really large update rects when starting new strokes
                 milton_state->last_raster_input = in_point;
             }
+
             v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
-            // TODO: make deque!!
+            f32 pressure_min = 0.20f;
+            f32 pressure = pressure_min + input->pressure * (1.0f - pressure_min);
+
+            // TODO:
+            // Check current input.
+            // If it contains the last point in the working stroke, then *replace* the
+            // last point.
+
             if (milton_state->working_stroke.num_points < STROKE_MAX_POINTS)
             {
                 // Add to current stroke.
                 int index = milton_state->working_stroke.num_points++;
                 milton_state->working_stroke.points[index] = canvas_point;
 
-                // Pressure calculation
-                f32 pressure_min = 0.20f;
-
-                f32 pressure = pressure_min + input->pressure * (1.0f - pressure_min);
 
                 if (input->pressure == NO_PRESSURE_INFO)
                 {

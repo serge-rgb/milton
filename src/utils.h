@@ -111,6 +111,18 @@ func f32 magnitude(v2f a)
     return sqrtf(dot(a, a));
 }
 
+func i32 magnitude_i(v2i a)
+{
+    return (i32)sqrtf((f32)dot(a, a));
+}
+
+func i32 distance_i(v2i a, v2i b)
+{
+   v2i d = sub_v2i(a, b);
+   i32 dist = magnitude_i(d);
+   return dist;
+}
+
 func f32 deegrees_to_radians(int d)
 {
     assert (0 <= d && d < 360);
