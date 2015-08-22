@@ -962,23 +962,72 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
             f32 pressure_min = 0.20f;
             f32 pressure = pressure_min + input->pressure * (1.0f - pressure_min);
 
-            // TODO:
+            if (input->pressure == NO_PRESSURE_INFO)
+            {
+                pressure = 1.0f;
+            }
+
             // Check current input.
             // If it contains the last point in the working stroke, then *replace* the
             // last point.
 
-            if (milton_state->working_stroke.num_points < STROKE_MAX_POINTS)
+            b32 not_the_first = false;
+            if (milton_state->working_stroke.num_points >= 1)
+            {
+                not_the_first = true;
+            }
+
+            // A point passes inspection if:
+            //  a) it's the first point of this stroke
+            //  b) it is being appended to the stroke and it didn't merge with the previous point.
+            b32 passed_inspection = true;
+
+            if (not_the_first)
+            {
+                i32 in_radius =
+                        (i32)(pressure * milton_state->working_stroke.brush.radius);
+
+                int point_window = 10;
+                int count = 0;
+                // Pop every point that is contained by the new one.
+                for (i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i)
+                {
+
+                    if (++count >= point_window)
+                    {
+                        break;
+                    }
+                    v2i last_point = milton_state->working_stroke.points[i];
+                    i32 last_radius =
+                            (i32)(milton_state->working_stroke.brush.radius *
+                                  milton_state->working_stroke.metadata[i].pressure);
+
+                    if (stroke_point_contains_point(canvas_point, in_radius,
+                                                    last_point, last_radius))
+                    {
+                        milton_state->working_stroke.num_points -= 1;
+                        b32 test = stroke_point_contains_point(canvas_point, in_radius,
+                                                               last_point, last_radius);
+                    }
+                    // If some other point in the past contains this point,
+                    // then this point is invalid.
+                    else if (stroke_point_contains_point(last_point, last_radius,
+                                                         canvas_point, in_radius))
+                    {
+                        passed_inspection = false;
+                        break;
+                    }
+
+                }
+            }
+            // Cleared to be appended.
+            if (passed_inspection)
             {
                 // Add to current stroke.
                 int index = milton_state->working_stroke.num_points++;
                 milton_state->working_stroke.points[index] = canvas_point;
 
 
-                if (input->pressure == NO_PRESSURE_INFO)
-                {
-                    // This will be a very visible glitch if the tablet handling goes wrong
-                    pressure = 1.0f;
-                }
                 milton_state->working_stroke.metadata[index] =
                         (PointMetadata) { .pressure = pressure };
             }

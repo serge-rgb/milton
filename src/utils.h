@@ -113,7 +113,7 @@ func f32 magnitude(v2f a)
 
 func i32 magnitude_i(v2i a)
 {
-    return (i32)sqrtf((f32)dot(a, a));
+    return (i32)sqrt(dot(a, a));
 }
 
 func i32 distance_i(v2i a, v2i b)

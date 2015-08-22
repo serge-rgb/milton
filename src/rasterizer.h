@@ -76,7 +76,9 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
         if (is_inside_rect(canvas_rect, in_stroke->points[0]))
         {
             Stroke* stroke = &clipped_stroke->stroke;
-            stroke->points[stroke->num_points++] = in_stroke->points[0];
+            i32 index = stroke->num_points++;
+            stroke->points[index] = in_stroke->points[0];
+            stroke->metadata[index] = in_stroke->metadata[0];
         }
     }
     else
@@ -138,22 +140,30 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
 }
 
 func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
-                                  v2i* points, i32 num_points,
+                                  v2i* points, i32* indices,
+                                  i32 num_points,
                                   PointMetadata* metadata,
                                   Brush brush, CanvasView* view)
 {
+    assert ((((rect.left + rect.right) / 2) - reference_point.x) == 0);
+    assert ((((rect.top + rect.bottom) / 2) - reference_point.y) == 0);
     // Perf note: With the current use, this is actually going to be zero.
-    // Maybe turn this into an assert and avoid extra computations?
+#if 0
     v2i rect_center =
     {
         ((rect.left + rect.right) / 2) - reference_point.x,
         ((rect.top + rect.bottom) / 2) - reference_point.y,
     };
+#endif
 
     if (num_points >= 2)
     {
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
         {
+            if (indices[point_i] + 1 != indices[point_i + 1])
+            {
+                continue;
+            }
             v2i a = points[point_i];
             v2i b = points[point_i + 1];
 
@@ -164,7 +174,7 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
             // TODO: Refactor into something clearer after we're done.
             v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-            v2i p  = closest_point_in_segment(a, b, ab, mag_ab2, rect_center, NULL);
+            v2i p  = closest_point_in_segment(a, b, ab, mag_ab2,(v2i){0}, NULL);
 
             f32 p_a = metadata[point_i    ].pressure;
             f32 p_b = metadata[point_i + 1].pressure;
@@ -260,23 +270,23 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         {
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
-            //list_head->next = (*out_list);
+#if 0
             if (is_rect_filled_by_stroke(canvas_block, reference_point,
-                                         stroke->points, stroke->num_points,
+                                         stroke->points, clipped_stroke->indices,
+                                         stroke->num_points,
                                          stroke->metadata, stroke->brush,
                                          view))
             {
                 list_head->fills_block = true;
             }
+#endif
             stroke_list = list_head;
-            //(*out_list) = list_head;
         }
     }
 
     // Set our `stroke_list` to end at the first opaque stroke that fills
     // this block.
     ClippedStroke* list_iter = stroke_list;
-    //ClippedStroke* list_iter = (*out_list);
 
     while (list_iter)
     {
@@ -419,6 +429,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                         dx = (f32)(i - min_point.x);
                         dy = (f32)(j - min_point.y);
                         min_dist = dx * dx + dy * dy;
+                        pressure = stroke->metadata[0].pressure;
                     }
                     else
                     {
@@ -467,7 +478,9 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                     if (min_dist < FLT_MAX)
                     {
-                        //u64 kk_ccount_begin = __rdtsc();
+                        // TODO: For implicit brush:
+                        //  This sampling is for a circular brush.
+                        //  Should dispatch on brush type. And do it for SSE impl too.
                         int samples = 0;
                         {
                             f32 f3 = (0.75f * view->scale) * downsample_factor;
@@ -704,6 +717,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         dx = (f32)(i - min_point.x);
                         dy = (f32)(j - min_point.y);
                         min_dist = dx * dx + dy * dy;
+                        pressure = stroke->metadata[0].pressure;
                     }
                     else
                     {

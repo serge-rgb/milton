@@ -126,9 +126,9 @@ func b32* filter_strokes_to_rect(Arena* arena,
                 v2i b = stroke->points[point_i + 1];
 
                 b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
-                                  (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
-                                  (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
-                                  (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
+                               (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
+                               (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
+                               (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
 
                 if (inside)
                 {
@@ -140,4 +140,22 @@ func b32* filter_strokes_to_rect(Arena* arena,
     }
 
     return mask_array;
+}
+
+// TODO: pass brush type when supporting implicitly defined brushes
+// Does point p0 with radius r0 contain point p1 with radius r1?
+//
+// NOTE: A conservative way to do this would be to specify a minimum radius for every brush.
+// Then this implementation wouldn't need to get more complicated and other places could also
+// benefit (i.e. is_filled for ClippedStroke)
+func b32 stroke_point_contains_point(v2i p0, i32 r0,
+                                     v2i p1, i32 r1)
+{
+    v2i d = sub_v2i(p1, p0);
+    // using manhattan distance, less chance of overflow. Still works well enough for this case.
+    i32 m = abs(d.x) + abs(d.y) + r1;
+    //i32 m = magnitude_i(d) + r1;
+    assert(m >= 0);
+    b32 contained = (m < r0);
+    return contained;
 }

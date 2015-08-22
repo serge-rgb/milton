@@ -3,7 +3,6 @@ To-Do
 
 
 - Bugs
-    - Pressure: closest-point approach breaks down
     - :)
 
 - Engine (urgent)
@@ -28,6 +27,7 @@ To-Do
     - Decrease worker memory usage (don't allocate num_points for clipped strokes!)
     - Stress the renderer with a huge drawing.
     - Brush
+        - Self intersections do not play nice. Figure out solution
         - Support for general, implicitly defined brushes
     - Robust save
 
