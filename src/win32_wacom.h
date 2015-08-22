@@ -117,7 +117,7 @@ func void win32_wacom_get_context(TabletState* tablet_state)
             continue;
         }
 
-        res = wacom->WTInfoA(WTI_DEVICES + ctx_i, DVC_X, &range_y );
+        res = wacom->WTInfoA(WTI_DEVICES + ctx_i, DVC_Y, &range_y );
         if (res != sizeof(AXIS))
         {
             continue;
@@ -129,23 +129,47 @@ func void win32_wacom_get_context(TabletState* tablet_state)
             continue;
         }
         log_context.lcPktData = PACKETDATA;
-        log_context.lcOptions |= CXO_SYSTEM;
+        log_context.lcOptions |= CXO_SYSTEM;    // Move cursor
         log_context.lcPktMode = PACKETMODE;
         log_context.lcMoveMask = PACKETDATA;
         log_context.lcBtnUpMask = log_context.lcBtnDnMask;
 
-#if 0
         log_context.lcInOrgX = 0;
         log_context.lcInOrgY = 0;
         log_context.lcInExtX = range_x.axMax;
         log_context.lcInExtY = range_y.axMax;
 
-        // TODO: If/when we port to unix then we need the equivalent thing here...
-        log_context.lcOutOrgX = GetSystemMetrics( SM_XVIRTUALSCREEN );
-        log_context.lcOutOrgY = GetSystemMetrics( SM_YVIRTUALSCREEN );
-        log_context.lcOutExtX = GetSystemMetrics( SM_CXVIRTUALSCREEN );
-        log_context.lcOutExtY = -GetSystemMetrics( SM_CYVIRTUALSCREEN );
+        // Raymond Chen says that by definition, a primary monitor has its origin at (0,0)
+        // We will configure the context to map the wacom to the primary monitor.
+
+        // Since we are defaulting to the primary monitor, we don't need this,
+        // but it's nice to know so that in the future we can introduce
+        // different options
+#if 0
+        HMONITOR monitor_handle = MonitorFromPoint((POINT){0}, MONITOR_DEFAULTTOPRIMARY);
+        MONITORINFO monitor_info;
+        GetMonitorInfo(monitor_handle, &monitor_info);
+
+        RECT monitor_dim = monitor_info.rcMonitor;
 #endif
+
+        log_context.lcOutOrgX = 0;
+        log_context.lcOutOrgY = 0;
+        // Size of the primary display.
+        log_context.lcOutExtX = GetSystemMetrics( SM_CXSCREEN );
+        log_context.lcOutExtY = GetSystemMetrics( SM_CYSCREEN );
+
+        log_context.lcSysOrgX = 0;
+        log_context.lcSysOrgY = 0;
+        log_context.lcSysExtX = GetSystemMetrics( SM_CXSCREEN );
+        log_context.lcSysExtY = GetSystemMetrics( SM_CYSCREEN );
+        // From the sample code: The whole virtual screen
+        /*
+           log_context.lcOutOrgX = GetSystemMetrics( SM_XVIRTUALSCREEN );
+           log_context.lcOutOrgY = GetSystemMetrics( SM_YVIRTUALSCREEN );
+           log_context.lcOutExtX = GetSystemMetrics( SM_CXVIRTUALSCREEN );
+           log_context.lcOutExtY = -GetSystemMetrics( SM_CYVIRTUALSCREEN );
+        */
 
         HCTX ctx = wacom->WTOpenA(tablet_state->window, &log_context, TRUE);
 

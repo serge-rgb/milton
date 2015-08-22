@@ -23,8 +23,10 @@
 
 
 #include <wintab.h>
-#define PACKETDATA	(PK_X | PK_Y | PK_BUTTONS | PK_NORMAL_PRESSURE)
-#define PACKETMODE	PK_BUTTONS
+
+#define PACKETDATA PK_X | PK_Y | PK_BUTTONS | PK_NORMAL_PRESSURE
+#define PACKETMODE PK_BUTTONS
+
 #include <pktdef.h>
 
 // Function pointers to Wintab functions exported from wintab32.dll.

@@ -95,24 +95,43 @@ struct TabletState_s
 
 #include "win32_wacom.h"
 
-func f32 platform_wacom_poll(TabletState* tablet_state)
+func void platform_wacom_poll(TabletState* tablet_state,
+                              f32* pressure_array,
+                              i32* pressure_array_count,
+                              i32 array_size)
 {
-    f32 pressure = NO_PRESSURE_INFO;
     WacomAPI* wacom = &tablet_state->wacom;
 
     i32 num_packets = wacom->WTPacketsGet(tablet_state->wacom_ctx,
                                           WIN_MAX_WACOM_PACKETS,
                                           (LPVOID)tablet_state->packet_buffer);
 
+    i32 limit = min(num_packets, array_size);
+
     f32 range = (f32)(tablet_state->wacom_prs_max);
-    for (i32 i = 0; i < num_packets; ++i)
+    for (i32 i = 0; i < limit; ++i)
     {
         PACKET pkt = tablet_state->packet_buffer[i];
-        //milton_log ("Wacom packet X: %d, Y: %d, P: %d", pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
-        pressure = (f32)pkt.pkNormalPressure / range;
-    }
+        milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
+                    pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
+        POINT screen_point =
+        {
+            .x = pkt.pkX,
+            .y = pkt.pkY,
+        };
 
-    return pressure;
+        POINT client_point = screen_point;
+        ScreenToClient(tablet_state->window, &client_point);
+
+        milton_log ("Translated to client: %d, %d\n", client_point.x, client_point.y);
+
+        f32 pressure = (f32)pkt.pkNormalPressure / range;
+
+
+        i32 index = (*pressure_array_count);
+        pressure_array[index] = pressure;
+        *pressure_array_count = *pressure_array_count + 1;
+    }
 }
 
 void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)

@@ -35,6 +35,7 @@ int milton_main();
 #define MAX_BRUSH_SIZE          80
 #define MILTON_DEFAULT_SCALE    (1 << 10)
 #define NO_PRESSURE_INFO        -1.0f
+#define MAX_INPUT_BUFFER_ELEMS  32
 
 typedef struct TabletState_s TabletState;
 
@@ -153,13 +154,13 @@ int milton_main()
     while(!should_quit)
     {
         // ==== Handle events
-        milton_input.pressure = NO_PRESSURE_INFO;  // If stroke had pressure info before, use previous value.
 
-        f32 polled_pressure = platform_wacom_poll(tablet_state);
-        if (polled_pressure != NO_PRESSURE_INFO)
-        {
-            milton_input.pressure = polled_pressure;
-        }
+        i32 num_pressure_results = 0;
+        i32 num_point_results = 0;
+
+        platform_wacom_poll(tablet_state,
+                            milton_input.pressures, &num_pressure_results,
+                            MAX_INPUT_BUFFER_ELEMS);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -190,7 +191,7 @@ int milton_main()
                         else
                         {
                             input_point = (v2i){ event.motion.x, event.motion.y };
-                            milton_input.point = &input_point;
+                            milton_input.points[num_point_results++] = input_point;
                         }
                     }
                     break;
@@ -220,7 +221,7 @@ int milton_main()
                     {
                         if (!platform_input.is_space_down)
                         {
-                            milton_input.point = &input_point;
+                            milton_input.points[num_point_results++] = input_point;
                         }
                         else if (platform_input.is_space_down)
                         {
@@ -230,7 +231,7 @@ int milton_main()
                             milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
                         }
                     }
-                    else if (!milton_input.point)
+                    else
                     {
                         milton_input.hover_point = &input_point;
                     }
@@ -243,7 +244,7 @@ int milton_main()
                     platform_sdl_wmevent(tablet_state, event.syswm, &pressure);
                     if (pressure != NO_PRESSURE_INFO)
                     {
-                        milton_input.pressure = pressure;
+                        milton_input.pressures[num_pressure_results++] = pressure;
                     }
                     break;
                 }
@@ -435,8 +436,19 @@ int milton_main()
         // The extra point would be ignored by the renderer, causing artifacts.
         if (milton_input.flags & MiltonInputFlags_END_STROKE)
         {
-            milton_input.point = NULL;
+            num_point_results = 0;
         }
+
+        if (num_point_results > num_pressure_results)
+        {
+            for (int i = num_pressure_results; i < num_point_results; ++i)
+            {
+                milton_input.pressures[num_pressure_results++] = NO_PRESSURE_INFO;
+            }
+            assert(num_pressure_results == num_point_results);
+        }
+        milton_input.input_count = num_point_results;
+
 
         v2i pan_delta = sub_v2i(platform_input.pan_point, platform_input.pan_start);
         if (pan_delta.x != 0 ||

@@ -147,8 +147,8 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 {
     assert ((((rect.left + rect.right) / 2) - reference_point.x) == 0);
     assert ((((rect.top + rect.bottom) / 2) - reference_point.y) == 0);
-    // Perf note: With the current use, this is actually going to be zero.
 #if 0
+    // Perf note: With the current use, this is actually going to be zero.
     v2i rect_center =
     {
         ((rect.left + rect.right) / 2) - reference_point.x,
@@ -270,7 +270,7 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         {
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
-#if 0
+#if 1
             if (is_rect_filled_by_stroke(canvas_block, reference_point,
                                          stroke->points, clipped_stroke->indices,
                                          stroke->num_points,
