@@ -39,6 +39,8 @@ int milton_main();
 
 typedef struct TabletState_s TabletState;
 
+#include "vector.h"
+
 #if defined(_WIN32)
 #include "platform_windows.h"
 #elif defined(__linux__) || defined(__MACH__)
@@ -158,9 +160,14 @@ int milton_main()
         i32 num_pressure_results = 0;
         i32 num_point_results = 0;
 
-        platform_wacom_poll(tablet_state,
+        platform_wacom_poll(tablet_state, width, height,
                             milton_input.pressures, &num_pressure_results,
+                            milton_input.points, &num_point_results,
                             MAX_INPUT_BUFFER_ELEMS);
+
+        // If platform_wacom_poll returns something, we will ignore duplicate
+        // points sent as SDL_MOUSEMOTION.
+        b32 is_tablet_active = (num_point_results != 0);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -209,6 +216,17 @@ int milton_main()
                     }
                     break;
                 }
+            case SDL_SYSWMEVENT: // This codepath is only taken on X11 (i.e. Linux).
+                {
+                    // TODO: remember to set is_tablet_active to true
+                    f32 pressure = NO_PRESSURE_INFO;
+                    platform_sdl_wmevent(tablet_state, event.syswm, &pressure);
+                    if (pressure != NO_PRESSURE_INFO)
+                    {
+                        milton_input.pressures[num_pressure_results++] = pressure;
+                    }
+                    break;
+                }
             case SDL_MOUSEMOTION:
                 {
                     if (event.motion.windowID != window_id)
@@ -219,9 +237,13 @@ int milton_main()
                     input_point = (v2i){ event.motion.x, event.motion.y };
                     if (platform_input.is_pointer_down)
                     {
-                        if (!platform_input.is_space_down)
+                        if (!platform_input.is_space_down )
                         {
-                            milton_input.points[num_point_results++] = input_point;
+                            // Don't duplicate points
+                            if (!is_tablet_active)
+                            {
+                                milton_input.points[num_point_results++] = input_point;
+                            }
                         }
                         else if (platform_input.is_space_down)
                         {
@@ -234,17 +256,6 @@ int milton_main()
                     else
                     {
                         milton_input.hover_point = &input_point;
-                    }
-                    break;
-                }
-            case SDL_SYSWMEVENT:
-                {
-                    // This codepath is only taken on X11 (i.e. Linux).
-                    f32 pressure = NO_PRESSURE_INFO;
-                    platform_sdl_wmevent(tablet_state, event.syswm, &pressure);
-                    if (pressure != NO_PRESSURE_INFO)
-                    {
-                        milton_input.pressures[num_pressure_results++] = pressure;
                     }
                     break;
                 }
@@ -438,6 +449,15 @@ int milton_main()
         {
             num_point_results = 0;
         }
+        if (milton_input.is_panning)
+        {
+            num_point_results = 0;
+        }
+
+#if 0
+        milton_log ("#Pressure results: %d\n", num_pressure_results);
+        milton_log ("#   Point results: %d\n", num_point_results);
+#endif
 
         if (num_point_results > num_pressure_results)
         {

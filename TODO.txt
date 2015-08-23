@@ -3,10 +3,8 @@ To-Do
 
 
 - Bugs
+    - Re-draw rect broken for working stroke.
     - :)
-
-- Engine (urgent)
-    - Stop dropping input packets
 
 - UI
     - Brush size keys ignore key repeat.

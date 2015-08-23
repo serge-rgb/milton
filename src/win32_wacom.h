@@ -153,23 +153,24 @@ func void win32_wacom_get_context(TabletState* tablet_state)
         RECT monitor_dim = monitor_info.rcMonitor;
 #endif
 
+#if 1
         log_context.lcOutOrgX = 0;
         log_context.lcOutOrgY = 0;
         // Size of the primary display.
         log_context.lcOutExtX = GetSystemMetrics( SM_CXSCREEN );
-        log_context.lcOutExtY = GetSystemMetrics( SM_CYSCREEN );
+        log_context.lcOutExtY = -GetSystemMetrics( SM_CYSCREEN );
 
         log_context.lcSysOrgX = 0;
         log_context.lcSysOrgY = 0;
         log_context.lcSysExtX = GetSystemMetrics( SM_CXSCREEN );
         log_context.lcSysExtY = GetSystemMetrics( SM_CYSCREEN );
         // From the sample code: The whole virtual screen
-        /*
-           log_context.lcOutOrgX = GetSystemMetrics( SM_XVIRTUALSCREEN );
-           log_context.lcOutOrgY = GetSystemMetrics( SM_YVIRTUALSCREEN );
-           log_context.lcOutExtX = GetSystemMetrics( SM_CXVIRTUALSCREEN );
-           log_context.lcOutExtY = -GetSystemMetrics( SM_CYVIRTUALSCREEN );
-        */
+#else
+        log_context.lcOutOrgX = GetSystemMetrics( SM_XVIRTUALSCREEN );
+        log_context.lcOutOrgY = GetSystemMetrics( SM_YVIRTUALSCREEN );
+        log_context.lcOutExtX = GetSystemMetrics( SM_CXVIRTUALSCREEN );
+        log_context.lcOutExtY = -GetSystemMetrics( SM_CYVIRTUALSCREEN );
+#endif
 
         HCTX ctx = wacom->WTOpenA(tablet_state->window, &log_context, TRUE);
 

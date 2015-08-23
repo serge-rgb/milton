@@ -75,9 +75,6 @@ void platform_load_gl_func_pointers()
 struct TabletState_s
 {
     HWND window;
-    // Window dimensions:
-    int32_t width;
-    int32_t height;
     BITMAPINFO bitmap_info;
 
     HINSTANCE wintab_handle;
@@ -96,8 +93,11 @@ struct TabletState_s
 #include "win32_wacom.h"
 
 func void platform_wacom_poll(TabletState* tablet_state,
+                              i32 width, i32 height,
                               f32* pressure_array,
                               i32* pressure_array_count,
+                              v2i* point_array,
+                              i32* point_array_count,
                               i32 array_size)
 {
     WacomAPI* wacom = &tablet_state->wacom;
@@ -112,8 +112,10 @@ func void platform_wacom_poll(TabletState* tablet_state,
     for (i32 i = 0; i < limit; ++i)
     {
         PACKET pkt = tablet_state->packet_buffer[i];
+#if 0
         milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
                     pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
+#endif
         POINT screen_point =
         {
             .x = pkt.pkX,
@@ -123,14 +125,22 @@ func void platform_wacom_poll(TabletState* tablet_state,
         POINT client_point = screen_point;
         ScreenToClient(tablet_state->window, &client_point);
 
-        milton_log ("Translated to client: %d, %d\n", client_point.x, client_point.y);
 
-        f32 pressure = (f32)pkt.pkNormalPressure / range;
+        if (client_point.x >= 0 && client_point.x < width &&
+            client_point.y >= 0 && client_point.y < height)
+        {
+            f32 pressure = (f32)pkt.pkNormalPressure / range;
 
-
-        i32 index = (*pressure_array_count);
-        pressure_array[index] = pressure;
-        *pressure_array_count = *pressure_array_count + 1;
+            i32 pressure_index = (*pressure_array_count);
+            pressure_array[pressure_index] = pressure;
+            *pressure_array_count = *pressure_array_count + 1;
+            if (pkt.pkNormalPressure != 0)
+            {
+                i32 point_index = (*point_array_count);
+                point_array[point_index] = (v2i){client_point.x, client_point.y};
+                *point_array_count = *point_array_count + 1;
+            }
+        }
     }
 }
 
@@ -159,7 +169,8 @@ func void platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event, 
 
 void platform_wacom_deinit(TabletState* tablet_state)
 {
-    // *tumbleweed*...
+    WacomAPI* wacom = &tablet_state->wacom;
+    wacom->WTClose(tablet_state->wacom_ctx);
 }
 
 int CALLBACK WinMain(
