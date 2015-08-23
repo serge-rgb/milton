@@ -1507,9 +1507,29 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
         else if (milton_state->working_stroke.num_points > 1)
         {
             Stroke* stroke = &milton_state->working_stroke;
+
+#if 1
+            // TODO: go back to the sub-rect.
+            raster_limits = bounding_box_for_stroke(stroke);
+            raster_limits.top_left = canvas_to_raster(milton_state->view, raster_limits.top_left);
+            raster_limits.bot_right = canvas_to_raster(milton_state->view, raster_limits.bot_right);
+            i32 block_width = milton_state->block_width;
+            if (raster_limits.bottom - raster_limits.top < milton_state->block_width)
+            {
+                raster_limits.top -= block_width / 2;
+                raster_limits.bottom += block_width / 2;
+            }
+            if (raster_limits.right - raster_limits.left < milton_state->block_width)
+            {
+                raster_limits.left -= block_width / 2;
+                raster_limits.right += block_width / 2;
+            }
+            raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
+#else
+
             v2i new_point = canvas_to_raster(
                     milton_state->view,
-                    stroke->points[stroke->num_points - 2]);
+                    stroke->points[stroke->num_points - min(stroke->num_points - 2, 10)]);
 
             raster_limits.left   = min (milton_state->last_raster_input.x, new_point.x);
             raster_limits.right  = max (milton_state->last_raster_input.x, new_point.x);
@@ -1529,6 +1549,7 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
             raster_limits = rect_enlarge(raster_limits,
                     block_offset + (stroke->brush.radius / milton_state->view->scale));
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
+#endif
             assert (raster_limits.right >= raster_limits.left);
             assert (raster_limits.bottom >= raster_limits.top);
         }

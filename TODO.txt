@@ -3,7 +3,7 @@ To-Do
 
 
 - Bugs
-    - Re-draw rect broken for working stroke.
+    - Duplicated stroke points break rendering
     - :)
 
 - UI

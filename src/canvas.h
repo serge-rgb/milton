@@ -159,3 +159,10 @@ func b32 stroke_point_contains_point(v2i p0, i32 r0,
     b32 contained = (m < r0);
     return contained;
 }
+
+func Rect bounding_box_for_stroke(Stroke* stroke)
+{
+    Rect bb = bounding_rect_for_points(stroke->points, stroke->num_points);
+    bb = rect_enlarge(bb, stroke->brush.radius);
+    return bb;
+}

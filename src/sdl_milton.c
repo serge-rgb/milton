@@ -444,11 +444,6 @@ int milton_main()
 
         milton_input.is_panning = platform_input.is_space_down;
 
-        // The extra point would be ignored by the renderer, causing artifacts.
-        if (milton_input.flags & MiltonInputFlags_END_STROKE)
-        {
-            num_point_results = 0;
-        }
         if (milton_input.is_panning)
         {
             num_point_results = 0;
@@ -459,7 +454,8 @@ int milton_main()
         milton_log ("#   Point results: %d\n", num_point_results);
 #endif
 
-        if (num_point_results > num_pressure_results)
+        //if (num_point_results > num_pressure_results)
+        if (num_pressure_results == 0)
         {
             for (int i = num_pressure_results; i < num_point_results; ++i)
             {

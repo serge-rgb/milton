@@ -109,13 +109,10 @@ func void platform_wacom_poll(TabletState* tablet_state,
     i32 limit = min(num_packets, array_size);
 
     f32 range = (f32)(tablet_state->wacom_prs_max);
+
     for (i32 i = 0; i < limit; ++i)
     {
         PACKET pkt = tablet_state->packet_buffer[i];
-#if 0
-        milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
-                    pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
-#endif
         POINT screen_point =
         {
             .x = pkt.pkX,
@@ -129,17 +126,23 @@ func void platform_wacom_poll(TabletState* tablet_state,
         if (client_point.x >= 0 && client_point.x < width &&
             client_point.y >= 0 && client_point.y < height)
         {
-            f32 pressure = (f32)pkt.pkNormalPressure / range;
+#if 0
+                milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
+                            pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
+                milton_log ("prev Wacom packet X: %d, Y: %d, P: %d\n",
+                            prev_pkt.pkX, prev_pkt.pkY, prev_pkt.pkNormalPressure);
+#endif
+                f32 pressure = (f32)pkt.pkNormalPressure / range;
 
-            i32 pressure_index = (*pressure_array_count);
-            pressure_array[pressure_index] = pressure;
-            *pressure_array_count = *pressure_array_count + 1;
-            if (pkt.pkNormalPressure != 0)
-            {
-                i32 point_index = (*point_array_count);
-                point_array[point_index] = (v2i){client_point.x, client_point.y};
-                *point_array_count = *point_array_count + 1;
-            }
+                i32 pressure_index = (*pressure_array_count);
+                pressure_array[pressure_index] = pressure;
+                *pressure_array_count = *pressure_array_count + 1;
+                if (pkt.pkNormalPressure != 0)
+                {
+                    i32 point_index = (*point_array_count);
+                    point_array[point_index] = (v2i){client_point.x, client_point.y};
+                    *point_array_count = *point_array_count + 1;
+                }
         }
     }
 }

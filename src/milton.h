@@ -130,8 +130,6 @@ typedef struct MiltonState_s
     CanvasView* view;
     v2i     hover_point;  // Track the pointer when not stroking..
 
-    v2i     last_raster_input;  // Last input point. Used to determine area to update.
-
     Stroke  working_stroke;
 
     Stroke  strokes[4096];  // TODO: Create a deque to store arbitrary number of strokes.
@@ -761,31 +759,21 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     //milton_log("Stroke input with %d packets\n", input->input_count);
     milton_state->working_stroke.brush = milton_get_brush(milton_state);
 
-    milton_state->last_raster_input = input->points[0];
-
-    for (int i = 0; i < input->input_count; ++i)
+    for (int input_i = 0; input_i < input->input_count; ++input_i)
+    ///
+    //for (int input_i = input->input_count - 1; input_i >= 0; --input_i)
     {
-        v2i in_point = input->points[i];
-
-        if (milton_state->working_stroke.num_points == 0)
-        {
-            // Avoid creating really large update rects when starting new strokes
-            milton_state->last_raster_input = in_point;
-        }
+        v2i in_point = input->points[input_i];
 
         v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
         f32 pressure_min = 0.20f;
         f32 pressure = 1.0;
 
-        if (input->pressures[i] != NO_PRESSURE_INFO)
+        if (input->pressures[input_i] != NO_PRESSURE_INFO)
         {
-            pressure = pressure_min + input->pressures[i] * (1.0f - pressure_min);
+            pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
         }
-
-        // Check current input.
-        // If it contains the last point in the working stroke, then *replace* the
-        // last point.
 
         b32 not_the_first = false;
         if (milton_state->working_stroke.num_points >= 1)
@@ -800,42 +788,39 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
         if (not_the_first)
         {
-            i32 in_radius =
-                    (i32)(pressure * milton_state->working_stroke.brush.radius);
+            i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
 
             int point_window = 10;
             int count = 0;
             // Pop every point that is contained by the new one.
             for (i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i)
             {
-
                 if (++count >= point_window)
                 {
                     break;
                 }
-                v2i last_point = milton_state->working_stroke.points[i];
-                i32 last_radius =
-                        (i32)(milton_state->working_stroke.brush.radius *
-                              milton_state->working_stroke.metadata[i].pressure);
+                v2i this_point = milton_state->working_stroke.points[i];
+                i32 this_radius = (i32)(milton_state->working_stroke.brush.radius *
+                                        milton_state->working_stroke.metadata[i].pressure);
 
                 if (stroke_point_contains_point(canvas_point, in_radius,
-                                                last_point, last_radius))
+                                                this_point, this_radius))
                 {
                     milton_state->working_stroke.num_points -= 1;
                     b32 test = stroke_point_contains_point(canvas_point, in_radius,
-                                                           last_point, last_radius);
+                                                           this_point, this_radius);
                 }
                 // If some other point in the past contains this point,
                 // then this point is invalid.
-                else if (stroke_point_contains_point(last_point, last_radius,
+                else if (stroke_point_contains_point(this_point, this_radius,
                                                      canvas_point, in_radius))
                 {
                     passed_inspection = false;
                     break;
                 }
-
             }
         }
+
         // Cleared to be appended.
         if (passed_inspection)
         {
@@ -847,7 +832,6 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
             milton_state->working_stroke.metadata[index] =
                     (PointMetadata) { .pressure = pressure };
         }
-
     }
 }
 
@@ -1054,6 +1038,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->num_redos = 0;
     }
 
+    // TODO: render finished stroke.
     if (input->flags & MiltonInputFlags_END_STROKE)
     {
         if (milton_state->is_ui_active)
