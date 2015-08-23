@@ -19,6 +19,9 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#include "gui.h"  // github.com/vurtun/gui
+#include "gui.c"
+
 #define MILTON_DESKTOP
 #include "system_includes.h"
 

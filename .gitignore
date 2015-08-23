@@ -3,7 +3,9 @@
 
 src/libnuwen
 src/metaprogram
-src/*.generated.h
+
+# vurtun/gui
+third_party/gui
 
 third_party/build
 
