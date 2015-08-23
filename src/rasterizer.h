@@ -270,7 +270,6 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         {
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
-#if 1
             if (is_rect_filled_by_stroke(canvas_block, reference_point,
                                          stroke->points, clipped_stroke->indices,
                                          stroke->num_points,
@@ -279,7 +278,6 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             {
                 list_head->fills_block = true;
             }
-#endif
             stroke_list = list_head;
         }
     }

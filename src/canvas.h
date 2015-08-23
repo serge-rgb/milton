@@ -138,7 +138,6 @@ func b32* filter_strokes_to_rect(Arena* arena,
             }
         }
     }
-
     return mask_array;
 }
 
