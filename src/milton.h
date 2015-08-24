@@ -759,6 +759,7 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     //milton_log("Stroke input with %d packets\n", input->input_count);
     milton_state->working_stroke.brush = milton_get_brush(milton_state);
 
+    //int input_i = 0;
     for (int input_i = 0; input_i < input->input_count; ++input_i)
     ///
     //for (int input_i = input->input_count - 1; input_i >= 0; --input_i)
