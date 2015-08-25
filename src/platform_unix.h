@@ -155,7 +155,6 @@ func b32 platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent ev
     }
     return caught_event;
 }
-
 // References:
 //  - GDK gdkinput-x11.c
 //  - Wine winex11.drv/wintab.c
