@@ -3,6 +3,14 @@ cd third_party/
 
 echo "==== Installing dependencies ===="
 
+if [ ! -d gui ]; then
+    git clone https://github.com/vurtun/gui.git gui
+else
+    cd gui
+    git pull
+    cd ..
+fi
+
 PKGS="clang"
 
 PKGS_DEBIAN="$PKGS libsdl2-dev"

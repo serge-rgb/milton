@@ -186,7 +186,13 @@ func void platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event, 
     }
 }
 
-func void platform_wacom_poll(TabletState*, i32, i32, f32* , i32* , v2i*, i32*, i32 )
+func void platform_wacom_poll(TabletState* tablet_state,
+                              i32 width, i32 height,
+                              f32* pressure_array,
+                              i32* pressure_array_count,
+                              v2i* point_array,
+                              i32* point_array_count,
+                              i32 array_size)
 {
 }
 

@@ -6,6 +6,7 @@ clang -Ithird_party \
     -Wno-unused-function \
     -Wno-unused-variable \
     `pkg-config --cflags sdl2` \
+    -Ithird_party/gui \
     -O2 -g\
     src/sdl_milton.c -lGL -lm -lpthread\
     `pkg-config --libs sdl2` \
