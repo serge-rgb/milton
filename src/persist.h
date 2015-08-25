@@ -21,8 +21,6 @@ extern "C"
 {
 #endif
 
-#include <stdio.h>
-
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
 func u32 word_swap_memory_order(u32 word)

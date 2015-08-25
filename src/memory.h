@@ -11,14 +11,6 @@ extern "C"
 {
 #endif
 
-#ifndef assert
-#include <assert.h>
-#endif
-
-#include <stdlib.h>  // memcpy
-#include <string.h>  // memset
-#include <stdint.h>
-
 typedef struct Arena_s Arena;
 
 struct Arena_s

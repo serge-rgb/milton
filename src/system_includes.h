@@ -27,8 +27,11 @@
 
 // Platform independent includes:
 #include <assert.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
 
 // Local includes
 #ifdef MILTON_DESKTOP
