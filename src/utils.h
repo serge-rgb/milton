@@ -104,16 +104,16 @@ func i32 absi(i32 a)
     return a < 0 ? -a : a;
 }
 
-#define dot(a, b)  ((a).x * (b).x + (a).y * (b).y)
+#define DOT(a, b)  ((a).x * (b).x + (a).y * (b).y)
 
 func f32 magnitude(v2f a)
 {
-    return sqrtf(dot(a, a));
+    return sqrtf(DOT(a, a));
 }
 
 func i32 magnitude_i(v2i a)
 {
-    return (i32)sqrt(dot(a, a));
+    return (i32)sqrt(DOT(a, a));
 }
 
 func i32 distance_i(v2i a, v2i b)
@@ -133,7 +133,7 @@ func f32 radians_to_degrees(f32 r)
     return (180 * r) / kPi;
 }
 
-#define square(x) ((x) * (x))
+#define SQUARE(x) ((x) * (x))
 
 
 // Could be called a signed area. `orientation(a, b, c) / 2` is the area of the
@@ -205,10 +205,10 @@ func b32 intersect_line_segments(v2i a, v2i b,
 {
     b32 hit = false;
     v2i perp = perp_v2i(sub_v2i(v, u));
-    i32 det = dot(sub_v2i(b, a), perp);
+    i32 det = DOT(sub_v2i(b, a), perp);
     if (det != 0)
     {
-        f32 t = (f32)dot(sub_v2i(u, a), perp) / (f32)det;
+        f32 t = (f32)DOT(sub_v2i(u, a), perp) / (f32)det;
         if (t > 1 && t < 1.001) t = 1;
         if (t < 0 && t > -0.001) t = 1;
 
@@ -245,6 +245,9 @@ typedef struct Rect_s
         };
     };
 } Rect;
+
+#define VALIDATE_RECT(rect) assert((rect).left <= (rect).right && \
+                                   (rect).top <= (rect).bottom)
 
 // Returns the number of rectangles into which src_rect was split.
 func i32 rect_split(Arena* transient_arena,
@@ -320,6 +323,22 @@ func Rect rect_intersect(Rect a, Rect b)
         result.bottom = result.top;
     }
     return result;
+}
+func Rect rect_stretch(Rect rect, i32 width)
+{
+   Rect stretched = rect;
+   // Make the raster limits at least as wide as a block
+   if (stretched.bottom - stretched.top < width)
+   {
+      stretched.top -= width / 2;
+      stretched.bottom += width / 2;
+   }
+   if (stretched.right - stretched.left < width)
+   {
+      stretched.left -= width / 2;
+      stretched.right += width / 2;
+   }
+   return stretched;
 }
 
 func Rect rect_clip_to_screen(Rect limits, v2i screen_size)

@@ -273,7 +273,7 @@ func float picker_wheel_get_angle(ColorPicker* picker, v2f point)
     v2f center = v2i_to_v2f(picker->center);
     v2f arrow = sub_v2f (point, center);
     v2f baseline = { 1, 0 };
-    float dotp = (dot(arrow, baseline)) / (magnitude(arrow));
+    float dotp = (DOT(arrow, baseline)) / (magnitude(arrow));
     float angle = acosf(dotp);
     if (point.y > center.y)
     {

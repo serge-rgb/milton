@@ -163,16 +163,8 @@ int milton_main()
         i32 num_pressure_results = 0;
         i32 num_point_results = 0;
 
-        platform_wacom_poll(tablet_state, width, height,
-                            milton_input.pressures, &num_pressure_results,
-                            milton_input.points, &num_point_results,
-                            MAX_INPUT_BUFFER_ELEMS);
-
-        // If platform_wacom_poll returns something, we will ignore duplicate
-        // points sent as SDL_MOUSEMOTION.
-        b32 is_tablet_active = (num_point_results != 0);
-
         SDL_Event event;
+        b32 got_tablet_input = false;
         while (SDL_PollEvent(&event))
         {
             SDL_Keymod keymod = SDL_GetModState();
@@ -183,6 +175,29 @@ int milton_main()
             case SDL_QUIT:
                 {
                     should_quit = true;
+                    break;
+                }
+            case SDL_SYSWMEVENT:
+                {
+                    f32 pressure = NO_PRESSURE_INFO;
+                    v2i point = { 0 };
+                    b32 caught = platform_native_event_poll(tablet_state, event.syswm,
+                                                            width, height,
+                                                            &point,
+                                                            &pressure);
+                    if (!platform_input.is_pointer_down &&
+                        caught &&
+                        pressure > 0)
+                    {
+                        platform_input.is_pointer_down = true;
+                    }
+                    if (platform_input.is_pointer_down && caught)
+                    {
+                        assert (pressure != NO_PRESSURE_INFO);
+                        milton_input.pressures[num_pressure_results++] = pressure;
+                        milton_input.points[num_point_results++] = point;
+                        got_tablet_input = true;
+                    }
                     break;
                 }
             case SDL_MOUSEBUTTONDOWN:
@@ -198,11 +213,7 @@ int milton_main()
                         {
                             platform_input.pan_start = (v2i) { event.button.x, event.button.y };
                         }
-                        else
-                        {
-                            input_point = (v2i){ event.motion.x, event.motion.y };
-                            milton_input.points[num_point_results++] = input_point;
-                        }
+
                     }
                     break;
                 }
@@ -216,17 +227,8 @@ int milton_main()
                     {
                         platform_input.is_pointer_down = false;
                         milton_input.flags |= MiltonInputFlags_END_STROKE;
-                    }
-                    break;
-                }
-            case SDL_SYSWMEVENT: // This codepath is only taken on X11 (i.e. Linux).
-                {
-                    // TODO: remember to set is_tablet_active to true
-                    f32 pressure = NO_PRESSURE_INFO;
-                    platform_sdl_wmevent(tablet_state, event.syswm, &pressure);
-                    if (pressure != NO_PRESSURE_INFO)
-                    {
-                        milton_input.pressures[num_pressure_results++] = pressure;
+                        input_point = (v2i){ event.button.x, event.button.y };
+                        milton_input.points[num_point_results++] = input_point;
                     }
                     break;
                 }
@@ -240,13 +242,9 @@ int milton_main()
                     input_point = (v2i){ event.motion.x, event.motion.y };
                     if (platform_input.is_pointer_down)
                     {
-                        if (!platform_input.is_space_down )
+                        if (!platform_input.is_space_down && !got_tablet_input)
                         {
-                            // Don't duplicate points
-                            if (!is_tablet_active)
-                            {
-                                milton_input.points[num_point_results++] = input_point;
-                            }
+                            milton_input.points[num_point_results++] = input_point;
                         }
                         else if (platform_input.is_space_down)
                         {

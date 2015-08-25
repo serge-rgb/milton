@@ -3,7 +3,6 @@ To-Do
 
 
 - Bugs
-    - Duplicated stroke points break rendering
     - :)
 
 - UI

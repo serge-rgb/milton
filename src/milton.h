@@ -761,8 +761,6 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
     //int input_i = 0;
     for (int input_i = 0; input_i < input->input_count; ++input_i)
-    ///
-    //for (int input_i = input->input_count - 1; input_i >= 0; --input_i)
     {
         v2i in_point = input->points[input_i];
 
@@ -791,7 +789,7 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         {
             i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
 
-            int point_window = 10;
+            int point_window = 1000;
             int count = 0;
             // Pop every point that is contained by the new one.
             for (i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i)
@@ -1039,7 +1037,6 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->num_redos = 0;
     }
 
-    // TODO: render finished stroke.
     if (input->flags & MiltonInputFlags_END_STROKE)
     {
         if (milton_state->is_ui_active)
@@ -1077,6 +1074,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
                 {
                     milton_state->working_stroke.num_points = 0;
                 }
+                render_flags |= MiltonRenderFlags_FINISHED_STROKE;
             }
         }
     }

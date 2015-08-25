@@ -98,9 +98,9 @@ func v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 func b32* filter_strokes_to_rect(Arena* arena,
-                                   const Stroke* strokes,
-                                   const i32 num_strokes,
-                                   const Rect rect)
+                                 const Stroke* strokes,
+                                 const i32 num_strokes,
+                                 const Rect rect)
 {
     b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
     if (!mask_array)
@@ -111,6 +111,7 @@ func b32* filter_strokes_to_rect(Arena* arena,
     {
         const Stroke* stroke = &strokes[stroke_i];
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
+        VALIDATE_RECT(stroke_rect);
         if (stroke->num_points == 1)
         {
             if (is_inside_rect(stroke_rect, stroke->points[0]))
@@ -164,4 +165,21 @@ func Rect bounding_box_for_stroke(Stroke* stroke)
     Rect bb = bounding_rect_for_points(stroke->points, stroke->num_points);
     bb = rect_enlarge(bb, stroke->brush.radius);
     return bb;
+}
+
+func Rect bounding_box_for_last_n_points(Stroke* stroke, i32 last_n)
+{
+    i32 forward = max(stroke->num_points - last_n, 0);
+    i32 num_points = min(last_n, stroke->num_points);
+    Rect bb = bounding_rect_for_points(stroke->points + forward, num_points);
+    bb = rect_enlarge(bb, stroke->brush.radius);
+    return bb;
+}
+
+func Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
+{
+    Rect raster_rect;
+    raster_rect.bot_right = canvas_to_raster(view, canvas_rect.bot_right);
+    raster_rect.top_left = canvas_to_raster(view, canvas_rect.top_left);
+    return raster_rect;
 }

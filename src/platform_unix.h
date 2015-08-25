@@ -119,8 +119,12 @@ func void unix_deallocate(void* ptr)
     munmap(ptr, size);
 }
 
-func void platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event, f32* out_pressure)
+func b32 platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
+                                     i32 width, i32 height,
+                                     v2i* out_point,
+                                     f32* out_pressure)
 {
+    b32 caught_event = false;
     if (event.type == SDL_SYSWMEVENT)
     {
         if (event.msg)
@@ -129,42 +133,6 @@ func void platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event, 
             if (msg.subsystem == SDL_SYSWM_X11)
             {
                 XEvent xevent = msg.msg.x11.event;
-
-                // Here lies the corpse of a mighty bug, defeated on the
-                // afternoon of Aug 16, 2015.
-                // You may have been slain by an innocuous volatile storage
-                // qualifier, yet I will remember you as a mighty and worthy
-                // opponent. I rejoice in the knowledge that the Gods have favored
-                // me, yet I will mourn you; for not even a lover can know oneself
-                // as fully, intimately and completely as a mortal enemy can.
-                //
-                // Rest now; O Thunderous Fiend; Killer of Men; Destroyer of
-                // Hearts; Eater of souls.
-                //
-                // Rest, and never return.
-                //
-                // (P.S.) The vestiges of the bug have been eroded by the sands
-                // of time. But I will leave this tombstone here in remembrance
-
-                /*
-                  _\<
-                 (   >
-                 __)(
-           _____/  //   ___
-          /        \\  /  \\__
-          |  _     //  \     ||
-          | | \    \\  / _   ||
-          | |  |    \\/ | \  ||
-          | |_/     |/  |  | ||
-          | | \     /|  |_/  ||
-          | |  \    \|  |     >_ )
-          | |   \. _|\  |    < _|=
-          |          /_.| .  \/
-  *       | *   **  / * **  |\)/)    **
-   \))ejm97/.,(//,,..,,\||(,wo,\ ).((//
-                             -  \)
-                   */
-
 
                 if (xevent.type == tablet_state->motion_type)
                 {
@@ -180,14 +148,12 @@ func void platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event, 
 #endif
                     *out_pressure = (f32)dme->axis_data[2] /
                             (f32)(tablet_state->max_pressure - tablet_state->min_pressure);
+                    caught_event = true;
                 }
             }
         }
     }
-}
-
-func void platform_wacom_poll(TabletState*, i32, i32, f32* , i32* , v2i*, i32*, i32 )
-{
+    return caught_event;
 }
 
 // References:

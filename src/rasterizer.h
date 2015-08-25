@@ -746,6 +746,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             for (i32 i = 0; i < 4; i++)
                             {
                                 i32 index = point_i + i;
+
                                 if (index + 1 >= stroke->num_points)
                                 {
                                     break;
@@ -863,7 +864,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             for (i32 i = 0; i < batch_size; ++i)
                             {
                                 f32 dist = dists[i];
-                                if (dist < min_dist)
+                                if (dist >= 0 && dist < min_dist)
                                 {
                                     min_dist = dist;
                                     dx = tests_dx[i];
@@ -1002,10 +1003,10 @@ func void rasterize_ring(u32* pixels,
                          i32 ring_radius, i32 ring_girth,
                          v4f color)
 {
-#define compare(dist) \
-    dist < square(ring_radius + ring_girth) && \
-    dist > square(ring_radius - ring_girth)
-#define distance(i, j) \
+#define COMPARE(dist) \
+    dist < SQUARE(ring_radius + ring_girth) && \
+    dist > SQUARE(ring_radius - ring_girth)
+#define DISTANCE(i, j) \
     ((i) - center_x) * ((i) - center_x) + ((j) - center_y) * ((j) - center_y)
 
     assert(ring_radius < (1 << 16));
@@ -1025,10 +1026,10 @@ func void rasterize_ring(u32* pixels,
                 f32 fi = (f32)i;
                 f32 fj = (f32)j;
 
-                samples += compare(distance(fi - u, fj - v));
-                samples += compare(distance(fi - v, fj + u));
-                samples += compare(distance(fi + u, fj + v));
-                samples += compare(distance(fi + v, fj + u));
+                samples += COMPARE(DISTANCE(fi - u, fj - v));
+                samples += COMPARE(DISTANCE(fi - v, fj + u));
+                samples += COMPARE(DISTANCE(fi + u, fj + v));
+                samples += COMPARE(DISTANCE(fi + v, fj + u));
             }
 
             if (samples > 0)
@@ -1485,6 +1486,7 @@ typedef enum
     MiltonRenderFlags_PICKER_UPDATED    = (1 << 0),
     MiltonRenderFlags_FULL_REDRAW       = (1 << 1),
     MiltonRenderFlags_BRUSH_OVERLAY     = (1 << 2),
+    MiltonRenderFlags_FINISHED_STROKE   = (1 << 3),
 } MiltonRenderFlags;
 
 func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
@@ -1501,55 +1503,17 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
             raster_limits.right = milton_state->view->screen_size.w;
             raster_limits.top = 0;
             raster_limits.bottom = milton_state->view->screen_size.h;
+            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
         }
         else if (milton_state->working_stroke.num_points > 1)
         {
             Stroke* stroke = &milton_state->working_stroke;
 
-#if 1
-            // TODO: go back to the sub-rect.
-            raster_limits = bounding_box_for_stroke(stroke);
-            raster_limits.top_left = canvas_to_raster(milton_state->view, raster_limits.top_left);
-            raster_limits.bot_right = canvas_to_raster(milton_state->view, raster_limits.bot_right);
-            i32 block_width = milton_state->block_width;
-            if (raster_limits.bottom - raster_limits.top < milton_state->block_width)
-            {
-                raster_limits.top -= block_width / 2;
-                raster_limits.bottom += block_width / 2;
-            }
-            if (raster_limits.right - raster_limits.left < milton_state->block_width)
-            {
-                raster_limits.left -= block_width / 2;
-                raster_limits.right += block_width / 2;
-            }
+            raster_limits = bounding_box_for_last_n_points(stroke, 20);
+            raster_limits = canvas_rect_to_raster_rect(milton_state->view, raster_limits);
+            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
+            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
-#else
-
-            v2i new_point = canvas_to_raster(
-                    milton_state->view,
-                    stroke->points[stroke->num_points - min(stroke->num_points - 2, 10)]);
-
-            raster_limits.left   = min (milton_state->last_raster_input.x, new_point.x);
-            raster_limits.right  = max (milton_state->last_raster_input.x, new_point.x);
-            raster_limits.top    = min (milton_state->last_raster_input.y, new_point.y);
-            raster_limits.bottom = max (milton_state->last_raster_input.y, new_point.y);
-            i32 block_offset = 0;
-            i32 w = raster_limits.right - raster_limits.left;
-            i32 h = raster_limits.bottom - raster_limits.top;
-            if (w < milton_state->block_width)
-            {
-                block_offset = (milton_state->block_width - w) / 2;
-            }
-            if (h < milton_state->block_width)
-            {
-                block_offset = max(block_offset, (milton_state->block_width - h) / 2);
-            }
-            raster_limits = rect_enlarge(raster_limits,
-                    block_offset + (stroke->brush.radius / milton_state->view->scale));
-            raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
-#endif
-            assert (raster_limits.right >= raster_limits.left);
-            assert (raster_limits.bottom >= raster_limits.top);
         }
         else if (milton_state->working_stroke.num_points == 1)
         {
@@ -1561,11 +1525,20 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
             raster_limits.right  = raster_radius  + point.x;
             raster_limits.top    = -raster_radius + point.y;
             raster_limits.bottom = raster_radius  + point.y;
+            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
-            assert (raster_limits.right >= raster_limits.left);
-            assert (raster_limits.bottom >= raster_limits.top);
+        }
+        if (render_flags & MiltonRenderFlags_FINISHED_STROKE)
+        {
+            i32 index = milton_state->num_strokes - 1;
+            Rect canvas_rect = bounding_box_for_last_n_points(&milton_state->strokes[index],
+                                                              2);
+            raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
+            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
+            raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
         }
     }
+    VALIDATE_RECT(raster_limits);
 
     //i32 index = (milton_state->raster_buffer_index + 1) % 2;
     i32 index = (milton_state->raster_buffer_index + 0);

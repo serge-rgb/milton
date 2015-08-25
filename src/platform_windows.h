@@ -79,76 +79,18 @@ struct TabletState_s
 
     HINSTANCE wintab_handle;
     WacomAPI wacom;
-    POINT wacom_pt_old;
-    POINT wacom_pt_new;
-    UINT wacom_prs_old;
-    UINT wacom_prs_new;
     UINT wacom_prs_max;
     HCTX wacom_ctx;
-    int wacom_num_attached_devices;
 
     PACKET packet_buffer[WIN_MAX_WACOM_PACKETS];
 };
 
 #include "win32_wacom.h"
 
-func void platform_wacom_poll(TabletState* tablet_state,
-                              i32 width, i32 height,
-                              f32* pressure_array,
-                              i32* pressure_array_count,
-                              v2i* point_array,
-                              i32* point_array_count,
-                              i32 array_size)
-{
-    WacomAPI* wacom = &tablet_state->wacom;
-
-    i32 num_packets = wacom->WTPacketsGet(tablet_state->wacom_ctx,
-                                          WIN_MAX_WACOM_PACKETS,
-                                          (LPVOID)tablet_state->packet_buffer);
-
-    i32 limit = min(num_packets, array_size);
-
-    f32 range = (f32)(tablet_state->wacom_prs_max);
-
-    for (i32 i = 0; i < limit; ++i)
-    {
-        PACKET pkt = tablet_state->packet_buffer[i];
-        POINT screen_point =
-        {
-            .x = pkt.pkX,
-            .y = pkt.pkY,
-        };
-
-        POINT client_point = screen_point;
-        ScreenToClient(tablet_state->window, &client_point);
-
-
-        if (client_point.x >= 0 && client_point.x < width &&
-            client_point.y >= 0 && client_point.y < height)
-        {
-#if 0
-                milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
-                            pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
-                milton_log ("prev Wacom packet X: %d, Y: %d, P: %d\n",
-                            prev_pkt.pkX, prev_pkt.pkY, prev_pkt.pkNormalPressure);
-#endif
-                f32 pressure = (f32)pkt.pkNormalPressure / range;
-
-                i32 pressure_index = (*pressure_array_count);
-                pressure_array[pressure_index] = pressure;
-                *pressure_array_count = *pressure_array_count + 1;
-                if (pkt.pkNormalPressure != 0)
-                {
-                    i32 point_index = (*point_array_count);
-                    point_array[point_index] = (v2i){client_point.x, client_point.y};
-                    *point_array_count = *point_array_count + 1;
-                }
-        }
-    }
-}
-
 void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
 {
+    // Ask SDL for windows events so we can receive packets
+    SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
     SDL_SysWMinfo wminfo;
     SDL_bool wminfo_ok = SDL_GetWindowWMInfo(window, &wminfo);
     if (!wminfo_ok)
@@ -165,9 +107,61 @@ void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
     win32_wacom_get_context(tablet_state);
 }
 
-func void platform_sdl_wmevent(TabletState* tablet_state, SDL_SysWMEvent event, f32* out_pressure)
+func b32 platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
+                                     i32 width, i32 height,
+                                     v2i* out_point,
+                                     f32* out_pressure)
 {
-    // Not used on windows because wacom is handled differently.
+    b32 caught_event = false;
+    i32 pressure_range = tablet_state->wacom_prs_max;
+    if (event.type == SDL_SYSWMEVENT)
+    {
+        if (event.msg)
+        {
+            SDL_SysWMmsg msg = *event.msg;
+            if (msg.subsystem == SDL_SYSWM_WINDOWS)
+            {
+                HWND window   = msg.msg.win.hwnd;
+                UINT message  = msg.msg.win.msg;
+                WPARAM wparam = msg.msg.win.wParam;
+                LPARAM lparam = msg.msg.win.lParam;
+                switch (message)
+                {
+                case WT_PACKET:
+                    {
+                        PACKET pkt = { 0 };
+                        HCTX ctx = (HCTX)lparam;
+                        if (ctx == tablet_state->wacom_ctx &&
+                            tablet_state->wacom.WTPacket(ctx, (UINT)wparam, &pkt))
+                        {
+                            POINT screen_point =
+                            {
+                                .x = pkt.pkX,
+                                .y = pkt.pkY,
+                            };
+                            POINT client_point = screen_point;
+                            ScreenToClient(tablet_state->window, &client_point);
+
+
+                            if (client_point.x >= 0 && client_point.x < width &&
+                                client_point.y >= 0 && client_point.y < height)
+                            {
+#if 0
+                                milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
+                                            pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
+#endif
+                                *out_pressure = (f32)pkt.pkNormalPressure / (f32)pressure_range;
+                                *out_point = (v2i){client_point.x, client_point.y};
+                                caught_event = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return caught_event;
 }
 
 void platform_wacom_deinit(TabletState* tablet_state)

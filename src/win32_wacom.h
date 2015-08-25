@@ -130,6 +130,7 @@ func void win32_wacom_get_context(TabletState* tablet_state)
         }
         log_context.lcPktData = PACKETDATA;
         log_context.lcOptions |= CXO_SYSTEM;    // Move cursor
+        log_context.lcOptions |= CXO_MESSAGES;
         log_context.lcPktMode = PACKETMODE;
         log_context.lcMoveMask = PACKETDATA;
         log_context.lcBtnUpMask = log_context.lcBtnDnMask;
