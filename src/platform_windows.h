@@ -107,12 +107,12 @@ void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
     win32_wacom_get_context(tablet_state);
 }
 
-func b32 platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
-                                     i32 width, i32 height,
-                                     v2i* out_point,
-                                     f32* out_pressure)
+func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
+                                                  i32 width, i32 height,
+                                                  v2i* out_point,
+                                                  f32* out_pressure)
 {
-    b32 caught_event = false;
+    NativeEventResult caught_event = Caught_NONE;
     i32 pressure_range = tablet_state->wacom_prs_max;
     if (event.type == SDL_SYSWMEVENT)
     {
@@ -152,7 +152,8 @@ func b32 platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent ev
 #endif
                                 *out_pressure = (f32)pkt.pkNormalPressure / (f32)pressure_range;
                                 *out_point = (v2i){client_point.x, client_point.y};
-                                caught_event = true;
+                                caught_event |= Caught_PRESSURE;
+                                caught_event |= Caught_POINT;
                             }
                         }
                         break;

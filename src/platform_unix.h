@@ -119,12 +119,12 @@ func void unix_deallocate(void* ptr)
     munmap(ptr, size);
 }
 
-func b32 platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
-                                     i32 width, i32 height,
-                                     v2i* out_point,
-                                     f32* out_pressure)
+func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
+                                                  i32 width, i32 height,
+                                                  v2i* out_point,
+                                                  f32* out_pressure)
 {
-    b32 caught_event = false;
+    NativeEventResult caught_event = Caught_NONE;
     if (event.type == SDL_SYSWMEVENT)
     {
         if (event.msg)
@@ -148,7 +148,7 @@ func b32 platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent ev
 #endif
                     *out_pressure = (f32)dme->axis_data[2] /
                             (f32)(tablet_state->max_pressure - tablet_state->min_pressure);
-                    caught_event = true;
+                    caught_event |= Caught_PRESSURE;
                 }
             }
         }

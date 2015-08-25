@@ -42,6 +42,14 @@ int milton_main();
 
 typedef struct TabletState_s TabletState;
 
+typedef enum
+{
+    Caught_NONE = 0,
+
+    Caught_PRESSURE = (1 << 0),
+    Caught_POINT    = (1 << 1),
+} NativeEventResult;
+
 #include "vector.h"
 
 #if defined(_WIN32)
@@ -186,15 +194,20 @@ int milton_main()
                                                             &point,
                                                             &pressure);
                     if (!platform_input.is_pointer_down &&
-                        caught &&
+                        (caught & Caught_POINT) &&
                         pressure > 0)
                     {
                         platform_input.is_pointer_down = true;
                     }
-                    if (platform_input.is_pointer_down && caught)
+                    if (platform_input.is_pointer_down &&
+                        (caught & Caught_PRESSURE))
                     {
                         assert (pressure != NO_PRESSURE_INFO);
                         milton_input.pressures[num_pressure_results++] = pressure;
+                    }
+                    if (platform_input.is_pointer_down &&
+                        (caught & Caught_POINT))
+                    {
                         milton_input.points[num_point_results++] = point;
                         got_tablet_input = true;
                     }
