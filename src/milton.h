@@ -88,9 +88,9 @@ typedef struct RenderQueue_s
     u32*    raster_buffer;
 
     // FIFO work queue
-    SDL_mutex*      mutex;
-    BlockgroupRenderData  blockgroup_render_data[RENDER_QUEUE_SIZE];
-    i32             index;
+    SDL_mutex*              mutex;
+    BlockgroupRenderData    blockgroup_render_data[RENDER_QUEUE_SIZE];
+    i32                     index;
 
     SDL_sem*   work_available;
     SDL_sem*   completed_semaphore;
@@ -110,8 +110,7 @@ typedef struct MiltonState_s
 
     i32     max_width;
     i32     max_height;
-    u8*     raster_buffers[2];      // Double buffering, for render jobs that may not finish.
-    i32     raster_buffer_index;
+    u8*     raster_buffer;
 
     // The screen is rendered in blockgroups
     // Each blockgroup is rendered in blocks of size (block_width*block_width).
@@ -192,7 +191,7 @@ func i32 milton_get_brush_size(MiltonState* milton_state);
 func void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;
-    u8* raster_buffer = milton_state->raster_buffers[milton_state->raster_buffer_index];
+    u8* raster_buffer = milton_state->raster_buffer;
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)raster_buffer);
@@ -700,17 +699,15 @@ func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen
 
     if (do_realloc)
     {
-        for (i32 i = 0; i < 2; ++i)
+        void* raster_buffer = (void*)milton_state->raster_buffer;
+        if (raster_buffer)
         {
-            void* raster_buffer = (void*)milton_state->raster_buffers[i];
-            if (raster_buffer)
-            {
-                free(raster_buffer);
-            }
-            milton_state->raster_buffers[i] = (u8*)malloc( buffer_size );
-            // TODO: handle this failure gracefully.
-            assert(milton_state->raster_buffers[i]);
+            free(raster_buffer);
         }
+        milton_state->raster_buffer = (u8*)malloc( buffer_size );
+
+        // TODO: handle this failure gracefully.
+        assert(milton_state->raster_buffer);
     }
 
     if (new_screen_size.w < milton_state->max_width &&

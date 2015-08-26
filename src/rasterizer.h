@@ -1460,7 +1460,7 @@ func void render_picker(ColorPicker* picker,
 func void render_brush_overlay(MiltonState* milton_state, v2i hover_point)
 {
     // TODO: Remove the two buffers. Async will not need it.
-    u32* buffer = (u32*)milton_state->raster_buffers[milton_state->raster_buffer_index];
+    u32* buffer = (u32*)milton_state->raster_buffer;
 
     i32 girth = 2;
 
@@ -1540,9 +1540,7 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
     }
     VALIDATE_RECT(raster_limits);
 
-    //i32 index = (milton_state->raster_buffer_index + 1) % 2;
-    i32 index = (milton_state->raster_buffer_index + 0);
-    u32* raster_buffer = (u32*)milton_state->raster_buffers[index];
+    u32* raster_buffer = (u32*)milton_state->raster_buffer;
 
 #if 0
     // DEBUG always render the whole thing.
@@ -1575,21 +1573,5 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
                           raster_buffer,
                           milton_state->view);
         }
-    }
-
-    /* if (render_flags & MiltonRenderFlags_BRUSH_OVERLAY) */
-    /* { */
-    /*     render_brush_overlay(milton_state, milton_state->hover_point); */
-    /* } */
-
-    // If not preempted, do a buffer swap.
-    if (completed)
-    {
-        i32 prev_index = milton_state->raster_buffer_index;
-        milton_state->raster_buffer_index = index;
-
-        memcpy(milton_state->raster_buffers[prev_index],
-               milton_state->raster_buffers[index],
-               milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel);
     }
 }
