@@ -68,6 +68,7 @@ typedef struct PlatformInput_s
     b32 is_ctrl_down;
     b32 is_space_down;
     b32 is_pointer_down;  // Left click or wacom input
+    b32 is_panning;
     v2i pan_start;
     v2i pan_point;
 } PlatformInput;
@@ -222,7 +223,7 @@ int milton_main()
                     if (event.button.button == SDL_BUTTON_LEFT)
                     {
                         platform_input.is_pointer_down = true;
-                        if (platform_input.is_space_down)
+                        if (platform_input.is_panning)
                         {
                             platform_input.pan_start = (v2i) { event.button.x, event.button.y };
                         }
@@ -239,9 +240,19 @@ int milton_main()
                     if (event.button.button == SDL_BUTTON_LEFT)
                     {
                         platform_input.is_pointer_down = false;
-                        milton_input.flags |= MiltonInputFlags_END_STROKE;
-                        input_point = (v2i){ event.button.x, event.button.y };
-                        milton_input.points[num_point_results++] = input_point;
+                        if (!platform_input.is_panning)
+                        {
+                            milton_input.flags |= MiltonInputFlags_END_STROKE;
+                            input_point = (v2i){ event.button.x, event.button.y };
+                            milton_input.points[num_point_results++] = input_point;
+                        }
+                        else if (platform_input.is_panning)
+                        {
+                            if (!platform_input.is_space_down)
+                            {
+                                platform_input.is_panning = false;
+                            }
+                        }
                     }
                     break;
                 }
@@ -255,11 +266,11 @@ int milton_main()
                     input_point = (v2i){ event.motion.x, event.motion.y };
                     if (platform_input.is_pointer_down)
                     {
-                        if (!platform_input.is_space_down && !got_tablet_input)
+                        if (!platform_input.is_panning && !got_tablet_input)
                         {
                             milton_input.points[num_point_results++] = input_point;
                         }
-                        else if (platform_input.is_space_down)
+                        else if (platform_input.is_panning)
                         {
                             platform_input.pan_point = input_point;
 
@@ -329,6 +340,7 @@ int milton_main()
                     if (keycode == SDLK_SPACE)
                     {
                         platform_input.is_space_down = true;
+                        platform_input.is_panning = true;
                     }
                     if (platform_input.is_ctrl_down)
                     {
@@ -409,6 +421,10 @@ int milton_main()
                     if (keycode == SDLK_SPACE)
                     {
                         platform_input.is_space_down = false;
+                        if (!platform_input.is_pointer_down)
+                        {
+                            platform_input.is_panning = false;
+                        }
                     }
                     break;
                 }
@@ -456,7 +472,7 @@ int milton_main()
             }
         }
 
-        milton_input.is_panning = platform_input.is_space_down;
+        milton_input.is_panning = platform_input.is_panning;
 
         if (milton_input.is_panning)
         {
