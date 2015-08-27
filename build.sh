@@ -1,6 +1,6 @@
 cd src
-clang metaprogram.c -g -o metaprogram
-./metaprogram
+clang template_expand.c -g -o template_expand
+./template_expand
 cd ..
 
 # Comment-out -Wno-unused-(variable|function) to clean up code

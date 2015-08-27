@@ -204,7 +204,7 @@ func b32 intersect_line_segments(v2i a, v2i b,
                                  v2f* out_intersection)
 {
     b32 hit = false;
-    v2i perp = perp_v2i(sub_v2i(v, u));
+    v2i perp = perpendicular_v2i(sub_v2i(v, u));
     i32 det = DOT(sub_v2i(b, a), perp);
     if (det != 0)
     {
