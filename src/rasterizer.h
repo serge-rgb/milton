@@ -1459,7 +1459,6 @@ func void render_picker(ColorPicker* picker,
 
 func void render_brush_overlay(MiltonState* milton_state, v2i hover_point)
 {
-    // TODO: Remove the two buffers. Async will not need it.
     u32* buffer = (u32*)milton_state->raster_buffer;
 
     i32 girth = 2;

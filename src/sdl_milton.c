@@ -50,7 +50,7 @@ typedef enum
     Caught_POINT    = (1 << 1),
 } NativeEventResult;
 
-#include "vector.h"
+#include "vector.generated.h"
 
 #if defined(_WIN32)
 #include "platform_windows.h"

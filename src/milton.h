@@ -667,11 +667,6 @@ func b32 is_user_drawing(MiltonState* milton_state)
     return result;
 }
 
-func b32 is_user_panning(MiltonInput* input)
-{
-    return input->is_panning;
-}
-
 func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
     if (new_screen_size.w > 8000 ||
@@ -1077,7 +1072,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     // Disable hover if panning.
-    if (is_user_panning(input))
+    if (input->is_panning)
     {
         milton_gl_unset_brush_hover(milton_state->gl);
     }

@@ -1,3 +1,8 @@
+cd src
+clang metaprogram.c -g -o metaprogram
+./metaprogram
+cd ..
+
 # Comment-out -Wno-unused-(variable|function) to clean up code
 clang -Ithird_party \
     -std=c99\
