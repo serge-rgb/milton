@@ -21,8 +21,6 @@ extern "C"
 {
 #endif
 
-#define stack_count(a) (sizeof((a)) / sizeof((a)[0]))
-
 // ==== Order matters. ====
 //
 //      We are compiling a big-blob of C code. Not multiple files. Everything

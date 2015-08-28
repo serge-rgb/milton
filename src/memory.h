@@ -64,9 +64,50 @@ static void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 // =========================================
 static void arena_reset(Arena* arena);
 
+// =========================================
+// ====   Simple stack from aren        ====
+// =========================================
+#define arena_make_stack(a, size, type) (type *)arena__stack_typeless(a, sizeof(type) * size)
+#define stack_push(a, e) if (arena__stack_try_grow(a)) a[arena__stack_header(a)->count - 1] = e
+#define stack_reset(a) (arena__stack_header(a)->count = 0)
+#define stack_count(a) (arena__stack_header(a)->count)
+
+#pragma pack(push, 1)
+typedef struct
+{
+    size_t size;
+    size_t count;
+} StackHeader;
+#pragma pack(pop)
+
+#define arena__stack_header(stack) ((StackHeader*)((uint8_t*)stack - sizeof(StackHeader)))
+
+static void* arena__stack_typeless(Arena* arena, size_t size)
+{
+    Arena child = arena_spawn(arena, size + sizeof(StackHeader));
+    StackHeader head = { 0 };
+    {
+        head.size = child.size;
+    }
+    memcpy(child.ptr, &head, sizeof(StackHeader));
+    return (void*)(((uint8_t*)child.ptr) + sizeof(StackHeader));
+}
+
+static int arena__stack_try_grow(void* stack)
+{
+    StackHeader* head = arena__stack_header(stack);
+    if (head->size < (head->count + 1))
+    {
+        assert (!"Stack full");
+        return 0;
+    }
+    ++head->count;
+    return 1;
+}
+
 
 // =========================================
-//        Implementation
+//        Arena implementation
 // =========================================
 
 static void* arena_alloc_bytes(Arena* arena, size_t num_bytes)

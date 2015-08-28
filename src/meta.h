@@ -65,39 +65,6 @@ typedef struct
     TemplateToken substitution;
 } Binding;
 
-#define arena_array(a, size, type) (type *)arena__array_typeless(a, sizeof(type) * size)
-#define array_push(a, e) (arena__array_try_grow(a), a[arena__array_header(a)->count - 1] = e)
-#define array_reset(a) (arena__array_header(a)->count = 0)
-#define array_count(a) (arena__array_header(a)->count)
-
-#pragma pack(push, 1)
-typedef struct
-{
-    size_t size;
-    size_t count;
-} ArrayHeader;
-#pragma pack(pop)
-
-#define arena__array_header(array) ((ArrayHeader*)((uint8_t*)array - sizeof(ArrayHeader)))
-
-static void* arena__array_typeless(Arena* arena, size_t size)
-{
-    Arena child = arena_spawn(arena, size + sizeof(ArrayHeader));
-    ArrayHeader head = { 0 };
-    {
-        head.size = child.size;
-    }
-    memcpy(child.ptr, &head, sizeof(ArrayHeader));
-    return (void*)(((uint8_t*)child.ptr) + sizeof(ArrayHeader));
-}
-
-static void arena__array_try_grow(void* array)
-{
-    ArrayHeader* head = arena__array_header(array);
-    assert(head->size >= (head->count + 1));
-    ++head->count;
-}
-
 static const int bytes_in_fd(FILE* fd);
 static const char* slurp_file(const char* path, int *out_size);
 
@@ -122,7 +89,7 @@ void meta_expand(
     // Get bindings
 
     // TODO: do a flexible stretchy array.
-    Binding* bindings = arena_array(&root_arena, 1000, Binding);
+    Binding* bindings = arena_make_stack(&root_arena, 1000, Binding);
 
     va_list ap;
 
@@ -136,7 +103,7 @@ void meta_expand(
         TemplateToken tk_subst = { subst, strlen(subst) };
 
         Binding binding = { tk_name, tk_subst };
-        array_push(bindings, binding);
+        stack_push(bindings, binding);
     }
     va_end(ap);
 
@@ -144,23 +111,23 @@ void meta_expand(
     assert(out_fd);
     int data_size = 0;
     const char* in_data = slurp_file(tmpl_path, &data_size);
-    char* out_data = arena_array(&root_arena, 10 * 1024 * 1024, char);
+    char* out_data = arena_make_stack(&root_arena, 10 * 1024 * 1024, char);
 
     size_t path_len = strlen(tmpl_path);
-    array_push(out_data, '/'); array_push(out_data, '/');
+    stack_push(out_data, '/'); stack_push(out_data, '/');
     for (int i = 0; i < path_len; ++i)
     {
-        array_push(out_data, tmpl_path[i]);
+        stack_push(out_data, tmpl_path[i]);
     }
-    array_push(out_data, '\n');
-    array_push(out_data, '\n');
+    stack_push(out_data, '\n');
+    stack_push(out_data, '\n');
 
-    TemplateToken* tokens = arena_array(&root_arena, 5000, TemplateToken);
+    TemplateToken* tokens = arena_make_stack(&root_arena, 5000, TemplateToken);
 
     int lexer_state = LEX_NOTHING;
 
     char prev = 0;
-    char* name = arena_array(&root_arena, 1000, char);
+    char* name = arena_make_stack(&root_arena, 1000, char);
     int name_len = 0;
     for (int i = 0; i < data_size - 1; ++i)  // Don't count EOF
     {
@@ -169,7 +136,7 @@ void meta_expand(
         {
             if ( lexer_state == LEX_NOTHING && c != '$' )
             {
-                array_push(out_data, c);
+                stack_push(out_data, c);
             }
             if ( lexer_state == LEX_NOTHING && c == '$' )
             {
@@ -182,25 +149,25 @@ void meta_expand(
             else if (lexer_state == LEX_INSIDE && c != '>')
             {
                 // add char to name
-                array_push(name, c);
+                stack_push(name, c);
                 ++name_len;
             }
             else if (lexer_state == LEX_INSIDE && c == '>')
             {
                 // add token
-                array_push(name, '\0');
+                stack_push(name, '\0');
                 TemplateToken token;
-                char* new_name = arena_array(&root_arena, strlen(name)+1, char);
+                char* new_name = arena_make_stack(&root_arena, strlen(name)+1, char);
                 strcpy(new_name, name);
                 token.str = new_name;
                 token.len = name_len;
-                array_reset(name);
-                array_push(tokens, token);
+                stack_reset(name);
+                stack_push(tokens, token);
                 name_len = 0;
                 lexer_state = LEX_NOTHING;
 
                 // Do stupid search on args to get matching subst.
-                for (int i = 0; i < array_count(bindings); ++i)
+                for (int i = 0; i < stack_count(bindings); ++i)
                 {
                     const Binding binding = bindings[i];
                     if (!strcmp(binding.name.str, token.str))
@@ -208,7 +175,7 @@ void meta_expand(
                         for (int j = 0; j < binding.substitution.len; ++j)
                         {
                             char c = binding.substitution.str[j];
-                            array_push(out_data, c);
+                            stack_push(out_data, c);
                         }
                         break;
                     }
@@ -218,9 +185,9 @@ void meta_expand(
         prev = c;
     }
 
-    array_push(out_data, '\n');
+    stack_push(out_data, '\n');
 
-    fwrite(out_data, sizeof(char), array_count(out_data), out_fd);
+    fwrite(out_data, sizeof(char), stack_count(out_data), out_fd);
     fclose(out_fd);
     free(big_block_of_memory);
 }

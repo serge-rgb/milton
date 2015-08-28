@@ -1,8 +1,8 @@
 # Milton saves
 *.mlt
 
-src/libnuwen
-src/metaprogram
+src/template_expand
+src/*.generated.h
 
 # vurtun/gui
 third_party/gui
