@@ -239,8 +239,8 @@ int milton_main()
                     }
                     if (event.button.button == SDL_BUTTON_LEFT)
                     {
-                        platform_input.is_pointer_down = false;
-                        if (!platform_input.is_panning)
+                        // Add final point
+                        if (!platform_input.is_panning && platform_input.is_pointer_down)
                         {
                             milton_input.flags |= MiltonInputFlags_END_STROKE;
                             input_point = (v2i){ event.button.x, event.button.y };
@@ -253,6 +253,7 @@ int milton_main()
                                 platform_input.is_panning = false;
                             }
                         }
+                        platform_input.is_pointer_down = false;
                     }
                     break;
                 }
@@ -333,6 +334,12 @@ int milton_main()
                         break;
                     }
 
+                    // Stop stroking when any key is hit
+                    {
+                        platform_input.is_pointer_down = false;
+                        milton_input.flags |= MiltonInputFlags_END_STROKE;
+                    }
+
                     if (keycode == SDLK_ESCAPE)
                     {
                         should_quit = true;
@@ -341,6 +348,7 @@ int milton_main()
                     {
                         platform_input.is_space_down = true;
                         platform_input.is_panning = true;
+                        // Stahp
                     }
                     if (platform_input.is_ctrl_down)
                     {
