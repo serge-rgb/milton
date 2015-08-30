@@ -226,9 +226,8 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 // Returns true if allocation succeeded, false if not.
 func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                           CanvasView* view,
-                                          Stroke* strokes,
+                                          StrokeDeque* strokes,
                                           b32* stroke_masks,
-                                          i32 num_strokes,
                                           Stroke* working_stroke,
                                           Rect canvas_block,
                                           v2i reference_point,
@@ -236,6 +235,7 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 {
     ClippedStroke* stroke_list = NULL;
     *allocation_ok = true;
+    i32 num_strokes = strokes->count;
 
     // Fill linked list with strokes clipped to this block
     for (i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
@@ -251,7 +251,7 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         }
         else
         {
-            unclipped_stroke = &strokes[stroke_i];
+            unclipped_stroke = StrokeDeque_get(strokes, stroke_i);
         }
         assert(unclipped_stroke);
         Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
@@ -302,9 +302,8 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 // returns false if allocation failed
 func b32 rasterize_canvas_block_slow(Arena* render_arena,
                                      CanvasView* view,
-                                     Stroke* strokes,
+                                     StrokeDeque* strokes,
                                      b32* stroke_masks,
-                                     i32 num_strokes,
                                      Stroke* working_stroke,
                                      u32* pixels,
                                      Rect raster_block)
@@ -346,7 +345,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
     // Get the linked list of clipped strokes.
     b32 allocation_ok = true;
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
-                                                       strokes, stroke_masks, num_strokes,
+                                                       strokes, stroke_masks,
                                                        working_stroke,
                                                        canvas_block, reference_point,
                                                        &allocation_ok);
@@ -592,13 +591,14 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 
 func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                      CanvasView* view,
-                                     Stroke* strokes,
+                                     StrokeDeque* strokes,
                                      b32* stroke_masks,
-                                     i32 num_strokes,
                                      Stroke* working_stroke,
                                      u32* pixels,
                                      Rect raster_block)
 {
+
+    i32 num_strokes = strokes->count;
     __m128 one4 = _mm_set_ps1(1);
     __m128 zero4 = _mm_set_ps1(0);
     //u64 pre_ccount_begin = __rdtsc();
@@ -638,7 +638,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
     // Get the linked list of clipped strokes.
     b32 allocation_ok = true;
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
-                                                       strokes, stroke_masks, num_strokes,
+                                                       strokes, stroke_masks,
                                                        working_stroke,
                                                        canvas_block, reference_point,
                                                        &allocation_ok);
@@ -1222,7 +1222,6 @@ func b32 render_blockgroup(MiltonState* milton_state,
     // Filter strokes to this blockgroup.
     b32* stroke_masks = filter_strokes_to_rect(blockgroup_arena,
                                                milton_state->strokes,
-                                               milton_state->num_strokes,
                                                canvas_blockgroup_rect);
 
     if (!stroke_masks)
@@ -1243,7 +1242,6 @@ func b32 render_blockgroup(MiltonState* milton_state,
                                                         milton_state->view,
                                                         milton_state->strokes,
                                                         stroke_masks,
-                                                        milton_state->num_strokes,
                                                         &milton_state->working_stroke,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
@@ -1254,7 +1252,6 @@ func b32 render_blockgroup(MiltonState* milton_state,
                                                         milton_state->view,
                                                         milton_state->strokes,
                                                         stroke_masks,
-                                                        milton_state->num_strokes,
                                                         &milton_state->working_stroke,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
@@ -1539,8 +1536,9 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
         }
         if (render_flags & MiltonRenderFlags_FINISHED_STROKE)
         {
-            i32 index = milton_state->num_strokes - 1;
-            Rect canvas_rect = bounding_box_for_last_n_points(&milton_state->strokes[index],
+            i32 index = milton_state->strokes->count - 1;
+            Rect canvas_rect = bounding_box_for_last_n_points(StrokeDeque_get(milton_state->strokes,
+                                                                              index),
                                                               2);
             raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);

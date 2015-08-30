@@ -21,16 +21,21 @@
 #endif  // _WIN32 && _MSC_VER
 
 #ifdef _WIN32
+/* #define VC_EXTRALEAN */
+/* #define WIN32_LEAN_AND_MEAN */
 #include <windows.h>
 #include <windowsx.h>
 #endif
 
 // Platform independent includes:
 #include <assert.h>
+#include <float.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 
 // Local includes

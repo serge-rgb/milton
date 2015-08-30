@@ -32,7 +32,8 @@
 #endif
 
 //#include "serg_io.h"
-//#include "defaults"
+
+#include "define_types.h"
 #include "memory.h"
 
 // ============================================================

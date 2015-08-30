@@ -16,31 +16,6 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-#include "SDL.h"
-#include "SDL_syswm.h"
-
-#include "gui.h"  // github.com/vurtun/gui
-#include "gui.c"
-
-#define MILTON_DESKTOP
-#include "system_includes.h"
-
-int milton_main();
-
-
-#define func static
-#include "define_types.h"
-
-
-#define MILTON_USE_VAO          1
-#define RENDER_QUEUE_SIZE       (1 << 13)
-#define STROKE_MAX_POINTS       2048
-#define MAX_BRUSH_SIZE          80
-#define MILTON_DEFAULT_SCALE    (1 << 10)
-#define NO_PRESSURE_INFO        -1.0f
-#define MAX_INPUT_BUFFER_ELEMS  32
-
-typedef struct TabletState_s TabletState;
 
 typedef enum
 {
@@ -50,15 +25,14 @@ typedef enum
     Caught_POINT    = (1 << 1),
 } NativeEventResult;
 
-#include "vector.generated.h"
+#include "SDL.h"
+#include "SDL_syswm.h"
 
-#if defined(_WIN32)
-#include "platform_windows.h"
-#elif defined(__linux__) || defined(__MACH__)
-#include "platform_unix.h"
-#endif
+#include "gui.h"  // github.com/vurtun/gui
+#include "gui.c"
 
-#include "memory.h"
+
+#include "define_types.h"
 
 #include "milton.h"
 

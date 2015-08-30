@@ -3,24 +3,14 @@
 //
 // Released under the MIT license. See LICENSE.txt
 
-
-#pragma once
-
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 typedef struct Arena_s Arena;
 
 struct Arena_s
 {
     // Memory:
-    size_t size;
-    size_t count;
-    int8_t* ptr;
+    size_t  size;
+    size_t  count;
+    u8*     ptr;
 
     // For pushing/popping
     Arena*  parent;
@@ -33,24 +23,24 @@ struct Arena_s
 // =========================================
 
 // Create a root arena from a memory block.
-static Arena arena_init(void* base, size_t size);
+func Arena arena_init(void* base, size_t size);
 // Create a child arena.
-static Arena arena_spawn(Arena* parent, size_t size);
+func Arena arena_spawn(Arena* parent, size_t size);
 
 // ==== Temporary arenas.
 // Usage:
 //      child = arena_push(my_arena, some_size);
 //      use_temporary_arena(&child.arena);
 //      arena_pop(child);
-static Arena    arena_push(Arena* parent, size_t size);
-static void     arena_pop (Arena* child);
+func Arena    arena_push(Arena* parent, size_t size);
+func void     arena_pop (Arena* child);
 
 // =========================================
 // ====          Allocation             ====
 // =========================================
 #define      arena_alloc_elem(arena, T)         (T *)arena_alloc_bytes((arena), sizeof(T))
 #define      arena_alloc_array(arena, count, T) (T *)arena_alloc_bytes((arena), (count) * sizeof(T))
-static void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
+func void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 
 // =========================================
 // ====        Utility                  ====
@@ -62,7 +52,7 @@ static void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 // =========================================
 // ====            Reuse                ====
 // =========================================
-static void arena_reset(Arena* arena);
+func void arena_reset(Arena* arena);
 
 // =========================================
 // ====   Simple stack from aren        ====
@@ -82,7 +72,7 @@ typedef struct
 
 #define arena__stack_header(stack) ((StackHeader*)((uint8_t*)stack - sizeof(StackHeader)))
 
-static void* arena__stack_typeless(Arena* arena, size_t size)
+func void* arena__stack_typeless(Arena* arena, size_t size)
 {
     Arena child = arena_spawn(arena, size + sizeof(StackHeader));
     StackHeader head = { 0 };
@@ -93,7 +83,7 @@ static void* arena__stack_typeless(Arena* arena, size_t size)
     return (void*)(((uint8_t*)child.ptr) + sizeof(StackHeader));
 }
 
-static int arena__stack_try_grow(void* stack)
+func int arena__stack_try_grow(void* stack)
 {
     StackHeader* head = arena__stack_header(stack);
     if (head->size < (head->count + 1))
@@ -110,7 +100,7 @@ static int arena__stack_try_grow(void* stack)
 //        Arena implementation
 // =========================================
 
-static void* arena_alloc_bytes(Arena* arena, size_t num_bytes)
+func void* arena_alloc_bytes(Arena* arena, size_t num_bytes)
 {
     size_t total = arena->count + num_bytes;
     if (total > arena->size)
@@ -122,18 +112,18 @@ static void* arena_alloc_bytes(Arena* arena, size_t num_bytes)
     return result;
 }
 
-static Arena arena_init(void* base, size_t size)
+func Arena arena_init(void* base, size_t size)
 {
     Arena arena = { 0 };
-    arena.ptr = (int8_t*)base;
+    arena.ptr = (u8*)base;
     if (arena.ptr)
     {
-        arena.size   = size;
+        arena.size = size;
     }
     return arena;
 }
 
-static Arena arena_spawn(Arena* parent, size_t size)
+func Arena arena_spawn(Arena* parent, size_t size)
 {
     void* ptr = arena_alloc_bytes(parent, size);
     assert(ptr);
@@ -147,7 +137,7 @@ static Arena arena_spawn(Arena* parent, size_t size)
     return child;
 }
 
-static Arena arena_push(Arena* parent, size_t size)
+func Arena arena_push(Arena* parent, size_t size)
 {
     assert ( size <= arena_available_space(parent));
     Arena child = { 0 };
@@ -162,7 +152,7 @@ static Arena arena_push(Arena* parent, size_t size)
     return child;
 }
 
-static void arena_pop(Arena* child)
+func void arena_pop(Arena* child)
 {
     Arena* parent = child->parent;
     assert(parent);
@@ -178,12 +168,9 @@ static void arena_pop(Arena* child)
     *child = (Arena){ 0 };
 }
 
-static void arena_reset(Arena* arena)
+func void arena_reset(Arena* arena)
 {
     memset (arena->ptr, 0, arena->count);
     arena->count = 0;
 }
 
-#ifdef __cplusplus
-}
-#endif

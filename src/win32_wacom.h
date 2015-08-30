@@ -29,6 +29,8 @@
     return false; \
 }
 
+#include "define_types.h"
+
 func b32 win32_wacom_load_wintab(TabletState* tablet_state)
 {
     tablet_state->wintab_handle = LoadLibraryA( "Wintab32.dll" );
