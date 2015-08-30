@@ -470,9 +470,6 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                                     min_dist = dist;
                                     dx = test_dx;
                                     dy = test_dy;
-                                    /* f32 p_a = stroke->metadata[point_i    ].pressure; */
-                                    /* f32 p_b = stroke->metadata[point_i + 1].pressure; */
-                                    /* pressure = (1 - t) * p_a + t * p_b; */
                                     pressure = test_pressure;
                                 }
                             }
@@ -728,20 +725,8 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     {
                         // Find closest point.
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
-                        __m128 test_dx = _mm_set_ps1(0.0f);
-                        __m128 test_dy = _mm_set_ps1(0.0f);
-                        /* __m128 ab_x    = _mm_set_ps1(0.0f); */
-                        /* __m128 ab_y    = _mm_set_ps1(0.0f); */
-                        __m128 d_x     = _mm_set_ps1(0.0f);
-                        __m128 d_y     = _mm_set_ps1(0.0f);
-                        __m128 ax_x    = _mm_set_ps1(0.0f);
-                        __m128 ax_y    = _mm_set_ps1(0.0f);
-                        /* __m128 disc    = _mm_set_ps1(0.0f); */
-                        assert (stroke->brush.radius < FLT_MAX);
-                        //__m128 radius4 = _mm_set_ps1((f32)stroke->brush.radius);
 
                         for (int point_i = 0; point_i < stroke->num_points - 1; point_i += 4)
-
                         {
                             f32 axs[4] = {FLT_MAX};
                             f32 ays[4] = {FLT_MAX};
@@ -817,18 +802,23 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             __m128 ab_x = _mm_sub_ps(b_x, a_x);
                             __m128 ab_y = _mm_sub_ps(b_y, a_y);
 
-                            __m128 inv_mag_ab = _mm_add_ps(_mm_mul_ps(ab_x, ab_x),
-                                                           _mm_mul_ps(ab_y, ab_y));
-                            inv_mag_ab = _mm_rsqrt_ps(inv_mag_ab);
+                            __m128 mag_ab2 = _mm_add_ps(_mm_mul_ps(ab_x, ab_x),
+                                                        _mm_mul_ps(ab_y, ab_y));
 
-                            d_x = _mm_mul_ps(ab_x, inv_mag_ab);
-                            d_y = _mm_mul_ps(ab_y, inv_mag_ab);
+                            // mask out the values for which we will divide-by-zero
+                            __m128 mask = _mm_cmpgt_ps(mag_ab2, zero4);
+
+                            // Inverse magnitude of ab
+                            __m128 inv_mag_ab = _mm_rsqrt_ps(mag_ab2);
+
+                            __m128 d_x = _mm_mul_ps(ab_x, inv_mag_ab);
+                            __m128 d_y = _mm_mul_ps(ab_y, inv_mag_ab);
 
                             __m128 canvas_point_x4 = _mm_set_ps1((f32)i);
                             __m128 canvas_point_y4 = _mm_set_ps1((f32)j);
 
-                            ax_x = _mm_sub_ps(canvas_point_x4, a_x);
-                            ax_y = _mm_sub_ps(canvas_point_y4, a_y);
+                            __m128 ax_x = _mm_sub_ps(canvas_point_x4, a_x);
+                            __m128 ax_y = _mm_sub_ps(canvas_point_y4, a_y);
 
                             __m128 disc = _mm_add_ps(_mm_mul_ps(d_x, ax_x),
                                                      _mm_mul_ps(d_y, ax_y));
@@ -845,16 +835,19 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             __m128 t4 = _mm_mul_ps(disc, inv_mag_ab);
 
 
+                            // point_x is the closest point in the AB segment to the canvas point
+                            // corresponding to the i,j point.
+                            //
                             // (axs[i] + disc_i * (d_x[i],
                             __m128 point_x_4 = _mm_add_ps(a_x, _mm_mul_ps(disc, d_x));
                             __m128 point_y_4 = _mm_add_ps(a_y, _mm_mul_ps(disc, d_y));
 
-
-                            test_dx = _mm_sub_ps(canvas_point_x4, point_x_4);
-                            test_dy = _mm_sub_ps(canvas_point_y4, point_y_4);
+                            __m128 test_dx = _mm_sub_ps(canvas_point_x4, point_x_4);
+                            __m128 test_dy = _mm_sub_ps(canvas_point_y4, point_y_4);
 
                             __m128 dist4 = _mm_add_ps(_mm_mul_ps(test_dx, test_dx),
                                                       _mm_mul_ps(test_dy, test_dy));
+                            dist4 = _mm_sqrt_ps(dist4);
 
                             // Lerp
                             // (1 - t) * p_a + t * p_b;
@@ -863,19 +856,8 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                                           _mm_mul_ps(t4,
                                                                      pressure_b));
 
-                            // Branch those less than zero
-                            __m128 lzmask = _mm_cmple_ps(dist4, zero4);
-
-#if 1
-                            assert(stroke->brush.radius < FLT_MAX);
                             __m128 radius4 = _mm_set_ps1((f32)stroke->brush.radius);
-                            if (stroke->brush.radius < (1 << 16));
-                            {
-                                radius4 = _mm_mul_ps(radius4, radius4);
-                            }
-                            dist4 = _mm_sub_ps(dist4,
-                                               _mm_mul_ps(pressure4, radius4));
-#endif
+                            dist4 = _mm_sub_ps(dist4, _mm_mul_ps(pressure4, radius4));
 
                             f32 dists[4];
                             f32 tests_dx[4];
@@ -889,12 +871,12 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             _mm_store_ps(tests_dy, test_dy);
                             _mm_store_ps(t_values, t4);
                             _mm_store_ps(pressures, pressure4);
-                            _mm_store_ps(masks, lzmask);
+                            _mm_store_ps(masks, mask);
 
                             for (i32 i = 0; i < batch_size; ++i)
                             {
                                 f32 dist = dists[i];
-                                if (dist > 0 && dist < min_dist && !masks[i])
+                                if (dist < min_dist && masks[i] > 0)
                                 {
                                     min_dist = dist;
                                     dx = tests_dx[i];

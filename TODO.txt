@@ -23,9 +23,11 @@ To-Do
     - Decrease worker memory usage (don't allocate num_points for clipped strokes!)
     - Stress the renderer with a huge drawing.
     - Brush
-        - Self intersections do not play nice. Figure out solution
         - Support for general, implicitly defined brushes
     - Robust save
+
+- Not replicable yet
+    - It sometimes sticks in low-quality mode.
 
 ============================================================
 ====                   1.0 Beta Milestone               ====

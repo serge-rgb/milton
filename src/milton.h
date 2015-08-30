@@ -396,6 +396,7 @@ func void milton_update_brushes(MiltonState* milton_state)
         Brush* brush = &milton_state->brushes[i];
         i32 size = milton_state->brush_sizes[i];
         brush->radius = size * milton_state->view->scale;
+        assert(brush->radius < FLT_MAX);
         if (i == BrushEnum_PEN)
         {
             // Alpha is set by the UI
