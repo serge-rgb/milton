@@ -467,6 +467,15 @@ int milton_main()
                             }
                             break;
                         }
+                        // --- A couple of events we might want to catch later...
+                    case SDL_WINDOWEVENT_ENTER:
+                        {
+                            break;
+                        }
+                    case SDL_WINDOWEVENT_FOCUS_GAINED:
+                        {
+                            break;
+                        }
                     default:
                         break;
                     }
