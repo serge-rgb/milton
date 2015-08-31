@@ -68,7 +68,7 @@ func void milton_fatal(char* message);
 #define platform_load_gl_func_pointers()
 #endif
 
-
+#ifdef __linux__
 struct TabletState_s {
     // Handle to the X11 window
     Display* display;
@@ -88,6 +88,13 @@ struct TabletState_s {
     i32 max_pressure;
 
 };
+#elif __MACH__
+struct TabletState_s
+{
+    // TODO: implement OSX
+    int foo;
+};
+#endif
 
 typedef struct UnixMemoryHeader_s
 {
@@ -125,6 +132,7 @@ func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL
                                                   f32* out_pressure)
 {
     NativeEventResult caught_event = Caught_NONE;
+#ifdef __linux__
     if (event.type == SDL_SYSWMEVENT)
     {
         if (event.msg)
@@ -153,6 +161,8 @@ func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL
             }
         }
     }
+// TODO: IMPLEMENT OSX
+#endif // __linux__
     return caught_event;
 }
 // References:
@@ -161,6 +171,7 @@ func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL
 //  - http://www.x.org/archive/X11R7.5/doc/man/man3/XOpenDevice.3.html
 func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
 {
+#ifdef __linux__
     // Tell SDL we want system events, to get the pressure
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 
@@ -280,14 +291,19 @@ func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
             }
         }
     }
+// TODO: implement OSX
+#endif // __linux__
 }
 
 void platform_wacom_deinit(TabletState* tablet_state)
 {
+#ifdef __linux__
     if (tablet_state->input_devices)
     {
         XFreeDeviceList(tablet_state->input_devices);
     }
+#endif
+// TODO: implement osx
 }
 
 

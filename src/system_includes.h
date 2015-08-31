@@ -61,7 +61,6 @@
 #define GL_GLEXT_PROTOTYPES 1
 #include "SDL_opengl.h"
 
-// __linux__
 #endif // defined(platform)
 
 #endif // MILTON_DESKTOP

@@ -39,17 +39,15 @@ extern "C"
 //
 // ========================
 
-#define MILTON_DESKTOP
-#include "system_includes.h"
+#include "define_types.h"
 
 int milton_main();
-
-
 
 #include "vector.generated.h"
 
 
 typedef struct TabletState_s TabletState;
+
 
 #if defined(_WIN32)
 #include "platform_windows.h"
@@ -1111,7 +1109,6 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
                     milton_state->working_stroke.num_points = 0;
                 }
                 render_flags |= MiltonRenderFlags_FINISHED_STROKE;
-                milton_log("Commited stroke. Num strokes: %d", milton_state->strokes->count);
             }
         }
     }

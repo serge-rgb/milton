@@ -28,11 +28,11 @@ typedef enum
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#define MILTON_DESKTOP
+#include "system_includes.h"
+
 #include "gui.h"  // github.com/vurtun/gui
 #include "gui.c"
-
-
-#include "define_types.h"
 
 #include "milton.h"
 

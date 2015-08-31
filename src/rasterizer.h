@@ -728,10 +728,10 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                         for (int point_i = 0; point_i < stroke->num_points - 1; point_i += 4)
                         {
-                            f32 axs[4] = {FLT_MAX};
-                            f32 ays[4] = {FLT_MAX};
-                            f32 bxs[4] = {FLT_MAX};
-                            f32 bys[4] = {FLT_MAX};
+                            f32 axs[4] = { 0 };
+                            f32 ays[4] = { 0 };
+                            f32 bxs[4] = { 0 };
+                            f32 bys[4] = { 0 };
                             f32 aps[4];
                             f32 bps[4];
                             batch_size = 0;
@@ -873,10 +873,15 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             _mm_store_ps(pressures, pressure4);
                             _mm_store_ps(masks, mask);
 
-                            for (i32 i = 0; i < batch_size; ++i)
+                            // Note: We can use 4 instead of batch_size.
+                            // Because `mask` will be 0 for the invalid elements.
+                            // But what we really want is to do this loop with
+                            // SSE magic. .
+                            for (i32 i = 0; i < 4; ++i)
                             {
                                 f32 dist = dists[i];
-                                if (dist < min_dist && masks[i] > 0)
+                                i32 imask = *(i32*)&masks[i];
+                                if (dist < min_dist && imask == -1)
                                 {
                                     min_dist = dist;
                                     dx = tests_dx[i];

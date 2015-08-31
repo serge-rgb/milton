@@ -1,12 +1,12 @@
+
+cd src
+clang template_expand.c -g -o template_expand
+./template_expand
+cd ..
+
+export MILTON_OSX_FLAGS="-I./third_party/SDL2-2.0.3/include -I./third_party/gui -framework OpenGL -L/usr/local/lib -framework AudioUnit -framework CoreAudio -framework Carbon -framework ForceFeedback -framework IOKit -framework Cocoa -liconv -lm"
+
 # Comment-out -Wno-unused-variable to clean up code
-    #-lm -lpthread -ldl\
-# Linux flags
-#    `pkg-config --cflags sdl2` \
-    # -lGL
-    #-L ./third_party/build \
-
-export MILTON_OSX_FLAGS="-I./third_party/SDL2-2.0.3/include -framework OpenGL -L/usr/local/lib -framework AudioUnit -framework CoreAudio -framework Carbon -framework ForceFeedback -framework IOKit -framework Cocoa -liconv -lm"
-
 clang -Ithird_party \
     -std=c99\
     -Wall -Werror \

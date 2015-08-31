@@ -4,7 +4,14 @@ cd third_party/
 
 echo "==== Installing dependencies ===="
 
-cd third_party
+if [ ! -d gui ]; then
+    git clone https://github.com/vurtun/gui.git gui
+else
+    cd gui
+    git pull
+    cd ..
+fi
+
 if [ ! -d build ]; then
 mkdir build
 fi
