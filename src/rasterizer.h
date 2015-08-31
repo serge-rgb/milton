@@ -426,7 +426,10 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                     if (stroke->num_points == 1)
                     {
                         v2i first_point = points[0];
-                        first_point = scale_v2i(first_point, local_scale);
+                        {
+                            first_point.x *= local_scale;
+                            first_point.y *= local_scale;
+                        }
                         //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
                         v2i min_point = sub_v2i(first_point, reference_point);
                         dx = (f32)(i - min_point.x);
@@ -450,6 +453,12 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                             v2i a = points[point_i];
                             v2i b = points[point_i + 1];
+                            {
+                                a.x *= local_scale;
+                                a.y *= local_scale;
+                                b.x *= local_scale;
+                                b.y *= local_scale;
+                            }
                             a = sub_v2i(a, reference_point);
                             b = sub_v2i(b, reference_point);
 
@@ -488,9 +497,9 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                         //  Should dispatch on brush type. And do it for SSE impl too.
                         int samples = 0;
                         {
-                            f32 f3 = (0.75f * view->scale) * downsample_factor;
-                            f32 f1 = (0.25f * view->scale) * downsample_factor;
-                            u32 radius = (u32)(stroke->brush.radius * pressure);
+                            f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
+                            f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
+                            u32 radius = (u32)(stroke->brush.radius * pressure * local_scale);
                             f32 fdists[16];
                             {
                                 f32 a1 = (dx - f3) * (dx - f3);
@@ -654,23 +663,28 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
         return false;
     }
 
+    i32 local_scale =  (view->scale <= 8) ?  4 : 1;
+    {
+        reference_point.x *= local_scale;
+        reference_point.y *= local_scale;
+    }
     i32 downsample_factor = view->downsampling_factor;
 
     // This is the distance between two adjacent canvas pixels. Derived to
     // avoid expensive raster_to_canvas computations in the inner loop
-    i32 canvas_jump = downsample_factor * view->scale;
+    i32 canvas_jump = downsample_factor * view->scale * local_scale;
 
 
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
-              view->scale) - view->pan_vector.y) - reference_point.y;
+              view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
 
     for (i32 pixel_j = raster_block.top;
          pixel_j < raster_block.bottom;
          pixel_j += downsample_factor)
     {
         i32 i =  (((raster_block.left - view->screen_center.x) *
-                    view->scale) - view->pan_vector.x) - reference_point.x;
+                    view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
 
         for (i32 pixel_i = raster_block.left;
              pixel_i < raster_block.right;
@@ -720,7 +734,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     if (stroke->num_points == 1)
                     {
                         v2i first_point = points[0];
-                        //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
+                        first_point = scale_v2i(first_point, local_scale);
                         v2i min_point = sub_v2i(first_point, reference_point);
                         dx = (f32)(i - min_point.x);
                         dy = (f32)(j - min_point.y);
@@ -762,13 +776,13 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 // The point of reference point is to do the subtraction with
                                 // integer arithmetic
                                 axs[batch_size] =
-                                        (f32)(points[index  ].x - reference_point.x);
+                                        (f32)(points[index  ].x * local_scale - reference_point.x);
                                 ays[batch_size] =
-                                        (f32)(points[index  ].y - reference_point.y);
+                                        (f32)(points[index  ].y * local_scale - reference_point.y);
                                 bxs[batch_size] =
-                                        (f32)(points[index+1].x - reference_point.x);
+                                        (f32)(points[index+1].x * local_scale - reference_point.x);
                                 bys[batch_size] =
-                                        (f32)(points[index+1].y - reference_point.y);
+                                        (f32)(points[index+1].y * local_scale - reference_point.y);
                                 aps[batch_size] = stroke->metadata[index  ].pressure;
                                 bps[batch_size] = stroke->metadata[index+1].pressure;
                                 batch_size++;
@@ -904,9 +918,9 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         //u64 kk_ccount_begin = __rdtsc();
                         int samples = 0;
                         {
-                            f32 f3 = (0.75f * view->scale) * downsample_factor;
-                            f32 f1 = (0.25f * view->scale) * downsample_factor;
-                            u32 radius = (u32)(stroke->brush.radius * pressure);
+                            f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
+                            f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
+                            u32 radius = (u32)(stroke->brush.radius * pressure * local_scale);
                             __m128 dists[4];
 
                             {
