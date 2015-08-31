@@ -13,11 +13,14 @@ To-Do
     - "Layers". History viewer?
 
 - Engine
-    - Wacom: Pressure levels (only OSX left)
+    - Wacom:
+        - Pressure levels (only OSX left)
+        - Windows buttons
+
     - Performance:
-        - Undo: Only redraw necessary area.
+        - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize color picker rendering
-        - Optimize small strokes away
+        - Stroke Level-of-Detail downsampling based on relative size.
         - Faster eraser and/or opacity rejection.
         - memcpy when Panning
     - Decrease worker memory usage (don't allocate num_points for clipped strokes!)

@@ -54,11 +54,30 @@ func void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 // =========================================
 func void arena_reset(Arena* arena);
 
-// =========================================
-// ====   Simple stack from aren        ====
-// =========================================
+// ==============================================
+// ====   Simple stack from arena            ====
+// ==== i.e. heap array with bounds checking ====
+// ==============================================
+
+/*
+    This is a heap array with bounds checking.
+
+    // Example: create an array of 10 elements of type Foo
+    Foo* array = arena_make_stack(arena, 10, Foo);
+    // Push into the array:
+    stack_push(array, some_foo);
+    // Get the first element:
+    Foo* first = array[0];
+    // Loop:
+    for (int i = 0; i < stack_count(array); ++i)
+    {
+        Foo* foo = array[i];
+        use_the_foo(foo);
+    }
+   */
+
 #define arena_make_stack(a, size, type) (type *)arena__stack_typeless(a, sizeof(type) * size)
-#define stack_push(a, e) if (arena__stack_try_grow(a)) a[arena__stack_header(a)->count - 1] = e
+#define stack_push(a, e) if (arena__stack_check(a)) a[arena__stack_header(a)->count - 1] = e
 #define stack_reset(a) (arena__stack_header(a)->count = 0)
 #define stack_count(a) (arena__stack_header(a)->count)
 
@@ -83,7 +102,7 @@ func void* arena__stack_typeless(Arena* arena, size_t size)
     return (void*)(((uint8_t*)child.ptr) + sizeof(StackHeader));
 }
 
-func int arena__stack_try_grow(void* stack)
+func int arena__stack_check(void* stack)
 {
     StackHeader* head = arena__stack_header(stack);
     if (head->size < (head->count + 1))

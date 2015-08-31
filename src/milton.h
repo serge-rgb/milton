@@ -823,7 +823,8 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         {
             i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
 
-            int point_window = 1000;
+            // Limit the number of points we check so that we don't mess with the strok too much.
+            int point_window = 4;
             int count = 0;
             // Pop every point that is contained by the new one.
             for (i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i)
