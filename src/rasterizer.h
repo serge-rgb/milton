@@ -355,23 +355,28 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
         return false;
     }
 
+    i32 local_scale =  (view->scale <= 8) ?  4 : 1;
+    {
+        reference_point.x *= local_scale;
+        reference_point.y *= local_scale;
+    }
     i32 downsample_factor = view->downsampling_factor;
 
     // This is the distance between two adjacent canvas pixels. Derived to
     // avoid expensive raster_to_canvas computations in the inner loop
-    i32 canvas_jump = downsample_factor * view->scale;
+    i32 canvas_jump = downsample_factor * view->scale * local_scale;
 
 
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
-              view->scale) - view->pan_vector.y) - reference_point.y;
+              view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
 
     for (i32 pixel_j = raster_block.top;
          pixel_j < raster_block.bottom;
          pixel_j += downsample_factor)
     {
         i32 i =  (((raster_block.left - view->screen_center.x) *
-                    view->scale) - view->pan_vector.x) - reference_point.x;
+                    view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
 
         for (i32 pixel_i = raster_block.left;
              pixel_i < raster_block.right;
@@ -421,6 +426,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                     if (stroke->num_points == 1)
                     {
                         v2i first_point = points[0];
+                        first_point = scale_v2i(first_point, local_scale);
                         //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
                         v2i min_point = sub_v2i(first_point, reference_point);
                         dx = (f32)(i - min_point.x);

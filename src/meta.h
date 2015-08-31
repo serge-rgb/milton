@@ -186,7 +186,7 @@ void meta_expand(
         prev = c;
     }
 
-    stack_push(out_data, '\n');
+    //stack_push(out_data, '\n');
 
     fwrite(out_data, sizeof(char), stack_count(out_data), out_fd);
     fclose(out_fd);
