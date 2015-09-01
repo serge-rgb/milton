@@ -185,6 +185,8 @@ typedef enum
     MiltonInputFlags_SET_MODE_ERASER = ( 1 << 5 ),
     MiltonInputFlags_SET_MODE_BRUSH  = ( 1 << 6 ),
     MiltonInputFlags_FAST_DRAW       = ( 1 << 7 ),
+    MiltonInputFlags_HOVERING        = ( 1 << 8 ),
+    MiltonInputFlags_PANNING         = ( 1 << 9 ),
 } MiltonInputFlags;
 
 typedef struct MiltonInput_s
@@ -195,10 +197,9 @@ typedef struct MiltonInput_s
     f32  pressures[MAX_INPUT_BUFFER_ELEMS];
     i32  input_count;
 
-    v2i* hover_point;
+    v2i  hover_point;
     i32  scale;
     v2i  pan_delta;
-    b32  is_panning;
 } MiltonInput;
 
 
@@ -899,7 +900,10 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
             milton_state->render_worker_arenas[i] =
                     arena_init(platform_allocate(render_memory_cap),
                                render_memory_cap);
-            assert(milton_state->render_worker_arenas[i].ptr != NULL);
+            if (milton_state->render_worker_arenas[i].ptr == NULL)
+            {
+                milton_fatal("Failed to realloc worker arena\n");
+            }
         }
 
         milton_log("[DEBUG] Assigning more memory per worker. From %li to %li\n",
@@ -1031,11 +1035,11 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 
 
     render_flags |= MiltonRenderFlags_BRUSH_OVERLAY;
-    if (input->hover_point)
+    if (input->flags & MiltonInputFlags_HOVERING)
     {
-        milton_state->hover_point = *(input->hover_point);
-        f32 x = input->hover_point->x / (f32)milton_state->view->screen_size.w;
-        f32 y = input->hover_point->y / (f32)milton_state->view->screen_size.w;
+        milton_state->hover_point = input->hover_point;
+        f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
+        f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
         milton_gl_set_brush_hover(milton_state->gl, milton_state->view,
                                   milton_get_brush_size(milton_state), x, y);
     }
@@ -1115,7 +1119,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     // Disable hover if panning.
-    if (input->is_panning)
+    if (input->flags & MiltonInputFlags_PANNING)
     {
         milton_gl_unset_brush_hover(milton_state->gl);
     }

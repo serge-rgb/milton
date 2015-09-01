@@ -255,7 +255,8 @@ int milton_main()
                     }
                     else
                     {
-                        milton_input.hover_point = &input_point;
+                        milton_input.flags |= MiltonInputFlags_HOVERING;
+                        milton_input.hover_point = input_point;
                     }
                     break;
                 }
@@ -463,10 +464,9 @@ int milton_main()
             }
         }
 
-        milton_input.is_panning = platform_input.is_panning;
-
-        if (milton_input.is_panning)
+        if (platform_input.is_panning)
         {
+            milton_input.flags |= MiltonInputFlags_PANNING;
             num_point_results = 0;
         }
 
@@ -475,7 +475,6 @@ int milton_main()
         milton_log ("#   Point results: %d\n", num_point_results);
 #endif
 
-        //if (num_point_results > num_pressure_results)
         if (num_pressure_results == 0)
         {
             for (int i = num_pressure_results; i < num_point_results; ++i)

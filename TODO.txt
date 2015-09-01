@@ -3,7 +3,6 @@ To-Do
 
 
 - Bugs
-    - hover point segfault
     - :)
 
 - UI
@@ -19,6 +18,7 @@ To-Do
         - Windows buttons
 
     - Performance:
+        - Trim strokes: we've got too many points
         - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize color picker rendering
         - Stroke Level-of-Detail downsampling based on relative size.
