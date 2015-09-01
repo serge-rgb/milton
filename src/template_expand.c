@@ -37,12 +37,5 @@ int main()
                     "deque.template.h",
                     1,
                     "T", "Stroke");
-
-        meta_clear_file("FatPointDeque.generated.h");
-        meta_expand("FatPointDeque.generated.h",
-                    "deque.template.h",
-                    1,
-                    "T", "FatPoint");
-
     }
 }

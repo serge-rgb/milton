@@ -16,15 +16,6 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-typedef struct
-{
-    v2i point;
-    PointMetadata metadata;
-    i32 index;
-} FatPoint;
-
-#include "FatPointDeque.generated.h"
-
 typedef struct ClippedStroke_s ClippedStroke;
 struct ClippedStroke_s
 {
@@ -32,18 +23,13 @@ struct ClippedStroke_s
 
     // This stroke is clipped to a particular block and its pointers only live
     // as long as the render work lasts.
-    FatPointDeque* fat_points;
-    Brush brush;
-
+    Stroke          stroke;
     // We store indices into clipped points to delineate segments.
     // i.e. We know that ab is a segment if index(a) + 1 == index(b)
     i32*            indices;
 
     ClippedStroke*  next;
 };
-
-
-#define CLIPPED_STROKE_CHUNK_SIZE 16
 
 func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, Rect canvas_rect)
 {
@@ -55,34 +41,44 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
 
     clipped_stroke->fills_block = false;
     clipped_stroke->next = NULL;
+    clipped_stroke->stroke = *in_stroke;  // Copy everything except:
 
-    clipped_stroke->fat_points = FatPointDeque_make(render_arena, CLIPPED_STROKE_CHUNK_SIZE);
-    if (!clipped_stroke->fat_points)
+    // ... now substitute the point data with an array of our own.
+    //
+    // TODO: To save memory, it would make sense to use a different data
+    // structure here.  A deque would have the advantages of a stretchy
+    // array without asking too much from our humble arena.
+    if (in_stroke->num_points > 0)
     {
-        // We need more memory. Return gracefully
-        return NULL;
+        clipped_stroke->stroke.num_points = 0;
+        clipped_stroke->stroke.points = arena_alloc_array(render_arena,
+                                                          in_stroke->num_points, v2i);
+        clipped_stroke->stroke.metadata = arena_alloc_array(render_arena,
+                                                            in_stroke->num_points, PointMetadata);
+        clipped_stroke->indices = arena_alloc_array(render_arena,
+                                                    in_stroke->num_points, i32);
     }
-
-    if (in_stroke->num_points == 0)
+    else
     {
         return clipped_stroke;
     }
 
+
+    if (!clipped_stroke->stroke.points ||
+        !clipped_stroke->stroke.metadata ||
+        !clipped_stroke->indices)
+    {
+        // We need more memory. Return gracefully
+        return NULL;
+    }
     if (in_stroke->num_points == 1)
     {
         if (is_inside_rect(canvas_rect, in_stroke->points[0]))
         {
-            FatPoint fat_point =
-            {
-                .point = in_stroke->points[0],
-                .metadata = in_stroke->metadata[0],
-                .index = in_stroke->num_points,  // TODO: can be zero?
-            };
-            b32 succ = FatPointDeque_push(clipped_stroke->fat_points, fat_point);
-            if (!succ)
-            {
-                return NULL;
-            }
+            Stroke* stroke = &clipped_stroke->stroke;
+            i32 index = stroke->num_points++;
+            stroke->points[index] = in_stroke->points[0];
+            stroke->metadata[index] = in_stroke->metadata[0];
         }
     }
     else
@@ -103,10 +99,10 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
                            (a.y < canvas_rect.top       && b.y < canvas_rect.top) ||
                            (a.y > canvas_rect.bottom    && b.y > canvas_rect.bottom));
 
-            b32 succ = false;
             // We can add the segment
             if (inside)
             {
+                Stroke* stroke = &clipped_stroke->stroke;
                 // XA AB<- CD
                 // We need to add AB to out clipped stroke.
                 // Based on the previous iteration:
@@ -114,29 +110,23 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
                 //  If XA was discarded, we haven't added A; both points need to be added.
                 if (!added_previous_segment)
                 {
-                    FatPoint fp_a;
-                    FatPoint fp_b;
+                    stroke->points[stroke->num_points]     = a;
+                    stroke->points[stroke->num_points + 1] = b;
 
-                    fp_a.point = a;
-                    fp_b.point = b;
-                    fp_a.metadata = metadata_a;
-                    fp_b.metadata = metadata_b;
-                    fp_a.index = point_i;
-                    fp_b.index = point_i + 1;
-                    succ = FatPointDeque_push(clipped_stroke->fat_points, fp_a);
-                    if (!succ) { return NULL; }
-                    succ = FatPointDeque_push(clipped_stroke->fat_points, fp_b);
-                    if (!succ) { return NULL; }
+                    stroke->metadata[stroke->num_points]     = metadata_a;
+                    stroke->metadata[stroke->num_points + 1] = metadata_b;
+
+                    clipped_stroke->indices[stroke->num_points]     = point_i;
+                    clipped_stroke->indices[stroke->num_points + 1] = point_i + 1;
+
+                    stroke->num_points += 2;
                 }
                 else if (added_previous_segment)
                 {
-                    FatPoint fp_b;
-
-                    fp_b.point = b;
-                    fp_b.metadata = metadata_b;
-                    fp_b.index = point_i + 1;
-                    succ = FatPointDeque_push(clipped_stroke->fat_points, fp_b);
-                    if (!succ) { return NULL; }
+                    stroke->points  [stroke->num_points]        = b;
+                    stroke->metadata[stroke->num_points]        = metadata_b;
+                    clipped_stroke->indices[stroke->num_points] = point_i + 1;
+                    stroke->num_points += 1;
                 }
                 added_previous_segment = true;
             }
@@ -150,7 +140,9 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
 }
 
 func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
-                                  FatPointDeque* fat_points,
+                                  v2i* points, i32* indices,
+                                  i32 num_points,
+                                  PointMetadata* metadata,
                                   Brush brush, CanvasView* view)
 {
     assert ((((rect.left + rect.right) / 2) - reference_point.x) == 0);
@@ -164,33 +156,28 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
     };
 #endif
 
-    i32 num_points = fat_points->count;
     if (num_points >= 2)
     {
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
         {
-            FatPoint fpa = *FatPointDeque_get(fat_points, point_i);
-            FatPoint fpb = *FatPointDeque_get(fat_points, point_i + 1);
-
-            if (fpa.index + 1 != fpb.index)
+            if (indices[point_i] + 1 != indices[point_i + 1])
             {
                 continue;
             }
-            v2i a = fpa.point;
-            v2i b = fpb.point;
+            v2i a = points[point_i];
+            v2i b = points[point_i + 1];
 
-            a = sub_v2i(a, reference_point);
-            b = sub_v2i(b, reference_point);
+            a = sub_v2i(points[point_i], reference_point);
+            b = sub_v2i(points[point_i + 1], reference_point);
 
             // Get closest point
             // TODO: Refactor into something clearer after we're done.
-            // OR: optimize the shit out of it
             v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
             v2i p  = closest_point_in_segment(a, b, ab, mag_ab2,(v2i){0}, NULL);
 
-            f32 p_a = fpa.metadata.pressure;
-            f32 p_b = fpb.metadata.pressure;
+            f32 p_a = metadata[point_i    ].pressure;
+            f32 p_b = metadata[point_i + 1].pressure;
 
             f32 pressure = min(p_a, p_b);
 
@@ -215,7 +202,7 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
     }
     else if (num_points == 1)
     {
-        v2i p  = FatPointDeque_get(fat_points, 0)->point;
+        v2i p  = points[0];
 
         // Half width of a rectangle contained by brush at point p.
         i32 rad = (i32)(brush.radius * 0.707106781f);  // cos(pi/4)
@@ -277,15 +264,16 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             *allocation_ok = false;
             return NULL;
         }
-        clipped_stroke->brush = unclipped_stroke->brush;
+        Stroke* stroke = &clipped_stroke->stroke;
 
-        if (clipped_stroke->fat_points->count > 0)
+        if (stroke->num_points)
         {
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
             if (is_rect_filled_by_stroke(canvas_block, reference_point,
-                                         list_head->fat_points,
-                                         clipped_stroke->brush,
+                                         stroke->points, clipped_stroke->indices,
+                                         stroke->num_points,
+                                         stroke->metadata, stroke->brush,
                                          view))
             {
                 list_head->fills_block = true;
@@ -300,7 +288,7 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 
     while (list_iter)
     {
-        if (list_iter->fills_block && list_iter->brush.color.a == 1.0f)
+        if (list_iter->fills_block && list_iter->stroke.brush.color.a == 1.0f)
         {
             list_iter->next = NULL;
             break;
@@ -405,11 +393,10 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
             while(list_iter)
             {
                 ClippedStroke* clipped_stroke = list_iter;
-                list_iter = list_iter->next;
-
                 assert (clipped_stroke);
-
-                assert (clipped_stroke->fat_points->count > 0);
+                Stroke* stroke = &clipped_stroke->stroke;
+                list_iter = list_iter->next;
+                assert (stroke->num_points > 0);
 
                 // Fast path.
                 if (clipped_stroke->fills_block)
@@ -417,14 +404,14 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 #if 0 // Visualize it with black
                     v4f dst = {0, 0, 0, stroke->brush.color.a};
 #else
-                    v4f dst = clipped_stroke->brush.color;
+                    v4f dst = stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 }
                 else
                 // Slow path. There are pixels not inside.
                 {
-                    FatPointDeque* points = clipped_stroke->fat_points;
+                    v2i* points = stroke->points;
 
                     i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
 
@@ -434,10 +421,9 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                     f32 dy = 0;
                     f32 pressure = 0.0f;
 
-                    if (points->count == 1)
+                    if (stroke->num_points == 1)
                     {
-                        FatPoint* fp = FatPointDeque_get(points, 0);
-                        v2i first_point = fp->point;
+                        v2i first_point = points[0];
                         {
                             first_point.x *= local_scale;
                             first_point.y *= local_scale;
@@ -447,26 +433,24 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                         dx = (f32)(i - min_point.x);
                         dy = (f32)(j - min_point.y);
                         min_dist = dx * dx + dy * dy;
-                        pressure = fp->metadata.pressure;
+                        pressure = stroke->metadata[0].pressure;
                     }
                     else
                     {
                         // Find closest point.
                         batch_size = 1;
-                        for (int point_i = 0; point_i < points->count - 1; point_i++)
+                        for (int point_i = 0; point_i < stroke->num_points - 1; point_i++)
                         {
-                            FatPoint fpa = *FatPointDeque_get(points, point_i);
-                            FatPoint fpb = *FatPointDeque_get(points, point_i + 1);
-                            i32 index_a = fpa.index;
-                            i32 index_b = fpb.index;
+                            i32 index_a = clipped_stroke->indices[point_i];
+                            i32 index_b = clipped_stroke->indices[point_i + 1];
                             // Skip this iteration. This is not a segment.
                             if (index_a + 1 != index_b)
                             {
                                 continue;
                             }
 
-                            v2i a = fpa.point;
-                            v2i b = fpb.point;
+                            v2i a = points[point_i];
+                            v2i b = points[point_i + 1];
                             {
                                 a.x *= local_scale;
                                 a.y *= local_scale;
@@ -489,10 +473,10 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                                 f32 test_dx = (f32) (i - point.x);
                                 f32 test_dy = (f32) (j - point.y);
                                 f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
-                                f32 p_a = fpa.metadata.pressure;
-                                f32 p_b = fpb.metadata.pressure;
+                                f32 p_a = stroke->metadata[point_i    ].pressure;
+                                f32 p_b = stroke->metadata[point_i + 1].pressure;
                                 f32 test_pressure = (1 - t) * p_a + t * p_b;
-                                dist = dist - test_pressure * clipped_stroke->brush.radius;
+                                dist = dist - test_pressure * stroke->brush.radius;
                                 if (dist < min_dist)
                                 {
                                     min_dist = dist;
@@ -513,7 +497,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                         {
                             f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
                             f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
-                            u32 radius = (u32)(clipped_stroke->brush.radius * pressure * local_scale);
+                            u32 radius = (u32)(stroke->brush.radius * pressure * local_scale);
                             f32 fdists[16];
                             {
                                 f32 a1 = (dx - f3) * (dx - f3);
@@ -577,7 +561,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                             f32 coverage = (f32)samples / 16.0f;
 
-                            v4f dst = clipped_stroke->brush.color;
+                            v4f dst = stroke->brush.color;
                             {
                                 dst.r *= coverage;
                                 dst.g *= coverage;
@@ -715,11 +699,10 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
             while(list_iter)
             {
                 ClippedStroke* clipped_stroke = list_iter;
-                list_iter = list_iter->next;
-
                 assert (clipped_stroke);
-
-                assert (clipped_stroke->fat_points->count > 0);
+                Stroke* stroke = &clipped_stroke->stroke;
+                list_iter = list_iter->next;
+                assert (stroke->num_points > 0);
 
                 // Fast path.
                 if (clipped_stroke->fills_block)
@@ -727,14 +710,14 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
 #if 0 // Visualize it with black
                     v4f dst = {0, 0, 0, stroke->brush.color.a};
 #else
-                    v4f dst = clipped_stroke->brush.color;
+                    v4f dst = stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 }
                 else
                 // Slow path. There are pixels not inside.
                 {
-                    FatPointDeque* points = clipped_stroke->fat_points;
+                    v2i* points = stroke->points;
 
                     i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
 
@@ -744,10 +727,9 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     f32 dy = 0;
                     f32 pressure = 0.0f;
 
-                    if (points->count == 1)
+                    if (stroke->num_points == 1)
                     {
-                        FatPoint* fp = FatPointDeque_get(points, 0);
-                        v2i first_point = fp->point;
+                        v2i first_point = points[0];
                         {
                             first_point.x *= local_scale;
                             first_point.y *= local_scale;
@@ -756,14 +738,13 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         dx = (f32)(i - min_point.x);
                         dy = (f32)(j - min_point.y);
                         min_dist = dx * dx + dy * dy;
-                        pressure = fp->metadata.pressure;
+                        pressure = stroke->metadata[0].pressure;
                     }
                     else
                     {
-                        FatPointDeque* points = clipped_stroke->fat_points;
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
 
-                        for (int point_i = 0; point_i < points->count - 1; point_i += 4)
+                        for (int point_i = 0; point_i < stroke->num_points - 1; point_i += 4)
                         {
                             f32 axs[4] = { 0 };
                             f32 ays[4] = { 0 };
@@ -777,16 +758,13 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             {
                                 i32 index = point_i + i;
 
-                                if (index + 1 >= points->count)
+                                if (index + 1 >= stroke->num_points)
                                 {
                                     break;
                                 }
 
-                                FatPoint fpa = *FatPointDeque_get(points, index);
-                                FatPoint fpb = *FatPointDeque_get(points, index + 1);
-
-                                i32 index_a = fpa.index;
-                                i32 index_b = fpb.index;
+                                i32 index_a = clipped_stroke->indices[index];
+                                i32 index_b = clipped_stroke->indices[index + 1];
 
                                 // Not a segment
                                 if (index_a + 1 != index_b)
@@ -796,15 +774,15 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 // The point of reference point is to do the subtraction with
                                 // integer arithmetic
                                 axs[batch_size] =
-                                        (f32)(fpa.point.x * local_scale - reference_point.x);
+                                        (f32)(points[index  ].x * local_scale - reference_point.x);
                                 ays[batch_size] =
-                                        (f32)(fpa.point.y * local_scale - reference_point.y);
+                                        (f32)(points[index  ].y * local_scale - reference_point.y);
                                 bxs[batch_size] =
-                                        (f32)(fpb.point.x * local_scale - reference_point.x);
+                                        (f32)(points[index+1].x * local_scale - reference_point.x);
                                 bys[batch_size] =
-                                        (f32)(fpb.point.y * local_scale - reference_point.y);
-                                aps[batch_size] = fpa.metadata.pressure;
-                                bps[batch_size] = fpb.metadata.pressure;
+                                        (f32)(points[index+1].y * local_scale - reference_point.y);
+                                aps[batch_size] = stroke->metadata[index  ].pressure;
+                                bps[batch_size] = stroke->metadata[index+1].pressure;
                                 batch_size++;
                             }
 
@@ -896,7 +874,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                                           _mm_mul_ps(t4,
                                                                      pressure_b));
 
-                            __m128 radius4 = _mm_set_ps1((f32)clipped_stroke->brush.radius);
+                            __m128 radius4 = _mm_set_ps1((f32)stroke->brush.radius);
                             dist4 = _mm_sub_ps(dist4, _mm_mul_ps(pressure4, radius4));
 
                             f32 dists[4];
@@ -940,7 +918,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         {
                             f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
                             f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
-                            u32 radius = (u32)(clipped_stroke->brush.radius * pressure * local_scale);
+                            u32 radius = (u32)(stroke->brush.radius * pressure * local_scale);
                             __m128 dists[4];
 
                             {
@@ -1011,7 +989,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                             f32 coverage = (f32)samples / 16.0f;
 
-                            v4f dst = clipped_stroke->brush.color;
+                            v4f dst = stroke->brush.color;
                             {
                                 dst.r *= coverage;
                                 dst.g *= coverage;
