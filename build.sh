@@ -12,8 +12,8 @@ clang -Ithird_party \
     -Wno-unused-variable \
     `pkg-config --cflags sdl2` \
     -Ithird_party/gui \
-    -O2 -g\
-    src/sdl_milton.c -lGL -lm -lpthread\
+    -O0 -g\
+    src/sdl_milton.c -lGL -lm \
     `pkg-config --libs sdl2` \
     -lX11 -lXi \
     -o milton

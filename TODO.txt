@@ -3,6 +3,7 @@ To-Do
 
 
 - Bugs
+    - hover point segfault
     - :)
 
 - UI
@@ -23,7 +24,6 @@ To-Do
         - Stroke Level-of-Detail downsampling based on relative size.
         - Faster eraser and/or opacity rejection.
         - memcpy when Panning
-    - Decrease worker memory usage (don't allocate num_points for clipped strokes!)
     - Stress the renderer with a huge drawing.
     - Brush
         - Support for general, implicitly defined brushes

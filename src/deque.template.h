@@ -56,8 +56,9 @@ func $<T>Deque* $<T>Deque_make(Arena* arena, i32 chunk_size)
     return deque;
 }
 
-func void $<T>Deque_push($<T>Deque* deque, $<T> elem)
+func b32 $<T>Deque_push($<T>Deque* deque, $<T> elem)
 {
+    b32 succeeded = false;
     $<T>DequeChunk* chunk = deque->first_chunk;
     int chunk_i = deque->count / deque->chunk_size;
     while(chunk_i--)
@@ -67,11 +68,15 @@ func void $<T>Deque_push($<T>Deque* deque, $<T> elem)
             chunk->next = $<T>Deque_internal_alloc_chunk(deque->parent_arena, deque->chunk_size);
         }
         chunk = chunk->next;
-        assert (chunk != NULL);
     }
-    int elem_i = deque->count % deque->chunk_size;
-    chunk->data[elem_i] = elem;
-    deque->count += 1;
+    if (chunk)
+    {
+        int elem_i = deque->count % deque->chunk_size;
+        chunk->data[elem_i] = elem;
+        deque->count += 1;
+        succeeded = true;
+    }
+    return succeeded;
 }
 
 func $<T>* $<T>Deque_get($<T>Deque* deque, i32 i)
