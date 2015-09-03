@@ -31,9 +31,6 @@ typedef enum
 #define MILTON_DESKTOP
 #include "system_includes.h"
 
-#include "gui.h"  // github.com/vurtun/gui
-#include "gui.c"
-
 #include "milton.h"
 
 

@@ -109,7 +109,7 @@ Requirements:
 0. Open a developer console. You have at least two options:
     - Open "Visual Studio Command Prompt" and go to Milton's directory.
     - Use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH. It will try to use the 64-bit version
-1. Run `setup.bat` to download dependencies and build SDL
+1. Run `setup.bat` to build SDL
 2. `build.bat`
 3. Milton is compiled to `build\Milton.exe`
 
@@ -123,7 +123,6 @@ Requirements:
 
 Note: If setup.sh fails, just install the equivalents of clang and libsdl-dev for your distribution.
 
-0. `./setup.sh` to download dependencies.
 1. `./build.sh`
 2. Milton is compiled to `./milton`
 
@@ -134,9 +133,9 @@ Requirements:
 
 - CMake (for building SDL)
 
-0. `./setup_osx.sh` to download dependencies and build SDL
-1. `./build_osx.sh`
-2. Milton is compiled to `./milton`
+1. `./setup_osx.sh` to download dependencies and build SDL
+2. `./build_osx.sh`
+3. Milton is compiled to `./milton`
 
 Roadmap
 -------

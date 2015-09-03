@@ -1,16 +1,5 @@
 @echo off
 
-IF NOT EXIST third_party\gui goto clone_gui
-goto pull_gui
-:clone_gui
-git clone https://github.com/vurtun/gui.git third_party\gui
-goto end_gui
-:pull_gui
-pushd third_party\gui
-git pull
-popd
-:end_gui
-
 IF NOT EXIST build mkdir build
 :sdl
 echo "==== Building SDL ===="
