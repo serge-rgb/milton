@@ -3,14 +3,22 @@ To-Do
 
 
 - Bugs
+    - NO_PRESSURE_INFO in mid-stroke. (x11)
     - :)
 
-- UI
+- (Immediate-mode) UI
+    - Image Button (hover & click)
     - Brush / Eraser buttons
-    - Color picker
+    - Text (stb)
+    - GUI toggle key
+    - History slider.
+    - Text input box.
+    - Selection rectangle
+    - "Export" button
     - Sliders for brush size & opacity / eraser
     - LRU color list
-    - "Layers". History viewer?
+    - Layers
+        - Drag-and-drop
 
 - Engine
     - Wacom:
@@ -18,16 +26,20 @@ To-Do
         - Windows buttons
 
     - Performance:
-        - Trim strokes: we've got too many points
+        - memcpy when Panning
+        - rasterize-ring -- holy crap. do not loop over entire region.
+        - ??? Trim strokes: we've got too many points
         - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize color picker rendering
-        - Stroke Level-of-Detail downsampling based on relative size.
-        - Faster eraser and/or opacity rejection.
-        - memcpy when Panning
+        - ??? Stroke Level-of-Detail downsampling based on relative size.
+        - Write perf logger to make informed decision.
     - Stress the renderer with a huge drawing.
     - Brush
         - Support for general, implicitly defined brushes
     - Robust save
+    - Export
+        - JPEG (tiny_jpeg)
+        - PNG (stb)
 
 - Not replicable yet
     - It sometimes sticks in low-quality mode.
