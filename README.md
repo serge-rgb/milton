@@ -8,7 +8,7 @@ Milton Paint is pre-alpha, currently in active development.
 
 ### [Latest release (2015-07-25) pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha001)
 
-My latest masterpiece: An alpaca
+![alpaca](http://i.imgur.com/k7E8k7r.png)
 
 ![alpaca](http://i.imgur.com/fJJZ0Bj.png)
 
@@ -38,8 +38,8 @@ Features
 
 - Wacom support
 
-    It currently has basic support for Wacom, there will be support for pressure
-    sensitivity and other good stuff
+    Milton currently works with a Wacom intuos pen&touch on Windows and Linux (X11).
+    OSX support is coming.
 
 - Gamma-correct alpha blending and 32-bit floating point per channel
 
@@ -59,7 +59,8 @@ Features
 What Milton is not:
 -------------------
 
-Milton is not an image editor or a vector graphics editor. It's a program that lets you draw.
+Milton is not an image editor or a vector graphics editor. It's a program that
+lets you draw, sketch and paint.
 
 User Manual
 ===========
@@ -85,7 +86,7 @@ Support for multiple files is coming. But right now you can just pan the canvas
 How to Compile
 ==============
 
-Milton targets Windows, Linux and OSX for 64 bit machines.
+Milton targets Windows, Linux and OSX. 64 bit is recommended but not necessary.
 
 Developed on:
 
@@ -97,29 +98,32 @@ Also known to work on:
 
 * Arch Linux on a laptop with Intel integrated graphics
 
-There is a chance that the master branch will not build on one of the platforms
-because of some warning, but if Milton builds and fails to work on your
-machine, please let me know.
-
-Windows x64
------------
+Windows
+-------
 
 Requirements:
 
 - CMake (for SDL)
 - Visual Studio 2013 (I'm using VS Ultimate with Surround Sound, but Community Edition should be fine)
 
-0. If needed, run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH.
-1. Run `setup.bat` to build SDL
-2. Build with `build.bat`
+0. Open a developer console. You have at least two options:
+    - Open "Visual Studio Command Prompt" and go to Milton's directory.
+    - Use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH. It will try to use the 64-bit version
+1. Run `setup.bat` to download dependencies and build SDL
+2. `build.bat`
 3. Milton is compiled to `build\Milton.exe`
 
 Linux
 -----
 
+Requirements:
+
+- SDL2 development libraries. On Ubuntu, this is `apt-get install libsdl2-dev`
+- The clang compiler.
+
 Note: If setup.sh fails, just install the equivalents of clang and libsdl-dev for your distribution.
 
-0. `./setup.sh` The setup script will try and get libsdl. I'm on Ubuntu and a friend added Arch. Patches welcome!
+0. `./setup.sh` to download dependencies.
 1. `./build.sh`
 2. Milton is compiled to `./milton`
 
@@ -130,22 +134,14 @@ Requirements:
 
 - CMake (for building SDL)
 
-0. `./setup_osx.sh` to build SDL
-1. `./build_osx.sh` to build milton
+0. `./setup_osx.sh` to download dependencies and build SDL
+1. `./build_osx.sh`
 2. Milton is compiled to `./milton`
 
 Roadmap
 -------
+
 See TODO.txt
-
-Workflow
---------
-
-On Windows, You can use build.bat to build from your favorite editor/IDE. If you want to
-debug, I recommend doing `devenv build\Milton.exe` and hitting F11.
-
-On Linux, use build.sh and your favorite and/or least horrible debugger.
-On OSX, creating an XCode project for debugging works pretty well.
 
 Thank You
 =========
