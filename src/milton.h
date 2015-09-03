@@ -471,12 +471,20 @@ func i32* pointer_to_brush_size(MiltonState* milton_state)
     return ptr;
 }
 
+func void milton_set_brush_size(MiltonState* milton_state, i32 size)
+{
+    assert (size < MAX_BRUSH_SIZE);
+    (*pointer_to_brush_size(milton_state)) = size;
+    milton_update_brushes(milton_state);
+}
+
 // For keyboard shortcut.
 func void milton_increase_brush_size(MiltonState* milton_state)
 {
-    if (milton_get_brush_size(milton_state) < MAX_BRUSH_SIZE)
+    i32 brush_size = milton_get_brush_size(milton_state);
+    if (brush_size < MAX_BRUSH_SIZE)
     {
-        (*pointer_to_brush_size(milton_state))++;
+        milton_set_brush_size(milton_state, brush_size + 1);
     }
     milton_update_brushes(milton_state);
 }
@@ -484,19 +492,16 @@ func void milton_increase_brush_size(MiltonState* milton_state)
 // For keyboard shortcut.
 func void milton_decrease_brush_size(MiltonState* milton_state)
 {
-    if (milton_get_brush_size(milton_state) > 1)
+    i32 brush_size = milton_get_brush_size(milton_state);
+
+    if (brush_size > 1)
     {
-        (*pointer_to_brush_size(milton_state))--;
+        milton_set_brush_size(milton_state, brush_size - 1);
     }
     milton_update_brushes(milton_state);
 }
 
-func void milton_set_brush_size(MiltonState* milton_state, i32 size)
-{
-    assert (size < MAX_BRUSH_SIZE);
-    (*pointer_to_brush_size(milton_state)) = size;
-    milton_update_brushes(milton_state);
-}
+
 
 func void milton_set_pen_alpha(MiltonState* milton_state, float alpha)
 {
@@ -842,8 +847,6 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                                                 this_point, this_radius))
                 {
                     milton_state->working_stroke.num_points -= 1;
-                    b32 test = stroke_point_contains_point(canvas_point, in_radius,
-                                                           this_point, this_radius);
                 }
                 // If some other point in the past contains this point,
                 // then this point is invalid.

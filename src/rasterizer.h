@@ -413,8 +413,6 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                 {
                     v2i* points = stroke->points;
 
-                    i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
-
                     //v2f min_points[4] = {0};
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
@@ -438,7 +436,6 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                     else
                     {
                         // Find closest point.
-                        batch_size = 1;
                         for (int point_i = 0; point_i < stroke->num_points - 1; point_i++)
                         {
                             i32 index_a = clipped_stroke->indices[point_i];
@@ -611,7 +608,6 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                      Rect raster_block)
 {
 
-    i32 num_strokes = strokes->count;
     __m128 one4 = _mm_set_ps1(1);
     __m128 zero4 = _mm_set_ps1(0);
     //u64 pre_ccount_begin = __rdtsc();
@@ -880,14 +876,12 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             f32 dists[4];
                             f32 tests_dx[4];
                             f32 tests_dy[4];
-                            f32 t_values[4];
                             f32 pressures[4];
                             f32 masks[4];
 
                             _mm_store_ps(dists, dist4);
                             _mm_store_ps(tests_dx, test_dx);
                             _mm_store_ps(tests_dy, test_dy);
-                            _mm_store_ps(t_values, t4);
                             _mm_store_ps(pressures, pressure4);
                             _mm_store_ps(masks, mask);
 
@@ -904,7 +898,6 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                     min_dist = dist;
                                     dx = tests_dx[i];
                                     dy = tests_dy[i];
-                                    f32 t = t_values[i];
                                     pressure = pressures[i];
                                 }
                             }
@@ -1485,28 +1478,6 @@ func void render_picker(ColorPicker* picker,
             buffer_pixels[j * view->screen_size.w + i] = color;
         }
     }
-}
-
-func void render_brush_overlay(MiltonState* milton_state, v2i hover_point)
-{
-    u32* buffer = (u32*)milton_state->raster_buffer;
-
-    i32 girth = 2;
-
-    if (milton_get_brush_size(milton_state) <= girth / 2)
-    {
-        return;
-    }
-
-    i32 radius = milton_get_brush_size(milton_state);
-    assert(radius == milton_state->working_stroke.brush.radius / milton_state->view->scale);
-
-    rasterize_ring(buffer,
-                   milton_state->view->screen_size.w,
-                   milton_state->view->screen_size.h,
-                   hover_point.x, hover_point.y,
-                   radius, girth,
-                   (v4f) { 0 });
 }
 
 typedef enum

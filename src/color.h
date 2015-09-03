@@ -387,7 +387,7 @@ func ColorPickResult picker_update(ColorPicker* picker, v2i point)
 {
     ColorPickResult result = ColorPickResult_NOTHING;
     v2f fpoint = v2i_to_v2f(point);
-    if (picker->flags == ColorPickResult_NOTHING)
+    if (picker->flags == ColorPickerFlags_NOTHING)
     {
         if (picker_hits_wheel(picker, fpoint))
         {
@@ -421,7 +421,7 @@ func ColorPickResult picker_update(ColorPicker* picker, v2i point)
             picker->b, picker->c,
             picker->c, picker->a,
         };
-        b32 did_hit = false;
+
         for (i32 segment_i = 0; segment_i < 6; segment_i += 2)
         {
             v2i a = v2f_to_v2i(segments[segment_i    ]);
@@ -434,7 +434,6 @@ func ColorPickResult picker_update(ColorPicker* picker, v2i point)
                                               &intersection);
             if (hit)
             {
-                did_hit = true;
                 picker->hsv = picker_hsv_from_point(picker, intersection);
                 result |= ColorPickResult_CHANGE_COLOR;
                 break;

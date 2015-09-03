@@ -41,31 +41,6 @@ extern "C"
 // System stuf
 // -----------
 
-typedef struct BitScanResult_s
-{
-    u32 index;
-    b32 found;
-} BitScanResult;
-
-func BitScanResult find_least_significant_set_bit(u32 value)
-{
-    BitScanResult result = { 0 };
-#if defined(_MSC_VER)
-    result.found = _BitScanForward((DWORD*)&result.index, value);
-#else
-    for (u32 i = 0; i < 32; ++i)
-    {
-        if (value & (1 << i))
-        {
-            result.index = i;
-            result.found = true;
-            break;
-        }
-    }
-#endif
-    return result;
-}
-
 // total RAM in bytes
 func size_t get_system_RAM()
 {
@@ -82,27 +57,11 @@ func v2f v2i_to_v2f(v2i p)
     return (v2f){(f32)p.x, (f32)p.y};
 }
 
-func v3f v4f_to_v3f(v4f v)
-{
-    return (v3f){v.r, v.g, v.b};
-}
-
 // ---------------
 // Math functions.
 // ---------------
 
 #define kPi 3.14152654f
-
-
-func f32 absf(f32 a)
-{
-    return a < 0 ? -a : a;
-}
-
-func i32 absi(i32 a)
-{
-    return a < 0 ? -a : a;
-}
 
 #define DOT(a, b)  ((a).x * (b).x + (a).y * (b).y)
 
@@ -111,23 +70,12 @@ func f32 magnitude(v2f a)
     return sqrtf(DOT(a, a));
 }
 
-func i32 magnitude_i(v2i a)
-{
-    return (i32)sqrt(DOT(a, a));
-}
-
-func i32 distance_i(v2i a, v2i b)
-{
-   v2i d = sub_v2i(a, b);
-   i32 dist = magnitude_i(d);
-   return dist;
-}
-
 func f32 deegrees_to_radians(int d)
 {
     assert (0 <= d && d < 360);
     return kPi * ((f32)(d) / 180.0f);
 }
+
 func f32 radians_to_degrees(f32 r)
 {
     return (180 * r) / kPi;
@@ -191,7 +139,6 @@ func v2i closest_point_in_segment(v2i a, v2i b,
     {
         *out_t = disc / mag_ab;
     }
-    f32 t = disc / mag_ab;
     result = (v2i)
     {
        (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
