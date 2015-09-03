@@ -164,10 +164,11 @@ int milton_main()
                 {
                     f32 pressure = NO_PRESSURE_INFO;
                     v2i point = { 0 };
-                    b32 caught = platform_native_event_poll(tablet_state, event.syswm,
-                                                            width, height,
-                                                            &point,
-                                                            &pressure);
+                    NativeEventResult caught = platform_native_event_poll(tablet_state,
+                                                                          event.syswm,
+                                                                          width, height,
+                                                                          &point,
+                                                                          &pressure);
                     if (!platform_input.is_pointer_down &&
                         (caught & Caught_POINT) &&
                         pressure > 0)
