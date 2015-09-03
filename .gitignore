@@ -6,7 +6,7 @@ src/*.generated.h
 
 # vurtun/gui
 third_party/gui
-
+third_party/nanovg
 third_party/build
 
 # Visual Studio crap
