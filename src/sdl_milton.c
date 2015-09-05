@@ -101,13 +101,17 @@ int milton_main()
 
     // ==== Initialize milton
     //  Total memory requirement for Milton
-    size_t total_memory_size = min((size_t)2 * 1024 * 1024 * 1024, get_system_RAM() / 2);
+    //size_t total_memory_size = min((size_t)2 * 1024 * 1024 * 1024, get_system_RAM() / 2);
+    size_t total_memory_size = get_system_RAM();
     //  Size of frame heap
     size_t frame_heap_in_MB  = 128 * 1024 * 1024;
 
     void* big_chunk_of_memory = platform_allocate(total_memory_size);
 
-    assert (big_chunk_of_memory);
+    if (!big_chunk_of_memory)
+    {
+        milton_fatal("Could allocate virtual memory for Milton.");
+    }
 
     Arena root_arena      = arena_init(big_chunk_of_memory, total_memory_size);
     Arena transient_arena = arena_spawn(&root_arena, frame_heap_in_MB);
@@ -144,7 +148,7 @@ int milton_main()
         i32 num_point_results = 0;
 
         SDL_Event event;
-        b32 got_tablet_input = false;
+        b32 got_tablet_point_input = false;
         while (SDL_PollEvent(&event))
         {
             SDL_Keymod keymod = SDL_GetModState();
@@ -161,6 +165,7 @@ int milton_main()
                 {
                     f32 pressure = NO_PRESSURE_INFO;
                     v2i point = { 0 };
+                    // TODO: get point from event poll
                     NativeEventResult caught = platform_native_event_poll(tablet_state,
                                                                           event.syswm,
                                                                           width, height,
@@ -182,7 +187,7 @@ int milton_main()
                         (caught & Caught_POINT))
                     {
                         milton_input.points[num_point_results++] = point;
-                        got_tablet_input = true;
+                        got_tablet_point_input = true;
                     }
                     break;
                 }
@@ -239,7 +244,7 @@ int milton_main()
                     input_point = (v2i){ event.motion.x, event.motion.y };
                     if (platform_input.is_pointer_down)
                     {
-                        if (!platform_input.is_panning && !got_tablet_input)
+                        if (!platform_input.is_panning && !got_tablet_point_input)
                         {
                             milton_input.points[num_point_results++] = input_point;
                         }
@@ -473,14 +478,22 @@ int milton_main()
         milton_log ("#   Point results: %d\n", num_point_results);
 #endif
 
-        if (num_pressure_results == 0)
+        // Mouse input, fill with NO_PRESSURE_INFO
+        if (num_pressure_results == 0 && !got_tablet_point_input)
         {
             for (int i = num_pressure_results; i < num_point_results; ++i)
             {
-                milton_input.pressures[num_pressure_results++] = NO_PRESSURE_INFO;
+                milton_input.pressures[num_pressure_results++] = 1.0f;
             }
-            assert(num_pressure_results == num_point_results);
         }
+
+        if (num_pressure_results < num_point_results)
+        {
+            num_point_results = num_pressure_results;
+        }
+
+        assert (num_point_results <= num_pressure_results);
+
         milton_input.input_count = num_point_results;
 
 

@@ -1533,7 +1533,7 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
             i32 index = milton_state->strokes->count - 1;
             Rect canvas_rect = bounding_box_for_last_n_points(StrokeDeque_get(milton_state->strokes,
                                                                               index),
-                                                              2);
+                                                              4);
             raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);

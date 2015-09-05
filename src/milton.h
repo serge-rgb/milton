@@ -807,11 +807,19 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
         f32 pressure_min = 0.20f;
-        f32 pressure = 1.0;
+        f32 pressure = NO_PRESSURE_INFO;
 
         if (input->pressures[input_i] != NO_PRESSURE_INFO)
         {
             pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
+        }
+        else if (input_i > 0)
+        {
+           f32 prev_pressure = input->pressures[input_i - 1];
+           if (prev_pressure != NO_PRESSURE_INFO)
+           {
+               pressure = prev_pressure;
+           }
         }
 
         b32 not_the_first = false;
@@ -825,7 +833,13 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         //  b) it is being appended to the stroke and it didn't merge with the previous point.
         b32 passed_inspection = true;
 
-        if (not_the_first)
+        if (pressure == NO_PRESSURE_INFO)
+        {
+            passed_inspection = false;
+        }
+
+
+        if (passed_inspection && not_the_first)
         {
             i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
 

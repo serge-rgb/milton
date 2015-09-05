@@ -28,7 +28,7 @@ if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
 	-Wno-unused-result \
 	-fno-strict-aliasing \
 	`pkg-config --cflags sdl2` \
-	-O2 -g\
+	-O0 -g\
 	src/sdl_milton.c -lGL -lm \
 	`pkg-config --libs sdl2` \
 	-lX11 -lXi \
