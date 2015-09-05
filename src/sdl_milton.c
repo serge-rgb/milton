@@ -101,8 +101,8 @@ int milton_main()
 
     // ==== Initialize milton
     //  Total memory requirement for Milton
-    //size_t total_memory_size = min((size_t)2 * 1024 * 1024 * 1024, get_system_RAM() / 2);
-    size_t total_memory_size = get_system_RAM();
+    size_t total_memory_size = min((size_t)2 * 1024 * 1024 * 1024, get_system_RAM() / 2);
+    //size_t total_memory_size = get_system_RAM();
     //  Size of frame heap
     size_t frame_heap_in_MB  = 128 * 1024 * 1024;
 
@@ -483,7 +483,7 @@ int milton_main()
         {
             for (int i = num_pressure_results; i < num_point_results; ++i)
             {
-                milton_input.pressures[num_pressure_results++] = 1.0f;
+                milton_input.pressures[num_pressure_results++] = NO_PRESSURE_INFO;
             }
         }
 

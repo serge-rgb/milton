@@ -231,7 +231,21 @@ func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
                                                 axis,
                                                 xvi->axes[axis].min_value,
                                                 xvi->axes[axis].max_value);
-                                    // 2 is pressure. Seems to be the convention... *cross fingers*
+                                    // 0 is x
+                                    if (axis == 0)
+                                    {
+                                        i32 maxv = xvi->axes[i].max_value;
+                                        i32 minv = xvi->axes[i].min_value;
+                                        milton_log("Max/min x values: %d, %d\n", minv, maxv);
+                                    }
+                                    // 1 is y
+                                    if (axis == 1)
+                                    {
+                                        i32 maxv = xvi->axes[i].max_value;
+                                        i32 minv = xvi->axes[i].min_value;
+                                        milton_log("Max/min y values: %d, %d\n", minv, maxv);
+                                    }
+                                    // 2 is pressure.
                                     if (axis == 2)
                                     {
                                         tablet_state->min_pressure = xvi->axes[i].min_value;
@@ -248,7 +262,8 @@ func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
                                                    cls);
                                 if (cls)
                                 {
-                                    tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
+                                    i32 index = tablet_state->num_event_classes++;
+                                    tablet_state->event_classes[index] = cls;
                                 }
 
  // Other stuff I might be interested in.

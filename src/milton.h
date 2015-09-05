@@ -171,7 +171,7 @@ typedef struct MiltonState_s
     b32         worker_needs_memory;
 
     b32         cpu_has_sse2;
-
+    b32         stroke_is_from_tablet;
 } MiltonState;
 
 typedef enum
@@ -595,7 +595,6 @@ func void milton_init(MiltonState* milton_state)
                                                            milton_state->num_render_workers,
                                                            Arena);
     milton_state->worker_memory_size = 65536;
-    milton_state->worker_needs_memory = true;
 
     assert (milton_state->num_render_workers);
 
@@ -806,20 +805,19 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
         v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
-        f32 pressure_min = 0.20f;
         f32 pressure = NO_PRESSURE_INFO;
 
         if (input->pressures[input_i] != NO_PRESSURE_INFO)
         {
+            f32 pressure_min = 0.20f;
             pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
+            milton_state->stroke_is_from_tablet = true;
         }
-        else if (input_i > 0)
+
+        // We haven't received pressure info, assume mouse input
+        if (input->pressures[input_i] == NO_PRESSURE_INFO && !milton_state->stroke_is_from_tablet)
         {
-           f32 prev_pressure = input->pressures[input_i - 1];
-           if (prev_pressure != NO_PRESSURE_INFO)
-           {
-               pressure = prev_pressure;
-           }
+            pressure = 1.0f;
         }
 
         b32 not_the_first = false;
@@ -1096,6 +1094,8 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (input->flags & MiltonInputFlags_END_STROKE)
     {
+        milton_state->stroke_is_from_tablet = false;
+
         if (milton_state->is_ui_active)
         {
             picker_deactivate(&milton_state->picker);
