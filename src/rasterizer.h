@@ -1489,15 +1489,6 @@ func void render_picker(ColorPicker* picker,
     }
 }
 
-typedef enum
-{
-    MiltonRenderFlags_NONE              = 0,
-    MiltonRenderFlags_PICKER_UPDATED    = (1 << 0),
-    MiltonRenderFlags_FULL_REDRAW       = (1 << 1),
-    MiltonRenderFlags_BRUSH_OVERLAY     = (1 << 2),
-    MiltonRenderFlags_FINISHED_STROKE   = (1 << 3),
-} MiltonRenderFlags;
-
 func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 {
     // `raster_limits` is the part of the screen (in pixels) that should be updated
@@ -1568,7 +1559,7 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
     if (completed)
     {
         b32 redraw = false;
-        Rect picker_rect = picker_get_bounds(&milton_state->picker);
+        Rect picker_rect = picker_get_bounds(&milton_state->gui->picker);
         Rect clipped = rect_intersect(picker_rect, raster_limits);
         if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
         {
@@ -1579,7 +1570,7 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
         {
             render_canvas(milton_state, raster_buffer, picker_rect);
 
-            render_picker(&milton_state->picker,
+            render_picker(&milton_state->gui->picker,
                           raster_buffer,
                           milton_state->view);
         }

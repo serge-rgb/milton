@@ -125,6 +125,8 @@ enum
     BrushEnum_COUNT,
 };
 
+typedef struct MiltonGui_s MiltonGui;
+
 typedef struct MiltonState_s
 {
     u8      bytes_per_pixel;
@@ -140,12 +142,10 @@ typedef struct MiltonState_s
 
     MiltonGLState* gl;
 
-    ColorPicker picker;
+    MiltonGui* gui;
 
     Brush   brushes[BrushEnum_COUNT];
     i32     brush_sizes[BrushEnum_COUNT];  // In screen pixels
-
-    b32 is_ui_active;  // When interacting with the UI.
 
     CanvasView* view;
     v2i     hover_point;  // Track the pointer when not stroking..
@@ -173,6 +173,7 @@ typedef struct MiltonState_s
     b32         cpu_has_sse2;
     b32         stroke_is_from_tablet;
 } MiltonState;
+
 
 typedef enum
 {
@@ -202,10 +203,18 @@ typedef struct MiltonInput_s
     v2i  pan_delta;
 } MiltonInput;
 
-
 // Defined below. Used in rasterizer.h
 func i32 milton_get_brush_size(MiltonState* milton_state);
 
+typedef enum
+{
+    MiltonRenderFlags_NONE              = 0,
+    MiltonRenderFlags_PICKER_UPDATED    = (1 << 0),
+    MiltonRenderFlags_FULL_REDRAW       = (1 << 1),
+    MiltonRenderFlags_FINISHED_STROKE   = (1 << 2),
+} MiltonRenderFlags;
+
+#include "gui.h"
 #include "rasterizer.h"
 #include "persist.h"
 
@@ -227,8 +236,10 @@ func void milton_gl_backend_draw(MiltonState* milton_state)
     assert (sampler_loc >= 0);
     GLCHK (glUniform1i(sampler_loc, 0 /*GL_TEXTURE0*/));
     GLCHK (glVertexAttribPointer(/*attrib location*/pos_loc,
-                                 /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                 /*stride*/0, /*ptr*/0));
+                                 /*size*/2, GL_FLOAT,
+                                 /*normalize*/GL_FALSE,
+                                 /*stride*/0,
+                                 /*ptr*/0));
 
     GLCHK (glEnableVertexAttribArray(pos_loc));
 #endif
@@ -423,7 +434,7 @@ func void milton_update_brushes(MiltonState* milton_state)
         if (i == BrushEnum_PEN)
         {
             // Alpha is set by the UI
-            brush->color = to_premultiplied(sRGB_to_linear(hsv_to_rgb(milton_state->picker.hsv)),
+            brush->color = to_premultiplied(sRGB_to_linear(gui_get_picker_rgb(milton_state->gui)),
                                             brush->alpha);
         }
         else if (i == BrushEnum_ERASER)
@@ -646,27 +657,8 @@ func void milton_init(MiltonState* milton_state)
 #endif
     }
 
-    // Init picker
-    {
-        i32 bounds_radius_px = 100;
-        f32 wheel_half_width = 12;
-        milton_state->picker.center = (v2i){ bounds_radius_px + 20, bounds_radius_px + 20 };
-        milton_state->picker.bounds_radius_px = bounds_radius_px;
-        milton_state->picker.wheel_half_width = wheel_half_width;
-        milton_state->picker.wheel_radius = (f32)bounds_radius_px - 5.0f - wheel_half_width;
-        milton_state->picker.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
-        Rect bounds;
-        bounds.left = milton_state->picker.center.x - bounds_radius_px;
-        bounds.right = milton_state->picker.center.x + bounds_radius_px;
-        bounds.top = milton_state->picker.center.y - bounds_radius_px;
-        bounds.bottom = milton_state->picker.center.y + bounds_radius_px;
-        milton_state->picker.bounds = bounds;
-        milton_state->picker.pixels = arena_alloc_array(milton_state->root_arena,
-                                                        (4 * bounds_radius_px * bounds_radius_px),
-                                                        u32);
-        picker_init(&milton_state->picker);
-    }
-
+    milton_state->gui = arena_alloc_elem(milton_state->root_arena, MiltonGui);
+    gui_init(milton_state->root_arena, milton_state->gui);
 
     milton_gl_backend_init(milton_state);
     milton_load(milton_state);
@@ -1049,7 +1041,6 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 #endif
 
 
-    render_flags |= MiltonRenderFlags_BRUSH_OVERLAY;
     if (input->flags & MiltonInputFlags_HOVERING)
     {
         milton_state->hover_point = input->hover_point;
@@ -1064,26 +1055,12 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         // Don't draw brush outline.
         milton_gl_unset_brush_hover(milton_state->gl);
 
-        render_flags ^= MiltonRenderFlags_BRUSH_OVERLAY;
-        v2i point = input->points[0];
         if (!is_user_drawing(milton_state) &&
-            is_picker_accepting_input(&milton_state->picker, point))
+            gui_accepts_input(milton_state->gui, input))
         {
-            {
-                ColorPickResult pick_result = picker_update(&milton_state->picker, point);
-                if ((pick_result & ColorPickResult_CHANGE_COLOR) &&
-                    (milton_state->current_mode == MiltonMode_PEN))
-                {
-                    v3f rgb = hsv_to_rgb(milton_state->picker.hsv);
-                    milton_state->brushes[BrushEnum_PEN].color =
-                            to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha);
-                }
-                render_flags |= MiltonRenderFlags_PICKER_UPDATED;
-                milton_state->is_ui_active = true;
-            }
+            render_flags |= gui_update(milton_state, input);
         }
-        // Currently drawing
-        else if (!milton_state->is_ui_active)
+        else if (!milton_state->gui->active)
         {
             milton_stroke_input(milton_state, input);
         }
@@ -1096,10 +1073,9 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         milton_state->stroke_is_from_tablet = false;
 
-        if (milton_state->is_ui_active)
+        if (milton_state->gui->active)
         {
-            picker_deactivate(&milton_state->picker);
-            milton_state->is_ui_active = false;
+            gui_deactivate(milton_state->gui);
             render_flags |= MiltonRenderFlags_PICKER_UPDATED;
         }
         else

@@ -146,12 +146,7 @@ func b32* filter_strokes_to_rect(Arena* arena,
     return mask_array;
 }
 
-// TODO: pass brush type when supporting implicitly defined brushes
 // Does point p0 with radius r0 contain point p1 with radius r1?
-//
-// NOTE: A conservative way to do this would be to specify a minimum radius for every brush.
-// Then this implementation wouldn't need to get more complicated and other places could also
-// benefit (i.e. is_filled for ClippedStroke)
 func b32 stroke_point_contains_point(v2i p0, i32 r0,
                                      v2i p1, i32 r1)
 {
