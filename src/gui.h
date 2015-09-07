@@ -251,12 +251,13 @@ func void picker_init(ColorPicker* picker)
     picker->hsv = (v3f){ 0, 1, 1 };
 }
 
-typedef struct MiltonGui_s
+// typedef'd in milton.h
+struct MiltonGui_s
 {
     b32 active;  // `active == true` when gui currently owns all user input.
 
     ColorPicker picker;
-} MiltonGui;
+};
 
 func v3f gui_get_picker_rgb(MiltonGui* gui)
 {
