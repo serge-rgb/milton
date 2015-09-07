@@ -3,10 +3,10 @@ To-Do
 
 
 - Bugs
-    - NO_PRESSURE_INFO in mid-stroke. (x11)
     - :)
 
 - (Immediate-mode) UI
+    - x-form color picker code into immediate mode API.
     - Image Button (hover & click)
     - Brush / Eraser buttons
     - Text (stb)
@@ -27,12 +27,11 @@ To-Do
 
     - Performance:
         - memcpy when Panning
-        - rasterize-ring -- holy crap. do not loop over entire region.
-        - ??? Trim strokes: we've got too many points
+        - Write perf logger to make informed decision.
         - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize color picker rendering
+        - ??? Trim strokes: we've got too many points
         - ??? Stroke Level-of-Detail downsampling based on relative size.
-        - Write perf logger to make informed decision.
     - Stress the renderer with a huge drawing.
     - Brush
         - Support for general, implicitly defined brushes

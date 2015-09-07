@@ -1240,9 +1240,17 @@ func b32 render_blockgroup(MiltonState* milton_state,
                                                milton_state->strokes,
                                                canvas_blockgroup_rect);
 
+
+
     if (!stroke_masks)
     {
         allocation_ok = false;
+    }
+
+    Arena render_arena = { 0 };
+    if (allocation_ok)
+    {
+        render_arena = arena_spawn(blockgroup_arena, arena_available_space(blockgroup_arena));
     }
 
     for (int block_i = 0; block_i < blocks_per_blockgroup && allocation_ok; ++block_i)
@@ -1254,7 +1262,7 @@ func b32 render_blockgroup(MiltonState* milton_state,
 
         if (milton_state->cpu_has_sse2)
         {
-            allocation_ok = rasterize_canvas_block_sse2(blockgroup_arena,
+            allocation_ok = rasterize_canvas_block_sse2(&render_arena,
                                                         milton_state->view,
                                                         milton_state->strokes,
                                                         stroke_masks,
@@ -1264,7 +1272,7 @@ func b32 render_blockgroup(MiltonState* milton_state,
         }
         else
         {
-            allocation_ok = rasterize_canvas_block_slow(blockgroup_arena,
+            allocation_ok = rasterize_canvas_block_slow(&render_arena,
                                                         milton_state->view,
                                                         milton_state->strokes,
                                                         stroke_masks,
@@ -1272,6 +1280,7 @@ func b32 render_blockgroup(MiltonState* milton_state,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
         }
+        arena_reset(&render_arena);
     }
     return allocation_ok;
 }
