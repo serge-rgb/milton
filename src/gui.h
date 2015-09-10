@@ -251,6 +251,11 @@ func void picker_init(ColorPicker* picker)
     picker->hsv = (v3f){ 0, 1, 1 };
 }
 
+////////////////////////////////////
+// API
+////////////////////////////////////
+
+
 // typedef'd in milton.h
 struct MiltonGui_s
 {

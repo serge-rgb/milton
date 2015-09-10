@@ -1355,7 +1355,7 @@ func void produce_render_work(MiltonState* milton_state,
 
 
 // Returns true if operation was completed.
-func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
+func void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
 {
     Rect* blocks = NULL;
 
@@ -1424,8 +1424,6 @@ func b32 render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raste
 #endif
 
     ARENA_VALIDATE(milton_state->transient_arena);
-
-    return true;
 }
 
 func void render_picker(ColorPicker* picker,
@@ -1486,6 +1484,28 @@ func void render_picker(ColorPicker* picker,
 
             buffer_pixels[j * view->screen_size.w + i] = color;
         }
+    }
+}
+
+func void render_gui(MiltonState* milton_state,
+                     u32* raster_buffer, Rect raster_limits,
+                     MiltonRenderFlags render_flags)
+{
+    b32 redraw = false;
+    Rect picker_rect = picker_get_bounds(&milton_state->gui->picker);
+    Rect clipped = rect_intersect(picker_rect, raster_limits);
+    if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
+    {
+        redraw = true;
+    }
+
+    if (redraw || (render_flags & MiltonRenderFlags_PICKER_UPDATED))
+    {
+        render_canvas(milton_state, raster_buffer, picker_rect);
+
+        render_picker(&milton_state->gui->picker,
+                      raster_buffer,
+                      milton_state->view);
     }
 }
 
@@ -1553,26 +1573,7 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
     }
 #endif
 
-    b32 completed = render_canvas(milton_state, raster_buffer, raster_limits);
+    render_canvas(milton_state, raster_buffer, raster_limits);
 
-    // Render UI
-    if (completed)
-    {
-        b32 redraw = false;
-        Rect picker_rect = picker_get_bounds(&milton_state->gui->picker);
-        Rect clipped = rect_intersect(picker_rect, raster_limits);
-        if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
-        {
-            redraw = true;
-        }
-
-        if (redraw || (render_flags & MiltonRenderFlags_PICKER_UPDATED))
-        {
-            render_canvas(milton_state, raster_buffer, picker_rect);
-
-            render_picker(&milton_state->gui->picker,
-                          raster_buffer,
-                          milton_state->view);
-        }
-    }
+    render_gui(milton_state, raster_buffer, raster_limits, render_flags);
 }
