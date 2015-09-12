@@ -24,6 +24,19 @@ typedef enum
     ColorPickerFlags_TRIANGLE_ACTIVE = (1 << 2)
 } ColorPickerFlags;
 
+// TODO: There should be a way to deal with high density displays.
+typedef struct ColorButton_s ColorButton;
+struct ColorButton_s
+{
+    i32 center_x;
+    i32 center_y;
+    i32 width;
+    i32 height;
+    v4f color;
+
+    ColorButton* next;
+};
+
 typedef struct ColorPicker_s
 {
     v2f a;  // Corresponds to value = 0      (black)
@@ -40,7 +53,10 @@ typedef struct ColorPicker_s
 
     v3f     hsv;
 
+    ColorButton color_buttons;
+
     ColorPickerFlags flags;
+
 } ColorPicker;
 
 typedef enum
@@ -260,6 +276,7 @@ func void picker_init(ColorPicker* picker)
 struct MiltonGui_s
 {
     b32 active;  // `active == true` when gui currently owns all user input.
+    b32 did_change_color;
 
     ColorPicker picker;
 };
@@ -285,6 +302,7 @@ func MiltonRenderFlags gui_update(MiltonState* milton_state, MiltonInput* input)
     if ((pick_result & ColorPickResult_CHANGE_COLOR) &&
         (milton_state->current_mode == MiltonMode_PEN))
     {
+        milton_state->gui->did_change_color = true;
         v3f rgb = hsv_to_rgb(milton_state->gui->picker.hsv);
         milton_state->brushes[BrushEnum_PEN].color =
                 to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha);
@@ -313,10 +331,65 @@ func void gui_init(Arena* root_arena, MiltonGui* gui)
                                            (4 * bounds_radius_px * bounds_radius_px),
                                            u32);
     picker_init(&gui->picker);
+
+    i32 spacing = 4;
+    i32 num_buttons = 5;
+
+    i32 button_size = (2*bounds_radius_px - (num_buttons - 1) * spacing) / num_buttons;
+
+    i32 current_center_x = 40;
+
+    ColorButton* cur_button = &gui->picker.color_buttons;
+    for (i32 i = 0; i < num_buttons; ++i)
+    {
+        assert (cur_button->next == NULL);
+        {
+            cur_button->center_x = current_center_x;
+            cur_button->center_y = gui->picker.center.y + bounds_radius_px + 40;
+            cur_button->width = button_size / 2;
+            cur_button->height = button_size / 2;
+            cur_button->color = (v4f){0.0, 0.0, 0.0, 0.0};
+        }
+
+        current_center_x += spacing + button_size;
+
+        if (i != (num_buttons - 1))
+        {
+            cur_button->next = arena_alloc_elem(root_arena, ColorButton);
+        }
+		else
+		{
+			cur_button->next = NULL;
+		}
+        cur_button = cur_button->next;
+    }
 }
 
 func void gui_deactivate(MiltonGui* gui)
 {
+    if (gui->did_change_color)
+    {
+        ColorButton* button = &gui->picker.color_buttons;
+        v4f color = button->color;
+        v3f rgb  = hsv_to_rgb(gui->picker.hsv);
+        button->color.rgb = rgb;
+        button->color.a = 1.0f;
+        button = button->next;
+
+        while (button)
+        {
+            v4f tmp_color = button->color;
+            button->color = color;
+            color = tmp_color;
+            button = button->next;
+        }
+    }
+
     picker_deactivate(&gui->picker);
-    gui->active = false;
+
+    // Reset transient values
+    {
+        gui->active = false;
+        gui->did_change_color = false;
+    }
 }

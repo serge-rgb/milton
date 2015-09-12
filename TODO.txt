@@ -33,12 +33,16 @@ To-Do
         - ??? Trim strokes: we've got too many points
         - ??? Stroke Level-of-Detail downsampling based on relative size.
     - Stress the renderer with a huge drawing.
-    - Brush
-        - Support for general, implicitly defined brushes
     - Robust save
     - Export
         - JPEG (tiny_jpeg)
         - PNG (stb)
+    - Playback
+        - Store view changes in persist file
+        - Playback mode? Separate viewer?
+
+    - Brush
+        - Support for general, implicitly defined brushes
 
 - Not replicable yet
     - It sometimes sticks in low-quality mode.
