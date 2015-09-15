@@ -24,9 +24,19 @@ void gl_log(char* str)
 
 void gl_query_error(const char* expr, const char* file, int line);  // Defined below
 
+// Apple defines GLhandleARB as void*
+// our simple solution is to define functions as their core counterparts, which should be
+// very likely to be present in a random Mac system
+#if defined(__MACH__)
+#define glShaderSourceARB glShaderSource
+#define glCompileShaderARB glCompileShader
+#define glGetObjectParameterivARB glGetShaderiv
+#define glGetInfoLogARB glGetShaderInfoLog
+#endif
+
 static GLuint gl_compile_shader(const char* src, GLuint type)
 {
-    GLuint obj = glCreateShaderObjectARB(type);
+    GLuint obj = (GLuint)glCreateShaderObjectARB(type);
     GLCHK ( glShaderSourceARB(obj, 1, &src, NULL) );
     GLCHK ( glCompileShaderARB(obj) );
     // ERROR CHECKING
@@ -48,6 +58,19 @@ static GLuint gl_compile_shader(const char* src, GLuint type)
     }
     return obj;
 }
+
+#if defined(__MACH__)
+#undef glShaderSourceARB
+#undef glCompileShaderARB
+#undef glGetObjectParameterivARB
+#undef glGetInfoLogARB
+#define glGetObjectParameterivARB glGetProgramiv
+#define glGetInfoLogARB glGetProgramInfoLog
+#define glAttachObjectARB glAttachShader
+#define glLinkProgramARB glLinkProgram
+#define glValidateProgramARB glValidateProgram
+#define glUseProgramObjectARB glUseProgram
+#endif
 
 static void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
 {
@@ -83,6 +106,14 @@ static void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
     }
     GLCHK ( glValidateProgramARB(obj) );
 }
+#if defined(__MACH__)
+#undef glGetObjectParameterivARB
+#undef glGetInfoLogARB
+#undef glAttachObjectARB
+#undef glLinkProgramARB
+#undef glValidateProgramARB
+#undef glUseProgramObjectARB
+#endif
 
 void gl_query_error(const char* expr, const char* file, int line)
 {

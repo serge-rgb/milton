@@ -15,6 +15,17 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+// See gl_helpers.h for the reason for defining this
+#if defined(__MACH__)
+#define glGetAttribLocationARB glGetAttribLocation
+#define glGetUniformLocationARB glGetUniformLocation
+#define glUseProgramObjectARB glUseProgram
+#define glCreateProgramObjectARB glCreateProgram
+#define glEnableVertexAttribArrayARB glEnableVertexAttribArray
+#define glVertexAttribPointerARB glVertexAttribPointer
+#define glGenVertexArrays glGenVertexArraysAPPLE
+#define glBindVertexArray glBindVertexArrayAPPLE
+#endif
 
 func void milton_gl_backend_draw(MiltonState* milton_state)
 {
@@ -187,4 +198,5 @@ func void milton_gl_backend_init(MiltonState* milton_state)
 #endif
     }
 }
+
 
