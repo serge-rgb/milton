@@ -56,6 +56,21 @@ void win32_log(char *format, ...)
     va_end( args );
 }
 
+func void milton_fatal(char* message)
+{
+    milton_log("*** [FATAL] ***: \n\t");
+    puts(message);
+    exit(EXIT_FAILURE);
+}
+
+// TODO: Show a message box, and then die
+func void milton_die_gracefully(char* message)
+{
+    milton_log("*** [FATAL] ***: \n\t");
+    puts(message);
+    exit(EXIT_FAILURE);
+}
+
 void platform_load_gl_func_pointers()
 {
     GLenum glew_err = glewInit();
@@ -66,6 +81,26 @@ void platform_load_gl_func_pointers()
                    glewGetErrorString(glew_err));
         exit(EXIT_FAILURE);
     }
+
+    if (GLEW_VERSION_1_4)
+    {
+        if (glewIsSupported("GL_ARB_shader_objects "
+                            "GL_ARB_vertex_program "
+                            "GL_ARB_fragment_program "
+                            "GL_ARB_vertex_buffer_object "))
+        {
+            milton_log("[DEBUG] GL capability found.\n");
+        }
+        else
+        {
+            milton_die_gracefully("One or more OpenGL extensions are not supported.\n");
+        }
+    }
+    else
+    {
+        milton_die_gracefully("OpenGL 1.4 not supported.\n");
+    }
+    // Load extensions
 }
 
 #include "win32_wacom_defines.h"

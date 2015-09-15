@@ -1,7 +1,13 @@
 // gl_helpers.h
-// (c) Copyright 2015 Sergio Gonzalez
+//  Sergio Gonzalez
 //
-// Released under the MIT license. See LICENSE.txt
+// (2015-09-15) - Updated to depend on GL_ARB_shader_objects,
+//  ARB_vertex_program, and ARB_fragment_program to increase compatibility
+//
+//
+// This software is in the public domain. Where that dedication is not
+// recognized, you are granted a perpetual, irrevocable license to copy
+// and modify this file as you see fit.
 
 #pragma once
 
@@ -16,6 +22,68 @@ void gl_log(char* str)
 #endif
 }
 
+void gl_query_error(const char* expr, const char* file, int line);  // Defined below
+
+static GLuint gl_compile_shader(const char* src, GLuint type)
+{
+    GLuint obj = glCreateShaderObjectARB(type);
+    GLCHK ( glShaderSourceARB(obj, 1, &src, NULL) );
+    GLCHK ( glCompileShaderARB(obj) );
+    // ERROR CHECKING
+    int res = 0;
+    GLCHK ( glGetObjectParameterivARB(obj, GL_OBJECT_COMPILE_STATUS_ARB, &res) );
+    if (!res)
+    {
+        GLint length;
+        // GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
+        GLCHK ( glGetObjectParameterivARB(obj, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length) );
+        char* log = (char*)malloc((size_t)length);
+        GLsizei written_len;
+        // GLCHK ( glGetShaderInfoLog(obj, length, &written_len, log) );
+        GLCHK ( glGetInfoLogARB(obj, length, &written_len, log) );
+        gl_log("Shader compilation failed. \n    ---- Info log:\n");
+        gl_log(log);
+        free(log);
+        assert(!"Shader compilation error");
+    }
+    return obj;
+}
+
+static void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
+{
+    //assert(glIsProgramARB(obj));
+    for (int i = 0; i < num_shaders; ++i)
+    {
+        // assert(glIsShader(shaders[i]));
+        // TODO: Is there an equivalent to glIsShader?
+
+        // GLCHK ( glAttachShader(obj, shaders[i]) );
+        GLCHK ( glAttachObjectARB(obj, shaders[i]) );
+
+    }
+    GLCHK ( glLinkProgramARB(obj) );
+
+    // ERROR CHECKING
+    int res = 0;
+    //GLCHK ( glGetProgramiv(obj, GL_LINK_STATUS, &res) );
+    GLCHK ( glGetObjectParameterivARB(obj, GL_OBJECT_LINK_STATUS_ARB, &res) );
+    if (!res)
+    {
+        gl_log("ERROR: program did not link.\n");
+        GLint len;
+        // glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &len);
+        glGetObjectParameterivARB(obj, GL_OBJECT_INFO_LOG_LENGTH_ARB, &len);
+        GLsizei written_len;
+        char* log = (char*)malloc((size_t)len);
+        //glGetProgramInfoLog(obj, (GLsizei)len, &written_len, log);
+        glGetInfoLogARB(obj, (GLsizei)len, &written_len, log);
+        gl_log(log);
+        free(log);
+        assert(!"program linking error");
+    }
+    GLCHK ( glValidateProgramARB(obj) );
+}
+
 void gl_query_error(const char* expr, const char* file, int line)
 {
     GLenum err = glGetError();
@@ -25,21 +93,31 @@ void gl_query_error(const char* expr, const char* file, int line)
         char buffer[256];
         switch(err)
         {
+#ifdef GL_INVALID_ENUM
         case GL_INVALID_ENUM:
             str = "GL_INVALID_ENUM";
             break;
+#endif
+#ifdef GL_INVALID_VALUE
         case GL_INVALID_VALUE:
             str = "GL_INVALID_VALUE";
             break;
+#endif
+#ifdef GL_INVALID_OPERATION
         case GL_INVALID_OPERATION:
             str = "GL_INVALID_OPERATION";
             break;
+#endif
+#ifdef GL_INVALID_FRAMEBUFFER_OPERATION
         case GL_INVALID_FRAMEBUFFER_OPERATION:
             str = "GL_INVALID_FRAMEBUFFER_OPERATION";
             break;
+#endif
+#ifdef GL_OUT_OF_MEMORY
         case GL_OUT_OF_MEMORY:
             str = "GL_OUT_OF_MEMORY";
             break;
+#endif
 #ifdef GL_STACK_OVERFLOW
         case GL_STACK_OVERFLOW:
             str = "GL_STACK_OVERFLOW";
@@ -52,6 +130,7 @@ void gl_query_error(const char* expr, const char* file, int line)
 #endif
         default:
             str = "SOME GL ERROR";
+            break;
         }
         snprintf(buffer, 256, "%s in: %s:%d\n", str, file, line);
         gl_log(buffer);
@@ -60,61 +139,11 @@ void gl_query_error(const char* expr, const char* file, int line)
     }
 }
 
-static GLuint gl_compile_shader(const char* src, GLuint type)
-{
-    GLuint obj = glCreateShader(type);
-    GLCHK ( glShaderSource(obj, 1, &src, NULL) );
-    GLCHK ( glCompileShader(obj) );
-    // ERROR CHECKING
-    int res = 0;
-    GLCHK ( glGetShaderiv(obj, GL_COMPILE_STATUS, &res) );
-    if (!res)
-    {
-        GLint length;
-        GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
-        char* log = (char*)malloc((size_t)length);
-        GLsizei written_len;
-        GLCHK ( glGetShaderInfoLog(obj, length, &written_len, log) );
-        gl_log("Shader compilation failed. \n    ---- Info log:\n");
-        gl_log(log);
-        free(log);
-        assert(!"Shader compilation error");
-    }
-    return obj;
-}
-
-static void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
-{
-    assert(glIsProgram(obj));
-    for (int i = 0; i < num_shaders; ++i)
-    {
-        assert(glIsShader(shaders[i]));
-        GLCHK ( glAttachShader(obj, shaders[i]) );
-    }
-    GLCHK ( glLinkProgram(obj) );
-
-    // ERROR CHECKING
-    int res = 0;
-    GLCHK ( glGetProgramiv(obj, GL_LINK_STATUS, &res) );
-    if (!res)
-    {
-        gl_log("ERROR: program did not link.\n");
-        GLint len;
-        glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &len);
-        GLsizei written_len;
-        char* log = (char*)malloc((size_t)len);
-        glGetProgramInfoLog(obj, (GLsizei)len, &written_len, log);
-        gl_log(log);
-        free(log);
-        assert(!"program linking error");
-    }
-    GLCHK ( glValidateProgram(obj) );
-}
-
 #ifdef _WIN32
+// This is not a very flexible function. Modify to your needs:
 // Will setup an OpenGL 3.3 core profile context.
 // Loads functions with GLEW
-static int win32_setup_context(HWND window, HGLRC* context)
+static int sgl_win32_setup_context(HWND window, HGLRC* context)
 {
     int format_index = 0;
 

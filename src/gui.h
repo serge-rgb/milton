@@ -357,10 +357,6 @@ func void gui_init(Arena* root_arena, MiltonGui* gui)
         {
             cur_button->next = arena_alloc_elem(root_arena, ColorButton);
         }
-		else
-		{
-			cur_button->next = NULL;
-		}
         cur_button = cur_button->next;
     }
 }

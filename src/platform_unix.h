@@ -58,8 +58,22 @@
 
 #define platform_deallocate(pointer) unix_deallocate((pointer)); {(pointer) = NULL;}
 
-func void milton_fatal(char* message);
 #define milton_log printf
+
+func void milton_fatal(char* message)
+{
+    milton_log("*** [FATAL] ***: \n\t");
+    puts(message);
+    exit(EXIT_FAILURE);
+}
+
+// TODO: Show a message box, and then die
+func void milton_die_gracefully(char* message)
+{
+    milton_log("*** [FATAL] ***: \n\t");
+    puts(message);
+    exit(EXIT_FAILURE);
+}
 
 #ifdef __linux__
 #define platform_load_gl_func_pointers()
