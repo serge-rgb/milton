@@ -59,7 +59,7 @@ func void milton_die_gracefully(char* message);
 #include "platform_unix.h"
 #endif
 
-#define MILTON_USE_VAO          1
+#define MILTON_USE_VAO          0
 #define RENDER_QUEUE_SIZE       (1 << 13)
 #define STROKE_MAX_POINTS       2048
 #define MAX_BRUSH_SIZE          80
@@ -228,8 +228,14 @@ func void milton_gl_update_brush_hover(MiltonGLState* gl, CanvasView* view, i32 
     f32 radiusf = (f32)radius / (f32)view->screen_size.w;
     glUseProgramObjectARB(gl->quad_program);
     GLint loc_radius_sq = glGetUniformLocationARB(gl->quad_program, "radiusf");
-    assert ( loc_radius_sq >= 0 );
-    glUniform1fARB(loc_radius_sq, radiusf);
+    if ( loc_radius_sq >= 0 );
+    {
+        glUniform1fARB(loc_radius_sq, radiusf);
+    }
+    else
+    {
+        milton_log("[ERROR] Could not set brush overlay in GL\n");
+    }
 }
 
 func i32 milton_get_brush_size(MiltonState* milton_state)
