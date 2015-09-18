@@ -30,11 +30,11 @@ int main()
                 "Type", "i64");
 
 
-    // ==== StrokeDeque ====
+    // ==== StrokeCord ====
     {
-        meta_clear_file("StrokeDeque.generated.h");
-        meta_expand("StrokeDeque.generated.h",
-                    "deque.template.h",
+        meta_clear_file("StrokeCord.generated.h");
+        meta_expand("StrokeCord.generated.h",
+                    "cord.template.h",
                     1,
                     "T", "Stroke");
     }

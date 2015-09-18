@@ -36,8 +36,8 @@ typedef struct Stroke_s
     i32             num_points;
 } Stroke;
 
-// From deque template
-#include "StrokeDeque.generated.h"
+// From cord template
+#include "StrokeCord.generated.h"
 
 
 typedef struct CanvasView_s
@@ -102,7 +102,7 @@ func v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 func b32* filter_strokes_to_rect(Arena* arena,
-                                 StrokeDeque* strokes,
+                                 StrokeCord* strokes,
                                  const Rect rect)
 {
     i32 num_strokes = strokes->count;
@@ -113,7 +113,7 @@ func b32* filter_strokes_to_rect(Arena* arena,
     }
     for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
     {
-        Stroke* stroke = StrokeDeque_get(strokes, stroke_i);
+        Stroke* stroke = StrokeCord_get(strokes, stroke_i);
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
         VALIDATE_RECT(stroke_rect);
         if (stroke->num_points == 1)

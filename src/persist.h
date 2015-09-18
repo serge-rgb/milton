@@ -65,8 +65,8 @@ func void milton_load(MiltonState* milton_state)
 
         for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
         {
-            StrokeDeque_push(milton_state->strokes, (Stroke) { 0 });
-            Stroke* stroke = StrokeDeque_get(milton_state->strokes,
+            StrokeCord_push(milton_state->strokes, (Stroke) { 0 });
+            Stroke* stroke = StrokeCord_get(milton_state->strokes,
                                              milton_state->strokes->count - 1);
             fread(&stroke->brush, sizeof(Brush), 1, fd);
             fread(&stroke->num_points, sizeof(i32), 1, fd);
@@ -94,7 +94,7 @@ close:
 func void milton_save(MiltonState* milton_state)
 {
     i32 num_strokes = milton_state->strokes->count;
-    StrokeDeque* strokes = milton_state->strokes;
+    StrokeCord* strokes = milton_state->strokes;
     FILE* fd = fopen("MiltonPersist.mlt", "wb");
 
     if (!fd)
@@ -117,7 +117,7 @@ func void milton_save(MiltonState* milton_state)
 
     for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
     {
-        Stroke* stroke = StrokeDeque_get(strokes, stroke_i);
+        Stroke* stroke = StrokeCord_get(strokes, stroke_i);
         assert(stroke->num_points > 0);
         fwrite(&stroke->brush, sizeof(Brush), 1, fd);
         fwrite(&stroke->num_points, sizeof(i32), 1, fd);

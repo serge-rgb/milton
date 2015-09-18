@@ -156,7 +156,7 @@ typedef struct MiltonState_s
 
     Stroke  working_stroke;
 
-    StrokeDeque* strokes;
+    StrokeCord* strokes;
 
     i32     num_redos;
 
@@ -398,20 +398,20 @@ func void milton_math_tests()
     assert(intersection.x >= 0.99999 && intersection.x <= 1.00001f);
 }
 
-func void milton_deque_tests(Arena* arena)
+func void milton_cord_tests(Arena* arena)
 {
-    StrokeDeque* deque = StrokeDeque_make(arena, 2);
-    if (deque)
+    StrokeCord* cord = StrokeCord_make(arena, 2);
+    if (cord)
     {
         for (int i = 0; i < 11; ++i)
         {
             Stroke test = {0};
             test.num_points = i;
-            StrokeDeque_push(deque, test);
+            StrokeCord_push(cord, test);
         }
         for (int i = 0; i < 11; ++i)
         {
-            Stroke test = *StrokeDeque_get(deque, i);
+            Stroke test = *StrokeCord_get(cord, i);
             assert(test.num_points == i);
         }
     }
@@ -446,13 +446,13 @@ func void milton_init(MiltonState* milton_state)
     milton_startup_tests();
     milton_blend_tests();
     milton_math_tests();
-    milton_deque_tests(milton_state->root_arena);
+    milton_cord_tests(milton_state->root_arena);
 #endif
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->bytes_per_pixel  = 4;
 
-    milton_state->strokes = StrokeDeque_make(milton_state->root_arena, 1024);
+    milton_state->strokes = StrokeCord_make(milton_state->root_arena, 1024);
 
     milton_state->working_stroke.points     = arena_alloc_array(milton_state->root_arena,
                                                                 STROKE_MAX_POINTS, v2i);
@@ -860,7 +860,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
         // TODO: Reclaim memory?
         milton_state->strokes->count = 0;
-        StrokeDeque_get(milton_state->strokes, 0)->num_points = 0;
+        StrokeCord_get(milton_state->strokes, 0)->num_points = 0;
         milton_state->working_stroke.num_points = 0;
         milton_update_brushes(milton_state);
     }
@@ -942,7 +942,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
                        milton_state->working_stroke.metadata,
                        milton_state->working_stroke.num_points * sizeof(PointMetadata));
 
-                StrokeDeque_push(milton_state->strokes, new_stroke);
+                StrokeCord_push(milton_state->strokes, new_stroke);
                 // Clear working_stroke
                 {
                     milton_state->working_stroke.num_points = 0;

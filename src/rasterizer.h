@@ -46,7 +46,7 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
     // ... now substitute the point data with an array of our own.
     //
     // TODO: To save memory, it would make sense to use a different data
-    // structure here.  A deque would have the advantages of a stretchy
+    // structure here.  A cord would have the advantages of a stretchy
     // array without asking too much from our humble arena.
     if (in_stroke->num_points > 0)
     {
@@ -226,7 +226,7 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 // Returns true if allocation succeeded, false if not.
 func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                           CanvasView* view,
-                                          StrokeDeque* strokes,
+                                          StrokeCord* strokes,
                                           b32* stroke_masks,
                                           Stroke* working_stroke,
                                           Rect canvas_block,
@@ -251,7 +251,7 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         }
         else
         {
-            unclipped_stroke = StrokeDeque_get(strokes, stroke_i);
+            unclipped_stroke = StrokeCord_get(strokes, stroke_i);
         }
         assert(unclipped_stroke);
         Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
@@ -302,7 +302,7 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 // returns false if allocation failed
 func b32 rasterize_canvas_block_slow(Arena* render_arena,
                                      CanvasView* view,
-                                     StrokeDeque* strokes,
+                                     StrokeCord* strokes,
                                      b32* stroke_masks,
                                      Stroke* working_stroke,
                                      u32* pixels,
@@ -601,7 +601,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 
 func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                      CanvasView* view,
-                                     StrokeDeque* strokes,
+                                     StrokeCord* strokes,
                                      b32* stroke_masks,
                                      Stroke* working_stroke,
                                      u32* pixels,
@@ -1592,7 +1592,7 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
         if (render_flags & MiltonRenderFlags_FINISHED_STROKE)
         {
             i32 index = milton_state->strokes->count - 1;
-            Rect canvas_rect = bounding_box_for_last_n_points(StrokeDeque_get(milton_state->strokes,
+            Rect canvas_rect = bounding_box_for_last_n_points(StrokeCord_get(milton_state->strokes,
                                                                               index),
                                                               4);
             raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);

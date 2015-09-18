@@ -2,6 +2,10 @@
 
 if %errorlevel% neq 0 goto fail
 
+
+REM ---- Delete old generated files.
+del src\*.generated.h
+
 pushd src
 cl template_expand.c
 template_expand.exe
