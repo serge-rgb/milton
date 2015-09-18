@@ -228,7 +228,7 @@ func void milton_gl_update_brush_hover(MiltonGLState* gl, CanvasView* view, i32 
     f32 radiusf = (f32)radius / (f32)view->screen_size.w;
     glUseProgramObjectARB(gl->quad_program);
     GLint loc_radius_sq = glGetUniformLocationARB(gl->quad_program, "radiusf");
-    if ( loc_radius_sq >= 0 );
+    if ( loc_radius_sq >= 0 )
     {
         glUniform1fARB(loc_radius_sq, radiusf);
     }
