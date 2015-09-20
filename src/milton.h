@@ -171,7 +171,7 @@ typedef struct MiltonState_s
     Arena*      transient_arena;    // Gets reset after every call to milton_update().
     Arena*      render_worker_arenas;
 
-    size_t      worker_memory_size;
+    i32         worker_memory_size;
     b32         worker_needs_memory;
 
     b32         cpu_has_sse2;
@@ -417,10 +417,31 @@ func void milton_cord_tests(Arena* arena)
     }
 
 }
+
+func void milton_dynmem_tests()
+{
+    int* ar1 = dyn_alloc(int, 10);
+    int* ar0 = dyn_alloc(int, 1);
+
+    dyn_free(ar1);
+    dyn_free(ar0);
+
+    int* ar2 = dyn_alloc(int, 9);
+    dyn_free(ar2);
+}
+
 #endif
 
 func void milton_init(MiltonState* milton_state)
 {
+    // Initialize dynamic memory stuff.
+    {
+        MILTON_GLOBAL_dyn_freelist_sentinel = arena_alloc_elem(milton_state->root_arena,
+                                                               AllocNode);
+        MILTON_GLOBAL_dyn_freelist_sentinel->next = MILTON_GLOBAL_dyn_freelist_sentinel;
+        MILTON_GLOBAL_dyn_freelist_sentinel->prev = MILTON_GLOBAL_dyn_freelist_sentinel;
+        MILTON_GLOBAL_dyn_root_arena = milton_state->root_arena;
+    }
     milton_state->cpu_has_sse2 = SDL_HasSSE2();
 
     // Initialize render queue
@@ -447,7 +468,9 @@ func void milton_init(MiltonState* milton_state)
     milton_blend_tests();
     milton_math_tests();
     milton_cord_tests(milton_state->root_arena);
+    milton_dynmem_tests();
 #endif
+
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->bytes_per_pixel  = 4;
@@ -529,7 +552,7 @@ func void milton_init(MiltonState* milton_state)
             *params = (WorkerParams) { milton_state, i };
         }
         assert (milton_state->render_worker_arenas[i].ptr == NULL);
-        void* worker_memory = platform_allocate(milton_state->worker_memory_size);
+        u8* worker_memory = dyn_alloc(u8, milton_state->worker_memory_size);
         if (!worker_memory)
         {
             milton_die_gracefully("Platform allocation failed");
@@ -739,16 +762,16 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         size_t debug_prev_memory_value = milton_state->worker_memory_size;
         milton_state->worker_memory_size *= 2;
-        size_t renderer_memory = milton_state->worker_memory_size;
+        i32 needed_size = milton_state->worker_memory_size;
 
         for (int i = 0; i < milton_state->num_render_workers; ++i)
         {
             if (milton_state->render_worker_arenas[i].ptr != NULL)
             {
-                platform_deallocate(milton_state->render_worker_arenas[i].ptr);
+                dyn_free(milton_state->render_worker_arenas[i].ptr);
             }
-            milton_state->render_worker_arenas[i] = arena_init(platform_allocate(renderer_memory),
-                                                               renderer_memory);
+            u8* new_memory = dyn_alloc(u8, needed_size);
+            milton_state->render_worker_arenas[i] = arena_init(new_memory, needed_size);
             if (milton_state->render_worker_arenas[i].ptr == NULL)
             {
                 milton_die_gracefully("Failed to realloc worker arena\n");

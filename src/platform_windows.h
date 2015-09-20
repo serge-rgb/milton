@@ -89,7 +89,7 @@ void platform_load_gl_func_pointers()
                             "GL_ARB_fragment_program "
                             "GL_ARB_vertex_buffer_object "))
         {
-            milton_log("[DEBUG] GL capability found.\n");
+            milton_log("[DEBUG] GL OK.\n");
         }
         else
         {
