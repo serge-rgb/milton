@@ -760,7 +760,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     b32 do_fast_draw = false;
     if (milton_state->worker_needs_memory)
     {
-        size_t debug_prev_memory_value = milton_state->worker_memory_size;
+        i32 prev_memory_value = milton_state->worker_memory_size;
         milton_state->worker_memory_size *= 2;
         i32 needed_size = milton_state->worker_memory_size;
 
@@ -778,8 +778,8 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
             }
         }
 
-        milton_log("[DEBUG] Assigning more memory per worker. From %li to %li\n",
-                   debug_prev_memory_value,
+        milton_log("[DEBUG] Assigning more memory per worker. From %d to %d\n",
+                   prev_memory_value,
                    milton_state->worker_memory_size);
 
         milton_state->worker_needs_memory = false;
