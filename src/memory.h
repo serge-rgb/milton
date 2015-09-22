@@ -86,7 +86,7 @@ static Arena* MILTON_GLOBAL_dyn_root_arena;
 #define     dyn_free(ptr)       dyn_free_typeless(ptr), ptr = NULL
 
 
-void* dyn_alloc_typeless(i32 size)
+func void* dyn_alloc_typeless(i32 size)
 {
     void* allocated = NULL;
     AllocNode* node = MILTON_GLOBAL_dyn_freelist_sentinel->next;
@@ -129,7 +129,7 @@ void* dyn_alloc_typeless(i32 size)
     return allocated;
 }
 
-void dyn_free_typeless(void* dyn_ptr)
+func void dyn_free_typeless(void* dyn_ptr)
 {
     // Insert at start of freelist.
     AllocNode* node = (AllocNode*)((u8*)dyn_ptr - sizeof(AllocNode));

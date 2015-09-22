@@ -592,7 +592,7 @@ func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen
         do_realloc = true;
     }
 
-    size_t buffer_size =
+    i32 buffer_size =
             milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
 
     if (do_realloc)
@@ -600,9 +600,9 @@ func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen
         void* raster_buffer = (void*)milton_state->raster_buffer;
         if (raster_buffer)
         {
-            free(raster_buffer);
+            dyn_free(raster_buffer);
         }
-        milton_state->raster_buffer = (u8*)malloc( buffer_size );
+        milton_state->raster_buffer = dyn_alloc(u8, buffer_size);
 
         // TODO: handle this failure gracefully.
         assert(milton_state->raster_buffer);
