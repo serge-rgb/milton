@@ -48,8 +48,7 @@ void win32_log(char *format, ...)
 
     num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
 
-    if ( num_bytes_written > 0 )
-    {
+    if ( num_bytes_written > 0 ) {
 	OutputDebugStringA( message );
     }
 
@@ -75,29 +74,22 @@ void platform_load_gl_func_pointers()
 {
     GLenum glew_err = glewInit();
 
-    if (glew_err != GLEW_OK)
-    {
+    if (glew_err != GLEW_OK) {
         milton_log("glewInit failed with error: %s\nExiting.\n",
                    glewGetErrorString(glew_err));
         exit(EXIT_FAILURE);
     }
 
-    if (GLEW_VERSION_1_4)
-    {
-        if (glewIsSupported("GL_ARB_shader_objects "
-                            "GL_ARB_vertex_program "
-                            "GL_ARB_fragment_program "
-                            "GL_ARB_vertex_buffer_object "))
-        {
+    if (GLEW_VERSION_1_4) {
+        if ( glewIsSupported("GL_ARB_shader_objects "
+                             "GL_ARB_vertex_program "
+                             "GL_ARB_fragment_program "
+                             "GL_ARB_vertex_buffer_object ") ) {
             milton_log("[DEBUG] GL OK.\n");
-        }
-        else
-        {
+        } else {
             milton_die_gracefully("One or more OpenGL extensions are not supported.\n");
         }
-    }
-    else
-    {
+    } else {
         milton_die_gracefully("OpenGL 1.4 not supported.\n");
     }
     // Load extensions
@@ -107,8 +99,7 @@ void platform_load_gl_func_pointers()
 
 #define WIN_MAX_WACOM_PACKETS 1024
 
-struct TabletState_s
-{
+struct TabletState_s {
     HWND window;
     BITMAPINFO bitmap_info;
 
@@ -122,20 +113,17 @@ struct TabletState_s
 
 #include "win32_wacom.h"
 
-void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
-{
+void platform_wacom_init(TabletState* tablet_state, SDL_Window* window) {
     // Ask SDL for windows events so we can receive packets
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
     SDL_SysWMinfo wminfo;
     SDL_bool wminfo_ok = SDL_GetWindowWMInfo(window, &wminfo);
-    if (!wminfo_ok)
-    {
+    if (!wminfo_ok) {
         milton_fatal("Could not get WM info from SDL");
     }
     tablet_state->window = wminfo.info.win.window;
 
-    if (!win32_wacom_load_wintab(tablet_state))
-    {
+    if (!win32_wacom_load_wintab(tablet_state)) {
         OutputDebugStringA("No wintab.\n");
     }
 
@@ -149,50 +137,45 @@ func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL
 {
     NativeEventResult caught_event = Caught_NONE;
     i32 pressure_range = tablet_state->wacom_prs_max;
-    if (event.type == SDL_SYSWMEVENT)
-    {
-        if (event.msg)
-        {
+    if ( event.type == SDL_SYSWMEVENT ) {
+        if ( event.msg ) {
             SDL_SysWMmsg msg = *event.msg;
-            if (msg.subsystem == SDL_SYSWM_WINDOWS)
-            {
+            if (msg.subsystem == SDL_SYSWM_WINDOWS) {
                 HWND window   = msg.msg.win.hwnd;
                 UINT message  = msg.msg.win.msg;
                 WPARAM wparam = msg.msg.win.wParam;
                 LPARAM lparam = msg.msg.win.lParam;
                 switch (message)
                 {
-                case WT_PACKET:
+                case WT_PACKET: {
+                    PACKET pkt = { 0 };
+                    HCTX ctx = (HCTX)lparam;
+                    if (ctx == tablet_state->wacom_ctx &&
+                        tablet_state->wacom.WTPacket(ctx, (UINT)wparam, &pkt))
                     {
-                        PACKET pkt = { 0 };
-                        HCTX ctx = (HCTX)lparam;
-                        if (ctx == tablet_state->wacom_ctx &&
-                            tablet_state->wacom.WTPacket(ctx, (UINT)wparam, &pkt))
+                        POINT screen_point =
                         {
-                            POINT screen_point =
-                            {
-                                .x = pkt.pkX,
-                                .y = pkt.pkY,
-                            };
-                            POINT client_point = screen_point;
-                            ScreenToClient(tablet_state->window, &client_point);
+                            .x = pkt.pkX,
+                            .y = pkt.pkY,
+                        };
+                        POINT client_point = screen_point;
+                        ScreenToClient(tablet_state->window, &client_point);
 
 
-                            if (client_point.x >= 0 && client_point.x < width &&
-                                client_point.y >= 0 && client_point.y < height)
-                            {
+                        if (client_point.x >= 0 && client_point.x < width &&
+                            client_point.y >= 0 && client_point.y < height)
+                        {
 #if 0
-                                milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
-                                            pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
+                            milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
+                                        pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
 #endif
-                                *out_pressure = (f32)pkt.pkNormalPressure / (f32)pressure_range;
-                                *out_point = (v2i){client_point.x, client_point.y};
-                                caught_event |= Caught_PRESSURE;
-                                caught_event |= Caught_POINT;
-                            }
+                            *out_pressure = (f32)pkt.pkNormalPressure / (f32)pressure_range;
+                            *out_point = (v2i){client_point.x, client_point.y};
+                            caught_event |= Caught_PRESSURE;
+                            caught_event |= Caught_POINT;
                         }
-                        break;
                     }
+                } break;
                 }
             }
         }

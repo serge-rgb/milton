@@ -17,8 +17,7 @@
 
 
 
-typedef enum
-{
+typedef enum {
     Caught_NONE = 0,
 
     Caught_PRESSURE = (1 << 0),
@@ -34,8 +33,7 @@ typedef enum
 #include "milton.h"
 
 
-typedef struct PlatformInput_s
-{
+typedef struct PlatformInput_s {
     b32 is_ctrl_down;
     b32 is_space_down;
     b32 is_pointer_down;  // Left click or wacom input
@@ -45,8 +43,7 @@ typedef struct PlatformInput_s
 } PlatformInput;
 
 // Called periodically to force updates that don't depend on user input.
-func u32 timer_callback(u32 interval, void *param)
-{
+func u32 timer_callback(u32 interval, void *param) {
     SDL_Event event;
     SDL_UserEvent userevent;
 
@@ -62,8 +59,7 @@ func u32 timer_callback(u32 interval, void *param)
     return(interval);
 }
 
-int milton_main()
-{
+int milton_main() {
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
     SDL_Init(SDL_INIT_VIDEO);
@@ -81,15 +77,13 @@ int milton_main()
 
     //SDL_MaximizeWindow(window);
 
-    if (!window)
-    {
+    if (!window) {
         milton_log("[ERROR] -- Exiting. SDL could not create window\n");
         exit(EXIT_FAILURE);
     }
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
-    if (!gl_context)
-    {
+    if (!gl_context) {
         milton_fatal("Could not create OpenGL context\n");
     }
 
@@ -107,16 +101,14 @@ int milton_main()
 
     void* big_chunk_of_memory = platform_allocate(total_memory_size);
 
-    if (!big_chunk_of_memory)
-    {
+    if (!big_chunk_of_memory) {
         milton_fatal("Could allocate virtual memory for Milton.");
     }
 
     Arena root_arena      = arena_init(big_chunk_of_memory, total_memory_size);
     Arena transient_arena = arena_spawn(&root_arena, frame_heap_in_MB);
 
-    MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
-    {
+    MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState); {
         milton_state->root_arena = &root_arena;
         milton_state->transient_arena = &transient_arena;
 
@@ -139,8 +131,7 @@ int milton_main()
     // Every 100ms, call this callback to send us an event so we don't wait for user input.
     SDL_AddTimer(100, timer_callback, NULL);
 
-    while(!should_quit)
-    {
+    while(!should_quit) {
         // ==== Handle events
 
         i32 num_pressure_results = 0;
@@ -148,115 +139,81 @@ int milton_main()
 
         SDL_Event event;
         b32 got_tablet_point_input = false;
-        while (SDL_PollEvent(&event))
-        {
+        while ( SDL_PollEvent(&event) ) {
             SDL_Keymod keymod = SDL_GetModState();
             platform_input.is_ctrl_down = (keymod & KMOD_LCTRL) | (keymod & KMOD_RCTRL);
 
-            switch (event.type)
-            {
+            switch ( event.type ) {
             case SDL_QUIT:
-                {
-                    should_quit = true;
-                    break;
+                should_quit = true;
+                break;
+            case SDL_SYSWMEVENT: {
+                f32 pressure = NO_PRESSURE_INFO;
+                v2i point = { 0 };
+                // TODO: get point from event poll
+                NativeEventResult caught = platform_native_event_poll(tablet_state,
+                                                                      event.syswm,
+                                                                      width, height,
+                                                                      &point,
+                                                                      &pressure);
+                if ( !platform_input.is_pointer_down && (caught & Caught_POINT) && pressure > 0 ) {
+                    platform_input.is_pointer_down = true;
                 }
-            case SDL_SYSWMEVENT:
-                {
-                    f32 pressure = NO_PRESSURE_INFO;
-                    v2i point = { 0 };
-                    // TODO: get point from event poll
-                    NativeEventResult caught = platform_native_event_poll(tablet_state,
-                                                                          event.syswm,
-                                                                          width, height,
-                                                                          &point,
-                                                                          &pressure);
-                    if (!platform_input.is_pointer_down &&
-                        (caught & Caught_POINT) &&
-                        pressure > 0)
-                    {
-                        platform_input.is_pointer_down = true;
-                    }
-                    if (platform_input.is_pointer_down &&
-                        (caught & Caught_PRESSURE))
-                    {
-                        assert (pressure != NO_PRESSURE_INFO);
-                        milton_input.pressures[num_pressure_results++] = pressure;
-                    }
-                    if (platform_input.is_pointer_down &&
-                        (caught & Caught_POINT))
-                    {
-                        milton_input.points[num_point_results++] = point;
-                        got_tablet_point_input = true;
-                    }
-                    break;
+                if (platform_input.is_pointer_down && (caught & Caught_PRESSURE)) {
+                    assert (pressure != NO_PRESSURE_INFO);
+                    milton_input.pressures[num_pressure_results++] = pressure;
                 }
+                if ( platform_input.is_pointer_down && (caught & Caught_POINT) ) {
+                    milton_input.points[num_point_results++] = point;
+                    got_tablet_point_input = true;
+                }
+            } break;
             case SDL_MOUSEBUTTONDOWN:
-                {
-                    if (event.button.windowID != window_id)
-                    {
-                        break;
-                    }
-                    if (event.button.button == SDL_BUTTON_LEFT)
-                    {
-                        platform_input.is_pointer_down = true;
-                        if (platform_input.is_panning)
-                        {
-                            platform_input.pan_start = (v2i) { event.button.x, event.button.y };
-                        }
-
-                    }
+                if (event.button.windowID != window_id) {
                     break;
                 }
+                if ( event.button.button == SDL_BUTTON_LEFT ) {
+                    platform_input.is_pointer_down = true;
+                    if ( platform_input.is_panning ) {
+                        platform_input.pan_start = (v2i) { event.button.x, event.button.y };
+                    }
+                }
+                break;
             case SDL_MOUSEBUTTONUP:
-                {
-                    if (event.button.windowID != window_id)
-                    {
-                        break;
-                    }
-                    if (event.button.button == SDL_BUTTON_LEFT)
-                    {
-                        // Add final point
-                        if (!platform_input.is_panning && platform_input.is_pointer_down)
-                        {
-                            milton_input.flags |= MiltonInputFlags_END_STROKE;
-                            input_point = (v2i){ event.button.x, event.button.y };
-                            milton_input.points[num_point_results++] = input_point;
-                        }
-                        else if (platform_input.is_panning)
-                        {
-                            if (!platform_input.is_space_down)
-                            {
-                                platform_input.is_panning = false;
-                            }
-                        }
-                        platform_input.is_pointer_down = false;
-                    }
+                if (event.button.windowID != window_id) {
                     break;
                 }
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    // Add final point
+                    if (!platform_input.is_panning && platform_input.is_pointer_down) {
+                        milton_input.flags |= MiltonInputFlags_END_STROKE;
+                        input_point = (v2i){ event.button.x, event.button.y };
+                        milton_input.points[num_point_results++] = input_point;
+                    } else if (platform_input.is_panning) {
+                        if (!platform_input.is_space_down) {
+                            platform_input.is_panning = false;
+                        }
+                    }
+                    platform_input.is_pointer_down = false;
+                }
+                break;
             case SDL_MOUSEMOTION:
                 {
-                    if (event.motion.windowID != window_id)
-                    {
+                    if (event.motion.windowID != window_id) {
                         break;
                     }
 
                     input_point = (v2i){ event.motion.x, event.motion.y };
-                    if (platform_input.is_pointer_down)
-                    {
-                        if (!platform_input.is_panning && !got_tablet_point_input)
-                        {
+                    if (platform_input.is_pointer_down) {
+                        if ( !platform_input.is_panning && !got_tablet_point_input ) {
                             milton_input.points[num_point_results++] = input_point;
-                        }
-                        else if (platform_input.is_panning)
-                        {
+                        } else if ( platform_input.is_panning ) {
                             platform_input.pan_point = input_point;
 
                             milton_input.flags |= MiltonInputFlags_FAST_DRAW;
                             milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
                         }
-                    }
-                    else
-                    {
+                    } else {
                         milton_input.flags |= MiltonInputFlags_HOVERING;
                         milton_input.hover_point = input_point;
                     }
@@ -264,8 +221,7 @@ int milton_main()
                 }
             case SDL_MOUSEWHEEL:
                 {
-                    if (event.wheel.windowID != window_id)
-                    {
+                    if (event.wheel.windowID != window_id) {
                         break;
                     }
 
@@ -276,8 +232,7 @@ int milton_main()
                 }
             case SDL_KEYDOWN:
                 {
-                    if (event.wheel.windowID != window_id)
-                    {
+                    if ( event.wheel.windowID != window_id ) {
                         break;
                     }
 
@@ -285,18 +240,13 @@ int milton_main()
 
                     // Actions accepting key repeats.
                     {
-                        if (keycode == SDLK_LEFTBRACKET)
-                        {
+                        if ( keycode == SDLK_LEFTBRACKET ) {
                             milton_decrease_brush_size(milton_state);
-                        }
-                        else if (keycode == SDLK_RIGHTBRACKET)
-                        {
+                        } else if ( keycode == SDLK_RIGHTBRACKET ) {
                             milton_increase_brush_size(milton_state);
                         }
-                        if (platform_input.is_ctrl_down)
-                        {
-                            if (keycode == SDLK_z)
-                            {
+                        if ( platform_input.is_ctrl_down ) {
+                            if (keycode == SDLK_z) {
                                 milton_input.flags |= MiltonInputFlags_UNDO;
                             }
                             if (keycode == SDLK_y)
@@ -306,82 +256,50 @@ int milton_main()
                         }
                     }
 
-                    if (event.key.repeat)
-                    {
+                    if (event.key.repeat) {
                         break;
                     }
 
                     // Stop stroking when any key is hit
-                    {
-                        platform_input.is_pointer_down = false;
-                        milton_input.flags |= MiltonInputFlags_END_STROKE;
-                    }
+                    platform_input.is_pointer_down = false;
+                    milton_input.flags |= MiltonInputFlags_END_STROKE;
 
-                    if (keycode == SDLK_ESCAPE)
-                    {
+                    if (keycode == SDLK_ESCAPE) {
                         should_quit = true;
                     }
-                    if (keycode == SDLK_SPACE)
-                    {
+                    if (keycode == SDLK_SPACE) {
                         platform_input.is_space_down = true;
                         platform_input.is_panning = true;
                         // Stahp
                     }
-                    if (platform_input.is_ctrl_down)
-                    {
-                        if (keycode == SDLK_BACKSPACE)
-                        {
+                    if (platform_input.is_ctrl_down) {
+                        if (keycode == SDLK_BACKSPACE) {
                             milton_input.flags |= MiltonInputFlags_RESET;
                         }
-                    }
-                    else
-                    {
-                        if (keycode == SDLK_e)
-                        {
+                    } else {
+                        if (keycode == SDLK_e) {
                             milton_input.flags |= MiltonInputFlags_SET_MODE_ERASER;
-                        }
-                        else if (keycode == SDLK_b)
-                        {
+                        } else if (keycode == SDLK_b) {
                             milton_input.flags |= MiltonInputFlags_SET_MODE_BRUSH;
-                        }
-                        else if (keycode == SDLK_1)
-                        {
+                        } else if (keycode == SDLK_1) {
                             milton_set_pen_alpha(milton_state, 0.1f);
-                        }
-                        else if (keycode == SDLK_2)
-                        {
+                        } else if (keycode == SDLK_2) {
                             milton_set_pen_alpha(milton_state, 0.2f);
-                        }
-                        else if (keycode == SDLK_3)
-                        {
+                        } else if (keycode == SDLK_3) {
                             milton_set_pen_alpha(milton_state, 0.3f);
-                        }
-                        else if (keycode == SDLK_4)
-                        {
+                        } else if (keycode == SDLK_4) {
                             milton_set_pen_alpha(milton_state, 0.4f);
-                        }
-                        else if (keycode == SDLK_5)
-                        {
+                        } else if (keycode == SDLK_5) {
                             milton_set_pen_alpha(milton_state, 0.5f);
-                        }
-                        else if (keycode == SDLK_6)
-                        {
+                        } else if (keycode == SDLK_6) {
                             milton_set_pen_alpha(milton_state, 0.6f);
-                        }
-                        else if (keycode == SDLK_7)
-                        {
+                        } else if (keycode == SDLK_7) {
                             milton_set_pen_alpha(milton_state, 0.7f);
-                        }
-                        else if (keycode == SDLK_8)
-                        {
+                        } else if (keycode == SDLK_8) {
                             milton_set_pen_alpha(milton_state, 0.8f);
-                        }
-                        else if (keycode == SDLK_9)
-                        {
+                        } else if (keycode == SDLK_9) {
                             milton_set_pen_alpha(milton_state, 0.9f);
-                        }
-                        else if (keycode == SDLK_0)
-                        {
+                        } else if (keycode == SDLK_0) {
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
 #ifndef NDEBUG
@@ -394,69 +312,55 @@ int milton_main()
 
                     break;
                 }
-            case SDL_KEYUP:
-                {
-                    if (event.key.windowID != window_id)
-                    {
-                        break;
-                    }
-
-                    SDL_Keycode keycode = event.key.keysym.sym;
-
-                    if (keycode == SDLK_SPACE)
-                    {
-                        platform_input.is_space_down = false;
-                        if (!platform_input.is_pointer_down)
-                        {
-                            platform_input.is_panning = false;
-                        }
-                    }
+            case SDL_KEYUP: {
+                if (event.key.windowID != window_id) {
                     break;
                 }
-            case SDL_WINDOWEVENT:
+
+                SDL_Keycode keycode = event.key.keysym.sym;
+
+                if (keycode == SDLK_SPACE)
                 {
-                    if (window_id != event.window.windowID)
+                    platform_input.is_space_down = false;
+                    if (!platform_input.is_pointer_down)
                     {
-                        break;
-                    }
-                    switch (event.window.event)
-                    {
-                        // Just handle every event that changes the window size.
-                    case SDL_WINDOWEVENT_RESIZED:
-                    case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        {
-                            width = event.window.data1;
-                            height = event.window.data2;
-                            milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
-                            glViewport(0, 0, width, height);
-                            break;
-                        }
-                    case SDL_WINDOWEVENT_LEAVE:
-                        {
-                            if (event.window.windowID != window_id)
-                            {
-                                break;
-                            }
-                            if (platform_input.is_pointer_down)
-                            {
-                                platform_input.is_pointer_down = false;
-                                milton_input.flags |= MiltonInputFlags_END_STROKE;
-                            }
-                            break;
-                        }
-                        // --- A couple of events we might want to catch later...
-                    case SDL_WINDOWEVENT_ENTER:
-                        {
-                            break;
-                        }
-                    case SDL_WINDOWEVENT_FOCUS_GAINED:
-                        {
-                            break;
-                        }
-                    default:
-                        break;
+                        platform_input.is_panning = false;
                     }
                 }
+            } break;
+            case SDL_WINDOWEVENT: {
+                if (window_id != event.window.windowID)
+                {
+                    break;
+                }
+                switch (event.window.event)
+                {
+                    // Just handle every event that changes the window size.
+                case SDL_WINDOWEVENT_RESIZED:
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    width = event.window.data1;
+                    height = event.window.data2;
+                    milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
+                    glViewport(0, 0, width, height);
+                    break;
+                case SDL_WINDOWEVENT_LEAVE:
+                    if (event.window.windowID != window_id) {
+                        break;
+                    }
+                    if (platform_input.is_pointer_down) {
+                        platform_input.is_pointer_down = false;
+                        milton_input.flags |= MiltonInputFlags_END_STROKE;
+                    }
+                    break;
+                    // --- A couple of events we might want to catch later...
+                case SDL_WINDOWEVENT_ENTER:
+                    break;
+                case SDL_WINDOWEVENT_FOCUS_GAINED:
+                    break;
+                default:
+                    break;
+                }
+            } break;
             default:
                 break;
             }
@@ -497,11 +401,10 @@ int milton_main()
 
 
         v2i pan_delta = sub_v2i(platform_input.pan_point, platform_input.pan_start);
-        if (pan_delta.x != 0 ||
-            pan_delta.y != 0 ||
-            width != milton_state->view->screen_size.x ||
-            height != milton_state->view->screen_size.y)
-        {
+        if ( pan_delta.x != 0 ||
+             pan_delta.y != 0 ||
+             width != milton_state->view->screen_size.x ||
+             height != milton_state->view->screen_size.y ) {
             milton_resize(milton_state, pan_delta, (v2i){width, height});
         }
         platform_input.pan_start = platform_input.pan_point;

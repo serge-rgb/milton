@@ -13,8 +13,7 @@
 
 #define GLCHK(stmt) stmt; gl_query_error(#stmt, __FILE__, __LINE__)
 
-void gl_log(char* str)
-{
+void gl_log(char* str) {
 #ifdef _WIN32
     OutputDebugStringA(str);
 #else
@@ -34,8 +33,7 @@ void gl_query_error(const char* expr, const char* file, int line);  // Defined b
 #define glGetInfoLogARB glGetShaderInfoLog
 #endif
 
-static GLuint gl_compile_shader(const char* src, GLuint type)
-{
+static GLuint gl_compile_shader(const char* src, GLuint type) {
     GLuint obj = (GLuint)glCreateShaderObjectARB(type);
     GLCHK ( glShaderSourceARB(obj, 1, &src, NULL) );
     GLCHK ( glCompileShaderARB(obj) );
@@ -90,8 +88,7 @@ static void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
     int res = 0;
     //GLCHK ( glGetProgramiv(obj, GL_LINK_STATUS, &res) );
     GLCHK ( glGetObjectParameterivARB(obj, GL_OBJECT_LINK_STATUS_ARB, &res) );
-    if (!res)
-    {
+    if (!res) {
         gl_log("ERROR: program did not link.\n");
         GLint len;
         // glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &len);
@@ -119,11 +116,9 @@ void gl_query_error(const char* expr, const char* file, int line)
 {
     GLenum err = glGetError();
     const char* str = "";
-    if (err != GL_NO_ERROR)
-    {
+    if (err != GL_NO_ERROR) {
         char buffer[256];
-        switch(err)
-        {
+        switch(err) {
 #ifdef GL_INVALID_ENUM
         case GL_INVALID_ENUM:
             str = "GL_INVALID_ENUM";
@@ -200,34 +195,29 @@ static int sgl_win32_setup_context(HWND window, HGLRC* context)
     // make that the pixel format of the device context
     int succeeded = SetPixelFormat(GetDC(window), format_index, &pfd);
 
-    if (!succeeded)
-    {
+    if (!succeeded) {
         gl_log("Could not set pixel format\n");
         return 0;
     }
 
     HGLRC dummy_context = wglCreateContext(GetDC(window));
-    if (!dummy_context)
-    {
+    if (!dummy_context) {
         gl_log("Could not create GL context. Exiting");
         return 0;
     }
     wglMakeCurrent(GetDC(window), dummy_context);
-    if (!succeeded)
-    {
+    if (!succeeded) {
         gl_log("Could not set current GL context. Exiting");
         return 0;
     }
 
     GLenum glew_result = glewInit();
-    if (glew_result != GLEW_OK)
-    {
+    if (glew_result != GLEW_OK) {
         gl_log("Could not init glew.\n");
         return 0;
     }
 
-    const int pixel_attribs[] =
-    {
+    const int pixel_attribs[] = {
         WGL_ACCELERATION_ARB   , WGL_FULL_ACCELERATION_ARB           ,
         WGL_DRAW_TO_WINDOW_ARB , GL_TRUE           ,
         WGL_SUPPORT_OPENGL_ARB , GL_TRUE           ,
@@ -244,34 +234,30 @@ static int sgl_win32_setup_context(HWND window, HGLRC* context)
 
     wglChoosePixelFormatARB(GetDC(window),
             pixel_attribs, NULL, 20 /*max_formats*/, format_indices, &num_formats);
-    if (!num_formats)
-    {
+    if (!num_formats) {
         gl_log("Could not choose pixel format. Exiting.");
         return 0;
     }
 
     // The spec *guarantees* that this does not happen but nothing ever works...
-    if (num_formats > 20)
-    {
+    if (num_formats > 20) {
         num_formats = 20;
     }
 
     succeeded = 0;
-    for (uint32_t i = 0; i < num_formats; ++i)
-    {
+    for (uint32_t i = 0; i < num_formats; ++i) {
         int local_index = format_indices[i];
         succeeded = SetPixelFormat(GetDC(window), local_index, &pfd);
-        if (succeeded)
+        if (succeeded) {
             break;
+        }
     }
-    if (!succeeded)
-    {
+    if (!succeeded) {
         gl_log("Could not set pixel format for final rendering context.\n");
         return 0;
     }
 
-    const int context_attribs[] =
-    {
+    const int context_attribs[] = {
         WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
         WGL_CONTEXT_MINOR_VERSION_ARB, 3,
         WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,

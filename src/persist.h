@@ -39,8 +39,7 @@ func u32 word_swap_memory_order(u32 word)
 func void milton_load(MiltonState* milton_state)
 {
     FILE* fd = fopen("MiltonPersist.mlt", "rb");
-    if (fd)
-    {
+    if ( fd ) {
         u32 milton_magic = (u32)-1;
         fread(&milton_magic, sizeof(u32), 1, fd);
         u32 milton_binary_version = (u32)-1;
@@ -52,8 +51,7 @@ func void milton_load(MiltonState* milton_state)
 
         milton_magic = word_swap_memory_order(milton_magic);
 
-        if (milton_magic != MILTON_MAGIC_NUMBER)
-        {
+        if ( milton_magic != MILTON_MAGIC_NUMBER ) {
             assert (!"Magic number not found");
             goto close;
         }
@@ -63,16 +61,14 @@ func void milton_load(MiltonState* milton_state)
 
         assert (num_strokes >= 0);
 
-        for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
-        {
+        for ( i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i ) {
             StrokeCord_push(milton_state->strokes, (Stroke) { 0 });
             Stroke* stroke = StrokeCord_get(milton_state->strokes,
                                              milton_state->strokes->count - 1);
             fread(&stroke->brush, sizeof(Brush), 1, fd);
             fread(&stroke->num_points, sizeof(i32), 1, fd);
-            if (stroke->num_points >= STROKE_MAX_POINTS ||
-                stroke->num_points <= 0)
-            {
+            if ( stroke->num_points >= STROKE_MAX_POINTS ||
+                 stroke->num_points <= 0 ) {
                 milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
                 // Corrupt file. Avoid this read
                 continue;       // Do not allocate, just move on.
@@ -97,8 +93,7 @@ func void milton_save(MiltonState* milton_state)
     StrokeCord* strokes = milton_state->strokes;
     FILE* fd = fopen("MiltonPersist.mlt", "wb");
 
-    if (!fd)
-    {
+    if (!fd) {
         assert (!"Could not create file");
         return;
     }
@@ -115,8 +110,7 @@ func void milton_save(MiltonState* milton_state)
 
     fwrite(&num_strokes, sizeof(i32), 1, fd);
 
-    for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i)
-    {
+    for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
         Stroke* stroke = StrokeCord_get(strokes, stroke_i);
         assert(stroke->num_points > 0);
         fwrite(&stroke->brush, sizeof(Brush), 1, fd);

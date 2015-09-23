@@ -28,8 +28,7 @@ func u32 color_v4f_to_u32(v4f c)
 
 func v4f color_u32_to_v4f(u32 color)
 {
-    v4f result =
-    {
+    v4f result = {
         (float)(0xff & (color >> 16)) / 255,
         (float)(0xff & (color >> 8)) / 255,
         (float)(0xff & (color >> 0)) / 255,
@@ -41,11 +40,10 @@ func v4f color_u32_to_v4f(u32 color)
 
 func v4f color_rgb_to_rgba(v3f rgb, float a)
 {
-    return (v4f)
-    {
-        rgb.r,
-        rgb.g,
-        rgb.b,
+    v4f rgba = {
+        .r = rgb.r,
+        .g = rgb.g,
+        .b = rgb.b,
         a
     };
 }
@@ -55,8 +53,7 @@ func v4f blend_v4f(v4f dst, v4f src)
     f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
 
     //f32 alpha = src.a + dst.a - (src.a * dst.a);
-    v4f result =
-    {
+    v4f result = {
         src.r + dst.r * (1 - src.a),
         src.g + dst.g * (1 - src.a),
         src.b + dst.b * (1 - src.a),
@@ -80,54 +77,39 @@ func v3f hsv_to_rgb(v3f hsv)
     float x = cr * (1.0f - fabsf(rem - 1.0f));
     float m = v - cr;
 
-    switch (hi)
-    {
+    switch (hi) {
     case 0:
-        {
-            rgb.r = cr;
-            rgb.g = x;
-            rgb.b = 0;
-            break;
-        }
+        rgb.r = cr;
+        rgb.g = x;
+        rgb.b = 0;
+        break;
     case 1:
-        {
-            rgb.r = x;
-            rgb.g = cr;
-            rgb.b = 0;
-            break;
-        }
+        rgb.r = x;
+        rgb.g = cr;
+        rgb.b = 0;
+        break;
     case 2:
-        {
-            rgb.r = 0;
-            rgb.g = cr;
-            rgb.b = x;
-            break;
-        }
+        rgb.r = 0;
+        rgb.g = cr;
+        rgb.b = x;
+        break;
     case 3:
-        {
-            rgb.r = 0;
-            rgb.g = x;
-            rgb.b = cr;
-            break;
-        }
+        rgb.r = 0;
+        rgb.g = x;
+        rgb.b = cr;
+        break;
     case 4:
-        {
-            rgb.r = x;
-            rgb.g = 0;
-            rgb.b = cr;
-            break;
-        }
+        rgb.r = x;
+        rgb.g = 0;
+        rgb.b = cr;
+        break;
     case 5:
-        {
-            rgb.r = cr;
-            rgb.g = 0;
-            rgb.b = x;
-            //  don't break;
-        }
+        rgb.r = cr;
+        rgb.g = 0;
+        rgb.b = x;
+        break;
     default:
-        {
-            break;
-        }
+        break;
     }
     rgb.r += m;
     rgb.g += m;
@@ -141,8 +123,7 @@ func v3f hsv_to_rgb(v3f hsv)
 
 func v4f to_premultiplied(v3f rgb, f32 a)
 {
-    v4f rgba =
-    {
+    v4f rgba = {
         .r = rgb.r * a,
         .g = rgb.g * a,
         .b = rgb.b * a,
@@ -155,16 +136,14 @@ func v4f to_premultiplied(v3f rgb, f32 a)
 func v4f linear_to_sRGB_v4(v4f rgb)
 {
 #if FAST_GAMMA
-    v4f srgb =
-    {
+    v4f srgb = {
         sqrtf(rgb.r),
         sqrtf(rgb.g),
         sqrtf(rgb.b),
         rgb.a,
     };
 #else
-    v4f srgb =
-    {
+    v4f srgb = {
         powf(rgb.r, 1/2.22f),
         powf(rgb.g, 1/2.22f),
         powf(rgb.b, 1/2.22f),
@@ -177,15 +156,13 @@ func v4f linear_to_sRGB_v4(v4f rgb)
 func v3f linear_to_sRGB(v3f rgb)
 {
 #if FAST_GAMMA
-    v3f srgb =
-    {
+    v3f srgb = {
         sqrtf(rgb.r),
         sqrtf(rgb.g),
         sqrtf(rgb.b),
     };
 #else
-    v3f srgb =
-    {
+    v3f srgb = {
         powf(rgb.r, 1/2.22f),
         powf(rgb.g, 1/2.22f),
         powf(rgb.b, 1/2.22f),
@@ -197,8 +174,7 @@ func v3f linear_to_sRGB(v3f rgb)
 func v3f sRGB_to_linear(v3f rgb)
 {
 #if FAST_GAMMA
-    v3f result =
-    {
+    v3f result = {
         rgb.r * rgb.r,
         rgb.g * rgb.g,
         rgb.b * rgb.b,
@@ -206,14 +182,10 @@ func v3f sRGB_to_linear(v3f rgb)
 #else
     v3f result = rgb;
     float* d = result.d;
-    for (int i = 0; i < 3; ++i)
-    {
-        if (*d <= 0.04045f)
-        {
+    for (int i = 0; i < 3; ++i) {
+        if (*d <= 0.04045f) {
             *d /= 12.92f;
-        }
-        else
-        {
+        } else {
             *d = powf((*d + 0.055f) / 1.055f, 2.4f);
         }
         ++d;

@@ -110,21 +110,17 @@ struct TabletState_s
 };
 #endif
 
-typedef struct UnixMemoryHeader_s
-{
+typedef struct UnixMemoryHeader_s {
     size_t size;
 } UnixMemoryHeader;
 
-func void* unix_allocate(size_t size)
-{
+func void* unix_allocate(size_t size) {
     void* ptr = mmap(HEAP_BEGIN_ADDRESS, size + sizeof(UnixMemoryHeader),
                      PROT_WRITE | PROT_READ,
                      MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS,
                      -1, 0);
-    if (ptr)
-    {
-        *((UnixMemoryHeader*)ptr) = (UnixMemoryHeader)
-        {
+    if (ptr) {
+        *((UnixMemoryHeader*)ptr) = (UnixMemoryHeader) {
             .size = size,
         };
         ptr += sizeof(UnixMemoryHeader);
@@ -147,17 +143,13 @@ func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL
 {
     NativeEventResult caught_event = Caught_NONE;
 #ifdef __linux__
-    if (event.type == SDL_SYSWMEVENT)
-    {
-        if (event.msg)
-        {
+    if ( event.type == SDL_SYSWMEVENT ) {
+        if ( event.msg ) {
             SDL_SysWMmsg msg = *event.msg;
-            if (msg.subsystem == SDL_SYSWM_X11)
-            {
+            if ( msg.subsystem == SDL_SYSWM_X11 ) {
                 XEvent xevent = msg.msg.x11.event;
 
-                if (xevent.type == tablet_state->motion_type)
-                {
+                if ( xevent.type == tablet_state->motion_type ) {
                     XDeviceMotionEvent* dme = (XDeviceMotionEvent*)(&xevent);
 #if 0
                     milton_log("========\n");
@@ -194,12 +186,9 @@ func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
 
     Display* disp = NULL;
 
-    if (SDL_GetWindowWMInfo(window, &sysinfo))
-    {
+    if ( SDL_GetWindowWMInfo( window, &sysinfo ) ) {
         disp = sysinfo.info.x11.display;
-    }
-    else
-    {
+    } else {
         return;
     }
 
@@ -208,22 +197,17 @@ func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
     milton_log("Scanning for wacom device...\n");
     i32 count;
     XDeviceInfoPtr devices = (XDeviceInfoPtr) XListInputDevices(disp, &count);
-    if (devices)
-    {
+    if (devices) {
         tablet_state->input_devices = devices;
-        for (int i = 0; i < count; ++i)
-        {
+        for (int i = 0; i < count; ++i) {
             milton_log("Device[%d] -- %s\n", i, devices[i].name);
             if (  //==== Not a single codebase does anything smarter.
                 strstr(devices[i].name, "stylus")
                 // || strstr(devices[i].name, "eraser")
-                )
-
-            {
+                ) {
                 milton_log("[FOUND] ^--This one seems to be the one.\n");
                 tablet_state->wacom_device_info = &devices[i];
-                if (tablet_state->wacom_device_info)
-                {
+                if ( tablet_state->wacom_device_info ) {
                     tablet_state->wacom_device =
                             XOpenDevice(disp, tablet_state->wacom_device_info->id);
 
@@ -231,87 +215,83 @@ func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
                     assert (tablet_state->wacom_device);
 
                     XAnyClassPtr class_ptr = tablet_state->wacom_device_info->inputclassinfo;
-                    for (int i = 0; i < tablet_state->wacom_device_info->num_classes; ++i)
-                    {
+                    for (int i = 0; i < tablet_state->wacom_device_info->num_classes; ++i) {
                         switch(class_ptr->class)
                         {
-                        case ValuatorClass:
+                        case ValuatorClass: {
+                            XValuatorInfo *xvi = (XValuatorInfo *)class_ptr;
+                            milton_log("Valuator. Num axes: %d\n", xvi->num_axes);
+                            for (int axis = 0; axis < xvi->num_axes; axis++)
                             {
-                                XValuatorInfo *xvi = (XValuatorInfo *)class_ptr;
-                                milton_log("Valuator. Num axes: %d\n", xvi->num_axes);
-                                for (int axis = 0; axis < xvi->num_axes; axis++)
+                                milton_log ("axis %d, min: %d, max: %d\n",
+                                            axis,
+                                            xvi->axes[axis].min_value,
+                                            xvi->axes[axis].max_value);
+                                // 0 is x
+                                if (axis == 0)
                                 {
-                                    milton_log ("axis %d, min: %d, max: %d\n",
-                                                axis,
-                                                xvi->axes[axis].min_value,
-                                                xvi->axes[axis].max_value);
-                                    // 0 is x
-                                    if (axis == 0)
-                                    {
-                                        i32 maxv = xvi->axes[i].max_value;
-                                        i32 minv = xvi->axes[i].min_value;
-                                        milton_log("Max/min x values: %d, %d\n", minv, maxv);
-                                    }
-                                    // 1 is y
-                                    if (axis == 1)
-                                    {
-                                        i32 maxv = xvi->axes[i].max_value;
-                                        i32 minv = xvi->axes[i].min_value;
-                                        milton_log("Max/min y values: %d, %d\n", minv, maxv);
-                                    }
-                                    // 2 is pressure.
-                                    if (axis == 2)
-                                    {
-                                        tablet_state->min_pressure = xvi->axes[i].min_value;
-                                        tablet_state->max_pressure = xvi->axes[i].max_value;
-                                        break;
-                                    }
+                                    i32 maxv = xvi->axes[i].max_value;
+                                    i32 minv = xvi->axes[i].min_value;
+                                    milton_log("Max/min x values: %d, %d\n", minv, maxv);
                                 }
-                                milton_log("[DEBUG] Wacom pressure range: [%d, %d]\n",
-                                           tablet_state->min_pressure,
-                                           tablet_state->max_pressure);
-                                XEventClass cls;
-                                DeviceMotionNotify(tablet_state->wacom_device,
-                                                   tablet_state->motion_type,
-                                                   cls);
-                                if (cls)
+                                // 1 is y
+                                if (axis == 1)
                                 {
-                                    i32 index = tablet_state->num_event_classes++;
-                                    tablet_state->event_classes[index] = cls;
+                                    i32 maxv = xvi->axes[i].max_value;
+                                    i32 minv = xvi->axes[i].min_value;
+                                    milton_log("Max/min y values: %d, %d\n", minv, maxv);
                                 }
+                                // 2 is pressure.
+                                if (axis == 2)
+                                {
+                                    tablet_state->min_pressure = xvi->axes[i].min_value;
+                                    tablet_state->max_pressure = xvi->axes[i].max_value;
+                                    break;
+                                }
+                            }
+                            milton_log("[DEBUG] Wacom pressure range: [%d, %d]\n",
+                                       tablet_state->min_pressure,
+                                       tablet_state->max_pressure);
+                            XEventClass cls;
+                            DeviceMotionNotify(tablet_state->wacom_device,
+                                               tablet_state->motion_type,
+                                               cls);
+                            if (cls)
+                            {
+                                i32 index = tablet_state->num_event_classes++;
+                                tablet_state->event_classes[index] = cls;
+                            }
 
- // Other stuff I might be interested in.
+                            // Other stuff I might be interested in.
 #if 0
-                                DeviceButton1Motion  (tablet_state->wacom_device, 0, cls);
-                                if (cls)
-                                {
-                                    tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
-                                }
-                                DeviceButton1Motion  (tablet_state->wacom_device, 0, cls);
-                                if (cls)
-                                {
-                                    tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
-                                }
-                                DeviceButton1Motion  (tablet_state->wacom_device, 0, cls);
-                                if (cls)
-                                {
-                                    tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
-                                }
-                                DeviceButtonMotion  (tablet_state->wacom_device, 0, cls);
-                                if (cls)
-                                {
-                                    tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
-                                }
+                            DeviceButton1Motion  (tablet_state->wacom_device, 0, cls);
+                            if (cls)
+                            {
+                                tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
+                            }
+                            DeviceButton1Motion  (tablet_state->wacom_device, 0, cls);
+                            if (cls)
+                            {
+                                tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
+                            }
+                            DeviceButton1Motion  (tablet_state->wacom_device, 0, cls);
+                            if (cls)
+                            {
+                                tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
+                            }
+                            DeviceButtonMotion  (tablet_state->wacom_device, 0, cls);
+                            if (cls)
+                            {
+                                tablet_state->event_classes[tablet_state->num_event_classes++] = cls;
+                            }
 #endif
 
-                                milton_log("[DEBUG] Registered motion type %d\n",
-                                           tablet_state->motion_type);
-                                break;
-                            }
-                        }
+                            milton_log("[DEBUG] Registered motion type %d\n",
+                                       tablet_state->motion_type);
+                        } break;
+                        }  // switch
                         class_ptr = (XAnyClassPtr) ((u8*)class_ptr + class_ptr->length);
                     }
-
                     XSelectExtensionEvent(tablet_state->display,
                                           DefaultRootWindow(tablet_state->display),
                                           tablet_state->event_classes,
@@ -327,8 +307,7 @@ func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
 void platform_wacom_deinit(TabletState* tablet_state)
 {
 #ifdef __linux__
-    if (tablet_state->input_devices)
-    {
+    if (tablet_state->input_devices) {
         XFreeDeviceList(tablet_state->input_devices);
     }
 #endif

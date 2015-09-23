@@ -75,9 +75,7 @@ func void milton_die_gracefully(char* message);
 #include "canvas.h"
 
 
-
-typedef struct MiltonGLState_s
-{
+typedef struct MiltonGLState_s {
     GLuint quad_program;
     GLuint texture;
     GLuint vbo;
@@ -86,8 +84,7 @@ typedef struct MiltonGLState_s
 #endif
 } MiltonGLState;
 
-typedef enum MiltonMode_s
-{
+typedef enum MiltonMode_s {
     MiltonMode_NONE                   = ( 0 ),
 
     MiltonMode_ERASER                 = ( 1 << 0 ),
@@ -101,13 +98,11 @@ typedef enum MiltonMode_s
 //    queue to take BlockgroupRenderData structures.
 //    When there is work available, they call blockgroup_render_thread with the
 //    appropriate parameters.
-typedef struct BlockgroupRenderData_s
-{
+typedef struct BlockgroupRenderData_s {
     i32     block_start;
 } BlockgroupRenderData;
 
-typedef struct RenderQueue_s
-{
+typedef struct RenderQueue_s {
     Rect*   blocks;  // Screen areas to render.
     i32     num_blocks;
     u32*    raster_buffer;
@@ -121,8 +116,7 @@ typedef struct RenderQueue_s
     SDL_sem*   completed_semaphore;
 } RenderQueue;
 
-enum
-{
+enum {
     BrushEnum_PEN,
     BrushEnum_ERASER,
 
@@ -131,8 +125,7 @@ enum
 
 typedef struct MiltonGui_s MiltonGui;
 
-typedef struct MiltonState_s
-{
+typedef struct MiltonState_s {
     u8      bytes_per_pixel;
 
     i32     max_width;
@@ -179,8 +172,7 @@ typedef struct MiltonState_s
 } MiltonState;
 
 
-typedef enum
-{
+typedef enum {
     MiltonInputFlags_NONE,
     MiltonInputFlags_FULL_REFRESH    = ( 1 << 0 ),
     MiltonInputFlags_RESET           = ( 1 << 1 ),
@@ -194,8 +186,7 @@ typedef enum
     MiltonInputFlags_PANNING         = ( 1 << 9 ),
 } MiltonInputFlags;
 
-typedef struct MiltonInput_s
-{
+typedef struct MiltonInput_s {
     MiltonInputFlags flags;
 
     v2i  points[MAX_INPUT_BUFFER_ELEMS];
@@ -210,8 +201,7 @@ typedef struct MiltonInput_s
 // Defined below. Used in rasterizer.h
 func i32 milton_get_brush_size(MiltonState* milton_state);
 
-typedef enum
-{
+typedef enum {
     MiltonRenderFlags_NONE              = 0,
     MiltonRenderFlags_PICKER_UPDATED    = (1 << 0),
     MiltonRenderFlags_FULL_REDRAW       = (1 << 1),
@@ -228,12 +218,9 @@ func void milton_gl_update_brush_hover(MiltonGLState* gl, CanvasView* view, i32 
     f32 radiusf = (f32)radius / (f32)view->screen_size.w;
     glUseProgramObjectARB(gl->quad_program);
     GLint loc_radius_sq = glGetUniformLocationARB(gl->quad_program, "radiusf");
-    if ( loc_radius_sq >= 0 )
-    {
+    if ( loc_radius_sq >= 0 ) {
         glUniform1fARB(loc_radius_sq, radiusf);
-    }
-    else
-    {
+    } else {
         milton_log("[ERROR] Could not set brush overlay in GL\n");
     }
 }
@@ -241,16 +228,11 @@ func void milton_gl_update_brush_hover(MiltonGLState* gl, CanvasView* view, i32 
 func i32 milton_get_brush_size(MiltonState* milton_state)
 {
     i32 brush_size = 0;
-    if (milton_state->current_mode & MiltonMode_PEN)
-    {
+    if (milton_state->current_mode & MiltonMode_PEN) {
         brush_size = milton_state->brush_sizes[BrushEnum_PEN];
-    }
-    else if (milton_state->current_mode & MiltonMode_ERASER)
-    {
+    } else if (milton_state->current_mode & MiltonMode_ERASER) {
         brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
-    }
-    else
-    {
+    } else {
         assert (! "milton_get_brush_size called when in invalid mode.");
     }
     return brush_size;
@@ -258,20 +240,16 @@ func i32 milton_get_brush_size(MiltonState* milton_state)
 
 func void milton_update_brushes(MiltonState* milton_state)
 {
-    for (int i = 0; i < BrushEnum_COUNT; ++i )
-    {
+    for (int i = 0; i < BrushEnum_COUNT; ++i ) {
         Brush* brush = &milton_state->brushes[i];
         i32 size = milton_state->brush_sizes[i];
         brush->radius = size * milton_state->view->scale;
         assert(brush->radius < FLT_MAX);
-        if (i == BrushEnum_PEN)
-        {
+        if (i == BrushEnum_PEN) {
             // Alpha is set by the UI
             brush->color = to_premultiplied(sRGB_to_linear(gui_get_picker_rgb(milton_state->gui)),
                                             brush->alpha);
-        }
-        else if (i == BrushEnum_ERASER)
-        {
+        } else if (i == BrushEnum_ERASER) {
             brush->color = (v4f) { 1, 1, 1, 1, };
             brush->alpha = 1;
         }
@@ -285,16 +263,11 @@ func void milton_update_brushes(MiltonState* milton_state)
 func Brush milton_get_brush(MiltonState* milton_state)
 {
     Brush brush = { 0 };
-    if (milton_state->current_mode & MiltonMode_PEN)
-    {
+    if (milton_state->current_mode & MiltonMode_PEN) {
         brush = milton_state->brushes[BrushEnum_PEN];
-    }
-    else if (milton_state->current_mode & MiltonMode_ERASER)
-    {
+    } else if (milton_state->current_mode & MiltonMode_ERASER) {
         brush = milton_state->brushes[BrushEnum_ERASER];
-    }
-    else
-    {
+    } else {
         assert (!"Picking brush in invalid mode");
     }
     return brush;
@@ -304,12 +277,9 @@ func i32* pointer_to_brush_size(MiltonState* milton_state)
 {
     i32* ptr = NULL;
 
-    if (milton_state->current_mode & MiltonMode_PEN)
-    {
+    if ( milton_state->current_mode & MiltonMode_PEN ) {
         ptr = &milton_state->brush_sizes[BrushEnum_PEN];
-    }
-    else if (milton_state->current_mode & MiltonMode_ERASER)
-    {
+    } else if (milton_state->current_mode & MiltonMode_ERASER) {
         ptr = &milton_state->brush_sizes[BrushEnum_ERASER];
     }
     return ptr;
@@ -326,8 +296,7 @@ func void milton_set_brush_size(MiltonState* milton_state, i32 size)
 func void milton_increase_brush_size(MiltonState* milton_state)
 {
     i32 brush_size = milton_get_brush_size(milton_state);
-    if (brush_size < MAX_BRUSH_SIZE)
-    {
+    if (brush_size < MAX_BRUSH_SIZE) {
         milton_set_brush_size(milton_state, brush_size + 1);
     }
     milton_update_brushes(milton_state);
@@ -338,8 +307,7 @@ func void milton_decrease_brush_size(MiltonState* milton_state)
 {
     i32 brush_size = milton_get_brush_size(milton_state);
 
-    if (brush_size > 1)
-    {
+    if (brush_size > 1) {
         milton_set_brush_size(milton_state, brush_size - 1);
     }
     milton_update_brushes(milton_state);
@@ -401,16 +369,13 @@ func void milton_math_tests()
 func void milton_cord_tests(Arena* arena)
 {
     StrokeCord* cord = StrokeCord_make(arena, 2);
-    if (cord)
-    {
-        for (int i = 0; i < 11; ++i)
-        {
+    if (cord) {
+        for (int i = 0; i < 11; ++i) {
             Stroke test = {0};
             test.num_points = i;
             StrokeCord_push(cord, test);
         }
-        for (int i = 0; i < 11; ++i)
-        {
+        for (int i = 0; i < 11; ++i) {
             Stroke test = *StrokeCord_get(cord, i);
             assert(test.num_points == i);
         }
@@ -520,41 +485,31 @@ func void milton_init(MiltonState* milton_state)
     milton_load(milton_state);
 
     // Set default brush sizes.
-    for (int i = 0; i < BrushEnum_COUNT; ++i)
-    {
-        switch (i)
-        {
+    for (int i = 0; i < BrushEnum_COUNT; ++i) {
+        switch (i) {
         case BrushEnum_PEN:
-            {
-                milton_state->brush_sizes[i] = 10;
-                break;
-            }
+            milton_state->brush_sizes[i] = 10;
+            break;
         case BrushEnum_ERASER:
-            {
-                milton_state->brush_sizes[i] = 40;
-                break;
-            }
+            milton_state->brush_sizes[i] = 40;
+            break;
         default:
-            {
-                assert(!"New brush has not been given a default size");
-                break;
-            }
+            assert(!"New brush has not been given a default size");
+            break;
         }
     }
 
     milton_set_pen_alpha(milton_state, 0.8f);
     milton_update_brushes(milton_state);
 
-    for (i32 i = 0; i < milton_state->num_render_workers; ++i)
-    {
+    for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
         {
             *params = (WorkerParams) { milton_state, i };
         }
         assert (milton_state->render_worker_arenas[i].ptr == NULL);
         u8* worker_memory = dyn_alloc(u8, milton_state->worker_memory_size);
-        if (!worker_memory)
-        {
+        if (!worker_memory) {
             milton_die_gracefully("Platform allocation failed");
         }
         milton_state->render_worker_arenas[i] = arena_init(worker_memory,
@@ -572,22 +527,19 @@ func b32 is_user_drawing(MiltonState* milton_state)
 
 func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
-    if (new_screen_size.w > 8000 ||
-        new_screen_size.h > 8000 ||
-        new_screen_size.w <= 0 ||
-        new_screen_size.h <= 0 )
-    {
+    if ((new_screen_size.w > 8000 ||
+         new_screen_size.h > 8000 ||
+         new_screen_size.w <= 0 ||
+         new_screen_size.h <= 0) ) {
         return;
     }
 
     b32 do_realloc = false;
-    if (milton_state->max_width <= new_screen_size.w)
-    {
+    if (milton_state->max_width <= new_screen_size.w) {
         milton_state->max_width = new_screen_size.w + 256;
         do_realloc = true;
     }
-    if (milton_state->max_height <= new_screen_size.h)
-    {
+    if (milton_state->max_height <= new_screen_size.h) {
         milton_state->max_height = new_screen_size.h + 256;
         do_realloc = true;
     }
@@ -595,8 +547,7 @@ func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen
     i32 buffer_size =
             milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
 
-    if (do_realloc)
-    {
+    if (do_realloc) {
         void* raster_buffer = (void*)milton_state->raster_buffer;
         if (raster_buffer)
         {
@@ -608,10 +559,8 @@ func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen
         assert(milton_state->raster_buffer);
     }
 
-    if (new_screen_size.w < milton_state->max_width &&
-        new_screen_size.h < milton_state->max_height)
-    {
-
+    if ( new_screen_size.w < milton_state->max_width &&
+         new_screen_size.h < milton_state->max_height) {
         milton_state->view->screen_size = new_screen_size;
         milton_state->view->aspect_ratio = (f32)new_screen_size.w / (f32)new_screen_size.h;
         milton_state->view->screen_center = invscale_v2i(milton_state->view->screen_size, 2);
@@ -637,17 +586,14 @@ func void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen
             pan_vector.y += milton_state->view->canvas_radius_limit;
         }
         milton_state->view->pan_vector = pan_vector;
-    }
-    else
-    {
+    } else {
         assert(!"DEBUG: new screen size is more than we can handle.");
     }
 }
 
 func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 {
-    if (input->input_count == 0)
-    {
+    if ( input->input_count == 0 ) {
         return;
     }
 
@@ -655,8 +601,7 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     milton_state->working_stroke.brush = milton_get_brush(milton_state);
 
     //int input_i = 0;
-    for (int input_i = 0; input_i < input->input_count; ++input_i)
-    {
+    for (int input_i = 0; input_i < input->input_count; ++input_i) {
         v2i in_point = input->points[input_i];
 
         v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
@@ -677,8 +622,7 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         b32 not_the_first = false;
-        if (milton_state->working_stroke.num_points >= 1)
-        {
+        if ( milton_state->working_stroke.num_points >= 1 ) {
             not_the_first = true;
         }
 
@@ -687,40 +631,32 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         //  b) it is being appended to the stroke and it didn't merge with the previous point.
         b32 passed_inspection = true;
 
-        if (pressure == NO_PRESSURE_INFO)
-        {
+        if ( pressure == NO_PRESSURE_INFO ) {
             passed_inspection = false;
         }
 
-
-        if (passed_inspection && not_the_first)
-        {
+        if (passed_inspection && not_the_first) {
             i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
 
             // Limit the number of points we check so that we don't mess with the strok too much.
             int point_window = 4;
             int count = 0;
             // Pop every point that is contained by the new one.
-            for (i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i)
-            {
-                if (++count >= point_window)
-                {
+            for (i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i) {
+                if ( ++count >= point_window ) {
                     break;
                 }
                 v2i this_point = milton_state->working_stroke.points[i];
                 i32 this_radius = (i32)(milton_state->working_stroke.brush.radius *
                                         milton_state->working_stroke.metadata[i].pressure);
 
-                if (stroke_point_contains_point(canvas_point, in_radius,
-                                                this_point, this_radius))
-                {
+                if ( stroke_point_contains_point(canvas_point, in_radius,
+                                                this_point, this_radius) ) {
                     milton_state->working_stroke.num_points -= 1;
-                }
-                // If some other point in the past contains this point,
-                // then this point is invalid.
-                else if (stroke_point_contains_point(this_point, this_radius,
-                                                     canvas_point, in_radius))
-                {
+                } else if ( stroke_point_contains_point(this_point, this_radius,
+                                                     canvas_point, in_radius) ) {
+                    // If some other point in the past contains this point,
+                    // then this point is invalid.
                     passed_inspection = false;
                     break;
                 }
@@ -728,8 +664,7 @@ func void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         // Cleared to be appended.
-        if (passed_inspection)
-        {
+        if ( passed_inspection ) {
             // Add to current stroke.
             int index = milton_state->working_stroke.num_points++;
             milton_state->working_stroke.points[index] = canvas_point;
@@ -758,8 +693,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
 
     b32 do_fast_draw = false;
-    if (milton_state->worker_needs_memory)
-    {
+    if ( milton_state->worker_needs_memory ) {
         i32 prev_memory_value = milton_state->worker_memory_size;
         milton_state->worker_memory_size *= 2;
         i32 needed_size = milton_state->worker_memory_size;
@@ -787,33 +721,26 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         do_fast_draw = true;
     }
 
-    if (input->flags & MiltonInputFlags_FAST_DRAW)
-    {
+    if ( input->flags & MiltonInputFlags_FAST_DRAW ) {
         do_fast_draw = true;
     }
 
-    if (do_fast_draw)
-    {
+    if ( do_fast_draw ) {
         milton_state->view->downsampling_factor = 2;
         milton_state->current_mode |= MiltonMode_REQUEST_QUALITY_REDRAW;
-    }
-    else
-    {
+    } else {
         milton_state->view->downsampling_factor = 1;
-        if (milton_state->current_mode & MiltonMode_REQUEST_QUALITY_REDRAW)
-        {
+        if ( milton_state->current_mode & MiltonMode_REQUEST_QUALITY_REDRAW ) {
             milton_state->current_mode ^= MiltonMode_REQUEST_QUALITY_REDRAW;
             render_flags |= MiltonRenderFlags_FULL_REDRAW;
         }
     }
 
-    if (input->flags & MiltonInputFlags_FULL_REFRESH)
-    {
+    if ( input->flags & MiltonInputFlags_FULL_REFRESH ) {
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
     }
 
-    if (input->scale)
-    {
+    if ( input->scale ) {
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
 
 // Sensible
@@ -827,58 +754,46 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 #endif
 
         static b32 debug_scale_lock = false;
-        if (!debug_scale_lock && input->scale > 0 && milton_state->view->scale >= 2)
-        {
+        if ( !debug_scale_lock && input->scale > 0 && milton_state->view->scale >= 2 ) {
             milton_state->view->scale = (i32)(milton_state->view->scale / scale_factor);
             if (milton_state->view->scale == 1)
             {
                 debug_scale_lock = true;
             }
-        }
-        else if (input->scale < 0 && milton_state->view->scale < view_scale_limit)
-        {
+        } else if ( input->scale < 0 && milton_state->view->scale < view_scale_limit ) {
             debug_scale_lock = false;
             milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_update_brushes(milton_state);
     }
 
-    if (input->flags & MiltonInputFlags_SET_MODE_BRUSH)
-    {
+    if ( input->flags & MiltonInputFlags_SET_MODE_BRUSH ) {
         milton_state->current_mode = MiltonMode_PEN;
         milton_update_brushes(milton_state);
     }
-    if (input->flags & MiltonInputFlags_SET_MODE_ERASER)
-    {
+    if ( input->flags & MiltonInputFlags_SET_MODE_ERASER ) {
         milton_state->current_mode = MiltonMode_ERASER;
         milton_update_brushes(milton_state);
     }
 
-    if (input->flags & MiltonInputFlags_UNDO)
-    {
-        if (milton_state->working_stroke.num_points == 0 && milton_state->strokes->count > 0)
-        {
+    if ( input->flags & MiltonInputFlags_UNDO ) {
+        if ( milton_state->working_stroke.num_points == 0 && milton_state->strokes->count > 0 ) {
             milton_state->strokes->count--;
             milton_state->num_redos++;
-        }
-        else if (milton_state->working_stroke.num_points > 0)
-        {
+        } else if ( milton_state->working_stroke.num_points > 0 ) {
             assert(!"NPE");
         }
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
     }
-    else if (input->flags & MiltonInputFlags_REDO)
-    {
-        if (milton_state->num_redos > 0)
-        {
+    else if ( input->flags & MiltonInputFlags_REDO ) {
+        if ( milton_state->num_redos > 0 ) {
             milton_state->strokes->count++;
             milton_state->num_redos--;
         }
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
     }
 
-    if (input->flags & MiltonInputFlags_RESET)
-    {
+    if ( input->flags & MiltonInputFlags_RESET ) {
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
         // TODO: Reclaim memory?
@@ -905,8 +820,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
 #endif
 
 
-    if (input->flags & MiltonInputFlags_HOVERING)
-    {
+    if ( input->flags & MiltonInputFlags_HOVERING ) {
         milton_state->hover_point = input->hover_point;
         f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
         f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
@@ -914,8 +828,7 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
                                   milton_get_brush_size(milton_state), x, y);
     }
 
-    if (input->input_count > 0)
-    {
+    if ( input->input_count > 0 ) {
         // Don't draw brush outline.
         milton_gl_unset_brush_hover(milton_state->gl);
 
@@ -933,19 +846,14 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->num_redos = 0;
     }
 
-    if (input->flags & MiltonInputFlags_END_STROKE)
-    {
+    if ( input->flags & MiltonInputFlags_END_STROKE ) {
         milton_state->stroke_is_from_tablet = false;
 
-        if (milton_state->gui->active)
-        {
+        if ( milton_state->gui->active ) {
             gui_deactivate(milton_state->gui);
             render_flags |= MiltonRenderFlags_PICKER_UPDATED;
-        }
-        else
-        {
-            if (milton_state->working_stroke.num_points > 0)
-            {
+        } else {
+            if ( milton_state->working_stroke.num_points > 0 ) {
                 // Copy current stroke.
                 Stroke new_stroke =
                 {
@@ -976,15 +884,13 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     // Disable hover if panning.
-    if (input->flags & MiltonInputFlags_PANNING)
-    {
+    if ( input->flags & MiltonInputFlags_PANNING ) {
         milton_gl_unset_brush_hover(milton_state->gl);
     }
 
     milton_render(milton_state, render_flags);
 
-    if (should_save)
-    {
+    if ( should_save ) {
         milton_save(milton_state);
     }
 }

@@ -17,8 +17,7 @@
 
 
 typedef struct ClippedStroke_s ClippedStroke;
-struct ClippedStroke_s
-{
+struct ClippedStroke_s {
     b32             fills_block;
 
     // This stroke is clipped to a particular block and its pointers only live
@@ -34,8 +33,7 @@ struct ClippedStroke_s
 func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, Rect canvas_rect)
 {
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
-    if (!clipped_stroke)
-    {
+    if (!clipped_stroke) {
         return NULL;
     }
 
@@ -48,8 +46,7 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
     // TODO: To save memory, it would make sense to use a different data
     // structure here.  A cord would have the advantages of a stretchy
     // array without asking too much from our humble arena.
-    if (in_stroke->num_points > 0)
-    {
+    if (in_stroke->num_points > 0) {
         clipped_stroke->stroke.num_points = 0;
         clipped_stroke->stroke.points = arena_alloc_array(render_arena,
                                                           in_stroke->num_points, v2i);
@@ -57,32 +54,25 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
                                                             in_stroke->num_points, PointMetadata);
         clipped_stroke->indices = arena_alloc_array(render_arena,
                                                     in_stroke->num_points, i32);
-    }
-    else
-    {
+    } else {
         return clipped_stroke;
     }
 
 
-    if (!clipped_stroke->stroke.points ||
-        !clipped_stroke->stroke.metadata ||
-        !clipped_stroke->indices)
-    {
+    if ( !clipped_stroke->stroke.points ||
+         !clipped_stroke->stroke.metadata ||
+         !clipped_stroke->indices ) {
         // We need more memory. Return gracefully
         return NULL;
     }
-    if (in_stroke->num_points == 1)
-    {
-        if (is_inside_rect(canvas_rect, in_stroke->points[0]))
-        {
+    if ( in_stroke->num_points == 1 ) {
+        if (is_inside_rect(canvas_rect, in_stroke->points[0])) {
             Stroke* stroke = &clipped_stroke->stroke;
             i32 index = stroke->num_points++;
             stroke->points[index] = in_stroke->points[0];
             stroke->metadata[index] = in_stroke->metadata[0];
         }
-    }
-    else
-    {
+    } else {
         i32 num_points = in_stroke->num_points;
         b32 added_previous_segment = false;
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
@@ -100,16 +90,14 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
                            (a.y > canvas_rect.bottom    && b.y > canvas_rect.bottom));
 
             // We can add the segment
-            if (inside)
-            {
+            if ( inside ) {
                 Stroke* stroke = &clipped_stroke->stroke;
                 // XA AB<- CD
                 // We need to add AB to out clipped stroke.
                 // Based on the previous iteration:
                 //  If we added, XA, then A is already inside; so for AB, we only need to add B.
                 //  If XA was discarded, we haven't added A; both points need to be added.
-                if (!added_previous_segment)
-                {
+                if ( !added_previous_segment ) {
                     stroke->points[stroke->num_points]     = a;
                     stroke->points[stroke->num_points + 1] = b;
 
@@ -120,18 +108,14 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
                     clipped_stroke->indices[stroke->num_points + 1] = point_i + 1;
 
                     stroke->num_points += 2;
-                }
-                else if (added_previous_segment)
-                {
+                } else if ( added_previous_segment ) {
                     stroke->points  [stroke->num_points]        = b;
                     stroke->metadata[stroke->num_points]        = metadata_b;
                     clipped_stroke->indices[stroke->num_points] = point_i + 1;
                     stroke->num_points += 1;
                 }
                 added_previous_segment = true;
-            }
-            else
-            {
+            } else {
                 added_previous_segment = false;
             }
         }
@@ -156,12 +140,9 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
     };
 #endif
 
-    if (num_points >= 2)
-    {
-        for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
-        {
-            if (indices[point_i] + 1 != indices[point_i + 1])
-            {
+    if (num_points >= 2) {
+        for ( i32 point_i = 0; point_i < num_points - 1; ++point_i ) {
+            if ( indices[point_i] + 1 != indices[point_i + 1] ) {
                 continue;
             }
             v2i a = points[point_i];
@@ -194,14 +175,11 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
                 bounded_rect.top    = p.y - rad;
             }
 
-            if (is_rect_within_rect(rect, bounded_rect))
-            {
+            if ( is_rect_within_rect(rect, bounded_rect) ) {
                 return true;
             }
         }
-    }
-    else if (num_points == 1)
-    {
+    } else if ( num_points == 1 ) {
         v2i p  = points[0];
 
         // Half width of a rectangle contained by brush at point p.
@@ -214,8 +192,7 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
             bounded_rect.top    = p.y - rad;
         }
 
-        if (is_rect_within_rect(rect, bounded_rect))
-        {
+        if ( is_rect_within_rect(rect, bounded_rect) ) {
             return true;
         }
     }
@@ -238,19 +215,14 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
     i32 num_strokes = strokes->count;
 
     // Fill linked list with strokes clipped to this block
-    for (i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i)
-    {
-        if (stroke_i < num_strokes && !stroke_masks[stroke_i])
-        {
+    for ( i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
+        if ( stroke_i < num_strokes && !stroke_masks[stroke_i] ) {
             continue;
         }
         Stroke* unclipped_stroke = NULL;
-        if (stroke_i == num_strokes)
-        {
+        if ( stroke_i == num_strokes ) {
             unclipped_stroke = working_stroke;
-        }
-        else
-        {
+        } else {
             unclipped_stroke = StrokeCord_get(strokes, stroke_i);
         }
         assert(unclipped_stroke);
@@ -259,23 +231,20 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                                             unclipped_stroke, enlarged_block);
         // ALlocation failed.
         // Handle this gracefully; this will cause more memory for render workers.
-        if (!clipped_stroke)
-        {
+        if ( !clipped_stroke ) {
             *allocation_ok = false;
             return NULL;
         }
         Stroke* stroke = &clipped_stroke->stroke;
 
-        if (stroke->num_points)
-        {
+        if ( stroke->num_points ) {
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
-            if (is_rect_filled_by_stroke(canvas_block, reference_point,
-                                         stroke->points, clipped_stroke->indices,
-                                         stroke->num_points,
-                                         stroke->metadata, stroke->brush,
-                                         view))
-            {
+            if ( is_rect_filled_by_stroke(canvas_block, reference_point,
+                                          stroke->points, clipped_stroke->indices,
+                                          stroke->num_points,
+                                          stroke->metadata, stroke->brush,
+                                          view) ) {
                 list_head->fills_block = true;
             }
             stroke_list = list_head;
@@ -286,10 +255,8 @@ func ClippedStroke* clip_strokes_to_block(Arena* render_arena,
     // this block.
     ClippedStroke* list_iter = stroke_list;
 
-    while (list_iter)
-    {
-        if (list_iter->fills_block && list_iter->stroke.brush.color.a == 1.0f)
-        {
+    while (list_iter) {
+        if ( list_iter->fills_block && list_iter->stroke.brush.color.a == 1.0f ) {
             list_iter->next = NULL;
             break;
         }
@@ -315,24 +282,20 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
         canvas_block.bot_right = raster_to_canvas(view, raster_block.bot_right);
     }
 
-    if (canvas_block.left   < -view->canvas_radius_limit ||
-        canvas_block.right  > view->canvas_radius_limit  ||
-        canvas_block.top    < -view->canvas_radius_limit ||
-        canvas_block.bottom > view->canvas_radius_limit
-        )
-    {
-        for (int j = raster_block.top; j < raster_block.bottom; j++)
-        {
-            for (int i = raster_block.left; i < raster_block.right; i++)
-            {
+    if ( canvas_block.left   < -view->canvas_radius_limit ||
+         canvas_block.right  > view->canvas_radius_limit  ||
+         canvas_block.top    < -view->canvas_radius_limit ||
+         canvas_block.bottom > view->canvas_radius_limit ) {
+        for ( int j = raster_block.top; j < raster_block.bottom; j++ ) {
+            for ( int i = raster_block.left; i < raster_block.right; i++ ) {
                 pixels[j * view->screen_size.w + i] = 0xffff00ff;
             }
         }
         return true;
     }
 
-    v2i reference_point =
 // Leaving this toggle-able for a quick way to show the cool precision error.
+    v2i reference_point =
 #if 1
     {
         (canvas_block.left + canvas_block.right) / 2,
@@ -349,8 +312,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                                                        working_stroke,
                                                        canvas_block, reference_point,
                                                        &allocation_ok);
-    if (!allocation_ok)
-    {
+    if (!allocation_ok) {
         // Request more memory
         return false;
     }
@@ -371,17 +333,15 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
     i32 j = (((raster_block.top - view->screen_center.y) *
               view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
 
-    for (i32 pixel_j = raster_block.top;
-         pixel_j < raster_block.bottom;
-         pixel_j += downsample_factor)
-    {
+    for ( i32 pixel_j = raster_block.top;
+          pixel_j < raster_block.bottom;
+          pixel_j += downsample_factor ) {
         i32 i =  (((raster_block.left - view->screen_center.x) *
                     view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
 
-        for (i32 pixel_i = raster_block.left;
-             pixel_i < raster_block.right;
-             pixel_i += downsample_factor)
-        {
+        for ( i32 pixel_i = raster_block.left;
+              pixel_i < raster_block.right;
+              pixel_i += downsample_factor ) {
             // Clear color
             v4f background_color = { 1, 1, 1, 1 };
 
@@ -390,8 +350,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 
             ClippedStroke* list_iter = stroke_list;
 
-            while(list_iter)
-            {
+            while(list_iter) {
                 ClippedStroke* clipped_stroke = list_iter;
                 assert (clipped_stroke);
                 Stroke* stroke = &clipped_stroke->stroke;
@@ -399,18 +358,15 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                 assert (stroke->num_points > 0);
 
                 // Fast path.
-                if (clipped_stroke->fills_block)
-                {
+                if (clipped_stroke->fills_block) {
 #if 0 // Visualize it with black
                     v4f dst = {0, 0, 0, stroke->brush.color.a};
 #else
                     v4f dst = stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
-                }
-                else
+                } else {
                 // Slow path. There are pixels not inside.
-                {
                     v2i* points = stroke->points;
 
                     //v2f min_points[4] = {0};
@@ -419,8 +375,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                     f32 dy = 0;
                     f32 pressure = 0.0f;
 
-                    if (stroke->num_points == 1)
-                    {
+                    if ( stroke->num_points == 1 ) {
                         v2i first_point = points[0];
                         {
                             first_point.x *= local_scale;
@@ -432,17 +387,13 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                         dy = (f32)(j - min_point.y);
                         min_dist = dx * dx + dy * dy;
                         pressure = stroke->metadata[0].pressure;
-                    }
-                    else
-                    {
+                    } else {
                         // Find closest point.
-                        for (int point_i = 0; point_i < stroke->num_points - 1; point_i++)
-                        {
+                        for ( int point_i = 0; point_i < stroke->num_points - 1; point_i++ ) {
                             i32 index_a = clipped_stroke->indices[point_i];
                             i32 index_b = clipped_stroke->indices[point_i + 1];
                             // Skip this iteration. This is not a segment.
-                            if (index_a + 1 != index_b)
-                            {
+                            if ( index_a + 1 != index_b ) {
                                 continue;
                             }
 
@@ -459,14 +410,11 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                             v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
                             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-                            if (mag_ab2 > 0)
-                            {
-
+                            if ( mag_ab2 > 0 ) {
                                 f32 t;
                                 v2f point = v2i_to_v2f(closest_point_in_segment(a, b,
                                                                                 ab, mag_ab2,
                                                                                 (v2i){i,j}, &t));
-
                                 f32 test_dx = (f32) (i - point.x);
                                 f32 test_dy = (f32) (j - point.y);
                                 f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
@@ -474,8 +422,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                                 f32 p_b = stroke->metadata[point_i + 1].pressure;
                                 f32 test_pressure = (1 - t) * p_a + t * p_b;
                                 dist = dist - test_pressure * stroke->brush.radius;
-                                if (dist < min_dist)
-                                {
+                                if ( dist < min_dist ) {
                                     min_dist = dist;
                                     dx = test_dx;
                                     dy = test_dy;
@@ -485,8 +432,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                         }
                     }
 
-                    if (min_dist < FLT_MAX)
-                    {
+                    if ( min_dist < FLT_MAX ) {
                         // TODO: For implicit brush:
                         //  This sampling is for a circular brush.
                         //  Should dispatch on brush type. And do it for SSE impl too.
@@ -532,27 +478,21 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                             // Perf note: We remove the sqrtf call when it's
                             // safe to square the radius
-                            if (radius >= (1 << 16))
-                            {
-                                for (int i = 0; i < 16; ++i)
-                                {
+                            if (radius >= ( 1 << 16 )) {
+                                for ( int i = 0; i < 16; ++i ) {
                                     samples += (sqrtf(fdists[i]) < radius);
                                 }
-                            }
-                            else
-                            {
+                            } else {
                                 u32 sq_radius = radius * radius;
 
-                                for (int i = 0; i < 16; ++i)
-                                {
+                                for ( int i = 0; i < 16; ++i ) {
                                     samples += (fdists[i] < sq_radius);
                                 }
                             }
                         }
 
                         // If the stroke contributes to the pixel, do compositing.
-                        if (samples > 0)
-                        {
+                        if ( samples > 0 ) {
                             // Do blending
                             // ---------------
 
@@ -570,8 +510,7 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                         }
                     }
                 }
-                if (acc_color.a > 0.999999)
-                {
+                if ( acc_color.a > 0.999999 ) {
                     break;
                 }
             }
@@ -617,16 +556,13 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
         canvas_block.bot_right = raster_to_canvas(view, raster_block.bot_right);
     }
 
-    if (canvas_block.left   < -view->canvas_radius_limit ||
-        canvas_block.right  > view->canvas_radius_limit  ||
-        canvas_block.top    < -view->canvas_radius_limit ||
-        canvas_block.bottom > view->canvas_radius_limit
-        )
-    {
-        for (int j = raster_block.top; j < raster_block.bottom; j++)
-        {
-            for (int i = raster_block.left; i < raster_block.right; i++)
-            {
+    if ( canvas_block.left   < -view->canvas_radius_limit ||
+         canvas_block.right  > view->canvas_radius_limit  ||
+         canvas_block.top    < -view->canvas_radius_limit ||
+         canvas_block.bottom > view->canvas_radius_limit
+        ) {
+        for ( int j = raster_block.top; j < raster_block.bottom; j++ ) {
+            for ( int i = raster_block.left; i < raster_block.right; i++ ) {
                 pixels[j * view->screen_size.w + i] = 0xffff00ff;
             }
         }
@@ -651,8 +587,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                                        working_stroke,
                                                        canvas_block, reference_point,
                                                        &allocation_ok);
-    if (!allocation_ok)
-    {
+    if ( !allocation_ok ) {
         // Request more memory
         return false;
     }
@@ -673,17 +608,15 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
     i32 j = (((raster_block.top - view->screen_center.y) *
               view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
 
-    for (i32 pixel_j = raster_block.top;
-         pixel_j < raster_block.bottom;
-         pixel_j += downsample_factor)
-    {
+    for ( i32 pixel_j = raster_block.top;
+          pixel_j < raster_block.bottom;
+          pixel_j += downsample_factor ) {
         i32 i =  (((raster_block.left - view->screen_center.x) *
                     view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
 
-        for (i32 pixel_i = raster_block.left;
-             pixel_i < raster_block.right;
-             pixel_i += downsample_factor)
-        {
+        for ( i32 pixel_i = raster_block.left;
+              pixel_i < raster_block.right;
+              pixel_i += downsample_factor ) {
             // Clear color
             v4f background_color = { 1, 1, 1, 1 };
 
@@ -692,8 +625,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
             ClippedStroke* list_iter = stroke_list;
 
-            while(list_iter)
-            {
+            while(list_iter) {
                 ClippedStroke* clipped_stroke = list_iter;
                 assert (clipped_stroke);
                 Stroke* stroke = &clipped_stroke->stroke;
@@ -701,18 +633,15 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                 assert (stroke->num_points > 0);
 
                 // Fast path.
-                if (clipped_stroke->fills_block)
-                {
+                if ( clipped_stroke->fills_block ) {
 #if 0 // Visualize it with black
                     v4f dst = {0, 0, 0, stroke->brush.color.a};
 #else
                     v4f dst = stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
-                }
-                else
-                // Slow path. There are pixels not inside.
-                {
+                } else {
+                    // Slow path. There are pixels not inside.
                     v2i* points = stroke->points;
 
                     i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
@@ -723,8 +652,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     f32 dy = 0;
                     f32 pressure = 0.0f;
 
-                    if (stroke->num_points == 1)
-                    {
+                    if ( stroke->num_points == 1 ) {
                         v2i first_point = points[0];
                         {
                             first_point.x *= local_scale;
@@ -735,13 +663,10 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         dy = (f32)(j - min_point.y);
                         min_dist = dx * dx + dy * dy;
                         pressure = stroke->metadata[0].pressure;
-                    }
-                    else
-                    {
+                    } else {
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
 
-                        for (int point_i = 0; point_i < stroke->num_points - 1; point_i += 4)
-                        {
+                        for ( int point_i = 0; point_i < stroke->num_points - 1; point_i += 4 ) {
                             f32 axs[4] = { 0 };
                             f32 ays[4] = { 0 };
                             f32 bxs[4] = { 0 };
@@ -750,8 +675,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             f32 bps[4];
                             batch_size = 0;
 
-                            for (i32 i = 0; i < 4; i++)
-                            {
+                            for ( i32 i = 0; i < 4; i++ ) {
                                 i32 index = point_i + i;
 
                                 if (index + 1 >= stroke->num_points)
@@ -763,8 +687,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 i32 index_b = clipped_stroke->indices[index + 1];
 
                                 // Not a segment
-                                if (index_a + 1 != index_b)
-                                {
+                                if ( index_a + 1 != index_b ) {
                                     continue;
                                 }
                                 // The point of reference point is to do the subtraction with
@@ -889,8 +812,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             // Because `mask` will be 0 for the invalid elements.
                             // But what we really want is to do this loop with
                             // SSE magic. .
-                            for (i32 i = 0; i < 4; ++i)
-                            {
+                            for ( i32 i = 0; i < 4; ++i ) {
                                 f32 dist = dists[i];
                                 i32 imask = *(i32*)&masks[i];
                                 if (dist < min_dist && imask == -1)
@@ -904,8 +826,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         }
                     }
 
-                    if (min_dist < FLT_MAX)
-                    {
+                    if ( min_dist < FLT_MAX ) {
                         //u64 kk_ccount_begin = __rdtsc();
                         int samples = 0;
                         {
@@ -940,8 +861,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             // safe to square the radius
                             __m128 comparisons[4];
                             __m128 ones = _mm_set_ps1(1.0f);
-                            if (radius >= (1 << 16))
-                            {
+                            if ( radius >= (1 << 16) ) {
                                 // sqrt slow. rsqrt fast
                                 dists[0] = _mm_mul_ps(dists[0], _mm_rsqrt_ps(dists[0]));
                                 dists[1] = _mm_mul_ps(dists[1], _mm_rsqrt_ps(dists[1]));
@@ -951,9 +871,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 comparisons[1] = _mm_cmplt_ps(dists[1], radius4);
                                 comparisons[2] = _mm_cmplt_ps(dists[2], radius4);
                                 comparisons[3] = _mm_cmplt_ps(dists[3], radius4);
-                            }
-                            else
-                            {
+                            } else {
                                 __m128 sq_radius = _mm_mul_ps(radius4, radius4);
                                 comparisons[0] = _mm_cmplt_ps(dists[0], sq_radius);
                                 comparisons[1] = _mm_cmplt_ps(dists[1], sq_radius);
@@ -975,8 +893,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         }
 
                         // If the stroke contributes to the pixel, do compositing.
-                        if (samples > 0)
-                        {
+                        if ( samples > 0 ) {
                             // Do blending
                             // ---------------
 
@@ -994,8 +911,7 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         }
                     }
                 }
-                if (acc_color.a > 0.999999)
-                {
+                if ( acc_color.a > 0.999999 ) {
                     break;
                 }
             }
@@ -1009,10 +925,8 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 
-            for (i32 jj = pixel_j; jj < pixel_j + downsample_factor; ++jj)
-            {
-                for (i32 ii = pixel_i; ii < pixel_i + downsample_factor; ++ii)
-                {
+            for ( i32 jj = pixel_j; jj < pixel_j + downsample_factor; ++jj ) {
+                for ( i32 ii = pixel_i; ii < pixel_i + downsample_factor; ++ii ) {
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }
             }
@@ -1039,10 +953,8 @@ func void rasterize_ring(u32* pixels,
 
     // TODO: Compute bounding box(es) for ring.
 
-    for (i32 j = 0; j < height; ++j)
-    {
-        for (i32 i = 0; i < width; ++i)
-        {
+    for ( i32 j = 0; j < height; ++j ) {
+        for ( i32 i = 0; i < width; ++i ) {
             // Rotated grid AA
             int samples = 0;
             {
@@ -1058,8 +970,7 @@ func void rasterize_ring(u32* pixels,
                 samples += COMPARE(DISTANCE(fi + v, fj + u));
             }
 
-            if (samples > 0)
-            {
+            if ( samples > 0 ) {
                 f32 contrib = (f32)samples / 4.0f;
                 v4f aa_color = to_premultiplied(color.rgb, contrib);
                 v4f dst = color_u32_to_v4f(pixels[j*width + i]);
@@ -1086,10 +997,8 @@ func void draw_rectangle(u32* raster_buffer,
     assert (right >= left);
     assert (bottom >= top);
 
-    for (i32 j = top; j < bottom; ++j)
-    {
-        for (i32 i = left; i < right; ++i)
-        {
+    for ( i32 j = top; j < bottom; ++j ) {
+        for ( i32 i = left; i < right; ++i ) {
             i32 index = j * raster_buffer_width + i;
 
             u32 dst_color = raster_buffer[index];
@@ -1105,10 +1014,8 @@ func void rasterize_color_picker(ColorPicker* picker,
                                  Rect draw_rect)
 {
     // Wheel
-    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
-    {
-        for (int i = draw_rect.left; i < draw_rect.right; ++i)
-        {
+    for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
+        for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
             u32 picker_i =
                     (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
             v2f point = {(f32)i, (f32)j};
@@ -1125,8 +1032,7 @@ func void rasterize_color_picker(ColorPicker* picker,
                 samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){v, u}));
             }
 
-            if (samples > 0)
-            {
+            if (samples > 0) {
                 f32 angle = picker_wheel_get_angle(picker, point);
                 f32 degree = radians_to_degrees(angle);
                 v3f hsv = { degree, 1.0f, 1.0f };
@@ -1144,10 +1050,8 @@ func void rasterize_color_picker(ColorPicker* picker,
     }
 
     // Triangle
-    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
-    {
-        for (int i = draw_rect.left; i < draw_rect.right; ++i)
-        {
+    for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
+        for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
             v2f point = { (f32)i, (f32)j };
             u32 picker_i =
                     (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
@@ -1195,16 +1099,14 @@ func void rasterize_color_picker(ColorPicker* picker,
 
         v3f rgb = hsv_to_rgb(hsv);
 
-        v4f color =
-        {
+        v4f color = {
             1 - rgb.r,
             1 - rgb.g,
             1 - rgb.b,
             1,
         };
 
-        if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE)
-        {
+        if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE) {
             ring_radius = 10;
             ring_girth  = 2;
             color       = (v4f){0};
@@ -1248,10 +1150,8 @@ func b32 render_blockgroup(MiltonState* milton_state,
     const i32 blocks_per_blockgroup = milton_state->blocks_per_blockgroup;
     // Clip and move to canvas space.
     // Derive blockgroup_rect
-    for (i32 block_i = 0; block_i < blocks_per_blockgroup; ++block_i)
-    {
-        if (block_start + block_i >= num_blocks)
-        {
+    for ( i32 block_i = 0; block_i < blocks_per_blockgroup; ++block_i ) {
+        if ( block_start + block_i >= num_blocks ) {
             break;
         }
         blocks[block_start + block_i] = rect_clip_to_screen(blocks[block_start + block_i],
@@ -1271,26 +1171,21 @@ func b32 render_blockgroup(MiltonState* milton_state,
 
 
 
-    if (!stroke_masks)
-    {
+    if (!stroke_masks) {
         allocation_ok = false;
     }
 
     Arena render_arena = { 0 };
-    if (allocation_ok)
-    {
+    if ( allocation_ok ) {
         render_arena = arena_spawn(blockgroup_arena, arena_available_space(blockgroup_arena));
     }
 
-    for (int block_i = 0; block_i < blocks_per_blockgroup && allocation_ok; ++block_i)
-    {
-        if (block_start + block_i >= num_blocks)
-        {
+    for ( int block_i = 0; block_i < blocks_per_blockgroup && allocation_ok; ++block_i ) {
+        if ( block_start + block_i >= num_blocks ) {
             break;
         }
 
-        if (milton_state->cpu_has_sse2)
-        {
+        if ( milton_state->cpu_has_sse2 ) {
             allocation_ok = rasterize_canvas_block_sse2(&render_arena,
                                                         milton_state->view,
                                                         milton_state->strokes,
@@ -1298,9 +1193,7 @@ func b32 render_blockgroup(MiltonState* milton_state,
                                                         &milton_state->working_stroke,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
-        }
-        else
-        {
+        } else {
             allocation_ok = rasterize_canvas_block_slow(&render_arena,
                                                         milton_state->view,
                                                         milton_state->strokes,
@@ -1327,16 +1220,13 @@ func int render_worker(void* data)
     i32 id = params->worker_id;
     RenderQueue* render_queue = milton_state->render_queue;
 
-    for (;;)
-    {
+    for ( ;; ) {
         int err = SDL_SemWait(render_queue->work_available);
-        if (err != 0)
-        {
+        if ( err != 0 ) {
             milton_fatal("Failure obtaining semaphore inside render worker");
         }
         err = SDL_LockMutex(render_queue->mutex);
-        if (err != 0)
-        {
+        if ( err != 0 ) {
             milton_fatal("Failure locking render queue mutex");
         }
         i32 index = -1;
@@ -1356,8 +1246,7 @@ func int render_worker(void* data)
                                               render_queue->blocks,
                                               blockgroup_data.block_start, render_queue->num_blocks,
                                               render_queue->raster_buffer);
-        if (!allocation_ok)
-        {
+        if ( !allocation_ok ) {
             milton_state->worker_needs_memory = true;
         }
 
@@ -1372,12 +1261,13 @@ func void produce_render_work(MiltonState* milton_state,
 {
     RenderQueue* render_queue = milton_state->render_queue;
     i32 lock_err = SDL_LockMutex(milton_state->render_queue->mutex);
-    if (!lock_err)
-    {
+    if ( !lock_err ) {
         render_queue->blockgroup_render_data[render_queue->index++] = blockgroup_render_data;
         SDL_UnlockMutex(render_queue->mutex);
     }
-    else { assert (!"Lock failure not handled"); }
+    else {
+        assert (!"Lock failure not handled");
+    }
 
     SDL_SemPost(render_queue->work_available);
 }
@@ -1392,8 +1282,7 @@ func void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect rast
                                 raster_limits,
                                 milton_state->block_width, milton_state->block_width, &blocks);
 
-    if (num_blocks < 0)
-    {
+    if ( num_blocks < 0 ) {
         milton_log ("[ERROR] Transient arena did not have enough memory for canvas block.\n");
         milton_fatal("Not handling this error.");
     }
@@ -1408,10 +1297,8 @@ func void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect rast
     const i32 blocks_per_blockgroup = milton_state->blocks_per_blockgroup;
 
     i32 blockgroup_acc = 0;
-    for (int block_i = 0; block_i < num_blocks; block_i += blocks_per_blockgroup)
-    {
-        if (block_i >= num_blocks)
-        {
+    for ( int block_i = 0; block_i < num_blocks; block_i += blocks_per_blockgroup ) {
+        if ( block_i >= num_blocks ) {
             break;
         }
 
@@ -1441,11 +1328,9 @@ func void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect rast
 #if RENDER_MULTITHREADED
     // Wait for workers to finish.
 
-    while(blockgroup_acc)
-    {
+    while(blockgroup_acc) {
         i32 waited_err = SDL_SemWait(milton_state->render_queue->completed_semaphore);
-        if (!waited_err)
-        {
+        if (!waited_err) {
             --blockgroup_acc;
         }
         else { assert ( !"Not handling completion semaphore wait error" ); }
@@ -1470,10 +1355,8 @@ func void render_picker(ColorPicker* picker,
     Rect draw_rect = picker_get_bounds(picker);
 
     // Copy canvas buffer into picker buffer
-    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
-    {
-        for (int i = draw_rect.left; i < draw_rect.right; ++i)
-        {
+    for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
+        for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
             u32 picker_i =
                     (j - draw_rect.top) * (2*picker->bounds_radius_px ) + (i - draw_rect.left);
             u32 src = buffer_pixels[j * view->screen_size.w + i];
@@ -1482,10 +1365,8 @@ func void render_picker(ColorPicker* picker,
     }
 
     // Render background color.
-    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
-    {
-        for (int i = draw_rect.left; i < draw_rect.right; ++i)
-        {
+    for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
+        for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
             u32 picker_i =
                     (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
 
@@ -1503,10 +1384,8 @@ func void render_picker(ColorPicker* picker,
 
     // Blit picker pixels
     u32* to_blit = picker->pixels;
-    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
-    {
-        for (int i = draw_rect.left; i < draw_rect.right; ++i)
-        {
+    for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
+        for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
             u32 linear_color = *to_blit++;
             v4f rgba = color_u32_to_v4f(linear_color);
             u32 color = color_v4f_to_u32(rgba);
@@ -1523,13 +1402,11 @@ func void render_gui(MiltonState* milton_state,
     b32 redraw = false;
     Rect picker_rect = picker_get_bounds(&milton_state->gui->picker);
     Rect clipped = rect_intersect(picker_rect, raster_limits);
-    if ((clipped.left != clipped.right) && clipped.top != clipped.bottom)
-    {
+    if ( (clipped.left != clipped.right) && clipped.top != clipped.bottom ) {
         redraw = true;
     }
 
-    if (redraw || (render_flags & MiltonRenderFlags_PICKER_UPDATED))
-    {
+    if ( redraw || (render_flags & MiltonRenderFlags_PICKER_UPDATED) ) {
         render_canvas(milton_state, raster_buffer, picker_rect);
 
         render_picker(&milton_state->gui->picker,
@@ -1537,8 +1414,7 @@ func void render_gui(MiltonState* milton_state,
                       milton_state->view);
 
         ColorButton* button = &milton_state->gui->picker.color_buttons;
-        while(button)
-        {
+        while(button) {
             draw_rectangle(raster_buffer,
                            milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                            button->center_x, button->center_y,
@@ -1558,16 +1434,13 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
 
     // Figure out what `raster_limits` should be.
     {
-        if (render_flags & MiltonRenderFlags_FULL_REDRAW)
-        {
+        if ( render_flags & MiltonRenderFlags_FULL_REDRAW ) {
             raster_limits.left = 0;
             raster_limits.right = milton_state->view->screen_size.w;
             raster_limits.top = 0;
             raster_limits.bottom = milton_state->view->screen_size.h;
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);
-        }
-        else if (milton_state->working_stroke.num_points > 1)
-        {
+        } else if ( milton_state->working_stroke.num_points > 1 ) {
             Stroke* stroke = &milton_state->working_stroke;
 
             raster_limits = bounding_box_for_last_n_points(stroke, 20);
@@ -1575,9 +1448,8 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
-        }
-        else if (milton_state->working_stroke.num_points == 1)
-        {
+
+        } else if ( milton_state->working_stroke.num_points == 1 ) {
             Stroke* stroke = &milton_state->working_stroke;
             v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
             i32 raster_radius = stroke->brush.radius / milton_state->view->scale;
@@ -1589,8 +1461,8 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
         }
-        if (render_flags & MiltonRenderFlags_FINISHED_STROKE)
-        {
+
+        if ( render_flags & MiltonRenderFlags_FINISHED_STROKE ) {
             i32 index = milton_state->strokes->count - 1;
             Rect canvas_rect = bounding_box_for_last_n_points(StrokeCord_get(milton_state->strokes,
                                                                               index),
@@ -1620,6 +1492,4 @@ func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flag
 
     i32 w = milton_state->view->screen_size.w;
     i32 h = milton_state->view->screen_size.h;
-
-
 }

@@ -18,8 +18,7 @@
 
 typedef struct Arena_s Arena;
 
-struct Arena_s
-{
+struct Arena_s {
     // Memory:
     size_t  size;
     size_t  count;
@@ -71,8 +70,7 @@ func void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 
 typedef struct AllocNode_s AllocNode;
 
-struct AllocNode_s
-{
+struct AllocNode_s {
     i32         size;
     AllocNode*  prev;
     AllocNode*  next;
@@ -80,14 +78,11 @@ struct AllocNode_s
 static AllocNode* MILTON_GLOBAL_dyn_freelist_sentinel;
 static Arena* MILTON_GLOBAL_dyn_root_arena;
 
-func void* dyn_alloc_typeless(i32 size)
-{
+func void* dyn_alloc_typeless(i32 size) {
     void* allocated = NULL;
     AllocNode* node = MILTON_GLOBAL_dyn_freelist_sentinel->next;
-    while (node != MILTON_GLOBAL_dyn_freelist_sentinel)
-    {
-        if (node->size >= size)
-        {
+    while (node != MILTON_GLOBAL_dyn_freelist_sentinel) {
+        if (node->size >= size) {
             // Remove node from list
             AllocNode* next = node->next;
             AllocNode* prev = node->prev;
@@ -103,19 +98,13 @@ func void* dyn_alloc_typeless(i32 size)
     }
 
     // If there was no viable candidate, get new pointer from root arena.
-    if (!allocated)
-    {
+    if (!allocated) {
         void* mem = arena_alloc_bytes(MILTON_GLOBAL_dyn_root_arena, size + sizeof(AllocNode));
-        if (mem)
-        {
+        if (mem) {
             AllocNode* node = (AllocNode*)mem;
-            {
-                node->size = size;
-            }
+            node->size = size;
             allocated = (void*)((u8*)mem + sizeof(AllocNode));
-        }
-        else
-        {
+        } else {
             assert(!"Failed to do dynamic allocation.");
         }
     }
@@ -123,8 +112,7 @@ func void* dyn_alloc_typeless(i32 size)
     return allocated;
 }
 
-func void dyn_free_typeless(void* dyn_ptr)
-{
+func void dyn_free_typeless(void* dyn_ptr) {
     // Insert at start of freelist.
     AllocNode* node = (AllocNode*)((u8*)dyn_ptr - sizeof(AllocNode));
     AllocNode* head = MILTON_GLOBAL_dyn_freelist_sentinel->next;
@@ -138,74 +126,10 @@ func void dyn_free_typeless(void* dyn_ptr)
     memset(dyn_ptr, 0, node->size);  // Safety first!
 }
 
-
-// ==============================================
-// ====   Simple stack from arena            ====
-// ==== i.e. heap array with bounds checking ====
-// ==============================================
-
-/*
-    This is a heap array with bounds checking.
-
-    // Example: create an array of 10 elements of type Foo
-    Foo* array = arena_make_stack(arena, 10, Foo);
-    // Push into the array:
-    stack_push(array, some_foo);
-    // Get the first element:
-    Foo* first = array[0];
-    // Loop:
-    for (int i = 0; i < stack_count(array); ++i)
-    {
-        Foo* foo = array[i];
-        use_the_foo(foo);
-    }
-   */
-
-#define arena_make_stack(a, size, type) (type *)arena__stack_typeless(a, sizeof(type) * size)
-#define stack_push(a, e) if (arena__stack_check(a)) a[arena__stack_header(a)->count - 1] = e
-#define stack_reset(a) (arena__stack_header(a)->count = 0)
-#define stack_count(a) (arena__stack_header(a)->count)
-
-
-
-#pragma pack(push, 1)
-typedef struct
-{
-    size_t size;
-    size_t count;
-} StackHeader;
-#pragma pack(pop)
-
-#define arena__stack_header(stack) ((StackHeader*)((uint8_t*)stack - sizeof(StackHeader)))
-
-func void* arena__stack_typeless(Arena* arena, size_t size)
-{
-    Arena child = arena_spawn(arena, size + sizeof(StackHeader));
-    StackHeader head = { 0 };
-    {
-        head.size = child.size;
-    }
-    memcpy(child.ptr, &head, sizeof(StackHeader));
-    return (void*)(((uint8_t*)child.ptr) + sizeof(StackHeader));
-}
-
-func int arena__stack_check(void* stack)
-{
-    StackHeader* head = arena__stack_header(stack);
-    if (head->size < (head->count + 1))
-    {
-        assert (!"Stack full");
-        return 0;
-    }
-    ++head->count;
-    return 1;
-}
-
 func void* arena_alloc_bytes(Arena* arena, size_t num_bytes)
 {
     size_t total = arena->count + num_bytes;
-    if (total > arena->size)
-    {
+    if (total > arena->size) {
         return NULL;
     }
     void* result = arena->ptr + arena->count;
@@ -217,8 +141,7 @@ func Arena arena_init(void* base, size_t size)
 {
     Arena arena = { 0 };
     arena.ptr = (u8*)base;
-    if (arena.ptr)
-    {
+    if (arena.ptr) {
         arena.size = size;
     }
     return arena;

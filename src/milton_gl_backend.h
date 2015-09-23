@@ -140,8 +140,7 @@ func void milton_gl_backend_init(MiltonState* milton_state)
             "}\n";
 
         GLuint shader_objects[2] = {0};
-        for ( int i = 0; i < 2; ++i )
-        {
+        for ( int i = 0; i < 2; ++i ) {
             GLuint shader_type = (i == 0) ? GL_VERTEX_SHADER_ARB : GL_FRAGMENT_SHADER_ARB;
             shader_objects[i] = gl_compile_shader(shader_contents[i], shader_type);
         }
@@ -168,8 +167,7 @@ func void milton_gl_backend_init(MiltonState* milton_state)
     {
 #define u -1.0f
         // full
-        GLfloat vert_data[] =
-        {
+        GLfloat vert_data[] = {
             -u, +u,
             -u, -u,
             +u, -u,
