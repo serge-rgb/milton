@@ -33,8 +33,8 @@ struct Arena_s
 
 // Create a root arena from a memory block.
 func Arena arena_init(void* base, size_t size);
-// Create a child arena.
 func Arena arena_spawn(Arena* parent, size_t size);
+func void  arena_reset(Arena* arena);
 
 // ==== Temporary arenas.
 // Usage:
@@ -43,7 +43,6 @@ func Arena arena_spawn(Arena* parent, size_t size);
 //      arena_pop(child);
 func Arena  arena_push(Arena* parent, size_t size);
 func void   arena_pop (Arena* child);
-func void   arena_reset(Arena* arena);
 
 #define     arena_alloc_elem(arena, T)          (T *)arena_alloc_bytes((arena), sizeof(T))
 #define     arena_alloc_array(arena, count, T)  (T *)arena_alloc_bytes((arena), (count) * sizeof(T))
@@ -64,27 +63,22 @@ func void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 // List of places in Milton that need dynamic allocation:
 //
 //  - Render worker memory. Ever growing, No realloc with simple arenas.
+//  - Milton resize window
 
+#define     dyn_alloc(T, n)     (T*)dyn_alloc_typeless(sizeof(T) * (n))
+#define     dyn_free(ptr)       dyn_free_typeless(ptr), ptr = NULL
 
-// Storing allocated blocks in a circular linked list with a global sentinel.
 
 typedef struct AllocNode_s AllocNode;
 
 struct AllocNode_s
 {
-    // Note: we can add Debug info here for debugging
     i32         size;
     AllocNode*  prev;
     AllocNode*  next;
 };
-
 static AllocNode* MILTON_GLOBAL_dyn_freelist_sentinel;
-
 static Arena* MILTON_GLOBAL_dyn_root_arena;
-
-#define     dyn_alloc(T, n)     (T*)dyn_alloc_typeless(sizeof(T) * (n))
-#define     dyn_free(ptr)       dyn_free_typeless(ptr), ptr = NULL
-
 
 func void* dyn_alloc_typeless(i32 size)
 {
@@ -206,11 +200,6 @@ func int arena__stack_check(void* stack)
     ++head->count;
     return 1;
 }
-
-
-// =========================================
-//        Arena implementation
-// =========================================
 
 func void* arena_alloc_bytes(Arena* arena, size_t num_bytes)
 {
