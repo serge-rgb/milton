@@ -46,6 +46,7 @@ func v4f color_rgb_to_rgba(v3f rgb, float a)
         .b = rgb.b,
         a
     };
+    return rgba;
 }
 
 func v4f blend_v4f(v4f dst, v4f src)
