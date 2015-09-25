@@ -1435,12 +1435,12 @@ func void render_gui(MiltonState* milton_state,
                      MiltonRenderFlags render_flags)
 {
     b32 redraw = false;
-    Rect picker_rect = picker_get_bounds(&milton_state->gui->picker);
+    Rect picker_rect = rect_union(picker_get_bounds(&milton_state->gui->picker),
+                                  picker_color_buttons_bounds(&milton_state->gui->picker));
     Rect clipped = rect_intersect(picker_rect, raster_limits);
     if ( (clipped.left != clipped.right) && clipped.top != clipped.bottom ) {
         redraw = true;
     }
-
     MiltonGui* gui = milton_state->gui;
     if ( redraw || (render_flags & MiltonRenderFlags_PICKER_UPDATED) ) {
         render_canvas(milton_state, raster_buffer, picker_rect);

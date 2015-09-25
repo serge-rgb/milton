@@ -154,24 +154,31 @@ func b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
     return result;
 }
 
+func Rect picker_color_buttons_bounds(ColorPicker* picker)
+{
+    Rect bounds = {
+        .right = INT_MIN,
+        .left = INT_MAX,
+        .top = INT_MAX,
+        .bottom = INT_MIN,
+    };
+    ColorButton* button = &picker->color_buttons;
+    while (button) {
+        bounds = rect_union(bounds,
+                            color_button_as_rect(button));
+        button = button->next;
+    }
+    return bounds;
+}
+
 func b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
 {
-    static b32 rect_is_cached;
-    static Rect button_rect;
-    if (!rect_is_cached) {
-        button_rect = (Rect) { 0 };
-        ColorButton* button = &picker->color_buttons;
-        while (button) {
-            button_rect = rect_union(button_rect,
-                                     color_button_as_rect(button));
-            button = button->next;
-        }
-    }
+    Rect button_rect = picker_color_buttons_bounds(picker);
     b32 is_inside = is_inside_rect(button_rect, point);
     return is_inside;
 }
 
-func b32 is_picker_accepting_input(ColorPicker* picker, v2i point)
+func b32 picker_is_accepting_input(ColorPicker* picker, v2i point)
 {
     // If wheel is active, yes! Gimme input.
     if (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) {
@@ -223,7 +230,6 @@ func b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
 {
     b32 hits = false;
     ColorButton* first = &picker->color_buttons;
-    ColorButton* prev = NULL;
     ColorButton* button = first;
     while (button) {
         if ( button->color.a != 0 &&
@@ -240,7 +246,6 @@ func b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
 
             break;
         }
-        prev = button;
         button = button->next;
     }
     return hits;
@@ -328,7 +333,7 @@ func v3f gui_get_picker_rgb(MiltonGui* gui)
 func b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     v2i point = input->points[0];
-    b32 accepts = is_picker_accepting_input(&gui->picker, point);
+    b32 accepts = picker_is_accepting_input(&gui->picker, point);
     accepts |= picker_hit_history_buttons(&gui->picker, point);
     return accepts;
 }
