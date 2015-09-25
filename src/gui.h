@@ -327,8 +327,8 @@ func MiltonRenderFlags gui_update(MiltonState* milton_state, MiltonInput* input)
     MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
     v2i point = input->points[0];
     ColorPickResult pick_result = picker_update(&milton_state->gui->picker, point);
-    if (pick_result & ColorPickResult_CHANGE_COLOR &&
-            milton_state->current_mode == MiltonMode_PEN) {
+    if ( pick_result & ColorPickResult_CHANGE_COLOR &&
+         milton_state->current_mode == MiltonMode_PEN ) {
         milton_state->gui->did_change_color = true;
         v3f rgb = hsv_to_rgb(milton_state->gui->picker.info.hsv);
         milton_state->brushes[BrushEnum_PEN].color =

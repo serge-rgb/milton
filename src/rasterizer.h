@@ -524,10 +524,8 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 
-            for (i32 jj = pixel_j; jj < pixel_j + downsample_factor; ++jj)
-            {
-                for (i32 ii = pixel_i; ii < pixel_i + downsample_factor; ++ii)
-                {
+            for (i32 jj = pixel_j; jj < pixel_j + downsample_factor; ++jj) {
+                for (i32 ii = pixel_i; ii < pixel_i + downsample_factor; ++ii) {
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }
             }
@@ -1107,8 +1105,7 @@ func void rasterize_color_picker(ColorPicker* picker,
                                                    picker->info.a, picker->info.b, picker->info.c);
             }
 
-            if (samples > 0)
-            {
+            if (samples > 0) {
                 v3f hsv = picker_hsv_from_point(picker, point);
 
                 f32 contrib = samples / 4.0f;
