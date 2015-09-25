@@ -219,17 +219,28 @@ func v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
     return hsv;
 }
 
-func b32 point_hit_picker_button(ColorPicker* picker, v2i point)
+func b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
 {
     b32 hits = false;
-    ColorButton* button = &picker->color_buttons;
+    ColorButton* first = &picker->color_buttons;
+    ColorButton* prev = NULL;
+    ColorButton* button = first;
     while (button) {
-        if (button->color.a != 0 &&
-            is_inside_rect(color_button_as_rect(button), point)) {
-            picker->info = button->picker_data;
+        if ( button->color.a != 0 &&
+             is_inside_rect(color_button_as_rect(button), point) ) {
             hits = true;
+            picker->info = button->picker_data;
+            // Swap info with the first.
+            v4f swp_color = button->color;
+            PickerData swp_data = button->picker_data;
+            button->color = first->color;
+            button->picker_data = first->picker_data;
+            first->color = swp_color;
+            first->picker_data = swp_data;
+
             break;
         }
+        prev = button;
         button = button->next;
     }
     return hits;
@@ -318,7 +329,7 @@ func b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     v2i point = input->points[0];
     b32 accepts = is_picker_accepting_input(&gui->picker, point);
-    accepts |= point_hit_picker_button(&gui->picker, point);
+    accepts |= picker_hit_history_buttons(&gui->picker, point);
     return accepts;
 }
 
