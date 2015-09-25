@@ -405,12 +405,29 @@ func void gui_init(Arena* root_arena, MiltonGui* gui)
 // button list.
 func b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
 {
-    b32 added = false;
-    ColorButton* button = &gui->picker.color_buttons;
-
+    b32 changed = false;
+    ColorButton* start = &gui->picker.color_buttons;
     v3f picker_color  = hsv_to_rgb(gui->picker.info.hsv);
-    if (!equals_v3f(picker_color, button->color.rgb)) {
-        added = true;
+    if (!equals_v3f(picker_color, start->color.rgb)) {
+
+        // Search for a color that is already in the list
+        ColorButton* button = start;
+        while(button) {
+            if ( equals_v3f(button->color.rgb, stroke_color) ) {
+                // Move this button to the start and return.
+                changed = true;
+                v4f tmp_color = button->color;
+                PickerData tmp_data = button->picker_data;
+                button->color = start->color;
+                button->picker_data = start->picker_data;
+                start->color = tmp_color;
+                start->picker_data = tmp_data;
+            }
+            button = button->next;
+        }
+        button = start;
+
+        changed = true;
         v4f button_color = color_rgb_to_rgba(picker_color,1);
         PickerData picker_data = gui->picker.info;
         // Pass info to the next one.
@@ -425,7 +442,7 @@ func b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
         }
     }
 
-    return added;
+    return changed;
 }
 
 func void gui_deactivate(MiltonGui* gui)

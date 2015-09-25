@@ -1044,6 +1044,36 @@ func void draw_rectangle(u32* raster_buffer,
     }
 }
 
+// 1-pixel margin
+func void draw_rectangle_with_margin(u32* raster_buffer,
+                                     i32 raster_buffer_width, i32 raster_buffer_height,
+                                     i32 center_x, i32 center_y,
+                                     i32 rect_w, i32 rect_h,
+                                     v4f rect_color, v4f margin_color)
+{
+    i32 left = max(center_x - rect_w, 0);
+    i32 right = min(center_x + rect_w, raster_buffer_width);
+    i32 top = max(center_y - rect_h, 0);
+    i32 bottom = min(center_y + rect_h, raster_buffer_height);
+
+    assert (right >= left);
+    assert (bottom >= top);
+
+    for ( i32 j = top; j < bottom; ++j ) {
+        for ( i32 i = left; i < right; ++i ) {
+            i32 index = j * raster_buffer_width + i;
+
+            u32 dst_color = raster_buffer[index];
+            v4f src_color = (i == left || i == right - 1 ||
+                             j == top || j == bottom - 1) ? margin_color : rect_color;
+
+            v4f blended = blend_v4f(color_u32_to_v4f(dst_color), src_color);
+            u32 color = color_v4f_to_u32(blended);
+            raster_buffer[index] = color;
+        }
+    }
+}
+
 
 func void rasterize_color_picker(ColorPicker* picker,
                                  Rect draw_rect)
@@ -1451,11 +1481,13 @@ func void render_gui(MiltonState* milton_state,
 
         ColorButton* button = &milton_state->gui->picker.color_buttons;
         while(button) {
-            draw_rectangle(raster_buffer,
-                           milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                           button->center_x, button->center_y,
-                           button->width, button->height,
-                           button->color);
+            draw_rectangle_with_margin(raster_buffer,
+                                       milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                                       button->center_x, button->center_y,
+                                       button->width, button->height,
+                                       button->color,
+                                       // Black margin
+                                       (v4f){ 0, 0, 0, 1 });
 			button = button->next;
         }
         // Draw an outlined circle for selected color.
