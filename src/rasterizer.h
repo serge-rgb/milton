@@ -1098,13 +1098,13 @@ func void rasterize_color_picker(ColorPicker* picker,
                 f32 v = 0.670820f;
 
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){-u, -v}),
-                                                   picker->a, picker->b, picker->c);
+                                                   picker->info.a, picker->info.b, picker->info.c);
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){-v, u}),
-                                                   picker->a, picker->b, picker->c);
+                                                   picker->info.a, picker->info.b, picker->info.c);
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){u, v}),
-                                                   picker->a, picker->b, picker->c);
+                                                   picker->info.a, picker->info.b, picker->info.c);
                 samples += (int)is_inside_triangle(add_v2f(point, (v2f){v, u}),
-                                                   picker->a, picker->b, picker->c);
+                                                   picker->info.a, picker->info.b, picker->info.c);
             }
 
             if (samples > 0)
@@ -1130,7 +1130,7 @@ func void rasterize_color_picker(ColorPicker* picker,
         i32 ring_radius = 5;
         i32 ring_girth = 1;
 
-        v3f hsv = picker->hsv;
+        v3f hsv = picker->info.hsv;
 
         v3f rgb = hsv_to_rgb(hsv);
 
@@ -1152,9 +1152,9 @@ func void rasterize_color_picker(ColorPicker* picker,
         f32 b = 1 - hsv.v;
         f32 c = 1 - a - b;
 
-        v2f point = add_v2f(scale_v2f(picker->c, a),
-                            add_v2f(scale_v2f(picker->b, b),
-                                    scale_v2f(picker->a, c)));
+        v2f point = add_v2f(scale_v2f(picker->info.c, a),
+                            add_v2f(scale_v2f(picker->info.b, b),
+                                    scale_v2f(picker->info.a, c)));
 
         // De-center
         point.x -= picker->center.x - picker->bounds_radius_px;
@@ -1470,7 +1470,7 @@ func void render_gui(MiltonState* milton_state,
                     milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                     x, y,
                     circle_radius,
-                    color_rgb_to_rgba(hsv_to_rgb(gui->picker.hsv), 1.0f));
+                    color_rgb_to_rgba(hsv_to_rgb(gui->picker.info.hsv), 1.0f));
         draw_ring(raster_buffer,
                   milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                   x, y,

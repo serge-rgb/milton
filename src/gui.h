@@ -23,6 +23,14 @@ typedef enum {
     ColorPickerFlags_TRIANGLE_ACTIVE = (1 << 2)
 } ColorPickerFlags;
 
+typedef struct PickerData_s {
+    v2f a;  // Corresponds to value = 0      (black)
+    v2f b;  // Corresponds to saturation = 0 (white)
+    v2f c;  // Points to chosen hue.         (full color)
+
+    v3f  hsv;
+} PickerData;
+
 // TODO: There should be a way to deal with high density displays.
 typedef struct ColorButton_s ColorButton;
 struct ColorButton_s {
@@ -32,14 +40,12 @@ struct ColorButton_s {
     i32 height;
     v4f color;
 
+    PickerData picker_data;
+
     ColorButton* next;
 };
 
 typedef struct ColorPicker_s {
-    v2f a;  // Corresponds to value = 0      (black)
-    v2f b;  // Corresponds to saturation = 0 (white)
-    v2f c;  // Points to chosen hue.         (full color)
-
     v2i     center;  // In screen pixel coordinates.
     i32     bounds_radius_px;
     Rect    bounds;
@@ -48,7 +54,7 @@ typedef struct ColorPicker_s {
 
     u32*    pixels;  // Blit this to render picker
 
-    v3f     hsv;
+    PickerData info;
 
     ColorButton color_buttons;
 
@@ -61,6 +67,16 @@ typedef enum {
     ColorPickResult_CHANGE_COLOR    = (1 << 1),
 } ColorPickResult;
 
+Rect color_button_as_rect(ColorButton* button)
+{
+    Rect rect = (Rect) {
+        .left = button->center_x - button->width,
+        .right = button->center_x + button->width,
+        .top = button->center_y - button->height,
+        .bottom = button->center_y + button->height,
+    };
+    return rect;
+}
 
 func b32 picker_hits_wheel(ColorPicker* picker, v2f point)
 {
@@ -90,7 +106,7 @@ func float picker_wheel_get_angle(ColorPicker* picker, v2f point)
 func void picker_update_wheel(ColorPicker* picker, v2f point)
 {
     float angle = picker_wheel_get_angle(picker, point);
-    picker->hsv.h = radians_to_degrees(angle);
+    picker->info.hsv.h = radians_to_degrees(angle);
     // Update the triangle
     {
         float radius = 0.9f * (picker->wheel_radius - picker->wheel_half_width);
@@ -98,17 +114,17 @@ func void picker_update_wheel(ColorPicker* picker, v2f point)
         {
             v2f point = polar_to_cartesian(-angle, radius);
             point = add_v2f(point, center);
-            picker->c = point;
+            picker->info.c = point;
         }
         {
             v2f point = polar_to_cartesian(-angle + 2 * kPi / 3.0f, radius);
             point = add_v2f(point, center);
-            picker->b = point;
+            picker->info.b = point;
         }
         {
             v2f point = polar_to_cartesian(-angle + 4 * kPi / 3.0f, radius);
             point = add_v2f(point, center);
-            picker->a = point;
+            picker->info.a = point;
         }
     }
 }
@@ -116,7 +132,7 @@ func void picker_update_wheel(ColorPicker* picker, v2f point)
 
 func b32 picker_hits_triangle(ColorPicker* picker, v2f fpoint)
 {
-    b32 result = is_inside_triangle(fpoint, picker->a, picker->b, picker->c);
+    b32 result = is_inside_triangle(fpoint, picker->info.a, picker->info.b, picker->info.c);
     return result;
 }
 
@@ -134,8 +150,25 @@ func b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
 {
     v2f fpoint = v2i_to_v2f(point);
     b32 result = picker_hits_wheel(picker, fpoint) ||
-                 is_inside_triangle(fpoint, picker->a, picker->b, picker->c);
+                 is_inside_triangle(fpoint, picker->info.a, picker->info.b, picker->info.c);
     return result;
+}
+
+func b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
+{
+    static b32 rect_is_cached;
+    static Rect button_rect;
+    if (!rect_is_cached) {
+        button_rect = (Rect) { 0 };
+        ColorButton* button = &picker->color_buttons;
+        while (button) {
+            button_rect = rect_union(button_rect,
+                                     color_button_as_rect(button));
+            button = button->next;
+        }
+    }
+    b32 is_inside = is_inside_rect(button_rect, point);
+    return is_inside;
 }
 
 func b32 is_picker_accepting_input(ColorPicker* picker, v2i point)
@@ -143,9 +176,11 @@ func b32 is_picker_accepting_input(ColorPicker* picker, v2i point)
     // If wheel is active, yes! Gimme input.
     if (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) {
         return true;
-    } else {
+    } else if (is_inside_picker_rect(picker, point)) {
         //return is_inside_picker_active_area(picker, point);
-        return is_inside_picker_rect(picker, point);
+        return true;
+    } else {
+        return is_inside_picker_button_area(picker, point);
     }
 }
 
@@ -166,22 +201,38 @@ func Rect picker_get_bounds(ColorPicker* picker)
 
 func v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
 {
-    float area = orientation(picker->a, picker->b, picker->c);
+    float area = orientation(picker->info.a, picker->info.b, picker->info.c);
     assert (area != 0);
     float inv_area = 1.0f / area;
-    float s = orientation(picker->b, point, picker->a) * inv_area;
+    float s = orientation(picker->info.b, point, picker->info.a) * inv_area;
     if (s > 1) { s = 1; }
     if (s < 0) { s = 0; }
-    float v = 1 - (orientation(point, picker->c, picker->a) * inv_area);
+    float v = 1 - (orientation(point, picker->info.c, picker->info.a) * inv_area);
     if (v > 1) { v = 1; }
     if (v < 0) { v = 0; }
 
     v3f hsv = {
-        picker->hsv.h,
+        picker->info.hsv.h,
         s,
         v,
     };
     return hsv;
+}
+
+func b32 point_hit_picker_button(ColorPicker* picker, v2i point)
+{
+    b32 hits = false;
+    ColorButton* button = &picker->color_buttons;
+    while (button) {
+        if (button->color.a != 0 &&
+            is_inside_rect(color_button_as_rect(button), point)) {
+            picker->info = button->picker_data;
+            hits = true;
+            break;
+        }
+        button = button->next;
+    }
+    return hits;
 }
 
 func ColorPickResult picker_update(ColorPicker* picker, v2i point)
@@ -202,16 +253,16 @@ func ColorPickResult picker_update(ColorPicker* picker, v2i point)
     if (picker_hits_triangle(picker, fpoint)) {
         if (!(picker->flags & ColorPickerFlags_WHEEL_ACTIVE)) {
             picker->flags |= ColorPickerFlags_TRIANGLE_ACTIVE;
-            picker->hsv = picker_hsv_from_point(picker, fpoint);
+            picker->info.hsv = picker_hsv_from_point(picker, fpoint);
             result |= ColorPickResult_CHANGE_COLOR;
         }
     } else if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE) {
         // We don't want the chooser to "stick" if go outside the triangle
         // (i.e. picking black should be easy)
         v2f segments[] = {
-            picker->a, picker->b,
-            picker->b, picker->c,
-            picker->c, picker->a,
+            picker->info.a, picker->info.b,
+            picker->info.b, picker->info.c,
+            picker->info.c, picker->info.a,
         };
 
         for (i32 segment_i = 0; segment_i < 6; segment_i += 2) {
@@ -222,7 +273,7 @@ func ColorPickResult picker_update(ColorPicker* picker, v2i point)
                                               a, b,
                                               &intersection);
             if (hit) {
-                picker->hsv = picker_hsv_from_point(picker, intersection);
+                picker->info.hsv = picker_hsv_from_point(picker, intersection);
                 result |= ColorPickResult_CHANGE_COLOR;
                 break;
             }
@@ -240,7 +291,7 @@ func void picker_init(ColorPicker* picker)
         (f32)picker->center.y
     };
     picker_update_wheel(picker, fpoint);
-    picker->hsv = (v3f){ 0, 1, 1 };
+    picker->info.hsv = (v3f){ 0, 1, 1 };
 }
 
 ////////////////////////////////////
@@ -258,14 +309,16 @@ struct MiltonGui_s {
 
 func v3f gui_get_picker_rgb(MiltonGui* gui)
 {
-    v3f rgb = hsv_to_rgb(gui->picker.hsv);
+    v3f rgb = hsv_to_rgb(gui->picker.info.hsv);
     return rgb;
 }
 
-func b32 gui_accepts_input(MiltonGui* gui, MiltonInput* input)
+// Returns true if the GUI consumed input. False if the GUI wasn't affected
+func b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     v2i point = input->points[0];
     b32 accepts = is_picker_accepting_input(&gui->picker, point);
+    accepts |= point_hit_picker_button(&gui->picker, point);
     return accepts;
 }
 
@@ -277,7 +330,7 @@ func MiltonRenderFlags gui_update(MiltonState* milton_state, MiltonInput* input)
     if (pick_result & ColorPickResult_CHANGE_COLOR &&
             milton_state->current_mode == MiltonMode_PEN) {
         milton_state->gui->did_change_color = true;
-        v3f rgb = hsv_to_rgb(milton_state->gui->picker.hsv);
+        v3f rgb = hsv_to_rgb(milton_state->gui->picker.info.hsv);
         milton_state->brushes[BrushEnum_PEN].color =
                 to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha);
     }
@@ -294,7 +347,7 @@ func void gui_init(Arena* root_arena, MiltonGui* gui)
     gui->picker.bounds_radius_px = bounds_radius_px;
     gui->picker.wheel_half_width = wheel_half_width;
     gui->picker.wheel_radius = (f32)bounds_radius_px - 5.0f - wheel_half_width;
-    gui->picker.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
+    gui->picker.info.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
     Rect bounds;
     bounds.left = gui->picker.center.x - bounds_radius_px;
     bounds.right = gui->picker.center.x + bounds_radius_px;
@@ -339,18 +392,19 @@ func b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
     b32 added = false;
     ColorButton* button = &gui->picker.color_buttons;
 
-    v4f button_color = button->color;
-    v3f picker_color  = hsv_to_rgb(gui->picker.hsv);
-    if (!equals_v3f(picker_color, button_color.rgb)) {
+    v3f picker_color  = hsv_to_rgb(gui->picker.info.hsv);
+    if (!equals_v3f(picker_color, button->color.rgb)) {
         added = true;
-        button->color.rgb = picker_color;
-        button->color.a = 1.0f;
-        button = button->next;
-
+        v4f button_color = color_rgb_to_rgba(picker_color,1);
+        PickerData picker_data = gui->picker.info;
+        // Pass info to the next one.
         while (button) {
             v4f tmp_color = button->color;
+            PickerData tmp_data = button->picker_data;
             button->color = button_color;
+            button->picker_data = picker_data;
             button_color = tmp_color;
+            picker_data = tmp_data;
             button = button->next;
         }
     }

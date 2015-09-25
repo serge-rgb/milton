@@ -500,7 +500,6 @@ func void milton_init(MiltonState* milton_state)
     }
 
     milton_set_pen_alpha(milton_state, 0.8f);
-    milton_update_brushes(milton_state);
 
     for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
@@ -832,13 +831,11 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
         // Don't draw brush outline.
         milton_gl_unset_brush_hover(milton_state->gl);
 
-        if (!is_user_drawing(milton_state) &&
-            gui_accepts_input(milton_state->gui, input))
-        {
+        if ( !is_user_drawing(milton_state) &&
+             gui_consume_input(milton_state->gui, input) ) {
+            milton_update_brushes(milton_state);
             render_flags |= gui_update(milton_state, input);
-        }
-        else if (!milton_state->gui->active)
-        {
+        } else if (!milton_state->gui->active) {
             milton_stroke_input(milton_state, input);
         }
 
