@@ -5,38 +5,36 @@ To-Do
 - Bugs
     - :)
 
-- (Immediate-mode) UI
-    - x-form color picker code into immediate mode API.
+-  GUI
     - Image Button (hover & click)
     - Brush / Eraser buttons
     - Text (stb)
+    - F1 help widget
     - GUI toggle key
     - History slider.
     - Text input box.
     - Selection rectangle
     - "Export" button
     - Sliders for brush size & opacity / eraser
-    - LRU color list
     - Layers
         - Drag-and-drop
 
 - Engine
     - Wacom:
         - Pressure levels (only OSX left)
-        - Windows buttons
+        - Windows stylus buttons
 
     - Performance:
+        - Live profiler
         - memcpy when Panning
         - Write perf logger to make informed decision.
         - Undo/Redo: Only redraw necessary area.
-        - Amdahl's curse... Parallelize color picker rendering
-        - ??? Trim strokes: we've got too many points
-        - ??? Stroke Level-of-Detail downsampling based on relative size.
+        - Amdahl's curse... Parallelize GUI rendering
     - Stress the renderer with a huge drawing.
     - Robust save
     - Export
         - JPEG (tiny_jpeg)
-        - PNG (stb)
+        - PNG (stb? hand written?)
     - Playback
         - Store view changes in persist file
         - Playback mode? Separate viewer?
@@ -44,8 +42,8 @@ To-Do
     - Brush
         - Support for general, implicitly defined brushes
 
-- Not replicable yet
-    - It sometimes sticks in low-quality mode.
+    - Debug
+        - Input recorder for bug replication
 
 ============================================================
 ====                   1.0 Beta Milestone               ====
