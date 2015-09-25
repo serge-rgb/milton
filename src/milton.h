@@ -854,6 +854,11 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
             render_flags |= MiltonRenderFlags_PICKER_UPDATED;
         } else {
             if ( milton_state->working_stroke.num_points > 0 ) {
+                // We used the selected color to draw something. Push.
+                if(gui_mark_color_used(milton_state->gui,
+                                       milton_state->working_stroke.brush.color.rgb)) {
+                    render_flags |= MiltonRenderFlags_PICKER_UPDATED;
+                }
                 // Copy current stroke.
                 Stroke new_stroke =
                 {

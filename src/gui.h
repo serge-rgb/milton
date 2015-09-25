@@ -332,24 +332,34 @@ func void gui_init(Arena* root_arena, MiltonGui* gui)
     }
 }
 
-func void gui_deactivate(MiltonGui* gui)
+// When a selected color is used in a stroke, call this to update the color
+// button list.
+func b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
 {
-    if (gui->did_change_color) {
-        ColorButton* button = &gui->picker.color_buttons;
-        v4f color = button->color;
-        v3f rgb  = hsv_to_rgb(gui->picker.hsv);
-        button->color.rgb = rgb;
+    b32 added = false;
+    ColorButton* button = &gui->picker.color_buttons;
+
+    v4f button_color = button->color;
+    v3f picker_color  = hsv_to_rgb(gui->picker.hsv);
+    if (!equals_v3f(picker_color, button_color.rgb)) {
+        added = true;
+        button->color.rgb = picker_color;
         button->color.a = 1.0f;
         button = button->next;
 
         while (button) {
             v4f tmp_color = button->color;
-            button->color = color;
-            color = tmp_color;
+            button->color = button_color;
+            button_color = tmp_color;
             button = button->next;
         }
     }
 
+    return added;
+}
+
+func void gui_deactivate(MiltonGui* gui)
+{
     picker_deactivate(&gui->picker);
 
     // Reset transient values

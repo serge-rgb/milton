@@ -137,6 +137,15 @@ func $<Name3> invscale_$<Name3> ($<Name3> v, $<Type> factor)
     return result;
 }
 
+func b32 equals_$<Name3> ($<Name3> a, $<Name3> b)
+{
+    b32 equals =
+            a.x == b.x &&
+            a.y == b.y &&
+            a.z == b.z;
+    return equals;
+}
+
 typedef struct $<Name4>_s
 {
     union
@@ -163,3 +172,13 @@ typedef struct $<Name4>_s
         $<Type> d[4];
     };
 } $<Name4>;
+
+func b32 equals_$<Name4> ($<Name4> a, $<Name4> b)
+{
+    b32 equals =
+            a.x == b.x &&
+            a.y == b.y &&
+            a.z == b.z &&
+            a.a == b.a;
+    return equals;
+}
