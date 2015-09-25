@@ -319,6 +319,7 @@ func void picker_init(ColorPicker* picker)
 struct MiltonGui_s {
     b32 active;  // `active == true` when gui currently owns all user input.
     b32 did_change_color;
+    b32 did_hit_button;  // Avoid multiple clicks.
 
     ColorPicker picker;
 };
@@ -329,12 +330,25 @@ func v3f gui_get_picker_rgb(MiltonGui* gui)
     return rgb;
 }
 
+func b32 picker_is_active(ColorPicker* picker)
+{
+    b32 is_active = (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) ||
+            (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE);
+
+    return is_active;
+}
+
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
 func b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     v2i point = input->points[0];
     b32 accepts = picker_is_accepting_input(&gui->picker, point);
-    accepts |= picker_hit_history_buttons(&gui->picker, point);
+    if ( !gui->did_hit_button &&
+         !picker_is_active(&gui->picker) &&
+         picker_hit_history_buttons(&gui->picker, point)) {
+        accepts = true;
+        gui->did_hit_button = true;
+    }
     return accepts;
 }
 
@@ -408,12 +422,12 @@ func b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
     b32 changed = false;
     ColorButton* start = &gui->picker.color_buttons;
     v3f picker_color  = hsv_to_rgb(gui->picker.info.hsv);
-    if (!equals_v3f(picker_color, start->color.rgb)) {
+    if ( start->color.a == 0 || !equals_v3f(picker_color, start->color.rgb)) {
 
         // Search for a color that is already in the list
         ColorButton* button = start;
         while(button) {
-            if ( equals_v3f(button->color.rgb, stroke_color) ) {
+            if ( button->color.a != 0 && equals_v3f(button->color.rgb, stroke_color) ) {
                 // Move this button to the start and return.
                 changed = true;
                 v4f tmp_color = button->color;
@@ -427,18 +441,21 @@ func b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
         }
         button = start;
 
-        changed = true;
-        v4f button_color = color_rgb_to_rgba(picker_color,1);
-        PickerData picker_data = gui->picker.info;
-        // Pass info to the next one.
-        while (button) {
-            v4f tmp_color = button->color;
-            PickerData tmp_data = button->picker_data;
-            button->color = button_color;
-            button->picker_data = picker_data;
-            button_color = tmp_color;
-            picker_data = tmp_data;
-            button = button->next;
+        if ( !changed ) {
+            changed = true;
+            v4f button_color = color_rgb_to_rgba(picker_color,1);
+            PickerData picker_data = gui->picker.info;
+            // Pass info to the next one.
+            while (button) {
+                v4f tmp_color = button->color;
+                PickerData tmp_data = button->picker_data;
+                button->color = button_color;
+                button->picker_data = picker_data;
+                button_color = tmp_color;
+                picker_data = tmp_data;
+                button = button->next;
+            }
+
         }
     }
 
@@ -452,4 +469,5 @@ func void gui_deactivate(MiltonGui* gui)
     // Reset transient values
     gui->active = false;
     gui->did_change_color = false;
+    gui->did_hit_button = false;
 }

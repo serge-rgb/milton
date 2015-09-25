@@ -1481,6 +1481,9 @@ func void render_gui(MiltonState* milton_state,
 
         ColorButton* button = &milton_state->gui->picker.color_buttons;
         while(button) {
+            if (button->color.a == 0) {
+                break;
+            }
             draw_rectangle_with_margin(raster_buffer,
                                        milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                                        button->center_x, button->center_y,
@@ -1488,7 +1491,7 @@ func void render_gui(MiltonState* milton_state,
                                        button->color,
                                        // Black margin
                                        (v4f){ 0, 0, 0, 1 });
-			button = button->next;
+            button = button->next;
         }
         // Draw an outlined circle for selected color.
         i32 circle_radius = 20;
