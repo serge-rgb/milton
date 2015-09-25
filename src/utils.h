@@ -70,6 +70,15 @@ func f32 magnitude(v2f a)
     return sqrtf(DOT(a, a));
 }
 
+func f32 distance(v2f a, v2f b)
+{
+    v2f diff = sub_v2f(a, b);
+
+    f32 dist = sqrtf(DOT(diff, diff));
+
+    return dist;
+}
+
 func f32 deegrees_to_radians(int d)
 {
     assert (0 <= d && d < 360);

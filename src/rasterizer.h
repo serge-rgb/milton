@@ -937,11 +937,11 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
     return true;
 }
 
-func void rasterize_ring(u32* pixels,
-                         i32 width, i32 height,
-                         i32 center_x, i32 center_y,
-                         i32 ring_radius, i32 ring_girth,
-                         v4f color)
+func void draw_ring(u32* pixels,
+                    i32 width, i32 height,
+                    i32 center_x, i32 center_y,
+                    i32 ring_radius, i32 ring_girth,
+                    v4f color)
 {
 #define COMPARE(dist) \
     dist < SQUARE(ring_radius + ring_girth) && \
@@ -951,10 +951,13 @@ func void rasterize_ring(u32* pixels,
 
     assert(ring_radius < (1 << 16));
 
-    // TODO: Compute bounding box(es) for ring.
+    i32 left = max(center_x - ring_radius - ring_girth, 0);
+    i32 right = min(center_x + ring_radius + ring_girth, width);
+    i32 top = max(center_y - ring_radius - ring_girth, 0);
+    i32 bottom = min(center_y + ring_radius + ring_girth, height);
 
-    for ( i32 j = 0; j < height; ++j ) {
-        for ( i32 i = 0; i < width; ++i ) {
+    for ( i32 j = top; j < bottom; ++j ) {
+        for ( i32 i = left; i < right; ++i ) {
             // Rotated grid AA
             int samples = 0;
             {
@@ -983,6 +986,38 @@ func void rasterize_ring(u32* pixels,
 #undef distance
 }
 
+func void draw_circle(u32* raster_buffer,
+                      i32 raster_buffer_width, i32 raster_buffer_height,
+                      i32 center_x, i32 center_y,
+                      i32 radius,
+                      v4f src_color)
+{
+    i32 left = max(center_x - radius, 0);
+    i32 right = min(center_x + radius, raster_buffer_width);
+    i32 top = max(center_y - radius, 0);
+    i32 bottom = min(center_y + radius, raster_buffer_height);
+
+    assert (right >= left);
+    assert (bottom >= top);
+
+    for ( i32 j = top; j < bottom; ++j ) {
+        for ( i32 i = left; i < right; ++i ) {
+            i32 index = j * raster_buffer_width + i;
+
+
+            //TODO: AA
+            f32 dist = distance(((v2f){ (f32)i, (f32)j }),
+                                (v2f){ (f32)center_x, (f32)center_y });
+
+            if (dist < radius) {
+                u32 dst_color = raster_buffer[index];
+                v4f blended = blend_v4f(color_u32_to_v4f(dst_color), src_color);
+                u32 color = color_v4f_to_u32(blended);
+                raster_buffer[index] = color;
+            }
+        }
+    }
+}
 func void draw_rectangle(u32* raster_buffer,
                          i32 raster_buffer_width, i32 raster_buffer_height,
                          i32 center_x, i32 center_y,
@@ -1128,10 +1163,10 @@ func void rasterize_color_picker(ColorPicker* picker,
         i32 width = picker->bounds_radius_px * 2;
         i32 height = picker->bounds_radius_px * 2;
 
-        rasterize_ring(picker->pixels, width, height,
-                       (i32)point.x, (i32)point.y,
-                       ring_radius, ring_girth,
-                       color);
+        draw_ring(picker->pixels, width, height,
+                  (i32)point.x, (i32)point.y,
+                  ring_radius, ring_girth,
+                  color);
     }
 }
 
@@ -1406,6 +1441,7 @@ func void render_gui(MiltonState* milton_state,
         redraw = true;
     }
 
+    MiltonGui* gui = milton_state->gui;
     if ( redraw || (render_flags & MiltonRenderFlags_PICKER_UPDATED) ) {
         render_canvas(milton_state, raster_buffer, picker_rect);
 
@@ -1422,6 +1458,24 @@ func void render_gui(MiltonState* milton_state,
                            button->color);
 			button = button->next;
         }
+        // Draw an outlined circle for selected color.
+        i32 circle_radius = 20;
+        i32 circle_shift_left = 20;
+        i32 picker_radius = gui->picker.bounds_radius_px;
+        i32 ring_girth = 1;
+        i32 center_shift = picker_radius - circle_radius - 2*ring_girth;
+        i32 x = gui->picker.center.x + center_shift;
+        i32 y = gui->picker.center.y - center_shift;
+        draw_circle(raster_buffer,
+                    milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                    x, y,
+                    circle_radius,
+                    color_rgb_to_rgba(hsv_to_rgb(gui->picker.hsv), 1.0f));
+        draw_ring(raster_buffer,
+                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                  x, y,
+                  circle_radius, ring_girth,
+                  (v4f) { 0 });
 
     }
 }
