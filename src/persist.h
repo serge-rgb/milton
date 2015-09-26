@@ -81,6 +81,7 @@ func void milton_load(MiltonState* milton_state)
             fread(stroke->metadata, sizeof(PointMetadata), stroke->num_points, fd);
         }
 
+        fread(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
 close:
         fclose(fd);
     }
@@ -118,6 +119,8 @@ func void milton_save(MiltonState* milton_state)
         fwrite(stroke->points, sizeof(v2i), stroke->num_points, fd);
         fwrite(stroke->metadata, sizeof(PointMetadata), stroke->num_points, fd);
     }
+
+    fwrite(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
 
     fclose(fd);
 }
