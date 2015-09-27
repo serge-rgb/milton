@@ -6,7 +6,7 @@ It is intended to be a reinvention from first principles of what a program for p
 
 Milton Paint is pre-alpha, currently in active development.
 
-### [Latest release (2015-07-25) pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha001)
+### [Latest release (2015-09-25) pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha002)
 
 ![alpaca](http://i.imgur.com/k7E8k7r.png)
 
