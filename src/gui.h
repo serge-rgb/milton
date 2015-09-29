@@ -31,7 +31,6 @@ typedef struct PickerData_s {
     v3f  hsv;
 } PickerData;
 
-// TODO: There should be a way to deal with high density displays.
 typedef struct ColorButton_s ColorButton;
 struct ColorButton_s {
     i32 center_x;
@@ -66,6 +65,30 @@ typedef enum {
     ColorPickResult_NOTHING         = 0,
     ColorPickResult_CHANGE_COLOR    = (1 << 1),
 } ColorPickResult;
+
+
+typedef enum {
+    GuiButtonState_INACTIVE,
+    GuiButtonState_HOVERING,  // Mouse over
+    GuiButtonState_PRESSED,   // Being clicked on..
+} GuiButtonState;
+
+typedef struct GuiButton_s {
+    GuiButtonState  state;
+    Rect            rect;
+    Bitmap          bitmap;
+} GuiButton;
+
+// typedef'd in milton.h
+struct MiltonGui_s {
+    b32 active;  // `active == true` when gui currently owns all user input.
+    b32 did_change_color;
+    b32 did_hit_button;  // Avoid multiple clicks.
+
+    ColorPicker picker;
+
+    GuiButton brush_button;
+};
 
 Rect color_button_as_rect(ColorButton* button)
 {
@@ -310,20 +333,6 @@ func void picker_init(ColorPicker* picker)
     picker->info.hsv = (v3f){ 0, 1, 1 };
 }
 
-////////////////////////////////////
-// API
-////////////////////////////////////
-
-
-// typedef'd in milton.h
-struct MiltonGui_s {
-    b32 active;  // `active == true` when gui currently owns all user input.
-    b32 did_change_color;
-    b32 did_hit_button;  // Avoid multiple clicks.
-
-    ColorPicker picker;
-};
-
 func v3f gui_get_picker_rgb(MiltonGui* gui)
 {
     v3f rgb = hsv_to_rgb(gui->picker.info.hsv);
@@ -446,7 +455,7 @@ func b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
             v4f button_color = color_rgb_to_rgba(picker_color,1);
             PickerData picker_data = gui->picker.info;
             // Pass info to the next one.
-            while (button) {
+            while ( button ) {
                 v4f tmp_color = button->color;
                 PickerData tmp_data = button->picker_data;
                 button->color = button_color;

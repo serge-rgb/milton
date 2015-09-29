@@ -341,6 +341,18 @@ func b32 is_rect_within_rect(Rect a, Rect b)
    return true;
 }
 
+func Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h)
+{
+    Rect rect  = {
+        .left = x,
+        .right = x + w,
+        .top = y,
+        .bottom = y + h,
+    };
+
+    return rect;
+}
+
 #ifdef __cplusplus
 }
 #endif

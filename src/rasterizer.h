@@ -15,6 +15,13 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+// TODO: There should be a way to deal with high density displays.
+
+// We might want to split this file into
+//  - Actual rasterization of implicitly defined geometry (including strokes.)
+//  - Render jobs and spacial division
+//  - Bitmap loading and resource management.
+
 
 typedef struct ClippedStroke_s ClippedStroke;
 struct ClippedStroke_s {
@@ -75,8 +82,7 @@ func ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, 
     } else {
         i32 num_points = in_stroke->num_points;
         b32 added_previous_segment = false;
-        for (i32 point_i = 0; point_i < num_points - 1; ++point_i)
-        {
+        for (i32 point_i = 0; point_i < num_points - 1; ++point_i) {
             v2i a = in_stroke->points[point_i];
             v2i b = in_stroke->points[point_i + 1];
 
@@ -167,8 +173,7 @@ func b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 
             // Half width of a rectangle contained by brush at point p.
             i32 rad = (i32)(brush.radius  * 0.707106781f * pressure);  // cos(pi/4)
-            Rect bounded_rect;
-            {
+            Rect bounded_rect; {
                 bounded_rect.left   = p.x - rad;
                 bounded_rect.right  = p.x + rad;
                 bounded_rect.bottom = p.y + rad;
@@ -1457,6 +1462,41 @@ func void render_picker(ColorPicker* picker,
     }
 }
 
+func void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_buffer_height,
+                      i32 x, i32 y, Bitmap* bitmap)
+{
+
+    if (!bitmap->data) {
+        // Fail silently when bitmap is NULL. Will happen until the Git situation is resolved...
+        return;
+    }
+    Rect limits = {
+        .left = max(x, 0),
+        .top = max(y, 0),
+        .right = min(raster_buffer_width, x + bitmap->width),
+        .bottom = min(raster_buffer_height, y + bitmap->height),
+    };
+
+    if (bitmap->num_components != 4) {
+        assert (bitmap->num_components && !"not implemented");
+    }
+
+    u32* src_data = (u32*)bitmap->data;
+    for ( i32 j = limits.top; j < limits.bottom; ++j ) {
+        for ( i32 i = limits.left; i < limits.right; ++i ) {
+            i32 index = j * raster_buffer_width + i;
+            raster_buffer[index] = *src_data++;
+        }
+    }
+
+}
+
+func void render_gui_button(u32* raster_buffer, i32 w, i32 h, GuiButton* button)
+{
+    // TODO: If assets are not present. Draw a flat rectangle.
+    blit_bitmap(raster_buffer, w, h, 10, 300, &button->bitmap);
+}
+
 func void render_gui(MiltonState* milton_state,
                      u32* raster_buffer, Rect raster_limits,
                      MiltonRenderFlags render_flags)
@@ -1476,6 +1516,7 @@ func void render_gui(MiltonState* milton_state,
                       raster_buffer,
                       milton_state->view);
 
+        // Render history buttons for picker
         ColorButton* button = &milton_state->gui->picker.color_buttons;
         while(button) {
             if (button->color.a == 0) {
@@ -1490,6 +1531,7 @@ func void render_gui(MiltonState* milton_state,
                                        (v4f){ 0, 0, 0, 1 });
             button = button->next;
         }
+
         // Draw an outlined circle for selected color.
         i32 circle_radius = 20;
         i32 circle_shift_left = 20;
@@ -1508,8 +1550,13 @@ func void render_gui(MiltonState* milton_state,
                   x, y,
                   circle_radius, ring_girth,
                   (v4f) { 0 });
-
     }
+
+
+    // Render button
+    render_gui_button(raster_buffer,
+                      milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                      &gui->brush_button);
 }
 
 func void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)

@@ -198,6 +198,13 @@ typedef struct MiltonInput_s {
     v2i  pan_delta;
 } MiltonInput;
 
+typedef struct Bitmap_s {
+    i32 width;
+    i32 height;
+    i32 num_components;
+    u8* data;
+} Bitmap;
+
 // Defined below. Used in rasterizer.h
 func i32 milton_get_brush_size(MiltonState* milton_state);
 
@@ -313,8 +320,6 @@ func void milton_decrease_brush_size(MiltonState* milton_state)
     milton_update_brushes(milton_state);
 }
 
-
-
 func void milton_set_pen_alpha(MiltonState* milton_state, float alpha)
 {
     milton_state->brushes[BrushEnum_PEN].alpha = alpha;
@@ -352,10 +357,10 @@ func void milton_blend_tests()
 
 func void milton_math_tests()
 {
-    v2i a = { 0,    0  };
-    v2i b = { 2,    0  };
+    v2i a = { 0,  0 };
+    v2i b = { 2,  0 };
     v2i u = { 1, -2 };
-    v2i v = { 1, 2  };
+    v2i v = { 1,  2 };
 
     v2f intersection;
     b32 hit = intersect_line_segments(a, b,
@@ -369,18 +374,19 @@ func void milton_math_tests()
 func void milton_cord_tests(Arena* arena)
 {
     StrokeCord* cord = StrokeCord_make(arena, 2);
-    if (cord) {
+    if ( cord ) {
         for (int i = 0; i < 11; ++i) {
             Stroke test = {0};
             test.num_points = i;
             StrokeCord_push(cord, test);
         }
-        for (int i = 0; i < 11; ++i) {
+        for ( int i = 0; i < 11; ++i ) {
             Stroke test = *StrokeCord_get(cord, i);
             assert(test.num_points == i);
         }
+    } else {
+        assert (!"Could not create cord");
     }
-
 }
 
 func void milton_dynmem_tests()
@@ -396,6 +402,21 @@ func void milton_dynmem_tests()
 }
 
 #endif
+
+func void milton_load_assets(MiltonState* milton_state)
+{
+    MiltonGui* gui = milton_state->gui;
+
+    Bitmap* bitmap = &gui->brush_button.bitmap;
+
+    static char* img_name_brush_button = "assets/brush.png";
+
+    bitmap->data = stbi_load(img_name_brush_button, &bitmap->width, &bitmap->height,
+                             &bitmap->num_components, 4);
+    i32 x = 400;
+    i32 y = 500;
+    gui->brush_button.rect = rect_from_xywh(x, y, bitmap->width, bitmap->height);
+}
 
 func void milton_init(MiltonState* milton_state)
 {
@@ -438,7 +459,7 @@ func void milton_init(MiltonState* milton_state)
 
     // Allocate enough memory for the maximum possible supported resolution. As
     // of now, it seems like future 8k displays will adopt this resolution.
-    milton_state->bytes_per_pixel  = 4;
+    milton_state->bytes_per_pixel = 4;
 
     milton_state->strokes = StrokeCord_make(milton_state->root_arena, 1024);
 
@@ -451,7 +472,7 @@ func void milton_init(MiltonState* milton_state)
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
-#if 1
+#if 0
     milton_state->blocks_per_blockgroup = 16;
     milton_state->block_width = 32;
 #else
@@ -516,6 +537,7 @@ func void milton_init(MiltonState* milton_state)
 
         SDL_CreateThread(render_worker, "Milton Render Worker", (void*)params);
     }
+    milton_load_assets(milton_state);
 }
 
 func b32 is_user_drawing(MiltonState* milton_state)
@@ -783,13 +805,11 @@ func void milton_update(MiltonState* milton_state, MiltonInput* input)
             assert(!"NPE");
         }
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
-    }
-    else if ( input->flags & MiltonInputFlags_REDO ) {
+    } else if ( input->flags & MiltonInputFlags_REDO ) {
         if ( milton_state->num_redos > 0 ) {
             milton_state->strokes->count++;
             milton_state->num_redos--;
-        }
-        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        } render_flags |= MiltonRenderFlags_FULL_REDRAW;
     }
 
     if ( input->flags & MiltonInputFlags_RESET ) {

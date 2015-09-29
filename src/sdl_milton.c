@@ -24,13 +24,22 @@ typedef enum {
     Caught_POINT    = (1 << 1),
 } NativeEventResult;
 
+// ----
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+
+// Using stb_image to load our GUI resources.
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+// ----
+
+
+// ----
 #define MILTON_DESKTOP
 #include "system_includes.h"
-
 #include "milton.h"
+// ----
 
 
 typedef struct PlatformInput_s {
@@ -59,7 +68,8 @@ func u32 timer_callback(u32 interval, void *param) {
     return(interval);
 }
 
-int milton_main() {
+int milton_main()
+{
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
     SDL_Init(SDL_INIT_VIDEO);
