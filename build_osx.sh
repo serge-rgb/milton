@@ -15,7 +15,7 @@ clang -Ithird_party \
     -Wno-unused-variable \
     -O2 -g\
     $MILTON_OSX_FLAGS \
-    src/sdl_milton.c -lm -lpthread\
+    src/milton_unity_build.c -lm -lpthread\
     third_party/build/libSDL2.a \
     third_party/build/libSDL2main.a \
     -o milton
