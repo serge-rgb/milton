@@ -17,31 +17,6 @@
 
 
 
-typedef enum {
-    Caught_NONE = 0,
-
-    Caught_PRESSURE = (1 << 0),
-    Caught_POINT    = (1 << 1),
-} NativeEventResult;
-
-// ----
-#include "SDL.h"
-#include "SDL_syswm.h"
-
-
-// Using stb_image to load our GUI resources.
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-// ----
-
-
-// ----
-#define MILTON_DESKTOP
-#include "system_includes.h"
-#include "milton.h"
-// ----
-
-
 typedef struct PlatformInput_s {
     b32 is_ctrl_down;
     b32 is_space_down;
@@ -52,7 +27,8 @@ typedef struct PlatformInput_s {
 } PlatformInput;
 
 // Called periodically to force updates that don't depend on user input.
-func u32 timer_callback(u32 interval, void *param) {
+static u32 timer_callback(u32 interval, void *param)
+{
     SDL_Event event;
     SDL_UserEvent userevent;
 

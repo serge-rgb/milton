@@ -16,6 +16,7 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+
 // The returns value mean different things, but other than that, we're ok
 #ifdef _MSC_VER
 #define snprintf sprintf_s
@@ -23,16 +24,23 @@
 
 #define HEAP_BEGIN_ADDRESS NULL
 
-#define platform_allocate(total_memory_size) VirtualAlloc(HEAP_BEGIN_ADDRESS, \
-                                                          (total_memory_size),\
-                                                          MEM_COMMIT | MEM_RESERVE, \
-                                                          PAGE_READWRITE)
 
-#define platform_deallocate(pointer) VirtualFree((pointer), 0, MEM_RELEASE); { (pointer) = 0; }
+void* platform_allocate(size_t size)
+{
+    return VirtualAlloc(HEAP_BEGIN_ADDRESS,
+                        (size),
+                        MEM_COMMIT | MEM_RESERVE,
+                        PAGE_READWRITE);
 
-func void milton_fatal(char* message);
+}
+
+void platform_deallocate_internal(void* pointer)
+{
+    VirtualFree(pointer, 0, MEM_RELEASE);
+}
+
 void win32_log(char *format, ...);
-#define milton_log win32_log
+#define platform_milton_log win32_log
 
 void win32_log(char *format, ...)
 {
@@ -55,7 +63,7 @@ void win32_log(char *format, ...)
     va_end( args );
 }
 
-func void milton_fatal(char* message)
+void milton_fatal(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");
     puts(message);
@@ -63,7 +71,7 @@ func void milton_fatal(char* message)
 }
 
 // TODO: Show a message box, and then die
-func void milton_die_gracefully(char* message)
+void milton_die_gracefully(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");
     puts(message);
@@ -130,7 +138,7 @@ void platform_wacom_init(TabletState* tablet_state, SDL_Window* window) {
     win32_wacom_get_context(tablet_state);
 }
 
-func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
+NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
                                                   i32 width, i32 height,
                                                   v2i* out_point,
                                                   f32* out_pressure)

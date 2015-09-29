@@ -3,6 +3,7 @@
 
 src/template_expand
 src/*.generated.h
+src/*.generated.c
 
 # vurtun/gui
 third_party/gui

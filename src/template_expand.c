@@ -1,4 +1,5 @@
 #include "meta.h"
+#include "memory.c"
 
 int main()
 {
@@ -32,10 +33,21 @@ int main()
 
     // ==== StrokeCord ====
     {
-        meta_clear_file("StrokeCord.generated.h");
-        meta_expand("StrokeCord.generated.h",
-                    "cord.template.h",
-                    1,
-                    "T", "Stroke");
+        char* sources[2] = {
+            "cord.template.h",
+            "cord.template.c",
+        };
+        char* dests[2] = {
+            "StrokeCord.generated.h",
+            "StrokeCord.generated.c",
+        };
+        for ( int i = 0; i < 2; ++i )
+        {
+            meta_clear_file(dests[i]);
+            meta_expand(dests[i],
+                        sources[i],
+                        1,
+                        "T", "Stroke");
+        }
     }
 }

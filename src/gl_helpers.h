@@ -13,15 +13,25 @@
 
 #define GLCHK(stmt) stmt; gl_query_error(#stmt, __FILE__, __LINE__)
 
-void gl_log(char* str) {
+void gl_log(char* str);
+void gl_query_error(const char* expr, const char* file, int line);
+static GLuint gl_compile_shader(const char* src, GLuint type);
+static void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders);
+
+#ifdef _WIN32 // sample OpenGL creation func
+static int sgl_win32_setup_context(HWND window, HGLRC* context);
+#endif
+
+#ifdef SGL_GL_HELPERS_IMPLEMENTATION
+
+void gl_log(char* str)
+{
 #ifdef _WIN32
     OutputDebugStringA(str);
 #else
     fprintf(stderr, "%s", str);
 #endif
 }
-
-void gl_query_error(const char* expr, const char* file, int line);  // Defined below
 
 // Apple defines GLhandleARB as void*
 // our simple solution is to define functions as their core counterparts, which should be
@@ -33,7 +43,8 @@ void gl_query_error(const char* expr, const char* file, int line);  // Defined b
 #define glGetInfoLogARB glGetShaderInfoLog
 #endif
 
-static GLuint gl_compile_shader(const char* src, GLuint type) {
+static GLuint gl_compile_shader(const char* src, GLuint type)
+{
     GLuint obj = (GLuint)glCreateShaderObjectARB(type);
     GLCHK ( glShaderSourceARB(obj, 1, &src, NULL) );
     GLCHK ( glCompileShaderARB(obj) );
@@ -269,4 +280,5 @@ static int sgl_win32_setup_context(HWND window, HGLRC* context)
     return 1;
 }
 
-#endif
+#endif  // _WIN32
+#endif  // SGL_GL_HELPERS_IMPLEMENTATION

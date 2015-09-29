@@ -16,7 +16,7 @@ typedef struct $<Name2>_s
     };
 } $<Name2>;
 
-func $<Name2> sub_$<Name2> ($<Name2> a, $<Name2> b)
+$<Name2> sub_$<Name2> ($<Name2> a, $<Name2> b)
 {
     $<Name2> result;
     result.x = a.x - b.x;
@@ -24,7 +24,7 @@ func $<Name2> sub_$<Name2> ($<Name2> a, $<Name2> b)
     return result;
 }
 
-func $<Name2> add_$<Name2> ($<Name2> a, $<Name2> b)
+$<Name2> add_$<Name2> ($<Name2> a, $<Name2> b)
 {
     $<Name2> result;
     result.x = a.x + b.x;
@@ -32,7 +32,7 @@ func $<Name2> add_$<Name2> ($<Name2> a, $<Name2> b)
     return result;
 }
 
-func $<Name2> mul_$<Name2> ($<Name2> a, $<Name2> b)
+$<Name2> mul_$<Name2> ($<Name2> a, $<Name2> b)
 {
     $<Name2> result;
     result.x = a.x * b.x;
@@ -40,7 +40,7 @@ func $<Name2> mul_$<Name2> ($<Name2> a, $<Name2> b)
     return result;
 }
 
-func $<Name2> scale_$<Name2> ($<Name2> v, $<Type> factor)
+$<Name2> scale_$<Name2> ($<Name2> v, $<Type> factor)
 {
     $<Name2> result;
     result.x = factor * v.x;
@@ -48,7 +48,7 @@ func $<Name2> scale_$<Name2> ($<Name2> v, $<Type> factor)
     return result;
 }
 
-func $<Name2> invscale_$<Name2> ($<Name2> v, $<Type> factor)
+$<Name2> invscale_$<Name2> ($<Name2> v, $<Type> factor)
 {
     $<Name2> result;
     result.x = v.x / factor;
@@ -56,7 +56,7 @@ func $<Name2> invscale_$<Name2> ($<Name2> v, $<Type> factor)
     return result;
 }
 
-func $<Name2> perpendicular_$<Name2> ($<Name2> a)
+$<Name2> perpendicular_$<Name2> ($<Name2> a)
 {
     $<Name2> result =
     {
@@ -92,7 +92,7 @@ typedef struct $<Name3>_s
     };
 } $<Name3>;
 
-func $<Name3> sub_$<Name3> ($<Name3> a, $<Name3> b)
+$<Name3> sub_$<Name3> ($<Name3> a, $<Name3> b)
 {
     $<Name3> result;
     result.x = a.x - b.x;
@@ -101,7 +101,7 @@ func $<Name3> sub_$<Name3> ($<Name3> a, $<Name3> b)
     return result;
 }
 
-func $<Name3> add_$<Name3> ($<Name3> a, $<Name3> b)
+$<Name3> add_$<Name3> ($<Name3> a, $<Name3> b)
 {
     $<Name3> result;
     result.x = a.x + b.x;
@@ -110,7 +110,7 @@ func $<Name3> add_$<Name3> ($<Name3> a, $<Name3> b)
     return result;
 }
 
-func $<Name3> mul_$<Name3> ($<Name3> a, $<Name3> b)
+$<Name3> mul_$<Name3> ($<Name3> a, $<Name3> b)
 {
     $<Name3> result;
     result.x = a.x * b.x;
@@ -119,7 +119,7 @@ func $<Name3> mul_$<Name3> ($<Name3> a, $<Name3> b)
     return result;
 }
 
-func $<Name3> scale_$<Name3> ($<Name3> v, $<Type> factor)
+$<Name3> scale_$<Name3> ($<Name3> v, $<Type> factor)
 {
     $<Name3> result;
     result.x = factor * v.x;
@@ -128,7 +128,7 @@ func $<Name3> scale_$<Name3> ($<Name3> v, $<Type> factor)
     return result;
 }
 
-func $<Name3> invscale_$<Name3> ($<Name3> v, $<Type> factor)
+$<Name3> invscale_$<Name3> ($<Name3> v, $<Type> factor)
 {
     $<Name3> result;
     result.x = v.x / factor;
@@ -137,7 +137,7 @@ func $<Name3> invscale_$<Name3> ($<Name3> v, $<Type> factor)
     return result;
 }
 
-func b32 equals_$<Name3> ($<Name3> a, $<Name3> b)
+b32 equals_$<Name3> ($<Name3> a, $<Name3> b)
 {
     b32 equals =
             a.x == b.x &&
@@ -173,7 +173,7 @@ typedef struct $<Name4>_s
     };
 } $<Name4>;
 
-func b32 equals_$<Name4> ($<Name4> a, $<Name4> b)
+b32 equals_$<Name4> ($<Name4> a, $<Name4> b)
 {
     b32 equals =
             a.x == b.x &&

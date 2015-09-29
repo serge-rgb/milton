@@ -54,13 +54,9 @@
 
 #endif // MAP_ANONYMOUS
 
-#define platform_allocate(size) unix_allocate((size))
+#define platform_milton_log printf
 
-#define platform_deallocate(pointer) unix_deallocate((pointer)); {(pointer) = NULL;}
-
-#define milton_log printf
-
-func void milton_fatal(char* message)
+void milton_fatal(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");
     puts(message);
@@ -68,7 +64,7 @@ func void milton_fatal(char* message)
 }
 
 // TODO: Show a message box, and then die
-func void milton_die_gracefully(char* message)
+void milton_die_gracefully(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");
     puts(message);
@@ -114,7 +110,8 @@ typedef struct UnixMemoryHeader_s {
     size_t size;
 } UnixMemoryHeader;
 
-func void* unix_allocate(size_t size) {
+void* platform_allocate(size_t size)
+{
     void* ptr = mmap(HEAP_BEGIN_ADDRESS, size + sizeof(UnixMemoryHeader),
                      PROT_WRITE | PROT_READ,
                      MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS,
@@ -128,7 +125,7 @@ func void* unix_allocate(size_t size) {
     return ptr;
 }
 
-func void unix_deallocate(void* ptr)
+void platform_deallocate_internal(void* ptr)
 {
     assert(ptr);
     void* begin = ptr - sizeof(UnixMemoryHeader);
@@ -136,7 +133,7 @@ func void unix_deallocate(void* ptr)
     munmap(ptr, size);
 }
 
-func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
+NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
                                                   i32 width, i32 height,
                                                   v2i* out_point,
                                                   f32* out_pressure)
@@ -175,7 +172,7 @@ func NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL
 //  - GDK gdkinput-x11.c
 //  - Wine winex11.drv/wintab.c
 //  - http://www.x.org/archive/X11R7.5/doc/man/man3/XOpenDevice.3.html
-func void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
+void platform_wacom_init(TabletState* tablet_state, SDL_Window* window)
 {
 #ifdef __linux__
     // Tell SDL we want system events, to get the pressure

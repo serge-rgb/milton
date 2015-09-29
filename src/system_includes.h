@@ -37,8 +37,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-
 // Local includes
 #ifdef MILTON_DESKTOP
 

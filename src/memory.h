@@ -31,17 +31,17 @@ struct Arena_s {
 };
 
 // Create a root arena from a memory block.
-func Arena arena_init(void* base, size_t size);
-func Arena arena_spawn(Arena* parent, size_t size);
-func void  arena_reset(Arena* arena);
+Arena arena_init(void* base, size_t size);
+Arena arena_spawn(Arena* parent, size_t size);
+void  arena_reset(Arena* arena);
 
 // ==== Temporary arenas.
 // Usage:
 //      child = arena_push(my_arena, some_size);
 //      use_temporary_arena(&child.arena);
 //      arena_pop(child);
-func Arena  arena_push(Arena* parent, size_t size);
-func void   arena_pop (Arena* child);
+Arena  arena_push(Arena* parent, size_t size);
+void   arena_pop (Arena* child);
 
 #define     arena_alloc_elem(arena, T)          (T *)arena_alloc_bytes((arena), sizeof(T))
 #define     arena_alloc_array(arena, count, T)  (T *)arena_alloc_bytes((arena), (count) * sizeof(T))
@@ -49,7 +49,7 @@ func void   arena_pop (Arena* child);
 #define     ARENA_VALIDATE(arena)               assert ((arena)->num_children == 0)
 
 
-func void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
+void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 
 // =======================
 // == Dynamic allocator ==
@@ -67,6 +67,8 @@ func void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 #define     dyn_alloc(T, n)     (T*)dyn_alloc_typeless(sizeof(T) * (n))
 #define     dyn_free(ptr)       dyn_free_typeless(ptr), ptr = NULL
 
+void* dyn_alloc_typeless(i32 size);
+void dyn_free_typeless(void* dyn_ptr);
 
 typedef struct AllocNode_s AllocNode;
 
@@ -75,126 +77,5 @@ struct AllocNode_s {
     AllocNode*  prev;
     AllocNode*  next;
 };
-static AllocNode* MILTON_GLOBAL_dyn_freelist_sentinel;
-static Arena* MILTON_GLOBAL_dyn_root_arena;
-
-func void* dyn_alloc_typeless(i32 size) {
-    void* allocated = NULL;
-    AllocNode* node = MILTON_GLOBAL_dyn_freelist_sentinel->next;
-    while (node != MILTON_GLOBAL_dyn_freelist_sentinel) {
-        if (node->size >= size) {
-            // Remove node from list
-            AllocNode* next = node->next;
-            AllocNode* prev = node->prev;
-            prev->next = next;
-            next->prev = prev;
-
-            allocated = (void*)((u8*)node + sizeof(AllocNode));
-
-            // Found
-            break;
-        }
-        node = node->next;
-    }
-
-    // If there was no viable candidate, get new pointer from root arena.
-    if (!allocated) {
-        void* mem = arena_alloc_bytes(MILTON_GLOBAL_dyn_root_arena, size + sizeof(AllocNode));
-        if (mem) {
-            node = (AllocNode*)mem;
-            node->size = size;
-            allocated = (void*)((u8*)mem + sizeof(AllocNode));
-        } else {
-            assert(!"Failed to do dynamic allocation.");
-        }
-    }
-
-    return allocated;
-}
-
-func void dyn_free_typeless(void* dyn_ptr) {
-    // Insert at start of freelist.
-    AllocNode* node = (AllocNode*)((u8*)dyn_ptr - sizeof(AllocNode));
-    AllocNode* head = MILTON_GLOBAL_dyn_freelist_sentinel->next;
-    head->prev->next = node;
-    head->prev = node;
-
-    node->next = head;
-
-    node->prev = MILTON_GLOBAL_dyn_freelist_sentinel;
-
-    memset(dyn_ptr, 0, node->size);  // Safety first!
-}
-
-func void* arena_alloc_bytes(Arena* arena, size_t num_bytes)
-{
-    size_t total = arena->count + num_bytes;
-    if (total > arena->size) {
-        return NULL;
-    }
-    void* result = arena->ptr + arena->count;
-    arena->count += num_bytes;
-    return result;
-}
-
-func Arena arena_init(void* base, size_t size)
-{
-    Arena arena = { 0 };
-    arena.ptr = (u8*)base;
-    if (arena.ptr) {
-        arena.size = size;
-    }
-    return arena;
-}
-
-func Arena arena_spawn(Arena* parent, size_t size)
-{
-    void* ptr = arena_alloc_bytes(parent, size);
-    assert(ptr);
-
-    Arena child = { 0 };
-    {
-        child.ptr    = ptr;
-        child.size   = size;
-    }
-
-    return child;
-}
-
-func Arena arena_push(Arena* parent, size_t size)
-{
-    assert ( size <= arena_available_space(parent));
-    Arena child = { 0 };
-    {
-        child.parent = parent;
-        child.id     = parent->num_children;
-        void* ptr = arena_alloc_bytes(parent, size);
-        parent->num_children += 1;
-        child.ptr = ptr;
-        child.size = size;
-    }
-    return child;
-}
-
-func void arena_pop(Arena* child)
-{
-    Arena* parent = child->parent;
-    assert(parent);
-
-    // Assert that this child was the latest push.
-    assert ((parent->num_children - 1) == child->id);
-
-    parent->count -= child->size;
-    char* ptr = (char*)(parent->ptr) + parent->count;
-    memset(ptr, 0, child->count);
-    parent->num_children -= 1;
-
-    *child = (Arena){ 0 };
-}
-
-func void arena_reset(Arena* arena)
-{
-    memset (arena->ptr, 0, arena->count);
-    arena->count = 0;
-}
-
+extern AllocNode* MILTON_GLOBAL_dyn_freelist_sentinel;
+extern Arena* MILTON_GLOBAL_dyn_root_arena;

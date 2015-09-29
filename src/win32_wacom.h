@@ -23,7 +23,7 @@
         if (!tablet_state->wacom.func) { \
                 assert(!"Could not load function pointer from dll"); return false; }
 
-#define wacom_func_check(f) if (!f) {\
+#define WACOM_FUNC_CHECK(f) if (!f) {\
     OutputDebugStringA("WARNING: Wacom API incomplete\n."); \
     tablet_state->wintab_handle = 0; \
     return false; \
@@ -31,7 +31,7 @@
 
 #include "define_types.h"
 
-func b32 win32_wacom_load_wintab(TabletState* tablet_state)
+static b32 win32_wacom_load_wintab(TabletState* tablet_state)
 {
     tablet_state->wintab_handle = LoadLibraryA( "Wintab32.dll" );
 
@@ -64,31 +64,31 @@ func b32 win32_wacom_load_wintab(TabletState* tablet_state)
     GETPROCADDRESS( WTMGRDEFCONTEXT, WTMgrDefContext );
     GETPROCADDRESS( WTMGRDEFCONTEXTEX, WTMgrDefContextEx );
 
-    wacom_func_check (tablet_state->wacom.WTInfoA);
-    wacom_func_check (tablet_state->wacom.WTOpenA);
-    wacom_func_check (tablet_state->wacom.WTGetA);
-    wacom_func_check (tablet_state->wacom.WTSetA);
-    wacom_func_check (tablet_state->wacom.WTClose);
-    wacom_func_check (tablet_state->wacom.WTPacket);
-    wacom_func_check (tablet_state->wacom.WTEnable);
-    wacom_func_check (tablet_state->wacom.WTOverlap);
-    wacom_func_check (tablet_state->wacom.WTSave);
-    wacom_func_check (tablet_state->wacom.WTConfig);
-    wacom_func_check (tablet_state->wacom.WTRestore);
-    wacom_func_check (tablet_state->wacom.WTExtSet);
-    wacom_func_check (tablet_state->wacom.WTExtGet);
-    wacom_func_check (tablet_state->wacom.WTQueueSizeSet);
-    wacom_func_check (tablet_state->wacom.WTDataPeek);
-    wacom_func_check (tablet_state->wacom.WTPacketsGet);
-    wacom_func_check (tablet_state->wacom.WTMgrOpen);
-    wacom_func_check (tablet_state->wacom.WTMgrClose);
-    wacom_func_check (tablet_state->wacom.WTMgrDefContext);
-    wacom_func_check (tablet_state->wacom.WTMgrDefContextEx);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTInfoA);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTOpenA);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTGetA);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTSetA);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTClose);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTPacket);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTEnable);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTOverlap);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTSave);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTConfig);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTRestore);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTExtSet);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTExtGet);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTQueueSizeSet);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTDataPeek);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTPacketsGet);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTMgrOpen);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTMgrClose);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTMgrDefContext);
+    WACOM_FUNC_CHECK (tablet_state->wacom.WTMgrDefContextEx);
 
     return true;
 }
 
-func void win32_wacom_get_context(TabletState* tablet_state)
+static void win32_wacom_get_context(TabletState* tablet_state)
 {
     if ( !tablet_state->wintab_handle )
     {
