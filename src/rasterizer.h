@@ -484,14 +484,14 @@ func b32 rasterize_canvas_block_slow(Arena* render_arena,
                             // Perf note: We remove the sqrtf call when it's
                             // safe to square the radius
                             if (radius >= ( 1 << 16 )) {
-                                for ( int i = 0; i < 16; ++i ) {
-                                    samples += (sqrtf(fdists[i]) < radius);
+                                for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
+                                    samples += (sqrtf(fdists[sample_i]) < radius);
                                 }
                             } else {
                                 u32 sq_radius = radius * radius;
 
-                                for ( int i = 0; i < 16; ++i ) {
-                                    samples += (fdists[i] < sq_radius);
+                                for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
+                                    samples += (fdists[sample_i] < sq_radius);
                                 }
                             }
                         }
@@ -678,8 +678,8 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             f32 bps[4];
                             batch_size = 0;
 
-                            for ( i32 i = 0; i < 4; i++ ) {
-                                i32 index = point_i + i;
+                            for ( i32 batch_i = 0; batch_i < 4; batch_i++ ) {
+                                i32 index = point_i + batch_i;
 
                                 if (index + 1 >= stroke->num_points)
                                 {
@@ -815,15 +815,15 @@ func b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             // Because `mask` will be 0 for the invalid elements.
                             // But what we really want is to do this loop with
                             // SSE magic. .
-                            for ( i32 i = 0; i < 4; ++i ) {
-                                f32 dist = dists[i];
-                                i32 imask = *(i32*)&masks[i];
+                            for ( i32 batch_i = 0; batch_i < 4; ++batch_i ) {
+                                f32 dist = dists[batch_i];
+                                i32 imask = *(i32*)&masks[batch_i];
                                 if (dist < min_dist && imask == -1)
                                 {
                                     min_dist = dist;
-                                    dx = tests_dx[i];
-                                    dy = tests_dy[i];
-                                    pressure = pressures[i];
+                                    dx = tests_dx[batch_i];
+                                    dy = tests_dy[batch_i];
+                                    pressure = pressures[batch_i];
                                 }
                             }
                         }

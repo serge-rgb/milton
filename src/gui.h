@@ -126,9 +126,9 @@ func float picker_wheel_get_angle(ColorPicker* picker, v2f point)
     return angle;
 }
 
-func void picker_update_wheel(ColorPicker* picker, v2f point)
+func void picker_update_wheel(ColorPicker* picker, v2f polar_point)
 {
-    float angle = picker_wheel_get_angle(picker, point);
+    float angle = picker_wheel_get_angle(picker, polar_point);
     picker->info.hsv.h = radians_to_degrees(angle);
     // Update the triangle
     {

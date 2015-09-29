@@ -101,7 +101,7 @@ func void* dyn_alloc_typeless(i32 size) {
     if (!allocated) {
         void* mem = arena_alloc_bytes(MILTON_GLOBAL_dyn_root_arena, size + sizeof(AllocNode));
         if (mem) {
-            AllocNode* node = (AllocNode*)mem;
+            node = (AllocNode*)mem;
             node->size = size;
             allocated = (void*)((u8*)mem + sizeof(AllocNode));
         } else {

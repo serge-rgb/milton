@@ -104,11 +104,11 @@ Windows
 Requirements:
 
 - CMake (for SDL)
-- Visual Studio 2013 (I'm using VS Ultimate with Surround Sound, but Community Edition should be fine)
+- Visual Studio 2015 (Community Edition is fine.)
 
 0. Open a developer console. You have at least two options:
     - Open "Visual Studio Command Prompt" and go to Milton's directory.
-    - Use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio suite in your PATH. It will try to use the 64-bit version
+    - Use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio 2015 suite in your PATH. It will try to use the 64-bit version
 1. Run `setup.bat` to build SDL
 2. `build.bat`
 3. Milton is compiled to `build\Milton.exe`
