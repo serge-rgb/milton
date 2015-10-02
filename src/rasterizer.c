@@ -26,16 +26,34 @@
 #include "gui.h"
 
 typedef struct ClippedStroke_s ClippedStroke;
+
 struct ClippedStroke_s {
+    // A bool inside a struct whose only purpose is to make things faster. This
+    // would probably make Mike Acton angry, but it works really well.
+    // What it does: It is set to true when this clipped stroke completely
+    // fills the block to which it's clipped. This allows us to avoid a *lot*
+    // of work by just flood-filling the block.
     b32             fills_block;
 
     // This stroke is clipped to a particular block and its pointers only live
-    // as long as the render work lasts.
+    // as long as the render worker lasts. It's a direct memcpy from whatever
+    // stroke we are clipping.  I tried using a smarter structure that did not
+    // copy too much memory but it ended up being significantly slower
     Stroke          stroke;
-    // We store indices into clipped points to delineate segments.
-    // i.e. We know that ab is a segment if index(a) + 1 == index(b)
+
+    // We store indices into clipped points to delineate segments.  i.e. We
+    // know that ab is a segment if index(a) + 1 == index(b)
+    //
+    // The alternative is to store points as AB BC CD DE, basically doubling
+    // the memory requirement.  This solution turned out to not have a
+    // significant perf impact and reduce dramatically the memory needed by
+    // render workers.
     i32*            indices;
 
+    // Yes, it is a linked list. Shoot me.
+    //
+    // In my defense, the elements of this list are guaranteed to be allocated
+    // sequentially.
     ClippedStroke*  next;
 };
 
@@ -51,10 +69,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
     clipped_stroke->stroke = *in_stroke;  // Copy everything except:
 
     // ... now substitute the point data with an array of our own.
-    //
-    // TODO: To save memory, it would make sense to use a different data
-    // structure here.  A cord would have the advantages of a stretchy
-    // array without asking too much from our humble arena.
     if (in_stroke->num_points > 0) {
         clipped_stroke->stroke.num_points = 0;
         clipped_stroke->stroke.points = arena_alloc_array(render_arena,
@@ -132,10 +146,10 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
 }
 
 static b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
-                                  v2i* points, i32* indices,
-                                  i32 num_points,
-                                  PointMetadata* metadata,
-                                  Brush brush, CanvasView* view)
+                                    v2i* points, i32* indices,
+                                    i32 num_points,
+                                    PointMetadata* metadata,
+                                    Brush brush, CanvasView* view)
 {
     assert ((((rect.left + rect.right) / 2) - reference_point.x) == 0);
     assert ((((rect.top + rect.bottom) / 2) - reference_point.y) == 0);
@@ -224,6 +238,8 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
     // Fill linked list with strokes clipped to this block
     for ( i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
         if ( stroke_i < num_strokes && !stroke_masks[stroke_i] ) {
+            // Stroke masks is of size num_strokes, but we use stroke_i ==
+            // num_strokes to indicate the current "working stroke"
             continue;
         }
         Stroke* unclipped_stroke = NULL;
@@ -234,8 +250,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         }
         assert(unclipped_stroke);
         Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
-        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena,
-                                                            unclipped_stroke, enlarged_block);
+        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke, enlarged_block);
         // ALlocation failed.
         // Handle this gracefully; this will cause more memory for render workers.
         if ( !clipped_stroke ) {
@@ -275,12 +290,12 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 
 // returns false if allocation failed
 static b32 rasterize_canvas_block_slow(Arena* render_arena,
-                                     CanvasView* view,
-                                     StrokeCord* strokes,
-                                     b32* stroke_masks,
-                                     Stroke* working_stroke,
-                                     u32* pixels,
-                                     Rect raster_block)
+                                       CanvasView* view,
+                                       StrokeCord* strokes,
+                                       b32* stroke_masks,
+                                       Stroke* working_stroke,
+                                       u32* pixels,
+                                       Rect raster_block)
 {
     //u64 pre_ccount_begin = __rdtsc();
     Rect canvas_block;
@@ -315,8 +330,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
     // Get the linked list of clipped strokes.
     b32 allocation_ok = true;
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
-                                                       strokes, stroke_masks,
-                                                       working_stroke,
+                                                       strokes, stroke_masks, working_stroke,
                                                        canvas_block, reference_point,
                                                        &allocation_ok);
     if (!allocation_ok) {
@@ -359,7 +373,6 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
             while(list_iter) {
                 ClippedStroke* clipped_stroke = list_iter;
-                assert (clipped_stroke);
                 Stroke* stroke = &clipped_stroke->stroke;
                 list_iter = list_iter->next;
                 assert (stroke->num_points > 0);
@@ -544,12 +557,12 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 }
 
 static b32 rasterize_canvas_block_sse2(Arena* render_arena,
-                                     CanvasView* view,
-                                     StrokeCord* strokes,
-                                     b32* stroke_masks,
-                                     Stroke* working_stroke,
-                                     u32* pixels,
-                                     Rect raster_block)
+                                       CanvasView* view,
+                                       StrokeCord* strokes,
+                                       b32* stroke_masks,
+                                       Stroke* working_stroke,
+                                       u32* pixels,
+                                       Rect raster_block)
 {
 
     __m128 one4 = _mm_set_ps1(1);
@@ -632,7 +645,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
             while(list_iter) {
                 ClippedStroke* clipped_stroke = list_iter;
-                assert (clipped_stroke);
                 Stroke* stroke = &clipped_stroke->stroke;
                 list_iter = list_iter->next;
                 assert (stroke->num_points > 0);
@@ -649,9 +661,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     // Slow path. There are pixels not inside.
                     v2i* points = stroke->points;
 
-                    i32 batch_size = 0;  // Up to 4. How many points could we load from the stroke.
-
-                    //v2f min_points[4] = {0};
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
                     f32 dy = 0;
@@ -670,7 +679,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         pressure = stroke->metadata[0].pressure;
                     } else {
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
-
                         for ( int point_i = 0; point_i < stroke->num_points - 1; point_i += 4 ) {
                             f32 axs[4] = { 0 };
                             f32 ays[4] = { 0 };
@@ -678,10 +686,19 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             f32 bys[4] = { 0 };
                             f32 aps[4];
                             f32 bps[4];
-                            batch_size = 0;
+
+                            // This is stupid.
+                            //
+                            // If we stored the strokes as in Struct of Arrays (SOA) form, we could avoid this loop.
+                            //
+                            // It would turn into the 6 _mm_set_ps calls
+                            // followed by 4 wide muls and 4 wide adds.  One
+                            // caveat: points would have to be a multiple of 4.
+                            // Not so bad. We would also save the set-to-zero
+                            // that we do above, which is expensive...
 
                             for ( i32 batch_i = 0; batch_i < 4; batch_i++ ) {
-                                i32 index = point_i + batch_i;
+                                register i32 index = point_i + batch_i;
 
                                 if (index + 1 >= stroke->num_points)
                                 {
@@ -697,49 +714,20 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 }
                                 // The point of reference point is to do the subtraction with
                                 // integer arithmetic
-                                axs[batch_size] =
-                                        (f32)(points[index  ].x * local_scale - reference_point.x);
-                                ays[batch_size] =
-                                        (f32)(points[index  ].y * local_scale - reference_point.y);
-                                bxs[batch_size] =
-                                        (f32)(points[index+1].x * local_scale - reference_point.x);
-                                bys[batch_size] =
-                                        (f32)(points[index+1].y * local_scale - reference_point.y);
-                                aps[batch_size] = stroke->metadata[index  ].pressure;
-                                bps[batch_size] = stroke->metadata[index+1].pressure;
-                                batch_size++;
+                                axs[batch_i] = (f32)(points[index  ].x * local_scale - reference_point.x);
+                                ays[batch_i] = (f32)(points[index  ].y * local_scale - reference_point.y);
+                                bxs[batch_i] = (f32)(points[index+1].x * local_scale - reference_point.x);
+                                bys[batch_i] = (f32)(points[index+1].y * local_scale - reference_point.y);
+                                aps[batch_i] = stroke->metadata[index  ].pressure;
+                                bps[batch_i] = stroke->metadata[index+1].pressure;
                             }
 
-
-                            __m128 a_x = _mm_set_ps((axs[3]),
-                                                    (axs[2]),
-                                                    (axs[1]),
-                                                    (axs[0]));
-
-                            __m128 b_x = _mm_set_ps((bxs[3]),
-                                                    (bxs[2]),
-                                                    (bxs[1]),
-                                                    (bxs[0]));
-
-                            __m128 a_y = _mm_set_ps((ays[3]),
-                                                    (ays[2]),
-                                                    (ays[1]),
-                                                    (ays[0]));
-
-                            __m128 b_y = _mm_set_ps((bys[3]),
-                                                    (bys[2]),
-                                                    (bys[1]),
-                                                    (bys[0]));
-
-                            __m128 pressure_a = _mm_set_ps(aps[3],
-                                                           aps[2],
-                                                           aps[1],
-                                                           aps[0]);
-
-                            __m128 pressure_b = _mm_set_ps(bps[3],
-                                                           bps[2],
-                                                           bps[1],
-                                                           bps[0]);
+                            __m128 a_x = _mm_set_ps((axs[3]), (axs[2]), (axs[1]), (axs[0]));
+                            __m128 b_x = _mm_set_ps((bxs[3]), (bxs[2]), (bxs[1]), (bxs[0]));
+                            __m128 a_y = _mm_set_ps((ays[3]), (ays[2]), (ays[1]), (ays[0]));
+                            __m128 b_y = _mm_set_ps((bys[3]), (bys[2]), (bys[1]), (bys[0]));
+                            __m128 pressure_a = _mm_set_ps(aps[3], aps[2], aps[1], aps[0]);
+                            __m128 pressure_b = _mm_set_ps(bps[3], bps[2], bps[1], bps[0]);
 
                             __m128 ab_x = _mm_sub_ps(b_x, a_x);
                             __m128 ab_y = _mm_sub_ps(b_y, a_y);
@@ -992,10 +980,10 @@ static void draw_ring(u32* pixels,
 }
 
 static void draw_circle(u32* raster_buffer,
-                      i32 raster_buffer_width, i32 raster_buffer_height,
-                      i32 center_x, i32 center_y,
-                      i32 radius,
-                      v4f src_color)
+                        i32 raster_buffer_width, i32 raster_buffer_height,
+                        i32 center_x, i32 center_y,
+                        i32 radius,
+                        v4f src_color)
 {
     i32 left = max(center_x - radius, 0);
     i32 right = min(center_x + radius, raster_buffer_width);
@@ -1024,10 +1012,10 @@ static void draw_circle(u32* raster_buffer,
     }
 }
 static void draw_rectangle(u32* raster_buffer,
-                         i32 raster_buffer_width, i32 raster_buffer_height,
-                         i32 center_x, i32 center_y,
-                         i32 rect_w, i32 rect_h,
-                         v4f src_color)
+                           i32 raster_buffer_width, i32 raster_buffer_height,
+                           i32 center_x, i32 center_y,
+                           i32 rect_w, i32 rect_h,
+                           v4f src_color)
 {
     i32 left = max(center_x - rect_w, 0);
     i32 right = min(center_x + rect_w, raster_buffer_width);
@@ -1051,10 +1039,10 @@ static void draw_rectangle(u32* raster_buffer,
 
 // 1-pixel margin
 static void draw_rectangle_with_margin(u32* raster_buffer,
-                                     i32 raster_buffer_width, i32 raster_buffer_height,
-                                     i32 center_x, i32 center_y,
-                                     i32 rect_w, i32 rect_h,
-                                     v4f rect_color, v4f margin_color)
+                                       i32 raster_buffer_width, i32 raster_buffer_height,
+                                       i32 center_x, i32 center_y,
+                                       i32 rect_w, i32 rect_h,
+                                       v4f rect_color, v4f margin_color)
 {
     i32 left = max(center_x - rect_w, 0);
     i32 right = min(center_x + rect_w, raster_buffer_width);
@@ -1206,10 +1194,10 @@ static void rasterize_color_picker(ColorPicker* picker,
 
 // Returns false if there were allocation errors
 static b32 render_blockgroup(MiltonState* milton_state,
-                           Arena* blockgroup_arena,
-                           Rect* blocks,
-                           i32 block_start, i32 num_blocks,
-                           u32* raster_buffer)
+                             Arena* blockgroup_arena,
+                             Rect* blocks,
+                             i32 block_start, i32 num_blocks,
+                             u32* raster_buffer)
 {
     b32 allocation_ok = true;
 
@@ -1320,7 +1308,7 @@ int render_worker(void* data)
 }
 
 static void produce_render_work(MiltonState* milton_state,
-                              BlockgroupRenderData blockgroup_render_data)
+                                BlockgroupRenderData blockgroup_render_data)
 {
     RenderQueue* render_queue = milton_state->render_queue;
     i32 lock_err = SDL_LockMutex(milton_state->render_queue->mutex);
@@ -1403,8 +1391,7 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
     ARENA_VALIDATE(milton_state->transient_arena);
 }
 
-static void render_picker(ColorPicker* picker,
-                        u32* buffer_pixels, CanvasView* view)
+static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* view)
 {
     v4f background_color =
     {
@@ -1459,7 +1446,7 @@ static void render_picker(ColorPicker* picker,
 }
 
 static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_buffer_height,
-                      i32 x, i32 y, Bitmap* bitmap)
+                        i32 x, i32 y, Bitmap* bitmap)
 {
 
     if (!bitmap->data) {

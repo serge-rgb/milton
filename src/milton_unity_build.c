@@ -8,13 +8,6 @@
 #include "stb_image.h"
 // ----
 
-
-
-
-
-//
-//
-//
 #include "define_types.h"
 #include "vector.generated.h"
 
@@ -29,12 +22,8 @@
 #include "platform_unix.h"
 #endif
 
-// ----
+
 #include "milton.h"
-// ----
-
-#include "sdl_milton.c"
-
 
 #include "StrokeCord.generated.c"
 #include "canvas.c"
@@ -44,6 +33,7 @@
 #include "milton.c"
 #include "persist.c"
 #include "rasterizer.c"
+#include "sdl_milton.c"
 #include "utils.c"
 
 

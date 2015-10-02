@@ -25,6 +25,7 @@ To-Do
         - Windows stylus buttons
 
     - Performance:
+        - Don't do the dumb 4-loop and learn SSE2
         - Live profiler
         - memcpy when Panning
         - Write perf logger to make informed decision.
