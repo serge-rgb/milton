@@ -21,7 +21,7 @@ REM     Define MILTON_FANCY_GL for OpenGL debugging messages.
 set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 
 set mlt_opt=/O2 /MT
-set mlt_nopt=/Od /MTd /DNDEBUG
+set mlt_nopt=/Od /MTd
 
 set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /fp:fast /nologo
 set mlt_disabled_warnings=/wd4127 /wd4255 /wd4820 /wd4514 /wd4505 /wd4100 /wd4189 /wd4201 /wd4204 /wd4201 /wd4711 /wd4668 /wd4710
