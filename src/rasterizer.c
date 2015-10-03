@@ -24,6 +24,7 @@
 
 
 #include "gui.h"
+#include "profiler.h"
 
 typedef struct ClippedStroke_s ClippedStroke;
 
@@ -71,39 +72,39 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
     // ... now substitute the point data with an array of our own.
     if (in_stroke->num_points > 0) {
         clipped_stroke->stroke.num_points = 0;
-        clipped_stroke->stroke.points = arena_alloc_array(render_arena,
-                                                          in_stroke->num_points, v2i);
-        clipped_stroke->stroke.metadata = arena_alloc_array(render_arena,
-                                                            in_stroke->num_points, PointMetadata);
-        clipped_stroke->indices = arena_alloc_array(render_arena,
-                                                    in_stroke->num_points, i32);
+        clipped_stroke->stroke.points_x = arena_alloc_array(render_arena, in_stroke->num_points, i32);
+        clipped_stroke->stroke.points_y = arena_alloc_array(render_arena, in_stroke->num_points, i32);
+        clipped_stroke->stroke.pressures = arena_alloc_array(render_arena, in_stroke->num_points, f32);
+        clipped_stroke->indices = arena_alloc_array(render_arena, in_stroke->num_points, i32);
     } else {
         return clipped_stroke;
     }
 
 
-    if ( !clipped_stroke->stroke.points ||
-         !clipped_stroke->stroke.metadata ||
+    if ( !clipped_stroke->stroke.points_x ||
+         !clipped_stroke->stroke.points_y ||
+         !clipped_stroke->stroke.pressures ||
          !clipped_stroke->indices ) {
         // We need more memory. Return gracefully
         return NULL;
     }
     if ( in_stroke->num_points == 1 ) {
-        if (is_inside_rect(canvas_rect, in_stroke->points[0])) {
+        if (is_inside_rect_scalar(canvas_rect, in_stroke->points_x[0], in_stroke->points_y[0])) {
             Stroke* stroke = &clipped_stroke->stroke;
             i32 index = stroke->num_points++;
-            stroke->points[index] = in_stroke->points[0];
-            stroke->metadata[index] = in_stroke->metadata[0];
+            stroke->points_x[index] = in_stroke->points_x[0];
+            stroke->points_y[index] = in_stroke->points_y[0];
+            stroke->pressures[index] = in_stroke->pressures[0];
         }
     } else {
         i32 num_points = in_stroke->num_points;
         b32 added_previous_segment = false;
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i) {
-            v2i a = in_stroke->points[point_i];
-            v2i b = in_stroke->points[point_i + 1];
+            v2i a = (v2i){in_stroke->points_x[point_i], in_stroke->points_y[point_i]};
+            v2i b = (v2i){in_stroke->points_x[point_i + 1], in_stroke->points_y[point_i + 1]};
 
-            PointMetadata metadata_a = in_stroke->metadata[point_i];
-            PointMetadata metadata_b = in_stroke->metadata[point_i + 1];
+            f32 pressure_a = in_stroke->pressures[point_i];
+            f32 pressure_b = in_stroke->pressures[point_i + 1];
 
             // Very conservative...
             b32 inside = !((a.x > canvas_rect.right     && b.x > canvas_rect.right) ||
@@ -120,19 +121,22 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
                 //  If we added, XA, then A is already inside; so for AB, we only need to add B.
                 //  If XA was discarded, we haven't added A; both points need to be added.
                 if ( !added_previous_segment ) {
-                    stroke->points[stroke->num_points]     = a;
-                    stroke->points[stroke->num_points + 1] = b;
+                    stroke->points_x[stroke->num_points]     = a.x;
+                    stroke->points_y[stroke->num_points]     = a.y;
+                    stroke->points_x[stroke->num_points + 1] = b.x;
+                    stroke->points_y[stroke->num_points + 1] = b.y;
 
-                    stroke->metadata[stroke->num_points]     = metadata_a;
-                    stroke->metadata[stroke->num_points + 1] = metadata_b;
+                    stroke->pressures[stroke->num_points]     = pressure_a;
+                    stroke->pressures[stroke->num_points + 1] = pressure_b;
 
                     clipped_stroke->indices[stroke->num_points]     = point_i;
                     clipped_stroke->indices[stroke->num_points + 1] = point_i + 1;
 
                     stroke->num_points += 2;
                 } else if ( added_previous_segment ) {
-                    stroke->points  [stroke->num_points]        = b;
-                    stroke->metadata[stroke->num_points]        = metadata_b;
+                    stroke->points_x[stroke->num_points] = b.x;
+                    stroke->points_y[stroke->num_points] = b.y;
+                    stroke->pressures[stroke->num_points] = pressure_b;
                     clipped_stroke->indices[stroke->num_points] = point_i + 1;
                     stroke->num_points += 1;
                 }
@@ -146,9 +150,10 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
 }
 
 static b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
-                                    v2i* points, i32* indices,
+                                    i32* points_x, i32* points_y,
+                                    i32* indices,
                                     i32 num_points,
-                                    PointMetadata* metadata,
+                                    f32* pressures,
                                     Brush brush, CanvasView* view)
 {
     assert ((((rect.left + rect.right) / 2) - reference_point.x) == 0);
@@ -167,11 +172,11 @@ static b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
             if ( indices[point_i] + 1 != indices[point_i + 1] ) {
                 continue;
             }
-            v2i a = points[point_i];
-            v2i b = points[point_i + 1];
+            v2i a = (v2i){points_x[point_i], points_y[point_i]};
+            v2i b = (v2i){points_x[point_i +  1], points_y[point_i + 1]};
 
-            a = sub_v2i(points[point_i], reference_point);
-            b = sub_v2i(points[point_i + 1], reference_point);
+            a = sub_v2i(a, reference_point);
+            b = sub_v2i(b, reference_point);
 
             // Get closest point
             // TODO: Refactor into something clearer after we're done.
@@ -179,8 +184,8 @@ static b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
             v2i p  = closest_point_in_segment(a, b, ab, mag_ab2,(v2i){0}, NULL);
 
-            f32 p_a = metadata[point_i    ].pressure;
-            f32 p_b = metadata[point_i + 1].pressure;
+            f32 p_a = pressures[point_i    ];
+            f32 p_b = pressures[point_i + 1];
 
             f32 pressure = min(p_a, p_b);
 
@@ -201,7 +206,7 @@ static b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
             }
         }
     } else if ( num_points == 1 ) {
-        v2i p  = points[0];
+        v2i p  = (v2i){points_x[0], points_y[0]};
 
         // Half width of a rectangle contained by brush at point p.
         i32 rad = (i32)(brush.radius * 0.707106781f);  // cos(pi/4)
@@ -263,9 +268,10 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             ClippedStroke* list_head = clipped_stroke;
             list_head->next = stroke_list;
             if ( is_rect_filled_by_stroke(canvas_block, reference_point,
-                                          stroke->points, clipped_stroke->indices,
+                                          stroke->points_x, stroke->points_y,
+                                          clipped_stroke->indices,
                                           stroke->num_points,
-                                          stroke->metadata, stroke->brush,
+                                          stroke->pressures, stroke->brush,
                                           view) ) {
                 list_head->fills_block = true;
             }
@@ -387,7 +393,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     acc_color = blend_v4f(dst, acc_color);
                 } else {
                 // Slow path. There are pixels not inside.
-                    v2i* points = stroke->points;
+                    i32* points_x = stroke->points_x;
+                    i32* points_y = stroke->points_y;
 
                     //v2f min_points[4] = {0};
                     f32 min_dist = FLT_MAX;
@@ -396,7 +403,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     f32 pressure = 0.0f;
 
                     if ( stroke->num_points == 1 ) {
-                        v2i first_point = points[0];
+                        v2i first_point = (v2i){points_x[0], points_y[0]};
                         {
                             first_point.x *= local_scale;
                             first_point.y *= local_scale;
@@ -406,7 +413,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                         dx = (f32)(i - min_point.x);
                         dy = (f32)(j - min_point.y);
                         min_dist = dx * dx + dy * dy;
-                        pressure = stroke->metadata[0].pressure;
+                        pressure = stroke->pressures[0];
                     } else {
                         // Find closest point.
                         for ( int point_i = 0; point_i < stroke->num_points - 1; point_i++ ) {
@@ -417,8 +424,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                 continue;
                             }
 
-                            v2i a = points[point_i];
-                            v2i b = points[point_i + 1];
+                            v2i a = (v2i){points_x[point_i], points_y[point_i]};
+                            v2i b = (v2i){points_x[point_i + 1], points_y[point_i + 1]};
                             {
                                 a.x *= local_scale;
                                 a.y *= local_scale;
@@ -438,8 +445,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                 f32 test_dx = (f32) (i - point.x);
                                 f32 test_dy = (f32) (j - point.y);
                                 f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
-                                f32 p_a = stroke->metadata[point_i    ].pressure;
-                                f32 p_b = stroke->metadata[point_i + 1].pressure;
+                                f32 p_a = stroke->pressures[point_i    ];
+                                f32 p_b = stroke->pressures[point_i + 1];
                                 f32 test_pressure = (1 - t) * p_a + t * p_b;
                                 dist = dist - test_pressure * stroke->brush.radius;
                                 if ( dist < min_dist ) {
@@ -564,10 +571,12 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                        u32* pixels,
                                        Rect raster_block)
 {
+    PROFILE_BEGIN(sse2);
+    PROFILE_BEGIN(preamble);
 
     __m128 one4 = _mm_set_ps1(1);
     __m128 zero4 = _mm_set_ps1(0);
-    //u64 pre_ccount_begin = __rdtsc();
+
     Rect canvas_block;
     {
         canvas_block.top_left  = raster_to_canvas(view, raster_block.top_left);
@@ -622,6 +631,9 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     i32 canvas_jump = downsample_factor * view->scale * local_scale;
 
 
+    PROFILE_PUSH(preamble);
+    PROFILE_BEGIN(total_work_loop);
+
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
               view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
@@ -659,7 +671,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     acc_color = blend_v4f(dst, acc_color);
                 } else {
                     // Slow path. There are pixels not inside.
-                    v2i* points = stroke->points;
+                    i32* points_x = stroke->points_x;
+                    i32* points_y = stroke->points_y;
 
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
@@ -667,19 +680,24 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     f32 pressure = 0.0f;
 
                     if ( stroke->num_points == 1 ) {
-                        v2i first_point = points[0];
-                        {
-                            first_point.x *= local_scale;
-                            first_point.y *= local_scale;
-                        }
-                        v2i min_point = sub_v2i(first_point, reference_point);
-                        dx = (f32)(i - min_point.x);
-                        dy = (f32)(j - min_point.y);
+                        i32 first_point_x = points_x[0] * local_scale;
+                        i32 first_point_y = points_y[0] * local_scale;
+
+                        //v2i min_point = sub_v2i(first_point, reference_point);
+                        i32 min_point_x = first_point_x - reference_point.x;
+                        i32 min_point_y = first_point_y - reference_point.y;
+
+
+                        dx = (f32)(i - min_point_x);
+                        dy = (f32)(j - min_point_y);
                         min_dist = dx * dx + dy * dy;
-                        pressure = stroke->metadata[0].pressure;
+                        pressure = stroke->pressures[0];
                     } else {
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
                         for ( int point_i = 0; point_i < stroke->num_points - 1; point_i += 4 ) {
+
+                            PROFILE_BEGIN(load);
+
                             f32 axs[4] = { 0 };
                             f32 ays[4] = { 0 };
                             f32 bxs[4] = { 0 };
@@ -714,12 +732,12 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 }
                                 // The point of reference point is to do the subtraction with
                                 // integer arithmetic
-                                axs[batch_i] = (f32)(points[index  ].x * local_scale - reference_point.x);
-                                ays[batch_i] = (f32)(points[index  ].y * local_scale - reference_point.y);
-                                bxs[batch_i] = (f32)(points[index+1].x * local_scale - reference_point.x);
-                                bys[batch_i] = (f32)(points[index+1].y * local_scale - reference_point.y);
-                                aps[batch_i] = stroke->metadata[index  ].pressure;
-                                bps[batch_i] = stroke->metadata[index+1].pressure;
+                                axs[batch_i] = (f32)(points_x[index  ] * local_scale - reference_point.x);
+                                ays[batch_i] = (f32)(points_y[index  ] * local_scale - reference_point.y);
+                                bxs[batch_i] = (f32)(points_x[index+1] * local_scale - reference_point.x);
+                                bys[batch_i] = (f32)(points_y[index+1] * local_scale - reference_point.y);
+                                aps[batch_i] = stroke->pressures[index  ];
+                                bps[batch_i] = stroke->pressures[index+1];
                             }
 
                             __m128 a_x = _mm_set_ps((axs[3]), (axs[2]), (axs[1]), (axs[0]));
@@ -728,6 +746,9 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             __m128 b_y = _mm_set_ps((bys[3]), (bys[2]), (bys[1]), (bys[0]));
                             __m128 pressure_a = _mm_set_ps(aps[3], aps[2], aps[1], aps[0]);
                             __m128 pressure_b = _mm_set_ps(bps[3], bps[2], bps[1], bps[0]);
+
+                            PROFILE_PUSH(load);
+                            PROFILE_BEGIN(work);
 
                             __m128 ab_x = _mm_sub_ps(b_x, a_x);
                             __m128 ab_y = _mm_sub_ps(b_y, a_y);
@@ -789,6 +810,9 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             __m128 radius4 = _mm_set_ps1((f32)stroke->brush.radius);
                             dist4 = _mm_sub_ps(dist4, _mm_mul_ps(pressure4, radius4));
 
+                            PROFILE_PUSH(work);
+                            PROFILE_BEGIN(gather);
+
                             f32 dists[4];
                             f32 tests_dx[4];
                             f32 tests_dy[4];
@@ -816,8 +840,11 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                     pressure = pressures[batch_i];
                                 }
                             }
+                            PROFILE_PUSH(gather);
                         }
                     }
+
+                    PROFILE_BEGIN(sampling);
 
                     if ( min_dist < FLT_MAX ) {
                         //u64 kk_ccount_begin = __rdtsc();
@@ -903,6 +930,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             acc_color = blend_v4f(dst, acc_color);
                         }
                     }
+                    PROFILE_PUSH(sampling);
                 }
                 if ( acc_color.a > 0.999999 ) {
                     break;
@@ -923,10 +951,14 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     pixels[jj * view->screen_size.w + ii] = pixel;
                 }
             }
+
+
             i += canvas_jump;
         }
         j += canvas_jump;
     }
+    PROFILE_PUSH(total_work_loop);
+    PROFILE_PUSH(sse2);
     return true;
 }
 
@@ -1327,6 +1359,8 @@ static void produce_render_work(MiltonState* milton_state,
 // Returns true if operation was completed.
 static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
 {
+    PROFILE_BEGIN(render_canvas);
+
     Rect* blocks = NULL;
 
     i32 num_blocks = rect_split(milton_state->transient_arena,
@@ -1353,7 +1387,7 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
             break;
         }
 
-#define RENDER_MULTITHREADED 1
+#define RENDER_MULTITHREADED 0
 #if RENDER_MULTITHREADED
         BlockgroupRenderData data =
         {
@@ -1389,6 +1423,8 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
 #endif
 
     ARENA_VALIDATE(milton_state->transient_arena);
+
+    PROFILE_PUSH(render_canvas);
 }
 
 static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* view)
@@ -1567,7 +1603,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 
         } else if ( milton_state->working_stroke.num_points == 1 ) {
             Stroke* stroke = &milton_state->working_stroke;
-            v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
+            v2i point = canvas_to_raster(milton_state->view, (v2i){stroke->points_x[0], stroke->points_y[0]});
             i32 raster_radius = stroke->brush.radius / milton_state->view->scale;
             raster_radius = max(raster_radius, milton_state->block_width);
             raster_limits.left   = -raster_radius + point.x;
@@ -1580,9 +1616,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 
         if ( render_flags & MiltonRenderFlags_FINISHED_STROKE ) {
             i32 index = milton_state->strokes->count - 1;
-            Rect canvas_rect = bounding_box_for_last_n_points(StrokeCord_get(milton_state->strokes,
-                                                                              index),
-                                                              4);
+            Rect canvas_rect = bounding_box_for_last_n_points(StrokeCord_get(milton_state->strokes, index), 4);
             raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
@@ -1605,6 +1639,8 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
     render_canvas(milton_state, raster_buffer, raster_limits);
 
     render_gui(milton_state, raster_buffer, raster_limits, render_flags);
+
+    profiler_output();
 
     i32 w = milton_state->view->screen_size.w;
     i32 h = milton_state->view->screen_size.h;

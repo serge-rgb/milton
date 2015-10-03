@@ -32,6 +32,7 @@
 #include "memory.c"
 #include "milton.c"
 #include "persist.c"
+#include "profiler.c"
 #include "rasterizer.c"
 #include "sdl_milton.c"
 #include "utils.c"

@@ -121,10 +121,12 @@ Rect rect_clip_to_screen(Rect limits, v2i screen_size);
 Rect rect_enlarge(Rect src, i32 offset);
 
 Rect bounding_rect_for_points(v2i points[], i32 num_points);
+Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_points);
 
 i32 rect_area(Rect rect);
 
 b32 is_inside_rect(Rect bounds, v2i point);
+b32 is_inside_rect_scalar(Rect bounds, i32 point_x, i32 point_y);
 
 b32 is_rect_within_rect(Rect a, Rect b);
 

@@ -68,12 +68,12 @@ void milton_load(MiltonState* milton_state)
                 // Corrupt file. Avoid this read
                 continue;       // Do not allocate, just move on.
             }
-            stroke->points =
-                    arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);
-            stroke->metadata =
-                    arena_alloc_array(milton_state->root_arena, stroke->num_points, PointMetadata);
-            fread(stroke->points, sizeof(v2i), stroke->num_points, fd);
-            fread(stroke->metadata, sizeof(PointMetadata), stroke->num_points, fd);
+            stroke->points_x = arena_alloc_array(milton_state->root_arena, stroke->num_points, i32);
+            stroke->points_y = arena_alloc_array(milton_state->root_arena, stroke->num_points, i32);
+            stroke->pressures = arena_alloc_array(milton_state->root_arena, stroke->num_points, f32);
+            fread(stroke->points_x, sizeof(i32), stroke->num_points, fd);
+            fread(stroke->points_y, sizeof(i32), stroke->num_points, fd);
+            fread(stroke->pressures, sizeof(f32), stroke->num_points, fd);
         }
 
         fread(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
@@ -111,8 +111,9 @@ void milton_save(MiltonState* milton_state)
         assert(stroke->num_points > 0);
         fwrite(&stroke->brush, sizeof(Brush), 1, fd);
         fwrite(&stroke->num_points, sizeof(i32), 1, fd);
-        fwrite(stroke->points, sizeof(v2i), stroke->num_points, fd);
-        fwrite(stroke->metadata, sizeof(PointMetadata), stroke->num_points, fd);
+        fwrite(stroke->points_x, sizeof(i32), stroke->num_points, fd);
+        fwrite(stroke->points_y, sizeof(i32), stroke->num_points, fd);
+        fwrite(stroke->pressures, sizeof(f32), stroke->num_points, fd);
     }
 
     fwrite(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);

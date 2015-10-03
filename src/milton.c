@@ -434,10 +434,9 @@ void milton_init(MiltonState* milton_state)
 
     milton_state->strokes = StrokeCord_make(milton_state->root_arena, 1024);
 
-    milton_state->working_stroke.points     = arena_alloc_array(milton_state->root_arena,
-                                                                STROKE_MAX_POINTS, v2i);
-    milton_state->working_stroke.metadata   = arena_alloc_array(milton_state->root_arena,
-                                                                STROKE_MAX_POINTS, PointMetadata);
+    milton_state->working_stroke.points_x   = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, i32);
+    milton_state->working_stroke.points_y   = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, i32);
+    milton_state->working_stroke.pressures  = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
 
     milton_state->current_mode = MiltonMode_PEN;
 
@@ -573,12 +572,11 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                 if ( ++count >= point_window ) {
                     break;
                 }
-                v2i this_point = milton_state->working_stroke.points[i];
-                i32 this_radius = (i32)(milton_state->working_stroke.brush.radius *
-                                        milton_state->working_stroke.metadata[i].pressure);
+                v2i this_point = (v2i){milton_state->working_stroke.points_x[i], milton_state->working_stroke.points_y[i]};
+                i32 this_radius = (i32)(milton_state->working_stroke.brush.radius * milton_state->working_stroke.pressures[i]);
 
                 if ( stroke_point_contains_point(canvas_point, in_radius,
-                                                this_point, this_radius) ) {
+                                                 this_point, this_radius) ) {
                     milton_state->working_stroke.num_points -= 1;
                 } else if ( stroke_point_contains_point(this_point, this_radius,
                                                      canvas_point, in_radius) ) {
@@ -594,11 +592,11 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         if ( passed_inspection ) {
             // Add to current stroke.
             int index = milton_state->working_stroke.num_points++;
-            milton_state->working_stroke.points[index] = canvas_point;
+            milton_state->working_stroke.points_x[index] = canvas_point.x;
+            milton_state->working_stroke.points_y[index] = canvas_point.y;
 
 
-            milton_state->working_stroke.metadata[index] =
-                    (PointMetadata) { .pressure = pressure };
+            milton_state->working_stroke.pressures[index] = pressure;
         }
     }
 }
@@ -850,20 +848,14 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 Stroke new_stroke =
                 {
                     .brush = milton_state->working_stroke.brush,
-                    .points = arena_alloc_array(milton_state->root_arena,
-                                                milton_state->working_stroke.num_points,
-                                                v2i),
-                    .metadata = arena_alloc_array(milton_state->root_arena,
-                                                  milton_state->working_stroke.num_points,
-                                                  PointMetadata),
+                    .points_x = arena_alloc_array(milton_state->root_arena, milton_state->working_stroke.num_points, i32),
+                    .points_y = arena_alloc_array(milton_state->root_arena, milton_state->working_stroke.num_points, i32),
+                    .pressures = arena_alloc_array(milton_state->root_arena, milton_state->working_stroke.num_points, f32),
                     .num_points = milton_state->working_stroke.num_points,
                 };
-                memcpy(new_stroke.points,
-                       milton_state->working_stroke.points,
-                       milton_state->working_stroke.num_points * sizeof(v2i));
-                memcpy(new_stroke.metadata,
-                       milton_state->working_stroke.metadata,
-                       milton_state->working_stroke.num_points * sizeof(PointMetadata));
+                memcpy(new_stroke.points_x, milton_state->working_stroke.points_x, milton_state->working_stroke.num_points * sizeof(i32));
+                memcpy(new_stroke.points_y, milton_state->working_stroke.points_y, milton_state->working_stroke.num_points * sizeof(i32));
+                memcpy(new_stroke.pressures, milton_state->working_stroke.pressures, milton_state->working_stroke.num_points * sizeof(f32));
 
                 StrokeCord_push(milton_state->strokes, new_stroke);
                 // Clear working_stroke

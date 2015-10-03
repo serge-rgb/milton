@@ -263,11 +263,6 @@ Rect bounding_rect_for_points(v2i points[], i32 num_points)
     return rect;
 }
 
-i32 rect_area(Rect rect)
-{
-    return (rect.right - rect.left) * (rect.bottom - rect.top);
-}
-
 b32 is_inside_rect(Rect bounds, v2i point)
 {
     return
@@ -275,6 +270,46 @@ b32 is_inside_rect(Rect bounds, v2i point)
         point.x <  bounds.right &&
         point.y >= bounds.top &&
         point.y <  bounds.bottom;
+}
+
+Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_points)
+{
+    assert (num_points > 0);
+
+    i32 top_left_x =  points_x[0];
+    i32 bot_right_x = points_x[0];
+
+    i32 top_left_y =  points_y[0];
+    i32 bot_right_y = points_y[0];
+
+    for (i32 i = 1; i < num_points; ++i) {
+        if (points_x[i] < top_left_x)   top_left_x = points_x[i];
+        if (points_x[i] > bot_right_x)  bot_right_x = points_x[i];
+
+        if (points_y[i] < top_left_y)   top_left_y = points_y[i];
+        if (points_y[i] > bot_right_y)  bot_right_y = points_y[i];
+    }
+    Rect rect = {
+        .left = top_left_x,
+        .right = bot_right_x,
+        .top = top_left_y,
+        .bottom = bot_right_y,
+    };
+    return rect;
+}
+
+i32 rect_area(Rect rect)
+{
+    return (rect.right - rect.left) * (rect.bottom - rect.top);
+}
+
+b32 is_inside_rect_scalar(Rect bounds, i32 point_x, i32 point_y)
+{
+    return
+        point_x >= bounds.left &&
+        point_x <  bounds.right &&
+        point_y >= bounds.top &&
+        point_y <  bounds.bottom;
 }
 
 b32 is_rect_within_rect(Rect a, Rect b)

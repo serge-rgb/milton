@@ -51,13 +51,13 @@ b32* filter_strokes_to_rect(Arena* arena,
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
         VALIDATE_RECT(stroke_rect);
         if (stroke->num_points == 1) {
-            if (is_inside_rect(stroke_rect, stroke->points[0])) {
+            if (is_inside_rect_scalar(stroke_rect, stroke->points_x[0], stroke->points_y[0])) {
                 mask_array[stroke_i] = true;
             }
         } else {
             for (i32 point_i = 0; point_i < stroke->num_points - 1; ++point_i) {
-                v2i a = stroke->points[point_i];
-                v2i b = stroke->points[point_i + 1];
+                v2i a = (v2i){stroke->points_x[point_i], stroke->points_y[point_i]};
+                v2i b = (v2i){stroke->points_x[point_i + 1], stroke->points_y[point_i + 1]};
 
                 b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
                                (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
@@ -76,7 +76,7 @@ b32* filter_strokes_to_rect(Arena* arena,
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
 b32 stroke_point_contains_point(v2i p0, i32 r0,
-                                     v2i p1, i32 r1)
+                                v2i p1, i32 r1)
 {
     v2i d = sub_v2i(p1, p0);
     // using manhattan distance, less chance of overflow. Still works well enough for this case.
@@ -89,7 +89,7 @@ b32 stroke_point_contains_point(v2i p0, i32 r0,
 
 Rect bounding_box_for_stroke(Stroke* stroke)
 {
-    Rect bb = bounding_rect_for_points(stroke->points, stroke->num_points);
+    Rect bb = bounding_rect_for_points_scalar(stroke->points_x, stroke->points_y, stroke->num_points);
     bb = rect_enlarge(bb, stroke->brush.radius);
     return bb;
 }
@@ -98,7 +98,9 @@ Rect bounding_box_for_last_n_points(Stroke* stroke, i32 last_n)
 {
     i32 forward = max(stroke->num_points - last_n, 0);
     i32 num_points = min(last_n, stroke->num_points);
-    Rect bb = bounding_rect_for_points(stroke->points + forward, num_points);
+    Rect bb = bounding_rect_for_points_scalar(stroke->points_x + forward,
+                                       stroke->points_y + forward,
+                                       num_points);
     bb = rect_enlarge(bb, stroke->brush.radius);
     return bb;
 }
