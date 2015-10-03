@@ -21,7 +21,7 @@
 // Not the most fancy thing, but it's useful for quick and dirty sessions of optimization.
 
 #include "define_types.h"
-
+#include "milton_configuration.h"
 
 typedef enum {
     MILTON_PROFILER_render_canvas,
@@ -49,9 +49,9 @@ static char* g_profiler_names[MILTON_PROFILER_COUNT] = {
     "sample"
 };
 
-#if defined(_WIN64) && 1
+#if defined(_WIN64) && MILTON_ENABLE_PROFILING
 
-#define PROFILER_ENABLED
+#define PROFILER_IMPLEMENTATION
 
 static u64 g_profiler_ticks[MILTON_PROFILER_COUNT];  // Total cpu clocks
 static u64 g_profiler_count[MILTON_PROFILER_COUNT];  // How many calls

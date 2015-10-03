@@ -20,7 +20,7 @@
 
 void profiler_output()
 {
-#if defined(PROFILER_ENABLED)
+#if defined(PROFILER_IMPLEMENTATION)
     milton_log("===== Profiler output ==========\n");
     for (i32 i = 0; i < MILTON_PROFILER_COUNT; ++i) {
         if (g_profiler_count[i]) {

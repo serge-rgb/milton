@@ -40,16 +40,24 @@ struct ClippedStroke_s {
     // as long as the render worker lasts. It's a direct memcpy from whatever
     // stroke we are clipping.  I tried using a smarter structure that did not
     // copy too much memory but it ended up being significantly slower
+    //
+    // DELETE AFTER RETURNING TO DOUBLE STORAGE SCHEME
     Stroke          stroke;
 
-    // We store indices into clipped points to delineate segments.  i.e. We
-    // know that ab is a segment if index(a) + 1 == index(b)
-    //
-    // The alternative is to store points as AB BC CD DE, basically doubling
-    // the memory requirement.  This solution turned out to not have a
-    // significant perf impact and reduce dramatically the memory needed by
-    // render workers.
-    i32*            indices;
+    // Point data for segments AB BC CD DE etc..
+    // A in AB
+    i32* a_xs;
+    i32* a_ys;
+
+    // B in AB
+    i32* b_xs;
+    i32* b_ys;
+
+    // A multiple of two, clipped strokes store segments duplicating some data
+    i32 num_points;
+
+    // A pressure value for every point.
+    f32* pressures;
 
     // Yes, it is a linked list. Shoot me.
     //
@@ -72,10 +80,18 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
     // ... now substitute the point data with an array of our own.
     if (in_stroke->num_points > 0) {
         clipped_stroke->stroke.num_points = 0;
-        clipped_stroke->stroke.points_x = arena_alloc_array(render_arena, in_stroke->num_points, i32);
-        clipped_stroke->stroke.points_y = arena_alloc_array(render_arena, in_stroke->num_points, i32);
-        clipped_stroke->stroke.pressures = arena_alloc_array(render_arena, in_stroke->num_points, f32);
-        clipped_stroke->indices = arena_alloc_array(render_arena, in_stroke->num_points, i32);
+
+        i32 points_allocated = in_stroke->num_points * 2;
+
+        // Add enough zeroed-out points to align the arrays to a multiple of 4
+        // points so that the renderer can comfortably load from the arrays
+        // without bounds checking.
+        if (0 != (points_allocated % 4)) {
+            points_allocated += 4 - (points_allocated % 4);
+        }
+        clipped_stroke->stroke.points_x = arena_alloc_array(render_arena, points_allocated, i32);
+        clipped_stroke->stroke.points_y = arena_alloc_array(render_arena, points_allocated, i32);
+        clipped_stroke->stroke.pressures = arena_alloc_array(render_arena, points_allocated, f32);
     } else {
         return clipped_stroke;
     }
@@ -83,8 +99,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
 
     if ( !clipped_stroke->stroke.points_x ||
          !clipped_stroke->stroke.points_y ||
-         !clipped_stroke->stroke.pressures ||
-         !clipped_stroke->indices ) {
+         !clipped_stroke->stroke.pressures) {
         // We need more memory. Return gracefully
         return NULL;
     }
@@ -98,7 +113,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
         }
     } else {
         i32 num_points = in_stroke->num_points;
-        b32 added_previous_segment = false;
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i) {
             v2i a = (v2i){in_stroke->points_x[point_i], in_stroke->points_y[point_i]};
             v2i b = (v2i){in_stroke->points_x[point_i + 1], in_stroke->points_y[point_i + 1]};
@@ -115,34 +129,15 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
             // We can add the segment
             if ( inside ) {
                 Stroke* stroke = &clipped_stroke->stroke;
-                // XA AB<- CD
-                // We need to add AB to out clipped stroke.
-                // Based on the previous iteration:
-                //  If we added, XA, then A is already inside; so for AB, we only need to add B.
-                //  If XA was discarded, we haven't added A; both points need to be added.
-                if ( !added_previous_segment ) {
-                    stroke->points_x[stroke->num_points]     = a.x;
-                    stroke->points_y[stroke->num_points]     = a.y;
-                    stroke->points_x[stroke->num_points + 1] = b.x;
-                    stroke->points_y[stroke->num_points + 1] = b.y;
+                stroke->points_x[stroke->num_points]     = a.x;
+                stroke->points_y[stroke->num_points]     = a.y;
+                stroke->points_x[stroke->num_points + 1] = b.x;
+                stroke->points_y[stroke->num_points + 1] = b.y;
 
-                    stroke->pressures[stroke->num_points]     = pressure_a;
-                    stroke->pressures[stroke->num_points + 1] = pressure_b;
+                stroke->pressures[stroke->num_points]     = pressure_a;
+                stroke->pressures[stroke->num_points + 1] = pressure_b;
 
-                    clipped_stroke->indices[stroke->num_points]     = point_i;
-                    clipped_stroke->indices[stroke->num_points + 1] = point_i + 1;
-
-                    stroke->num_points += 2;
-                } else if ( added_previous_segment ) {
-                    stroke->points_x[stroke->num_points] = b.x;
-                    stroke->points_y[stroke->num_points] = b.y;
-                    stroke->pressures[stroke->num_points] = pressure_b;
-                    clipped_stroke->indices[stroke->num_points] = point_i + 1;
-                    stroke->num_points += 1;
-                }
-                added_previous_segment = true;
-            } else {
-                added_previous_segment = false;
+                stroke->num_points += 2;
             }
         }
     }
@@ -151,7 +146,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
 
 static b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
                                     i32* points_x, i32* points_y,
-                                    i32* indices,
                                     i32 num_points,
                                     f32* pressures,
                                     Brush brush, CanvasView* view)
@@ -169,9 +163,6 @@ static b32 is_rect_filled_by_stroke(Rect rect, v2i reference_point,
 
     if (num_points >= 2) {
         for ( i32 point_i = 0; point_i < num_points - 1; ++point_i ) {
-            if ( indices[point_i] + 1 != indices[point_i + 1] ) {
-                continue;
-            }
             v2i a = (v2i){points_x[point_i], points_y[point_i]};
             v2i b = (v2i){points_x[point_i +  1], points_y[point_i + 1]};
 
@@ -269,7 +260,6 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             list_head->next = stroke_list;
             if ( is_rect_filled_by_stroke(canvas_block, reference_point,
                                           stroke->points_x, stroke->points_y,
-                                          clipped_stroke->indices,
                                           stroke->num_points,
                                           stroke->pressures, stroke->brush,
                                           view) ) {
@@ -416,14 +406,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                         pressure = stroke->pressures[0];
                     } else {
                         // Find closest point.
-                        for ( int point_i = 0; point_i < stroke->num_points - 1; point_i++ ) {
-                            i32 index_a = clipped_stroke->indices[point_i];
-                            i32 index_b = clipped_stroke->indices[point_i + 1];
-                            // Skip this iteration. This is not a segment.
-                            if ( index_a + 1 != index_b ) {
-                                continue;
-                            }
-
+                        for (int point_i = 0; point_i < stroke->num_points - 1; point_i += 2) {
                             v2i a = (v2i){points_x[point_i], points_y[point_i]};
                             v2i b = (v2i){points_x[point_i + 1], points_y[point_i + 1]};
                             {
@@ -694,7 +677,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         pressure = stroke->pressures[0];
                     } else {
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
-                        for ( int point_i = 0; point_i < stroke->num_points - 1; point_i += 4 ) {
+                        for ( int point_i = 0; point_i < stroke->num_points - 1; point_i += (2 * 4) ) {
+                            // The step is 4 (128 bit SIMD) times 2 (points are in format AB BC CD DE)
 
                             PROFILE_BEGIN(load);
 
@@ -705,44 +689,32 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             f32 aps[4];
                             f32 bps[4];
 
-                            // This is stupid.
-                            //
-                            // If we stored the strokes as in Struct of Arrays (SOA) form, we could avoid this loop.
-                            //
-                            // It would turn into the 6 _mm_set_ps calls
-                            // followed by 4 wide muls and 4 wide adds.  One
-                            // caveat: points would have to be a multiple of 4.
-                            // Not so bad. We would also save the set-to-zero
-                            // that we do above, which is expensive...
-
+                            i32 l_point_i = point_i;
                             for ( i32 batch_i = 0; batch_i < 4; batch_i++ ) {
-                                register i32 index = point_i + batch_i;
+
+                                i32 index = l_point_i + batch_i;
 
                                 if (index + 1 >= stroke->num_points)
                                 {
                                     break;
                                 }
 
-                                i32 index_a = clipped_stroke->indices[index];
-                                i32 index_b = clipped_stroke->indices[index + 1];
-
-                                // Not a segment
-                                if ( index_a + 1 != index_b ) {
-                                    continue;
-                                }
                                 // The point of reference point is to do the subtraction with
                                 // integer arithmetic
                                 axs[batch_i] = (f32)(points_x[index  ] * local_scale - reference_point.x);
-                                ays[batch_i] = (f32)(points_y[index  ] * local_scale - reference_point.y);
                                 bxs[batch_i] = (f32)(points_x[index+1] * local_scale - reference_point.x);
+                                ays[batch_i] = (f32)(points_y[index  ] * local_scale - reference_point.y);
                                 bys[batch_i] = (f32)(points_y[index+1] * local_scale - reference_point.y);
                                 aps[batch_i] = stroke->pressures[index  ];
                                 bps[batch_i] = stroke->pressures[index+1];
+
+                                l_point_i += 1;
                             }
 
                             __m128 a_x = _mm_set_ps((axs[3]), (axs[2]), (axs[1]), (axs[0]));
-                            __m128 b_x = _mm_set_ps((bxs[3]), (bxs[2]), (bxs[1]), (bxs[0]));
                             __m128 a_y = _mm_set_ps((ays[3]), (ays[2]), (ays[1]), (ays[0]));
+
+                            __m128 b_x = _mm_set_ps((bxs[3]), (bxs[2]), (bxs[1]), (bxs[0]));
                             __m128 b_y = _mm_set_ps((bys[3]), (bys[2]), (bys[1]), (bys[0]));
                             __m128 pressure_a = _mm_set_ps(aps[3], aps[2], aps[1], aps[0]);
                             __m128 pressure_b = _mm_set_ps(bps[3], bps[2], bps[1], bps[0]);
@@ -1387,7 +1359,7 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
             break;
         }
 
-#define RENDER_MULTITHREADED 0
+#define RENDER_MULTITHREADED MILTON_MULTITHREADED
 #if RENDER_MULTITHREADED
         BlockgroupRenderData data =
         {
@@ -1626,8 +1598,8 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 
     u32* raster_buffer = (u32*)milton_state->raster_buffer;
 
-#if 0
-    // DEBUG always render the whole thing.
+#if MILTON_ENABLE_PROFILING
+    // Draw everything every frame when profiling.
     {
         raster_limits.left = 0;
         raster_limits.right = milton_state->view->screen_size.w;

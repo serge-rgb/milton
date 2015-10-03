@@ -19,6 +19,7 @@
 #pragma once
 
 #include "define_types.h"
+#include "milton_configuration.h"
 
 #define MILTON_USE_VAO          0
 #define RENDER_QUEUE_SIZE       (1 << 13)
@@ -49,9 +50,9 @@ typedef struct MiltonGLState_s {
 typedef enum MiltonMode_s {
     MiltonMode_NONE                   = ( 0 ),
 
-    MiltonMode_ERASER                 = ( 1 << 0 ),
-    MiltonMode_PEN                    = ( 1 << 1 ),
-    MiltonMode_REQUEST_QUALITY_REDRAW = ( 1 << 2 ),
+    MiltonMode_ERASER                 = (1 << 0),
+    MiltonMode_PEN                    = (1 << 1),
+    MiltonMode_REQUEST_QUALITY_REDRAW = (1 << 2),
 } MiltonMode;
 
 typedef enum {
