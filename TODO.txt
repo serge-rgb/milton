@@ -6,9 +6,11 @@ To-Do
     - :)
 
 -  GUI
-    - Image Button (hover & click)
-    - Brush / Eraser buttons
-    - Text (stb)
+    - Brush / Eraser
+        - Image Button (hover & click)
+    - Export buttons
+        - "Rubber band" selection rect
+        - OS-dependent file-save dialog.
     - F1 help widget
     - GUI toggle key
     - History slider.
@@ -23,28 +25,25 @@ To-Do
     - Wacom:
         - Pressure levels (only OSX left)
         - Windows stylus buttons
-
     - Performance:
-        - Don't do the dumb 4-loop and learn SSE2
-        - Live profiler
+        - Strokes should be sampled based on relative size
         - memcpy when Panning
-        - Write perf logger to make informed decision.
         - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize GUI rendering
     - Stress the renderer with a huge drawing.
     - Robust save
     - Export
         - JPEG (tiny_jpeg)
-        - PNG (stb? hand written?)
+        - stb_image_write (PNG, BMP, TGA)
     - Playback
         - Store view changes in persist file
         - Playback mode? Separate viewer?
-
     - Brush
         - Support for general, implicitly defined brushes
-
     - Debug
         - Input recorder for bug replication
+    - General
+        - DPI-aware
 
 ============================================================
 ====                   1.0 Beta Milestone               ====

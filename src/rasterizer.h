@@ -15,21 +15,18 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-// TODO: There should be a way to deal with high density displays.
 
-// We might want to split this file into
-//  - Actual rasterization of implicitly defined geometry (including strokes.)
-//  - Render jobs and spacial division
-//  - Bitmap loading and resource management.
-
-typedef struct
-{
+// What "void* data" below is expecting...
+typedef struct WorkerParams_s {
     MiltonState* milton_state;
     i32 worker_id;
 } WorkerParams;
 
-// Thread function.
-int render_worker(void* data);
+// Declared here so that the workers get launched from the init function.
+int renderer_worker_thread(void* data);
 
+// Blocking function. When it returns, the framebuffer is updated to the
+// current state. It does a lot of smart things to do as little work as
+// possible. Most users on most machines should get interactive framerates.
 void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags);
 

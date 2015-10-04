@@ -505,7 +505,7 @@ void milton_init(MiltonState* milton_state)
         milton_state->render_worker_arenas[i] = arena_init(worker_memory,
                                                            milton_state->worker_memory_size);
 
-        SDL_CreateThread(render_worker, "Milton Render Worker", (void*)params);
+        SDL_CreateThread(renderer_worker_thread, "Milton Render Worker", (void*)params);
     }
     milton_load_assets(milton_state);
 }

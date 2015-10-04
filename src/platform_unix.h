@@ -134,9 +134,9 @@ void platform_deallocate_internal(void* ptr)
 }
 
 NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
-                                                  i32 width, i32 height,
-                                                  v2i* out_point,
-                                                  f32* out_pressure)
+                                             i32 width, i32 height,
+                                             v2i* out_point,
+                                             f32* out_pressure)
 {
     NativeEventResult caught_event = Caught_NONE;
 #ifdef __linux__

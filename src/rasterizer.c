@@ -29,13 +29,6 @@
 typedef struct ClippedStroke_s ClippedStroke;
 
 struct ClippedStroke_s {
-    // A bool inside a struct whose only purpose is to make things faster. This
-    // would probably make Mike Acton angry, but it works really well.
-    // What it does: It is set to true when this clipped stroke completely
-    // fills the block to which it's clipped. This allows us to avoid a *lot*
-    // of work by just flood-filling the block.
-    b32             fills_block;
-
     // Same contents as a stroke, but these points are stored in relative
     // coordinates to the center of the block. This helps with FP precision and
     // we do it it at "clip time" to avoid per-pixel computations.
@@ -45,8 +38,13 @@ struct ClippedStroke_s {
     Brush           brush;
     i32*            points_x;
     i32*            points_y;
-    // Is it a good idea to copy the pressures? It's read only, so we (probably) shouldn't be thrashing
     f32*            pressures;
+
+    // A clipped stroke is never empty. We use 0 to denote a stroke that fills
+    // the block completely, allowing us to go through the "fast path" of just
+    // flood-filling the block, which is a common occurrence and an effective
+    // optimization.
+#define CLIPPED_STROKE_FILLS_BLOCK 0
     i32             num_points;
 
     // Point data for segments AB BC CD DE etc..
@@ -57,14 +55,21 @@ struct ClippedStroke_s {
     ClippedStroke*  next;
 };
 
-static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke, Rect canvas_rect, i32 local_scale, v2i reference_point)
+
+static b32 clipped_stroke_fills_block(ClippedStroke* clipped_stroke)
+{
+    b32 fills = clipped_stroke->num_points == CLIPPED_STROKE_FILLS_BLOCK;
+    return fills;
+}
+
+static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke,
+                                          Rect canvas_rect, i32 local_scale, v2i reference_point)
 {
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
     if (!clipped_stroke) {
         return NULL;
     }
 
-    clipped_stroke->fills_block = false;
     clipped_stroke->next = NULL;
     clipped_stroke->brush = in_stroke->brush;
 
@@ -81,9 +86,9 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
         clipped_stroke->points_y = arena_alloc_array(render_arena, points_allocated, i32);
         clipped_stroke->pressures = arena_alloc_array(render_arena, points_allocated, f32);
     } else {
+        milton_log("WARNING: An empty stroke was received to clip.\n");
         return clipped_stroke;
     }
-
 
     if ( !clipped_stroke->points_x ||
          !clipped_stroke->points_y ||
@@ -93,12 +98,12 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
     }
     if ( in_stroke->num_points == 1 ) {
         if (is_inside_rect_scalar(canvas_rect, in_stroke->points_x[0], in_stroke->points_y[0])) {
-            i32 index = clipped_stroke->num_points++;
-            clipped_stroke->points_x[index] = in_stroke->points_x[0];
-            clipped_stroke->points_y[index] = in_stroke->points_y[0];
-            clipped_stroke->pressures[index] = in_stroke->pressures[0];
+            clipped_stroke->num_points = 1;
+            clipped_stroke->points_x[0] = in_stroke->points_x[0] * local_scale - reference_point.x;
+            clipped_stroke->points_y[0] = in_stroke->points_y[0] * local_scale - reference_point.y;
+            clipped_stroke->pressures[0] = in_stroke->pressures[0];
         }
-    } else {
+    } else if ( in_stroke->num_points > 1 ){
         i32 num_points = in_stroke->num_points;
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i) {
             v2i a = (v2i){in_stroke->points_x[point_i], in_stroke->points_y[point_i]};
@@ -126,6 +131,9 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
                 clipped_stroke->num_points += 2;
             }
         }
+    } else {
+        // We should have already handled the pathological case of the empty stroke.
+        assert (!"invalid code path");
     }
     return clipped_stroke;
 }
@@ -189,24 +197,22 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
             }
         }
     } else if ( num_points == 1 ) {
-        return false;
-#if 0
-        v2i p  = (v2i){points_x[0], points_y[0]};
-
         // Half width of a rectangle contained by brush at point p.
-        i32 rad = (i32)(brush.radius * 0.707106781f);  // cos(pi/4)
-        Rect bounded_rect;
-        {
-            bounded_rect.left   = p.x - rad;
-            bounded_rect.right  = p.x + rad;
-            bounded_rect.bottom = p.y + rad;
-            bounded_rect.top    = p.y - rad;
-        }
+        f32 rad = brush.radius * local_scale * 0.707106781f * pressures[0];  // cos(pi/4)
+        i32 p_x = points_x[0];
+        i32 p_y = points_y[0];
+        f32 b_left   = p_x - rad;
+        f32 b_right  = p_x + rad;
+        f32 b_top    = p_y - rad;
+        f32 b_bottom = p_y + rad;
 
-        if ( is_rect_within_rect(rect, bounded_rect) ) {
+        // Rect within rect
+        if ((left >= b_left) &&
+            (right <= b_right) &&
+            (top >= b_top) &&
+            (bottom <= b_bottom)) {
             return true;
         }
-#endif
     }
     return false;
 }
@@ -251,14 +257,20 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         }
 
         if ( clipped_stroke->num_points ) {
+            // Empty strokes ignored.
             ClippedStroke* list_head = clipped_stroke;
+
             list_head->next = stroke_list;
             if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
                                           clipped_stroke->points_x, clipped_stroke->points_y,
                                           clipped_stroke->num_points,
                                           clipped_stroke->pressures, clipped_stroke->brush,
                                           view) ) {
-                list_head->fills_block = true;
+                // Set num_points = 0. Since we are ignoring empty strokes
+                // (which should not get here in the first place), we can use 0
+                // to denote a stroke that fills the block, saving ourselves a
+                // boolean struct member.
+                list_head->num_points = CLIPPED_STROKE_FILLS_BLOCK;
             }
             stroke_list = list_head;
         }
@@ -267,9 +279,8 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
     // Set our `stroke_list` to end at the first opaque stroke that fills
     // this block.
     ClippedStroke* list_iter = stroke_list;
-
     while (list_iter) {
-        if ( list_iter->fills_block && list_iter->brush.color.a == 1.0f ) {
+        if ( clipped_stroke_fills_block(list_iter) && list_iter->brush.color.a == 1.0f ) {
             list_iter->next = NULL;
             break;
         }
@@ -365,10 +376,9 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
             while(list_iter) {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
-                assert (clipped_stroke->num_points > 0);
 
                 // Fast path.
-                if (clipped_stroke->fills_block) {
+                if ( clipped_stroke_fills_block(clipped_stroke) ) {
 #if 1 // Visualize it with black
                     v4f dst = {0, 0, 0, clipped_stroke->brush.color.a};
 #else
@@ -376,7 +386,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 } else {
-                // Slow path. There are pixels not inside.
+                    // Slow path. There are pixels not inside.
+                    assert (clipped_stroke->num_points > 0);
                     i32* points_x = clipped_stroke->points_x;
                     i32* points_y = clipped_stroke->points_y;
 
@@ -387,15 +398,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     f32 pressure = 0.0f;
 
                     if ( clipped_stroke->num_points == 1 ) {
-                        v2i first_point = (v2i){points_x[0], points_y[0]};
-                        {
-                            first_point.x *= local_scale;
-                            first_point.y *= local_scale;
-                        }
-                        //min_points[0] = v2i_to_v2f(sub_v2i(first_point, reference_point));
-                        v2i min_point = sub_v2i(first_point, reference_point);
-                        dx = (f32)(i - min_point.x);
-                        dy = (f32)(j - min_point.y);
+                        dx = (f32)(i - points_x[0]);
+                        dy = (f32)(j - points_y[0]);
                         min_dist = dx * dx + dy * dy;
                         pressure = clipped_stroke->pressures[0];
                     } else {
@@ -627,10 +631,9 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
             while(list_iter) {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
-                assert (clipped_stroke->num_points > 0);
 
                 // Fast path.
-                if ( clipped_stroke->fills_block ) {
+                if ( clipped_stroke_fills_block(clipped_stroke) ) {
 #if 0 // Visualize it with black
                     v4f dst = {0, 0, 0, clipped_stroke->brush.color.a};
 #else
@@ -638,6 +641,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 } else {
+                    assert(clipped_stroke->num_points > 0);
                     // Slow path. There are pixels not inside.
                     i32* points_x = clipped_stroke->points_x;
                     i32* points_y = clipped_stroke->points_y;
@@ -648,13 +652,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     f32 pressure = 0.0f;
 
                     if ( clipped_stroke->num_points == 1 ) {
-                        //v2i min_point = sub_v2i(first_point, reference_point);
-                        i32 min_point_x = points_x[0] - reference_point.x;
-                        i32 min_point_y = points_y[0] - reference_point.y;
-
-
-                        dx = (f32)(i - min_point_x);
-                        dy = (f32)(j - min_point_y);
+                        dx = (f32)(i - points_x[0]);
+                        dy = (f32)(j - points_y[0]);
                         min_dist = dx * dx + dy * dy;
                         pressure = clipped_stroke->pressures[0];
                     } else {
@@ -1254,7 +1253,7 @@ static b32 render_blockgroup(MiltonState* milton_state,
     return allocation_ok;
 }
 
-int render_worker(void* data)
+int renderer_worker_thread(void* data)
 {
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;

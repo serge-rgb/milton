@@ -82,6 +82,9 @@ v2i closest_point_in_segment(v2i a, v2i b,
                              v2f ab, f32 ab_magnitude_squared,
                              v2i point, f32* out_t);
 
+// Returns false if there is no intersection.
+// Returns true otherwise, and fills out_intersection with the intersection
+// point.
 b32 intersect_line_segments(v2i a, v2i b,
                             v2i u, v2i v,
                             v2f* out_intersection);
@@ -110,12 +113,13 @@ typedef struct Rect_s
 #define VALIDATE_RECT(rect) assert((rect).left <= (rect).right && \
                                    (rect).top <= (rect).bottom)
 
+// Splits src_rect into a number of rectangles stored in dest_rects
 // Returns the number of rectangles into which src_rect was split.
 i32 rect_split(Arena* transient_arena,
-        Rect src_rect, i32 width, i32 height, Rect** dest_rects);
+               Rect src_rect, i32 width, i32 height, Rect** dest_rects);
 
+// Set operations on rectangles
 Rect rect_union(Rect a, Rect b);
-
 Rect rect_intersect(Rect a, Rect b);
 Rect rect_stretch(Rect rect, i32 width);
 

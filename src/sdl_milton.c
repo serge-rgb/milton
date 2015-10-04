@@ -289,8 +289,7 @@ int milton_main()
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
 #ifndef NDEBUG
-                        else if (keycode == SDLK_F4)
-                        {
+                        else if (keycode == SDLK_F4) {
                             milton_state->cpu_has_sse2 = !milton_state->cpu_has_sse2;
                         }
 #endif
@@ -350,8 +349,7 @@ int milton_main()
             default:
                 break;
             }
-            if (should_quit)
-            {
+            if (should_quit) {
                 break;
             }
         }
@@ -368,16 +366,13 @@ int milton_main()
 #endif
 
         // Mouse input, fill with NO_PRESSURE_INFO
-        if (num_pressure_results == 0 && !got_tablet_point_input)
-        {
-            for (int i = num_pressure_results; i < num_point_results; ++i)
-            {
+        if (num_pressure_results == 0 && !got_tablet_point_input) {
+            for (int i = num_pressure_results; i < num_point_results; ++i) {
                 milton_input.pressures[num_pressure_results++] = NO_PRESSURE_INFO;
             }
         }
 
-        if (num_pressure_results < num_point_results)
-        {
+        if (num_pressure_results < num_point_results) {
             num_point_results = num_pressure_results;
         }
 
