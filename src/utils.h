@@ -75,16 +75,16 @@ v2f polar_to_cartesian(f32 angle, f32 radius);
 
 v2i rotate_v2i(v2i p, f32 angle);
 
-v2f closest_point_in_segment_f(v2f a, v2f b,
+v2f closest_point_in_segment_f(v2i a, v2i b,
                                v2f ab, f32 ab_magnitude_squared,
                                v2i point, f32* out_t);
-v2i closest_point_in_segment(v2f a, v2f b,
-                                  v2f ab, f32 ab_magnitude_squared,
-                                  v2i point, f32* out_t);
+v2i closest_point_in_segment(v2i a, v2i b,
+                             v2f ab, f32 ab_magnitude_squared,
+                             v2i point, f32* out_t);
 
 b32 intersect_line_segments(v2i a, v2i b,
-                                 v2i u, v2i v,
-                                 v2f* out_intersection);
+                            v2i u, v2i v,
+                            v2f* out_intersection);
 
 
 // ---------------
