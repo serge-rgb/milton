@@ -110,8 +110,7 @@ typedef struct Rect_s
     };
 } Rect;
 
-#define VALIDATE_RECT(rect) assert((rect).left <= (rect).right && \
-                                   (rect).top <= (rect).bottom)
+#define VALIDATE_RECT(rect) assert(rect_is_valid((rect)))
 
 // Splits src_rect into a number of rectangles stored in dest_rects
 // Returns the number of rectangles into which src_rect was split.
@@ -126,6 +125,8 @@ Rect rect_stretch(Rect rect, i32 width);
 Rect rect_clip_to_screen(Rect limits, v2i screen_size);
 
 Rect rect_enlarge(Rect src, i32 offset);
+
+b32 rect_is_valid(Rect rect);
 
 Rect bounding_rect_for_points(v2i points[], i32 num_points);
 Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_points);

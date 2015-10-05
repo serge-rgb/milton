@@ -242,7 +242,11 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         }
         Stroke* unclipped_stroke = NULL;
         if ( stroke_i == num_strokes ) {
-            unclipped_stroke = working_stroke;
+            if ( working_stroke->num_points ) {
+                unclipped_stroke = working_stroke;
+            } else {
+                break;
+            }
         } else {
             unclipped_stroke = StrokeCord_get(strokes, stroke_i);
         }
@@ -1579,7 +1583,6 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
         }
     }
-    VALIDATE_RECT(raster_limits);
 
     u32* raster_buffer = (u32*)milton_state->raster_buffer;
 
@@ -1593,12 +1596,15 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
     }
 #endif
 
-    render_canvas(milton_state, raster_buffer, raster_limits);
+    if (rect_is_valid(raster_limits)) {
+        render_canvas(milton_state, raster_buffer, raster_limits);
 
-    render_gui(milton_state, raster_buffer, raster_limits, render_flags);
-
-    profiler_output();
-
-    i32 w = milton_state->view->screen_size.w;
-    i32 h = milton_state->view->screen_size.h;
+        render_gui(milton_state, raster_buffer, raster_limits, render_flags);
+    } else {
+        milton_log("WARNING: Tried to render with invalid rect: (l r t b): %d %d %d %d\n",
+                   raster_limits.left,
+                   raster_limits.right,
+                   raster_limits.top,
+                   raster_limits.bottom);
+    }
 }

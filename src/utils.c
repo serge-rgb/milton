@@ -294,6 +294,12 @@ b32 is_inside_rect(Rect bounds, v2i point)
         point.y <  bounds.bottom;
 }
 
+b32 rect_is_valid(Rect rect)
+{
+    b32 valid = rect.left <= rect.right && rect.top <= rect.bottom;
+    return valid;
+}
+
 Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_points)
 {
     assert (num_points > 0);

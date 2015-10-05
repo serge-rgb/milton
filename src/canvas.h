@@ -24,11 +24,11 @@ typedef struct Brush_s {
 } Brush;
 
 typedef struct Stroke_s {
-    Brush           brush;
-    i32*            points_x;
-    i32*            points_y;
-    f32*            pressures;
-    i32             num_points;
+    Brush   brush;
+    i32*    points_x;
+    i32*    points_y;
+    f32*    pressures;
+    i32     num_points;
 } Stroke;
 
 // From cord template

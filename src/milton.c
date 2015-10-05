@@ -18,6 +18,9 @@
 
 
 #include "milton.h"
+
+#include "profiler.h"
+
 static void milton_gl_set_brush_hover(MiltonGLState* gl,
                                     CanvasView* view,
                                     int radius,
@@ -877,4 +880,5 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if ( should_save ) {
         milton_save(milton_state);
     }
+    profiler_output();
 }
