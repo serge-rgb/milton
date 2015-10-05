@@ -163,7 +163,8 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
     f32 bottom = (f32)rect.bottom * local_scale - reference_point.y;
 
     if (num_points >= 2) {
-        for ( i32 point_i = 0; point_i < num_points - 1; ++point_i ) {
+        assert (num_points % 2 == 0);
+        for ( i32 point_i = 0; point_i < num_points; point_i += 2 ) {
             v2i a = (v2i){points_x[point_i], points_y[point_i]};
             v2i b = (v2i){points_x[point_i +  1], points_y[point_i + 1]};
 
