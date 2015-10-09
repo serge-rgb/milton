@@ -684,7 +684,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             // knows. Point is. This loop is good.
                             //
                             // We can comfortably get 4 elements because the
-                            // points are allocated with some buffering.
+                            // points are allocated with enough trailing zeros.
                             i32 l_point_i = point_i;
                             for ( i32 batch_i = 0; batch_i < 4; batch_i++ ) {
 
@@ -775,6 +775,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             PROFILE_PUSH(work);
                             PROFILE_BEGIN(gather);
 
+#if 1
                             f32 dists[4];
                             f32 tests_dx[4];
                             f32 tests_dy[4];
@@ -787,10 +788,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             _mm_store_ps(pressures, pressure4);
                             _mm_store_ps(masks, mask);
 
-                            // Note: We can use 4 instead of batch_size.
-                            // Because `mask` will be 0 for the invalid elements.
-                            // But what we really want is to do this loop with
-                            // SSE magic. .
                             for ( i32 batch_i = 0; batch_i < 4; ++batch_i ) {
                                 f32 dist = dists[batch_i];
                                 i32 imask = *(i32*)&masks[batch_i];
@@ -802,6 +799,47 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                     pressure = pressures[batch_i];
                                 }
                             }
+#else  // "Smarter" version: a few cycles slower:
+                            // Fast version
+                            __m128 maxed = _mm_andnot_ps(mask, _mm_set_ps1(FLT_MAX));
+                            __m128 minned = _mm_and_ps(mask, _mm_set_ps1(-FLT_MAX));
+
+                            dist4 = _mm_max_ps(dist4, _mm_xor_ps(maxed, minned));
+                            // dist = [a, b, c, d]
+                            // m0   = [b, x, d, x]
+                            __m128 m0 = _mm_shuffle_ps(dist4, dist4, 0x71);
+                            // m0 = [min(a, b), x, min(c, d), x]
+                            m0 = _mm_min_ps(dist4, m0);
+                            // m1 = [min(c, d), x, x, x]
+                            __m128 m1 = _mm_shuffle_ps(m0, m0, 2);
+                            // min4 [ (min(min(a, b), min(c, d))) x x x]
+                            __m128 min4 = _mm_min_ps(m0, m1);
+
+                            // extract the min dist.
+                            f32 dist = _mm_cvtss_f32(min4);
+                            if (dist < min_dist) {
+                                f32 tests_dx[4];
+                                f32 tests_dy[4];
+                                f32 pressures[4];
+                                _mm_store_ps(tests_dx, test_dx);
+                                _mm_store_ps(tests_dy, test_dy);
+                                _mm_store_ps(pressures, pressure4);
+                                min_dist = dist;
+                                __m128 index4f = _mm_set_ps(3,2,1,0);
+                                index4f = _mm_and_ps(index4f, _mm_cmpeq_ps(_mm_set_ps1(dist), dist4));
+                                __m128i index4 = _mm_cvtps_epi32(index4f);
+                                // Same shit. Find max index.
+                                __m128i m0i = _mm_max_epi32(index4, _mm_shuffle_epi32(index4, 0x71));
+                                __m128i max4 = _mm_max_epi32(m0i, _mm_shuffle_epi32(m0i, 2));
+                                //i32 batch_i = _mm_cvtss_si32(max4);
+                                i32 batch_i = _mm_cvtsi128_si32(max4);
+                                dx = tests_dx[batch_i];
+                                dy = tests_dy[batch_i];
+                                pressure = pressures[batch_i];
+                            }
+#endif
+
+
                             PROFILE_PUSH(gather);
                         }
                     }
