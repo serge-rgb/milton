@@ -1,6 +1,5 @@
 #pragma once
 
-
 // Self-profiling counters. Currently only active on Windows. Should be used
 // for micro-tweaks. Use a sampling profiler for higher-level performance info
 #define MILTON_ENABLE_PROFILING 0
