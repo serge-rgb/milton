@@ -26,8 +26,6 @@ typedef struct Brush_s {
 typedef struct Stroke_s {
     Brush   brush;
     v2i*    points;
-    /* i32*    points_x; */
-    /* i32*    points_y; */
     f32*    pressures;
     i32     num_points;
 } Stroke;

@@ -26,6 +26,17 @@
 #include "gui.h"
 #include "profiler.h"
 
+// Special value for num_points member of `ClippedStroke` to indicate that the
+// block should be flood-filled
+#define CLIPPED_STROKE_FILLS_BLOCK 0
+
+// Always accessed together. Keeping them sequential to save some cache misses.
+typedef struct ClippedPoint_s {
+    i32 x;
+    i32 y;
+    f32 pressure;
+} ClippedPoint;
+
 typedef struct ClippedStroke_s ClippedStroke;
 
 struct ClippedStroke_s {
@@ -36,14 +47,12 @@ struct ClippedStroke_s {
     // We also store twice the points. In the form of AB BC CD DE. It's faster
     // to treat points as segments.
     Brush           brush;
-    v2i*            points;
-    f32*            pressures;
+    ClippedPoint*   clipped_points;
 
     // A clipped stroke is never empty. We use 0 to denote a stroke that fills
     // the block completely, allowing us to go through the "fast path" of just
     // flood-filling the block, which is a common occurrence and an effective
     // optimization.
-#define CLIPPED_STROKE_FILLS_BLOCK 0
     i32             num_points;
 
     // Point data for segments AB BC CD DE etc..
@@ -81,24 +90,22 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
         // without bounds checking.
         i32 points_allocated = in_stroke->num_points * 2 + 4;
 
-        clipped_stroke->points = arena_alloc_array(render_arena, points_allocated, v2i);
-        clipped_stroke->pressures = arena_alloc_array(render_arena, points_allocated, f32);
+        clipped_stroke->clipped_points = arena_alloc_array(render_arena, points_allocated, ClippedPoint);
     } else {
         milton_log("WARNING: An empty stroke was received to clip.\n");
         return clipped_stroke;
     }
 
-    if ( !clipped_stroke->points ||
-         !clipped_stroke->pressures) {
+    if ( !clipped_stroke->clipped_points) {
         // We need more memory. Return gracefully
         return NULL;
     }
     if ( in_stroke->num_points == 1 ) {
         if (is_inside_rect(canvas_rect, in_stroke->points[0])) {
             clipped_stroke->num_points = 1;
-            clipped_stroke->points[0].x = in_stroke->points[0].x * local_scale - reference_point.x;
-            clipped_stroke->points[0].y = in_stroke->points[0].y * local_scale - reference_point.y;
-            clipped_stroke->pressures[0] = in_stroke->pressures[0];
+            clipped_stroke->clipped_points[0].x = in_stroke->points[0].x * local_scale - reference_point.x;
+            clipped_stroke->clipped_points[0].y = in_stroke->points[0].y * local_scale - reference_point.y;
+            clipped_stroke->clipped_points[0].pressure = in_stroke->pressures[0];
         }
     } else if ( in_stroke->num_points > 1 ){
         i32 num_points = in_stroke->num_points;
@@ -117,13 +124,13 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
 
             // We can add the segment
             if ( maybe_inside ) {
-                clipped_stroke->points[clipped_stroke->num_points].x     = a.x * local_scale - reference_point.x;
-                clipped_stroke->points[clipped_stroke->num_points].y     = a.y * local_scale - reference_point.y;
-                clipped_stroke->points[clipped_stroke->num_points + 1].x = b.x * local_scale - reference_point.x;
-                clipped_stroke->points[clipped_stroke->num_points + 1].y = b.y * local_scale - reference_point.y;
+                clipped_stroke->clipped_points[clipped_stroke->num_points].x     = a.x * local_scale - reference_point.x;
+                clipped_stroke->clipped_points[clipped_stroke->num_points].y     = a.y * local_scale - reference_point.y;
+                clipped_stroke->clipped_points[clipped_stroke->num_points + 1].x = b.x * local_scale - reference_point.x;
+                clipped_stroke->clipped_points[clipped_stroke->num_points + 1].y = b.y * local_scale - reference_point.y;
 
-                clipped_stroke->pressures[clipped_stroke->num_points]     = pressure_a;
-                clipped_stroke->pressures[clipped_stroke->num_points + 1] = pressure_b;
+                clipped_stroke->clipped_points[clipped_stroke->num_points].pressure     = pressure_a;
+                clipped_stroke->clipped_points[clipped_stroke->num_points + 1].pressure = pressure_b;
 
                 clipped_stroke->num_points += 2;
             }
@@ -136,9 +143,8 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
 }
 
 static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_point,
-                                    v2i* points,
+                                    ClippedPoint* points,
                                     i32 num_points,
-                                    f32* pressures,
                                     Brush brush, CanvasView* view)
 {
     assert ((((rect.left + rect.right) / 2) * local_scale - reference_point.x) == 0);
@@ -162,19 +168,21 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
     if (num_points >= 2) {
         assert (num_points % 2 == 0);
         for ( i32 point_i = 0; point_i < num_points; point_i += 2 ) {
-            v2i a = points[point_i];
-            v2i b = points[point_i +  1];
+            i32 ax = points[point_i].x;
+            i32 ay = points[point_i].y;
+            i32 bx = points[point_i + 1].x;
+            i32 by = points[point_i + 1].y;
+            f32 p_a = points[point_i].pressure;
+            f32 p_b = points[point_i + 1].pressure;
 
             // Get closest point
-            v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
+            v2f ab = {(f32)(bx - ax), (f32)(by - ay)};
             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
 
 
             // Note (v2i){0} is the center of the rect.
-            v2f p  = closest_point_in_segment_f(a, b, ab, mag_ab2,(v2i){0}, NULL);
+            v2f p  = closest_point_in_segment_f(ax, ay, bx, by, ab, mag_ab2,(v2i){0}, NULL);
 
-            f32 p_a = pressures[point_i    ];
-            f32 p_b = pressures[point_i + 1];
 
             f32 pressure = min(p_a, p_b);
 
@@ -196,7 +204,7 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
         }
     } else if ( num_points == 1 ) {
         // Half width of a rectangle contained by brush at point p.
-        f32 rad = brush.radius * local_scale * 0.707106781f * pressures[0];  // cos(pi/4)
+        f32 rad = brush.radius * local_scale * 0.707106781f * points[0].pressure;  // cos(pi/4)
         i32 p_x = points[0].x;
         i32 p_y = points[0].y;
         f32 b_left   = p_x - rad;
@@ -264,9 +272,9 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 
             list_head->next = stroke_list;
             if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
-                                          clipped_stroke->points,
+                                          clipped_stroke->clipped_points,
                                           clipped_stroke->num_points,
-                                          clipped_stroke->pressures, clipped_stroke->brush,
+                                          clipped_stroke->brush,
                                           view) ) {
                 // Set num_points = 0. Since we are ignoring empty strokes
                 // (which should not get here in the first place), we can use 0
@@ -390,7 +398,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                 } else {
                     // Slow path. There are pixels not inside.
                     assert (clipped_stroke->num_points > 0);
-                    v2i* points = clipped_stroke->points;
+                    ClippedPoint* points = clipped_stroke->clipped_points;
 
                     //v2f min_points[4] = {0};
                     f32 min_dist = FLT_MAX;
@@ -402,25 +410,27 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                         dx = (f32)(i - points[0].x);
                         dy = (f32)(j - points[0].y);
                         min_dist = dx * dx + dy * dy;
-                        pressure = clipped_stroke->pressures[0];
+                        pressure = points[0].pressure;
                     } else {
                         // Find closest point.
                         for (int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += 2) {
-                            v2i a = points[point_i];
-                            v2i b = points[point_i + 1];
+                            i32 ax = points[point_i].x;
+                            i32 ay = points[point_i].y;
+                            i32 bx = points[point_i + 1].x;
+                            i32 by = points[point_i + 1].y;
+                            f32 p_a = points[point_i    ].pressure;
+                            f32 p_b = points[point_i + 1].pressure;
 
-                            v2f ab = {(f32)(b.x - a.x), (f32)(b.y - a.y)};
+                            v2f ab = {(f32)(bx - ax), (f32)(by - ay)};
                             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
                             if ( mag_ab2 > 0 ) {
                                 f32 t;
-                                v2f point = v2i_to_v2f(closest_point_in_segment(a, b,
-                                                                                ab, mag_ab2,
-                                                                                (v2i){i,j}, &t));
+                                v2f point = closest_point_in_segment_f(ax, ay, bx, by,
+                                                                       ab, mag_ab2,
+                                                                       (v2i){i,j}, &t);
                                 f32 test_dx = (f32) (i - point.x);
                                 f32 test_dy = (f32) (j - point.y);
                                 f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
-                                f32 p_a = clipped_stroke->pressures[point_i    ];
-                                f32 p_b = clipped_stroke->pressures[point_i + 1];
                                 f32 test_pressure = (1 - t) * p_a + t * p_b;
                                 dist = dist - test_pressure * clipped_stroke->brush.radius;
                                 if ( dist < min_dist ) {
@@ -644,7 +654,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                 } else {
                     assert(clipped_stroke->num_points > 0);
                     // Slow path. There are pixels not inside.
-                    v2i* points = clipped_stroke->points;
+                    ClippedPoint* points = clipped_stroke->clipped_points;
 
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
@@ -655,7 +665,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         dx = (f32)(i - points[0].x);
                         dy = (f32)(j - points[0].y);
                         min_dist = dx * dx + dy * dy;
-                        pressure = clipped_stroke->pressures[0];
+                        pressure = points[0].pressure;
                     } else {
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
                         for ( int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += (2 * 4) ) {
@@ -691,8 +701,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 bxs[batch_i] = (f32)(points[index+1].x);
                                 ays[batch_i] = (f32)(points[index  ].y);
                                 bys[batch_i] = (f32)(points[index+1].y);
-                                aps[batch_i] = clipped_stroke->pressures[index  ];
-                                bps[batch_i] = clipped_stroke->pressures[index+1];
+                                aps[batch_i] = points[index  ].pressure;
+                                bps[batch_i] = points[index+1].pressure;
 
                                 l_point_i += 1;
                             }

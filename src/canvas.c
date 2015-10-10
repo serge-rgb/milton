@@ -37,8 +37,8 @@ v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 b32* filter_strokes_to_rect(Arena* arena,
-                                 StrokeCord* strokes,
-                                 const Rect rect)
+                            StrokeCord* strokes,
+                            const Rect rect)
 {
     i32 num_strokes = strokes->count;
     b32* mask_array = arena_alloc_array(arena, num_strokes, b32);

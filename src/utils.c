@@ -100,7 +100,8 @@ v2i rotate_v2i(v2i p, f32 angle)
     return r;
 }
 
-v2f closest_point_in_segment_f(v2i a, v2i b,
+v2f closest_point_in_segment_f(i32 ax, i32 ay,
+                               i32 bx, i32 by,
                                v2f ab, f32 ab_magnitude_squared,
                                v2i point, f32* out_t)
 {
@@ -108,8 +109,8 @@ v2f closest_point_in_segment_f(v2i a, v2i b,
     f32 mag_ab = sqrtf(ab_magnitude_squared);
     f32 d_x = ab.x / mag_ab;
     f32 d_y = ab.y / mag_ab;
-    f32 ax_x = (f32)(point.x - a.x);
-    f32 ax_y = (f32)(point.y - a.y);
+    f32 ax_x = (f32)(point.x - ax);
+    f32 ax_y = (f32)(point.y - ay);
     f32 disc = d_x * ax_x + d_y * ax_y;
     if (disc < 0) disc = 0;
     if (disc > mag_ab) disc = mag_ab;
@@ -117,7 +118,7 @@ v2f closest_point_in_segment_f(v2i a, v2i b,
         *out_t = disc / mag_ab;
     }
     result = (v2f) {
-       (a.x + disc * d_x), (a.y + disc * d_y),
+       (ax + disc * d_x), (ay + disc * d_y),
     };
     return result;
 }
