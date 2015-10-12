@@ -402,7 +402,7 @@ void milton_init(MiltonState* milton_state)
         MILTON_GLOBAL_dyn_freelist_sentinel->prev = MILTON_GLOBAL_dyn_freelist_sentinel;
         MILTON_GLOBAL_dyn_root_arena = milton_state->root_arena;
     }
-    milton_state->cpu_has_sse2 = SDL_HasSSE2();
+    milton_state->cpu_caps = SDL_HasSSE2();
 
     // Initialize render queue
     milton_state->render_queue = arena_alloc_elem(milton_state->root_arena, RenderQueue);

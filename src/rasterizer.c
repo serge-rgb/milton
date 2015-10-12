@@ -1278,7 +1278,12 @@ static b32 render_blockgroup(MiltonState* milton_state,
             break;
         }
 
-        if ( milton_state->cpu_has_sse2 ) {
+
+        b32 can_use_sse2 = milton_state->cpu_caps & CPUCAPS_sse2;
+        b32 can_use_avx = milton_state->cpu_caps & CPUCAPS_avx;
+
+        // TODO: use the debug dispatcher.
+        if ( can_use_sse2 ) {
             allocation_ok = rasterize_canvas_block_sse2(&render_arena,
                                                         milton_state->view,
                                                         milton_state->strokes,

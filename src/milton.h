@@ -92,6 +92,25 @@ enum {
     BrushEnum_COUNT,
 };
 
+#ifndef NDEBUG
+typedef enum {
+    DEBUG_BACKEND_CHOICE_avx,
+    DEBUG_BACKEND_CHOICE_sse2,
+    DEBUG_BACKEND_CHOICE_scalar,
+
+    DEBUG_BACKEND_CHOICE_count,
+} MILTONDEBUG_BackendChoice;
+
+
+static char* MILTONDEBUG_BackendChoiceStrings[DEBUG_BACKEND_CHOICE_count] =
+{
+    "DEBUG_BACKEND_CHOICE_avx",
+    "DEBUG_BACKEND_CHOICE_sse2",
+    "DEBUG_BACKEND_CHOICE_scalar",
+};
+
+#endif
+
 typedef struct MiltonGui_s MiltonGui;
 
 typedef struct MiltonState_s {
@@ -122,7 +141,7 @@ typedef struct MiltonState_s {
 
     i32     num_redos;
 
-    MiltonMode current_mode;
+    MiltonMode current_mode;  // TODO: `milton_mode` is not clear. Change approach before adding functionality.
 
     i32             num_render_workers;
     RenderQueue*    render_queue;
@@ -136,8 +155,15 @@ typedef struct MiltonState_s {
     i32         worker_memory_size;
     b32         worker_needs_memory;
 
-    b32         cpu_has_sse2;
+    CPUCaps     cpu_caps;
     b32         stroke_is_from_tablet;
+
+    // ====
+    // Debug helpers
+    // ====
+#ifndef NDEBUG
+    MILTONDEBUG_BackendChoice DEBUG_backend_choice;
+#endif
 } MiltonState;
 
 

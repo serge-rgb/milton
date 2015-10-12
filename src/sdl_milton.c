@@ -290,7 +290,9 @@ int milton_main()
                         }
 #ifndef NDEBUG
                         else if (keycode == SDLK_F4) {
-                            milton_state->cpu_has_sse2 = !milton_state->cpu_has_sse2;
+                            milton_state->DEBUG_backend_choice = (milton_state->DEBUG_backend_choice + 1) % DEBUG_BACKEND_CHOICE_count;
+                            milton_log("Changed backend choice to: %s\n",
+                                       MILTONDEBUG_BackendChoiceStrings[milton_state->DEBUG_backend_choice]);
                         }
 #endif
                     }

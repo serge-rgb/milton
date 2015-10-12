@@ -39,6 +39,14 @@
 // total RAM in bytes
 size_t get_system_RAM();
 
+typedef enum {
+    CPUCAPS_none = 0,
+    CPUCAPS_sse2 = (1 << 0),
+    CPUCAPS_avx = (1 << 1),
+} CPUCaps;;
+
+CPUCaps get_cpu_caps();
+
 // ---------------
 // Math functions.
 // ---------------
