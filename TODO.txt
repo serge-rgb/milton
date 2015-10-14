@@ -26,12 +26,17 @@ To-Do
         - Pressure levels (only OSX left)
         - Windows stylus buttons
     - Performance:
+        - AVX backend
         - Strokes should be sampled based on relative size
-        - memcpy when Panning
+        - memcpy when Panning (most users will benefit hugely)
+        - Square Blockgroups (4x4) (probably less strokes?)
         - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize GUI rendering
-    - Stress the renderer with a huge drawing.
+    - Stress the renderer with a huge drawing. (Do we need smart spatial acceleration?)
     - Robust save
+        - Save to temp file and swap
+        - Keep backups
+        - Future-proof. Marker for extensions post v1.0
     - Export
         - JPEG (tiny_jpeg)
         - stb_image_write (PNG, BMP, TGA)
@@ -44,6 +49,10 @@ To-Do
         - Input recorder for bug replication
     - General
         - DPI-aware
+        - Determine the maximum precision of stroke coordinates
+        - App data directory
+            - Windows
+            - Unix
 
 ============================================================
 ====                   1.0 Beta Milestone               ====
