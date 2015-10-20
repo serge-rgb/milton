@@ -764,6 +764,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                             __m128 dist4 = _mm_add_ps(_mm_mul_ps(test_dx, test_dx),
                                                       _mm_mul_ps(test_dy, test_dy));
+                            dist4 = _mm_sqrt_ps(dist4);
 
                             // Lerp
                             // (1 - t) * p_a + t * p_b;
