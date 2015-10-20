@@ -41,25 +41,26 @@ typedef struct ClippedStroke_s ClippedStroke;
 
 struct ClippedStroke_s {
     // Same contents as a stroke, but these points are stored in relative
-    // coordinates to the center of the block. This helps with FP precision and
-    // we do it it at "clip time" to avoid per-pixel computations.
+    // coordinates to the center of the block. This helps with FP precision. We
+    // create them per block. Each block gets an array of ClippedStroke which
+    // are likely to fill pixels.
     //
-    // We also store twice the points. In the form of AB BC CD DE. It's faster
-    // to treat points as segments.
-    Brush           brush;
+    // We store n*2-2 where n is the original number of points. They are stored
+    // in segment form, eg. AB BC CD DE. It's faster to treat points as
+    // segments. Single-point strokes are single point clipped strokes.
     ClippedPoint*   clipped_points;
+    Brush           brush;
 
-    // A clipped stroke is never empty. We use 0 to denote a stroke that fills
-    // the block completely, allowing us to go through the "fast path" of just
-    // flood-filling the block, which is a common occurrence and an effective
-    // optimization.
+    // A clipped stroke is never empty. We define CLIPPED_STROKE_FILLS_BLOCK to
+    // 0 to denote a stroke that fills the block completely, allowing us to go
+    // through the "fast path" of just flood-filling the block, which is a
+    // common occurrence.
     i32             num_points;
 
     // Point data for segments AB BC CD DE etc..
     // Yes, it is a linked list. Shoot me.
     //
-    // In my defense, the elements of this list are guaranteed to be allocated
-    // sequentially.
+    // Cache misses are not a problem in the stroke rasterization path.
     ClippedStroke*  next;
 };
 
@@ -561,6 +562,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     __m128 one4 = _mm_set_ps1(1);
     __m128 zero4 = _mm_set_ps1(0);
 
+
     Rect canvas_block;
     {
         canvas_block.top_left  = raster_to_canvas(view, raster_block.top_left);
@@ -680,20 +682,16 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             f32 aps[4];
                             f32 bps[4];
 
-                            // NOTE: This loop is not stupid.
-                            // I spent many hours transforming the data so that
-                            // this loop turned into 4 _mm_load_ps. The problem
-                            // was that while I did reduce the number of cycles
-                            // in this loop, the rest of the code got slower,
-                            // presumably because of cache thrashing, but who
-                            // knows. Point is. This loop is good.
+                            // NOTE: This loop is not stupid:
+                            //  I transformed the data representation to SOA
+                            //  form. There was no measureable difference even
+                            //  though this loop turned into 4 _mm_load_ps
+                            //  instructions.
                             //
                             // We can comfortably get 4 elements because the
                             // points are allocated with enough trailing zeros.
-                            i32 l_point_i = point_i;
                             for ( i32 batch_i = 0; batch_i < 4; batch_i++ ) {
-
-                                i32 index = l_point_i + batch_i;
+                                i32 index = point_i + batch_i;
 
                                 // The point of reference point is to do the subtraction with
                                 // integer arithmetic
@@ -704,7 +702,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 aps[batch_i] = points[index  ].pressure;
                                 bps[batch_i] = points[index+1].pressure;
 
-                                l_point_i += 1;
+                                point_i += 1;
                             }
 
                             __m128 a_x = _mm_load_ps(axs);
@@ -765,7 +763,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                             __m128 dist4 = _mm_add_ps(_mm_mul_ps(test_dx, test_dx),
                                                       _mm_mul_ps(test_dy, test_dy));
-                            dist4 = _mm_sqrt_ps(dist4);
 
                             // Lerp
                             // (1 - t) * p_a + t * p_b;
@@ -780,7 +777,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             PROFILE_PUSH(work);
                             PROFILE_BEGIN(gather);
 
-#if 1
                             f32 dists[4];
                             f32 tests_dx[4];
                             f32 tests_dy[4];
@@ -793,57 +789,50 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             _mm_store_ps(pressures, pressure4);
                             _mm_store_ps(masks, mask);
 
+#if 0
+                            __m128 max_pos4 = _mm_set_ps1(FLT_MAX);
+                            __m128 min_neg4 = _mm_set_ps1(-FLT_MAX);
+                            __m128 maxed = _mm_andnot_ps(mask, max_pos4);
+                            __m128 minned = _mm_and_ps(mask, min_neg4);
+                            dist4 = _mm_max_ps(dist4, _mm_xor_ps(maxed, minned));
+                            // dist = [a, b, c, d]
+                            __m128 m0 = _mm_shuffle_ps(dist4, dist4, 0x71); // m0   = [b, x, d, x]
+                            m0 = _mm_min_ps(dist4, m0);  // m0 = [min(a, b), x, min(c, d), x]
+                            __m128 m1 = _mm_shuffle_ps(m0, m0, 2);  // m1 = [min(c, d), x, x, x]
+                            // min4 [ (min(min(a, b), min(c, d))) x x x]
+                            __m128 min4 = _mm_min_ps(m0, m1);
+                            f32 dist = _mm_cvtss_f32(min4);
+                            if (dist < min_dist) {
+                                int bit  = _mm_movemask_ps(_mm_cmpeq_ps(_mm_set_ps1(dist), dist4));
+                                int batch_i = -1;
+#ifdef _WIN32
+                                _BitScanForward64((DWORD*)&batch_i, bit);
+#else  // TODO: way to do this in clang?
+                                for (int p = 0; p < 4; ++p) {
+                                    if ( bit & (1 << p) ) {
+                                        batch_i = p;
+                                        break;
+                                    }
+                                }
+#endif // _WIN32
+                                min_dist = dist;
+                                dx = tests_dx[batch_i];
+                                dy = tests_dy[batch_i];
+                                pressure = pressures[batch_i];
+                            }
+
+#else  // Dumb loop is 20% faster.
                             for ( i32 batch_i = 0; batch_i < 4; ++batch_i ) {
                                 f32 dist = dists[batch_i];
                                 i32 imask = *(i32*)&masks[batch_i];
-                                if (dist < min_dist && imask == -1)
-                                {
+                                if (dist < min_dist && imask == -1) {
                                     min_dist = dist;
                                     dx = tests_dx[batch_i];
                                     dy = tests_dy[batch_i];
                                     pressure = pressures[batch_i];
                                 }
                             }
-#else  // "Smarter" version: a few cycles slower:
-                            f32 tests_dx[4];
-                            f32 tests_dy[4];
-                            f32 pressures[4];
-                            __m128 maxed = _mm_andnot_ps(mask, _mm_set_ps1(FLT_MAX));
-                            __m128 minned = _mm_and_ps(mask, _mm_set_ps1(-FLT_MAX));
-
-                            dist4 = _mm_max_ps(dist4, _mm_xor_ps(maxed, minned));
-                            // dist = [a, b, c, d]
-                            // m0   = [b, x, d, x]
-                            __m128 m0 = _mm_shuffle_ps(dist4, dist4, 0x71);
-                            // m0 = [min(a, b), x, min(c, d), x]
-                            m0 = _mm_min_ps(dist4, m0);
-                            // m1 = [min(c, d), x, x, x]
-                            __m128 m1 = _mm_shuffle_ps(m0, m0, 2);
-                            // min4 [ (min(min(a, b), min(c, d))) x x x]
-                            __m128 min4 = _mm_min_ps(m0, m1);
-
-                            // extract the min dist.
-                            f32 dist = _mm_cvtss_f32(min4);
-                            if (dist < min_dist) {
-                                _mm_store_ps(tests_dx, test_dx);
-                                _mm_store_ps(tests_dy, test_dy);
-                                _mm_store_ps(pressures, pressure4);
-                                min_dist = dist;
-                                __m128 index4f = _mm_set_ps(3,2,1,0);
-                                index4f = _mm_and_ps(index4f, _mm_cmpeq_ps(_mm_set_ps1(dist), dist4));
-                                __m128i index4 = _mm_cvtps_epi32(index4f);
-                                // Same shit. Find max index.
-                                __m128i m0i = _mm_max_epi32(index4, _mm_shuffle_epi32(index4, 0x71));
-                                __m128i max4 = _mm_max_epi32(m0i, _mm_shuffle_epi32(m0i, 2));
-                                //i32 batch_i = _mm_cvtss_si32(max4);
-                                i32 batch_i = _mm_cvtsi128_si32(max4);
-                                dx = tests_dx[batch_i];
-                                dy = tests_dy[batch_i];
-                                pressure = pressures[batch_i];
-                            }
 #endif
-
-
                             PROFILE_PUSH(gather);
                         }
                     }
