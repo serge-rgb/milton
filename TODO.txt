@@ -2,6 +2,18 @@ To-Do
 =====
 
 
+***
+
+    Hello, person reading this. The reason that there has been very little work
+on Milton lately is that I am very busy finishing my undergraduate thesis. I
+expect to continue being real productive sometime in mid-November to early
+December. Until then, all commits might be minor TODO.txt additions or small
+tweaks.
+    Rest assured, Milton won't ever be abandoned.
+
+***
+
+
 - Bugs
     - :)
 
@@ -20,8 +32,16 @@ To-Do
     - Sliders for brush size & opacity / eraser
     - Layers
         - Drag-and-drop
+    - Options
+        - GUI scale
 
 - Engine
+    - General
+        - App data directory
+            - Windows (AppData\Local\Milton)
+            - Unix (.milton)
+        - DPI-aware (gui scale set by default)
+        - Determine the maximum precision of stroke coordinates
     - Wacom:
         - Pressure levels (only OSX left)
         - Windows stylus buttons
@@ -29,14 +49,15 @@ To-Do
         - AVX backend
         - Strokes should be sampled based on relative size
         - memcpy when Panning (most users will benefit hugely)
-        - Square Blockgroups (4x4) (probably less strokes?)
+        - 4x4 Blockgroups (morton-order)
         - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize GUI rendering
-    - Stress the renderer with a huge drawing. (Do we need smart spatial acceleration?)
+        - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
     - Robust save
         - Save to temp file and swap
         - Keep backups
         - Future-proof. Marker for extensions post v1.0
+        - Check return values for stdlib funcs.
     - Export
         - JPEG (tiny_jpeg)
         - stb_image_write (PNG, BMP, TGA)
@@ -47,12 +68,6 @@ To-Do
         - Support for general, implicitly defined brushes
     - Debug
         - Input recorder for bug replication
-    - General
-        - DPI-aware
-        - Determine the maximum precision of stroke coordinates
-        - App data directory
-            - Windows
-            - Unix
 
 ============================================================
 ====                   1.0 Beta Milestone               ====

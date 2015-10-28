@@ -809,7 +809,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 int batch_i = -1;
 #ifdef _WIN32
                                 _BitScanForward64((DWORD*)&batch_i, bit);
-#else  // TODO: way to do this in clang?
+#else  // TODO: way to do this in clang? ... yes: __builtin_ctz
                                 for (int p = 0; p < 4; ++p) {
                                     if ( bit & (1 << p) ) {
                                         batch_i = p;
