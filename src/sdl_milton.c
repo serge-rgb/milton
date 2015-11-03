@@ -424,6 +424,7 @@ int milton_main()
              height != milton_state->view->screen_size.y ) {
             milton_resize(milton_state, pan_delta, (v2i){width, height});
         }
+        milton_input.pan_delta = pan_delta;
         platform_input.pan_start = platform_input.pan_point;
         // ==== Update and render
         milton_update(milton_state, &milton_input);

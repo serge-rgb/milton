@@ -48,18 +48,20 @@ typedef struct MiltonGLState_s {
 } MiltonGLState;
 
 typedef enum MiltonMode_s {
-    MiltonMode_NONE                   = ( 0 ),
+    MiltonMode_NONE                   = 0,
 
-    MiltonMode_ERASER                 = (1 << 0),
-    MiltonMode_PEN                    = (1 << 1),
-    MiltonMode_REQUEST_QUALITY_REDRAW = (1 << 2),
+    MiltonMode_ERASER                 = 1 << 0,
+    MiltonMode_PEN                    = 1 << 1,
+    MiltonMode_REQUEST_QUALITY_REDRAW = 1 << 2,
 } MiltonMode;
 
 typedef enum {
     MiltonRenderFlags_NONE              = 0,
-    MiltonRenderFlags_PICKER_UPDATED    = (1 << 0),
-    MiltonRenderFlags_FULL_REDRAW       = (1 << 1),
-    MiltonRenderFlags_FINISHED_STROKE   = (1 << 2),
+
+    MiltonRenderFlags_PICKER_UPDATED    = 1 << 0,
+    MiltonRenderFlags_FULL_REDRAW       = 1 << 1,
+    MiltonRenderFlags_FINISHED_STROKE   = 1 << 2,
+    MiltonRenderFlags_PAN_COPY          = 1 << 3,
 } MiltonRenderFlags;
 
 // Render Workers:
@@ -169,16 +171,16 @@ typedef struct MiltonState_s {
 
 typedef enum {
     MiltonInputFlags_NONE,
-    MiltonInputFlags_FULL_REFRESH    = ( 1 << 0 ),
-    MiltonInputFlags_RESET           = ( 1 << 1 ),
-    MiltonInputFlags_END_STROKE      = ( 1 << 2 ),
-    MiltonInputFlags_UNDO            = ( 1 << 3 ),
-    MiltonInputFlags_REDO            = ( 1 << 4 ),
-    MiltonInputFlags_SET_MODE_ERASER = ( 1 << 5 ),
-    MiltonInputFlags_SET_MODE_BRUSH  = ( 1 << 6 ),
-    MiltonInputFlags_FAST_DRAW       = ( 1 << 7 ),
-    MiltonInputFlags_HOVERING        = ( 1 << 8 ),
-    MiltonInputFlags_PANNING         = ( 1 << 9 ),
+    MiltonInputFlags_FULL_REFRESH    = 1 << 0,
+    MiltonInputFlags_RESET           = 1 << 1,
+    MiltonInputFlags_END_STROKE      = 1 << 2,
+    MiltonInputFlags_UNDO            = 1 << 3,
+    MiltonInputFlags_REDO            = 1 << 4,
+    MiltonInputFlags_SET_MODE_ERASER = 1 << 5,
+    MiltonInputFlags_SET_MODE_BRUSH  = 1 << 6,
+    MiltonInputFlags_FAST_DRAW       = 1 << 7,
+    MiltonInputFlags_HOVERING        = 1 << 8,
+    MiltonInputFlags_PANNING         = 1 << 9,
 } MiltonInputFlags;
 
 typedef struct MiltonInput_s {

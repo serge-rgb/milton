@@ -763,6 +763,11 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_update_brushes(milton_state);
+    } else if (input->flags & MiltonInputFlags_PANNING) {
+        // If we are *not* zooming and we are panning, we can copy most of the
+        // framebuffer
+        // TODO: What happens with request_quality_redraw?
+        render_flags |= MiltonRenderFlags_PAN_COPY;
     }
 
     if ( input->flags & MiltonInputFlags_SET_MODE_BRUSH ) {
