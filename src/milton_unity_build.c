@@ -1,3 +1,8 @@
+// TODO: Remove this
+typedef int bool;
+
+
+
 // ----
 #include "SDL.h"
 #include "SDL_syswm.h"
@@ -6,6 +11,11 @@
 // Using stb_image to load our GUI resources.
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+// ----
+
+
+// EasyTab for drawing tablet support
+#include "easytab.h"
 // ----
 
 #include "define_types.h"
@@ -36,5 +46,5 @@
 #include "rasterizer.c"
 #include "sdl_milton.c"
 #include "utils.c"
-
+#include "easytab_impl.c"
 

@@ -19,13 +19,6 @@
 
 #include "define_types.h"
 
-typedef enum {
-    Caught_NONE = 0,
-
-    Caught_PRESSURE = (1 << 0),
-    Caught_POINT    = (1 << 1),
-} NativeEventResult;
-
 typedef struct TabletState_s TabletState;
 
 int milton_main();
@@ -35,15 +28,4 @@ void*   platform_allocate(size_t size);
 #define milton_log platform_milton_log
 void    milton_fatal(char* message);
 void    milton_die_gracefully(char* message);
-
-// Currently only used to poll for tablet data. Called from SDL as a function
-// inserted in the main event loop that has access to OS-dependent data and
-// API's
-NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
-                                             i32 width, i32 height,
-                                             v2i* out_point,
-                                             f32* out_pressure);
-void platform_wacom_init(TabletState* tablet_state, SDL_Window* window);
-void platform_wacom_deinit(TabletState* tablet_state);
-
 

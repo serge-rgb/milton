@@ -50,6 +50,7 @@ int milton_main()
     // Note: Event handling, File I/O and Threading are initialized by default
     SDL_Init(SDL_INIT_VIDEO);
 
+
     i32 width = 1280;
     i32 height = 800;
 
@@ -60,8 +61,6 @@ int milton_main()
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                           width, height,
                                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-
-    //SDL_MaximizeWindow(window);
 
     if (!window) {
         milton_log("[ERROR] -- Exiting. SDL could not create window\n");
@@ -100,8 +99,24 @@ int milton_main()
 
         milton_init(milton_state);
     }
-    TabletState* tablet_state = arena_alloc_elem(&root_arena, TabletState);
-    platform_wacom_init(tablet_state, window);
+
+    // Ask for native events to poll tablet events.
+    SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+
+    SDL_SysWMinfo sysinfo;
+    if ( SDL_GetWindowWMInfo( window, &sysinfo ) ) {
+        switch(sysinfo.subsystem) {
+        case SDL_SYSWM_WINDOWS:
+            EasyTab_Load(sysinfo.info.win.window);
+            break;
+        case SDL_SYSWM_X11:
+            // TODO: load here.
+            break;
+        default:
+            milton_die_gracefully("Runtime system not recognized.");
+            break;
+        }
+    }
 
 
     PlatformInput platform_input = { 0 };
@@ -136,22 +151,31 @@ int milton_main()
             case SDL_SYSWMEVENT: {
                 f32 pressure = NO_PRESSURE_INFO;
                 v2i point = { 0 };
-                // TODO: get point from event poll
-                NativeEventResult caught = platform_native_event_poll(tablet_state,
-                                                                      event.syswm,
-                                                                      width, height,
-                                                                      &point,
-                                                                      &pressure);
-                if ( !platform_input.is_pointer_down && (caught & Caught_POINT) && pressure > 0 ) {
-                    platform_input.is_pointer_down = true;
+                SDL_SysWMEvent sysevent = event.syswm;
+                EasyTabResult er = EASYTAB_EVENT_NOT_HANDLED;
+                switch(sysevent.msg->subsystem) {
+                case SDL_SYSWM_WINDOWS:
+                    er = EasyTab_HandleEvent(sysevent.msg->msg.win.hwnd,
+                                             sysevent.msg->msg.win.msg,
+                                             sysevent.msg->msg.win.lParam,
+                                             sysevent.msg->msg.win.wParam);
+                    break;
+                case SDL_SYSWM_X11:
+                    // TODO impl.
+                    break;
+                case SDL_SYSWM_COCOA:
+                    // TODO impl
+                    break;
+                default:
+                    break;  // Are we in Wayland yet?
+
                 }
-                if (platform_input.is_pointer_down && (caught & Caught_PRESSURE)) {
-                    assert (pressure != NO_PRESSURE_INFO);
-                    milton_input.pressures[num_pressure_results++] = pressure;
-                }
-                if ( platform_input.is_pointer_down && (caught & Caught_POINT) ) {
-                    milton_input.points[num_point_results++] = point;
-                    got_tablet_point_input = true;
+                if (er == EASYTAB_OK) {  // Event was handled.
+                    if (EasyTab->Pressure > 0) {
+                        platform_input.is_pointer_down = true;
+                        milton_input.points[num_point_results++] = (v2i){ EasyTab->PosX, EasyTab->PosY };
+                        milton_input.pressures[num_pressure_results++] = EasyTab->Pressure;
+                    }
                 }
             } break;
             case SDL_MOUSEBUTTONDOWN:
@@ -400,7 +424,6 @@ int milton_main()
         milton_input = (MiltonInput){0};
     }
 
-    platform_wacom_deinit(tablet_state);
 
     // Release pages. Not really necessary but we don't want to piss off leak
     // detectors, do we?

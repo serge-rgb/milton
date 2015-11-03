@@ -68,8 +68,6 @@ void milton_load(MiltonState* milton_state)
                 // Corrupt file. Avoid this read
                 continue;       // Do not allocate, just move on.
             }
-            i32* points_x = arena_alloc_array(milton_state->root_arena, stroke->num_points, i32);
-            i32* points_y = arena_alloc_array(milton_state->root_arena, stroke->num_points, i32);
             stroke->pressures = arena_alloc_array(milton_state->root_arena, stroke->num_points, f32);
             stroke->points = arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);
 

@@ -24,7 +24,6 @@
 
 #define HEAP_BEGIN_ADDRESS NULL
 
-
 void* platform_allocate(size_t size)
 {
     return VirtualAlloc(HEAP_BEGIN_ADDRESS,
@@ -101,100 +100,6 @@ void platform_load_gl_func_pointers()
         milton_die_gracefully("OpenGL 1.4 not supported.\n");
     }
     // Load extensions
-}
-
-#include "win32_wacom_defines.h"
-
-#define WIN_MAX_WACOM_PACKETS 1024
-
-struct TabletState_s {
-    HWND window;
-    BITMAPINFO bitmap_info;
-
-    HINSTANCE wintab_handle;
-    WacomAPI wacom;
-    UINT wacom_prs_max;
-    HCTX wacom_ctx;
-
-    PACKET packet_buffer[WIN_MAX_WACOM_PACKETS];
-};
-
-#include "win32_wacom.h"
-
-void platform_wacom_init(TabletState* tablet_state, SDL_Window* window) {
-    // Ask SDL for windows events so we can receive packets
-    SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-    SDL_SysWMinfo wminfo;
-    SDL_bool wminfo_ok = SDL_GetWindowWMInfo(window, &wminfo);
-    if (!wminfo_ok) {
-        milton_fatal("Could not get WM info from SDL");
-    }
-    tablet_state->window = wminfo.info.win.window;
-
-    if (!win32_wacom_load_wintab(tablet_state)) {
-        OutputDebugStringA("No wintab.\n");
-    }
-
-    win32_wacom_get_context(tablet_state);
-}
-
-NativeEventResult platform_native_event_poll(TabletState* tablet_state, SDL_SysWMEvent event,
-                                                  i32 width, i32 height,
-                                                  v2i* out_point,
-                                                  f32* out_pressure)
-{
-    NativeEventResult caught_event = Caught_NONE;
-    i32 pressure_range = tablet_state->wacom_prs_max;
-    if ( event.type == SDL_SYSWMEVENT ) {
-        if ( event.msg ) {
-            SDL_SysWMmsg msg = *event.msg;
-            if (msg.subsystem == SDL_SYSWM_WINDOWS) {
-                HWND window   = msg.msg.win.hwnd;
-                UINT message  = msg.msg.win.msg;
-                WPARAM wparam = msg.msg.win.wParam;
-                LPARAM lparam = msg.msg.win.lParam;
-                switch (message)
-                {
-                case WT_PACKET: {
-                    PACKET pkt = { 0 };
-                    HCTX ctx = (HCTX)lparam;
-                    if (ctx == tablet_state->wacom_ctx &&
-                        tablet_state->wacom.WTPacket(ctx, (UINT)wparam, &pkt))
-                    {
-                        POINT screen_point =
-                        {
-                            .x = pkt.pkX,
-                            .y = pkt.pkY,
-                        };
-                        POINT client_point = screen_point;
-                        ScreenToClient(tablet_state->window, &client_point);
-
-
-                        if (client_point.x >= 0 && client_point.x < width &&
-                            client_point.y >= 0 && client_point.y < height)
-                        {
-#if 0
-                            milton_log ("Wacom packet X: %d, Y: %d, P: %d\n",
-                                        pkt.pkX, pkt.pkY, pkt.pkNormalPressure);
-#endif
-                            *out_pressure = (f32)pkt.pkNormalPressure / (f32)pressure_range;
-                            *out_point = (v2i){client_point.x, client_point.y};
-                            caught_event |= Caught_PRESSURE;
-                            caught_event |= Caught_POINT;
-                        }
-                    }
-                } break;
-                }
-            }
-        }
-    }
-    return caught_event;
-}
-
-void platform_wacom_deinit(TabletState* tablet_state)
-{
-    WacomAPI* wacom = &tablet_state->wacom;
-    wacom->WTClose(tablet_state->wacom_ctx);
 }
 
 int CALLBACK WinMain(
