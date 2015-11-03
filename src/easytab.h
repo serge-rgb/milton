@@ -44,14 +44,14 @@
 
             ...
 
-            if (EasyTab_Load(Window) != EASYTAB_OK)                   // Load
+            if (EasyTab_Load(Window) != EASYTAB_OK)                     // Load
             {
                 OutputDebugStringA("Tablet init failed\n");
             }
 
             ...
 
-            EasyTab_Unload();                                          // Unload
+            EasyTab_Unload();                                           // Unload
         }
 
         LRESULT CALLBACK WindowProc(
@@ -77,10 +77,11 @@
         int main(...)
         {
             Display* Disp;
+            Window   Win;
 
             ...
 
-            if (EasyTab_Load(Disp) != EASYTAB_OK)                       // Load
+            if (EasyTab_Load(Disp, Win) != EASYTAB_OK)                       // Load
             {
                 printf("Tablet init failed\n");
             }
@@ -92,7 +93,7 @@
                 XEvent Event;
                 XNextEvent(XlibDisplay, &Event);
 
-                if (EasyTab_HandleEvent(&Event) == EASYTAB_OK)         // Event
+                if (EasyTab_HandleEvent(&Event) == EASYTAB_OK)          // Event
                 {
                     continue; // Tablet event handled
                 }
@@ -566,7 +567,7 @@ static EasyTabInfo* EasyTab;
 // -----------------------------------------------------------------------------
 #if defined(__linux__)
 
-    EasyTabResult EasyTab_Load(Display* Disp);
+EasyTabResult EasyTab_Load(Display* Disp, Window Win);
     EasyTabResult EasyTab_HandleEvent(XEvent* Event);
     void EasyTab_Unload();
 
@@ -600,7 +601,7 @@ static EasyTabInfo* EasyTab;
 // -----------------------------------------------------------------------------
 #ifdef __linux__
 
-EasyTabResult EasyTab_Load(Display* Disp)
+EasyTabResult EasyTab_Load(Display* Disp, Window Win)
 {
     EasyTab = (EasyTabInfo*)calloc(1, sizeof(EasyTabInfo)); // We want init to zero, hence calloc.
     if (!EasyTab) { return EASYTAB_MEMORY_ERROR; }
@@ -619,12 +620,11 @@ EasyTabResult EasyTab_Load(Display* Disp)
 
         for (int32_t j = 0; j < Devices[i].num_classes; j++)
         {
-            switch (ClassPtr->c_class) // NOTE: Most examples use ClassPtr->class, but that gives me the error:
-                                       // expected unqualified-id before ‘class’ switch (ClassPtr->class)
-                                       //                                                          ^
-                                       // Looking at Line 759 of XInput.h, this is expected,
-                                       // since 'c_class' is defined in stead of 'class' if the flag '__cplusplus' is defined.
-                                       // Not sure why examples compile. Maybe they use C.
+#if defined(__cplusplus)
+            switch (ClassPtr->c_class)
+#else
+            switch (ClassPtr->class)
+#endif
             {
                 case ValuatorClass:
                 {
@@ -666,7 +666,7 @@ EasyTabResult EasyTab_Load(Display* Disp)
             ClassPtr = (XAnyClassPtr) ((uint8_t*)ClassPtr + ClassPtr->length); // TODO: Access this as an array to avoid pointer arithmetic?
         }
 
-        XSelectExtensionEvent(Disp, DefaultRootWindow(Disp), EasyTab->EventClasses, EasyTab->NumEventClasses);
+        XSelectExtensionEvent(Disp, Win, EasyTab->EventClasses, EasyTab->NumEventClasses);
     }
 
     XFreeDeviceList(Devices);
@@ -680,8 +680,8 @@ EasyTabResult EasyTab_HandleEvent(XEvent* Event)
     if (Event->type != EasyTab->MotionType) { return EASYTAB_EVENT_NOT_HANDLED; }
 
     XDeviceMotionEvent* MotionEvent = (XDeviceMotionEvent*)(Event);
-    EasyTab->PosX     = MotionEvent->axis_data[0];
-    EasyTab->PosY     = MotionEvent->axis_data[1];
+    EasyTab->PosX     = MotionEvent->x;
+    EasyTab->PosY     = MotionEvent->y;
     EasyTab->Pressure = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
     return EASYTAB_OK;
 }

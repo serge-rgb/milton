@@ -104,18 +104,24 @@ int milton_main()
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 
     SDL_SysWMinfo sysinfo;
+    SDL_VERSION(&sysinfo.version);
     if ( SDL_GetWindowWMInfo( window, &sysinfo ) ) {
         switch(sysinfo.subsystem) {
+#if defined(_WIN32)
         case SDL_SYSWM_WINDOWS:
             EasyTab_Load(sysinfo.info.win.window);
             break;
+#elif defined(__linux__)
         case SDL_SYSWM_X11:
-            // TODO: load here.
+            EasyTab_Load(sysinfo.info.x11.display, sysinfo.info.x11.window);
             break;
+#endif
         default:
             milton_die_gracefully("Runtime system not recognized.");
             break;
         }
+    } else {
+        milton_die_gracefully("Can't get system info!\n");
     }
 
 
@@ -154,18 +160,22 @@ int milton_main()
                 SDL_SysWMEvent sysevent = event.syswm;
                 EasyTabResult er = EASYTAB_EVENT_NOT_HANDLED;
                 switch(sysevent.msg->subsystem) {
+#if defined(_WIN32)
                 case SDL_SYSWM_WINDOWS:
                     er = EasyTab_HandleEvent(sysevent.msg->msg.win.hwnd,
                                              sysevent.msg->msg.win.msg,
                                              sysevent.msg->msg.win.lParam,
                                              sysevent.msg->msg.win.wParam);
                     break;
+#elif defined(__linux__)
                 case SDL_SYSWM_X11:
-                    // TODO impl.
+                    er = EasyTab_HandleEvent(&sysevent.msg->msg.x11.event);
                     break;
+#elif defined(__MACH__)
                 case SDL_SYSWM_COCOA:
                     // TODO impl
                     break;
+#endif
                 default:
                     break;  // Are we in Wayland yet?
 
