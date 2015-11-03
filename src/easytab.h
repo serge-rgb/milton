@@ -15,9 +15,9 @@
        parameters vary per OS, so look at the function declarations or examples
        below. Function returns EASYTAB_OK if initialization was successful.
 
-    3) Call EasyTab_HandleEvent() in your message-handling code. The function returns
-       EASYTAB_OK if the message was a tablet message, and EASYTAB_EVENT_NOT_HANDLED
-       otherwise.
+    3) Call EasyTab_HandleEvent() in your message-handling code. The function
+       returns EASYTAB_OK if the message was a tablet message, and
+       EASYTAB_EVENT_NOT_HANDLED otherwise.
 
     4) Call EasyTab_Unload() in your shutdown code.
 
@@ -44,14 +44,14 @@
 
             ...
 
-            if (EasyTab_Load(Window) != EASYTAB_OK)                     // Load
+            if (EasyTab_Load(Window) != EASYTAB_OK)                                  // Load
             {
                 OutputDebugStringA("Tablet init failed\n");
             }
 
             ...
 
-            EasyTab_Unload();                                           // Unload
+            EasyTab_Unload();                                                      // Unload
         }
 
         LRESULT CALLBACK WindowProc(
@@ -60,7 +60,7 @@
             WPARAM WParam,
             LPARAM LParam)
         {
-            if (EasyTab_HandleEvent(Window, Message, LParam, WParam) == EASYTAB_OK)   // Event
+            if (EasyTab_HandleEvent(Window, Message, LParam, WParam) == EASYTAB_OK) // Event
             {
                 return true; // Tablet event handled
             }
@@ -81,7 +81,7 @@
 
             ...
 
-            if (EasyTab_Load(Disp, Win) != EASYTAB_OK)                       // Load
+            if (EasyTab_Load(Disp, Win) != EASYTAB_OK)                   // Load
             {
                 printf("Tablet init failed\n");
             }
@@ -126,8 +126,8 @@
     distribute, and modify this file as you see fit.
 */
 
-// TODO: Better error logging/printing
 // TODO: Null checks and warnings for EasyTab
+// TODO: Differentiate between stylus and eraser in the API
 
 // =============================================================================
 // EasyTab header section
@@ -147,10 +147,11 @@ typedef enum
     EASYTAB_OK = 0,
 
     // Errors
-    EASYTAB_MEMORY_ERROR      = -1,
-    EASYTAB_X11_ERROR         = -2,
-    EASYTAB_DLL_LOAD_ERROR    = -3,
-    EASYTAB_WACOM_WIN32_ERROR = -4,
+    EASYTAB_MEMORY_ERROR           = -1,
+    EASYTAB_X11_ERROR              = -2,
+    EASYTAB_DLL_LOAD_ERROR         = -3,
+    EASYTAB_WACOM_WIN32_ERROR      = -4,
+    EASYTAB_INVALID_FUNCTION_ERROR = -5,
 
     EASYTAB_EVENT_NOT_HANDLED = -16,
 } EasyTabResult;
@@ -560,14 +561,12 @@ typedef struct
 #endif // WIN32
 } EasyTabInfo;
 
-static EasyTabInfo* EasyTab;
-
 // -----------------------------------------------------------------------------
 // Function declarations
 // -----------------------------------------------------------------------------
 #if defined(__linux__)
 
-EasyTabResult EasyTab_Load(Display* Disp, Window Win);
+    EasyTabResult EasyTab_Load(Display* Disp, Window Win);
     EasyTabResult EasyTab_HandleEvent(XEvent* Event);
     void EasyTab_Unload();
 
@@ -580,12 +579,14 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win);
 #else
 
     // Save some trouble when porting.
-#error "Unsupported platform."
+    #error "Unsupported platform."
 
 #endif // __linux__ _WIN32
 // -----------------------------------------------------------------------------
 
 #endif // EASYTAB_H
+
+static EasyTabInfo* EasyTab;
 
 
 
@@ -594,7 +595,6 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win);
 // =============================================================================
 
 #ifdef EASYTAB_IMPLEMENTATION
-
 
 // -----------------------------------------------------------------------------
 // Linux implementation
@@ -705,7 +705,7 @@ void EasyTab_Unload()
     if (!EasyTab->func)                                                         \
     {                                                                           \
         OutputDebugStringA("Function " #func " not found in Wintab32.dll.\n");  \
-        return false;                                                           \
+        return EASYTAB_INVALID_FUNCTION_ERROR;                                                           \
     }
 
 EasyTabResult EasyTab_Load(HWND Window)
@@ -816,8 +816,7 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         POINT Point = { 0 };
         Point.x = Packet.pkX;
         Point.y = Packet.pkY;
-        ScreenToClient(Window, &Point); // TODO: Is ScreenToClient() required?
-                                        //       Do we want it to be optional?
+        ScreenToClient(Window, &Point);
         EasyTab->PosX = Point.x;
         EasyTab->PosY = Point.y;
 
