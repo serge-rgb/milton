@@ -152,6 +152,7 @@ Thank You
     * Milton's logo by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
 
 * Code
+    * [Apoorva Joshi](http://apoorvaj.io) - Author of [Papaya](https://github.com/ApoorvaJ/Papaya) for joining forces and creating [EasyTab](https://github.com/ApoorvaJ/EasyTab).
     * [Michael Freundorfer](https://github.com/mordecai154)
     * [Joshua Mendoza](https://github.com/jomendoz)
 

@@ -25,8 +25,8 @@
        e.g.:
 
            EasyTab->PosX        // X position of the pen
+           EasyTab->PosY        // Y position of the pen
            EasyTab->Pressure    // Pressure of the pen ranging from 0.0f to 1.0f
-           EasyTab->MaxPressure // Maximum pressure the pen can register
 
        For more info, have a look at the EasyTabInfo struct below.
 
@@ -142,6 +142,7 @@
 #include <X11/extensions/XInput.h>
 #endif // __linux__
 
+
 typedef enum
 {
     EASYTAB_OK = 0,
@@ -155,6 +156,46 @@ typedef enum
 
     EASYTAB_EVENT_NOT_HANDLED = -16,
 } EasyTabResult;
+
+
+struct EasyTab_
+{
+    int32_t PosX, PosY;
+    float   Pressure; // Range: 0.0f to 1.0f
+};
+struct EasyTab_* EasyTab;
+
+
+#if defined(__linux__)
+
+    EasyTabResult EasyTab_Load(Display* Disp, Window Win);
+    EasyTabResult EasyTab_HandleEvent(XEvent* Event);
+    void EasyTab_Unload();
+
+#elif defined(_WIN32)
+
+    EasyTabResult EasyTab_Load(HWND Window);
+    EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPARAM WParam);
+    void EasyTab_Unload();
+
+#else
+
+    // Save some trouble when porting.
+    #error "Unsupported platform."
+
+#endif // __linux__ _WIN32
+// -----------------------------------------------------------------------------
+
+
+#endif // EASYTAB_H
+
+
+
+// =============================================================================
+// EasyTab implementation section
+// =============================================================================
+
+#ifdef EASYTAB_IMPLEMENTATION
 
 #ifdef WIN32
 // -----------------------------------------------------------------------------
@@ -519,14 +560,9 @@ typedef HCTX (WINAPI * WTMGRDEFCONTEXTEX) (HMGR, UINT, BOOL);
 // -----------------------------------------------------------------------------
 // Structs
 // -----------------------------------------------------------------------------
-typedef struct
+
+struct EasyTabContext_s
 {
-    int32_t PosX, PosY;
-    float   Pressure; // Range: 0.0f to 1.0f
-
-    int32_t RangeX, RangeY;
-    int32_t MaxPressure;
-
 #ifdef __linux__
     XDevice* Device;
     uint32_t MotionType;
@@ -536,7 +572,7 @@ typedef struct
 
 #ifdef WIN32
     HINSTANCE Dll;
-    HCTX      Context;
+    HCTX      WintabContext;
 
     WTINFOA           WTInfoA;
     WTOPENA           WTOpenA;
@@ -559,42 +595,11 @@ typedef struct
     WTMGRDEFCONTEXT   WTMgrDefContext;
     WTMGRDEFCONTEXTEX WTMgrDefContextEx;
 #endif // WIN32
-} EasyTabInfo;
 
-// -----------------------------------------------------------------------------
-// Function declarations
-// -----------------------------------------------------------------------------
-#if defined(__linux__)
-
-    EasyTabResult EasyTab_Load(Display* Disp, Window Win);
-    EasyTabResult EasyTab_HandleEvent(XEvent* Event);
-    void EasyTab_Unload();
-
-#elif defined(_WIN32)
-
-    EasyTabResult EasyTab_Load(HWND Window);
-    EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPARAM WParam);
-    void EasyTab_Unload();
-
-#else
-
-    // Save some trouble when porting.
-    #error "Unsupported platform."
-
-#endif // __linux__ _WIN32
-// -----------------------------------------------------------------------------
-
-#endif // EASYTAB_H
-
-static EasyTabInfo* EasyTab;
-
-
-
-// =============================================================================
-// EasyTab implementation section
-// =============================================================================
-
-#ifdef EASYTAB_IMPLEMENTATION
+    int32_t RangeX, RangeY;
+    int32_t MaxPressure;
+};
+struct EasyTabContext_s* EasyTabContext;
 
 // -----------------------------------------------------------------------------
 // Linux implementation
@@ -603,8 +608,10 @@ static EasyTabInfo* EasyTab;
 
 EasyTabResult EasyTab_Load(Display* Disp, Window Win)
 {
-    EasyTab = (EasyTabInfo*)calloc(1, sizeof(EasyTabInfo)); // We want init to zero, hence calloc.
-    if (!EasyTab) { return EASYTAB_MEMORY_ERROR; }
+    EasyTab = (struct EasyTab_*)calloc(1, sizeof(struct EasyTab_)); // We want init to zero, hence calloc.
+    EasyTabContext = (struct EasyTabContext_s*)calloc(1, sizeof(struct EasyTabContext_s));
+
+    if (!EasyTab || !EasyTabContext) { return EASYTAB_MEMORY_ERROR; }
 
     int32_t Count;
     XDeviceInfoPtr Devices = (XDeviceInfoPtr)XListInputDevices(Disp, &Count);
@@ -615,8 +622,8 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
         if (!strstr(Devices[i].name, "stylus") &&
             !strstr(Devices[i].name, "eraser")) { continue; }
 
-        EasyTab->Device = XOpenDevice(Disp, Devices[i].id);
-        XAnyClassPtr ClassPtr = Devices[i].inputclassinfo;
+        EasyTabContext->Device = XOpenDevice(Disp, Devices[i].id);
+        XAnyClassPtr ClassPtr  = Devices[i].inputclassinfo;
 
         for (int32_t j = 0; j < Devices[i].num_classes; j++)
         {
@@ -632,33 +639,33 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
                     // X
                     if (Info->num_axes > 0)
                     {
-                        int32_t min     = Info->axes[0].min_value;
-                        EasyTab->RangeX = Info->axes[0].max_value;
-                        //printf("Max/min x values: %d, %d\n", min, EasyTab->RangeX); // TODO: Platform-print macro
+                        int32_t min            = Info->axes[0].min_value;
+                        EasyTabContext->RangeX = Info->axes[0].max_value;
+                        //printf("Max/min x values: %d, %d\n", min, EasyTabContext->RangeX); // TODO: Platform-print macro
                     }
 
                     // Y
                     if (Info->num_axes > 1)
                     {
-                        int32_t min     = Info->axes[1].min_value;
-                        EasyTab->RangeY = Info->axes[1].max_value;
-                        //printf("Max/min y values: %d, %d\n", min, EasyTab->RangeY);
+                        int32_t min            = Info->axes[1].min_value;
+                        EasyTabContext->RangeY = Info->axes[1].max_value;
+                        //printf("Max/min y values: %d, %d\n", min, EasyTabContext->RangeY);
                     }
 
                     // Pressure
                     if (Info->num_axes > 2)
                     {
-                        int32_t min          = Info->axes[2].min_value;
-                        EasyTab->MaxPressure = Info->axes[2].max_value;
-                        //printf("Max/min pressure values: %d, %d\n", min, EasyTab->MaxPressure);
+                        int32_t min                 = Info->axes[2].min_value;
+                        EasyTabContext->MaxPressure = Info->axes[2].max_value;
+                        //printf("Max/min pressure values: %d, %d\n", min, EasyTabContext->MaxPressure);
                     }
 
                     XEventClass EventClass;
-                    DeviceMotionNotify(EasyTab->Device, EasyTab->MotionType, EventClass);
+                    DeviceMotionNotify(EasyTabContext->Device, EasyTabContext->MotionType, EventClass);
                     if (EventClass)
                     {
-                        EasyTab->EventClasses[EasyTab->NumEventClasses] = EventClass;
-                        EasyTab->NumEventClasses++;
+                        EasyTabContext->EventClasses[EasyTabContext->NumEventClasses] = EventClass;
+                        EasyTabContext->NumEventClasses++;
                     }
                 } break;
             }
@@ -666,30 +673,32 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
             ClassPtr = (XAnyClassPtr) ((uint8_t*)ClassPtr + ClassPtr->length); // TODO: Access this as an array to avoid pointer arithmetic?
         }
 
-        XSelectExtensionEvent(Disp, Win, EasyTab->EventClasses, EasyTab->NumEventClasses);
+        XSelectExtensionEvent(Disp, Win, EasyTabContext->EventClasses, EasyTabContext->NumEventClasses);
     }
 
     XFreeDeviceList(Devices);
 
-    if (EasyTab->Device != 0) { return EASYTAB_OK; }
+    if (EasyTabContext->Device != 0) { return EASYTAB_OK; }
     else                      { return EASYTAB_X11_ERROR; }
 }
 
 EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 {
-    if (Event->type != EasyTab->MotionType) { return EASYTAB_EVENT_NOT_HANDLED; }
+    if (Event->type != EasyTabContext->MotionType) { return EASYTAB_EVENT_NOT_HANDLED; }
 
     XDeviceMotionEvent* MotionEvent = (XDeviceMotionEvent*)(Event);
     EasyTab->PosX     = MotionEvent->x;
     EasyTab->PosY     = MotionEvent->y;
-    EasyTab->Pressure = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
+    EasyTab->Pressure = (float)MotionEvent->axis_data[2] / (float)EasyTabContext->MaxPressure;
     return EASYTAB_OK;
 }
 
 void EasyTab_Unload()
 {
+    free(EasyTabContext)
     free(EasyTab);
-    EasyTab = NULL;
+    EasyTab        = NULL;
+    EasyTabContext = NULL;
 }
 
 #endif // __linux__
@@ -701,22 +710,24 @@ void EasyTab_Unload()
 #ifdef WIN32
 
 #define GETPROCADDRESS(type, func)                                              \
-    EasyTab->func = (type)GetProcAddress(EasyTab->Dll, #func);                  \
-    if (!EasyTab->func)                                                         \
+    EasyTabContext->func = (type)GetProcAddress(EasyTabContext->Dll, #func);    \
+    if (!EasyTabContext->func)                                                  \
     {                                                                           \
         OutputDebugStringA("Function " #func " not found in Wintab32.dll.\n");  \
-        return EASYTAB_INVALID_FUNCTION_ERROR;                                                           \
+        return EASYTAB_INVALID_FUNCTION_ERROR;                                  \
     }
 
 EasyTabResult EasyTab_Load(HWND Window)
 {
-    EasyTab = (EasyTabInfo*)calloc(1, sizeof(EasyTabInfo)); // We want init to zero, hence calloc.
-    if (!EasyTab) { return EASYTAB_MEMORY_ERROR; }
+    EasyTab = (struct EasyTab_*)calloc(1, sizeof(struct EasyTab_)); // We want init to zero, hence calloc.
+    EasyTabContext = (struct EasyTabContext_s*)calloc(1, sizeof(struct EasyTabContext_s));
+
+    if (!EasyTab || !EasyTabContext) { return EASYTAB_MEMORY_ERROR; }
 
     // Load Wintab DLL and get function addresses
     {
-        EasyTab->Dll = LoadLibraryA("Wintab32.dll");
-        if (!EasyTab->Dll)
+        EasyTabContext->Dll = LoadLibraryA("Wintab32.dll");
+        if (!EasyTabContext->Dll)
         {
             OutputDebugStringA("Wintab32.dll not found.\n");
             return EASYTAB_DLL_LOAD_ERROR;
@@ -744,7 +755,7 @@ EasyTabResult EasyTab_Load(HWND Window)
         GETPROCADDRESS(WTMGRDEFCONTEXTEX , WTMgrDefContextEx);
     }
 
-    if (!EasyTab->WTInfoA(0, 0, NULL))
+    if (!EasyTabContext->WTInfoA(0, 0, NULL))
     {
         OutputDebugStringA("Wintab services not available.\n");
         return EASYTAB_WACOM_WIN32_ERROR;
@@ -757,10 +768,10 @@ EasyTabResult EasyTab_Load(HWND Window)
         AXIS        RangeY     = {0};
         AXIS        Pressure   = {0};
 
-        EasyTab->WTInfoA(WTI_DDCTXS, 0, &LogContext);
-        EasyTab->WTInfoA(WTI_DEVICES, DVC_X, &RangeX);
-        EasyTab->WTInfoA(WTI_DEVICES, DVC_Y, &RangeY);
-        EasyTab->WTInfoA(WTI_DEVICES, DVC_NPRESSURE, &Pressure);
+        EasyTabContext->WTInfoA(WTI_DDCTXS, 0, &LogContext);
+        EasyTabContext->WTInfoA(WTI_DEVICES, DVC_X, &RangeX);
+        EasyTabContext->WTInfoA(WTI_DEVICES, DVC_Y, &RangeY);
+        EasyTabContext->WTInfoA(WTI_DEVICES, DVC_NPRESSURE, &Pressure);
 
         LogContext.lcPktData = PACKETDATA; // ??
         LogContext.lcOptions |= CXO_SYSTEM;
@@ -784,9 +795,9 @@ EasyTabResult EasyTab_Load(HWND Window)
         LogContext.lcSysExtX = GetSystemMetrics(SM_CXSCREEN);
         LogContext.lcSysExtY = GetSystemMetrics(SM_CYSCREEN);
 
-        EasyTab->Context = EasyTab->WTOpenA(Window, &LogContext, TRUE);
+        EasyTabContext->WintabContext = EasyTabContext->WTOpenA(Window, &LogContext, TRUE);
 
-        if (!EasyTab->Context)
+        if (!EasyTabContext->WintabContext)
         {
             OutputDebugStringA("Wintab context couldn't be opened.\n");
             return EASYTAB_WACOM_WIN32_ERROR;
@@ -794,9 +805,9 @@ EasyTabResult EasyTab_Load(HWND Window)
 
         // Get tablet capabilites
         {
-            EasyTab->MaxPressure = Pressure.axMax;
-            EasyTab->RangeX      = RangeX.axMax;
-            EasyTab->RangeY      = RangeY.axMax;
+            EasyTabContext->MaxPressure = Pressure.axMax;
+            EasyTabContext->RangeX      = RangeX.axMax;
+            EasyTabContext->RangeY      = RangeY.axMax;
         }
     }
 
@@ -810,8 +821,8 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
     PACKET Packet = { 0 };
 
     if (Message == WT_PACKET &&
-        (HCTX)LParam == EasyTab->Context &&
-        EasyTab->WTPacket(EasyTab->Context, (UINT)WParam, &Packet))
+        (HCTX)LParam == EasyTabContext->WintabContext &&
+        EasyTabContext->WTPacket(EasyTabContext->WintabContext, (UINT)WParam, &Packet))
     {
         POINT Point = { 0 };
         Point.x = Packet.pkX;
@@ -820,7 +831,7 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         EasyTab->PosX = Point.x;
         EasyTab->PosY = Point.y;
 
-        EasyTab->Pressure = (float)Packet.pkNormalPressure / (float)EasyTab->MaxPressure;
+        EasyTab->Pressure = (float)Packet.pkNormalPressure / (float)EasyTabContext->MaxPressure;
         return EASYTAB_OK;
     }
 
@@ -829,10 +840,12 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 
 void EasyTab_Unload()
 {
-    EasyTab->WTClose(EasyTab->Context);
-    if (EasyTab->Dll) { FreeLibrary(EasyTab->Dll); }
+    EasyTabContext->WTClose(EasyTabContext->WintabContext);
+    if (EasyTabContext->Dll) { FreeLibrary(EasyTabContext->Dll); }
+    free(EasyTabContext);
     free(EasyTab);
-    EasyTab = NULL;
+    EasyTab        = NULL;
+    EasyTabContext = NULL;
 }
 
 #endif // WIN32
