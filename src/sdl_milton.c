@@ -93,7 +93,8 @@ int milton_main()
     Arena root_arena      = arena_init(big_chunk_of_memory, total_memory_size);
     Arena transient_arena = arena_spawn(&root_arena, frame_heap_in_MB);
 
-    MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState); {
+    MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
+    {
         milton_state->root_arena = &root_arena;
         milton_state->transient_arena = &transient_arena;
 

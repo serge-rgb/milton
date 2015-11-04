@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "1..."
 cd src
 clang template_expand.c -g -o template_expand

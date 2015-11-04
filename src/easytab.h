@@ -695,7 +695,7 @@ EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 
 void EasyTab_Unload()
 {
-    free(EasyTabContext)
+    free(EasyTabContext);
     free(EasyTab);
     EasyTab        = NULL;
     EasyTabContext = NULL;
