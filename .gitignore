@@ -20,15 +20,8 @@ third_party/SDL2-2.0.3/VisualC
 *.opensdf
 *.psess
 *.vsp
+
 *.sleepy
-
-# Android crap
-
-android/.gradle
-android/.idea
-android/local.properties
-android/build
-android/app/build
 
 # SDL build
 third_party/SDL2-2.0.3/Makefile

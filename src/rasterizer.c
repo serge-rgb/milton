@@ -433,7 +433,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                 f32 test_dy = (f32) (j - point.y);
                                 f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
                                 f32 test_pressure = (1 - t) * p_a + t * p_b;
-                                dist = dist - test_pressure * clipped_stroke->brush.radius;
+                                dist = dist - test_pressure * clipped_stroke->brush.radius * local_scale;
                                 if ( dist < min_dist ) {
                                     min_dist = dist;
                                     dx = test_dx;
@@ -596,6 +596,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     // Get the linked list of clipped strokes.
     b32 allocation_ok = true;
     i32 local_scale =  (view->scale <= 8) ?  4 : 1;
+    __m128 local_scale4 = _mm_set_ps1((float)local_scale);
+
     {
         reference_point.x *= local_scale;
         reference_point.y *= local_scale;
@@ -774,7 +776,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                                                      pressure_b));
 
                             __m128 radius4 = _mm_set_ps1((f32)clipped_stroke->brush.radius);
-                            dist4 = _mm_sub_ps(dist4, _mm_mul_ps(pressure4, radius4));
+                            dist4 = _mm_sub_ps(dist4, _mm_mul_ps(_mm_mul_ps(pressure4, radius4),
+                                                                 local_scale4));
 
                             PROFILE_PUSH(work);
                             PROFILE_BEGIN(gather);

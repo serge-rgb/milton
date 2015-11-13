@@ -15,7 +15,6 @@ tweaks.
 
 
 - Bugs
-    - Self-intersection check fails at high zoom levels.
     - :)
 
 -  GUI
