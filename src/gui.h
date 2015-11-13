@@ -108,5 +108,3 @@ float picker_wheel_get_angle(ColorPicker* picker, v2f point);
 Rect picker_color_buttons_bounds(ColorPicker* picker);
 Rect picker_get_bounds(ColorPicker* picker);
 v3f picker_hsv_from_point(ColorPicker* picker, v2f point);
-
-

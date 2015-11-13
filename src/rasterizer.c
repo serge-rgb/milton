@@ -259,7 +259,8 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         }
         assert(unclipped_stroke);
         Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
-        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke, enlarged_block, local_scale, reference_point);
+        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
+                                                            enlarged_block, local_scale, reference_point);
         // ALlocation failed.
         // Handle this gracefully; this will cause more memory for render workers.
         if ( !clipped_stroke ) {
@@ -672,7 +673,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         pressure = points[0].pressure;
                     } else {
 //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
-                        for ( int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += (2 * 4) ) {
+                        for (int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += (2 * 4) ) {
                             // The step is 4 (128 bit SIMD) times 2 (points are in format AB BC CD DE)
 
                             PROFILE_BEGIN(load);
