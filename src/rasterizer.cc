@@ -161,18 +161,18 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
 #endif
 
     // We need to move the rect to "local coordinates" specified by local scale and reference point.
-    f32 left = (f32)rect.left * local_scale - reference_point.x;
-    f32 right = (f32)rect.right * local_scale - reference_point.x;
-    f32 top = (f32)rect.top * local_scale - reference_point.y;
+    f32 left   = (f32)rect.left   * local_scale - reference_point.x;
+    f32 right  = (f32)rect.right  * local_scale - reference_point.x;
+    f32 top    = (f32)rect.top    * local_scale - reference_point.y;
     f32 bottom = (f32)rect.bottom * local_scale - reference_point.y;
 
     if (num_points >= 2) {
         assert (num_points % 2 == 0);
         for ( i32 point_i = 0; point_i < num_points; point_i += 2 ) {
-            i32 ax = points[point_i].x;
-            i32 ay = points[point_i].y;
-            i32 bx = points[point_i + 1].x;
-            i32 by = points[point_i + 1].y;
+            i32 ax  = points[point_i].x;
+            i32 ay  = points[point_i].y;
+            i32 bx  = points[point_i + 1].x;
+            i32 by  = points[point_i + 1].y;
             f32 p_a = points[point_i].pressure;
             f32 p_b = points[point_i + 1].pressure;
 
@@ -182,7 +182,7 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
 
 
             // Note (v2i){0} is the center of the rect.
-            v2f p  = closest_point_in_segment_f(ax, ay, bx, by, ab, mag_ab2,(v2i){0}, NULL);
+            v2f p  = closest_point_in_segment_f(ax, ay, bx, by, ab, mag_ab2, {}, NULL);
 
 
             f32 pressure = min(p_a, p_b);
@@ -255,7 +255,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                 break;
             }
         } else {
-            unclipped_stroke = StrokeCord_get(strokes, stroke_i);
+            unclipped_stroke = get(strokes, stroke_i);
         }
         assert(unclipped_stroke);
         Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
@@ -429,7 +429,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                 f32 t;
                                 v2f point = closest_point_in_segment_f(ax, ay, bx, by,
                                                                        ab, mag_ab2,
-                                                                       (v2i){i,j}, &t);
+                                                                       {i,j}, &t);
                                 f32 test_dx = (f32) (i - point.x);
                                 f32 test_dy = (f32) (j - point.y);
                                 f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
@@ -847,7 +847,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                     if ( min_dist < FLT_MAX ) {
                         //u64 kk_ccount_begin = __rdtsc();
-                        int samples = 0;
+                        u32 samples = 0;
                         {
                             f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
                             f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
@@ -1016,9 +1016,9 @@ static void draw_circle(u32* raster_buffer,
                         i32 radius,
                         v4f src_color)
 {
-    i32 left = max(center_x - radius, 0);
-    i32 right = min(center_x + radius, raster_buffer_width);
-    i32 top = max(center_y - radius, 0);
+    i32 left   = max(center_x - radius, 0);
+    i32 right  = min(center_x + radius, raster_buffer_width);
+    i32 top    = max(center_y - radius, 0);
     i32 bottom = min(center_y + radius, raster_buffer_height);
 
     assert (right >= left);
@@ -1030,8 +1030,8 @@ static void draw_circle(u32* raster_buffer,
 
 
             //TODO: AA
-            f32 dist = distance(((v2f){ (f32)i, (f32)j }),
-                                (v2f){ (f32)center_x, (f32)center_y });
+            f32 dist = distance({ (f32)i, (f32)j },
+                                { (f32)center_x, (f32)center_y });
 
             if (dist < radius) {
                 u32 dst_color = raster_buffer[index];
@@ -1042,6 +1042,8 @@ static void draw_circle(u32* raster_buffer,
         }
     }
 }
+
+#if 0
 static void draw_rectangle(u32* raster_buffer,
                            i32 raster_buffer_width, i32 raster_buffer_height,
                            i32 center_x, i32 center_y,
@@ -1067,6 +1069,7 @@ static void draw_rectangle(u32* raster_buffer,
         }
     }
 }
+#endif
 
 // 1-pixel margin
 static void draw_rectangle_with_margin(u32* raster_buffer,
@@ -1105,8 +1108,7 @@ static void rasterize_color_picker(ColorPicker* picker,
     // Wheel
     for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
         for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
-            u32 picker_i =
-                    (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
+            u32 picker_i = (u32) (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
             v2f point = {(f32)i, (f32)j};
             u32 dest_color = picker->pixels[picker_i];
 
@@ -1115,10 +1117,10 @@ static void rasterize_color_picker(ColorPicker* picker,
                 f32 u = 0.223607f;
                 f32 v = 0.670820f;
 
-                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){-u, -v}));
-                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){-v, u}));
-                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){u, v}));
-                samples += (int)picker_hits_wheel(picker, add_v2f(point, (v2f){v, u}));
+                samples += (int)picker_hits_wheel(picker, point + v2f{-u, -v});
+                samples += (int)picker_hits_wheel(picker, point + v2f{-v, u});
+                samples += (int)picker_hits_wheel(picker, point + v2f{u, v});
+                samples += (int)picker_hits_wheel(picker, point + v2f{v, u});
             }
 
             if (samples > 0) {
@@ -1142,8 +1144,7 @@ static void rasterize_color_picker(ColorPicker* picker,
     for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
         for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
             v2f point = { (f32)i, (f32)j };
-            u32 picker_i =
-                    (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
+            u32 picker_i = (u32) (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
             u32 dest_color = picker->pixels[picker_i];
             // MSAA!!
             int samples = 0;
@@ -1151,14 +1152,10 @@ static void rasterize_color_picker(ColorPicker* picker,
                 f32 u = 0.223607f;
                 f32 v = 0.670820f;
 
-                samples += (int)is_inside_triangle(add_v2f(point, (v2f){-u, -v}),
-                                                   picker->info.a, picker->info.b, picker->info.c);
-                samples += (int)is_inside_triangle(add_v2f(point, (v2f){-v, u}),
-                                                   picker->info.a, picker->info.b, picker->info.c);
-                samples += (int)is_inside_triangle(add_v2f(point, (v2f){u, v}),
-                                                   picker->info.a, picker->info.b, picker->info.c);
-                samples += (int)is_inside_triangle(add_v2f(point, (v2f){v, u}),
-                                                   picker->info.a, picker->info.b, picker->info.c);
+                samples += (int)is_inside_triangle(point + v2f{-u, -v}, picker->info.a, picker->info.b, picker->info.c);
+                samples += (int)is_inside_triangle(point + v2f{-v, u}, picker->info.a, picker->info.b, picker->info.c);
+                samples += (int)is_inside_triangle(point + v2f{u, v}, picker->info.a, picker->info.b, picker->info.c);
+                samples += (int)is_inside_triangle(point + v2f{v, u}, picker->info.a, picker->info.b, picker->info.c);
             }
 
             if (samples > 0) {
@@ -1194,10 +1191,10 @@ static void rasterize_color_picker(ColorPicker* picker,
             1,
         };
 
-        if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE) {
+        if (check_flag(picker->flags, ColorPickerFlags::TRIANGLE_ACTIVE)) {
             ring_radius = 10;
             ring_girth  = 2;
-            color       = (v4f){0};
+            color       = {};
         }
 
         // Barycentric to cartesian
@@ -1205,9 +1202,7 @@ static void rasterize_color_picker(ColorPicker* picker,
         f32 b = 1 - hsv.v;
         f32 c = 1 - a - b;
 
-        v2f point = add_v2f(scale_v2f(picker->info.c, a),
-                            add_v2f(scale_v2f(picker->info.b, b),
-                                    scale_v2f(picker->info.a, c)));
+        v2f point = (picker->info.c*a) + (picker->info.b*b) + (picker->info.a*c);
 
         // De-center
         point.x -= picker->center.x - picker->bounds_radius_px;
@@ -1274,8 +1269,8 @@ static b32 render_blockgroup(MiltonState* milton_state,
         }
 
 
-        b32 can_use_sse2 = milton_state->cpu_caps & CPUCAPS_sse2;
-        b32 can_use_avx = milton_state->cpu_caps & CPUCAPS_avx;
+        b32 can_use_sse2 = check_flag(milton_state->cpu_caps, CPUCaps::sse2);
+        b32 can_use_avx  = check_flag(milton_state->cpu_caps, CPUCaps::avx);
 
         // TODO: use the debug dispatcher.
         if ( can_use_sse2 ) {
@@ -1395,7 +1390,7 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
 #if RENDER_MULTITHREADED
         BlockgroupRenderData data =
         {
-            .block_start = block_i,
+            block_i,
         };
 
         produce_render_work(milton_state, data);
@@ -1447,8 +1442,7 @@ static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* v
     // Copy canvas buffer into picker buffer
     for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
         for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
-            u32 picker_i =
-                    (j - draw_rect.top) * (2*picker->bounds_radius_px ) + (i - draw_rect.left);
+            u32 picker_i = (u32) (j - draw_rect.top) * (2*picker->bounds_radius_px ) + (i - draw_rect.left);
             u32 src = buffer_pixels[j * view->screen_size.w + i];
             picker->pixels[picker_i] = src;
         }
@@ -1457,8 +1451,7 @@ static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* v
     // Render background color.
     for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
         for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
-            u32 picker_i =
-                    (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
+            u32 picker_i = (u32) (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
 
 
             // TODO: Premultiplied?
@@ -1493,12 +1486,11 @@ static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_
         // Fail silently when bitmap is NULL. Will happen until the Git situation is resolved...
         return;
     }
-    Rect limits = {
-        .left = max(x, 0),
-        .top = max(y, 0),
-        .right = min(raster_buffer_width, x + bitmap->width),
-        .bottom = min(raster_buffer_height, y + bitmap->height),
-    };
+    Rect limits = {};
+    limits.left   = max(x, 0);
+    limits.top    = max(y, 0);
+    limits.right  = min(raster_buffer_width, x + bitmap->width);
+    limits.bottom = min(raster_buffer_height, y + bitmap->height);
 
     if (bitmap->num_components != 4) {
         assert (bitmap->num_components && !"not implemented");
@@ -1532,7 +1524,7 @@ static void render_gui(MiltonState* milton_state,
         redraw = true;
     }
     MiltonGui* gui = milton_state->gui;
-    if ( redraw || (render_flags & MiltonRenderFlags_PICKER_UPDATED) ) {
+    if ( redraw || (check_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED)) ) {
         render_canvas(milton_state, raster_buffer, picker_rect);
 
         render_picker(&milton_state->gui->picker,
@@ -1551,7 +1543,7 @@ static void render_gui(MiltonState* milton_state,
                                        button->width, button->height,
                                        button->color,
                                        // Black margin
-                                       (v4f){ 0, 0, 0, 1 });
+                                       { 0, 0, 0, 1 });
             button = button->next;
         }
 
@@ -1572,7 +1564,7 @@ static void render_gui(MiltonState* milton_state,
                   milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                   x, y,
                   circle_radius, ring_girth,
-                  (v4f) { 0 });
+                  {});
     }
 
 
@@ -1590,7 +1582,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 
     // Figure out what `raster_limits` should be.
     {
-        if ( render_flags & MiltonRenderFlags_FULL_REDRAW ) {
+        if (check_flag(render_flags, MiltonRenderFlags::FULL_REDRAW)) {
             raster_limits.left = 0;
             raster_limits.right = milton_state->view->screen_size.w;
             raster_limits.top = 0;
@@ -1618,9 +1610,9 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
         }
 
-        if ( render_flags & MiltonRenderFlags_FINISHED_STROKE ) {
+        if (check_flag( render_flags, MiltonRenderFlags::FINISHED_STROKE )) {
             i32 index = milton_state->strokes->count - 1;
-            Rect canvas_rect = bounding_box_for_last_n_points(StrokeCord_get(milton_state->strokes, index), 4);
+            Rect canvas_rect = bounding_box_for_last_n_points(get(milton_state->strokes, index), 4);
             raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);

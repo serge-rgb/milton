@@ -49,7 +49,7 @@ void   arena_pop (Arena* child);
 #define     ARENA_VALIDATE(arena)               assert ((arena)->num_children == 0)
 
 
-void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
+u8* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 
 // =======================
 // == Dynamic allocator ==
@@ -65,15 +65,15 @@ void* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 //  - Milton resize window
 
 #define     dyn_alloc(T, n)     (T*)dyn_alloc_typeless(sizeof(T) * (n))
-#define     dyn_free(ptr)       dyn_free_typeless(ptr), ptr = NULL
+#define     dyn_free(ptr)       dyn_free_typeless((u8*)ptr), ptr = NULL
 
-void* dyn_alloc_typeless(i32 size);
-void dyn_free_typeless(void* dyn_ptr);
+u8* dyn_alloc_typeless(size_t size);
+void dyn_free_typeless(u8* dyn_ptr);
 
 typedef struct AllocNode_s AllocNode;
 
 struct AllocNode_s {
-    i32         size;
+    size_t      size;
     AllocNode*  prev;
     AllocNode*  next;
 };

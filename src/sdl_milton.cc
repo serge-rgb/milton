@@ -129,9 +129,9 @@ int milton_main()
     PlatformInput platform_input = { 0 };
 
     b32 should_quit = false;
-    MiltonInput milton_input = { 0 };
-    milton_input.flags |= MiltonInputFlags_FULL_REFRESH;  // Full draw on first launch
-    milton_resize(milton_state, (v2i){0}, (v2i){width, height});
+    MiltonInput milton_input = {};
+    milton_input.flags = MiltonInputFlags::FULL_REFRESH;  // Full draw on first launch
+    milton_resize(milton_state, {}, {width, height});
 
     u32 window_id = SDL_GetWindowID(window);
     v2i input_point = { 0 };
@@ -184,7 +184,7 @@ int milton_main()
                 if (er == EASYTAB_OK) {  // Event was handled.
                     if (EasyTab->Pressure > 0) {
                         platform_input.is_pointer_down = true;
-                        milton_input.points[num_point_results++] = (v2i){ EasyTab->PosX, EasyTab->PosY };
+                        milton_input.points[num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
                         milton_input.pressures[num_pressure_results++] = EasyTab->Pressure;
                     }
                 }
@@ -196,7 +196,7 @@ int milton_main()
                 if ( event.button.button == SDL_BUTTON_LEFT ) {
                     platform_input.is_pointer_down = true;
                     if ( platform_input.is_panning ) {
-                        platform_input.pan_start = (v2i) { event.button.x, event.button.y };
+                        platform_input.pan_start = { event.button.x, event.button.y };
                     }
                 }
                 break;
@@ -207,8 +207,8 @@ int milton_main()
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     // Add final point
                     if (!platform_input.is_panning && platform_input.is_pointer_down) {
-                        milton_input.flags |= MiltonInputFlags_END_STROKE;
-                        input_point = (v2i){ event.button.x, event.button.y };
+                        set_flag(milton_input.flags, MiltonInputFlags::END_STROKE);
+                        input_point = { event.button.x, event.button.y };
                         milton_input.points[num_point_results++] = input_point;
                     } else if (platform_input.is_panning) {
                         if (!platform_input.is_space_down) {
@@ -224,18 +224,18 @@ int milton_main()
                         break;
                     }
 
-                    input_point = (v2i){ event.motion.x, event.motion.y };
+                    input_point = { event.motion.x, event.motion.y };
                     if (platform_input.is_pointer_down) {
                         if ( !platform_input.is_panning && !got_tablet_point_input ) {
                             milton_input.points[num_point_results++] = input_point;
                         } else if ( platform_input.is_panning ) {
                             platform_input.pan_point = input_point;
 
-                            milton_input.flags |= MiltonInputFlags_FAST_DRAW;
-                            milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
+                            set_flag(milton_input.flags, MiltonInputFlags::FAST_DRAW);
+                            set_flag(milton_input.flags, MiltonInputFlags::FULL_REFRESH);
                         }
                     } else {
-                        milton_input.flags |= MiltonInputFlags_HOVERING;
+                        set_flag(milton_input.flags, MiltonInputFlags::HOVERING);
                         milton_input.hover_point = input_point;
                     }
                     break;
@@ -247,7 +247,7 @@ int milton_main()
                     }
 
                     milton_input.scale += event.wheel.y;
-                    milton_input.flags |= MiltonInputFlags_FAST_DRAW;
+                    set_flag(milton_input.flags, MiltonInputFlags::FAST_DRAW);
 
                     break;
                 }
@@ -268,11 +268,11 @@ int milton_main()
                         }
                         if ( platform_input.is_ctrl_down ) {
                             if (keycode == SDLK_z) {
-                                milton_input.flags |= MiltonInputFlags_UNDO;
+                                set_flag(milton_input.flags, MiltonInputFlags::UNDO);
                             }
                             if (keycode == SDLK_y)
                             {
-                                milton_input.flags |= MiltonInputFlags_REDO;
+                                set_flag(milton_input.flags, MiltonInputFlags::REDO);
                             }
                         }
                     }
@@ -283,7 +283,7 @@ int milton_main()
 
                     // Stop stroking when any key is hit
                     platform_input.is_pointer_down = false;
-                    milton_input.flags |= MiltonInputFlags_END_STROKE;
+                    set_flag(milton_input.flags, MiltonInputFlags::END_STROKE);
 
                     if (keycode == SDLK_ESCAPE) {
                         should_quit = true;
@@ -295,13 +295,13 @@ int milton_main()
                     }
                     if (platform_input.is_ctrl_down) {
                         if (keycode == SDLK_BACKSPACE) {
-                            milton_input.flags |= MiltonInputFlags_RESET;
+                            set_flag(milton_input.flags, MiltonInputFlags::RESET);
                         }
                     } else {
                         if (keycode == SDLK_e) {
-                            milton_input.flags |= MiltonInputFlags_SET_MODE_ERASER;
+                            set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_ERASER);
                         } else if (keycode == SDLK_b) {
-                            milton_input.flags |= MiltonInputFlags_SET_MODE_BRUSH;
+                            set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_BRUSH);
                         } else if (keycode == SDLK_1) {
                             milton_set_pen_alpha(milton_state, 0.1f);
                         } else if (keycode == SDLK_2) {
@@ -323,13 +323,7 @@ int milton_main()
                         } else if (keycode == SDLK_0) {
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
-#ifndef NDEBUG
-                        else if (keycode == SDLK_F4) {
-                            milton_state->DEBUG_backend_choice = (milton_state->DEBUG_backend_choice + 1) % DEBUG_BACKEND_CHOICE_count;
-                            milton_log("Changed backend choice to: %s\n",
-                                       MILTONDEBUG_BackendChoiceStrings[milton_state->DEBUG_backend_choice]);
-                        }
-#endif
+                        // TODO: Re-implement backend toggle
                     }
 
                     break;
@@ -362,7 +356,7 @@ int milton_main()
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                     width = event.window.data1;
                     height = event.window.data2;
-                    milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
+                    set_flag(milton_input.flags, MiltonInputFlags::FULL_REFRESH);
                     glViewport(0, 0, width, height);
                     break;
                 case SDL_WINDOWEVENT_LEAVE:
@@ -371,7 +365,7 @@ int milton_main()
                     }
                     if (platform_input.is_pointer_down) {
                         platform_input.is_pointer_down = false;
-                        milton_input.flags |= MiltonInputFlags_END_STROKE;
+                        set_flag(milton_input.flags, MiltonInputFlags::END_STROKE);
                     }
                     break;
                     // --- A couple of events we might want to catch later...
@@ -393,7 +387,7 @@ int milton_main()
 
         if (platform_input.is_panning)
         {
-            milton_input.flags |= MiltonInputFlags_PANNING;
+            set_flag(milton_input.flags, MiltonInputFlags::PANNING);
             num_point_results = 0;
         }
 
@@ -418,12 +412,12 @@ int milton_main()
         milton_input.input_count = num_point_results;
 
 
-        v2i pan_delta = sub_v2i(platform_input.pan_point, platform_input.pan_start);
+        v2i pan_delta = platform_input.pan_point - platform_input.pan_start;
         if ( pan_delta.x != 0 ||
              pan_delta.y != 0 ||
              width != milton_state->view->screen_size.x ||
              height != milton_state->view->screen_size.y ) {
-            milton_resize(milton_state, pan_delta, (v2i){width, height});
+              milton_resize(milton_state, pan_delta, {width, height});
         }
         milton_input.pan_delta = pan_delta;
         platform_input.pan_start = platform_input.pan_point;
@@ -433,7 +427,7 @@ int milton_main()
         SDL_GL_SwapWindow(window);
         SDL_WaitEvent(NULL);
 
-        milton_input = (MiltonInput){0};
+        milton_input = {};
     }
 
 

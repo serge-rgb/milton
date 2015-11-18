@@ -57,8 +57,8 @@ void milton_load(MiltonState* milton_state)
         assert (num_strokes >= 0);
 
         for ( i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i ) {
-            StrokeCord_push(milton_state->strokes, (Stroke) { 0 });
-            Stroke* stroke = StrokeCord_get(milton_state->strokes,
+            push(milton_state->strokes, {});
+            Stroke* stroke = get(milton_state->strokes,
                                              milton_state->strokes->count - 1);
             fread(&stroke->brush, sizeof(Brush), 1, fd);
             fread(&stroke->num_points, sizeof(i32), 1, fd);
@@ -71,8 +71,8 @@ void milton_load(MiltonState* milton_state)
             stroke->pressures = arena_alloc_array(milton_state->root_arena, stroke->num_points, f32);
             stroke->points = arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);
 
-            fread(stroke->points, sizeof(v2i), stroke->num_points, fd);
-            fread(stroke->pressures, sizeof(f32), stroke->num_points, fd);
+            fread(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
+            fread(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
         }
 
         fread(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
@@ -106,19 +106,15 @@ void milton_save(MiltonState* milton_state)
     fwrite(&num_strokes, sizeof(i32), 1, fd);
 
     for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
-        Stroke* stroke = StrokeCord_get(strokes, stroke_i);
+        Stroke* stroke = get(strokes, stroke_i);
         assert(stroke->num_points > 0);
         fwrite(&stroke->brush, sizeof(Brush), 1, fd);
         fwrite(&stroke->num_points, sizeof(i32), 1, fd);
-        fwrite(stroke->points, sizeof(v2i), stroke->num_points, fd);
-        fwrite(stroke->pressures, sizeof(f32), stroke->num_points, fd);
+        fwrite(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
+        fwrite(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
     }
 
     fwrite(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
 
     fclose(fd);
 }
-
-#ifdef __cplusplus
-}
-#endif

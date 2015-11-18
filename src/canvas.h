@@ -17,23 +17,20 @@
 
 #pragma once
 
-typedef struct Brush_s {
+struct Brush {
     i32     radius;  // This should be replaced by a BrushType and some union containing brush info.
     v4f     color;
     f32     alpha;
-} Brush;
+};
 
-typedef struct Stroke_s {
+struct Stroke {
     Brush   brush;
     v2i*    points;
     f32*    pressures;
     i32     num_points;
-} Stroke;
+};
 
-// From cord template
-#include "StrokeCord.generated.h"
-
-typedef struct CanvasView_s {
+struct CanvasView {
     v2i     screen_size;            // Size in pixels
     f32     aspect_ratio;
     i32     scale;                  // Zoom
@@ -41,12 +38,23 @@ typedef struct CanvasView_s {
     v2i     pan_vector;             // In canvas scale
     i32     downsampling_factor;
     i32     canvas_radius_limit;
-} CanvasView;
+};
 
+struct StrokeCordChunk {
+    Stroke*	   data;
+    StrokeCordChunk* next;
+};
 
-v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
+typedef struct StrokeCord_s {
+    Arena*	        parent_arena;
+    StrokeCordChunk*    first_chunk;
+    i32	        chunk_size;
+    i32	        count;
+} StrokeCord;
 
-v2i raster_to_canvas(CanvasView* view, v2i raster_point);
+const v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
+
+const v2i raster_to_canvas(CanvasView* view, v2i raster_point);
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 b32* filter_strokes_to_rect(Arena* arena,
@@ -62,4 +70,15 @@ Rect bounding_box_for_stroke(Stroke* stroke);
 Rect bounding_box_for_last_n_points(Stroke* stroke, i32 last_n);
 
 Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect);
+
+// A "stretchy" array that works well with arena allocators.
+// It's a linked list of chunks. Chunks are fixed-size arrays of length `chunk_size`
+
+// Might return NULL, which is a failure case.
+StrokeCord* StrokeCord_make(Arena* arena, i32 chunk_size);
+
+b32     push(StrokeCord* cord, Stroke elem);
+Stroke* get(StrokeCord* cord, i32 i);
+Stroke  pop(StrokeCord* cord, i32 i);
+
 

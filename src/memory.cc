@@ -19,9 +19,9 @@
 AllocNode* MILTON_GLOBAL_dyn_freelist_sentinel = NULL;
 Arena* MILTON_GLOBAL_dyn_root_arena = NULL;
 
-void* dyn_alloc_typeless(i32 size)
+u8* dyn_alloc_typeless(size_t size)
 {
-    void* allocated = NULL;
+    u8* allocated = NULL;
     AllocNode* node = MILTON_GLOBAL_dyn_freelist_sentinel->next;
     while (node != MILTON_GLOBAL_dyn_freelist_sentinel) {
         if (node->size >= size) {
@@ -31,7 +31,7 @@ void* dyn_alloc_typeless(i32 size)
             prev->next = next;
             next->prev = prev;
 
-            allocated = (void*)((u8*)node + sizeof(AllocNode));
+            allocated = (u8*)node + sizeof(AllocNode);
 
             // Found
             break;
@@ -45,7 +45,7 @@ void* dyn_alloc_typeless(i32 size)
         if (mem) {
             node = (AllocNode*)mem;
             node->size = size;
-            allocated = (void*)((u8*)mem + sizeof(AllocNode));
+            allocated = (u8*)mem + sizeof(AllocNode);
         } else {
             assert(!"Failed to do dynamic allocation.");
         }
@@ -54,7 +54,7 @@ void* dyn_alloc_typeless(i32 size)
     return allocated;
 }
 
-void dyn_free_typeless(void* dyn_ptr)
+void dyn_free_typeless(u8* dyn_ptr)
 {
     // Insert at start of freelist.
     AllocNode* node = (AllocNode*)((u8*)dyn_ptr - sizeof(AllocNode));
@@ -69,13 +69,13 @@ void dyn_free_typeless(void* dyn_ptr)
     memset(dyn_ptr, 0, node->size);  // Safety first!
 }
 
-void* arena_alloc_bytes(Arena* arena, size_t num_bytes)
+u8* arena_alloc_bytes(Arena* arena, size_t num_bytes)
 {
     size_t total = arena->count + num_bytes;
     if (total > arena->size) {
         return NULL;
     }
-    void* result = arena->ptr + arena->count;
+    u8* result = arena->ptr + arena->count;
     arena->count += num_bytes;
     return result;
 }
@@ -92,7 +92,7 @@ Arena arena_init(void* base, size_t size)
 
 Arena arena_spawn(Arena* parent, size_t size)
 {
-    void* ptr = arena_alloc_bytes(parent, size);
+    u8* ptr = arena_alloc_bytes(parent, size);
     assert(ptr);
 
     Arena child = { 0 };
@@ -111,7 +111,7 @@ Arena arena_push(Arena* parent, size_t size)
     {
         child.parent = parent;
         child.id     = parent->num_children;
-        void* ptr = arena_alloc_bytes(parent, size);
+        u8* ptr = arena_alloc_bytes(parent, size);
         parent->num_children += 1;
         child.ptr = ptr;
         child.size = size;
@@ -132,7 +132,7 @@ void arena_pop(Arena* child)
     memset(ptr, 0, child->count);
     parent->num_children -= 1;
 
-    *child = (Arena){ 0 };
+    //*child = Arena();
 }
 
 void arena_reset(Arena* arena)

@@ -47,31 +47,34 @@ typedef struct MiltonGLState_s {
 #endif
 } MiltonGLState;
 
-typedef enum MiltonMode_s {
-    MiltonMode_NONE                   = 0,
+// TODO: smells move 'request' elsewhere and make this not be a flag
+enum class MiltonMode {
+    none                   = 0,
 
-    MiltonMode_ERASER                 = 1 << 0,
-    MiltonMode_PEN                    = 1 << 1,
-    MiltonMode_REQUEST_QUALITY_REDRAW = 1 << 2,
-} MiltonMode;
+    ERASER                 = 1 << 0,
+    PEN                    = 1 << 1,
+    REQUEST_QUALITY_REDRAW = 1 << 2,
+};
+DECLARE_FLAG(MiltonMode)
 
-typedef enum {
-    MiltonRenderFlags_NONE              = 0,
+enum class MiltonRenderFlags {
+    NONE            = 0,
 
-    MiltonRenderFlags_PICKER_UPDATED    = 1 << 0,
-    MiltonRenderFlags_FULL_REDRAW       = 1 << 1,
-    MiltonRenderFlags_FINISHED_STROKE   = 1 << 2,
-    MiltonRenderFlags_PAN_COPY          = 1 << 3,
-} MiltonRenderFlags;
+    PICKER_UPDATED  = 1 << 0,
+    FULL_REDRAW     = 1 << 1,
+    FINISHED_STROKE = 1 << 2,
+    PAN_COPY        = 1 << 3,
+};
+DECLARE_FLAG(MiltonRenderFlags);
 
 // Render Workers:
 //    We have a bunch of workers running on threads, who wait on a lockless
 //    queue to take BlockgroupRenderData structures.
 //    When there is work available, they call blockgroup_render_thread with the
 //    appropriate parameters.
-typedef struct BlockgroupRenderData_s {
+struct BlockgroupRenderData {
     i32     block_start;
-} BlockgroupRenderData;
+};
 
 typedef struct RenderQueue_s {
     Rect*   blocks;  // Screen areas to render.
@@ -154,7 +157,7 @@ typedef struct MiltonState_s {
     Arena*      transient_arena;    // Gets reset after every call to milton_update().
     Arena*      render_worker_arenas;
 
-    i32         worker_memory_size;
+    size_t      worker_memory_size;
     b32         worker_needs_memory;
 
     CPUCaps     cpu_caps;
@@ -169,19 +172,20 @@ typedef struct MiltonState_s {
 } MiltonState;
 
 
-typedef enum {
-    MiltonInputFlags_NONE,
-    MiltonInputFlags_FULL_REFRESH    = 1 << 0,
-    MiltonInputFlags_RESET           = 1 << 1,
-    MiltonInputFlags_END_STROKE      = 1 << 2,
-    MiltonInputFlags_UNDO            = 1 << 3,
-    MiltonInputFlags_REDO            = 1 << 4,
-    MiltonInputFlags_SET_MODE_ERASER = 1 << 5,
-    MiltonInputFlags_SET_MODE_BRUSH  = 1 << 6,
-    MiltonInputFlags_FAST_DRAW       = 1 << 7,
-    MiltonInputFlags_HOVERING        = 1 << 8,
-    MiltonInputFlags_PANNING         = 1 << 9,
-} MiltonInputFlags;
+enum class MiltonInputFlags {
+    NONE = 0,
+    FULL_REFRESH    = 1 << 0,
+    RESET           = 1 << 1,
+    END_STROKE      = 1 << 2,
+    UNDO            = 1 << 3,
+    REDO            = 1 << 4,
+    SET_MODE_ERASER = 1 << 5,
+    SET_MODE_BRUSH  = 1 << 6,
+    FAST_DRAW       = 1 << 7,
+    HOVERING        = 1 << 8,
+    PANNING         = 1 << 9,
+};
+DECLARE_FLAG(MiltonInputFlags);
 
 typedef struct MiltonInput_s {
     MiltonInputFlags flags;
@@ -241,6 +245,3 @@ void milton_set_pen_alpha(MiltonState* milton_state, float alpha);
 // Our "game loop" inner function.
 void milton_update(MiltonState* milton_state, MiltonInput* input);
 
-#ifdef __cplusplus
-}
-#endif

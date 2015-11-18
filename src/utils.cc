@@ -25,24 +25,24 @@ size_t get_system_RAM()
 
 CPUCaps get_cpu_caps()
 {
-    CPUCaps cpu_caps = CPUCAPS_none;
+    CPUCaps cpu_caps = CPUCaps::none;
     if ( SDL_HasSSE2() ) {
-        cpu_caps |= CPUCAPS_sse2;
+        set_flag(cpu_caps, CPUCaps::sse2);
     }
     if ( SDL_HasAVX() ) {
-        cpu_caps |= CPUCAPS_avx;
+        set_flag(cpu_caps, CPUCaps::avx);
     }
     return cpu_caps;
 }
 
 v2i v2f_to_v2i(v2f p)
 {
-    return (v2i){(i32)p.x, (i32)p.y};
+    return {(i32)p.x, (i32)p.y};
 }
 
 v2f v2i_to_v2f(v2i p)
 {
-    return (v2f){(f32)p.x, (f32)p.y};
+    return {(f32)p.x, (f32)p.y};
 }
 
 // ---------------
@@ -56,7 +56,7 @@ f32 magnitude(v2f a)
 
 f32 distance(v2f a, v2f b)
 {
-    v2f diff = sub_v2f(a, b);
+    v2f diff = a - b;
 
     f32 dist = sqrtf(DOT(diff, diff));
 
@@ -129,9 +129,7 @@ v2f closest_point_in_segment_f(i32 ax, i32 ay,
     if (out_t) {
         *out_t = disc / mag_ab;
     }
-    result = (v2f) {
-       (ax + disc * d_x), (ay + disc * d_y),
-    };
+    result = {(ax + disc * d_x), (ay + disc * d_y)};
     return result;
 }
 
@@ -151,9 +149,7 @@ v2i closest_point_in_segment(v2i a, v2i b,
     if (out_t) {
         *out_t = disc / mag_ab;
     }
-    result = (v2i) {
-       (i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y),
-    };
+    result = {(i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y)};
     return result;
 }
 
@@ -162,10 +158,10 @@ b32 intersect_line_segments(v2i a, v2i b,
                             v2f* out_intersection)
 {
     b32 hit = false;
-    v2i perp = perpendicular_v2i(sub_v2i(v, u));
-    i32 det = DOT(sub_v2i(b, a), perp);
+    v2i perp = perpendicular(v - u);
+    i32 det = DOT(b - a, perp);
     if (det != 0) {
-        f32 t = (f32)DOT(sub_v2i(u, a), perp) / (f32)det;
+        f32 t = (f32)DOT(u - a, perp) / (f32)det;
         if (t > 1 && t < 1.001) t = 1;
         if (t < 0 && t > -0.001) t = 1;
 
@@ -269,7 +265,7 @@ Rect rect_clip_to_screen(Rect limits, v2i screen_size)
     return limits;
 }
 
-Rect rect_enlarge(Rect src, i32 offset)
+const Rect rect_enlarge(Rect src, i32 offset)
 {
     Rect result;
     result.left = src.left - offset;
@@ -330,12 +326,11 @@ Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_poi
         if (points_y[i] < top_left_y)   top_left_y = points_y[i];
         if (points_y[i] > bot_right_y)  bot_right_y = points_y[i];
     }
-    Rect rect = {
-        .left = top_left_x,
-        .right = bot_right_x,
-        .top = top_left_y,
-        .bottom = bot_right_y,
-    };
+    Rect rect;
+        rect.left = top_left_x;
+        rect.right = bot_right_x;
+        rect.top = top_left_y;
+        rect.bottom = bot_right_y;
     return rect;
 }
 
@@ -366,16 +361,12 @@ b32 is_rect_within_rect(Rect a, Rect b)
 
 Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h)
 {
-    Rect rect  = {
-        .left = x,
-        .right = x + w,
-        .top = y,
-        .bottom = y + h,
-    };
+    Rect rect;
+    rect.left = x;
+    rect.right = x + w;
+    rect.top = y;
+    rect.bottom = y + h;
 
     return rect;
 }
 
-#ifdef __cplusplus
-}
-#endif

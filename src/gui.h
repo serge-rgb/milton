@@ -17,23 +17,36 @@
 
 #pragma once
 
-typedef enum {
-    ColorPickerFlags_NOTHING = 0,
+#include "utils.h"
 
-    ColorPickerFlags_WHEEL_ACTIVE    = (1 << 1),
-    ColorPickerFlags_TRIANGLE_ACTIVE = (1 << 2)
-} ColorPickerFlags;
+enum class ColorPickerFlags {
 
-typedef struct PickerData_s {
+    NOTHING = 0,
+
+    WHEEL_ACTIVE    = (1 << 1),
+    TRIANGLE_ACTIVE = (1 << 2)
+};
+DECLARE_FLAG(ColorPickerFlags);
+
+/* void set_flag(ColorPickerFlags& f, ColorPickerFlags val) */
+/* { */
+/*     f = (ColorPickerFlags)((int)f | (int)val); */
+/* } */
+
+/* b32 check_flag(ColorPickerFlags flags, ColorPickerFlags f) */
+/* { */
+/*     return (b32)((int)flags & (int)f); */
+/* } */
+
+struct PickerData {
     v2f a;  // Corresponds to value = 0      (black)
     v2f b;  // Corresponds to saturation = 0 (white)
     v2f c;  // Points to chosen hue.         (full color)
 
     v3f  hsv;
-} PickerData;
+};
 
-typedef struct ColorButton_s ColorButton;
-struct ColorButton_s {
+struct ColorButton {
     i32 center_x;
     i32 center_y;
     i32 width;
@@ -45,7 +58,7 @@ struct ColorButton_s {
     ColorButton* next;
 };
 
-typedef struct ColorPicker_s {
+struct ColorPicker {
     v2i     center;  // In screen pixel coordinates.
     i32     bounds_radius_px;
     Rect    bounds;
@@ -59,26 +72,18 @@ typedef struct ColorPicker_s {
     ColorButton color_buttons;
 
     ColorPickerFlags flags;
+};
 
-} ColorPicker;
-
-typedef enum {
-    ColorPickResult_NOTHING         = 0,
-    ColorPickResult_CHANGE_COLOR    = (1 << 1),
-} ColorPickResult;
+enum class ColorPickResult {
+    NOTHING         = 0,
+    CHANGE_COLOR,
+};
 
 
-typedef enum {
-    GuiButtonState_INACTIVE,
-    GuiButtonState_HOVERING,  // Mouse over
-    GuiButtonState_PRESSED,   // Being clicked on..
-} GuiButtonState;
-
-typedef struct GuiButton_s {
-    GuiButtonState  state;
+struct GuiButton {
     Rect            rect;
     Bitmap          bitmap;
-} GuiButton;
+};
 
 // typedef'd in milton.h
 struct MiltonGui_s {

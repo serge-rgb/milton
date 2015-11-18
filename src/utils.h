@@ -18,6 +18,7 @@
 
 #pragma once
 
+
 #ifdef array_length
 #error "array_length is already defined"
 #else
@@ -32,6 +33,30 @@
 #define max(a, b) (((a) < (b)) ? b : a)
 #endif
 
+#define _BOOL_OPERATOR(cl, op) \
+        bool operator##op (cl v) { return (bool)( (int)*this op (int)v ); }
+
+// Define C++ operators for bit twiddling flags.
+#define DECLARE_FLAG(cl) \
+        \
+void set_flag(cl& f, cl val)  \
+{ \
+    f = (cl)((int)f | (int)val); \
+} \
+\
+void unset_flag(cl& f, cl val)  \
+{ \
+    f = (cl)((int)f ^ (int)val); \
+} \
+\
+b32 check_flag(cl flags, cl f) \
+{\
+    return (b32)((int)flags & (int)f);\
+}
+        //_BOOL_OPERATOR(cl, &)
+
+        //bool operator& (cl a, cl b) { return (bool)( (int)a & (int)b ); } \
+
 // -----------
 // System stuf
 // -----------
@@ -39,13 +64,15 @@
 // total RAM in bytes
 size_t get_system_RAM();
 
-typedef enum {
-    CPUCAPS_none = 0,
-    CPUCAPS_sse2 = (1 << 0),
-    CPUCAPS_avx = (1 << 1),
-} CPUCaps;;
+enum class CPUCaps {
+    none = 0,
+    sse2 = (1 << 0),
+    avx = (1 << 1),
+};
+DECLARE_FLAG(CPUCaps);
 
 CPUCaps get_cpu_caps();
+
 
 // ---------------
 // Math functions.
@@ -103,7 +130,7 @@ b32 intersect_line_segments(v2i a, v2i b,
 // The mighty rect
 // ---------------
 
-typedef struct Rect_s
+struct Rect
 {
     union {
         struct {
@@ -117,7 +144,7 @@ typedef struct Rect_s
             i32 bottom;
         };
     };
-} Rect;
+};
 
 #define VALIDATE_RECT(rect) assert(rect_is_valid((rect)))
 
@@ -133,7 +160,7 @@ Rect rect_stretch(Rect rect, i32 width);
 
 Rect rect_clip_to_screen(Rect limits, v2i screen_size);
 
-Rect rect_enlarge(Rect src, i32 offset);
+const Rect rect_enlarge(Rect src, i32 offset);
 
 b32 rect_is_valid(Rect rect);
 

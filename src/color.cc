@@ -18,11 +18,11 @@
 
 u32 color_v4f_to_u32(v4f c)
 {
-    u32 result =
-        ((u8)(c.r * 255.0f) << 16) |
-        ((u8)(c.g * 255.0f) << 8) |
-        ((u8)(c.b * 255.0f) << 0) |
-        ((u8)(c.a * 255.0f) << 24);
+    u32 result = (u32)
+        ((int)(c.r * 255.0f) << 16) |
+        ((int)(c.g * 255.0f) << 8) |
+        ((int)(c.b * 255.0f) << 0) |
+        ((int)(c.a * 255.0f) << 24);
     return result;
 }
 
@@ -41,9 +41,9 @@ v4f color_u32_to_v4f(u32 color)
 v4f color_rgb_to_rgba(v3f rgb, float a)
 {
     v4f rgba = {
-        .r = rgb.r,
-        .g = rgb.g,
-        .b = rgb.b,
+        rgb.r,
+        rgb.g,
+        rgb.b,
         a
     };
     return rgba;
@@ -125,10 +125,10 @@ v3f hsv_to_rgb(v3f hsv)
 v4f to_premultiplied(v3f rgb, f32 a)
 {
     v4f rgba = {
-        .r = rgb.r * a,
-        .g = rgb.g * a,
-        .b = rgb.b * a,
-        .a = a
+        rgb.r * a,
+        rgb.g * a,
+        rgb.b * a,
+        a
     };
     return rgba;
 }

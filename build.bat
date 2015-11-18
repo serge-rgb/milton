@@ -1,15 +1,15 @@
 @echo off
 
+(call dir)
 if %errorlevel% neq 0 goto fail
 
-
 REM ---- Delete old generated files.
-del src\*.generated.h
-
-pushd src
-cl /Zi template_expand.c
-template_expand.exe
-popd
+::del src\*.generated.h
+::
+::pushd src
+::cl /Zi template_expand.c
+::template_expand.exe
+::popd
 
 pushd build
 
@@ -34,17 +34,20 @@ REM 4711 Auto inline
 REM 4189 Init. Not ref
 REM 4201 Nameless struct (GNU extension, but available in MSVC. Also, valid C11)
 REM 4204 Non-constant aggregate initializer.
-set comment_for_cleanup=/wd4100 /wd4189
-set mlt_disabled_warnings=%comment_for_cleanup% /wd4820 /wd4255 /wd4668 /wd4710 /wd4711 /wd4201 /wd4204
-set mlt_includes=-I ..\third_party\ -I ..\third_party\gui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab
+REM 4800 b32 to bool or int to bool perf warning
+REM 4191 FARPROC from GetProcAddress
+REM 5027 move assignment operator implicitly deleted
+set comment_for_cleanup=/wd4100 /wd4189 /wd4800
+set mlt_disabled_warnings=%comment_for_cleanup% /wd4820 /wd4255 /wd4668 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027
+set mlt_includes=-I ..\third_party\ -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab
 set mlt_links=..\third_party\glew32s.lib OpenGL32.lib ..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug\SDL2.lib ..\third_party\SDL2-2.0.3\VisualC\SDLmain\x64\Debug\SDL2main.lib user32.lib gdi32.lib %sdl_link_deps%
 
-:: ---- Create static library for CPP imgui layer
-cl %mlt_nopt% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% -I..\third_party\imgui /c ..\src\gui_imgui.cpp
-lib gui_imgui.obj
+:: ---- Compile third_party libs with less warnings
+cl /O2 %mlt_includes% /c ..\src\headerlibs_impl.cc
+lib headerlibs_impl.obj
 
 :: ---- Unity build for Milton
-cl %mlt_opt% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes%  ..\src\milton_unity_build.c /FeMilton.exe %mlt_links%
+cl %mlt_opt% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes%  ..\src\milton_unity_build.cc /FeMilton.exe %mlt_links% headerlibs_impl.lib
 if %errorlevel% equ 0 goto ok
 goto fail
 

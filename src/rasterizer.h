@@ -17,10 +17,10 @@
 
 
 // What "void* data" below is expecting...
-typedef struct WorkerParams_s {
+struct WorkerParams {
     MiltonState* milton_state;
     i32 worker_id;
-} WorkerParams;
+};
 
 // Declared here so that the workers get launched from the init function.
 int renderer_worker_thread(void* data);

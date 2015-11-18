@@ -18,12 +18,11 @@
 
 static Rect color_button_as_rect(ColorButton* button)
 {
-    Rect rect = (Rect) {
-        .left = button->center_x - button->width,
-        .right = button->center_x + button->width,
-        .top = button->center_y - button->height,
-        .bottom = button->center_y + button->height,
-    };
+    Rect rect = {};
+    rect.left = button->center_x - button->width;
+    rect.right = button->center_x + button->width;
+    rect.top = button->center_y - button->height;
+    rect.bottom = button->center_y + button->height;
     return rect;
 }
 
@@ -37,17 +36,17 @@ static void picker_update_wheel(ColorPicker* picker, v2f polar_point)
         v2f center = v2i_to_v2f(picker->center);
         {
             v2f point = polar_to_cartesian(-angle, radius);
-            point = add_v2f(point, center);
+            point = point + center;
             picker->info.c = point;
         }
         {
             v2f point = polar_to_cartesian(-angle + 2 * kPi / 3.0f, radius);
-            point = add_v2f(point, center);
+            point = point + center;
             picker->info.b = point;
         }
         {
             v2f point = polar_to_cartesian(-angle + 4 * kPi / 3.0f, radius);
-            point = add_v2f(point, center);
+            point = point + center;
             picker->info.a = point;
         }
     }
@@ -61,7 +60,7 @@ static b32 picker_hits_triangle(ColorPicker* picker, v2f fpoint)
 
 static void picker_deactivate(ColorPicker* picker)
 {
-    picker->flags = ColorPickerFlags_NOTHING;
+    picker->flags = ColorPickerFlags::NOTHING;
 }
 
 static b32 is_inside_picker_rect(ColorPicker* picker, v2i point)
@@ -80,7 +79,7 @@ static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
 b32 picker_hits_wheel(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
-    v2f arrow = sub_v2f (point, center);
+    v2f arrow = point - center;
     float dist = magnitude(arrow);
 
     b32 hits = (dist <= picker->wheel_radius + picker->wheel_half_width ) &&
@@ -92,7 +91,7 @@ b32 picker_hits_wheel(ColorPicker* picker, v2f point)
 float picker_wheel_get_angle(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
-    v2f arrow = sub_v2f (point, center);
+    v2f arrow = point - center;
     v2f baseline = { 1, 0 };
     float dotp = (DOT(arrow, baseline)) / (magnitude(arrow));
     float angle = acosf(dotp);
@@ -113,16 +112,14 @@ b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
 
 Rect picker_color_buttons_bounds(ColorPicker* picker)
 {
-    Rect bounds = {
-        .right = INT_MIN,
-        .left = INT_MAX,
-        .top = INT_MAX,
-        .bottom = INT_MIN,
-    };
+    Rect bounds = {};
+    bounds.right = INT_MIN;
+    bounds.left = INT_MAX;
+    bounds.top = INT_MAX;
+    bounds.bottom = INT_MIN;
     ColorButton* button = &picker->color_buttons;
     while (button) {
-        bounds = rect_union(bounds,
-                            color_button_as_rect(button));
+        bounds = rect_union(bounds, color_button_as_rect(button));
         button = button->next;
     }
     return bounds;
@@ -131,7 +128,7 @@ Rect picker_color_buttons_bounds(ColorPicker* picker)
 static b32 picker_is_accepting_input(ColorPicker* picker, v2i point)
 {
     // If wheel is active, yes! Gimme input.
-    if (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) {
+    if (check_flag(picker->flags, ColorPickerFlags::WHEEL_ACTIVE)) {
         return true;
     } else if (is_inside_picker_rect(picker, point)) {
         //return is_inside_picker_active_area(picker, point);
@@ -168,26 +165,26 @@ static b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
 
 static ColorPickResult picker_update(ColorPicker* picker, v2i point)
 {
-    ColorPickResult result = ColorPickResult_NOTHING;
+    ColorPickResult result = ColorPickResult::NOTHING;
     v2f fpoint = v2i_to_v2f(point);
-    if (picker->flags == ColorPickerFlags_NOTHING) {
+    if (picker->flags == ColorPickerFlags::NOTHING) {
         if (picker_hits_wheel(picker, fpoint)) {
-            picker->flags |= ColorPickerFlags_WHEEL_ACTIVE;
+            set_flag(picker->flags, ColorPickerFlags::WHEEL_ACTIVE);
         }
     }
-    if (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) {
-        if (!(picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE)) {
+    if (check_flag(picker->flags, ColorPickerFlags::WHEEL_ACTIVE)) {
+        if (!(check_flag(picker->flags, ColorPickerFlags::TRIANGLE_ACTIVE))) {
             picker_update_wheel(picker, fpoint);
-            result |= ColorPickResult_CHANGE_COLOR;
+            result = ColorPickResult::CHANGE_COLOR;
         }
     }
     if (picker_hits_triangle(picker, fpoint)) {
-        if (!(picker->flags & ColorPickerFlags_WHEEL_ACTIVE)) {
-            picker->flags |= ColorPickerFlags_TRIANGLE_ACTIVE;
+        if (!(check_flag(picker->flags, ColorPickerFlags::WHEEL_ACTIVE))) {
+            set_flag(picker->flags, ColorPickerFlags::TRIANGLE_ACTIVE);
             picker->info.hsv = picker_hsv_from_point(picker, fpoint);
-            result |= ColorPickResult_CHANGE_COLOR;
+            result = ColorPickResult::CHANGE_COLOR;
         }
-    } else if (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE) {
+    } else if (check_flag(picker->flags, ColorPickerFlags::TRIANGLE_ACTIVE)) {
         // We don't want the chooser to "stick" if go outside the triangle
         // (i.e. picking black should be easy)
         v2f segments[] = {
@@ -205,7 +202,7 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
                                               &intersection);
             if (hit) {
                 picker->info.hsv = picker_hsv_from_point(picker, intersection);
-                result |= ColorPickResult_CHANGE_COLOR;
+                result = ColorPickResult::CHANGE_COLOR;
                 break;
             }
         }
@@ -222,13 +219,13 @@ static void picker_init(ColorPicker* picker)
         (f32)picker->center.y
     };
     picker_update_wheel(picker, fpoint);
-    picker->info.hsv = (v3f){ 0, 1, 1 };
+    picker->info.hsv = { 0, 1, 1 };
 }
 
 static b32 picker_is_active(ColorPicker* picker)
 {
-    b32 is_active = (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) ||
-            (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE);
+    b32 is_active = check_flag(picker->flags, ColorPickerFlags::WHEEL_ACTIVE) ||
+            check_flag(picker->flags, ColorPickerFlags::TRIANGLE_ACTIVE);
 
     return is_active;
 }
@@ -290,17 +287,17 @@ b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
 
 MiltonRenderFlags gui_update(MiltonState* milton_state, MiltonInput* input)
 {
-    MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
+    MiltonRenderFlags render_flags = MiltonRenderFlags::NONE;
     v2i point = input->points[0];
     ColorPickResult pick_result = picker_update(&milton_state->gui->picker, point);
-    if ( pick_result & ColorPickResult_CHANGE_COLOR &&
-         milton_state->current_mode == MiltonMode_PEN ) {
+    if ( (pick_result == ColorPickResult::CHANGE_COLOR) &&
+         check_flag(milton_state->current_mode, MiltonMode::PEN) ) {
         milton_state->gui->did_change_color = true;
         v3f rgb = hsv_to_rgb(milton_state->gui->picker.info.hsv);
         milton_state->brushes[BrushEnum_PEN].color =
                 to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha);
     }
-    render_flags |= MiltonRenderFlags_PICKER_UPDATED;
+    set_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED);
     milton_state->gui->active = true;
     return render_flags;
 }
@@ -309,11 +306,11 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 {
     i32 bounds_radius_px = 100;
     f32 wheel_half_width = 12;
-    gui->picker.center = (v2i){ bounds_radius_px + 20, bounds_radius_px + 20 };
+    gui->picker.center = { bounds_radius_px + 20, bounds_radius_px + 20 };
     gui->picker.bounds_radius_px = bounds_radius_px;
     gui->picker.wheel_half_width = wheel_half_width;
     gui->picker.wheel_radius = (f32)bounds_radius_px - 5.0f - wheel_half_width;
-    gui->picker.info.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
+    gui->picker.info.hsv = { 0.0f, 1.0f, 0.7f };
     Rect bounds;
     bounds.left = gui->picker.center.x - bounds_radius_px;
     bounds.right = gui->picker.center.x + bounds_radius_px;
@@ -340,7 +337,7 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
         cur_button->center_y = gui->picker.center.y + bounds_radius_px + 40;
         cur_button->width = button_size / 2;
         cur_button->height = button_size / 2;
-        cur_button->color = (v4f){0.0, 0.0, 0.0, 0.0};
+        cur_button->color = {0.0, 0.0, 0.0, 0.0};
 
         current_center_x += spacing + button_size;
 
@@ -358,12 +355,12 @@ b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
     b32 changed = false;
     ColorButton* start = &gui->picker.color_buttons;
     v3f picker_color  = hsv_to_rgb(gui->picker.info.hsv);
-    if ( start->color.a == 0 || !equals_v3f(picker_color, start->color.rgb)) {
+    if ( start->color.a == 0 || picker_color == start->color.rgb) {
 
         // Search for a color that is already in the list
         ColorButton* button = start;
         while(button) {
-            if ( button->color.a != 0 && equals_v3f(button->color.rgb, stroke_color) ) {
+            if ( button->color.a != 0 && button->color.rgb == stroke_color) {
                 // Move this button to the start and return.
                 changed = true;
                 v4f tmp_color = button->color;

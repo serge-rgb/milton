@@ -16,7 +16,7 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
+const v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
     v2i raster_point = {
         ((view->pan_vector.x + canvas_point.x) / view->scale) + view->screen_center.x,
@@ -25,7 +25,7 @@ v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
     return raster_point;
 }
 
-v2i raster_to_canvas(CanvasView* view, v2i raster_point)
+const v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 {
     v2i canvas_point = {
         ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x,
@@ -47,7 +47,7 @@ b32* filter_strokes_to_rect(Arena* arena,
     }
 
     for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
-        Stroke* stroke = StrokeCord_get(strokes, stroke_i);
+        Stroke* stroke = get(strokes, stroke_i);
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
         VALIDATE_RECT(stroke_rect);
         if (stroke->num_points == 1) {
@@ -78,7 +78,7 @@ b32* filter_strokes_to_rect(Arena* arena,
 b32 stroke_point_contains_point(v2i p0, i32 r0,
                                 v2i p1, i32 r1)
 {
-    v2i d = sub_v2i(p1, p0);
+    v2i d = p1 - p0;
     // using manhattan distance, less chance of overflow. Still works well enough for this case.
     i32 m = abs(d.x) + abs(d.y) + r1;
     //i32 m = magnitude_i(d) + r1;
@@ -90,8 +90,8 @@ b32 stroke_point_contains_point(v2i p0, i32 r0,
 Rect bounding_box_for_stroke(Stroke* stroke)
 {
     Rect bb = bounding_rect_for_points(stroke->points, stroke->num_points);
-    bb = rect_enlarge(bb, stroke->brush.radius);
-    return bb;
+    Rect bb_enlarged = rect_enlarge(bb, stroke->brush.radius);
+    return bb_enlarged;
 }
 
 Rect bounding_box_for_last_n_points(Stroke* stroke, i32 last_n)
@@ -99,8 +99,8 @@ Rect bounding_box_for_last_n_points(Stroke* stroke, i32 last_n)
     i32 forward = max(stroke->num_points - last_n, 0);
     i32 num_points = min(last_n, stroke->num_points);
     Rect bb = bounding_rect_for_points(stroke->points + forward, num_points);
-    bb = rect_enlarge(bb, stroke->brush.radius);
-    return bb;
+    Rect bb_enlarged = rect_enlarge(bb, stroke->brush.radius);
+    return bb_enlarged;
 }
 
 Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
@@ -110,3 +110,78 @@ Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
     raster_rect.top_left = canvas_to_raster(view, canvas_rect.top_left);
     return raster_rect;
 }
+
+static StrokeCordChunk* StrokeCord_internal_alloc_chunk(Arena* arena, i32 chunk_size)
+{
+    StrokeCordChunk* result = arena_alloc_elem(arena, StrokeCordChunk);
+    if (result) {
+        result->data = arena_alloc_array(arena, chunk_size, Stroke);
+        if (!result->data) {
+            result = NULL;
+        }
+    }
+    return result;
+}
+
+// Might return NULL, which is a failure case.
+StrokeCord* StrokeCord_make(Arena* arena, i32 chunk_size)
+{
+    StrokeCord* deque = arena_alloc_elem(arena, StrokeCord);
+    if (deque) {
+        deque->parent_arena = arena;
+        deque->count = 0;
+        deque->chunk_size = chunk_size;
+        deque->first_chunk = StrokeCord_internal_alloc_chunk(arena, chunk_size);
+        if (!deque->first_chunk) {
+            deque = NULL;
+        }
+    }
+    return deque;
+}
+
+b32 push(StrokeCord* deque, Stroke elem)
+{
+    b32 succeeded = false;
+    StrokeCordChunk* chunk = deque->first_chunk;
+    int chunk_i = deque->count / deque->chunk_size;
+    while(chunk_i--) {
+        if (!chunk->next) {
+            chunk->next = StrokeCord_internal_alloc_chunk(deque->parent_arena, deque->chunk_size);
+        }
+        chunk = chunk->next;
+    }
+    if (chunk) {
+        int elem_i = deque->count % deque->chunk_size;
+        chunk->data[elem_i] = elem;
+        deque->count += 1;
+        succeeded = true;
+    }
+    return succeeded;
+}
+
+Stroke* get(StrokeCord* deque, i32 i)
+{
+    StrokeCordChunk* chunk = deque->first_chunk;
+    int chunk_i = i / deque->chunk_size;
+    while(chunk_i--) {
+        chunk = chunk->next;
+        assert (chunk != NULL);
+    }
+    int elem_i = i % deque->chunk_size;
+    return &chunk->data[elem_i];
+}
+
+Stroke pop(StrokeCord* deque, i32 i)
+{
+    StrokeCordChunk* chunk = deque->first_chunk;
+    int chunk_i = i / deque->chunk_size;
+    while(chunk_i--) {
+        chunk = chunk->next;
+        assert (chunk != NULL);
+    }
+    int elem_i = i % deque->chunk_size;
+    Stroke result = chunk->data[elem_i];
+    deque->count -= 1;
+    return result;
+}
+
