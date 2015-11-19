@@ -355,12 +355,17 @@ b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
     b32 changed = false;
     ColorButton* start = &gui->picker.color_buttons;
     v3f picker_color  = hsv_to_rgb(gui->picker.info.hsv);
-    if ( start->color.a == 0 || picker_color == start->color.rgb) {
-
-        // Search for a color that is already in the list
-        ColorButton* button = start;
-        while(button) {
-            if ( button->color.a != 0 && button->color.rgb == stroke_color) {
+    // Search for a color that is already in the list
+    ColorButton* button = start;
+    while(button) {
+        if ( button->color.a != 0) {
+            v3f diff = {
+                fabs(button->color.r - picker_color.r),
+                fabs(button->color.g - picker_color.g),
+                fabs(button->color.b - picker_color.b),
+            };
+            float epsilon = 0.000001;
+            if (diff.r < epsilon && diff.g < epsilon && diff.b < epsilon) {
                 // Move this button to the start and return.
                 changed = true;
                 v4f tmp_color = button->color;
@@ -370,26 +375,27 @@ b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
                 start->color = tmp_color;
                 start->picker_data = tmp_data;
             }
+        }
+        button = button->next;
+    }
+    button = start;
+
+    // If not found, add to list.
+    if ( !changed ) {
+        changed = true;
+        v4f button_color = color_rgb_to_rgba(picker_color,1);
+        PickerData picker_data = gui->picker.info;
+        // Pass info to the next one.
+        while ( button ) {
+            v4f tmp_color = button->color;
+            PickerData tmp_data = button->picker_data;
+            button->color = button_color;
+            button->picker_data = picker_data;
+            button_color = tmp_color;
+            picker_data = tmp_data;
             button = button->next;
         }
-        button = start;
 
-        if ( !changed ) {
-            changed = true;
-            v4f button_color = color_rgb_to_rgba(picker_color,1);
-            PickerData picker_data = gui->picker.info;
-            // Pass info to the next one.
-            while ( button ) {
-                v4f tmp_color = button->color;
-                PickerData tmp_data = button->picker_data;
-                button->color = button_color;
-                button->picker_data = picker_data;
-                button_color = tmp_color;
-                picker_data = tmp_data;
-                button = button->next;
-            }
-
-        }
     }
 
     return changed;
