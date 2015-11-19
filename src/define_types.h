@@ -34,6 +34,3 @@ typedef float       f32;
 
 typedef i32         b32;
 
-#define true 1
-#define false 0
-

@@ -23,7 +23,7 @@ set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 set mlt_opt=/O2 /MT
 set mlt_nopt=/Od /MTd
 
-set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /fp:fast /nologo /FC
+set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /fp:fast /nologo /FC /EHsc
 
 REM 4100 Unreferenced func param (cleanup)
 REM 4820 struct padding
@@ -37,7 +37,8 @@ REM 4204 Non-constant aggregate initializer.
 REM 4800 b32 to bool or int to bool perf warning
 REM 4191 FARPROC from GetProcAddress
 REM 5027 move assignment operator implicitly deleted
-set comment_for_cleanup=/wd4100 /wd4189 /wd4800
+REM 4127 expression is constant. while(0) et al. Useful sometimes? Mostly annoying.
+set comment_for_cleanup=/wd4100 /wd4189 /wd4800 /wd4127
 set mlt_disabled_warnings=%comment_for_cleanup% /wd4820 /wd4255 /wd4668 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027
 set mlt_includes=-I ..\third_party\ -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab
 set mlt_links=..\third_party\glew32s.lib OpenGL32.lib ..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug\SDL2.lib ..\third_party\SDL2-2.0.3\VisualC\SDLmain\x64\Debug\SDL2main.lib user32.lib gdi32.lib %sdl_link_deps%

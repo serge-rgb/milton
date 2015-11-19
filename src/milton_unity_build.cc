@@ -39,5 +39,6 @@
 #include "profiler.cc"
 #include "rasterizer.cc"
 #include "sdl_milton.cc"
+#include "tests.cc"
 #include "utils.cc"
 

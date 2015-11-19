@@ -15,10 +15,13 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#pragma once
 
-typedef struct Arena_s Arena;
+#define mlt_calloc(n, sz) calloc(n, sz)
+#define mlt_free(ptr) do { if (ptr) { free(ptr); ptr = NULL; } else { assert(!"Freeing null"); } } while(0)
+#define mlt_realloc realloc
 
-struct Arena_s {
+struct Arena {
     // Memory:
     size_t  size;
     size_t  count;
