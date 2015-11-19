@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "Arrays.h"
 
 #ifdef array_length
 #error "array_length is already defined"
@@ -150,8 +151,7 @@ struct Rect
 
 // Splits src_rect into a number of rectangles stored in dest_rects
 // Returns the number of rectangles into which src_rect was split.
-i32 rect_split(Arena* transient_arena,
-               Rect src_rect, i32 width, i32 height, Rect** dest_rects);
+i32 rect_split(StretchArray<Rect>& out_rects, Rect src_rect, i32 width, i32 height);
 
 // Set operations on rectangles
 Rect rect_union(Rect a, Rect b);

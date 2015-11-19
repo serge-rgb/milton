@@ -1338,6 +1338,7 @@ int renderer_worker_thread(void* data)
     }
 }
 
+#if MILTON_MULTITHREADED
 static void produce_render_work(MiltonState* milton_state,
                                 BlockgroupRenderData blockgroup_render_data)
 {
@@ -1353,6 +1354,7 @@ static void produce_render_work(MiltonState* milton_state,
 
     SDL_SemPost(render_queue->work_available);
 }
+#endif
 
 
 // Returns true if operation was completed.
@@ -1360,11 +1362,8 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
 {
     PROFILE_BEGIN(render_canvas);
 
-    Rect* blocks = NULL;
-
-    i32 num_blocks = rect_split(milton_state->transient_arena,
-                                raster_limits,
-                                milton_state->block_width, milton_state->block_width, &blocks);
+    StretchArray<Rect> blocks;
+    i32 num_blocks = rect_split(blocks, raster_limits, milton_state->block_width, milton_state->block_width);
 
     if ( num_blocks < 0 ) {
         milton_log ("[ERROR] Transient arena did not have enough memory for canvas block.\n");
@@ -1373,8 +1372,8 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
 
     RenderQueue* render_queue = milton_state->render_queue;
     {
-        render_queue->blocks = blocks;
-        render_queue->num_blocks = num_blocks;
+        render_queue->blocks = blocks.m_data;
+        render_queue->num_blocks = (i32)count(blocks);
         render_queue->raster_buffer = raster_buffer;
     }
 
@@ -1386,8 +1385,7 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
             break;
         }
 
-#define RENDER_MULTITHREADED MILTON_MULTITHREADED
-#if RENDER_MULTITHREADED
+#if MILTON_MULTITHREADED
         BlockgroupRenderData data =
         {
             block_i,
@@ -1396,20 +1394,18 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
         produce_render_work(milton_state, data);
         blockgroup_acc += 1;
 #else
-        Arena blockgroup_arena = arena_push(milton_state->transient_arena,
-                                            arena_available_space(milton_state->transient_arena));
+        Arena blockgroup_arena = arena_push(milton_state->root_arena, (size_t)128 * 1024 * 1024);
         render_blockgroup(milton_state,
                           &blockgroup_arena,
-                          blocks,
+                          blocks.m_data,
                           block_i, num_blocks,
                           raster_buffer);
 
         arena_pop(&blockgroup_arena);
 #endif
-        ARENA_VALIDATE(milton_state->transient_arena);
     }
 
-#if RENDER_MULTITHREADED
+#if MILTON_MULTITHREADED
     // Wait for workers to finish.
 
     while(blockgroup_acc) {
@@ -1420,8 +1416,6 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
         else { assert ( !"Not handling completion semaphore wait error" ); }
     }
 #endif
-
-    ARENA_VALIDATE(milton_state->transient_arena);
 
     PROFILE_PUSH(render_canvas);
 }

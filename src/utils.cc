@@ -15,8 +15,6 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
-
 // total RAM in bytes
 size_t get_system_RAM()
 {
@@ -175,8 +173,7 @@ b32 intersect_line_segments(v2i a, v2i b,
 }
 
 // Returns the number of rectangles into which src_rect was split.
-i32 rect_split(Arena* transient_arena,
-        Rect src_rect, i32 width, i32 height, Rect** dest_rects)
+i32 rect_split(StretchArray<Rect>& out_rects, Rect src_rect, i32 width, i32 height)
 {
     int n_width = (src_rect.right - src_rect.left) / width;
     int n_height = (src_rect.bottom - src_rect.top) / height;
@@ -186,12 +183,8 @@ i32 rect_split(Arena* transient_arena,
     }
 
     i32 max_num_rects = (n_width + 1) * (n_height + 1);
-    *dest_rects = arena_alloc_array(transient_arena, max_num_rects, Rect);
-    if (!*dest_rects) {
-       return -1;
-    }
+    StretchArray<Rect> rects((size_t)max(max_num_rects / 2, 1));
 
-    i32 i = 0;
     for ( int h = src_rect.top; h < src_rect.bottom; h += height ) {
         for ( int w = src_rect.left; w < src_rect.right; w += width ) {
             Rect rect;
@@ -201,11 +194,14 @@ i32 rect_split(Arena* transient_arena,
                 rect.top = h;
                 rect.bottom = min(src_rect.bottom, h + height);
             }
-            (*dest_rects)[i++] = rect;
+            push(rects, rect);
         }
     }
-    assert(i <= max_num_rects);
-    return i;
+
+    assert((i32)count(rects) <= max_num_rects);
+    i32 num_rects = (i32)count(rects);
+    out_rects = rects;
+    return num_rects;
 }
 
 Rect rect_union(Rect a, Rect b)

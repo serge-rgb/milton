@@ -118,7 +118,7 @@ static char* MILTONDEBUG_BackendChoiceStrings[DEBUG_BACKEND_CHOICE_count] =
 
 typedef struct MiltonGui_s MiltonGui;
 
-typedef struct MiltonState_s {
+struct MiltonState {
     u8      bytes_per_pixel;
 
     i32     max_width;
@@ -154,7 +154,6 @@ typedef struct MiltonState_s {
 
     // Heap
     Arena*      root_arena;         // Persistent memory.
-    Arena*      transient_arena;    // Gets reset after every call to milton_update().
     Arena*      render_worker_arenas;
 
     size_t      worker_memory_size;
@@ -169,7 +168,7 @@ typedef struct MiltonState_s {
 #ifndef NDEBUG
     MILTONDEBUG_BackendChoice DEBUG_backend_choice;
 #endif
-} MiltonState;
+};
 
 
 enum class MiltonInputFlags {

@@ -1,16 +1,5 @@
 @echo off
 
-(call dir)
-if %errorlevel% neq 0 goto fail
-
-REM ---- Delete old generated files.
-::del src\*.generated.h
-::
-::pushd src
-::cl /Zi template_expand.c
-::template_expand.exe
-::popd
-
 pushd build
 
 set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib

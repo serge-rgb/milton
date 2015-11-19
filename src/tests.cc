@@ -2,7 +2,7 @@
 #include "tests.h"
 
 #include "memory.h"
-#include "Array.h"
+#include "Arrays.h"
 
 static void milton_dynmem_tests();
 static void milton_cord_tests(Arena* arena);

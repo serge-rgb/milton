@@ -78,25 +78,21 @@ int milton_main()
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // ==== Initialize milton
-    //  Total memory requirement for Milton
-    //size_t total_memory_size = min((size_t)2 * 1024 * 1024 * 1024, get_system_RAM() / 2);
-    size_t total_memory_size = get_system_RAM();
-    //  Size of frame heap
-    size_t frame_heap_in_MB  = 128 * 1024 * 1024;
+    //  Total (static) memory requirement for Milton
+    // TODO: Calculate how much is the arena using before shipping.
+    size_t sz_root_arena = (size_t)2L * 1024 * 1024 * 1024;
 
-    void* big_chunk_of_memory = platform_allocate(total_memory_size);
+    void* big_chunk_of_memory = mlt_calloc(1, sz_root_arena);
 
     if (!big_chunk_of_memory) {
         milton_fatal("Could allocate virtual memory for Milton.");
     }
 
-    Arena root_arena      = arena_init(big_chunk_of_memory, total_memory_size);
-    Arena transient_arena = arena_spawn(&root_arena, frame_heap_in_MB);
+    Arena root_arena = arena_init(big_chunk_of_memory, sz_root_arena);
 
     MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
     {
         milton_state->root_arena = &root_arena;
-        milton_state->transient_arena = &transient_arena;
 
         milton_init(milton_state);
     }
@@ -433,7 +429,7 @@ int milton_main()
 
     // Release pages. Not really necessary but we don't want to piss off leak
     // detectors, do we?
-    platform_deallocate(big_chunk_of_memory);
+    mlt_free(big_chunk_of_memory);
 
     SDL_Quit();
 

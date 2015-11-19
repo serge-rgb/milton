@@ -605,8 +605,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             (check_flag(input->flags, MiltonInputFlags::UNDO)) ||
             (check_flag(input->flags, MiltonInputFlags::REDO));
 
-    arena_reset(milton_state->transient_arena);
-
     MiltonRenderFlags render_flags = MiltonRenderFlags::NONE;
 
     b32 do_fast_draw = false;
