@@ -19,9 +19,13 @@
 
 #include <memory>
 
+#include "common.h"
+
 // Dumb array
 template <typename T> struct Array
 {
+    INSERT_ALLOC_OVERRIDES
+
     T*      m_data;
     size_t  m_count;
 
@@ -44,6 +48,8 @@ template<class T> T* end(Array<T> a) { return a.m_data + a.m_count; }
 
 template<typename T> struct ScopedArray
 {
+    INSERT_ALLOC_OVERRIDES
+
     T*                  m_data;
     size_t              m_count;
 
@@ -121,6 +127,8 @@ template<class T> Array<T> get_dumb_array(ScopedArray<T>& scoped_arr)
 
 template<class T> struct StretchArray
 {
+    INSERT_ALLOC_OVERRIDES
+
     T*      m_data;
     size_t  m_count;
     size_t  m_capacity;

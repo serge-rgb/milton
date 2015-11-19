@@ -34,30 +34,6 @@
 #define max(a, b) (((a) < (b)) ? b : a)
 #endif
 
-#define _BOOL_OPERATOR(cl, op) \
-        bool operator##op (cl v) { return (bool)( (int)*this op (int)v ); }
-
-// Define C++ operators for bit twiddling flags.
-#define DECLARE_FLAG(cl) \
-        \
-void set_flag(cl& f, cl val)  \
-{ \
-    f = (cl)((int)f | (int)val); \
-} \
-\
-void unset_flag(cl& f, cl val)  \
-{ \
-    f = (cl)((int)f ^ (int)val); \
-} \
-\
-b32 check_flag(cl flags, cl f) \
-{\
-    return (b32)((int)flags & (int)f);\
-}
-        //_BOOL_OPERATOR(cl, &)
-
-        //bool operator& (cl a, cl b) { return (bool)( (int)a & (int)b ); } \
-
 // -----------
 // System stuf
 // -----------

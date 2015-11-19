@@ -54,6 +54,10 @@ static void array_tests()
             assert(e == i++);
         }
     }
+    {
+        auto* sap = new StretchArray<int>(32);
+        auto deleter = std::unique_ptr<StretchArray<int>>(sap);
+    }
 }
 
 static void milton_startup_tests()
