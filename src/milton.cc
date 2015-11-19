@@ -760,17 +760,17 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         } else {
             if ( milton_state->working_stroke.num_points > 0 ) {
                 // We used the selected color to draw something. Push.
-                if(gui_mark_color_used(milton_state->gui,
-                                       milton_state->working_stroke.brush.color.rgb)) {
+                if(gui_mark_color_used(milton_state->gui, milton_state->working_stroke.brush.color.rgb)) {
                     set_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED);
                 }
                 // Copy current stroke.
+                auto num_points = milton_state->working_stroke.num_points;
                 Stroke new_stroke =
                 {
                     milton_state->working_stroke.brush,
-                    arena_alloc_array(milton_state->root_arena, milton_state->working_stroke.num_points, v2i),
-                    arena_alloc_array(milton_state->root_arena, milton_state->working_stroke.num_points, f32),
-                    milton_state->working_stroke.num_points,
+                    (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i)),
+                    (f32*)mlt_calloc((size_t)num_points, sizeof(f32)),
+                    num_points,
                 };
                 memcpy(new_stroke.points, milton_state->working_stroke.points, milton_state->working_stroke.num_points * sizeof(v2i));
                 memcpy(new_stroke.pressures, milton_state->working_stroke.pressures, milton_state->working_stroke.num_points * sizeof(f32));
