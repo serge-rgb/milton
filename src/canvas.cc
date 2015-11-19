@@ -37,17 +37,17 @@ const v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 b32* filter_strokes_to_rect(Arena* arena,
-                            StrokeCord* strokes,
+                            StrokeCord strokes,
                             const Rect rect)
 {
-    i32 num_strokes = strokes->count;
+    size_t num_strokes = count(strokes);
     b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
     if (!mask_array) {
         return NULL;
     }
 
-    for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
-        Stroke* stroke = get(strokes, stroke_i);
+    for (size_t stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
+        Stroke* stroke = &strokes[stroke_i];
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
         VALIDATE_RECT(stroke_rect);
         if (stroke->num_points == 1) {
@@ -55,7 +55,7 @@ b32* filter_strokes_to_rect(Arena* arena,
                 mask_array[stroke_i] = true;
             }
         } else {
-            for (i32 point_i = 0; point_i < stroke->num_points - 1; ++point_i) {
+            for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
                 v2i a = stroke->points[point_i];
                 v2i b = stroke->points[point_i + 1];
 
@@ -111,11 +111,16 @@ Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
     return raster_rect;
 }
 
-static StrokeCordChunk* StrokeCord_internal_alloc_chunk(Arena* arena, i32 chunk_size)
+struct StrokeCord::StrokeCordChunk {
+    Stroke*	     data;
+    StrokeCordChunk* next;
+};
+
+static StrokeCord::StrokeCordChunk* StrokeCord_internal_alloc_chunk(size_t chunk_size)
 {
-    StrokeCordChunk* result = arena_alloc_elem(arena, StrokeCordChunk);
+    auto* result = (StrokeCord::StrokeCordChunk*)mlt_calloc(1, sizeof(StrokeCord::StrokeCordChunk));
     if (result) {
-        result->data = arena_alloc_array(arena, chunk_size, Stroke);
+        result->data = (Stroke*)mlt_calloc(chunk_size, sizeof(Stroke));
         if (!result->data) {
             result = NULL;
         }
@@ -123,65 +128,64 @@ static StrokeCordChunk* StrokeCord_internal_alloc_chunk(Arena* arena, i32 chunk_
     return result;
 }
 
-// Might return NULL, which is a failure case.
-StrokeCord* StrokeCord_make(Arena* arena, i32 chunk_size)
+StrokeCord::StrokeCord(size_t chunk_size)
 {
-    StrokeCord* deque = arena_alloc_elem(arena, StrokeCord);
-    if (deque) {
-        deque->parent_arena = arena;
-        deque->count = 0;
-        deque->chunk_size = chunk_size;
-        deque->first_chunk = StrokeCord_internal_alloc_chunk(arena, chunk_size);
-        if (!deque->first_chunk) {
-            deque = NULL;
-        }
+    StrokeCord* cord = (StrokeCord*) mlt_calloc(1, sizeof(StrokeCord));
+    this->count = 0;
+    this->chunk_size = chunk_size;
+    this->first_chunk = StrokeCord_internal_alloc_chunk(chunk_size);
+    if (!this->first_chunk) {
+        milton_die_gracefully("StrokeCord construction failed\n");
     }
-    return deque;
+}
+size_t count(StrokeCord& cord)
+{
+    return cord.count;
 }
 
-b32 push(StrokeCord* deque, Stroke elem)
+b32 push(StrokeCord& cord, Stroke elem)
 {
     b32 succeeded = false;
-    StrokeCordChunk* chunk = deque->first_chunk;
-    int chunk_i = deque->count / deque->chunk_size;
+    StrokeCord::StrokeCordChunk* chunk = cord.first_chunk;
+    size_t chunk_i = cord.count / cord.chunk_size;
     while(chunk_i--) {
         if (!chunk->next) {
-            chunk->next = StrokeCord_internal_alloc_chunk(deque->parent_arena, deque->chunk_size);
+            chunk->next = StrokeCord_internal_alloc_chunk(cord.chunk_size);
         }
         chunk = chunk->next;
     }
     if (chunk) {
-        int elem_i = deque->count % deque->chunk_size;
+        size_t elem_i = cord.count % cord.chunk_size;
         chunk->data[elem_i] = elem;
-        deque->count += 1;
+        cord.count += 1;
         succeeded = true;
     }
     return succeeded;
 }
 
-Stroke* get(StrokeCord* deque, i32 i)
+Stroke& StrokeCord::operator[](const size_t i)
 {
-    StrokeCordChunk* chunk = deque->first_chunk;
-    int chunk_i = i / deque->chunk_size;
+    StrokeCord::StrokeCordChunk* chunk = this->first_chunk;
+    size_t chunk_i = i / this->chunk_size;
     while(chunk_i--) {
         chunk = chunk->next;
         assert (chunk != NULL);
     }
-    int elem_i = i % deque->chunk_size;
-    return &chunk->data[elem_i];
+    size_t elem_i = i % this->chunk_size;
+    return chunk->data[elem_i];
 }
 
-Stroke pop(StrokeCord* deque, i32 i)
+Stroke pop(StrokeCord* cord, size_t i)
 {
-    StrokeCordChunk* chunk = deque->first_chunk;
-    int chunk_i = i / deque->chunk_size;
+    StrokeCord::StrokeCordChunk* chunk = cord->first_chunk;
+    size_t chunk_i = i / cord->chunk_size;
     while(chunk_i--) {
         chunk = chunk->next;
         assert (chunk != NULL);
     }
-    int elem_i = i % deque->chunk_size;
+    size_t elem_i = i % cord->chunk_size;
     Stroke result = chunk->data[elem_i];
-    deque->count -= 1;
+    cord->count -= 1;
     return result;
 }
 

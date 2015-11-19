@@ -15,60 +15,6 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
-AllocNode* MILTON_GLOBAL_dyn_freelist_sentinel = NULL;
-Arena* MILTON_GLOBAL_dyn_root_arena = NULL;
-
-u8* dyn_alloc_typeless(size_t size)
-{
-    u8* allocated = NULL;
-    AllocNode* node = MILTON_GLOBAL_dyn_freelist_sentinel->next;
-    while (node != MILTON_GLOBAL_dyn_freelist_sentinel) {
-        if (node->size >= size) {
-            // Remove node from list
-            AllocNode* next = node->next;
-            AllocNode* prev = node->prev;
-            prev->next = next;
-            next->prev = prev;
-
-            allocated = (u8*)node + sizeof(AllocNode);
-
-            // Found
-            break;
-        }
-        node = node->next;
-    }
-
-    // If there was no viable candidate, get new pointer from root arena.
-    if (!allocated) {
-        void* mem = arena_alloc_bytes(MILTON_GLOBAL_dyn_root_arena, size + sizeof(AllocNode));
-        if (mem) {
-            node = (AllocNode*)mem;
-            node->size = size;
-            allocated = (u8*)mem + sizeof(AllocNode);
-        } else {
-            assert(!"Failed to do dynamic allocation.");
-        }
-    }
-
-    return allocated;
-}
-
-void dyn_free_typeless(u8* dyn_ptr)
-{
-    // Insert at start of freelist.
-    AllocNode* node = (AllocNode*)((u8*)dyn_ptr - sizeof(AllocNode));
-    AllocNode* head = MILTON_GLOBAL_dyn_freelist_sentinel->next;
-    head->prev->next = node;
-    head->prev = node;
-
-    node->next = head;
-
-    node->prev = MILTON_GLOBAL_dyn_freelist_sentinel;
-
-    memset(dyn_ptr, 0, node->size);  // Safety first!
-}
-
 u8* arena_alloc_bytes(Arena* arena, size_t num_bytes)
 {
     size_t total = arena->count + num_bytes;

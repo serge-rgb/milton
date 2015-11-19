@@ -228,7 +228,7 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
 // Returns true if allocation succeeded, false if not.
 static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                             CanvasView* view,
-                                            StrokeCord* strokes,
+                                            StrokeCord strokes,
                                             b32* stroke_masks,
                                             Stroke* working_stroke,
                                             Rect canvas_block,
@@ -238,10 +238,10 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 {
     ClippedStroke* stroke_list = NULL;
     *allocation_ok = true;
-    i32 num_strokes = strokes->count;
+    size_t num_strokes = strokes.count;
 
     // Fill linked list with strokes clipped to this block
-    for ( i32 stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
+    for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
         if ( stroke_i < num_strokes && !stroke_masks[stroke_i] ) {
             // Stroke masks is of size num_strokes, but we use stroke_i ==
             // num_strokes to indicate the current "working stroke"
@@ -255,7 +255,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                 break;
             }
         } else {
-            unclipped_stroke = get(strokes, stroke_i);
+            unclipped_stroke = &strokes[stroke_i];
         }
         assert(unclipped_stroke);
         Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
@@ -305,7 +305,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 // returns false if allocation failed
 static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                        CanvasView* view,
-                                       StrokeCord* strokes,
+                                       StrokeCord strokes,
                                        b32* stroke_masks,
                                        Stroke* working_stroke,
                                        u32* pixels,
@@ -551,7 +551,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
 static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                        CanvasView* view,
-                                       StrokeCord* strokes,
+                                       StrokeCord strokes,
                                        b32* stroke_masks,
                                        Stroke* working_stroke,
                                        u32* pixels,
@@ -1605,8 +1605,8 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
         }
 
         if (check_flag( render_flags, MiltonRenderFlags::FINISHED_STROKE )) {
-            i32 index = milton_state->strokes->count - 1;
-            Rect canvas_rect = bounding_box_for_last_n_points(get(milton_state->strokes, index), 4);
+            size_t index = milton_state->strokes.count - 1;
+            Rect canvas_rect = bounding_box_for_last_n_points(&milton_state->strokes[index], 4);
             raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
             raster_limits = rect_stretch(raster_limits, milton_state->block_width);
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);

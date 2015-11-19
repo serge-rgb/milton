@@ -321,15 +321,6 @@ static void milton_load_assets(MiltonState* milton_state)
 
 void milton_init(MiltonState* milton_state)
 {
-    // Initialize dynamic memory stuff.
-    {
-        MILTON_GLOBAL_dyn_freelist_sentinel = arena_alloc_elem(milton_state->root_arena,
-                                                               AllocNode);
-        MILTON_GLOBAL_dyn_freelist_sentinel->next = MILTON_GLOBAL_dyn_freelist_sentinel;
-        MILTON_GLOBAL_dyn_freelist_sentinel->prev = MILTON_GLOBAL_dyn_freelist_sentinel;
-        MILTON_GLOBAL_dyn_root_arena = milton_state->root_arena;
-    }
-
     // Fill cpu capabilities.
     milton_state->cpu_caps = CPUCaps::none;
     if ( SDL_HasSSE2() ) {
@@ -362,7 +353,7 @@ void milton_init(MiltonState* milton_state)
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->bytes_per_pixel = 4;
 
-    milton_state->strokes = StrokeCord_make(milton_state->root_arena, 1024);
+    milton_state->strokes = StrokeCord(1024);
 
     milton_state->working_stroke.points   = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, v2i);
     milton_state->working_stroke.pressures  = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
@@ -428,7 +419,7 @@ void milton_init(MiltonState* milton_state)
             *params = { milton_state, i };
         }
         assert (milton_state->render_worker_arenas[i].ptr == NULL);
-        u8* worker_memory = dyn_alloc(u8, milton_state->worker_memory_size);
+        u8* worker_memory = (u8*)mlt_calloc(1, milton_state->worker_memory_size);
         if (!worker_memory) {
             milton_die_gracefully("Platform allocation failed");
         }
@@ -549,16 +540,14 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
         do_realloc = true;
     }
 
-    i32 buffer_size =
-            milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
+    size_t buffer_size = (size_t) milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
 
     if (do_realloc) {
         void* raster_buffer = (void*)milton_state->raster_buffer;
-        if (raster_buffer)
-        {
-            dyn_free(raster_buffer);
+        if (raster_buffer) {
+            mlt_free(raster_buffer);
         }
-        milton_state->raster_buffer = dyn_alloc(u8, buffer_size);
+        milton_state->raster_buffer = (u8*)mlt_calloc(1, buffer_size);
 
         // TODO: handle this failure gracefully.
         assert(milton_state->raster_buffer);
@@ -615,11 +604,10 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
         for (int i = 0; i < milton_state->num_render_workers; ++i)
         {
-            if (milton_state->render_worker_arenas[i].ptr != NULL)
-            {
-                dyn_free(milton_state->render_worker_arenas[i].ptr);
+            if (milton_state->render_worker_arenas[i].ptr != NULL) {
+                mlt_free(milton_state->render_worker_arenas[i].ptr);
             }
-            u8* new_memory = dyn_alloc(u8, needed_size);
+            u8* new_memory = (u8*)mlt_calloc(1, needed_size);
             milton_state->render_worker_arenas[i] = arena_init(new_memory, needed_size);
             if (milton_state->render_worker_arenas[i].ptr == NULL)
             {
@@ -697,8 +685,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if (check_flag( input->flags, MiltonInputFlags::UNDO )) {
-        if ( milton_state->working_stroke.num_points == 0 && milton_state->strokes->count > 0 ) {
-            milton_state->strokes->count--;
+        if ( milton_state->working_stroke.num_points == 0 && milton_state->strokes.count > 0 ) {
+            milton_state->strokes.count--;
             milton_state->num_redos++;
         } else if ( milton_state->working_stroke.num_points > 0 ) {
             assert(!"NPE");
@@ -706,7 +694,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
     } else if (check_flag( input->flags, MiltonInputFlags::REDO )) {
         if ( milton_state->num_redos > 0 ) {
-            milton_state->strokes->count++;
+            milton_state->strokes.count++;
             milton_state->num_redos--;
         }
         set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
@@ -716,8 +704,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
         // TODO: Reclaim memory?
-        milton_state->strokes->count = 0;
-        get(milton_state->strokes, 0)->num_points = 0;
+        milton_state->strokes.count = 0;
+        (&milton_state->strokes[0])->num_points = 0;
         milton_state->working_stroke.num_points = 0;
         milton_update_brushes(milton_state);
     }

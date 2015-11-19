@@ -142,7 +142,7 @@ struct MiltonState {
 
     Stroke  working_stroke;
 
-    StrokeCord* strokes;
+    StrokeCord strokes;
 
     i32     num_redos;
 

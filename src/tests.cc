@@ -4,7 +4,6 @@
 #include "memory.h"
 #include "Arrays.h"
 
-static void milton_dynmem_tests();
 static void milton_cord_tests(Arena* arena);
 static void milton_blend_tests();
 static void milton_startup_tests();
@@ -15,7 +14,6 @@ void milton_run_tests(MiltonState* milton_state)
 {
     array_tests();
     milton_math_tests();
-    milton_dynmem_tests();
     milton_cord_tests(milton_state->root_arena);
     milton_blend_tests();
     milton_startup_tests();
@@ -104,32 +102,16 @@ static void milton_math_tests()
 
 static void milton_cord_tests(Arena* arena)
 {
-    StrokeCord* cord = StrokeCord_make(arena, 2);
-    if ( cord ) {
-        for (int i = 0; i < 11; ++i) {
-            Stroke test = {0};
-            test.num_points = i;
-            push(cord, test);
-        }
-        for ( int i = 0; i < 11; ++i ) {
-            Stroke test = *get(cord, i);
-            assert(test.num_points == i);
-        }
-    } else {
-        assert (!"Could not create cord");
+    StrokeCord cord(2);
+    for (int i = 0; i < 11; ++i) {
+        Stroke test = {0};
+        test.num_points = i;
+        push(cord, test);
     }
-}
-
-static void milton_dynmem_tests()
-{
-    int* ar1 = dyn_alloc(int, 10);
-    int* ar0 = dyn_alloc(int, 1);
-
-    dyn_free(ar1);
-    dyn_free(ar0);
-
-    int* ar2 = dyn_alloc(int, 9);
-    dyn_free(ar2);
+    for ( size_t i = 0; i < 11; ++i ) {
+        Stroke test = cord[i];
+        assert((size_t)test.num_points == i);
+    }
 }
 
 #endif

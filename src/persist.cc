@@ -58,8 +58,7 @@ void milton_load(MiltonState* milton_state)
 
         for ( i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i ) {
             push(milton_state->strokes, {});
-            Stroke* stroke = get(milton_state->strokes,
-                                             milton_state->strokes->count - 1);
+            Stroke* stroke = &milton_state->strokes[milton_state->strokes.count - 1];
             fread(&stroke->brush, sizeof(Brush), 1, fd);
             fread(&stroke->num_points, sizeof(i32), 1, fd);
             if ( stroke->num_points >= STROKE_MAX_POINTS ||
@@ -84,8 +83,8 @@ close:
 // TODO: handle failures gracefully.
 void milton_save(MiltonState* milton_state)
 {
-    i32 num_strokes = milton_state->strokes->count;
-    StrokeCord* strokes = milton_state->strokes;
+    size_t num_strokes = milton_state->strokes.count;
+    StrokeCord strokes = milton_state->strokes;
     FILE* fd = fopen("MiltonPersist.mlt", "wb");
 
     if (!fd) {
@@ -105,8 +104,8 @@ void milton_save(MiltonState* milton_state)
 
     fwrite(&num_strokes, sizeof(i32), 1, fd);
 
-    for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
-        Stroke* stroke = get(strokes, stroke_i);
+    for (size_t stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
+        Stroke* stroke = &strokes[stroke_i];
         assert(stroke->num_points > 0);
         fwrite(&stroke->brush, sizeof(Brush), 1, fd);
         fwrite(&stroke->num_points, sizeof(i32), 1, fd);

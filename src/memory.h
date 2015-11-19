@@ -54,31 +54,3 @@ void   arena_pop (Arena* child);
 
 u8* arena_alloc_bytes(Arena* arena, size_t num_bytes);
 
-// =======================
-// == Dynamic allocator ==
-// =======================
-//
-// Notes:
-//  Not type safe. It's a poor man's malloc for the few uses in Milton where we
-//  need dynamic allocation:
-//
-// List of places in Milton that need dynamic allocation:
-//
-//  - Render worker memory. Ever growing, No realloc with simple arenas.
-//  - Milton resize window
-
-#define     dyn_alloc(T, n)     (T*)dyn_alloc_typeless(sizeof(T) * (n))
-#define     dyn_free(ptr)       dyn_free_typeless((u8*)ptr), ptr = NULL
-
-u8* dyn_alloc_typeless(size_t size);
-void dyn_free_typeless(u8* dyn_ptr);
-
-typedef struct AllocNode_s AllocNode;
-
-struct AllocNode_s {
-    size_t      size;
-    AllocNode*  prev;
-    AllocNode*  next;
-};
-extern AllocNode* MILTON_GLOBAL_dyn_freelist_sentinel;
-extern Arena* MILTON_GLOBAL_dyn_root_arena;
