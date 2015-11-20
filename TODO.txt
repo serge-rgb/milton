@@ -17,42 +17,40 @@ tweaks.
 - Bugs
     - :)
 
--  GUI
-    - Brush / Eraser
-        - Image Button (hover & click)
-    - Export buttons
-        - "Rubber band" selection rect
-        - OS-dependent file-save dialog.
-    - F1 help widget
-    - GUI toggle key
-    - History slider.
-    - Text input box.
-    - Selection rectangle
-    - "Export" button
-    - Sliders for brush size & opacity / eraser
-    - Layers
-        - Drag-and-drop
-    - Options
-        - GUI scale
-
-- Engine
-    - General
+- Milton v0.1.0
+    -  GUI
+        - Brush / Eraser
+            - Stub (text)
+            - Image Button
+        - Sliders for brush size & opacity / eraser
+        - Selection rectangle (engine support needed)
+        - Export buttons
+            - OS-dependent file-save dialog.
+        - F1 help widget
+        - GUI toggle key
+        - "Export" button
+        - Layers (w/engine support)
+        - Options
+            - GUI scale
+        - History slider?
+    - EasyTab:
+        - OSX support.
+        - Windows stylus buttons.
+        - Distinction between eraser and pen.
+    - Application
         - App data directory
             - Windows (AppData\Local\Milton)
             - Unix (.milton)
         - DPI-aware (gui scale set by default)
-        - Determine the maximum precision of stroke coordinates
-    - Wacom:
-        - Pressure levels (only OSX left)
-        - Windows stylus buttons
     - Performance:
-        - AVX backend
         - Strokes should be sampled based on relative size
         - memcpy when Panning (most users will benefit hugely)
+        - Check valgrind for cache performance from new allocation patterns..
         - 4x4 Blockgroups (morton-order)
         - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize GUI rendering
         - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
+        - AVX backend??
     - Robust save
         - Save to temp file and swap
         - Keep backups
@@ -61,13 +59,20 @@ tweaks.
     - Export
         - JPEG (tiny_jpeg)
         - stb_image_write (PNG, BMP, TGA)
-    - Playback
-        - Store view changes in persist file
-        - Playback mode? Separate viewer?
     - Brush
         - Support for general, implicitly defined brushes
     - Debug
         - Input recorder for bug replication
+    - Canvas
+        - Determine precision limits.
+    - Playback
+        - Store view changes in persist file
+        - Playback mode? Separate viewer?
+    - Milton Image Viewer
+        - Legal crap
+            - Separate into Application / Engine.  App is GPL, "Engine" is liberal. For integration with other stuff!
+        - Viewer API & examples.
+
 
 ============================================================
 ====                   1.0 Beta Milestone               ====

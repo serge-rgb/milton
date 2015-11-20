@@ -41,8 +41,13 @@ struct CanvasView {
 };
 
 struct StrokeCord {
+    INSERT_ALLOC_OVERRIDES;
+
     StrokeCord();
     StrokeCord(size_t chunk_size);
+    // Note: Intentionally not including a destructor because this
+    // should either be freed explicitly or live until everything dies.
+
     Stroke& operator[](const size_t i);
 
     struct StrokeCordChunk;

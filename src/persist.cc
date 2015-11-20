@@ -67,8 +67,8 @@ void milton_load(MiltonState* milton_state)
                 // Corrupt file. Avoid this read
                 continue;       // Do not allocate, just move on.
             }
-            stroke->pressures = arena_alloc_array(milton_state->root_arena, stroke->num_points, f32);
-            stroke->points = arena_alloc_array(milton_state->root_arena, stroke->num_points, v2i);
+            stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
+            stroke->points    = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
 
             fread(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
             fread(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
