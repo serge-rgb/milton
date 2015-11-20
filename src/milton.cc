@@ -353,7 +353,7 @@ void milton_init(MiltonState* milton_state)
     // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->bytes_per_pixel = 4;
 
-    milton_state->strokes = StrokeCord(4);
+    milton_state->strokes = StrokeCord(1024);
 
     milton_state->working_stroke.points    = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, v2i);
     milton_state->working_stroke.pressures = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
@@ -677,10 +677,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if (check_flag( input->flags, MiltonInputFlags::SET_MODE_BRUSH )) {
         set_flag(milton_state->current_mode, MiltonMode::PEN);
+        unset_flag(milton_state->current_mode, MiltonMode::ERASER);
         milton_update_brushes(milton_state);
     }
     if (check_flag( input->flags, MiltonInputFlags::SET_MODE_ERASER )) {
         set_flag(milton_state->current_mode, MiltonMode::ERASER);
+        unset_flag(milton_state->current_mode, MiltonMode::PEN);
         milton_update_brushes(milton_state);
     }
 
