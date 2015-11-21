@@ -13,6 +13,9 @@
 #include "easytab.h"
 // ----
 
+// ImGUI
+#
+
 #include "define_types.h"
 #include "vector.h"
 
@@ -41,4 +44,5 @@
 #include "sdl_milton.cc"
 #include "tests.cc"
 #include "utils.cc"
+#include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
 

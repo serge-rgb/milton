@@ -15,7 +15,8 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
+#include <imgui.h>
+#include <imgui_impl_sdl_gl3.h>
 
 typedef struct PlatformInput_s {
     b32 is_ctrl_down;
@@ -77,6 +78,10 @@ int milton_main()
     milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+    // Init ImGUI
+    ImGui_ImplSDLGL3_Init();
+
+
     // ==== Initialize milton
     //  Total (static) memory requirement for Milton
     // TODO: Calculate how much is the arena using before shipping.
@@ -134,6 +139,11 @@ int milton_main()
 
     // Every 100ms, call this callback to send us an event so we don't wait for user input.
     SDL_AddTimer(100, timer_callback, NULL);
+
+    // IMGUI HELLO WORLD SHIT
+    float f = 0.0f;
+    bool show_test_window = true;
+    bool show_another_window = false;
 
     while(!should_quit) {
         // ==== Handle events
@@ -381,6 +391,24 @@ int milton_main()
             }
         }
 
+        // TODO: get window size
+        ImGui_ImplSDLGL3_NewFrame(width, height,
+                                  width, height);
+
+        // 1. Show a simple window
+        // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
+        ImGui::Begin("hey");
+        {
+            ImGui::Text("Hello, world!");
+            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+            ImVec4 clear_color = ImColor(114, 144, 154);
+            ImGui::ColorEdit3("clear color", (float*)&clear_color);
+            if (ImGui::Button("Test Window")) show_test_window ^= 1;
+            if (ImGui::Button("Another Window")) show_another_window ^= 1;
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        }
+        ImGui::End();
+
         if (platform_input.is_panning)
         {
             set_flag(milton_input.flags, MiltonInputFlags::PANNING);
@@ -420,6 +448,7 @@ int milton_main()
         // ==== Update and render
         milton_update(milton_state, &milton_input);
         milton_gl_backend_draw(milton_state);
+        ImGui::Render();
         SDL_GL_SwapWindow(window);
         SDL_WaitEvent(NULL);
 

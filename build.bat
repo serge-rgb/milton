@@ -29,15 +29,15 @@ REM 5027 move assignment operator implicitly deleted
 REM 4127 expression is constant. while(0) et al. Useful sometimes? Mostly annoying.
 set comment_for_cleanup=/wd4100 /wd4189 /wd4800 /wd4127
 set mlt_disabled_warnings=%comment_for_cleanup% /wd4820 /wd4255 /wd4668 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027
-set mlt_includes=-I ..\third_party\ -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab
+set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab
 set mlt_links=..\third_party\glew32s.lib OpenGL32.lib ..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug\SDL2.lib ..\third_party\SDL2-2.0.3\VisualC\SDLmain\x64\Debug\SDL2main.lib user32.lib gdi32.lib %sdl_link_deps%
 
 :: ---- Compile third_party libs with less warnings
-cl /O2 %mlt_includes% /c ..\src\headerlibs_impl.cc
+cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
 lib headerlibs_impl.obj
 
 :: ---- Unity build for Milton
-cl %mlt_opt% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes%  ..\src\milton_unity_build.cc /FeMilton.exe %mlt_links% headerlibs_impl.lib
+cl %mlt_nopt% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes%  ..\src\milton_unity_build.cc /FeMilton.exe %mlt_links% headerlibs_impl.lib
 if %errorlevel% equ 0 goto ok
 goto fail
 
