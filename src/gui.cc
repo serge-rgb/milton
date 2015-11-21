@@ -15,6 +15,7 @@
 //    with this program; if not, write to the Free Software Foundation, Inc.,
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <imgui.h>
 
 static Rect color_button_as_rect(ColorButton* button)
 {
@@ -211,6 +212,32 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
     return result;
 }
 
+void gui_tick(MiltonState* milton_state)
+{
+    // ImGui Section
+
+    static float f = 0.0f;
+
+    // Spawn below the picker
+    Rect pbounds = picker_get_bounds(&milton_state->gui->picker);
+
+    /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
+    /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
+    ImGui::SetNextWindowPos(ImVec2(10, (float)pbounds.bottom), ImGuiSetCond_Always);
+    ImGui::Begin("hey");
+    {
+        ImGui::Text("Hello, world!");
+        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+        ImVec4 clear_color = ImColor(114, 144, 154);
+        ImGui::ColorEdit3("clear color", (float*)&clear_color);
+        if (ImGui::Button("Test Window")) {}
+        if (ImGui::Button("Another Window")) {}
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    }
+    ImGui::End();
+
+}
+
 static void picker_init(ColorPicker* picker)
 {
 
@@ -285,7 +312,7 @@ b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
     return accepts;
 }
 
-MiltonRenderFlags gui_update(MiltonState* milton_state, MiltonInput* input)
+MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* input)
 {
     MiltonRenderFlags render_flags = MiltonRenderFlags::NONE;
     v2i point = input->points[0];
@@ -299,6 +326,8 @@ MiltonRenderFlags gui_update(MiltonState* milton_state, MiltonInput* input)
     }
     set_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED);
     milton_state->gui->active = true;
+
+
     return render_flags;
 }
 

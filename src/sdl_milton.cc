@@ -87,7 +87,8 @@ int milton_main()
     // TODO: Calculate how much is the arena using before shipping.
     size_t sz_root_arena = (size_t)2L * 1024 * 1024 * 1024;
 
-    void* big_chunk_of_memory = mlt_calloc(1, sz_root_arena);
+    // Using platform_allocate because stdlib calloc will be really slow.
+    void* big_chunk_of_memory = platform_allocate(sz_root_arena);
 
     if (!big_chunk_of_memory) {
         milton_fatal("Could allocate virtual memory for Milton.");
@@ -409,24 +410,15 @@ int milton_main()
             imgui_io.MouseDown[0] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT));
             imgui_io.MouseDown[1] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_MIDDLE));
             imgui_io.MouseDown[2] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT));
+
+            // Clear our pointer input because we captured an ImGui widget!
+            if (ImGui::IsMouseDragging(0) && ImGui::GetIO().WantCaptureMouse) {
+                num_point_results = 0;
+                platform_input.is_pointer_down = false;
+            }
         }
 
-        // 1. Show a simple window
-        // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
-        ImGui::Begin("hey");
-        {
-            ImGui::Text("Hello, world!");
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-            ImVec4 clear_color = ImColor(114, 144, 154);
-            ImGui::ColorEdit3("clear color", (float*)&clear_color);
-            if (ImGui::Button("Test Window")) show_test_window ^= 1;
-            if (ImGui::Button("Another Window")) show_another_window ^= 1;
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        }
-        ImGui::End();
-
-        if (platform_input.is_panning)
-        {
+        if (platform_input.is_panning) {
             set_flag(milton_input.flags, MiltonInputFlags::PANNING);
             num_point_results = 0;
         }
@@ -451,7 +443,6 @@ int milton_main()
 
         milton_input.input_count = num_point_results;
 
-
         v2i pan_delta = platform_input.pan_point - platform_input.pan_start;
         if ( pan_delta.x != 0 ||
              pan_delta.y != 0 ||
@@ -474,7 +465,7 @@ int milton_main()
 
     // Release pages. Not really necessary but we don't want to piss off leak
     // detectors, do we?
-    mlt_free(big_chunk_of_memory);
+    platform_deallocate(big_chunk_of_memory);
 
     SDL_Quit();
 

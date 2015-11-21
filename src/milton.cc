@@ -741,10 +741,9 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         // Don't draw brush outline.
         milton_gl_unset_brush_hover(milton_state->gl);
 
-        if ( !is_user_drawing(milton_state) &&
-             gui_consume_input(milton_state->gui, input) ) {
+        if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
             milton_update_brushes(milton_state);
-            set_flag(render_flags, gui_update(milton_state, input));
+            set_flag(render_flags, gui_process_input(milton_state, input));
         } else if (!milton_state->gui->active) {
             milton_stroke_input(milton_state, input);
         }
@@ -791,6 +790,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (check_flag( input->flags, MiltonInputFlags::PANNING )) {
         milton_gl_unset_brush_hover(milton_state->gl);
     }
+
+    gui_tick(milton_state);
 
     milton_render(milton_state, render_flags);
 
