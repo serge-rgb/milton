@@ -147,6 +147,7 @@ int milton_main()
 
     while(!should_quit) {
         // ==== Handle events
+        ImGuiIO& imgui_io = ImGui::GetIO();
 
         i32 num_pressure_results = 0;
         i32 num_point_results = 0;
@@ -391,9 +392,24 @@ int milton_main()
             }
         }
 
-        // TODO: get window size
-        ImGui_ImplSDLGL3_NewFrame(width, height,
-                                  width, height);
+        // TODO: get framebuffer size
+        ImGui_ImplSDLGL3_NewFrame(width, height, width, height);
+        {
+
+            int mouse_x;
+            int mouse_y;
+            SDL_GetMouseState(&mouse_x, &mouse_y);
+
+            imgui_io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
+
+            if (SDL_GetMouseState(0,0) & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+                int foo = 52;
+            }
+            // TODO: if focused, else -1,-1
+            imgui_io.MouseDown[0] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT));
+            imgui_io.MouseDown[1] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_MIDDLE));
+            imgui_io.MouseDown[2] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT));
+        }
 
         // 1. Show a simple window
         // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
