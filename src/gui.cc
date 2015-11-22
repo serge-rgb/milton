@@ -227,20 +227,8 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Once);
     ImGui::Begin("Brushes");
     {
-        if (!check_flag(milton_state.current_mode, MiltonMode::PEN)) {
-            if (ImGui::Button("Switch to Pen")) {
-                set_flag(input, MiltonInputFlags::SET_MODE_PEN);
-            }
-        }
-
-        if (!check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
-            if (ImGui::Button("Switch to Eraser")) {
-                set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
-            }
-        }
-
         if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
-            ImGui::SliderFloat("Opacity", &alpha, 0.0f, 1.0f);
+            ImGui::SliderFloat("Opacity", &alpha, 0.1f, 1.0f);
             milton_set_pen_alpha(&milton_state, alpha);
         }
 
@@ -256,7 +244,20 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
             milton_set_brush_size(milton_state, mut_size);
         }
 
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        if (!check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+            if (ImGui::Button("Switch to Pen")) {
+                set_flag(input, MiltonInputFlags::SET_MODE_PEN);
+            }
+        }
+
+        if (!check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
+            if (ImGui::Button("Switch to Eraser")) {
+                set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
+            }
+        }
+
+
+        //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
     ImGui::End();
 
