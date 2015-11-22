@@ -225,6 +225,13 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
     /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
     ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Once);
+
+    int stack = 0;
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4{.5f,.5f,.5f,1}); ++stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4{.5f,.5f,.5f,1}); ++stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4{.6f,.6f,.6f,1}); ++stack;
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{.3f,.3f,.4f,1}); ++stack;
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{.1f,.1f,.1f,1}); ++stack;
     ImGui::Begin("Brushes");
     {
         if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
@@ -244,22 +251,26 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
             milton_set_brush_size(milton_state, mut_size);
         }
 
-        if (!check_flag(milton_state.current_mode, MiltonMode::PEN)) {
-            if (ImGui::Button("Switch to Pen")) {
-                set_flag(input, MiltonInputFlags::SET_MODE_PEN);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
+        {
+            if (!check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+                if (ImGui::Button("Switch to Pen")) {
+                    set_flag(input, MiltonInputFlags::SET_MODE_PEN);
+                }
+            }
+
+            if (!check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
+                if (ImGui::Button("Switch to Eraser")) {
+                    set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
+                }
             }
         }
-
-        if (!check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
-            if (ImGui::Button("Switch to Eraser")) {
-                set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
-            }
-        }
-
+        ImGui::PopStyleColor(1); // Pop white button text
 
         //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
     ImGui::End();
+    ImGui::PopStyleColor(stack);
 
 }
 

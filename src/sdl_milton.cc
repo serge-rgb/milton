@@ -18,14 +18,14 @@
 #include <imgui.h>
 #include <imgui_impl_sdl_gl3.h>
 
-typedef struct PlatformInput_s {
+struct PlatformInput {
     b32 is_ctrl_down;
     b32 is_space_down;
     b32 is_pointer_down;  // Left click or wacom input
     b32 is_panning;
     v2i pan_start;
     v2i pan_point;
-} PlatformInput;
+};
 
 // Called periodically to force updates that don't depend on user input.
 static u32 timer_callback(u32 interval, void *param)
@@ -85,7 +85,7 @@ int milton_main()
     // ==== Initialize milton
     //  Total (static) memory requirement for Milton
     // TODO: Calculate how much is the arena using before shipping.
-    size_t sz_root_arena = (size_t)2L * 1024 * 1024 * 1024;
+    size_t sz_root_arena = (size_t)128 * 1024 * 1024;
 
     // Using platform_allocate because stdlib calloc will be really slow.
     void* big_chunk_of_memory = platform_allocate(sz_root_arena);
@@ -396,6 +396,7 @@ int milton_main()
         // TODO: get framebuffer size
         ImGui_ImplSDLGL3_NewFrame(width, height, width, height);
 
+        milton_gui_tick(milton_input.flags, *milton_state);
         {
             int mouse_x;
             int mouse_y;
@@ -409,13 +410,11 @@ int milton_main()
             imgui_io.MouseDown[2] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT));
 
             // Clear our pointer input because we captured an ImGui widget!
-            if (ImGui::IsMouseDragging(0) && ImGui::GetIO().WantCaptureMouse) {
+            if (ImGui::GetIO().WantCaptureMouse) {
                 num_point_results = 0;
                 platform_input.is_pointer_down = false;
             }
         }
-
-        milton_gui_tick(milton_input.flags, *milton_state);
 
         if (platform_input.is_panning) {
             set_flag(milton_input.flags, MiltonInputFlags::PANNING);
