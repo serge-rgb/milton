@@ -18,7 +18,9 @@
 
 
 #ifdef __linux__
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE  // To get MAP_ANONYMOUS on linux
+#endif
 #define __USE_MISC 1  // MAP_ANONYMOUS and MAP_NORESERVE dont' get defined without this
 #include <sys/mman.h>
 #undef __USE_MISC
@@ -84,10 +86,10 @@ typedef struct UnixMemoryHeader_s {
 
 void* platform_allocate(size_t size)
 {
-    void* ptr = mmap(HEAP_BEGIN_ADDRESS, size + sizeof(UnixMemoryHeader),
-                     PROT_WRITE | PROT_READ,
-                     MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS,
-                     -1, 0);
+    u8* ptr = (u8*)mmap(HEAP_BEGIN_ADDRESS, size + sizeof(UnixMemoryHeader),
+                   PROT_WRITE | PROT_READ,
+                   /*MAP_NORESERVE |*/ MAP_PRIVATE | MAP_ANONYMOUS,
+                   -1, 0);
     if (ptr) {
         *((UnixMemoryHeader*)ptr) = (UnixMemoryHeader) {
             .size = size,
@@ -100,7 +102,7 @@ void* platform_allocate(size_t size)
 void platform_deallocate_internal(void* ptr)
 {
     assert(ptr);
-    void* begin = ptr - sizeof(UnixMemoryHeader);
+    u8* begin = (u8*)ptr - sizeof(UnixMemoryHeader);
     size_t size = *((size_t*)begin);
     munmap(ptr, size);
 }

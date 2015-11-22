@@ -15,14 +15,13 @@ tweaks.
 
 
 - Bugs
+    - Lower GL dependencies so it runs on crappy hardware (as it should)
     - :)
 
 - Milton v0.1.0
     -  GUI
         - Brush / Eraser
-            - Stub (text)
             - Image Button
-        - Sliders for brush size & opacity / eraser
         - Selection rectangle (engine support needed)
         - Export buttons
             - OS-dependent file-save dialog.

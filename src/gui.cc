@@ -421,9 +421,9 @@ b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
     while(button) {
         if ( button->color.a != 0) {
             v3f diff = {
-                fabs(button->color.r - picker_color.r),
-                fabs(button->color.g - picker_color.g),
-                fabs(button->color.b - picker_color.b),
+                fabsf(button->color.r - picker_color.r),
+                fabsf(button->color.g - picker_color.g),
+                fabsf(button->color.b - picker_color.b),
             };
             float epsilon = 0.000001;
             if (diff.r < epsilon && diff.g < epsilon && diff.b < epsilon) {

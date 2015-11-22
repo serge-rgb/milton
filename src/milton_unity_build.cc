@@ -5,7 +5,7 @@
 
 
 // Using stb_image to load our GUI resources.
-#include "stb_image.h"
+#include <stb_image.h>
 // ----
 
 

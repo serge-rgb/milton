@@ -2,7 +2,9 @@
 // declarations and implementation in EasyTab.h
 
 
+#if defined(_WIN32)
 #include <Windows.H>
+#endif
 
 #define EASYTAB_IMPLEMENTATION
 #include "easytab.h"

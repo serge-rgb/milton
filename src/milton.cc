@@ -622,7 +622,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             }
         }
 
-        milton_log("[DEBUG] Assigning more memory per worker. From %d to %d\n",
+        milton_log("[DEBUG] Assigning more memory per worker. From %lu to %lu\n",
                    prev_memory_value,
                    milton_state->worker_memory_size);
 

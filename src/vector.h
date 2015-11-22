@@ -161,12 +161,12 @@ struct Vec4
         union
         {
             Vec3<T> rgb;
-            T  _pad__a;
+            T  pad__a;
         };
         union
         {
             Vec3<T> xyz;
-            T  _pad__a;
+            T  pad__w;
         };
         T d[4];
     };

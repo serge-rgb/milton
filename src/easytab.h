@@ -15,8 +15,8 @@
        parameters vary per OS, so look at the function declarations or examples
        below. Function returns EASYTAB_OK if initialization was successful.
 
-    3) Call EasyTab_HandleEvent() in your message-handling code. The function 
-       returns EASYTAB_OK if the message was a tablet message, and 
+    3) Call EasyTab_HandleEvent() in your message-handling code. The function
+       returns EASYTAB_OK if the message was a tablet message, and
        EASYTAB_EVENT_NOT_HANDLED otherwise.
 
     4) Call EasyTab_Unload() in your shutdown code.
@@ -52,9 +52,9 @@
             ...
 
             // Once you've set up EasyTab loading, unloading and event handling,
-            // use the EasyTab variable at any point in your program to access 
+            // use the EasyTab variable at any point in your program to access
             // the tablet state:
-            //    EasyTab->PosX 
+            //    EasyTab->PosX
             //    EasyTab->PosY
             //    EasyTab->Pressure
             // For more tablet information, look at the EasyTabInfo struct.
@@ -117,9 +117,9 @@
             ...
 
             // Once you've set up EasyTab loading, unloading and event handling,
-            // use the EasyTab variable at any point in your program to access 
+            // use the EasyTab variable at any point in your program to access
             // the tablet state:
-            //    EasyTab->PosX 
+            //    EasyTab->PosX
             //    EasyTab->PosY
             //    EasyTab->Pressure
             // For more tablet information, look at the EasyTabInfo struct.
@@ -615,6 +615,9 @@ static EasyTabInfo* EasyTab;
 // =============================================================================
 
 #ifdef EASYTAB_IMPLEMENTATION
+
+#include <stdlib.h>  // calloc
+#include <string.h>  // strstr
 
 // -----------------------------------------------------------------------------
 // Linux implementation

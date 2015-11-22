@@ -1,37 +1,35 @@
 #!/bin/bash
 
-echo "1..."
-cd src
-clang template_expand.c -g -o template_expand
-te_ok=$?
-./template_expand
-cd ..
-
-
-if [ $te_ok -ne 0 ]; then
-    echo "Error in meta-programming step."
-    exit 1
-fi
 
 # Look for sdl
 pkg-config --exists sdl2
 sdl_ok=$?
 
+if [ ! -d build ]; then
+    echo "Building into new directory ./build"
+    mkdir build
+fi
 
+cd build
 if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
-    echo "2..."
     # Omit -Wno-unused-(variable|function) to clean up code
-    clang -Ithird_party \
-	-std=c99\
-	-Wall -Werror \
+    clang++ -O2 -g -I../third_party ../src/headerlibs_impl.cc -c -o headerlibs_impl.o
+    ar rcs headerlibs_impl.a headerlibs_impl.o
+    clang++                 \
+        -I../third_party       \
+        -I../third_party/imgui \
+	-std=c++11          \
+	-Wall -Werror       \
 	-Wno-missing-braces \
 	-Wno-unused-function \
 	-Wno-unused-variable \
 	-Wno-unused-result \
+        -Wno-c++11-compat-deprecated-writable-strings \
 	-fno-strict-aliasing \
 	`pkg-config --cflags sdl2` \
-	-O2 -g\
-	src/milton_unity_build.c -lGL -lm \
+	-O2 -g                  \
+	../src/milton_unity_build.cc -lGL -lm \
+        headerlibs_impl.a        \
 	`pkg-config --libs sdl2` \
 	-lX11 -lXi \
 	-o milton
@@ -47,3 +45,4 @@ if [ $? -ne 0 ]; then
 else
     echo "Milton build succeeded."
 fi
+cd ..

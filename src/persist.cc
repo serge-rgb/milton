@@ -34,6 +34,7 @@ static u32 word_swap_memory_order(u32 word)
 void milton_load(MiltonState* milton_state)
 {
     FILE* fd = fopen("MiltonPersist.mlt", "rb");
+    b32 valid = true;
     if ( fd ) {
         u32 milton_magic = (u32)-1;
         fread(&milton_magic, sizeof(u32), 1, fd);
@@ -48,34 +49,34 @@ void milton_load(MiltonState* milton_state)
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
             assert (!"Magic number not found");
-            goto close;
+            valid = false;
         }
 
-        i32 num_strokes = -1;
-        fread(&num_strokes, sizeof(i32), 1, fd);
+        if (valid) {
+            i32 num_strokes = -1;
+            fread(&num_strokes, sizeof(i32), 1, fd);
 
-        assert (num_strokes >= 0);
+            assert (num_strokes >= 0);
 
-        for ( i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i ) {
-            push(milton_state->strokes, {});
-            Stroke* stroke = &milton_state->strokes[milton_state->strokes.count - 1];
-            fread(&stroke->brush, sizeof(Brush), 1, fd);
-            fread(&stroke->num_points, sizeof(i32), 1, fd);
-            if ( stroke->num_points >= STROKE_MAX_POINTS ||
-                 stroke->num_points <= 0 ) {
-                milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
-                // Corrupt file. Avoid this read
-                continue;       // Do not allocate, just move on.
+            for ( i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i ) {
+                push(milton_state->strokes, {});
+                Stroke* stroke = &milton_state->strokes[milton_state->strokes.count - 1];
+                fread(&stroke->brush, sizeof(Brush), 1, fd);
+                fread(&stroke->num_points, sizeof(i32), 1, fd);
+                if ( stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0 ) {
+                    milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
+                    // Corrupt file. Avoid this read
+                    continue;       // Do not allocate, just move on.
+                }
+                stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
+                stroke->points    = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
+
+                fread(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
+                fread(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
             }
-            stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
-            stroke->points    = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
 
-            fread(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
-            fread(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
+            fread(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
         }
-
-        fread(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
-close:
         fclose(fd);
     }
 }

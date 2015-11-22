@@ -102,7 +102,7 @@ template<typename T> struct ScopedArray
         m_count = other.m_count;
 
         other.m_data  = NULL;
-        other.m_count = NULL;
+        other.m_count = 0;
         return *this;
     }
 };
