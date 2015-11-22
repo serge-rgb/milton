@@ -99,10 +99,13 @@ struct MiltonGui {
 //
 // GUI API
 //
+// Call from the main loop before milton_update
+void milton_gui_tick(MiltonInputFlags& input, const MiltonState& milton_state);
+
+
+//
 void                gui_init(Arena* root_arena, MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
-// Call every frame. Does the ImGui magic.
-void                gui_tick(MiltonState*);
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
 b32                 gui_consume_input(MiltonGui* gui, MiltonInput* input);
 // Use if gui_consume_input was true and nothing else wants to capture input.
@@ -116,6 +119,5 @@ void gui_deactivate(MiltonGui* gui);
 // Color Picker API
 b32     picker_hits_wheel(ColorPicker* picker, v2f point);
 float   picker_wheel_get_angle(ColorPicker* picker, v2f point);
-Rect    picker_color_buttons_bounds(ColorPicker* picker);
-Rect    picker_get_bounds(ColorPicker* picker);
 v3f     picker_hsv_from_point(ColorPicker* picker, v2f point);
+Rect    get_bounds_for_picker_and_colors(const ColorPicker& picker);

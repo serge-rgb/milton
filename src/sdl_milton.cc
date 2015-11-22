@@ -309,7 +309,7 @@ int milton_main()
                         if (keycode == SDLK_e) {
                             set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_ERASER);
                         } else if (keycode == SDLK_b) {
-                            set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_BRUSH);
+                            set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_PEN);
                         } else if (keycode == SDLK_1) {
                             milton_set_pen_alpha(milton_state, 0.1f);
                         } else if (keycode == SDLK_2) {
@@ -395,17 +395,14 @@ int milton_main()
 
         // TODO: get framebuffer size
         ImGui_ImplSDLGL3_NewFrame(width, height, width, height);
-        {
 
+        {
             int mouse_x;
             int mouse_y;
             SDL_GetMouseState(&mouse_x, &mouse_y);
 
             imgui_io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
 
-            if (SDL_GetMouseState(0,0) & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-                int foo = 52;
-            }
             // TODO: if focused, else -1,-1
             imgui_io.MouseDown[0] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT));
             imgui_io.MouseDown[1] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_MIDDLE));
@@ -417,6 +414,8 @@ int milton_main()
                 platform_input.is_pointer_down = false;
             }
         }
+
+        milton_gui_tick(milton_input.flags, *milton_state);
 
         if (platform_input.is_panning) {
             set_flag(milton_input.flags, MiltonInputFlags::PANNING);

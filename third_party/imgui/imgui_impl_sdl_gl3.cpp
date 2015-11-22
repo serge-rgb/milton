@@ -343,7 +343,7 @@ void ImGui_ImplSDLGL3_NewFrame(int w, int h,  // Window size
     io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);
 
     // Setup time step
-    double current_time = (double)(SDL_GetTicks() * 1000);
+    double current_time = (double)(SDL_GetTicks() / 1000);
     io.DeltaTime = g_Time > 0.0 ? (float)(current_time - g_Time) : (float)(1.0f/60.0f);
     g_Time = current_time;
 

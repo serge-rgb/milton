@@ -24,7 +24,6 @@
 #define MILTON_USE_VAO          0
 #define RENDER_QUEUE_SIZE       (1 << 13)
 #define STROKE_MAX_POINTS       2048
-#define MAX_BRUSH_SIZE          80
 #define MILTON_DEFAULT_SCALE    (1 << 10)
 #define NO_PRESSURE_INFO        -1.0f
 #define MAX_INPUT_BUFFER_ELEMS  32
@@ -38,14 +37,14 @@
 #include "canvas.h"
 
 
-typedef struct MiltonGLState_s {
+struct MiltonGLState {
     GLuint quad_program;
     GLuint texture;
     GLuint vbo;
 #if MILTON_USE_VAO
     GLuint quad_vao;
 #endif
-} MiltonGLState;
+};
 
 // TODO: smells move 'request' elsewhere and make this not be a flag
 enum class MiltonMode {
@@ -76,7 +75,7 @@ struct BlockgroupRenderData {
     i32     block_start;
 };
 
-typedef struct RenderQueue_s {
+struct RenderQueue {
     Rect*   blocks;  // Screen areas to render.
     i32     num_blocks;
     u32*    raster_buffer;
@@ -88,7 +87,7 @@ typedef struct RenderQueue_s {
 
     SDL_sem*   work_available;
     SDL_sem*   completed_semaphore;
-} RenderQueue;
+};
 
 enum {
     BrushEnum_PEN,
@@ -179,14 +178,14 @@ enum class MiltonInputFlags {
     UNDO            = 1 << 3,
     REDO            = 1 << 4,
     SET_MODE_ERASER = 1 << 5,
-    SET_MODE_BRUSH  = 1 << 6,
+    SET_MODE_PEN  = 1 << 6,
     FAST_DRAW       = 1 << 7,
     HOVERING        = 1 << 8,
     PANNING         = 1 << 9,
 };
 DECLARE_FLAG(MiltonInputFlags);
 
-typedef struct MiltonInput_s {
+struct MiltonInput {
     MiltonInputFlags flags;
 
     v2i  points[MAX_INPUT_BUFFER_ELEMS];
@@ -196,17 +195,14 @@ typedef struct MiltonInput_s {
     v2i  hover_point;
     i32  scale;
     v2i  pan_delta;
-} MiltonInput;
+};
 
-typedef struct Bitmap_s {
+struct Bitmap {
     i32 width;
     i32 height;
     i32 num_components;
     u8* data;
-} Bitmap;
-
-// Defined below. Used in rasterizer.h
-static i32 milton_get_brush_size(MiltonState* milton_state);
+};
 
 #include "gui.h"
 #include "rasterizer.h"
@@ -231,14 +227,15 @@ void milton_init(MiltonState* milton_state);
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size);
 
 void milton_gl_backend_draw(MiltonState* milton_state);
-void milton_set_brush_size(MiltonState* milton_state, i32 size);
 
-// For keyboard shortcut.
+static const i32 k_max_brush_size = 80;
+
+// Between 0 and k_max_brush_size
+i32 milton_get_brush_size(const MiltonState& milton_state);
+void milton_set_brush_size(MiltonState& milton_state, i32 size);
 void milton_increase_brush_size(MiltonState* milton_state);
-
-// For keyboard shortcut.
 void milton_decrease_brush_size(MiltonState* milton_state);
-
+float milton_get_pen_alpha(const MiltonState& milton_state);
 void milton_set_pen_alpha(MiltonState* milton_state, float alpha);
 
 // Our "game loop" inner function.

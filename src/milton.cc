@@ -181,13 +181,13 @@ static void milton_gl_update_brush_hover(MiltonGLState* gl, CanvasView* view, i3
     }
 }
 
-static i32 milton_get_brush_size(MiltonState* milton_state)
+i32 milton_get_brush_size(const MiltonState& milton_state)
 {
     i32 brush_size = 0;
-    if (check_flag(milton_state->current_mode, MiltonMode::PEN)) {
-        brush_size = milton_state->brush_sizes[BrushEnum_PEN];
-    } else if (check_flag(milton_state->current_mode, MiltonMode::ERASER)) {
-        brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
+    if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+        brush_size = milton_state.brush_sizes[BrushEnum_PEN];
+    } else if (check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
+        brush_size = milton_state.brush_sizes[BrushEnum_ERASER];
     } else {
         assert (! "milton_get_brush_size called when in invalid mode.");
     }
@@ -211,7 +211,7 @@ static void milton_update_brushes(MiltonState* milton_state)
         }
     }
     milton_gl_update_brush_hover(milton_state->gl, milton_state->view,
-                                 milton_get_brush_size(milton_state));
+                                 milton_get_brush_size(*milton_state));
 
     milton_state->working_stroke.brush = milton_state->brushes[BrushEnum_PEN];
 }
@@ -270,19 +270,20 @@ void milton_gl_backend_draw(MiltonState* milton_state)
 }
 
 
-void milton_set_brush_size(MiltonState* milton_state, i32 size)
+void milton_set_brush_size(MiltonState& milton_state, i32 size)
 {
-    assert (size < MAX_BRUSH_SIZE);
-    (*pointer_to_brush_size(milton_state)) = size;
-    milton_update_brushes(milton_state);
+    if (size < k_max_brush_size && size > 0) {
+        (*pointer_to_brush_size(&milton_state)) = size;
+        milton_update_brushes(&milton_state);
+    }
 }
 
 // For keyboard shortcut.
 void milton_increase_brush_size(MiltonState* milton_state)
 {
-    i32 brush_size = milton_get_brush_size(milton_state);
-    if (brush_size < MAX_BRUSH_SIZE) {
-        milton_set_brush_size(milton_state, brush_size + 1);
+    i32 brush_size = milton_get_brush_size(*milton_state);
+    if (brush_size < k_max_brush_size && brush_size > 0) {
+        milton_set_brush_size(*milton_state, brush_size + 1);
     }
     milton_update_brushes(milton_state);
 }
@@ -290,10 +291,10 @@ void milton_increase_brush_size(MiltonState* milton_state)
 // For keyboard shortcut.
 void milton_decrease_brush_size(MiltonState* milton_state)
 {
-    i32 brush_size = milton_get_brush_size(milton_state);
+    i32 brush_size = milton_get_brush_size(*milton_state);
 
     if (brush_size > 1) {
-        milton_set_brush_size(milton_state, brush_size - 1);
+        milton_set_brush_size(*milton_state, brush_size - 1);
     }
     milton_update_brushes(milton_state);
 }
@@ -302,6 +303,12 @@ void milton_set_pen_alpha(MiltonState* milton_state, float alpha)
 {
     milton_state->brushes[BrushEnum_PEN].alpha = alpha;
     milton_update_brushes(milton_state);
+}
+
+float milton_get_pen_alpha(const MiltonState& milton_state)
+{
+    const float alpha = milton_state.brushes[BrushEnum_PEN].alpha;
+    return alpha;
 }
 
 static void milton_load_assets(MiltonState* milton_state)
@@ -675,7 +682,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         set_flag(render_flags, MiltonRenderFlags::PAN_COPY);
     }
 
-    if (check_flag( input->flags, MiltonInputFlags::SET_MODE_BRUSH )) {
+    if (check_flag( input->flags, MiltonInputFlags::SET_MODE_PEN )) {
         set_flag(milton_state->current_mode, MiltonMode::PEN);
         unset_flag(milton_state->current_mode, MiltonMode::ERASER);
         milton_update_brushes(milton_state);
@@ -734,7 +741,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
         f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
         milton_gl_set_brush_hover(milton_state->gl, milton_state->view,
-                                  milton_get_brush_size(milton_state), x, y);
+                                  milton_get_brush_size(*milton_state), x, y);
     }
 
     if ( input->input_count > 0 ) {
@@ -790,8 +797,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (check_flag( input->flags, MiltonInputFlags::PANNING )) {
         milton_gl_unset_brush_hover(milton_state->gl);
     }
-
-    gui_tick(milton_state);
 
     milton_render(milton_state, render_flags);
 

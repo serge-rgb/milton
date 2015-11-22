@@ -17,7 +17,7 @@
 
 #include <imgui.h>
 
-static Rect color_button_as_rect(ColorButton* button)
+static Rect color_button_as_rect(const ColorButton* button)
 {
     Rect rect = {};
     rect.left = button->center_x - button->width;
@@ -69,6 +69,22 @@ static b32 is_inside_picker_rect(ColorPicker* picker, v2i point)
     return is_inside_rect(picker->bounds, point);
 }
 
+static Rect picker_color_buttons_bounds(const ColorPicker* picker)
+{
+    Rect bounds = {};
+    bounds.right = INT_MIN;
+    bounds.left = INT_MAX;
+    bounds.top = INT_MAX;
+    bounds.bottom = INT_MIN;
+    const ColorButton* button = &picker->color_buttons;
+    while (button) {
+        bounds = rect_union(bounds, color_button_as_rect(button));
+        button = button->next;
+    }
+    return bounds;
+}
+
+
 static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
 {
     Rect button_rect = picker_color_buttons_bounds(picker);
@@ -109,21 +125,6 @@ b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
     b32 result = picker_hits_wheel(picker, fpoint) ||
                  is_inside_triangle(fpoint, picker->info.a, picker->info.b, picker->info.c);
     return result;
-}
-
-Rect picker_color_buttons_bounds(ColorPicker* picker)
-{
-    Rect bounds = {};
-    bounds.right = INT_MIN;
-    bounds.left = INT_MAX;
-    bounds.top = INT_MAX;
-    bounds.bottom = INT_MIN;
-    ColorButton* button = &picker->color_buttons;
-    while (button) {
-        bounds = rect_union(bounds, color_button_as_rect(button));
-        button = button->next;
-    }
-    return bounds;
 }
 
 static b32 picker_is_accepting_input(ColorPicker* picker, v2i point)
@@ -212,26 +213,49 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
     return result;
 }
 
-void gui_tick(MiltonState* milton_state)
+void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 {
     // ImGui Section
 
-    static float f = 0.0f;
-
+    float alpha = milton_get_pen_alpha(milton_state);
+    assert(alpha >= 0.0f && alpha <= 1.0f);
     // Spawn below the picker
-    Rect pbounds = picker_get_bounds(&milton_state->gui->picker);
+    Rect pbounds = get_bounds_for_picker_and_colors(milton_state.gui->picker);
 
     /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
     /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
-    ImGui::SetNextWindowPos(ImVec2(10, (float)pbounds.bottom), ImGuiSetCond_Always);
-    ImGui::Begin("hey");
+    ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Once);
+    ImGui::Begin("Brushes");
     {
-        ImGui::Text("Hello, world!");
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-        ImVec4 clear_color = ImColor(114, 144, 154);
-        ImGui::ColorEdit3("clear color", (float*)&clear_color);
-        if (ImGui::Button("Test Window")) {}
-        if (ImGui::Button("Another Window")) {}
+        if (!check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+            if (ImGui::Button("Switch to Pen")) {
+                set_flag(input, MiltonInputFlags::SET_MODE_PEN);
+            }
+        }
+
+        if (!check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
+            if (ImGui::Button("Switch to Eraser")) {
+                set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
+            }
+        }
+
+        if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+            ImGui::SliderFloat("Opacity", &alpha, 0.0f, 1.0f);
+            milton_set_pen_alpha(&milton_state, alpha);
+        }
+
+        assert (check_flag(milton_state.current_mode, MiltonMode::ERASER) ||
+                check_flag(milton_state.current_mode, MiltonMode::PEN));
+
+        const auto size = milton_get_brush_size(milton_state);
+        auto mut_size = size;
+
+        ImGui::SliderInt("Brush Size", &mut_size, 1, k_max_brush_size);
+
+        if (mut_size != size) {
+            milton_set_brush_size(milton_state, mut_size);
+        }
+
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
     ImGui::End();
@@ -257,7 +281,7 @@ static b32 picker_is_active(ColorPicker* picker)
     return is_active;
 }
 
-Rect picker_get_bounds(ColorPicker* picker)
+static Rect picker_get_bounds(const ColorPicker* picker)
 {
     Rect picker_rect;
     {
@@ -271,6 +295,13 @@ Rect picker_get_bounds(ColorPicker* picker)
 
     return picker_rect;
 }
+
+Rect get_bounds_for_picker_and_colors(const ColorPicker& picker)
+{
+    Rect result = rect_union(picker_get_bounds(&picker), picker_color_buttons_bounds(&picker));
+    return result;
+}
+
 
 v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
 {
