@@ -55,6 +55,8 @@ tweaks.
         - Keep backups
         - Future-proof. Marker for extensions post v1.0
         - Check return values for stdlib funcs.
+    - Profile loading
+        - Is allocation a problem?
     - Export
         - JPEG (tiny_jpeg)
         - stb_image_write (PNG, BMP, TGA)
@@ -70,6 +72,7 @@ tweaks.
     - Milton Image Viewer
         - Legal crap
             - Separate into Application / Engine.  App is GPL, "Engine" is liberal. For integration with other stuff!
+            - *or* Fuck it. Go full MIT
         - Viewer API & examples.
 
 
