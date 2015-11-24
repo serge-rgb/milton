@@ -1,10 +1,6 @@
 ![MiltonLogo](http://i.imgur.com/hXxloIS.png)
 
-Milton is a modern paint package.
-
-It is intended to be a reinvention from first principles of what a program for painting should be.
-
-Milton Paint is pre-alpha, currently in active development.
+Milton is a modern paint app.
 
 ### [Latest release (2015-09-25) pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha002)
 
@@ -14,7 +10,15 @@ Milton Paint is pre-alpha, currently in active development.
 
 ![alpacaGif](http://i.imgur.com/QR8TPDJ.gif)
 
+The Pitch
+---------
 
+One problem with digital art tools is that pixels are too constraining. It is liberating to not have to pick a resolution when starting something new, and to be able to export it to any size. Milton wants to provide that freedom.
+
+Milton is open source, and runs on almost any machine. It has an efficient software renderer. It runs well on 10-year old laptops and on supercomputers. It is opinionated. There is no save button because this isn't the 80s anymore. Your work is persistent, with unlimited undo.
+
+It is handmade, data oriented, gamma-correct, and user friendly.
+    
 Features
 --------
 
