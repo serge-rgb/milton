@@ -13,6 +13,7 @@
 
 #define GLCHK(stmt) stmt; gl_query_error(#stmt, __FILE__, __LINE__)
 
+
 void gl_log(char* str);
 void gl_query_error(const char* expr, const char* file, int line);
 static GLuint gl_compile_shader(const char* src, GLuint type);
@@ -33,19 +34,23 @@ void gl_log(char* str)
 #endif
 }
 
+
 // Apple defines GLhandleARB as void*
 // our simple solution is to define functions as their core counterparts, which should be
 // very likely to be present in a random Mac system
 #if defined(__MACH__)
+#define glCreateShaderObjectARB glCreateShader
 #define glShaderSourceARB glShaderSource
 #define glCompileShaderARB glCompileShader
 #define glGetObjectParameterivARB glGetShaderiv
 #define glGetInfoLogARB glGetShaderInfoLog
+
 #endif
 
 static GLuint gl_compile_shader(const char* src, GLuint type)
 {
     GLuint obj = (GLuint)glCreateShaderObjectARB(type);
+
     GLCHK ( glShaderSourceARB(obj, 1, &src, NULL) );
     GLCHK ( glCompileShaderARB(obj) );
     // ERROR CHECKING

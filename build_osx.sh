@@ -1,21 +1,32 @@
+export MILTON_OSX_FLAGS="-I../third_party/SDL2-2.0.3/include -I../third_party/imgui -I../third_party -framework OpenGL -framework AudioUnit -framework CoreAudio -framework Carbon -framework ForceFeedback -framework IOKit -framework Cocoa -liconv -lm"
 
-cd src
-clang template_expand.c -g -o template_expand
-./template_expand
-cd ..
 
-export MILTON_OSX_FLAGS="-I./third_party/SDL2-2.0.3/include -I./third_party/gui -framework OpenGL -framework AudioUnit -framework CoreAudio -framework Carbon -framework ForceFeedback -framework IOKit -framework Cocoa -liconv -lm"
+if [ ! -d build ]; then
+    mkdir build
+fi
 
-# Comment-out -Wno-unused-variable to clean up code
-clang -Ithird_party \
-    -std=c99\
-    -Wall -Werror \
+cd build
+
+# Omit -Wno-unused-(variable|function) to clean up code
+clang++ -O0 -g -I../third_party ../src/headerlibs_impl.cc -c -o headerlibs_impl.o
+ar rcs headerlibs_impl.a headerlibs_impl.o
+clang++                 \
+    -std=c++11          \
+    -Wall -Werror       \
     -Wno-missing-braces \
     -Wno-unused-function \
     -Wno-unused-variable \
-    -O2 -g\
+    -Wno-unused-result \
+    -Wno-writable-strings \
+    -Wno-c++11-compat-deprecated-writable-strings \
+    -fno-strict-aliasing \
+    -O0 -g                  \
+    ../src/milton_unity_build.cc \
+    headerlibs_impl.a        \
+    ../third_party/build/libSDL2.a \
+    ../third_party/build/libSDL2main.a \
     $MILTON_OSX_FLAGS \
-    src/milton_unity_build.c -lm -lpthread\
-    third_party/build/libSDL2.a \
-    third_party/build/libSDL2main.a \
-    -o milton
+    -o milton.bin
+
+cd ..
+
