@@ -157,6 +157,8 @@
 #define EASYTAB_H
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef __linux__
 #include <X11/extensions/XInput.h>
@@ -581,7 +583,7 @@ typedef struct
 #endif // WIN32
 } EasyTabInfo;
 
-static EasyTabInfo* EasyTab;
+extern EasyTabInfo* EasyTab;
 
 // -----------------------------------------------------------------------------
 // Function declarations
@@ -601,7 +603,7 @@ static EasyTabInfo* EasyTab;
 #else
 
     // Save some trouble when porting.
-    //#error "Unsupported platform."
+    #error "Unsupported platform."
 
 #endif // __linux__ _WIN32
 // -----------------------------------------------------------------------------
@@ -616,8 +618,7 @@ static EasyTabInfo* EasyTab;
 
 #ifdef EASYTAB_IMPLEMENTATION
 
-#include <stdlib.h>  // calloc
-#include <string.h>  // strstr
+EasyTabInfo* EasyTab;
 
 // -----------------------------------------------------------------------------
 // Linux implementation
