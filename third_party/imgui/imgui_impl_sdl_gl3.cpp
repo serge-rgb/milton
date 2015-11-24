@@ -40,13 +40,13 @@ void ImGui_ImplSDLGL3_RenderDrawLists(ImDrawData* draw_data)
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
 
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glEnable(GL_SCISSOR_TEST);
-    glActiveTexture(GL_TEXTURE0);
+    GLCHK(glEnable(GL_BLEND));
+    GLCHK(glBlendEquation(GL_FUNC_ADD));
+    GLCHK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    GLCHK(glDisable(GL_CULL_FACE));
+    GLCHK(glDisable(GL_DEPTH_TEST));
+    GLCHK(glEnable(GL_SCISSOR_TEST));
+    GLCHK(glActiveTexture(GL_TEXTURE0));
 
     // Handle cases of screen coordinates != from framebuffer coordinates (e.g. retina displays)
     ImGuiIO& io = ImGui::GetIO();
@@ -61,10 +61,10 @@ void ImGui_ImplSDLGL3_RenderDrawLists(ImDrawData* draw_data)
         { 0.0f,                  0.0f,                  -1.0f, 0.0f },
         {-1.0f,                  1.0f,                   0.0f, 1.0f },
     };
-    glUseProgram((GLuint)g_ShaderHandle);
-    glUniform1i((GLint)g_AttribLocationTex, 0);
-    glUniformMatrix4fv((GLint)g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]);
-    glBindVertexArray(g_VaoHandle);
+    GLCHK(glUseProgram((GLuint)g_ShaderHandle));
+    GLCHK(glUniform1i((GLint)g_AttribLocationTex, 0));
+    GLCHK(glUniformMatrix4fv((GLint)g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]));
+    GLCHK(glBindVertexArray(g_VaoHandle));
 
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
@@ -85,22 +85,22 @@ void ImGui_ImplSDLGL3_RenderDrawLists(ImDrawData* draw_data)
             }
             else
             {
-                glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
+                GLCHK(glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId));
                 glScissor((int)pcmd->ClipRect.x, (int)(fb_height - pcmd->ClipRect.w), (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
-                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, GL_UNSIGNED_SHORT, idx_buffer_offset);
+                GLCHK(glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, GL_UNSIGNED_SHORT, idx_buffer_offset));
             }
             idx_buffer_offset += pcmd->ElemCount;
         }
     }
 
     // Restore modified GL state
-    glUseProgram((GLuint)last_program);
-    glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);
-    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_array_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_element_array_buffer);
-    glBindVertexArray((GLuint)last_vertex_array);
-    glBlendEquationSeparate((GLenum)last_blend_equation_rgb, (GLuint)last_blend_equation_alpha);
-    glBlendFunc((GLenum)last_blend_src, (GLenum)last_blend_dst);
+    /* GLCHK(glUseProgram((GLuint)last_program)); */
+    GLCHK(glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture));
+    GLCHK(glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_array_buffer));
+    GLCHK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_element_array_buffer));
+    GLCHK(glBindVertexArray((GLuint)last_vertex_array));
+    /* GLCHK(glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha)); */
+    GLCHK(glBlendFunc((GLenum)last_blend_src, (GLenum)last_blend_dst));
     if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
     if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
     if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
