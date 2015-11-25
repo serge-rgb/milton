@@ -94,6 +94,8 @@ struct MiltonGui {
     ColorPicker picker;
 
     GuiButton brush_button;
+
+    v2i preview_pos;  // If rendering brush preview, this is where to do it.
 };
 
 //

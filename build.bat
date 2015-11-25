@@ -1,5 +1,7 @@
 @echo off
 
+set mlt_opt_level=%mlt_opt%
+
 pushd build
 
 set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
@@ -12,7 +14,6 @@ set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 set mlt_opt=/O2 /MT
 set mlt_nopt=/Od /MTd
 
-set mlt_opt_level=%mlt_nopt%
 
 set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /fp:fast /nologo /FC /EHsc
 

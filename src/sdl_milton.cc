@@ -413,6 +413,7 @@ int milton_main()
             if (ImGui::GetIO().WantCaptureMouse) {
                 num_point_results = 0;
                 platform_input.is_pointer_down = false;
+                set_flag(milton_input.flags, MiltonInputFlags::IMGUI_GRABBED_INPUT);
             }
         }
 

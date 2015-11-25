@@ -39,15 +39,19 @@ struct Vec2
 typedef Vec2<f32> v2f;
 typedef Vec2<i32> v2i;
 
-template<typename T>
-bool operator== (Vec2<T> a, Vec2<T> b)
+template<typename T> bool operator== (Vec2<T> a, Vec2<T> b)
 {
     bool result = a.x == b.x && a.y == b.y;
     return result;
 }
 
-template<typename T>
-Vec2<T> operator- (Vec2<T> a, Vec2<T> b)
+template<typename T> bool operator!= (Vec2<T> a, Vec2<T> b)
+{
+    bool result = !(a == b);
+    return result;
+}
+
+template<typename T> Vec2<T> operator- (Vec2<T> a, Vec2<T> b)
 {
 
     Vec2<T> result;
@@ -56,8 +60,7 @@ Vec2<T> operator- (Vec2<T> a, Vec2<T> b)
     return result;
 }
 
-template<typename T>
-Vec2<T> operator+ (Vec2<T> a, Vec2<T> b)
+template<typename T> Vec2<T> operator+ (Vec2<T> a, Vec2<T> b)
 {
     Vec2<T> result;
     result.x = a.x + b.x;
@@ -65,8 +68,7 @@ Vec2<T> operator+ (Vec2<T> a, Vec2<T> b)
     return result;
 }
 
-template<typename T>
-Vec2<T> operator* (Vec2<T> a, Vec2<T> b)
+template<typename T> Vec2<T> operator* (Vec2<T> a, Vec2<T> b)
 {
     Vec2<T> result;
     result.x = a.x * b.x;
@@ -74,8 +76,7 @@ Vec2<T> operator* (Vec2<T> a, Vec2<T> b)
     return result;
 }
 
-template<typename T>
-Vec2<T> operator* (Vec2<T> v, T factor)
+template<typename T> Vec2<T> operator* (Vec2<T> v, T factor)
 {
     Vec2<T> result;
     result.x = factor * v.x;
@@ -83,8 +84,7 @@ Vec2<T> operator* (Vec2<T> v, T factor)
     return result;
 }
 
-template<typename T>
-Vec2<T> operator/ (Vec2<T> v, T factor)
+template<typename T> Vec2<T> operator/ (Vec2<T> v, T factor)
 {
     Vec2<T> result;
     result.x = v.x / factor;
@@ -92,8 +92,7 @@ Vec2<T> operator/ (Vec2<T> v, T factor)
     return result;
 }
 
-template<typename T>
-Vec2<T> perpendicular (Vec2<T> a)
+template<typename T> Vec2<T> perpendicular (Vec2<T> a)
 {
     Vec2<T> result =
     {
@@ -132,8 +131,7 @@ struct Vec3
 
 typedef Vec3<f32> v3f;
 
-template<typename T>
-bool operator== (Vec3<T> a, Vec3<T> b)
+template<typename T> bool operator== (Vec3<T> a, Vec3<T> b)
 {
     bool result = a.x == b.x && a.y == b.y && a.z == b.z;
     return result;

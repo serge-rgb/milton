@@ -16,15 +16,6 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-// Using stb_image to load our GUI resources.
-#include <stb_image.h>
-// ----
-
-
-// EasyTab for drawing tablet support
-#include "easytab.h"
-// ----
-
 #include "define_types.h"
 #include "vector.h"
 
@@ -32,6 +23,15 @@
 #include "system_includes.h"
 
 #include "platform.h"
+
+// Using stb_image to load our GUI resources.
+#include <stb_image.h>
+// ----
+
+// EasyTab for drawing tablet support
+#include "easytab.h"
+// ----
+
 
 #if defined(_WIN32)
 #include "platform_windows.h"

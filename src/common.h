@@ -17,6 +17,12 @@
 
 #pragma once
 
+#ifdef UNUSED
+#error "Someone else defined UNUSED macro"
+#else
+#define UNUSED(x) (void*)(&x)
+#endif
+
 //
 // Use enum classes as flags.
 //  Insert right after definition.

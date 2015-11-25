@@ -1034,6 +1034,7 @@ static void draw_circle(u32* raster_buffer,
                                 { (f32)center_x, (f32)center_y });
 
             if (dist < radius) {
+                //u32 dst_color = color_v4f_to_u32(to_premultiplied(color_u32_to_v4f(raster_buffer[index]).rgb, 1.0f));
                 u32 dst_color = raster_buffer[index];
                 v4f blended = blend_v4f(color_u32_to_v4f(dst_color), src_color);
                 u32 color = color_v4f_to_u32(blended);
@@ -1507,8 +1508,8 @@ static void render_gui_button(u32* raster_buffer, i32 w, i32 h, GuiButton* butto
 }
 
 static void render_gui(MiltonState* milton_state,
-                     u32* raster_buffer, Rect raster_limits,
-                     MiltonRenderFlags render_flags)
+                       u32* raster_buffer, Rect raster_limits,
+                       MiltonRenderFlags render_flags)
 {
     b32 redraw = false;
     Rect picker_rect = get_bounds_for_picker_and_colors(milton_state->gui->picker);
@@ -1565,6 +1566,29 @@ static void render_gui(MiltonState* milton_state,
     render_gui_button(raster_buffer,
                       milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                       &gui->brush_button);
+
+    if (check_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW)) {
+        assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
+        const auto radius = milton_get_brush_size(*milton_state);
+        {
+            auto r = k_max_brush_size + 2;
+            auto x = gui->preview_pos.x;
+            auto y = gui->preview_pos.y;
+            render_canvas(milton_state, raster_buffer, Rect{x - r, y - r, x + r, y + r});
+        }
+        draw_circle(raster_buffer,
+                    milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                    gui->preview_pos.x, gui->preview_pos.y,
+                    radius,
+                    to_premultiplied(hsv_to_rgb(gui->picker.info.hsv), milton_get_pen_alpha(*milton_state)));
+        draw_ring(raster_buffer,
+                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                  gui->preview_pos.x, gui->preview_pos.y,
+                  radius, 2,
+                  {});
+        gui->preview_pos = { -1, -1 };
+        // TODO: Request redraw rect here.
+    }
 }
 
 void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)

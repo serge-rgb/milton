@@ -217,8 +217,8 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 {
     // ImGui Section
 
-    float alpha = milton_get_pen_alpha(milton_state);
-    assert(alpha >= 0.0f && alpha <= 1.0f);
+    const float pen_alpha = milton_get_pen_alpha(milton_state);
+    assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
     // Spawn below the picker
     Rect pbounds = get_bounds_for_picker_and_colors(milton_state.gui->picker);
 
@@ -226,17 +226,23 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
     ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Once);
 
-    int stack = 0;
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4{.5f,.5f,.5f,1}); ++stack;
-    ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4{.5f,.5f,.5f,1}); ++stack;
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4{.6f,.6f,.6f,1}); ++stack;
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{.3f,.3f,.4f,1}); ++stack;
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{.1f,.1f,.1f,1}); ++stack;
+    b32 render_brush_viz = false;
+    int color_stack = 0;
+    ImGui::GetStyle().WindowFillAlphaDefault = 0.9f;  // Redundant for all calls but the first one...
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4{.5f,.5f,.5f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4{.5f,.5f,.5f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4{.6f,.6f,.6f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{.3f,.3f,.4f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{.1f,.1f,.1f,1}); ++color_stack;
     ImGui::Begin("Brushes");
     {
         if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
-            ImGui::SliderFloat("Opacity", &alpha, 0.1f, 1.0f);
-            milton_set_pen_alpha(&milton_state, alpha);
+            float mut_alpha = pen_alpha;
+            ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
+            if ( mut_alpha != pen_alpha ) {
+                render_brush_viz = true;
+                milton_set_pen_alpha(&milton_state, mut_alpha);
+            }
         }
 
         assert (check_flag(milton_state.current_mode, MiltonMode::ERASER) ||
@@ -249,6 +255,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
         if (mut_size != size) {
             milton_set_brush_size(milton_state, mut_size);
+            render_brush_viz = true;
         }
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
@@ -269,14 +276,21 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
         //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
+    const v2i pos = {
+        (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),
+        (i32)(ImGui::GetWindowPos().y),
+    };
     ImGui::End();
-    ImGui::PopStyleColor(stack);
+    ImGui::PopStyleColor(color_stack);
+
+    if ( render_brush_viz ) {
+        milton_set_brush_preview(milton_state, pos);
+    }
 
 }
 
 static void picker_init(ColorPicker* picker)
 {
-
     v2f fpoint = {
         (f32)picker->center.x + (int)(picker->wheel_radius),
         (f32)picker->center.y
@@ -418,6 +432,8 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
         }
         cur_button = cur_button->next;
     }
+
+    gui->preview_pos = {-1, -1};
 }
 
 // When a selected color is used in a stroke, call this to update the color

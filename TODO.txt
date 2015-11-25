@@ -44,6 +44,8 @@ tweaks.
     - Performance:
         - Strokes should be sampled based on relative size
         - memcpy when Panning (most users will benefit hugely)
+        - Do not redraw when stroking over existing drawing.
+        - Adaptive resolution scaling
         - Check valgrind for cache performance from new allocation patterns..
         - 4x4 Blockgroups (morton-order)
         - Undo/Redo: Only redraw necessary area.

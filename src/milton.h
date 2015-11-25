@@ -48,7 +48,7 @@ struct MiltonGLState {
 
 // TODO: smells move 'request' elsewhere and make this not be a flag
 enum class MiltonMode {
-    none                   = 0,
+    NONE                   = 0,
 
     ERASER                 = 1 << 0,
     PEN                    = 1 << 1,
@@ -63,6 +63,7 @@ enum class MiltonRenderFlags {
     FULL_REDRAW     = 1 << 1,
     FINISHED_STROKE = 1 << 2,
     PAN_COPY        = 1 << 3,
+    BRUSH_PREVIEW   = 1 << 4,
 };
 DECLARE_FLAG(MiltonRenderFlags);
 
@@ -172,16 +173,18 @@ struct MiltonState {
 
 enum class MiltonInputFlags {
     NONE = 0,
-    FULL_REFRESH    = 1 << 0,
-    RESET           = 1 << 1,
-    END_STROKE      = 1 << 2,
-    UNDO            = 1 << 3,
-    REDO            = 1 << 4,
-    SET_MODE_ERASER = 1 << 5,
-    SET_MODE_PEN  = 1 << 6,
-    FAST_DRAW       = 1 << 7,
-    HOVERING        = 1 << 8,
-    PANNING         = 1 << 9,
+
+    FULL_REFRESH        = 1 << 0,
+    RESET               = 1 << 1,
+    END_STROKE          = 1 << 2,
+    UNDO                = 1 << 3,
+    REDO                = 1 << 4,
+    SET_MODE_ERASER     = 1 << 5,
+    SET_MODE_PEN        = 1 << 6,
+    FAST_DRAW           = 1 << 7,
+    HOVERING            = 1 << 8,
+    PANNING             = 1 << 9,
+    IMGUI_GRABBED_INPUT = 1 << 10,
 };
 DECLARE_FLAG(MiltonInputFlags);
 
@@ -237,6 +240,11 @@ void milton_increase_brush_size(MiltonState* milton_state);
 void milton_decrease_brush_size(MiltonState* milton_state);
 float milton_get_pen_alpha(const MiltonState& milton_state);
 void milton_set_pen_alpha(MiltonState* milton_state, float alpha);
+
+void milton_set_brush_preview(MiltonState& milton_state, const v2i& pos)
+{
+    milton_state.gui->preview_pos = pos;
+}
 
 // Our "game loop" inner function.
 void milton_update(MiltonState* milton_state, MiltonInput* input);

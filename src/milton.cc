@@ -26,9 +26,9 @@
 #endif
 
 static void milton_gl_set_brush_hover(MiltonGLState* gl,
-                                    CanvasView* view,
-                                    int radius,
-                                    f32 x, f32 y)
+                                      CanvasView* view,
+                                      int radius,
+                                      f32 x, f32 y)
 {
     glUseProgramObjectARB(gl->quad_program);
 
@@ -210,8 +210,7 @@ static void milton_update_brushes(MiltonState* milton_state)
             brush->alpha = 1;
         }
     }
-    milton_gl_update_brush_hover(milton_state->gl, milton_state->view,
-                                 milton_get_brush_size(*milton_state));
+    milton_gl_update_brush_hover(milton_state->gl, milton_state->view, milton_get_brush_size(*milton_state));
 
     milton_state->working_stroke.brush = milton_state->brushes[BrushEnum_PEN];
 }
@@ -712,7 +711,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (check_flag( input->flags, MiltonInputFlags::RESET )) {
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
-        // TODO: Reclaim memory?
         milton_state->strokes.count = 0;
         (&milton_state->strokes[0])->num_points = 0;
         milton_state->working_stroke.num_points = 0;
@@ -757,6 +755,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
         // Clear redo stack
         milton_state->num_redos = 0;
+    }
+
+    if ( check_flag(input->flags, MiltonInputFlags::IMGUI_GRABBED_INPUT) ) {
+        milton_gl_unset_brush_hover(milton_state->gl);
+        if ( milton_state->gui->preview_pos != v2i{-1, -1} ) {
+            set_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW);
+        }
     }
 
     if (check_flag( input->flags, MiltonInputFlags::END_STROKE )) {
