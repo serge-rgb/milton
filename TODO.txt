@@ -23,6 +23,7 @@ tweaks.
         - Brush / Eraser
             - Image Button
         - Selection rectangle (engine support needed)
+        - Brush overlay in software (prettier)
         - Export buttons
             - OS-dependent file-save dialog.
         - F1 help widget
