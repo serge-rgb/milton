@@ -226,7 +226,6 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
     ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Once);
 
-    b32 render_brush_viz = false;
     int color_stack = 0;
     ImGui::GetStyle().WindowFillAlphaDefault = 0.9f;  // Redundant for all calls but the first one...
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4{.5f,.5f,.5f,1}); ++color_stack;
@@ -240,8 +239,8 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
             float mut_alpha = pen_alpha;
             ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
             if ( mut_alpha != pen_alpha ) {
-                render_brush_viz = true;
                 milton_set_pen_alpha(&milton_state, mut_alpha);
+                milton_state.gui->is_showing_preview = true;
             }
         }
 
@@ -255,7 +254,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
         if (mut_size != size) {
             milton_set_brush_size(milton_state, mut_size);
-            render_brush_viz = true;
+            milton_state.gui->is_showing_preview = true;
         }
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
@@ -283,7 +282,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     ImGui::End();
     ImGui::PopStyleColor(color_stack);
 
-    if ( render_brush_viz ) {
+    if ( milton_state.gui->is_showing_preview ) {
         milton_set_brush_preview(milton_state, pos);
     }
 
@@ -320,6 +319,11 @@ static Rect picker_get_bounds(const ColorPicker* picker)
     assert (picker_rect.top >= 0);
 
     return picker_rect;
+}
+
+void gui_imgui_ungrabbed(MiltonGui& gui)
+{
+    gui.is_showing_preview = false;
 }
 
 Rect get_bounds_for_picker_and_colors(const ColorPicker& picker)
@@ -403,9 +407,8 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
     bounds.top = gui->picker.center.y - bounds_radius_px;
     bounds.bottom = gui->picker.center.y + bounds_radius_px;
     gui->picker.bounds = bounds;
-    gui->picker.pixels = arena_alloc_array(root_arena,
-                                           (4 * bounds_radius_px * bounds_radius_px),
-                                           u32);
+    gui->picker.pixels = arena_alloc_array(root_arena, (4 * bounds_radius_px * bounds_radius_px), u32);
+
     picker_init(&gui->picker);
 
     i32 spacing = 4;
@@ -433,7 +436,8 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
         cur_button = cur_button->next;
     }
 
-    gui->preview_pos = {-1, -1};
+    gui->preview_pos      = {-1, -1};
+    gui->preview_pos_prev = {-1, -1};
 }
 
 // When a selected color is used in a stroke, call this to update the color

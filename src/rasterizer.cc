@@ -1328,7 +1328,7 @@ int renderer_worker_thread(void* data)
                                               &milton_state->render_worker_arenas[id],
                                               render_queue->blocks,
                                               blockgroup_data.block_start, render_queue->num_blocks,
-                                              render_queue->raster_buffer);
+                                              render_queue->canvas_buffer);
         if ( !allocation_ok ) {
             milton_state->worker_needs_memory = true;
         }
@@ -1357,9 +1357,7 @@ static void produce_render_work(MiltonState* milton_state,
 }
 #endif
 
-
-// Returns true if operation was completed.
-static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect raster_limits)
+static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 {
     PROFILE_BEGIN(render_canvas);
 
@@ -1375,7 +1373,7 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
     {
         render_queue->blocks = blocks.m_data;
         render_queue->num_blocks = (i32)count(blocks);
-        render_queue->raster_buffer = raster_buffer;
+        render_queue->canvas_buffer = (u32*)milton_state->canvas_buffer;
     }
 
     const i32 blocks_per_blockgroup = milton_state->blocks_per_blockgroup;
@@ -1400,7 +1398,7 @@ static void render_canvas(MiltonState* milton_state, u32* raster_buffer, Rect ra
                           &blockgroup_arena,
                           blocks.m_data,
                           block_i, num_blocks,
-                          raster_buffer);
+                          (u32*)milton_state->canvas_buffer);
 
         arena_pop(&blockgroup_arena);
 #endif
@@ -1500,6 +1498,17 @@ static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_
     }
 
 }
+static void copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
+{
+    u32* raster_ptr = (u32*)milton_state->raster_buffer;
+    u32* canvas_ptr = (u32*)milton_state->canvas_buffer;
+    for (auto j = rect.top; j <= rect.bottom; ++j) {
+        for (auto i = rect.left; i <= rect.right; ++i) {
+            auto bufi = j*milton_state->view->screen_size.w + i;
+            *raster_ptr++ = *canvas_ptr++;
+        }
+    }
+}
 
 static void render_gui_button(u32* raster_buffer, i32 w, i32 h, GuiButton* button)
 {
@@ -1507,9 +1516,7 @@ static void render_gui_button(u32* raster_buffer, i32 w, i32 h, GuiButton* butto
     blit_bitmap(raster_buffer, w, h, 10, 300, &button->bitmap);
 }
 
-static void render_gui(MiltonState* milton_state,
-                       u32* raster_buffer, Rect raster_limits,
-                       MiltonRenderFlags render_flags)
+static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRenderFlags render_flags)
 {
     b32 redraw = false;
     Rect picker_rect = get_bounds_for_picker_and_colors(milton_state->gui->picker);
@@ -1517,9 +1524,9 @@ static void render_gui(MiltonState* milton_state,
     if ( (clipped.left != clipped.right) && clipped.top != clipped.bottom ) {
         redraw = true;
     }
+    u32* raster_buffer = (u32*)milton_state->raster_buffer;
     MiltonGui* gui = milton_state->gui;
     if ( redraw || (check_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED)) ) {
-        render_canvas(milton_state, raster_buffer, picker_rect);
 
         render_picker(&milton_state->gui->picker,
                       raster_buffer,
@@ -1572,9 +1579,8 @@ static void render_gui(MiltonState* milton_state,
         const auto radius = milton_get_brush_size(*milton_state);
         {
             auto r = k_max_brush_size + 2;
-            auto x = gui->preview_pos.x;
-            auto y = gui->preview_pos.y;
-            render_canvas(milton_state, raster_buffer, Rect{x - r, y - r, x + r, y + r});
+            auto x = gui->preview_pos_prev.x != -1? gui->preview_pos_prev.x : gui->preview_pos.x;
+            auto y = gui->preview_pos_prev.y != -1? gui->preview_pos_prev.y : gui->preview_pos.y;
         }
         draw_circle(raster_buffer,
                     milton_state->view->screen_size.w, milton_state->view->screen_size.h,
@@ -1586,6 +1592,7 @@ static void render_gui(MiltonState* milton_state,
                   gui->preview_pos.x, gui->preview_pos.y,
                   radius, 2,
                   {});
+        gui->preview_pos_prev = gui->preview_pos;
         gui->preview_pos = { -1, -1 };
         // TODO: Request redraw rect here.
     }
@@ -1636,7 +1643,6 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
         }
     }
 
-    u32* raster_buffer = (u32*)milton_state->raster_buffer;
 
 #if MILTON_ENABLE_PROFILING
     // Draw everything every frame when profiling.
@@ -1649,9 +1655,17 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 #endif
 
     if (rect_is_valid(raster_limits)) {
-        render_canvas(milton_state, raster_buffer, raster_limits);
+        render_canvas(milton_state, raster_limits);
 
-        render_gui(milton_state, raster_buffer, raster_limits, render_flags);
+        {
+            raster_limits.left = 0;
+            raster_limits.right = milton_state->view->screen_size.w;
+            raster_limits.top = 0;
+            raster_limits.bottom = milton_state->view->screen_size.h;
+        }
+        copy_canvas_to_raster_buffer(milton_state, raster_limits);
+
+        render_gui(milton_state, raster_limits, render_flags);
     } else {
         milton_log("WARNING: Tried to render with invalid rect: (l r t b): %d %d %d %d\n",
                    raster_limits.left,

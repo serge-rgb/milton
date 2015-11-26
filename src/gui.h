@@ -28,16 +28,6 @@ enum class ColorPickerFlags {
 };
 DECLARE_FLAG(ColorPickerFlags);
 
-/* void set_flag(ColorPickerFlags& f, ColorPickerFlags val) */
-/* { */
-/*     f = (ColorPickerFlags)((int)f | (int)val); */
-/* } */
-
-/* b32 check_flag(ColorPickerFlags flags, ColorPickerFlags f) */
-/* { */
-/*     return (b32)((int)flags & (int)f); */
-/* } */
-
 struct PickerData {
     v2f a;  // Corresponds to value = 0      (black)
     v2f b;  // Corresponds to saturation = 0 (white)
@@ -90,12 +80,14 @@ struct MiltonGui {
     b32 active;  // `active == true` when gui currently owns all user input.
     b32 did_change_color;
     b32 did_hit_button;  // Avoid multiple clicks.
+    b32 is_showing_preview;
 
     ColorPicker picker;
 
     GuiButton brush_button;
 
     v2i preview_pos;  // If rendering brush preview, this is where to do it.
+    v2i preview_pos_prev;  // Keep the previous position to clear the canvas.
 };
 
 //
@@ -103,6 +95,8 @@ struct MiltonGui {
 //
 // Call from the main loop before milton_update
 void milton_gui_tick(MiltonInputFlags& input, const MiltonState& milton_state);
+
+void gui_imgui_ungrabbed(MiltonGui& gui);
 
 
 //

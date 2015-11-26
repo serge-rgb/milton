@@ -79,7 +79,7 @@ struct BlockgroupRenderData {
 struct RenderQueue {
     Rect*   blocks;  // Screen areas to render.
     i32     num_blocks;
-    u32*    raster_buffer;
+    u32*    canvas_buffer;
 
     // FIFO work queue
     SDL_mutex*              mutex;
@@ -124,6 +124,7 @@ struct MiltonState {
     i32     max_width;
     i32     max_height;
     u8*     raster_buffer;
+    u8*     canvas_buffer;
 
     // The screen is rendered in blockgroups
     // Each blockgroup is rendered in blocks of size (block_width*block_width).
@@ -150,7 +151,6 @@ struct MiltonState {
 
     i32             num_render_workers;
     RenderQueue*    render_queue;
-
 
     // Heap
     Arena*      root_arena;         // Persistent memory.

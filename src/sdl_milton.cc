@@ -85,7 +85,7 @@ int milton_main()
     // ==== Initialize milton
     //  Total (static) memory requirement for Milton
     // TODO: Calculate how much is the arena using before shipping.
-    size_t sz_root_arena = (size_t)128 * 1024 * 1024;
+    size_t sz_root_arena = (size_t)1 * 1024 * 1024 * 1024;
 
     // Using platform_allocate because stdlib calloc will be really slow.
     void* big_chunk_of_memory = platform_allocate(sz_root_arena);

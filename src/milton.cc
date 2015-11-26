@@ -549,14 +549,16 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     size_t buffer_size = (size_t) milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
 
     if (do_realloc) {
-        void* raster_buffer = (void*)milton_state->raster_buffer;
-        if (raster_buffer) {
-            mlt_free(raster_buffer);
-        }
-        milton_state->raster_buffer = (u8*)mlt_calloc(1, buffer_size);
+        u8* raster_buffer = milton_state->raster_buffer;
+        u8* canvas_buffer = milton_state->canvas_buffer;
+        if ( raster_buffer ) mlt_free(raster_buffer);
+        if ( canvas_buffer ) mlt_free(canvas_buffer);
+        milton_state->raster_buffer      = (u8*)mlt_calloc(1, buffer_size);
+        milton_state->canvas_buffer      = (u8*)mlt_calloc(1, buffer_size);
 
         // TODO: handle this failure gracefully.
         assert(milton_state->raster_buffer);
+        assert(milton_state->canvas_buffer);
     }
 
     if ( new_screen_size.w < milton_state->max_width &&
@@ -758,10 +760,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( check_flag(input->flags, MiltonInputFlags::IMGUI_GRABBED_INPUT) ) {
+        // Start drawing the preview if we just grabbed a slider.
         milton_gl_unset_brush_hover(milton_state->gl);
-        if ( milton_state->gui->preview_pos != v2i{-1, -1} ) {
+        if ( milton_state->gui->is_showing_preview ) {
             set_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW);
         }
+    } else {
+        gui_imgui_ungrabbed(*milton_state->gui);
     }
 
     if (check_flag( input->flags, MiltonInputFlags::END_STROKE )) {
