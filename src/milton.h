@@ -64,7 +64,9 @@ enum class MiltonRenderFlags {
     FINISHED_STROKE = 1 << 2,
     PAN_COPY        = 1 << 3,
     BRUSH_PREVIEW   = 1 << 4,
+    BRUSH_HOVER     = 1 << 5,
 };
+
 DECLARE_FLAG(MiltonRenderFlags);
 
 // Render Workers:

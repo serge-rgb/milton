@@ -25,42 +25,6 @@
 #include "tests.h"
 #endif
 
-static void milton_gl_set_brush_hover(MiltonGLState* gl,
-                                      CanvasView* view,
-                                      int radius,
-                                      f32 x, f32 y)
-{
-    glUseProgramObjectARB(gl->quad_program);
-
-    i32 width = view->screen_size.w;
-
-    f32 radiusf = (f32)radius / (f32)width;
-
-    GLint loc_hover_on  = glGetUniformLocationARB(gl->quad_program, "hover_on");
-    GLint loc_radius_sq = glGetUniformLocationARB(gl->quad_program, "radiusf");
-    GLint loc_pointer   = glGetUniformLocationARB(gl->quad_program, "pointer");
-    GLint loc_aspect    = glGetUniformLocationARB(gl->quad_program, "aspect_ratio");
-    assert ( loc_hover_on >= 0 );
-    assert ( loc_radius_sq >= 0 );
-    assert ( loc_pointer >= 0 );
-    assert ( loc_aspect >= 0 );
-
-    glUniform1iARB(loc_hover_on, 1);
-    glUniform1fARB(loc_radius_sq, radiusf);
-    glUniform2fARB(loc_pointer, x, y);
-    glUniform1fARB(loc_aspect, view->aspect_ratio);
-}
-
-static void milton_gl_unset_brush_hover(MiltonGLState* gl)
-{
-    glUseProgramObjectARB(gl->quad_program);
-
-    GLint loc_hover_on = glGetUniformLocationARB(gl->quad_program, "hover_on");
-    assert ( loc_hover_on >= 0 );
-
-    glUniform1iARB(loc_hover_on, 0);
-}
-
 static void milton_gl_backend_init(MiltonState* milton_state)
 {
     // Init quad program
@@ -84,27 +48,12 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             "#version 120\n"
             "\n"
             "uniform sampler2D raster_buffer;\n"
-            "uniform bool hover_on;\n"
-            "uniform vec2 pointer;\n"
-            "uniform float radiusf;\n"
             "uniform float aspect_ratio;\n"
             "varying vec2 coord;\n"
-            //"out vec4 out_color;\n"
             "\n"
             "void main(void)\n"
             "{\n"
             "   vec4 color = texture2D(raster_buffer, coord).bgra; \n"
-            "   if (hover_on)\n"
-            "   { \n"
-            "       float girth = 0.001; \n"
-            "       float dx = (coord.x - pointer.x); \n"
-            "       float dy = (coord.y / aspect_ratio - pointer.y); \n"
-            "       float dist = sqrt(dx * dx + dy * dy); \n"
-            "       bool test1 = ( dist < radiusf + girth ); \n"
-            "       bool test2 = ( dist > radiusf - girth ); \n"
-            "       float t = float(test1 && test2); \n"
-            "       color = t * vec4(0.5,0.5,0.5,1) + (1 - t) * color; \n"
-            "   } \n"
             "   gl_FragColor = color; \n"
             //"   out_color = color; \n"
             "}\n";
@@ -167,20 +116,6 @@ static void milton_gl_backend_init(MiltonState* milton_state)
     }
 }
 
-
-
-static void milton_gl_update_brush_hover(MiltonGLState* gl, CanvasView* view, i32 radius)
-{
-    f32 radiusf = (f32)radius / (f32)view->screen_size.w;
-    glUseProgramObjectARB(gl->quad_program);
-    GLint loc_radius_sq = glGetUniformLocationARB(gl->quad_program, "radiusf");
-    if ( loc_radius_sq >= 0 ) {
-        glUniform1fARB(loc_radius_sq, radiusf);
-    } else {
-        milton_log("[ERROR] Could not set brush overlay in GL\n");
-    }
-}
-
 i32 milton_get_brush_size(const MiltonState& milton_state)
 {
     i32 brush_size = 0;
@@ -210,7 +145,6 @@ static void milton_update_brushes(MiltonState* milton_state)
             brush->alpha = 1;
         }
     }
-    milton_gl_update_brush_hover(milton_state->gl, milton_state->view, milton_get_brush_size(*milton_state));
 
     milton_state->working_stroke.brush = milton_state->brushes[BrushEnum_PEN];
 }
@@ -735,18 +669,18 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 #endif
 
+    // By default, draw hover outling. Various cases can unset this flag.
+    set_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
 
     if (check_flag( input->flags, MiltonInputFlags::HOVERING )) {
         milton_state->hover_point = input->hover_point;
         f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
         f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
-        milton_gl_set_brush_hover(milton_state->gl, milton_state->view,
-                                  milton_get_brush_size(*milton_state), x, y);
     }
 
     if ( input->input_count > 0 ) {
         // Don't draw brush outline.
-        milton_gl_unset_brush_hover(milton_state->gl);
+        unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
 
         if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
             milton_update_brushes(milton_state);
@@ -761,7 +695,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if ( check_flag(input->flags, MiltonInputFlags::IMGUI_GRABBED_INPUT) ) {
         // Start drawing the preview if we just grabbed a slider.
-        milton_gl_unset_brush_hover(milton_state->gl);
+        unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
         if ( milton_state->gui->is_showing_preview ) {
             set_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW);
         }
@@ -805,7 +739,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     // Disable hover if panning.
     if (check_flag( input->flags, MiltonInputFlags::PANNING )) {
-        milton_gl_unset_brush_hover(milton_state->gl);
+        unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
     }
 
     milton_render(milton_state, render_flags);

@@ -20,15 +20,14 @@ tweaks.
 
 - Milton v0.1.0
     -  GUI
-        - Brush / Eraser
-            - Image Button
-        - Selection rectangle (engine support needed)
-        - Brush overlay in software (prettier)
-        - Export buttons
-            - OS-dependent file-save dialog.
         - F1 help widget
         - GUI toggle key
         - "Export" button
+        - Selection rectangle (engine support needed)
+        - Export buttons
+            - OS-dependent file-save dialog.
+        - Brush / Eraser
+            - Image Button
         - Layers (w/engine support)
         - Options
             - GUI scale

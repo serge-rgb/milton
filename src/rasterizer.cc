@@ -1598,6 +1598,14 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
         gui->preview_pos = { -1, -1 };
         // TODO: Request redraw rect here.
     }
+    if ( check_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER) ) {
+        const auto radius = milton_get_brush_size(*milton_state);
+        draw_ring(raster_buffer,
+                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                  milton_state->hover_point.x, milton_state->hover_point.y,
+                  radius, 1,
+                  {});
+    }
 }
 
 void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
