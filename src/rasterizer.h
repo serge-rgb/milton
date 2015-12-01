@@ -16,14 +16,13 @@
 //    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-// What "void* data" below is expecting...
 struct WorkerParams {
     MiltonState* milton_state;
     i32 worker_id;
 };
 
 // Declared here so that the workers get launched from the init function.
-int renderer_worker_thread(void* data);
+int renderer_worker_thread(/* WorkerParams* */void* data);
 
 // Blocking function. When it returns, the framebuffer is updated to the
 // current state. It does a lot of smart things to do as little work as

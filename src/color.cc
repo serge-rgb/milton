@@ -133,7 +133,8 @@ v4f to_premultiplied(v3f rgb, f32 a)
     return rgba;
 }
 
-#define FAST_GAMMA 1
+// TODO: Fix linear <-> gamma functions to mean SRGB or 2-power-curve
+
 v4f linear_to_sRGB_v4(v4f rgb)
 {
 #if FAST_GAMMA
@@ -144,6 +145,7 @@ v4f linear_to_sRGB_v4(v4f rgb)
         rgb.a,
     };
 #else
+#error "Do a correct implementation"
     v4f srgb = {
         powf(rgb.r, 1/2.22f),
         powf(rgb.g, 1/2.22f),
@@ -163,6 +165,7 @@ v3f linear_to_sRGB(v3f rgb)
         sqrtf(rgb.b),
     };
 #else
+#error "Do a correct implementation"
     v3f srgb = {
         powf(rgb.r, 1/2.22f),
         powf(rgb.g, 1/2.22f),
