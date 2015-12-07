@@ -282,7 +282,7 @@
 
        Button("Hello###ID";   // Label = "Hello",  ID = hash of "ID"
        Button("World###ID";   // Label = "World",  ID = hash of "ID" (same as above)
-       
+
        sprintf(buf, "My game (%f FPS)###MyGame");
        Begin(buf);            // Variable label,   ID = hash of "MyGame"
 
@@ -932,7 +932,7 @@ int ImTextCharFromUtf8(unsigned int* out_char, const char* in_text, const char* 
     if ((*str & 0xf0) == 0xe0)
     {
         *out_char = 0xFFFD; // will be invalid but not end of string
-        if (in_text_end && in_text_end - (const char*)str < 3) return 1; 
+        if (in_text_end && in_text_end - (const char*)str < 3) return 1;
         if (*str == 0xe0 && (str[1] < 0xa0 || str[1] > 0xbf)) return 3;
         if (*str == 0xed && str[1] > 0x9f) return 3; // str[1] < 0x80 is checked below
         c = (unsigned int)((*str++ & 0x0f) << 12);
@@ -3521,7 +3521,7 @@ bool ImGui::Begin(const char* name, bool* p_opened, const ImVec2& size_on_first_
         g.CurrentPopupStack.push_back(popup_ref);
         window->PopupID = popup_ref.PopupID;
     }
-    
+
     const bool window_appearing_after_being_hidden = (window->HiddenFrames == 1);
 
     // Process SetNextWindow***() calls
@@ -3668,7 +3668,7 @@ bool ImGui::Begin(const char* name, bool* p_opened, const ImVec2& size_on_first_
         else
         {
             size_auto_fit = ImClamp(window->SizeContents + window->WindowPadding, style.WindowMinSize, ImMax(style.WindowMinSize, g.IO.DisplaySize - window->WindowPadding));
-            
+
             // Handling case of auto fit window not fitting in screen on one axis, we are growing auto fit size on the other axis to compensate for expected scrollbar. FIXME: Might turn bigger than DisplaySize-WindowPadding.
             if (size_auto_fit.x < window->SizeContents.x && !(flags & ImGuiWindowFlags_NoScrollbar) && (flags & ImGuiWindowFlags_HorizontalScrollbar))
                 size_auto_fit.y += style.ScrollbarSize;
@@ -7092,7 +7092,7 @@ static bool InputTextFilterCharacter(unsigned int* p_char, ImGuiInputTextFlags f
 }
 
 // Edit a string of text
-// FIXME: This is rather complex partly because we are doing UTF8 > u16 > UTF8 conversions on the go to more easily handle stb_textedit calls. Ideally we should stay in UTF-8 all the time. 
+// FIXME: This is rather complex partly because we are doing UTF8 > u16 > UTF8 conversions on the go to more easily handle stb_textedit calls. Ideally we should stay in UTF-8 all the time.
 bool ImGui::InputTextEx(const char* label, char* buf, int buf_size, const ImVec2& size_arg, ImGuiInputTextFlags flags, ImGuiTextEditCallback callback, void* user_data)
 {
     ImGuiWindow* window = GetCurrentWindow();
@@ -8478,10 +8478,11 @@ bool ImGui::ColorEdit4(const char* label, float col[4], bool alpha)
     const ImVec4 col_display(col[0], col[1], col[2], 1.0f);
     if (ImGui::ColorButton(col_display))
         g.ColorEditModeStorage.SetInt(id, (edit_mode + 1) % 3); // Don't set local copy of 'edit_mode' right away!
-    
+
     // Recreate our own tooltip over's ColorButton() one because we want to display correct alpha here
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Color:\n(%.2f,%.2f,%.2f,%.2f)\n#%08X", col[0], col[1], col[2], col[3], IM_F32_TO_INT8(col[0]), IM_F32_TO_INT8(col[1]), IM_F32_TO_INT8(col[2]), IM_F32_TO_INT8(col[3]));
+        assert (!"Commenting this out because it doesn't seem to be doing the right thing (clang warning) -Sergio");
+        // ImGui::SetTooltip("Color:\n(%.2f,%.2f,%.2f,%.2f)\n#%08X", col[0], col[1], col[2], col[3], IM_F32_TO_INT8(col[0]), IM_F32_TO_INT8(col[1]), IM_F32_TO_INT8(col[2]), IM_F32_TO_INT8(col[3]));
 
     if (window->DC.ColorEditMode == ImGuiColorEditMode_UserSelectShowButton)
     {
@@ -8575,7 +8576,7 @@ void ImGui::Dummy(const ImVec2& size)
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
         return;
-    
+
     const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
     ItemSize(bb);
     ItemAdd(bb, NULL);

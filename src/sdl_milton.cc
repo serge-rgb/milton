@@ -120,7 +120,8 @@ int milton_main()
             break;
 #endif
         default:
-            milton_die_gracefully("Runtime system not recognized.");
+            // TODO Easytab port
+            // milton_die_gracefully("Runtime system not recognized.");
             break;
         }
     } else {

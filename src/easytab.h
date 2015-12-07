@@ -602,8 +602,7 @@ extern EasyTabInfo* EasyTab;
 
 #else
 
-    // Save some trouble when porting.
-    #error "Unsupported platform."
+    // TODO: port
 
 #endif // __linux__ _WIN32
 // -----------------------------------------------------------------------------

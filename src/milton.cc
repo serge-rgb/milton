@@ -700,7 +700,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             set_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW);
         }
     } else {
-        gui_imgui_ungrabbed(*milton_state->gui);
+        gui_imgui_set_ungrabbed(*milton_state->gui);
     }
 
     if (check_flag( input->flags, MiltonInputFlags::END_STROKE )) {
