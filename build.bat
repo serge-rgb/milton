@@ -62,9 +62,7 @@ goto fail
 
 goto ok
 :fail
-popd
-exit /b 1
+popd && (call)
 
 :ok
 popd
-exit /b 0

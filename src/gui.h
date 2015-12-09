@@ -20,7 +20,6 @@
 #include "utils.h"
 
 enum class ColorPickerFlags {
-
     NOTHING = 0,
 
     WHEEL_ACTIVE    = (1 << 1),
