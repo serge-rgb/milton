@@ -222,17 +222,13 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     // Spawn below the picker
     Rect pbounds = get_bounds_for_picker_and_colors(milton_state.gui->picker);
 
-    /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
-    /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
-    ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Once);
-
     int color_stack = 0;
     ImGui::GetStyle().WindowFillAlphaDefault = 0.9f;  // Redundant for all calls but the first one...
     ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4{.5f,.5f,.5f,1}); ++color_stack;
     ImGui::PushStyleColor(ImGuiCol_TitleBg,         ImVec4{.3f,.3f,.3f,1}); ++color_stack;
     ImGui::PushStyleColor(ImGuiCol_TitleBgActive,   ImVec4{.4f,.4f,.4f,1}); ++color_stack;
     ImGui::PushStyleColor(ImGuiCol_Button,          ImVec4{.3f,.3f,.4f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_Text,            ImVec4{.1f,.1f,.1f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_Text,            ImVec4{1, 1, 1, 1}); ++color_stack;
 
     ImGui::PushStyleColor(ImGuiCol_MenuBarBg,   ImVec4{.3f,.3f,.3f,1}); ++color_stack;
 
@@ -240,10 +236,9 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
 
     int menu_style_stack = 0;
-    ImGui::PushStyleColor(ImGuiCol_Text,            ImVec4{.1f,.5f,.9f,1}); ++menu_style_stack;
     ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4{.3f,.3f,.3f,1}); ++menu_style_stack;
     ImGui::PushStyleColor(ImGuiCol_TextDisabled,   ImVec4{.9f,.3f,.3f,1}); ++menu_style_stack;
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4{.7f,.3f,.3f,1}); ++menu_style_stack;
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4{.3f,.3f,.6f,1}); ++menu_style_stack;
     if ( ImGui::BeginMainMenuBar() ) {
         if ( ImGui::BeginMenu("File") ) {
             if ( ImGui::MenuItem("Open Milton Canvas") ) {
@@ -261,10 +256,18 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     }
     ImGui::PopStyleColor(menu_style_stack);
 
-
+    // TODO (IMPORTANT): Add a "reset UI" option? widgets might get outside the viewport without a way to get back.
 
     ImGui::Begin("Brushes");
     {
+        // Size
+
+        /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
+        /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
+
+        ImGui::SetWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
+        ImGui::SetWindowSize({271, 109}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+
         if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
             float mut_alpha = pen_alpha;
             ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
@@ -426,7 +429,7 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 {
     i32 bounds_radius_px = 100;
     f32 wheel_half_width = 12;
-    gui->picker.center = { bounds_radius_px + 20, bounds_radius_px + 20 };
+    gui->picker.center = { bounds_radius_px + 20, bounds_radius_px + 30 };
     gui->picker.bounds_radius_px = bounds_radius_px;
     gui->picker.wheel_half_width = wheel_half_width;
     gui->picker.wheel_radius = (f32)bounds_radius_px - 5.0f - wheel_half_width;
