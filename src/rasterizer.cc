@@ -1505,7 +1505,7 @@ static void copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
     for (auto j = rect.top; j <= rect.bottom; ++j) {
         for (auto i = rect.left; i <= rect.right; ++i) {
             auto bufi = j*milton_state->view->screen_size.w + i;
-            *raster_ptr++ = *canvas_ptr++;
+            raster_ptr[bufi] = canvas_ptr[bufi];
         }
     }
 }
@@ -1667,12 +1667,17 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
     if (rect_is_valid(raster_limits)) {
         render_canvas(milton_state, raster_limits);
 
+        // Copy the whole thing. Makes gui elements redraw fast.
+        // Disabling this would mean keeping track of GUI updates for
+        // canvas redrawing.
+#if 1
         {
             raster_limits.left = 0;
             raster_limits.right = milton_state->view->screen_size.w;
             raster_limits.top = 0;
             raster_limits.bottom = milton_state->view->screen_size.h;
         }
+#endif
         copy_canvas_to_raster_buffer(milton_state, raster_limits);
 
         render_gui(milton_state, raster_limits, render_flags);

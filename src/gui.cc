@@ -228,11 +228,41 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
     int color_stack = 0;
     ImGui::GetStyle().WindowFillAlphaDefault = 0.9f;  // Redundant for all calls but the first one...
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4{.5f,.5f,.5f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4{.5f,.5f,.5f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4{.6f,.6f,.6f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{.3f,.3f,.4f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{.1f,.1f,.1f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4{.5f,.5f,.5f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBg,         ImVec4{.3f,.3f,.3f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,   ImVec4{.4f,.4f,.4f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_Button,          ImVec4{.3f,.3f,.4f,1}); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_Text,            ImVec4{.1f,.1f,.1f,1}); ++color_stack;
+
+    ImGui::PushStyleColor(ImGuiCol_MenuBarBg,   ImVec4{.3f,.3f,.3f,1}); ++color_stack;
+
+    //ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{.1f,.1f,.1f,1}); ++color_stack;
+
+
+    int menu_style_stack = 0;
+    ImGui::PushStyleColor(ImGuiCol_Text,            ImVec4{.1f,.5f,.9f,1}); ++menu_style_stack;
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4{.3f,.3f,.3f,1}); ++menu_style_stack;
+    ImGui::PushStyleColor(ImGuiCol_TextDisabled,   ImVec4{.9f,.3f,.3f,1}); ++menu_style_stack;
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4{.7f,.3f,.3f,1}); ++menu_style_stack;
+    if ( ImGui::BeginMainMenuBar() ) {
+        if ( ImGui::BeginMenu("File") ) {
+            if ( ImGui::MenuItem("Open Milton Canvas") ) {
+
+            }
+            ImGui::EndMenu();
+        }
+        if ( ImGui::BeginMenu("Canvas", /*enabled=*/false) ) {
+            ImGui::EndMenu();
+        }
+        if ( ImGui::BeginMenu("Help", /*enabled=*/false) ) {
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+    ImGui::PopStyleColor(menu_style_stack);
+
+
+
     ImGui::Begin("Brushes");
     {
         if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
@@ -321,7 +351,7 @@ static Rect picker_get_bounds(const ColorPicker* picker)
     return picker_rect;
 }
 
-void gui_imgui_ungrabbed(MiltonGui& gui)
+void gui_imgui_set_ungrabbed(MiltonGui& gui)
 {
     gui.is_showing_preview = false;
 }

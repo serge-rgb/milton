@@ -22,6 +22,7 @@ tweaks.
     -  GUI
         - F1 help widget
         - GUI toggle key
+        - Set background
         - "Export" button
         - Selection rectangle (engine support needed)
         - Export buttons
@@ -32,14 +33,16 @@ tweaks.
         - Options
             - GUI scale
         - History slider?
-    - EasyTab:
-        - OSX support.
-        - Windows stylus buttons.
-        - Distinction between eraser and pen.
+        - Ctrl -> Cmd in OSX. Other cross platform binding issues?
+    - Porting:
+        - Easytab: OSX support.
+        - Easytab: Windows stylus buttons.
+        - Easytab: Distinction between eraser and pen.
     - Application
         - App data directory
-            - Windows (AppData\Local\Milton)
-            - Unix (.milton)
+            - Windows (AppData\Local\MiltonPaint)
+            - Unix (.milton_paint)
+            - What if directory exists?
         - DPI-aware (gui scale set by default)
     - Performance:
         - Strokes should be sampled based on relative size

@@ -96,7 +96,7 @@ struct MiltonGui {
 // Call from the main loop before milton_update
 void milton_gui_tick(MiltonInputFlags& input, const MiltonState& milton_state);
 
-void gui_imgui_ungrabbed(MiltonGui& gui);
+void gui_imgui_set_ungrabbed(MiltonGui& gui);
 
 
 //
