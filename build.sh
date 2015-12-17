@@ -24,7 +24,7 @@ if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
 	-Wno-unused-function \
 	-Wno-unused-variable \
 	-Wno-unused-result \
-        -Wno-writable-strings \
+        -Wno-write-strings \
         -Wno-c++11-compat-deprecated-writable-strings \
 	-fno-strict-aliasing \
 	`pkg-config --cflags sdl2` \
