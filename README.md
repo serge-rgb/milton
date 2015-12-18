@@ -18,7 +18,7 @@ One problem with digital art tools is that pixels are too constraining. It is li
 Milton is open source, and runs on almost any machine. It has an efficient software renderer. It runs well on 10-year old laptops and on supercomputers. It is opinionated. There is no save button because this isn't the 80s anymore. Your work is persistent, with unlimited undo.
 
 It is handmade, data oriented, gamma-correct, and user friendly.
-    
+
 Features
 --------
 
@@ -94,9 +94,9 @@ Milton targets Windows, Linux and OSX. 64 bit is recommended but not necessary.
 
 Developed on:
 
-* Windows 7 (Intel x64, NVidia card)
-* Ubuntu 15.04 (same machine)
-* OSX 10.10 Yosemite (Macbook Pro mid 2012)
+* Windows 10 (Intel x64, NVidia GTX770)
+* Linux Mint 17.03 (same machine)
+* OSX 10.11 El Capitan (Macbook Pro mid 2012)
 
 Also known to work on:
 

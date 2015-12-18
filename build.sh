@@ -13,8 +13,13 @@ fi
 cd build
 if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
     # Omit -Wno-unused-(variable|function) to clean up code
-    clang++ -O2 -g -I../third_party ../src/headerlibs_impl.cc -c -o headerlibs_impl.o
-    ar rcs headerlibs_impl.a headerlibs_impl.o
+    echo 1...
+    if [ ! -f SKIP_HEADERLIBS ]; then
+        clang++ -O2 -g -I../third_party ../src/headerlibs_impl.cc -c -o headerlibs_impl.o
+        ar rcs headerlibs_impl.a headerlibs_impl.o
+        touch SKIP_HEADERLIBS
+    fi
+    echo 2...
     clang++                 \
         -I../third_party       \
         -I../third_party/imgui \
@@ -28,7 +33,7 @@ if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
         -Wno-c++11-compat-deprecated-writable-strings \
 	-fno-strict-aliasing \
 	`pkg-config --cflags sdl2` \
-	-O2 -g                  \
+	-O0 -g                  \
 	../src/milton_unity_build.cc -lGL -lm \
         headerlibs_impl.a        \
 	`pkg-config --libs sdl2` \
