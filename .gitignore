@@ -21,6 +21,7 @@ third_party/SDL2-2.0.3/VisualC
 *.psess
 *.vsp
 
+
 *.sleepy
 
 # SDL build
@@ -33,4 +34,7 @@ third_party/SDL2-2.0.3/sdl2-config
 third_party/SDL2-2.0.3/sdl2.pc
 
 # Linux build
-milton
+build/milton
+build/*.a
+build/*.o
+build/SKIP_HEADERLIBS
