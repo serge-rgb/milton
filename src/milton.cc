@@ -425,7 +425,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         if (passed_inspection && not_the_first) {
             i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
 
-            // Limit the number of points we check so that we don't mess with the strok too much.
+            // Limit the number of points we check so that we don't mess with the stroke too much.
             int point_window = 4;
             int count = 0;
             // Pop every point that is contained by the new one.
@@ -442,7 +442,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                                                  this_point, this_radius) ) {
                     milton_state->working_stroke.num_points -= 1;
                 } else if ( stroke_point_contains_point(this_point, this_radius,
-                                                     canvas_point, in_radius) ) {
+                                                        canvas_point, in_radius) ) {
                     // If some other point in the past contains this point,
                     // then this point is invalid.
                     passed_inspection = false;
@@ -712,7 +712,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         } else {
             if ( milton_state->working_stroke.num_points > 0 ) {
                 // We used the selected color to draw something. Push.
-                if(gui_mark_color_used(milton_state->gui, milton_state->working_stroke.brush.color.rgb)) {
+                if( gui_mark_color_used(milton_state->gui, milton_state->working_stroke.brush.color.rgb) ) {
                     set_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED);
                 }
                 // Copy current stroke.

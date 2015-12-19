@@ -68,6 +68,8 @@ void milton_load(MiltonState* milton_state)
                     // Corrupt file. Avoid this read
                     continue;       // Do not allocate, just move on.
                 }
+                // TODO: Loading a large drawing will result in many calloc
+                // calls that can be reduced in various ways. Check if this is a problem.
                 stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
                 stroke->points    = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export MILTON_SRC_DIR=`pwd`/src  # To get absolute paths in error msgs.
+
 
 # Look for sdl
 pkg-config --exists sdl2
@@ -33,8 +35,8 @@ if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
         -Wno-c++11-compat-deprecated-writable-strings \
 	-fno-strict-aliasing \
 	`pkg-config --cflags sdl2` \
-	-O0 -g                  \
-	../src/milton_unity_build.cc -lGL -lm \
+	-O2 -g                  \
+	$MILTON_SRC_DIR/milton_unity_build.cc -lGL -lm \
         headerlibs_impl.a        \
 	`pkg-config --libs sdl2` \
 	-lX11 -lXi \

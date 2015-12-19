@@ -27,23 +27,23 @@ struct PlatformInput {
     v2i pan_point;
 };
 
-// Called periodically to force updates that don't depend on user input.
-static u32 timer_callback(u32 interval, void *param)
-{
-    SDL_Event event;
-    SDL_UserEvent userevent;
+/* // Called periodically to force updates that don't depend on user input. */
+/* static u32 timer_callback(u32 interval, void *param) */
+/* { */
+/*     SDL_Event event; */
+/*     SDL_UserEvent userevent; */
 
-    userevent.type = SDL_USEREVENT;
-    userevent.code = 0;
-    userevent.data1 = NULL;
-    userevent.data2 = NULL;
+/*     userevent.type = SDL_USEREVENT; */
+/*     userevent.code = 0; */
+/*     userevent.data1 = NULL; */
+/*     userevent.data2 = NULL; */
 
-    event.type = SDL_USEREVENT;
-    event.user = userevent;
+/*     event.type = SDL_USEREVENT; */
+/*     event.user = userevent; */
 
-    SDL_PushEvent(&event);
-    return(interval);
-}
+/*     SDL_PushEvent(&event); */
+/*     return(interval); */
+/* } */
 
 int milton_main()
 {
@@ -140,7 +140,23 @@ int milton_main()
     v2i input_point = { 0 };
 
     // Every 100ms, call this callback to send us an event so we don't wait for user input.
-    SDL_AddTimer(100, timer_callback, NULL);
+// Called periodically to force updates that don't depend on user input.
+    SDL_AddTimer(100,
+                 [](u32 interval, void *param) {
+                     SDL_Event event;
+                     SDL_UserEvent userevent;
+
+                     userevent.type = SDL_USEREVENT;
+                     userevent.code = 0;
+                     userevent.data1 = NULL;
+                     userevent.data2 = NULL;
+
+                     event.type = SDL_USEREVENT;
+                     event.user = userevent;
+
+                     SDL_PushEvent(&event);
+                     return(interval);
+                 }, NULL);
 
     // IMGUI HELLO WORLD SHIT
     float f = 0.0f;

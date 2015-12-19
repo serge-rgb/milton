@@ -162,6 +162,9 @@ struct MiltonState {
     b32         worker_needs_memory;
 
     CPUCaps     cpu_caps;
+
+    // Quick and dirty way to count MOUSE_UP events as stroke points for mouse
+    // but discard them when using a tablet.
     b32         stroke_is_from_tablet;
 
     // ====

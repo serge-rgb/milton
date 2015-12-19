@@ -56,11 +56,13 @@ struct StrokeCord {
     size_t              chunk_size;
     size_t              count;
 };
-// A "stretchy" array with better locality, but not guarantee of
+// A "stretchy" array with better locality, but not guarantee of any two
+// pointers being adjacent
+//
 // It's a linked list of chunks. Chunks are fixed-size arrays of length `chunk_size`
 b32     push(StrokeCord& cord, Stroke elem);
 Stroke  pop(StrokeCord& cord, size_t i);
-size_t count(StrokeCord& cord);
+size_t  count(StrokeCord& cord);
 
 const v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
 

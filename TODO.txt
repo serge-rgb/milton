@@ -2,18 +2,6 @@ To-Do
 =====
 
 
-***
-
-    Hello, person reading this. The reason that there has been very little work
-on Milton lately is that I am very busy finishing my undergraduate thesis. I
-expect to continue being real productive sometime in mid-November to early
-December. Until then, all commits might be minor TODO.txt additions or small
-tweaks.
-    Rest assured, Milton won't ever be abandoned.
-
-***
-
-
 - Bugs
     - Lower GL dependencies so it runs on crappy hardware (as it should)
     - :)

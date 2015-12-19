@@ -56,7 +56,7 @@ void win32_log(char *format, ...)
     num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
 
     if ( num_bytes_written > 0 ) {
-	    OutputDebugStringA( message );
+        OutputDebugStringA( message );
     }
 
     va_end( args );
