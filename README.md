@@ -125,10 +125,7 @@ Requirements:
 - SDL2 development libraries. On Ubuntu, this is `apt-get install libsdl2-dev`
 - The clang compiler.
 
-Note: If setup.sh fails, just install the equivalents of clang and libsdl-dev for your distribution.
-
-1. `./build.sh`
-2. Milton is compiled to `./milton`
+Just run `make`
 
 OSX
 ---
@@ -139,7 +136,7 @@ Requirements:
 
 1. `./setup_osx.sh` to download dependencies and build SDL
 2. `./build_osx.sh`
-3. Milton is compiled to `./milton`
+3. Milton is compiled to `./build/milton`
 
 Roadmap
 -------

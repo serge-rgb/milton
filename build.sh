@@ -12,29 +12,30 @@ if [ ! -d build ]; then
     mkdir build
 fi
 
-cd build
-if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
+if [ $sdl_ok -eq 0 ]; then
+    cd build
     # Omit -Wno-unused-(variable|function) to clean up code
-    echo 1...
     if [ ! -f SKIP_HEADERLIBS ]; then
+        echo == Building dependencies...
         clang++ -O2 -g -I../third_party ../src/headerlibs_impl.cc -c -o headerlibs_impl.o
         ar rcs headerlibs_impl.a headerlibs_impl.o
         touch SKIP_HEADERLIBS
+        echo "    Run \`make clean\` or \`rm build/SKIP_HEADERLIBS\` to rebuild dependencies."
     fi
-    echo 2...
+    echo == Building milton...
     clang++                 \
         -I../third_party       \
         -I../third_party/imgui \
-	-std=c++11          \
-	-Wall -Werror       \
-	-Wno-missing-braces \
-	-Wno-unused-function \
-	-Wno-unused-variable \
-	-Wno-unused-result \
+        -std=c++11          \
+        -Wall -Werror       \
+        -Wno-missing-braces \
+        -Wno-unused-function \
+        -Wno-unused-variable \
+        -Wno-unused-result \
         -Wno-write-strings \
         -Wno-c++11-compat-deprecated-writable-strings \
-	-fno-strict-aliasing \
-	`pkg-config --cflags sdl2` \
+        -fno-strict-aliasing \
+        `pkg-config --cflags sdl2` \
         -O2 -g                  \
         $MILTON_SRC_DIR/milton_unity_build.cc -lGL -lm \
         headerlibs_impl.a        \
@@ -42,6 +43,8 @@ if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
         -lX11 -lXi \
         -o milton
         #-fsanitize=address\
+
+    cd ..
 else
     echo "SDL 2 not found."
     echo "   Please make sure that you have a development version of SDL2 installed. On"
@@ -50,8 +53,7 @@ else
 fi
 
 if [ $? -ne 0 ]; then
-    echo "Milton build failed."
+    echo Milton build failed.
 else
-    echo "Milton build succeeded."
+    echo Milton build succeeded. Program location: build/milton
 fi
-cd ..
