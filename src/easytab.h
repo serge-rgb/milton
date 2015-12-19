@@ -852,7 +852,8 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 
 void EasyTab_Unload()
 {
-    EasyTab->WTClose(EasyTab->Context);
+    if (EasyTab->Context)
+        EasyTab->WTClose(EasyTab->Context);
     if (EasyTab->Dll) { FreeLibrary(EasyTab->Dll); }
     free(EasyTab);
     EasyTab = NULL;
