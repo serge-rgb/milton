@@ -1,5 +1,7 @@
 # Milton saves
 *.mlt
+# imgui save
+imgui.ini
 
 src/template_expand
 src/*.generated.h

@@ -9,10 +9,11 @@ To-Do
 - Milton v0.1.0
     -  GUI
         - F1 help widget
+        - Set background color
         - GUI toggle key
-        - Set background
         - "Export" button
         - Selection rectangle (engine support needed)
+        - History slider
         - Export buttons
             - OS-dependent file-save dialog.
         - Brush / Eraser
@@ -20,9 +21,11 @@ To-Do
         - Layers (w/engine support)
         - Options
             - GUI scale
-        - History slider?
-        - Ctrl -> Cmd in OSX. Other cross platform binding issues?
+        - Set background image?
+        - Reduce or remove widget rounding
+        - can 'imgui.ini' be name-changed?
     - Porting:
+        - Ctrl -> Cmd in OSX. Other cross platform binding issues?
         - Easytab: OSX support.
         - Easytab: Windows stylus buttons.
         - Easytab: Distinction between eraser and pen.

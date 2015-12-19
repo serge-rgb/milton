@@ -35,12 +35,13 @@ if [ $sdl_ok -eq 0 ] && [ $? -eq 0 ]; then
         -Wno-c++11-compat-deprecated-writable-strings \
 	-fno-strict-aliasing \
 	`pkg-config --cflags sdl2` \
-	-O2 -g                  \
-	$MILTON_SRC_DIR/milton_unity_build.cc -lGL -lm \
+        -O2 -g                  \
+        $MILTON_SRC_DIR/milton_unity_build.cc -lGL -lm \
         headerlibs_impl.a        \
-	`pkg-config --libs sdl2` \
-	-lX11 -lXi \
-	-o milton
+        `pkg-config --libs sdl2` \
+        -lX11 -lXi \
+        -o milton
+        #-fsanitize=address\
 else
     echo "SDL 2 not found."
     echo "   Please make sure that you have a development version of SDL2 installed. On"
