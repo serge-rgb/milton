@@ -17,7 +17,7 @@ if [ $sdl_ok -eq 0 ]; then
     # Omit -Wno-unused-(variable|function) to clean up code
     if [ ! -f SKIP_HEADERLIBS ]; then
         echo == Building dependencies...
-        clang++ -O2 -g -I../third_party ../src/headerlibs_impl.cc -c -o headerlibs_impl.o
+        clang++ -O0 -g -I../third_party ../src/headerlibs_impl.cc -c -o headerlibs_impl.o
         ar rcs headerlibs_impl.a headerlibs_impl.o
         touch SKIP_HEADERLIBS
         echo "    Run \`make clean\` or \`rm build/SKIP_HEADERLIBS\` to rebuild dependencies."
@@ -36,7 +36,7 @@ if [ $sdl_ok -eq 0 ]; then
         -Wno-c++11-compat-deprecated-writable-strings \
         -fno-strict-aliasing \
         `pkg-config --cflags sdl2` \
-        -O2 -g                  \
+        -O0 -g                  \
         $MILTON_SRC_DIR/milton_unity_build.cc -lGL -lm \
         headerlibs_impl.a        \
         `pkg-config --libs sdl2` \
