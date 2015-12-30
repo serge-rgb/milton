@@ -27,7 +27,7 @@ clang++                 \
     ../third_party/build/libSDL2.a \
     ../third_party/build/libSDL2main.a \
     $MILTON_OSX_FLAGS \
-    -o milton.bin
+    -o milton
 
 cd ..
 

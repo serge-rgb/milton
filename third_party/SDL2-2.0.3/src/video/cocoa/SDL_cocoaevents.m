@@ -26,6 +26,12 @@
 #include "SDL_cocoavideo.h"
 #include "../../events/SDL_events_c.h"
 
+/* NOTE(serge_rgb):
+ *  Including milton's tablet hook to integrate EasyTab.
+ */
+#include "../../../../../src/platform_OSX_SDL_hooks.h"
+#include "../../../../../src/platform_OSX_SDL_hooks.m"
+
 #if !defined(UsrActivity) && defined(__LP64__) && !defined(__POWER__)
 /*
  * Workaround for a bug in the 10.5 SDK: By accident, OSService.h does
@@ -162,7 +168,7 @@ CreateApplicationMenus(void)
     if (NSApp == nil) {
         return;
     }
-    
+
     /* Create the main menu bar */
     [NSApp setMainMenu:[[NSMenu alloc] init]];
 
@@ -334,6 +340,15 @@ Cocoa_PumpEvents(_THIS)
         case NSKeyUp:
         case NSFlagsChanged:
             Cocoa_HandleKeyEvent(_this, event);
+            break;
+
+        /*
+         * NOTE(serge_rgb):
+         *  This is all we want to send to EasyTab for now...
+         */
+        case NSTabletProximity:
+        case NSTabletPoint:
+            milton_osx_tablet_hook(event);
             break;
         default:
             break;
