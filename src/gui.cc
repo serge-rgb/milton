@@ -32,24 +32,22 @@ static void picker_update_wheel(ColorPicker* picker, v2f polar_point)
     float angle = picker_wheel_get_angle(picker, polar_point);
     picker->info.hsv.h = radians_to_degrees(angle);
     // Update the triangle
+    float radius = 0.9f * (picker->wheel_radius - picker->wheel_half_width);
+    v2f center = v2i_to_v2f(picker->center);
     {
-        float radius = 0.9f * (picker->wheel_radius - picker->wheel_half_width);
-        v2f center = v2i_to_v2f(picker->center);
-        {
-            v2f point = polar_to_cartesian(-angle, radius);
-            point = point + center;
-            picker->info.c = point;
-        }
-        {
-            v2f point = polar_to_cartesian(-angle + 2 * kPi / 3.0f, radius);
-            point = point + center;
-            picker->info.b = point;
-        }
-        {
-            v2f point = polar_to_cartesian(-angle + 4 * kPi / 3.0f, radius);
-            point = point + center;
-            picker->info.a = point;
-        }
+        v2f point = polar_to_cartesian(-angle, radius);
+        point = point + center;
+        picker->info.c = point;
+    }
+    {
+        v2f point = polar_to_cartesian(-angle + 2 * kPi / 3.0f, radius);
+        point = point + center;
+        picker->info.b = point;
+    }
+    {
+        v2f point = polar_to_cartesian(-angle + 4 * kPi / 3.0f, radius);
+        point = point + center;
+        picker->info.a = point;
     }
 }
 
@@ -306,7 +304,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         }
         ImGui::PopStyleColor(1); // Pop white button text
 
-        //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
     const v2i pos = {
         (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),
