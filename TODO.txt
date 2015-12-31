@@ -10,7 +10,6 @@ To-Do
     -  GUI
         - F1 help widget
         - Set background color
-        - GUI toggle key
         - "Export" button
         - Selection rectangle (engine support needed)
         - History slider
@@ -64,11 +63,8 @@ To-Do
     - Playback
         - Store view changes in persist file
         - Playback mode? Separate viewer?
-    - Milton Image Viewer
-        - Legal crap
-            - Separate into Application / Engine.  App is GPL, "Engine" is liberal. For integration with other stuff!
-            - *or* Fuck it. Go full MIT
-        - Viewer API & examples.
+    - Milton Library
+        - Build as library. Write sample program.
 
 
 ============================================================

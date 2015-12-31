@@ -1671,7 +1671,9 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 #endif
         copy_canvas_to_raster_buffer(milton_state, raster_limits);
 
-        render_gui(milton_state, raster_limits, render_flags);
+        if ( milton_state->gui->visible ) {
+            render_gui(milton_state, raster_limits, render_flags);
+        }
     } else {
         milton_log("WARNING: Tried to render with invalid rect: (l r t b): %d %d %d %d\n",
                    raster_limits.left,

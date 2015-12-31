@@ -74,6 +74,8 @@ struct GuiButton {
 
 // typedef'd in milton.h
 struct MiltonGui {
+    b32 visible;
+
     b32 active;  // `active == true` when gui currently owns all user input.
     b32 did_change_color;
     b32 did_hit_button;  // Avoid multiple clicks.
@@ -93,16 +95,17 @@ struct MiltonGui {
 // Call from the main loop before milton_update
 void milton_gui_tick(MiltonInputFlags& input, const MiltonState& milton_state);
 
-void gui_imgui_set_ungrabbed(MiltonGui& gui);
 
 
 //
 void                gui_init(Arena* root_arena, MiltonGui* gui);
+void                gui_toggle_visibility(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
 b32                 gui_consume_input(MiltonGui* gui, MiltonInput* input);
 // Use if gui_consume_input was true and nothing else wants to capture input.
 MiltonRenderFlags   gui_process_input(MiltonState* milton_state, MiltonInput* input);
+void                gui_imgui_set_ungrabbed(MiltonGui& gui);
 
 // When a selected color is used in a stroke, call this to update the color
 // button list.

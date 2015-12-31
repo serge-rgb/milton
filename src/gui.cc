@@ -254,66 +254,69 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
     // TODO (IMPORTANT): Add a "reset UI" option? widgets might get outside the viewport without a way to get back.
 
-    ImGui::Begin("Brushes");
-    {
-        // Size
 
-        /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
-        /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
+    if ( milton_state.gui->visible ) {
+        ImGui::Begin("Brushes");
+        {
+            // Size
 
-        ImGui::SetWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
-        ImGui::SetWindowSize({271, 109}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+            /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
+            /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
 
-        if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
-            float mut_alpha = pen_alpha;
-            ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
-            if ( mut_alpha != pen_alpha ) {
-                milton_set_pen_alpha(&milton_state, mut_alpha);
+            ImGui::SetWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
+            ImGui::SetWindowSize({271, 109}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+
+            if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+                float mut_alpha = pen_alpha;
+                ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
+                if ( mut_alpha != pen_alpha ) {
+                    milton_set_pen_alpha(&milton_state, mut_alpha);
+                    milton_state.gui->is_showing_preview = true;
+                }
+            }
+
+            assert (check_flag(milton_state.current_mode, MiltonMode::ERASER) ||
+                    check_flag(milton_state.current_mode, MiltonMode::PEN));
+
+            const auto size = milton_get_brush_size(milton_state);
+            auto mut_size = size;
+
+            ImGui::SliderInt("Brush Size", &mut_size, 1, k_max_brush_size);
+
+            if (mut_size != size) {
+                milton_set_brush_size(milton_state, mut_size);
                 milton_state.gui->is_showing_preview = true;
             }
-        }
 
-        assert (check_flag(milton_state.current_mode, MiltonMode::ERASER) ||
-                check_flag(milton_state.current_mode, MiltonMode::PEN));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
+            {
+                if (!check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+                    if (ImGui::Button("Switch to Pen")) {
+                        set_flag(input, MiltonInputFlags::SET_MODE_PEN);
+                    }
+                }
 
-        const auto size = milton_get_brush_size(milton_state);
-        auto mut_size = size;
-
-        ImGui::SliderInt("Brush Size", &mut_size, 1, k_max_brush_size);
-
-        if (mut_size != size) {
-            milton_set_brush_size(milton_state, mut_size);
-            milton_state.gui->is_showing_preview = true;
-        }
-
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
-        {
-            if (!check_flag(milton_state.current_mode, MiltonMode::PEN)) {
-                if (ImGui::Button("Switch to Pen")) {
-                    set_flag(input, MiltonInputFlags::SET_MODE_PEN);
+                if (!check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
+                    if (ImGui::Button("Switch to Eraser")) {
+                        set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
+                    }
                 }
             }
+            ImGui::PopStyleColor(1); // Pop white button text
 
-            if (!check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
-                if (ImGui::Button("Switch to Eraser")) {
-                    set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
-                }
-            }
+            // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         }
-        ImGui::PopStyleColor(1); // Pop white button text
+        const v2i pos = {
+            (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),
+            (i32)(ImGui::GetWindowPos().y),
+        };
+        ImGui::End();  // Brushes
 
-        // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        if ( milton_state.gui->is_showing_preview ) {
+            milton_set_brush_preview(milton_state, pos);
+        }
     }
-    const v2i pos = {
-        (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),
-        (i32)(ImGui::GetWindowPos().y),
-    };
-    ImGui::End();
     ImGui::PopStyleColor(color_stack);
-
-    if ( milton_state.gui->is_showing_preview ) {
-        milton_set_brush_preview(milton_state, pos);
-    }
 
 }
 
@@ -420,6 +423,10 @@ MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* inpu
 
     return render_flags;
 }
+void gui_toggle_visibility(MiltonGui* gui)
+{
+    gui->visible = !gui->visible;
+}
 
 void gui_init(Arena* root_arena, MiltonGui* gui)
 {
@@ -437,6 +444,7 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
     bounds.bottom = gui->picker.center.y + bounds_radius_px;
     gui->picker.bounds = bounds;
     gui->picker.pixels = arena_alloc_array(root_arena, (4 * bounds_radius_px * bounds_radius_px), u32);
+    gui->visible = true;
 
     picker_init(&gui->picker);
 

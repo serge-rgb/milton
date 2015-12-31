@@ -25,24 +25,6 @@ struct PlatformInput {
     v2i pan_point;
 };
 
-/* // Called periodically to force updates that don't depend on user input. */
-/* static u32 timer_callback(u32 interval, void *param) */
-/* { */
-/*     SDL_Event event; */
-/*     SDL_UserEvent userevent; */
-
-/*     userevent.type = SDL_USEREVENT; */
-/*     userevent.code = 0; */
-/*     userevent.data1 = NULL; */
-/*     userevent.data2 = NULL; */
-
-/*     event.type = SDL_USEREVENT; */
-/*     event.user = userevent; */
-
-/*     SDL_PushEvent(&event); */
-/*     return(interval); */
-/* } */
-
 int milton_main()
 {
     // Note: Possible crash regarding SDL_main entry point.
@@ -325,6 +307,8 @@ int milton_main()
                             set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_ERASER);
                         } else if (keycode == SDLK_b) {
                             set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_PEN);
+                        } else if (keycode == SDLK_TAB) {
+                            gui_toggle_visibility(milton_state->gui);
                         } else if (keycode == SDLK_1) {
                             milton_set_pen_alpha(milton_state, 0.1f);
                         } else if (keycode == SDLK_2) {
