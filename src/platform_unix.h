@@ -58,6 +58,11 @@
 
 #define platform_milton_log printf
 
+#if defined(__MACH__)
+// Include header for our SDL hook.
+#include "platform_OSX_SDL_hooks.h"
+#endif
+
 void milton_fatal(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");

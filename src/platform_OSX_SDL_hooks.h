@@ -2,9 +2,19 @@
  * Hello there!
  * */
 
-#define MILTON_TABLET_EVT_QUEUE_SIZE 512
+#pragma once
+
 
 // NOTE
 //  Since we are using NSEvent to get tablet data, we are forcing OSX >= 10.4
 
-extern void milton_osx_tablet_hook(NSEvent* event);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void     milton_osx_tablet_hook(/* NSEvent* */void* event);
+float*   milton_osx_poll_pressures(int* out_num_pressures);
+
+#ifdef __cplusplus
+}
+#endif

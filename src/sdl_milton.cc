@@ -409,6 +409,18 @@ int milton_main()
                 break;
             }
         }
+        // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
+#if defined(__MACH__)
+        assert( num_pressure_results == 0 );
+        int num_polled_pressures = 0;
+        float* polled_pressures = milton_osx_poll_pressures(&num_polled_pressures);
+        if ( num_polled_pressures ) {
+            for (int i = num_polled_pressures - 1; i >= 0; --i) {
+                milton_input.pressures[num_pressure_results++] = polled_pressures[i];
+            }
+        }
+#endif
+
 
         // TODO: get framebuffer size
         ImGui_ImplSDLGL3_NewFrame(width, height, width, height);

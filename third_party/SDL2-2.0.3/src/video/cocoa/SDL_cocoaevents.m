@@ -27,7 +27,7 @@
 #include "../../events/SDL_events_c.h"
 
 /* NOTE(serge_rgb):
- *  Including milton's tablet hook to integrate EasyTab.
+ *  Including milton's tablet hook for tablet implementation
  */
 #include "../../../../../src/platform_OSX_SDL_hooks.h"
 #include "../../../../../src/platform_OSX_SDL_hooks.m"
@@ -332,8 +332,12 @@ Cocoa_PumpEvents(_THIS)
         case NSLeftMouseDragged:
         case NSRightMouseDragged:
         case NSOtherMouseDragged: /* usually middle mouse dragged */
-        case NSMouseMoved:
+            Cocoa_HandleMouseEvent(_this, event);
+            /** NOTE(serge_rgb): We need to handle oll of the events above */
+            milton_osx_tablet_hook(event);
+            break;
         case NSScrollWheel:
+        case NSMouseMoved:
             Cocoa_HandleMouseEvent(_this, event);
             break;
         case NSKeyDown:
@@ -342,14 +346,15 @@ Cocoa_PumpEvents(_THIS)
             Cocoa_HandleKeyEvent(_this, event);
             break;
 
-        /*
-         * NOTE(serge_rgb):
-         *  This is all we want to send to EasyTab for now...
-         */
+            /* NOTE(serge_rgb): */
+            /* We don't need these, just leaving it here for documentation */
+
+            /*
         case NSTabletProximity:
         case NSTabletPoint:
-            milton_osx_tablet_hook(event);
+        case NSEventTypePressure:
             break;
+            */
         default:
             break;
         }

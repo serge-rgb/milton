@@ -2,21 +2,38 @@
  *
  */
 
-#include <stdio.h>
+// Notes:
+//  This is a hack. It works but it ain't exactly pretty.
+//  It won't work if SDL is linked dynamically.
+//
 
-struct MiltonTabletEvent {
-    int x;
-    int y;
-    float pressure;
+#define MILTON_TABLET_EVT_QUEUE_SIZE 512
+
+
+struct MiltonPressureQueue {
+    int count;
+    float pressures[MILTON_TABLET_EVT_QUEUE_SIZE];
 };
 
-struct MiltonTabletEventQueue {
-    int head;
-    int tail;
-    struct MiltonTabletEvent events[MILTON_TABLET_EVT_QUEUE_SIZE];
-};
+struct MiltonPressureQueue g_milton_tablet_pressures;
 
-void milton_osx_tablet_hook(NSEvent* event)
+float* milton_osx_poll_pressures(int* out_num_pressures)
 {
-    exit(-1);
+    *out_num_pressures = 0;
+    float* pressures = NULL;
+    if (g_milton_tablet_pressures.count != 0) {
+        *out_num_pressures = g_milton_tablet_pressures.count;
+
+        pressures = g_milton_tablet_pressures.pressures;
+        g_milton_tablet_pressures.count = 0;
+    }
+    return pressures;
+}
+
+void milton_osx_tablet_hook(void* event_)
+{
+    NSEvent* event = (NSEvent*)event_;
+    float pressure = [event pressure];
+    g_milton_tablet_pressures.pressures[g_milton_tablet_pressures.count++] = pressure;
+    assert ( g_milton_tablet_pressures.count < MILTON_TABLET_EVT_QUEUE_SIZE );
 }
