@@ -143,6 +143,13 @@ Roadmap
 
 See TODO.txt
 
+License
+=======
+
+Copyright 2015 Sergio Gonzalez. All rights reserved.
+
+Milton is licensed under the GNU Lesser General Public License. See LICENSE.txt.
+
 Thank You
 =========
 

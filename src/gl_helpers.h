@@ -1,13 +1,17 @@
-// gl_helpers.h
-//  Sergio Gonzalez
+// This file is part of Milton.
 //
-// (2015-09-15) - Updated to depend on GL_ARB_shader_objects,
-//  ARB_vertex_program, and ARB_fragment_program to increase compatibility
+// Milton is free software: you can redistribute it and/or modify it under the
+// terms of the GNU Lesser General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
 //
+// Milton is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+// more details.
 //
-// This software is in the public domain. Where that dedication is not
-// recognized, you are granted a perpetual, irrevocable license to copy
-// and modify this file as you see fit.
+// You should have received a copy of the GNU Lesser General Public License
+// along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
