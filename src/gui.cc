@@ -304,7 +304,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         }
         ImGui::PopStyleColor(1); // Pop white button text
 
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
     const v2i pos = {
         (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),

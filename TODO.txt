@@ -26,13 +26,12 @@ To-Do
         - can 'imgui.ini' be name-changed?
     - Porting:
         - Ctrl -> Cmd in OSX. Other cross platform binding issues?
-        - Easytab: OSX support.
-        - Easytab: Windows stylus buttons.
+        - Easytab: Stylus buttons.
         - Easytab: Distinction between eraser and pen.
     - Application
         - App data directory
             - Windows (AppData\Local\MiltonPaint)
-            - Unix (.milton_paint)
+            - Unix (~/.config/milton_paint)
             - What if directory exists?
         - DPI-aware (gui scale set by default)
     - Performance:

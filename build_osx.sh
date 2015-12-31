@@ -9,7 +9,7 @@ fi
 cd build
 
 # Omit -Wno-unused-(variable|function) to clean up code
-clang++ -O0 -g -I../third_party $MILTON_SRC_DIR/headerlibs_impl.cc -c -o headerlibs_impl.o
+clang++ -O2 -g -I../third_party $MILTON_SRC_DIR/headerlibs_impl.cc -c -o headerlibs_impl.o
 ar rcs headerlibs_impl.a headerlibs_impl.o
 clang++                 \
     -std=c++11          \
@@ -21,7 +21,7 @@ clang++                 \
     -Wno-writable-strings \
     -Wno-c++11-compat-deprecated-writable-strings \
     -fno-strict-aliasing \
-    -O0 -g                  \
+    -O2 -g                  \
     $MILTON_SRC_DIR/milton_unity_build.cc \
     headerlibs_impl.a        \
     ../third_party/build/libSDL2.a \
