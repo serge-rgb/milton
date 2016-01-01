@@ -120,7 +120,7 @@ int milton_main()
     v2i input_point = { 0 };
 
     // Every 100ms, call this callback to send us an event so we don't wait for user input.
-// Called periodically to force updates that don't depend on user input.
+    // Called periodically to force updates that don't depend on user input.
     SDL_AddTimer(100,
                  [](u32 interval, void *param) {
                      SDL_Event event;
@@ -239,6 +239,7 @@ int milton_main()
                             set_flag(milton_input.flags, MiltonInputFlags::FAST_DRAW);
                             set_flag(milton_input.flags, MiltonInputFlags::FULL_REFRESH);
                         }
+                        unset_flag(milton_input.flags, MiltonInputFlags::HOVERING);
                     } else {
                         set_flag(milton_input.flags, MiltonInputFlags::HOVERING);
                         milton_input.hover_point = input_point;
@@ -309,6 +310,8 @@ int milton_main()
                             set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_PEN);
                         } else if (keycode == SDLK_TAB) {
                             gui_toggle_visibility(milton_state->gui);
+                        } else if (keycode == SDLK_1) {
+                            gui_toggle_help(milton_state->gui);
                         } else if (keycode == SDLK_1) {
                             milton_set_pen_alpha(milton_state, 0.1f);
                         } else if (keycode == SDLK_2) {
