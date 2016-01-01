@@ -215,6 +215,9 @@ int milton_main()
                         set_flag(milton_input.flags, MiltonInputFlags::END_STROKE);
                         input_point = { event.button.x, event.button.y };
                         milton_input.points[num_point_results++] = input_point;
+                        // Start drawing hover as soon as we stop the stroke.
+                        milton_input.hover_point = input_point;
+                        set_flag(milton_input.flags, MiltonInputFlags::HOVERING);
                     } else if (platform_input.is_panning) {
                         if (!platform_input.is_space_down) {
                             platform_input.is_panning = false;
@@ -228,7 +231,6 @@ int milton_main()
                     if (event.motion.windowID != window_id) {
                         break;
                     }
-
                     input_point = { event.motion.x, event.motion.y };
                     if (platform_input.is_pointer_down) {
                         if ( !platform_input.is_panning && !got_tablet_point_input ) {
@@ -393,6 +395,10 @@ int milton_main()
             if (should_quit) {
                 break;
             }
+        }
+
+        if ( platform_input.is_pointer_down && check_flag(milton_input.flags, MiltonInputFlags::HOVERING) ) {
+            milton_input.hover_point = {-100, -100};
         }
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
 #if defined(__MACH__)
