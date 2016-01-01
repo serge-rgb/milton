@@ -6,9 +6,8 @@ To-Do
     - Lower GL dependencies so it runs on crappy hardware (as it should)
     - :)
 
-- Milton v0.1.0
+- Milton v1.0.0
     -  GUI
-        - F1 help widget
         - Set background color
         - "Export" button
         - Selection rectangle (engine support needed)
@@ -23,6 +22,8 @@ To-Do
         - Set background image?
         - Reduce or remove widget rounding
         - can 'imgui.ini' be name-changed?
+        - First time run:
+            - Show help widget.
     - Porting:
         - Ctrl -> Cmd in OSX. Other cross platform binding issues?
         - Easytab: Stylus buttons.

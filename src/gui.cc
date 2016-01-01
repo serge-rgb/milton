@@ -245,7 +245,11 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         if ( ImGui::BeginMenu("Canvas", /*enabled=*/false) ) {
             ImGui::EndMenu();
         }
-        if ( ImGui::BeginMenu("Help", /*enabled=*/false) ) {
+        if ( ImGui::BeginMenu("Help") ) {
+            const char* help_window_title = milton_state.gui->show_help_widget ? "Hide Keyboard Shortcuts" : "Show Keyboard Shortcuts";
+            if ( ImGui::MenuItem(help_window_title) ) {
+                gui_toggle_help(milton_state.gui);
+            }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -256,8 +260,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
 
     if ( milton_state.gui->visible ) {
-        ImGui::Begin("Brushes");
-        {
+        if( ImGui::Begin("Brushes") ) {
             // Size
 
             /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
@@ -315,6 +318,37 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         if ( milton_state.gui->is_showing_preview ) {
             milton_set_brush_preview(milton_state, pos);
         }
+
+        if ( milton_state.gui->show_help_widget ) {
+            //bool opened;
+            //if ( ImGui::Begin("Help"), &opened, (ImGuiWindowFlags)(ImGuiWindowFlags_NoCollapse) ) {
+            if ( ImGui::Begin("Help") ) {
+                ImGui::SetWindowPos(ImVec2(365, 92), ImGuiSetCond_FirstUseEver);
+                ImGui::SetWindowSize({235, 215}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+                ImGui::TextWrapped(
+                                   "Increase brush size        ]\n"
+                                   "Decrease brush size        [\n"
+                                   "Brush                      b\n"
+                                   "Eraser                     e\n"
+                                   "10%% opacity                1\n"
+                                   "20%% opacity                2\n"
+                                   "30%% opacity                3\n"
+                                   "             ...            \n"
+                                   "90%% opacity                9\n"
+                                   "100%% opacity               0\n"
+                                   "\n"
+                                   "Show/Hide Help Window     F1\n"
+                                   "\n"
+                                   "\n"
+                                   );
+            }
+            // If the user closed the Help window...
+            /* if ( !opened ) { */
+            /*     milton_state.gui->show_help_widget = false; */
+            /* } */
+            ImGui::End();  // Help
+        }
+
     }
     ImGui::PopStyleColor(color_stack);
 
@@ -423,9 +457,18 @@ MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* inpu
 
     return render_flags;
 }
+
 void gui_toggle_visibility(MiltonGui* gui)
 {
     gui->visible = !gui->visible;
+}
+
+void gui_toggle_help(MiltonGui* gui)
+{
+    if ( !gui->visible ) {
+        gui_toggle_visibility(gui);
+    }
+    gui->show_help_widget = !gui->show_help_widget;
 }
 
 void gui_init(Arena* root_arena, MiltonGui* gui)

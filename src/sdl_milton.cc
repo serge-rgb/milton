@@ -310,7 +310,7 @@ int milton_main()
                             set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_PEN);
                         } else if (keycode == SDLK_TAB) {
                             gui_toggle_visibility(milton_state->gui);
-                        } else if (keycode == SDLK_1) {
+                        } else if (keycode == SDLK_F1) {
                             gui_toggle_help(milton_state->gui);
                         } else if (keycode == SDLK_1) {
                             milton_set_pen_alpha(milton_state, 0.1f);

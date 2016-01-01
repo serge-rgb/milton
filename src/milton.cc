@@ -616,14 +616,18 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if (check_flag( input->flags, MiltonInputFlags::SET_MODE_PEN )) {
-        set_flag(milton_state->current_mode, MiltonMode::PEN);
-        unset_flag(milton_state->current_mode, MiltonMode::ERASER);
-        milton_update_brushes(milton_state);
+        if ( !check_flag( milton_state->current_mode, MiltonMode::PEN ) ) {
+            set_flag(milton_state->current_mode, MiltonMode::PEN);
+            unset_flag(milton_state->current_mode, MiltonMode::ERASER);
+            milton_update_brushes(milton_state);
+        }
     }
     if (check_flag( input->flags, MiltonInputFlags::SET_MODE_ERASER )) {
-        set_flag(milton_state->current_mode, MiltonMode::ERASER);
-        unset_flag(milton_state->current_mode, MiltonMode::PEN);
-        milton_update_brushes(milton_state);
+        if ( !check_flag( milton_state->current_mode, MiltonMode::ERASER ) ) {
+            set_flag(milton_state->current_mode, MiltonMode::ERASER);
+            unset_flag(milton_state->current_mode, MiltonMode::PEN);
+            milton_update_brushes(milton_state);
+        }
     }
 
     if (check_flag( input->flags, MiltonInputFlags::UNDO )) {

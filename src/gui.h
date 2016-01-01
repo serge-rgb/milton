@@ -62,7 +62,7 @@ struct ColorPicker {
 };
 
 enum class ColorPickResult {
-    NOTHING         = 0,
+    NOTHING,
     CHANGE_COLOR,
 };
 
@@ -74,12 +74,13 @@ struct GuiButton {
 
 // typedef'd in milton.h
 struct MiltonGui {
-    b32 visible;
+    b32 visible          = true;
+    b32 show_help_widget = false;
 
     b32 active;  // `active == true` when gui currently owns all user input.
     b32 did_change_color;
     b32 did_hit_button;  // Avoid multiple clicks.
-    b32 is_showing_preview;
+    b32 is_showing_preview;  // Preview brush shown next to "Brushes" widget
 
     ColorPicker picker;
 
@@ -96,10 +97,10 @@ struct MiltonGui {
 void milton_gui_tick(MiltonInputFlags& input, const MiltonState& milton_state);
 
 
-
 //
 void                gui_init(Arena* root_arena, MiltonGui* gui);
 void                gui_toggle_visibility(MiltonGui* gui);
+void                gui_toggle_help(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
 b32                 gui_consume_input(MiltonGui* gui, MiltonInput* input);
