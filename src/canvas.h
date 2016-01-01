@@ -37,6 +37,7 @@ struct CanvasView {
     v2i     pan_vector;             // In canvas scale
     i32     downsampling_factor;
     i32     canvas_radius_limit;
+    v3f     background_color;
 };
 
 struct StrokeCord {

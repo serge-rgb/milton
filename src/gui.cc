@@ -242,7 +242,10 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
             }
             ImGui::EndMenu();
         }
-        if ( ImGui::BeginMenu("Canvas", /*enabled=*/false) ) {
+        if ( ImGui::BeginMenu("Canvas", /*enabled=*/true) ) {
+            if ( ImGui::MenuItem("Set Background Color") ) {
+                milton_state.gui->choosing_bg_color = true;
+            }
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu("Help") ) {
@@ -260,7 +263,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
 
     if ( milton_state.gui->visible ) {
-        if( ImGui::Begin("Brushes") ) {
+        if( ImGui::Begin("Brushes", NULL, ImGuiWindowFlags_NoCollapse) ) {
             // Size
 
             /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
@@ -319,10 +322,28 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
             milton_set_brush_preview(milton_state, pos);
         }
 
+        if ( milton_state.gui->choosing_bg_color ) {
+            bool closed;
+            if ( ImGui::Begin("Choose Background Color", &closed, ImGuiWindowFlags_NoCollapse) ) {
+                ImGui::SetWindowSize({271, 109}, ImGuiSetCond_FirstUseEver);
+                ImGui::Text("Sup");
+                float color[3];
+                if ( ImGui::ColorEdit3("Background Color", milton_state.view->background_color.d) ) {
+                    set_flag(input, MiltonInputFlags::FULL_REFRESH);
+                    set_flag(input, MiltonInputFlags::FAST_DRAW);
+                }
+                if ( closed ) {
+                    milton_state.gui->choosing_bg_color = false;
+                }
+            }
+            ImGui::End();
+        }
+
         if ( milton_state.gui->show_help_widget ) {
             //bool opened;
             //if ( ImGui::Begin("Help"), &opened, (ImGuiWindowFlags)(ImGuiWindowFlags_NoCollapse) ) {
-            if ( ImGui::Begin("Help") ) {
+            bool closed;
+            if ( ImGui::Begin("Shortcuts", &closed, ImGuiWindowFlags_NoCollapse) ) {
                 ImGui::SetWindowPos(ImVec2(365, 92), ImGuiSetCond_FirstUseEver);
                 ImGui::SetWindowSize({235, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
                 ImGui::TextWrapped(
@@ -342,11 +363,10 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
                                    "\n"
                                    "\n"
                                    );
+                if ( closed ) {
+                    gui_toggle_help(milton_state.gui);
+                }
             }
-            // If the user closed the Help window...
-            /* if ( !opened ) { */
-            /*     milton_state.gui->show_help_widget = false; */
-            /* } */
             ImGui::End();  // Help
         }
 

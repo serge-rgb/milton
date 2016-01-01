@@ -8,7 +8,6 @@ To-Do
 
 - Milton v1.0.0
     -  GUI
-        - Set background color
         - "Export" button
         - Selection rectangle (engine support needed)
         - History slider
@@ -37,14 +36,13 @@ To-Do
     - Performance:
         - Strokes should be sampled based on relative size
         - memcpy when Panning (most users will benefit hugely)
-        - Do not redraw when stroking over existing drawing.
         - Adaptive resolution scaling
-        - Check valgrind for cache performance from new allocation patterns..
-        - 4x4 Blockgroups (morton-order)
         - Undo/Redo: Only redraw necessary area.
         - Amdahl's curse... Parallelize GUI rendering
         - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
+        - 4x4 Blockgroups (morton-order)
         - AVX backend??
+        - Do not redraw when stroking over existing drawing? Only on top layer?
     - Robust save
         - Save to temp file and swap
         - Keep backups

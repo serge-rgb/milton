@@ -82,6 +82,8 @@ struct MiltonGui {
     b32 did_hit_button;  // Avoid multiple clicks.
     b32 is_showing_preview;  // Preview brush shown next to "Brushes" widget
 
+    b32 choosing_bg_color = false;
+
     ColorPicker picker;
 
     GuiButton brush_button;

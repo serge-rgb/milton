@@ -369,7 +369,9 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
               pixel_i < raster_block.right;
               pixel_i += downsample_factor ) {
             // Clear color
-            v4f background_color = { 1, 1, 1, 1 };
+            v4f background_color;
+            background_color.rgb = view->background_color;
+            background_color.a = 1.0f;
 
             // Cumulative blending
             v4f acc_color = { 0 };
@@ -628,7 +630,9 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
               pixel_i < raster_block.right;
               pixel_i += downsample_factor ) {
             // Clear color
-            v4f background_color = { 1, 1, 1, 1 };
+            v4f background_color;
+            background_color.rgb = view->background_color;
+            background_color.a = 1.0f;
 
             // Cumulative blending
             v4f acc_color = { 0 };
@@ -1509,6 +1513,7 @@ static void render_gui_button(u32* raster_buffer, i32 w, i32 h, GuiButton* butto
 
 static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRenderFlags render_flags)
 {
+    const b32 gui_visible = milton_state->gui->visible;  // Some elements are not affected by this, like the hover outline
     b32 redraw = false;
     Rect picker_rect = get_bounds_for_picker_and_colors(milton_state->gui->picker);
     Rect clipped = rect_intersect(picker_rect, raster_limits);
@@ -1517,7 +1522,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
     }
     u32* raster_buffer = (u32*)milton_state->raster_buffer;
     MiltonGui* gui = milton_state->gui;
-    if ( redraw || (check_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED)) ) {
+    if ( gui_visible && (redraw || (check_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED))) ) {
 
         render_picker(&milton_state->gui->picker,
                       raster_buffer,
@@ -1560,34 +1565,35 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
     }
 
 
-    // Render button
-    render_gui_button(raster_buffer,
-                      milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                      &gui->brush_button);
+    if ( gui_visible ) {  // Render button
+        render_gui_button(raster_buffer,
+                          milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                          &gui->brush_button);
 
-    if (check_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW)) {
-        assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
-        const auto radius = milton_get_brush_size(*milton_state);
-        {
-            auto r = k_max_brush_size + 2;
-            auto x = gui->preview_pos_prev.x != -1? gui->preview_pos_prev.x : gui->preview_pos.x;
-            auto y = gui->preview_pos_prev.y != -1? gui->preview_pos_prev.y : gui->preview_pos.y;
+        if (check_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW)) {
+            assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
+            const auto radius = milton_get_brush_size(*milton_state);
+            {
+                auto r = k_max_brush_size + 2;
+                auto x = gui->preview_pos_prev.x != -1? gui->preview_pos_prev.x : gui->preview_pos.x;
+                auto y = gui->preview_pos_prev.y != -1? gui->preview_pos_prev.y : gui->preview_pos.y;
+            }
+            if ( check_flag(milton_state->current_mode, MiltonMode::PEN) ) {
+                draw_circle(raster_buffer,
+                            milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                            gui->preview_pos.x, gui->preview_pos.y,
+                            radius,
+                            to_premultiplied(hsv_to_rgb(gui->picker.info.hsv), milton_get_pen_alpha(*milton_state)));
+            }
+            draw_ring(raster_buffer,
+                      milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                      gui->preview_pos.x, gui->preview_pos.y,
+                      radius, 2,
+                      {});
+            gui->preview_pos_prev = gui->preview_pos;
+            gui->preview_pos = { -1, -1 };
+            // TODO: Request redraw rect here.
         }
-        if ( check_flag(milton_state->current_mode, MiltonMode::PEN) ) {
-            draw_circle(raster_buffer,
-                        milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                        gui->preview_pos.x, gui->preview_pos.y,
-                        radius,
-                        to_premultiplied(hsv_to_rgb(gui->picker.info.hsv), milton_get_pen_alpha(*milton_state)));
-        }
-        draw_ring(raster_buffer,
-                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                  gui->preview_pos.x, gui->preview_pos.y,
-                  radius, 2,
-                  {});
-        gui->preview_pos_prev = gui->preview_pos;
-        gui->preview_pos = { -1, -1 };
-        // TODO: Request redraw rect here.
     }
     if ( check_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER) ) {
         const auto radius = milton_get_brush_size(*milton_state);
@@ -1671,9 +1677,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 #endif
         copy_canvas_to_raster_buffer(milton_state, raster_limits);
 
-        if ( milton_state->gui->visible ) {
-            render_gui(milton_state, raster_limits, render_flags);
-        }
+        render_gui(milton_state, raster_limits, render_flags);
     } else {
         milton_log("WARNING: Tried to render with invalid rect: (l r t b): %d %d %d %d\n",
                    raster_limits.left,

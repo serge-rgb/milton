@@ -135,6 +135,24 @@ template<typename T> bool operator== (Vec3<T> a, Vec3<T> b)
     return result;
 }
 
+template<typename T> Vec3<T> operator* (Vec3<T> v, T factor)
+{
+    Vec3<T> result;
+    result.x = factor * v.x;
+    result.y = factor * v.y;
+    result.z = factor * v.z;
+    return result;
+}
+
+/* template<typename T> Vec2<T> operator*= (Vec2<T> v, T factor) */
+/* { */
+/*     Vec2<T> result; */
+/*     result.x = factor * v.x; */
+/*     result.y = factor * v.y; */
+/*     result.z = factor * v.z; */
+/*     return result; */
+/* } */
+
 template<typename T>
 struct Vec4
 {

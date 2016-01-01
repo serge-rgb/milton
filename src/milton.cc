@@ -285,6 +285,7 @@ void milton_init(MiltonState* milton_state)
                                                            Arena);
     milton_state->worker_memory_size = 65536;
 
+
     assert (milton_state->num_render_workers);
 
     // Allocate enough memory for the maximum possible supported resolution. As
@@ -314,6 +315,7 @@ void milton_init(MiltonState* milton_state)
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         milton_state->view->downsampling_factor = 1;
         milton_state->view->canvas_radius_limit = 1024 * 1024 * 512;
+        milton_state->view->background_color = { 254.0f, 254.0f, 254.0f };
 #if 0
         milton_state->view->rotation = 0;
         for (int d = 0; d < 360; d++)
