@@ -324,20 +324,21 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
             //if ( ImGui::Begin("Help"), &opened, (ImGuiWindowFlags)(ImGuiWindowFlags_NoCollapse) ) {
             if ( ImGui::Begin("Help") ) {
                 ImGui::SetWindowPos(ImVec2(365, 92), ImGuiSetCond_FirstUseEver);
-                ImGui::SetWindowSize({235, 215}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+                ImGui::SetWindowSize({235, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
                 ImGui::TextWrapped(
                                    "Increase brush size        ]\n"
                                    "Decrease brush size        [\n"
-                                   "Brush                      b\n"
+                                   "Pen                        b\n"
                                    "Eraser                     e\n"
-                                   "10%% opacity                1\n"
-                                   "20%% opacity                2\n"
-                                   "30%% opacity                3\n"
-                                   "             ...            \n"
-                                   "90%% opacity                9\n"
+                                   "10%%  opacity               1\n"
+                                   "20%%  opacity               2\n"
+                                   "30%%  opacity               3\n"
+                                   "             ...             \n"
+                                   "90%%  opacity               9\n"
                                    "100%% opacity               0\n"
                                    "\n"
                                    "Show/Hide Help Window     F1\n"
+                                   "Toggle GUI Visibility     Tab\n"
                                    "\n"
                                    "\n"
                                    );
