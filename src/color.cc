@@ -131,29 +131,6 @@ v4f to_premultiplied(v3f rgb, f32 a)
     return rgba;
 }
 
-// TODO: Fix linear <-> gamma functions to mean SRGB or 2-power-curve
-
-v4f linear_to_sRGB_v4(v4f rgb)
-{
-#if FAST_GAMMA
-    v4f srgb = {
-        sqrtf(rgb.r),
-        sqrtf(rgb.g),
-        sqrtf(rgb.b),
-        rgb.a,
-    };
-#else
-#error "Do a correct implementation"
-    v4f srgb = {
-        powf(rgb.r, 1/2.22f),
-        powf(rgb.g, 1/2.22f),
-        powf(rgb.b, 1/2.22f),
-        rgb.a,
-    };
-#endif
-    return srgb;
-}
-
 v3f linear_to_sRGB(v3f rgb)
 {
 #if FAST_GAMMA
@@ -163,12 +140,14 @@ v3f linear_to_sRGB(v3f rgb)
         sqrtf(rgb.b),
     };
 #else
-#error "Do a correct implementation"
-    v3f srgb = {
-        powf(rgb.r, 1/2.22f),
-        powf(rgb.g, 1/2.22f),
-        powf(rgb.b, 1/2.22f),
-    };
+    v3f srgb = rgb;
+    for (int i = 0; i < 3; ++i) {
+        if (srgb.d[i] <= 0.0031308f) {
+            srgb.d[i] *= 12.92f;
+        } else {
+            srgb.d[i] = 1.055f*powf(rgb.d[i], 1.0f/2.4f) - 0.055f;
+        }
+    }
 #endif
     return srgb;
 }

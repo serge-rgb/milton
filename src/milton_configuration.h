@@ -24,7 +24,7 @@
 
 // 0 - Use strict SRGB definition
 // 1 - Use a power curve of 2.
-#define FAST_GAMMA 1
+#define FAST_GAMMA 0
 
 
 // By default, when activating the internal profiler with
