@@ -381,13 +381,14 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
             while(list_iter) {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
+                b32 is_eraser = (clipped_stroke->brush.color == v4f{ -1, -1, -1, -1 });
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
-#if 1 // Visualize it with black
-                    v4f dst = {0, 0, 0, clipped_stroke->brush.color.a};
+#if 0 // Visualize it with black
+                    v4f dst = {0, 0, 0, is_eraser? 1 : clipped_stroke->brush.color.a};
 #else
-                    v4f dst = clipped_stroke->brush.color;
+                    v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 } else {
@@ -504,7 +505,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                             f32 coverage = (f32)samples / 16.0f;
 
-                            v4f dst = clipped_stroke->brush.color;
+                            v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
                             {
                                 dst.r *= coverage;
                                 dst.g *= coverage;
@@ -616,6 +617,12 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     PROFILE_PUSH(preamble);
     PROFILE_BEGIN(total_work_loop);
 
+    // Clear color
+    v4f background_color;
+    background_color.rgb = view->background_color;
+    background_color.a = 1.0f;
+
+
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
               view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
@@ -629,11 +636,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
         for ( i32 pixel_i = raster_block.left;
               pixel_i < raster_block.right;
               pixel_i += downsample_factor ) {
-            // Clear color
-            v4f background_color;
-            background_color.rgb = view->background_color;
-            background_color.a = 1.0f;
-
             // Cumulative blending
             v4f acc_color = { 0 };
 
@@ -642,13 +644,14 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
             while(list_iter) {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
+                b32 is_eraser = (clipped_stroke->brush.color == v4f{ -1, -1, -1, -1 });
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
 #if 0 // Visualize it with black
-                    v4f dst = {0, 0, 0, clipped_stroke->brush.color.a};
+                    v4f dst = {0, 0, 0, is_eraser? 1 : clipped_stroke->brush.color.a};
 #else
-                    v4f dst = clipped_stroke->brush.color;
+                    v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
 #endif
                     acc_color = blend_v4f(dst, acc_color);
                 } else {
@@ -913,7 +916,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                             f32 coverage = (f32)samples / 16.0f;
 
-                            v4f dst = clipped_stroke->brush.color;
+                            v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
                             {
                                 dst.r *= coverage;
                                 dst.g *= coverage;
@@ -1265,11 +1268,8 @@ static b32 render_blockgroup(MiltonState* milton_state,
         }
 
 
-        b32 can_use_sse2 = check_flag(milton_state->cpu_caps, CPUCaps::sse2);
-        b32 can_use_avx  = check_flag(milton_state->cpu_caps, CPUCaps::avx);
-
         // TODO: use the debug dispatcher.
-        if ( can_use_sse2 ) {
+        if ( SDL_HasSSE2() && !milton_state->DEBUG_sse2_switch ) {
             allocation_ok = rasterize_canvas_block_sse2(&render_arena,
                                                         milton_state->view,
                                                         milton_state->strokes,

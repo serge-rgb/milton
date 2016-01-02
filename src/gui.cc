@@ -88,41 +88,6 @@ static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
     return is_inside;
 }
 
-
-b32 picker_hits_wheel(ColorPicker* picker, v2f point)
-{
-    v2f center = v2i_to_v2f(picker->center);
-    v2f arrow = point - center;
-    float dist = magnitude(arrow);
-
-    b32 hits = (dist <= picker->wheel_radius + picker->wheel_half_width ) &&
-               (dist >= picker->wheel_radius - picker->wheel_half_width );
-
-    return hits;
-}
-
-float picker_wheel_get_angle(ColorPicker* picker, v2f point)
-{
-    v2f center = v2i_to_v2f(picker->center);
-    v2f arrow = point - center;
-    v2f baseline = { 1, 0 };
-    float dotp = (DOT(arrow, baseline)) / (magnitude(arrow));
-    float angle = acosf(dotp);
-    if (point.y > center.y) {
-        angle = (2 * kPi) - angle;
-    }
-    return angle;
-}
-
-
-b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
-{
-    v2f fpoint = v2i_to_v2f(point);
-    b32 result = picker_hits_wheel(picker, fpoint) ||
-                 is_inside_triangle(fpoint, picker->info.a, picker->info.b, picker->info.c);
-    return result;
-}
-
 static b32 picker_is_accepting_input(ColorPicker* picker, v2i point)
 {
     // If wheel is active, yes! Gimme input.
@@ -159,6 +124,14 @@ static b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
         button = button->next;
     }
     return hits;
+}
+
+static b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
+{
+    v2f fpoint = v2i_to_v2f(point);
+    b32 result = picker_hits_wheel(picker, fpoint) ||
+                 is_inside_triangle(fpoint, picker->info.a, picker->info.b, picker->info.c);
+    return result;
 }
 
 static ColorPickResult picker_update(ColorPicker* picker, v2i point)
@@ -208,6 +181,66 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
 
     return result;
 }
+
+
+b32 picker_hits_wheel(ColorPicker* picker, v2f point)
+{
+    v2f center = v2i_to_v2f(picker->center);
+    v2f arrow = point - center;
+    float dist = magnitude(arrow);
+
+    b32 hits = (dist <= picker->wheel_radius + picker->wheel_half_width ) &&
+               (dist >= picker->wheel_radius - picker->wheel_half_width );
+
+    return hits;
+}
+
+float picker_wheel_get_angle(ColorPicker* picker, v2f point)
+{
+    v2f center = v2i_to_v2f(picker->center);
+    v2f arrow = point - center;
+    v2f baseline = { 1, 0 };
+    float dotp = (DOT(arrow, baseline)) / (magnitude(arrow));
+    float angle = acosf(dotp);
+    if (point.y > center.y) {
+        angle = (2 * kPi) - angle;
+    }
+    return angle;
+}
+
+static void picker_init(ColorPicker* picker)
+{
+    v2f fpoint = {
+        (f32)picker->center.x + (int)(picker->wheel_radius),
+        (f32)picker->center.y
+    };
+    picker_update_wheel(picker, fpoint);
+    picker->info.hsv = { 0, 1, 1 };
+}
+
+static b32 picker_is_active(ColorPicker* picker)
+{
+    b32 is_active = check_flag(picker->flags, ColorPickerFlags::WHEEL_ACTIVE) ||
+            check_flag(picker->flags, ColorPickerFlags::TRIANGLE_ACTIVE);
+
+    return is_active;
+}
+
+static Rect picker_get_bounds(const ColorPicker* picker)
+{
+    Rect picker_rect;
+    {
+        picker_rect.left   = picker->center.x - picker->bounds_radius_px;
+        picker_rect.right  = picker->center.x + picker->bounds_radius_px;
+        picker_rect.bottom = picker->center.y + picker->bounds_radius_px;
+        picker_rect.top    = picker->center.y - picker->bounds_radius_px;
+    }
+    assert (picker_rect.left >= 0);
+    assert (picker_rect.top >= 0);
+
+    return picker_rect;
+}
+
 
 void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 {
@@ -263,15 +296,14 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
 
     if ( milton_state.gui->visible ) {
-        if( ImGui::Begin("Brushes", NULL, ImGuiWindowFlags_NoCollapse) ) {
-            // Size
 
-            /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
-            /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
+        /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
+        /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
 
-            ImGui::SetWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
-            ImGui::SetWindowSize({271, 109}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+        ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize({271, 109}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
+        if ( ImGui::Begin("Brushes", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize) ) {
             if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
                 float mut_alpha = pen_alpha;
                 ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
@@ -342,10 +374,10 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         if ( milton_state.gui->show_help_widget ) {
             //bool opened;
             //if ( ImGui::Begin("Help"), &opened, (ImGuiWindowFlags)(ImGuiWindowFlags_NoCollapse) ) {
-            bool closed;
-            if ( ImGui::Begin("Shortcuts", &closed, ImGuiWindowFlags_NoCollapse) ) {
-                ImGui::SetWindowPos(ImVec2(365, 92), ImGuiSetCond_FirstUseEver);
-                ImGui::SetWindowSize({235, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+            ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_FirstUseEver);
+            ImGui::SetNextWindowSize({235, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+            bool opened;
+            if ( ImGui::Begin("Shortcuts", &opened, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize) ) {
                 ImGui::TextWrapped(
                                    "Increase brush size        ]\n"
                                    "Decrease brush size        [\n"
@@ -363,8 +395,8 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
                                    "\n"
                                    "\n"
                                    );
-                if ( closed ) {
-                    gui_toggle_help(milton_state.gui);
+                if ( opened ) {
+                    milton_state.gui->show_help_widget = false;
                 }
             }
             ImGui::End();  // Help
@@ -373,39 +405,6 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     }
     ImGui::PopStyleColor(color_stack);
 
-}
-
-static void picker_init(ColorPicker* picker)
-{
-    v2f fpoint = {
-        (f32)picker->center.x + (int)(picker->wheel_radius),
-        (f32)picker->center.y
-    };
-    picker_update_wheel(picker, fpoint);
-    picker->info.hsv = { 0, 1, 1 };
-}
-
-static b32 picker_is_active(ColorPicker* picker)
-{
-    b32 is_active = check_flag(picker->flags, ColorPickerFlags::WHEEL_ACTIVE) ||
-            check_flag(picker->flags, ColorPickerFlags::TRIANGLE_ACTIVE);
-
-    return is_active;
-}
-
-static Rect picker_get_bounds(const ColorPicker* picker)
-{
-    Rect picker_rect;
-    {
-        picker_rect.left   = picker->center.x - picker->bounds_radius_px;
-        picker_rect.right  = picker->center.x + picker->bounds_radius_px;
-        picker_rect.bottom = picker->center.y + picker->bounds_radius_px;
-        picker_rect.top    = picker->center.y - picker->bounds_radius_px;
-    }
-    assert (picker_rect.left >= 0);
-    assert (picker_rect.top >= 0);
-
-    return picker_rect;
 }
 
 void gui_imgui_set_ungrabbed(MiltonGui& gui)

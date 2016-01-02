@@ -39,16 +39,6 @@
 // total RAM in bytes
 size_t get_system_RAM();
 
-enum class CPUCaps {
-    none = 0,
-    sse2 = (1 << 0),
-    avx = (1 << 1),
-};
-DECLARE_FLAG(CPUCaps);
-
-CPUCaps get_cpu_caps();
-
-
 // ---------------
 // Math functions.
 // ---------------

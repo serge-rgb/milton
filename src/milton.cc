@@ -139,7 +139,7 @@ static void milton_update_brushes(MiltonState* milton_state)
             brush->color = to_premultiplied(sRGB_to_linear(gui_get_picker_rgb(milton_state->gui)),
                                             brush->alpha);
         } else if (i == BrushEnum_ERASER) {
-            brush->color = { 1, 1, 1, 1, };
+            brush->color = { -1, -1, -1, -1, };
             brush->alpha = 1;
         }
     }
@@ -259,15 +259,6 @@ static void milton_load_assets(MiltonState* milton_state)
 
 void milton_init(MiltonState* milton_state)
 {
-    // Fill cpu capabilities.
-    milton_state->cpu_caps = CPUCaps::none;
-    if ( SDL_HasSSE2() ) {
-        set_flag(milton_state->cpu_caps, CPUCaps::sse2);
-    }
-    if ( SDL_HasAVX() ) {
-        set_flag(milton_state->cpu_caps, CPUCaps::avx);
-    }
-
     // Initialize render queue
     milton_state->render_queue = arena_alloc_elem(milton_state->root_arena, RenderQueue);
     {
@@ -315,7 +306,7 @@ void milton_init(MiltonState* milton_state)
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         milton_state->view->downsampling_factor = 1;
         milton_state->view->canvas_radius_limit = 1024 * 1024 * 512;
-        milton_state->view->background_color = { 254.0f, 254.0f, 254.0f };
+        milton_state->view->background_color = { 1, 1, 1 };
 #if 0
         milton_state->view->rotation = 0;
         for (int d = 0; d < 360; d++)

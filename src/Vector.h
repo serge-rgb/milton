@@ -188,3 +188,8 @@ struct Vec4
 
 typedef Vec4<f32> v4f;
 
+template<typename T> bool operator== (Vec4<T> a, Vec4<T> b)
+{
+    bool result = a.x == b.x && a.y == b.y && a.z == b.z && a.a == b.a;
+    return result;
+}

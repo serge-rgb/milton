@@ -19,18 +19,6 @@ size_t get_system_RAM()
    return (size_t)SDL_GetSystemRAM() * 1024 * 1024;
 }
 
-CPUCaps get_cpu_caps()
-{
-    CPUCaps cpu_caps = CPUCaps::none;
-    if ( SDL_HasSSE2() ) {
-        set_flag(cpu_caps, CPUCaps::sse2);
-    }
-    if ( SDL_HasAVX() ) {
-        set_flag(cpu_caps, CPUCaps::avx);
-    }
-    return cpu_caps;
-}
-
 v2i v2f_to_v2i(v2f p)
 {
     return {(i32)p.x, (i32)p.y};

@@ -293,9 +293,6 @@ int milton_main()
                     platform_input.is_pointer_down = false;
                     set_flag(milton_input.flags, MiltonInputFlags::END_STROKE);
 
-                    if (keycode == SDLK_ESCAPE) {
-                        should_quit = true;
-                    }
                     if (keycode == SDLK_SPACE) {
                         platform_input.is_space_down = true;
                         platform_input.is_panning = true;
@@ -335,7 +332,14 @@ int milton_main()
                         } else if (keycode == SDLK_0) {
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
-                        // TODO: Re-implement backend toggle
+#ifndef NDEBUG
+                        if (keycode == SDLK_ESCAPE) {
+                            should_quit = true;
+                        }
+                        if ( keycode == SDLK_F4 ) {
+                            milton_state->DEBUG_sse2_switch = !milton_state->DEBUG_sse2_switch;
+                        }
+#endif
                     }
 
                     break;
