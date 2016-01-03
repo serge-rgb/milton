@@ -245,6 +245,7 @@ static Rect picker_get_bounds(const ColorPicker* picker)
 void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 {
     // ImGui Section
+    auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
     const float pen_alpha = milton_get_pen_alpha(milton_state);
     assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
@@ -299,11 +300,13 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
         /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
+        /* ImGuiSetCond_FirstUseEver */
 
-        ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize({271, 109}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+        ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Always);
+        ImGui::SetNextWindowSize({271, 109}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
 
-        if ( ImGui::Begin("Brushes", NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize) ) {
+
+        if ( ImGui::Begin("Brushes", NULL, default_imgui_window_flags) ) {
             if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
                 float mut_alpha = pen_alpha;
                 ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
@@ -356,8 +359,8 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
 
         if ( milton_state.gui->choosing_bg_color ) {
             bool closed;
-            if ( ImGui::Begin("Choose Background Color", &closed, ImGuiWindowFlags_NoCollapse) ) {
-                ImGui::SetWindowSize({271, 109}, ImGuiSetCond_FirstUseEver);
+            if ( ImGui::Begin("Choose Background Color", &closed, default_imgui_window_flags) ) {
+                ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
                 ImGui::Text("Sup");
                 float color[3];
                 if ( ImGui::ColorEdit3("Background Color", milton_state.view->background_color.d) ) {
@@ -374,10 +377,10 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         if ( milton_state.gui->show_help_widget ) {
             //bool opened;
             //if ( ImGui::Begin("Help"), &opened, (ImGuiWindowFlags)(ImGuiWindowFlags_NoCollapse) ) {
-            ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_FirstUseEver);
-            ImGui::SetNextWindowSize({235, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+            ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_Always);
+            ImGui::SetNextWindowSize({235, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
             bool opened;
-            if ( ImGui::Begin("Shortcuts", &opened, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize) ) {
+            if ( ImGui::Begin("Shortcuts", &opened, default_imgui_window_flags) ) {
                 ImGui::TextWrapped(
                                    "Increase brush size        ]\n"
                                    "Decrease brush size        [\n"
