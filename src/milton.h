@@ -44,15 +44,13 @@ struct MiltonGLState {
 #endif
 };
 
-// TODO: smells move 'request' elsewhere and make this not be a flag
 enum class MiltonMode {
     NONE                   = 0,
 
     ERASER                 = 1 << 0,
     PEN                    = 1 << 1,
-    REQUEST_QUALITY_REDRAW = 1 << 2,
+    EXPORTING              = 1 << 2,
 };
-DECLARE_FLAG(MiltonMode)
 
 enum class MiltonRenderFlags {
     NONE            = 0,
@@ -147,7 +145,9 @@ struct MiltonState {
 
     i32     num_redos;
 
-    MiltonMode current_mode;  // TODO: `milton_mode` is not clear. Change approach before adding functionality.
+    MiltonMode current_mode;
+
+    b32 request_quality_redraw;  // After drawing with downsampling this gets set to true.
 
     i32             num_render_workers;
     RenderQueue*    render_queue;

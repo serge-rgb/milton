@@ -305,9 +305,11 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Always);
         ImGui::SetNextWindowSize({271, 109}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
 
+        b32 show_brush_window = (milton_state.current_mode == MiltonMode::PEN || milton_state.current_mode == MiltonMode::ERASER);
 
-        if ( ImGui::Begin("Brushes", NULL, default_imgui_window_flags) ) {
-            if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+        if ( show_brush_window &&
+             ImGui::Begin("Brushes", NULL, default_imgui_window_flags) ) {
+            if ( milton_state.current_mode == MiltonMode::PEN ) {
                 float mut_alpha = pen_alpha;
                 ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
                 if ( mut_alpha != pen_alpha ) {
@@ -316,28 +318,25 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
                 }
             }
 
-            assert (check_flag(milton_state.current_mode, MiltonMode::ERASER) ||
-                    check_flag(milton_state.current_mode, MiltonMode::PEN));
-
             const auto size = milton_get_brush_size(milton_state);
             auto mut_size = size;
 
             ImGui::SliderInt("Brush Size", &mut_size, 1, k_max_brush_size);
 
-            if (mut_size != size) {
+            if ( mut_size != size ) {
                 milton_set_brush_size(milton_state, mut_size);
                 milton_state.gui->is_showing_preview = true;
             }
 
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
             {
-                if (!check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+                if ( milton_state.current_mode != MiltonMode::PEN ) {
                     if (ImGui::Button("Switch to Pen")) {
                         set_flag(input, MiltonInputFlags::SET_MODE_PEN);
                     }
                 }
 
-                if (!check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
+                if ( milton_state.current_mode != MiltonMode::ERASER ) {
                     if (ImGui::Button("Switch to Eraser")) {
                         set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
                     }
@@ -467,13 +466,14 @@ MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* inpu
     MiltonRenderFlags render_flags = MiltonRenderFlags::NONE;
     v2i point = input->points[0];
     ColorPickResult pick_result = picker_update(&milton_state->gui->picker, point);
-    if ( (pick_result == ColorPickResult::CHANGE_COLOR) &&
-         check_flag(milton_state->current_mode, MiltonMode::PEN) ) {
+    if ( pick_result == ColorPickResult::CHANGE_COLOR &&
+         milton_state->current_mode == MiltonMode::PEN ) {
         milton_state->gui->did_change_color = true;
         v3f rgb = hsv_to_rgb(milton_state->gui->picker.info.hsv);
         milton_state->brushes[BrushEnum_PEN].color =
                 to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha);
     }
+
     set_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED);
     milton_state->gui->active = true;
 

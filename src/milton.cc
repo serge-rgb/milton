@@ -117,9 +117,9 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 i32 milton_get_brush_size(const MiltonState& milton_state)
 {
     i32 brush_size = 0;
-    if (check_flag(milton_state.current_mode, MiltonMode::PEN)) {
+    if ( milton_state.current_mode == MiltonMode::PEN ) {
         brush_size = milton_state.brush_sizes[BrushEnum_PEN];
-    } else if (check_flag(milton_state.current_mode, MiltonMode::ERASER)) {
+    } else if ( milton_state.current_mode == MiltonMode::ERASER ) {
         brush_size = milton_state.brush_sizes[BrushEnum_ERASER];
     } else {
         assert (! "milton_get_brush_size called when in invalid mode.");
@@ -150,9 +150,9 @@ static void milton_update_brushes(MiltonState* milton_state)
 static Brush milton_get_brush(MiltonState* milton_state)
 {
     Brush brush = { 0 };
-    if (check_flag(milton_state->current_mode, MiltonMode::PEN)) {
+    if ( milton_state->current_mode == MiltonMode::PEN ) {
         brush = milton_state->brushes[BrushEnum_PEN];
-    } else if (check_flag(milton_state->current_mode, MiltonMode::ERASER)) {
+    } else if ( milton_state->current_mode == MiltonMode::ERASER ) {
         brush = milton_state->brushes[BrushEnum_ERASER];
     } else {
         assert (!"Picking brush in invalid mode");
@@ -164,9 +164,9 @@ static i32* pointer_to_brush_size(MiltonState* milton_state)
 {
     i32* ptr = NULL;
 
-    if (check_flag(milton_state->current_mode, MiltonMode::PEN)) {
+    if ( milton_state->current_mode == MiltonMode::PEN ) {
         ptr = &milton_state->brush_sizes[BrushEnum_PEN];
-    } else if (check_flag(milton_state->current_mode, MiltonMode::ERASER)) {
+    } else if ( milton_state->current_mode == MiltonMode::ERASER ) {
         ptr = &milton_state->brush_sizes[BrushEnum_ERASER];
     }
     return ptr;
@@ -563,11 +563,11 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if ( do_fast_draw ) {
         milton_state->view->downsampling_factor = 2;
-        set_flag(milton_state->current_mode, MiltonMode::REQUEST_QUALITY_REDRAW);
+        milton_state->request_quality_redraw = true;
     } else {
         milton_state->view->downsampling_factor = 1;
-        if (check_flag(milton_state->current_mode, MiltonMode::REQUEST_QUALITY_REDRAW)) {
-            unset_flag(milton_state->current_mode, MiltonMode::REQUEST_QUALITY_REDRAW);
+        if ( milton_state->request_quality_redraw ) {
+            milton_state->request_quality_redraw = false;
             set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
         }
     }
@@ -609,16 +609,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if (check_flag( input->flags, MiltonInputFlags::SET_MODE_PEN )) {
-        if ( !check_flag( milton_state->current_mode, MiltonMode::PEN ) ) {
-            set_flag(milton_state->current_mode, MiltonMode::PEN);
-            unset_flag(milton_state->current_mode, MiltonMode::ERASER);
+        if ( milton_state->current_mode != MiltonMode::PEN ) {
+            milton_state->current_mode = MiltonMode::PEN;
             milton_update_brushes(milton_state);
         }
-    }
-    if (check_flag( input->flags, MiltonInputFlags::SET_MODE_ERASER )) {
-        if ( !check_flag( milton_state->current_mode, MiltonMode::ERASER ) ) {
-            set_flag(milton_state->current_mode, MiltonMode::ERASER);
-            unset_flag(milton_state->current_mode, MiltonMode::PEN);
+    } else if (check_flag( input->flags, MiltonInputFlags::SET_MODE_ERASER )) {
+        if ( milton_state->current_mode != MiltonMode::ERASER ) {
+            milton_state->current_mode = MiltonMode::ERASER;
             milton_update_brushes(milton_state);
         }
     }
