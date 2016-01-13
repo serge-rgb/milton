@@ -21,6 +21,9 @@ if [ $sdl_ok -eq 0 ]; then
         ar rcs headerlibs_impl.a headerlibs_impl.o
         touch SKIP_HEADERLIBS
         echo "    Run \`make clean\` or \`rm build/SKIP_HEADERLIBS\` to rebuild dependencies."
+    else
+        echo "... skipping dependencies. > rm build/SKIP_HEADERLIBS to rebuild. "
+
     fi
     echo == Building milton...
     clang++                 \
