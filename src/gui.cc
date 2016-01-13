@@ -242,7 +242,7 @@ static Rect picker_get_bounds(const ColorPicker* picker)
 }
 
 
-void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
+void milton_gui_tick(MiltonInputFlags& input, MiltonState* milton_state)
 {
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
@@ -250,7 +250,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     const float pen_alpha = milton_get_pen_alpha(milton_state);
     assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
     // Spawn below the picker
-    Rect pbounds = get_bounds_for_picker_and_colors(milton_state.gui->picker);
+    Rect pbounds = get_bounds_for_picker_and_colors(milton_state->gui->picker);
 
     int color_stack = 0;
     ImGui::GetStyle().WindowFillAlphaDefault = 0.9f;  // Redundant for all calls but the first one...
@@ -278,14 +278,14 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         }
         if ( ImGui::BeginMenu("Canvas", /*enabled=*/true) ) {
             if ( ImGui::MenuItem("Set Background Color") ) {
-                milton_state.gui->choosing_bg_color = true;
+                milton_state->gui->choosing_bg_color = true;
             }
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu("Help") ) {
-            const char* help_window_title = milton_state.gui->show_help_widget ? "Hide Keyboard Shortcuts" : "Show Keyboard Shortcuts";
+            const char* help_window_title = milton_state->gui->show_help_widget ? "Hide Keyboard Shortcuts" : "Show Keyboard Shortcuts";
             if ( ImGui::MenuItem(help_window_title) ) {
-                gui_toggle_help(milton_state.gui);
+                gui_toggle_help(milton_state->gui);
             }
             ImGui::EndMenu();
         }
@@ -296,7 +296,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
     // TODO (IMPORTANT): Add a "reset UI" option? widgets might get outside the viewport without a way to get back.
 
 
-    if ( milton_state.gui->visible ) {
+    if ( milton_state->gui->visible ) {
 
         /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
@@ -305,75 +305,77 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
         ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Always);
         ImGui::SetNextWindowSize({271, 109}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
 
-        b32 show_brush_window = (milton_state.current_mode == MiltonMode::PEN || milton_state.current_mode == MiltonMode::ERASER);
+        b32 show_brush_window = (milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER);
 
-        if ( show_brush_window &&
-             ImGui::Begin("Brushes", NULL, default_imgui_window_flags) ) {
-            if ( milton_state.current_mode == MiltonMode::PEN ) {
-                float mut_alpha = pen_alpha;
-                ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
-                if ( mut_alpha != pen_alpha ) {
-                    milton_set_pen_alpha(&milton_state, mut_alpha);
-                    milton_state.gui->is_showing_preview = true;
-                }
-            }
-
-            const auto size = milton_get_brush_size(milton_state);
-            auto mut_size = size;
-
-            ImGui::SliderInt("Brush Size", &mut_size, 1, k_max_brush_size);
-
-            if ( mut_size != size ) {
-                milton_set_brush_size(milton_state, mut_size);
-                milton_state.gui->is_showing_preview = true;
-            }
-
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
-            {
-                if ( milton_state.current_mode != MiltonMode::PEN ) {
-                    if (ImGui::Button("Switch to Pen")) {
-                        set_flag(input, MiltonInputFlags::SET_MODE_PEN);
+        if ( show_brush_window) {
+            if ( ImGui::Begin("Brushes", NULL, default_imgui_window_flags) ) {
+                if ( milton_state->current_mode == MiltonMode::PEN ) {
+                    float mut_alpha = pen_alpha;
+                    ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
+                    if ( mut_alpha != pen_alpha ) {
+                        milton_set_pen_alpha(milton_state, mut_alpha);
+                        milton_state->gui->is_showing_preview = true;
                     }
                 }
 
-                if ( milton_state.current_mode != MiltonMode::ERASER ) {
-                    if (ImGui::Button("Switch to Eraser")) {
-                        set_flag(input, MiltonInputFlags::SET_MODE_ERASER);
+                const auto size = milton_get_brush_size(milton_state);
+                auto mut_size = size;
+
+                ImGui::SliderInt("Brush Size", &mut_size, 1, k_max_brush_size);
+
+                if ( mut_size != size ) {
+                    milton_set_brush_size(milton_state, mut_size);
+                    milton_state->gui->is_showing_preview = true;
+                }
+
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
+                {
+                    if ( milton_state->current_mode != MiltonMode::PEN ) {
+                        if (ImGui::Button("Switch to Pen")) {
+                            set_flag(input, MiltonInputFlags::CHANGE_MODE);
+                        }
+                    }
+
+                    if ( milton_state->current_mode != MiltonMode::ERASER ) {
+                        if (ImGui::Button("Switch to Eraser")) {
+                            set_flag(input, MiltonInputFlags::CHANGE_MODE);
+                        }
                     }
                 }
-            }
-            ImGui::PopStyleColor(1); // Pop white button text
+                ImGui::PopStyleColor(1); // Pop white button text
 
-            // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+                // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            }
+            ImGui::End();  // Brushes
         }
-        const v2i pos = {
-            (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),
-            (i32)(ImGui::GetWindowPos().y),
-        };
-        ImGui::End();  // Brushes
 
-        if ( milton_state.gui->is_showing_preview ) {
+
+        if ( milton_state->gui->is_showing_preview ) {
+            const v2i pos = {
+                (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),
+                (i32)(ImGui::GetWindowPos().y),
+            };
             milton_set_brush_preview(milton_state, pos);
         }
 
-        if ( milton_state.gui->choosing_bg_color ) {
+        if ( milton_state->gui->choosing_bg_color ) {
             bool closed;
             if ( ImGui::Begin("Choose Background Color", &closed, default_imgui_window_flags) ) {
                 ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
                 ImGui::Text("Sup");
                 float color[3];
-                if ( ImGui::ColorEdit3("Background Color", milton_state.view->background_color.d) ) {
+                if ( ImGui::ColorEdit3("Background Color", milton_state->view->background_color.d) ) {
                     set_flag(input, MiltonInputFlags::FULL_REFRESH);
                     set_flag(input, MiltonInputFlags::FAST_DRAW);
                 }
                 if ( closed ) {
-                    milton_state.gui->choosing_bg_color = false;
+                    milton_state->gui->choosing_bg_color = false;
                 }
             }
             ImGui::End();
         }
 
-        if ( milton_state.gui->show_help_widget ) {
+        if ( milton_state->gui->show_help_widget ) {
             //bool opened;
             //if ( ImGui::Begin("Help"), &opened, (ImGuiWindowFlags)(ImGuiWindowFlags_NoCollapse) ) {
             ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_Always);
@@ -398,7 +400,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState& milton_state)
                                    "\n"
                                    );
                 if ( opened ) {
-                    milton_state.gui->show_help_widget = false;
+                    milton_state->gui->show_help_widget = false;
                 }
             }
             ImGui::End();  // Help

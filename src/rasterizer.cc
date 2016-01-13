@@ -1572,7 +1572,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
 
         if (check_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW)) {
             assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
-            const auto radius = milton_get_brush_size(*milton_state);
+            const auto radius = milton_get_brush_size(milton_state);
             {
                 auto r = k_max_brush_size + 2;
                 auto x = gui->preview_pos_prev.x != -1? gui->preview_pos_prev.x : gui->preview_pos.x;
@@ -1583,7 +1583,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
                             milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                             gui->preview_pos.x, gui->preview_pos.y,
                             radius,
-                            to_premultiplied(hsv_to_rgb(gui->picker.info.hsv), milton_get_pen_alpha(*milton_state)));
+                            to_premultiplied(hsv_to_rgb(gui->picker.info.hsv), milton_get_pen_alpha(milton_state)));
             }
             draw_ring(raster_buffer,
                       milton_state->view->screen_size.w, milton_state->view->screen_size.h,
@@ -1596,7 +1596,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
         }
     }
     if ( check_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER) ) {
-        const auto radius = milton_get_brush_size(*milton_state);
+        const auto radius = milton_get_brush_size(milton_state);
         draw_ring(raster_buffer,
                   milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                   milton_state->hover_point.x, milton_state->hover_point.y,

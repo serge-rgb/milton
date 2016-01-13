@@ -304,9 +304,14 @@ int milton_main()
                         }
                     } else {
                         if (keycode == SDLK_e) {
-                            set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_ERASER);
+                            set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
+                            milton_input.mode_to_set = MiltonMode::ERASER;
                         } else if (keycode == SDLK_b) {
-                            set_flag(milton_input.flags, MiltonInputFlags::SET_MODE_PEN);
+                            set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
+                            milton_input.mode_to_set = MiltonMode::PEN;
+                        } else if (keycode == SDLK_r) {
+                            set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
+                            milton_input.mode_to_set = MiltonMode::EXPORTING;
                         } else if (keycode == SDLK_TAB) {
                             gui_toggle_visibility(milton_state->gui);
                         } else if (keycode == SDLK_F1) {
@@ -420,7 +425,7 @@ int milton_main()
         // TODO: get framebuffer size
         ImGui_ImplSDLGL3_NewFrame(width, height, width, height);
 
-        milton_gui_tick(milton_input.flags, *milton_state);
+        milton_gui_tick(milton_input.flags, milton_state);
         {
             int mouse_x;
             int mouse_y;

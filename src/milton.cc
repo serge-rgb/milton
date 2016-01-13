@@ -114,18 +114,21 @@ static void milton_gl_backend_init(MiltonState* milton_state)
     }
 }
 
-i32 milton_get_brush_size(const MiltonState& milton_state)
+static void milton_load_assets(MiltonState* milton_state)
 {
-    i32 brush_size = 0;
-    if ( milton_state.current_mode == MiltonMode::PEN ) {
-        brush_size = milton_state.brush_sizes[BrushEnum_PEN];
-    } else if ( milton_state.current_mode == MiltonMode::ERASER ) {
-        brush_size = milton_state.brush_sizes[BrushEnum_ERASER];
-    } else {
-        assert (! "milton_get_brush_size called when in invalid mode.");
-    }
-    return brush_size;
+    MiltonGui* gui = milton_state->gui;
+
+    Bitmap* bitmap = &gui->brush_button.bitmap;
+
+    static char* img_name_brush_button = "assets/brush.png";
+
+    bitmap->data = stbi_load(img_name_brush_button, &bitmap->width, &bitmap->height,
+                             &bitmap->num_components, 4);
+    i32 x = 400;
+    i32 y = 500;
+    gui->brush_button.rect = rect_from_xywh(x, y, bitmap->width, bitmap->height);
 }
+
 
 static void milton_update_brushes(MiltonState* milton_state)
 {
@@ -172,6 +175,106 @@ static i32* pointer_to_brush_size(MiltonState* milton_state)
     return ptr;
 }
 
+static b32 is_user_drawing(MiltonState* milton_state)
+{
+    b32 result = milton_state->working_stroke.num_points > 0;
+    return result;
+}
+
+
+static b32 is_accepting_canvas_input(MiltonState* milton_state)
+{
+    b32 result = milton_state->current_mode == MiltonMode::PEN ||
+            milton_state->current_mode == MiltonMode::ERASER;
+    return result;
+}
+
+
+static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
+{
+    if ( input->input_count == 0 ) {
+        return;
+    }
+
+    //milton_log("Stroke input with %d packets\n", input->input_count);
+    milton_state->working_stroke.brush = milton_get_brush(milton_state);
+
+    //int input_i = 0;
+    for (int input_i = 0; input_i < input->input_count; ++input_i) {
+        v2i in_point = input->points[input_i];
+
+        v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
+
+        f32 pressure = NO_PRESSURE_INFO;
+
+        if (input->pressures[input_i] != NO_PRESSURE_INFO)
+        {
+            f32 pressure_min = 0.20f;
+            pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
+            milton_state->stroke_is_from_tablet = true;
+        }
+
+        // We haven't received pressure info, assume mouse input
+        if (input->pressures[input_i] == NO_PRESSURE_INFO && !milton_state->stroke_is_from_tablet)
+        {
+            pressure = 1.0f;
+        }
+
+        b32 not_the_first = false;
+        if ( milton_state->working_stroke.num_points >= 1 ) {
+            not_the_first = true;
+        }
+
+        // A point passes inspection if:
+        //  a) it's the first point of this stroke
+        //  b) it is being appended to the stroke and it didn't merge with the previous point.
+        b32 passed_inspection = true;
+
+        if ( pressure == NO_PRESSURE_INFO ) {
+            passed_inspection = false;
+        }
+
+        if (passed_inspection && not_the_first) {
+            i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
+
+            // Limit the number of points we check so that we don't mess with the stroke too much.
+            int point_window = 4;
+            int count = 0;
+            // Pop every point that is contained by the new one.
+            for (i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i) {
+                if ( ++count >= point_window ) {
+                    break;
+                }
+                /* v2i this_point = (v2i){milton_state->working_stroke.points_x[i], milton_state->working_stroke.points_y[i]}; */
+                /* i32 this_radius = (i32)(milton_state->working_stroke.brush.radius * milton_state->working_stroke.pressures[i]); */
+                v2i this_point = milton_state->working_stroke.points[i];
+                i32 this_radius = (i32)(milton_state->working_stroke.brush.radius * milton_state->working_stroke.pressures[i]);
+
+                if ( stroke_point_contains_point(canvas_point, in_radius,
+                                                 this_point, this_radius) ) {
+                    milton_state->working_stroke.num_points -= 1;
+                } else if ( stroke_point_contains_point(this_point, this_radius,
+                                                        canvas_point, in_radius) ) {
+                    // If some other point in the past contains this point,
+                    // then this point is invalid.
+                    passed_inspection = false;
+                    break;
+                }
+            }
+        }
+
+        // Cleared to be appended.
+        if ( passed_inspection ) {
+            // Add to current stroke.
+            int index = milton_state->working_stroke.num_points++;
+            milton_state->working_stroke.points[index] = canvas_point;
+            milton_state->working_stroke.pressures[index] = pressure;
+        }
+    }
+}
+
+
+
 void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;
@@ -200,34 +303,52 @@ void milton_gl_backend_draw(MiltonState* milton_state)
     GLCHK (glDrawArrays (GL_TRIANGLE_FAN, 0, 4) );
 }
 
-
-void milton_set_brush_size(MiltonState& milton_state, i32 size)
+i32 milton_get_brush_size(MiltonState* milton_state)
 {
-    if (size < k_max_brush_size && size > 0) {
-        (*pointer_to_brush_size(&milton_state)) = size;
-        milton_update_brushes(&milton_state);
+    i32 brush_size = 0;
+    if ( milton_state->current_mode == MiltonMode::PEN ) {
+        brush_size = milton_state->brush_sizes[BrushEnum_PEN];
+    } else if ( milton_state->current_mode == MiltonMode::ERASER ) {
+        brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
+    } else {
+        assert (! "milton_get_brush_size called when in invalid mode.");
+    }
+    return brush_size;
+}
+
+void milton_set_brush_size(MiltonState* milton_state, i32 size)
+{
+    if ( is_accepting_canvas_input(milton_state) ) {
+        if (size < k_max_brush_size && size > 0) {
+            (*pointer_to_brush_size(milton_state)) = size;
+            milton_update_brushes(milton_state);
+        }
     }
 }
 
 // For keyboard shortcut.
 void milton_increase_brush_size(MiltonState* milton_state)
 {
-    i32 brush_size = milton_get_brush_size(*milton_state);
-    if (brush_size < k_max_brush_size && brush_size > 0) {
-        milton_set_brush_size(*milton_state, brush_size + 1);
+    if ( is_accepting_canvas_input(milton_state) ) {
+        i32 brush_size = milton_get_brush_size(milton_state);
+        if (brush_size < k_max_brush_size && brush_size > 0) {
+            milton_set_brush_size(milton_state, brush_size + 1);
+        }
+        milton_update_brushes(milton_state);
     }
-    milton_update_brushes(milton_state);
 }
 
 // For keyboard shortcut.
 void milton_decrease_brush_size(MiltonState* milton_state)
 {
-    i32 brush_size = milton_get_brush_size(*milton_state);
+    if ( is_accepting_canvas_input(milton_state) ) {
+        i32 brush_size = milton_get_brush_size(milton_state);
 
-    if (brush_size > 1) {
-        milton_set_brush_size(*milton_state, brush_size - 1);
+        if (brush_size > 1) {
+            milton_set_brush_size(milton_state, brush_size - 1);
+        }
+        milton_update_brushes(milton_state);
     }
-    milton_update_brushes(milton_state);
 }
 
 void milton_set_pen_alpha(MiltonState* milton_state, float alpha)
@@ -236,25 +357,10 @@ void milton_set_pen_alpha(MiltonState* milton_state, float alpha)
     milton_update_brushes(milton_state);
 }
 
-float milton_get_pen_alpha(const MiltonState& milton_state)
+float milton_get_pen_alpha(MiltonState* milton_state)
 {
-    const float alpha = milton_state.brushes[BrushEnum_PEN].alpha;
+    const float alpha = milton_state->brushes[BrushEnum_PEN].alpha;
     return alpha;
-}
-
-static void milton_load_assets(MiltonState* milton_state)
-{
-    MiltonGui* gui = milton_state->gui;
-
-    Bitmap* bitmap = &gui->brush_button.bitmap;
-
-    static char* img_name_brush_button = "assets/brush.png";
-
-    bitmap->data = stbi_load(img_name_brush_button, &bitmap->width, &bitmap->height,
-                             &bitmap->num_components, 4);
-    i32 x = 400;
-    i32 y = 500;
-    gui->brush_button.rect = rect_from_xywh(x, y, bitmap->width, bitmap->height);
 }
 
 void milton_init(MiltonState* milton_state)
@@ -360,96 +466,6 @@ void milton_init(MiltonState* milton_state)
         SDL_CreateThread(renderer_worker_thread, "Milton Render Worker", (void*)params);
     }
     milton_load_assets(milton_state);
-}
-
-static b32 is_user_drawing(MiltonState* milton_state)
-{
-    b32 result = milton_state->working_stroke.num_points > 0;
-    return result;
-}
-
-
-static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
-{
-    if ( input->input_count == 0 ) {
-        return;
-    }
-
-    //milton_log("Stroke input with %d packets\n", input->input_count);
-    milton_state->working_stroke.brush = milton_get_brush(milton_state);
-
-    //int input_i = 0;
-    for (int input_i = 0; input_i < input->input_count; ++input_i) {
-        v2i in_point = input->points[input_i];
-
-        v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
-
-        f32 pressure = NO_PRESSURE_INFO;
-
-        if (input->pressures[input_i] != NO_PRESSURE_INFO)
-        {
-            f32 pressure_min = 0.20f;
-            pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
-            milton_state->stroke_is_from_tablet = true;
-        }
-
-        // We haven't received pressure info, assume mouse input
-        if (input->pressures[input_i] == NO_PRESSURE_INFO && !milton_state->stroke_is_from_tablet)
-        {
-            pressure = 1.0f;
-        }
-
-        b32 not_the_first = false;
-        if ( milton_state->working_stroke.num_points >= 1 ) {
-            not_the_first = true;
-        }
-
-        // A point passes inspection if:
-        //  a) it's the first point of this stroke
-        //  b) it is being appended to the stroke and it didn't merge with the previous point.
-        b32 passed_inspection = true;
-
-        if ( pressure == NO_PRESSURE_INFO ) {
-            passed_inspection = false;
-        }
-
-        if (passed_inspection && not_the_first) {
-            i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
-
-            // Limit the number of points we check so that we don't mess with the stroke too much.
-            int point_window = 4;
-            int count = 0;
-            // Pop every point that is contained by the new one.
-            for (i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i) {
-                if ( ++count >= point_window ) {
-                    break;
-                }
-                /* v2i this_point = (v2i){milton_state->working_stroke.points_x[i], milton_state->working_stroke.points_y[i]}; */
-                /* i32 this_radius = (i32)(milton_state->working_stroke.brush.radius * milton_state->working_stroke.pressures[i]); */
-                v2i this_point = milton_state->working_stroke.points[i];
-                i32 this_radius = (i32)(milton_state->working_stroke.brush.radius * milton_state->working_stroke.pressures[i]);
-
-                if ( stroke_point_contains_point(canvas_point, in_radius,
-                                                 this_point, this_radius) ) {
-                    milton_state->working_stroke.num_points -= 1;
-                } else if ( stroke_point_contains_point(this_point, this_radius,
-                                                        canvas_point, in_radius) ) {
-                    // If some other point in the past contains this point,
-                    // then this point is invalid.
-                    passed_inspection = false;
-                    break;
-                }
-            }
-        }
-
-        // Cleared to be appended.
-        if ( passed_inspection ) {
-            // Add to current stroke.
-            int index = milton_state->working_stroke.num_points++;
-            milton_state->working_stroke.points[index] = canvas_point;
-            milton_state->working_stroke.pressures[index] = pressure;
-        }
-    }
 }
 
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
@@ -608,14 +624,10 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         set_flag(render_flags, MiltonRenderFlags::PAN_COPY);
     }
 
-    if (check_flag( input->flags, MiltonInputFlags::SET_MODE_PEN )) {
-        if ( milton_state->current_mode != MiltonMode::PEN ) {
-            milton_state->current_mode = MiltonMode::PEN;
-            milton_update_brushes(milton_state);
-        }
-    } else if (check_flag( input->flags, MiltonInputFlags::SET_MODE_ERASER )) {
-        if ( milton_state->current_mode != MiltonMode::ERASER ) {
-            milton_state->current_mode = MiltonMode::ERASER;
+    if ( check_flag(input->flags, MiltonInputFlags::CHANGE_MODE) ) {
+        milton_state->current_mode = input->mode_to_set;
+        if ( input->mode_to_set == MiltonMode::PEN ||
+             input->mode_to_set == MiltonMode::ERASER ) {
             milton_update_brushes(milton_state);
         }
     }
@@ -661,19 +673,23 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 #endif
 
-    // By default, draw hover outling. Various cases can unset this flag.
-    set_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
+    // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
+    if ( milton_state->current_mode == MiltonMode::PEN ||
+         milton_state->current_mode == MiltonMode::ERASER ) {
+        set_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
+    }
 
     if (check_flag( input->flags, MiltonInputFlags::HOVERING )) {
         milton_state->hover_point = input->hover_point;
         f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
         f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
-        if ( is_user_drawing(milton_state) ) {
-            unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
-        }
     }
 
-    if ( input->input_count > 0 ) {
+    if ( is_user_drawing(milton_state) ) {
+        unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
+    }
+
+    if ( is_accepting_canvas_input(milton_state) && input->input_count > 0 ) {
         // Don't draw brush outline.
 
         if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
