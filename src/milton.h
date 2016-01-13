@@ -114,7 +114,8 @@ static char* MILTONDEBUG_BackendChoiceStrings[DEBUG_BACKEND_CHOICE_count] =
 
 #endif
 
-struct MiltonGui;  // Fowrard decl.
+// Forward  declarations
+struct MiltonGui;
 
 struct MiltonState {
     u8      bytes_per_pixel;

@@ -1071,7 +1071,7 @@ static void draw_rectangle(u32* raster_buffer,
 #endif
 
 // 1-pixel margin
-static void draw_rectangle_with_margin(u32* raster_buffer,
+static void fill_rectangle_with_margin(u32* raster_buffer,
                                        i32 raster_buffer_width, i32 raster_buffer_height,
                                        i32 center_x, i32 center_y,
                                        i32 rect_w, i32 rect_h,
@@ -1098,6 +1098,46 @@ static void draw_rectangle_with_margin(u32* raster_buffer,
             raster_buffer[index] = color;
         }
     }
+}
+
+static void rectangle_margin(u32* raster_buffer,
+                             i32 raster_buffer_width, i32 raster_buffer_height,
+                             i32 x, i32 y,
+                             i32 w, i32 h,
+                             v4f margin_color, i32 margin_px)
+{
+    i32 left = max(x, 0);
+    i32 right = min(x + w, raster_buffer_width);
+    i32 top = max(y, 0);
+    i32 bottom = min(y + h, raster_buffer_height);
+
+#define BLEND_HERE() \
+    i32 index = j * raster_buffer_width + i; \
+    u32 dst_color = raster_buffer[index]; \
+    v4f blended = blend_v4f(color_u32_to_v4f(dst_color), margin_color); \
+    u32 color = color_v4f_to_u32(blended); \
+    raster_buffer[index] = color; \
+
+
+    for ( i32 j = top; j < bottom; ++j ) {
+        for ( i32 i = left; i <= left + margin_px; ++i ) {
+            BLEND_HERE();
+        }
+        for ( i32 i = right - margin_px; i <= right; ++i ) {
+            BLEND_HERE();
+        }
+    }
+
+    for ( i32 i = left; i < right; ++i ) {
+        for ( i32 j = top; j <= top + margin_px; ++j) {
+            BLEND_HERE();
+        }
+        for ( i32 j = bottom - margin_px; j <= bottom; ++j ) {
+            BLEND_HERE();
+        }
+    }
+
+#undef BLEND_AT_INDEX
 }
 
 
@@ -1534,7 +1574,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
             if (button->color.a == 0) {
                 break;
             }
-            draw_rectangle_with_margin(raster_buffer,
+            fill_rectangle_with_margin(raster_buffer,
                                        milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                                        button->center_x, button->center_y,
                                        button->width, button->height,
@@ -1595,6 +1635,27 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
             // TODO: Request redraw rect here.
         }
     }
+
+    // If the explorer is active, render regardless of UI being visible
+
+    if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
+        Exporter* exporter = &gui->exporter;
+        if ( exporter->state == ExporterState::GROWING_RECT ) {
+            auto x = min(exporter->pivot.x, exporter->needle.x);
+            auto y = min(exporter->pivot.y, exporter->needle.y);
+            auto w = abs(exporter->pivot.x - exporter->needle.x);
+            auto h = abs(exporter->pivot.y - exporter->needle.y);
+
+            auto center_x = x + w / 2;
+            auto center_y = y + h / 2;
+
+            rectangle_margin(raster_buffer,
+                             milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                             x,y,w,h,
+                             { 0, 0, 0, 1 }, 1);
+        }
+    }
+
     if ( check_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER) ) {
         const auto radius = milton_get_brush_size(milton_state);
         draw_ring(raster_buffer,

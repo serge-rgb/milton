@@ -273,7 +273,23 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     }
 }
 
-
+static void exporter_input(Exporter* exporter, MiltonInput* input)
+{
+    if ( input->input_count > 0 ) {
+        v2i point = input->points[input->input_count - 1];
+        if ( exporter->state == ExporterState::IDLE ) {
+            exporter->pivot = point;
+            exporter->needle = point;
+            exporter->state = ExporterState::GROWING_RECT;
+        } else if ( exporter->state == ExporterState::GROWING_RECT) {
+            exporter->needle = point;
+        }
+    }
+    if ( check_flag(input->flags, MiltonInputFlags::END_STROKE) &&
+                exporter->state != ExporterState::IDLE ) {
+        exporter->state = ExporterState::IDLE;
+    }
+}
 
 void milton_gl_backend_draw(MiltonState* milton_state)
 {
@@ -689,18 +705,22 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
     }
 
-    if ( is_accepting_canvas_input(milton_state) && input->input_count > 0 ) {
-        // Don't draw brush outline.
+    if ( input->input_count > 0 ){
+        if ( is_accepting_canvas_input(milton_state) ) {
+            if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
+                milton_update_brushes(milton_state);
+                set_flag(render_flags, gui_process_input(milton_state, input));
+            } else if (!milton_state->gui->active) {
+                milton_stroke_input(milton_state, input);
+            }
 
-        if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
-            milton_update_brushes(milton_state);
-            set_flag(render_flags, gui_process_input(milton_state, input));
-        } else if (!milton_state->gui->active) {
-            milton_stroke_input(milton_state, input);
+            // Clear redo stack
+            milton_state->num_redos = 0;
         }
+    }
 
-        // Clear redo stack
-        milton_state->num_redos = 0;
+    if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
+        exporter_input(&milton_state->gui->exporter, input);
     }
 
     if ( check_flag(input->flags, MiltonInputFlags::IMGUI_GRABBED_INPUT) ) {

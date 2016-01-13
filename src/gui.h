@@ -72,6 +72,19 @@ struct GuiButton {
     Bitmap          bitmap;
 };
 
+enum class ExporterState {
+    IDLE,
+    GROWING_RECT,
+};
+
+struct Exporter {
+    ExporterState state;
+    // Pivot: The raster point where we click to begin the rectangle
+    v2i pivot;
+    // Needle, the point that we drag.
+    v2i needle;
+};
+
 // typedef'd in milton.h
 struct MiltonGui {
     b32 visible          = true;
@@ -87,6 +100,8 @@ struct MiltonGui {
     ColorPicker picker;
 
     GuiButton brush_button;
+
+    Exporter exporter;
 
     v2i preview_pos;  // If rendering brush preview, this is where to do it.
     v2i preview_pos_prev;  // Keep the previous position to clear the canvas.
