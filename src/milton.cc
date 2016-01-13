@@ -182,10 +182,9 @@ static b32 is_user_drawing(MiltonState* milton_state)
 }
 
 
-static b32 is_accepting_canvas_input(MiltonState* milton_state)
+static b32 current_mode_is_for_painting(MiltonState* milton_state)
 {
-    b32 result = milton_state->current_mode == MiltonMode::PEN ||
-            milton_state->current_mode == MiltonMode::ERASER;
+    b32 result = milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER;
     return result;
 }
 
@@ -334,7 +333,7 @@ i32 milton_get_brush_size(MiltonState* milton_state)
 
 void milton_set_brush_size(MiltonState* milton_state, i32 size)
 {
-    if ( is_accepting_canvas_input(milton_state) ) {
+    if ( current_mode_is_for_painting(milton_state) ) {
         if (size < k_max_brush_size && size > 0) {
             (*pointer_to_brush_size(milton_state)) = size;
             milton_update_brushes(milton_state);
@@ -345,7 +344,7 @@ void milton_set_brush_size(MiltonState* milton_state, i32 size)
 // For keyboard shortcut.
 void milton_increase_brush_size(MiltonState* milton_state)
 {
-    if ( is_accepting_canvas_input(milton_state) ) {
+    if ( current_mode_is_for_painting(milton_state) ) {
         i32 brush_size = milton_get_brush_size(milton_state);
         if (brush_size < k_max_brush_size && brush_size > 0) {
             milton_set_brush_size(milton_state, brush_size + 1);
@@ -357,7 +356,7 @@ void milton_increase_brush_size(MiltonState* milton_state)
 // For keyboard shortcut.
 void milton_decrease_brush_size(MiltonState* milton_state)
 {
-    if ( is_accepting_canvas_input(milton_state) ) {
+    if ( current_mode_is_for_painting(milton_state) ) {
         i32 brush_size = milton_get_brush_size(milton_state);
 
         if (brush_size > 1) {
@@ -411,6 +410,7 @@ void milton_init(MiltonState* milton_state)
     milton_state->working_stroke.pressures = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
 
     milton_state->current_mode = MiltonMode::PEN;
+    milton_state->last_mode = MiltonMode::NONE;
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
@@ -549,6 +549,30 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     }
 }
 
+void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
+{
+    if ( mode != milton_state->current_mode ) {
+        milton_state->last_mode = milton_state->current_mode;
+        milton_state->current_mode = mode;
+
+        if ( mode == MiltonMode::EXPORTING && milton_state->gui->visible) {
+            gui_toggle_visibility(milton_state->gui);
+        }
+        if ( milton_state->last_mode == MiltonMode::EXPORTING && !milton_state->gui->visible) {
+            gui_toggle_visibility(milton_state->gui);
+        }
+    }
+}
+
+void milton_use_previous_mode(MiltonState* milton_state)
+{
+    if ( milton_state->last_mode != MiltonMode::NONE ) {
+        milton_switch_mode(milton_state, milton_state->last_mode);
+    } else {
+        assert ( !"invalid code path" );
+    }
+}
+
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
     // TODO: Save redo point?
@@ -641,7 +665,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( check_flag(input->flags, MiltonInputFlags::CHANGE_MODE) ) {
-        milton_state->current_mode = input->mode_to_set;
+        milton_switch_mode( milton_state, input->mode_to_set );
         if ( input->mode_to_set == MiltonMode::PEN ||
              input->mode_to_set == MiltonMode::ERASER ) {
             milton_update_brushes(milton_state);
@@ -701,12 +725,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
     }
 
-    if ( is_user_drawing(milton_state) ) {
+    if ( is_user_drawing(milton_state) || milton_state->gui->active ) {
         unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
     }
 
     if ( input->input_count > 0 ){
-        if ( is_accepting_canvas_input(milton_state) ) {
+        if ( current_mode_is_for_painting(milton_state) ) {
             if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
                 milton_update_brushes(milton_state);
                 set_flag(render_flags, gui_process_input(milton_state, input));
@@ -726,11 +750,11 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if ( check_flag(input->flags, MiltonInputFlags::IMGUI_GRABBED_INPUT) ) {
         // Start drawing the preview if we just grabbed a slider.
         unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
-        if ( milton_state->gui->is_showing_preview ) {
+        if ( check_flag(milton_state->gui->flags, MiltonGuiFlags::SHOWING_PREVIEW) ) {
             set_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW);
         }
     } else {
-        gui_imgui_set_ungrabbed(*milton_state->gui);
+        gui_imgui_set_ungrabbed(milton_state->gui);
     }
 
     if (check_flag( input->flags, MiltonInputFlags::END_STROKE )) {
@@ -739,6 +763,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         if ( milton_state->gui->active ) {
             gui_deactivate(milton_state->gui);
             set_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED);
+            unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
         } else {
             if ( milton_state->working_stroke.num_points > 0 ) {
                 // We used the selected color to draw something. Push.

@@ -1618,13 +1618,18 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
                 auto x = gui->preview_pos_prev.x != -1? gui->preview_pos_prev.x : gui->preview_pos.x;
                 auto y = gui->preview_pos_prev.y != -1? gui->preview_pos_prev.y : gui->preview_pos.y;
             }
+
+            v4f preview_color;
+            preview_color.rgb = milton_state->view->background_color;
+            preview_color.a = 1;
             if ( milton_state->current_mode == MiltonMode::PEN ) {
-                draw_circle(raster_buffer,
-                            milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                            gui->preview_pos.x, gui->preview_pos.y,
-                            radius,
-                            to_premultiplied(hsv_to_rgb(gui->picker.info.hsv), milton_get_pen_alpha(milton_state)));
+                preview_color = to_premultiplied(hsv_to_rgb(gui->picker.info.hsv), milton_get_pen_alpha(milton_state));
             }
+            draw_circle(raster_buffer,
+                        milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                        gui->preview_pos.x, gui->preview_pos.y,
+                        radius,
+                        preview_color);
             draw_ring(raster_buffer,
                       milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                       gui->preview_pos.x, gui->preview_pos.y,

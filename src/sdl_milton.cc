@@ -425,7 +425,7 @@ int milton_main()
         // TODO: get framebuffer size
         ImGui_ImplSDLGL3_NewFrame(width, height, width, height);
 
-        milton_gui_tick(milton_input.flags, milton_state);
+        milton_gui_tick(&milton_input, milton_state);
         {
             int mouse_x;
             int mouse_y;

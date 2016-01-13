@@ -242,7 +242,7 @@ static Rect picker_get_bounds(const ColorPicker* picker)
 }
 
 
-void milton_gui_tick(MiltonInputFlags& input, MiltonState* milton_state)
+void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 {
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
@@ -274,11 +274,14 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState* milton_state)
             if ( ImGui::MenuItem("Open Milton Canvas") ) {
 
             }
+            if ( ImGui::MenuItem("Export to image...") ) {
+                milton_switch_mode(milton_state, MiltonMode::EXPORTING);
+            }
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu("Canvas", /*enabled=*/true) ) {
             if ( ImGui::MenuItem("Set Background Color") ) {
-                milton_state->gui->choosing_bg_color = true;
+                set_flag(milton_state->gui->flags, MiltonGuiFlags::CHOOSING_BG_COLOR);
             }
             ImGui::EndMenu();
         }
@@ -314,7 +317,7 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState* milton_state)
                     ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
                     if ( mut_alpha != pen_alpha ) {
                         milton_set_pen_alpha(milton_state, mut_alpha);
-                        milton_state->gui->is_showing_preview = true;
+                        set_flag(milton_state->gui->flags, MiltonGuiFlags::SHOWING_PREVIEW);
                     }
                 }
 
@@ -325,20 +328,22 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState* milton_state)
 
                 if ( mut_size != size ) {
                     milton_set_brush_size(milton_state, mut_size);
-                    milton_state->gui->is_showing_preview = true;
+                    set_flag(milton_state->gui->flags, MiltonGuiFlags::SHOWING_PREVIEW);
                 }
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
                 {
                     if ( milton_state->current_mode != MiltonMode::PEN ) {
                         if (ImGui::Button("Switch to Pen")) {
-                            set_flag(input, MiltonInputFlags::CHANGE_MODE);
+                            set_flag(input->flags, MiltonInputFlags::CHANGE_MODE);
+                            input->mode_to_set = MiltonMode::PEN;
                         }
                     }
 
                     if ( milton_state->current_mode != MiltonMode::ERASER ) {
                         if (ImGui::Button("Switch to Eraser")) {
-                            set_flag(input, MiltonInputFlags::CHANGE_MODE);
+                            set_flag(input->flags, MiltonInputFlags::CHANGE_MODE);
+                            input->mode_to_set = MiltonMode::ERASER;
                         }
                     }
                 }
@@ -346,74 +351,93 @@ void milton_gui_tick(MiltonInputFlags& input, MiltonState* milton_state)
 
                 // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             }
-            ImGui::End();  // Brushes
-        }
-
-
-        if ( milton_state->gui->is_showing_preview ) {
+            // Important to place this before ImGui::End()
             const v2i pos = {
                 (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),
                 (i32)(ImGui::GetWindowPos().y),
             };
-            milton_set_brush_preview(milton_state, pos);
+            ImGui::End();  // Brushes
+            if ( check_flag(milton_state->gui->flags, MiltonGuiFlags::SHOWING_PREVIEW) ) {
+                milton_state->gui->preview_pos = pos;
+            }
         }
 
-        if ( milton_state->gui->choosing_bg_color ) {
+
+
+        if ( check_flag(milton_state->gui->flags, MiltonGuiFlags::CHOOSING_BG_COLOR) ) {
             bool closed;
             if ( ImGui::Begin("Choose Background Color", &closed, default_imgui_window_flags) ) {
                 ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
                 ImGui::Text("Sup");
                 float color[3];
                 if ( ImGui::ColorEdit3("Background Color", milton_state->view->background_color.d) ) {
-                    set_flag(input, MiltonInputFlags::FULL_REFRESH);
-                    set_flag(input, MiltonInputFlags::FAST_DRAW);
+                    set_flag(input->flags, MiltonInputFlags::FULL_REFRESH);
+                    set_flag(input->flags, MiltonInputFlags::FAST_DRAW);
                 }
                 if ( closed ) {
-                    milton_state->gui->choosing_bg_color = false;
+                    unset_flag(milton_state->gui->flags, MiltonGuiFlags::CHOOSING_BG_COLOR);
                 }
             }
             ImGui::End();
         }
 
-        if ( milton_state->gui->show_help_widget ) {
-            //bool opened;
-            //if ( ImGui::Begin("Help"), &opened, (ImGuiWindowFlags)(ImGuiWindowFlags_NoCollapse) ) {
-            ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_Always);
-            ImGui::SetNextWindowSize({235, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
-            bool opened;
-            if ( ImGui::Begin("Shortcuts", &opened, default_imgui_window_flags) ) {
-                ImGui::TextWrapped(
-                                   "Increase brush size        ]\n"
-                                   "Decrease brush size        [\n"
-                                   "Pen                        b\n"
-                                   "Eraser                     e\n"
-                                   "10%%  opacity               1\n"
-                                   "20%%  opacity               2\n"
-                                   "30%%  opacity               3\n"
-                                   "             ...             \n"
-                                   "90%%  opacity               9\n"
-                                   "100%% opacity               0\n"
-                                   "\n"
-                                   "Show/Hide Help Window     F1\n"
-                                   "Toggle GUI Visibility     Tab\n"
-                                   "\n"
-                                   "\n"
-                                   );
-                if ( opened ) {
-                    milton_state->gui->show_help_widget = false;
-                }
-            }
-            ImGui::End();  // Help
+    } // Visible
+
+    // Note: The export window is drawn regardless of gui visibility.
+    if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
+        bool closed;
+        if ( ImGui::Begin("Export...", &closed, default_imgui_window_flags) ) {
+            ImGui::Text("Click and drag to select the area to export.");
         }
 
+        if ( ImGui::Button("Cancel") ) {
+            milton_use_previous_mode(milton_state);
+        }
+        ImGui::End(); // Export...
+        if ( closed ) {
+            milton_use_previous_mode(milton_state);
+        }
     }
+
+    // Shortcut help. Also shown regardless of UI visibility.
+    if ( milton_state->gui->show_help_widget ) {
+        //bool opened;
+        ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_Always);
+        ImGui::SetNextWindowSize({235, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
+        bool closed;
+        if ( ImGui::Begin("Shortcuts", &closed, default_imgui_window_flags) ) {
+            ImGui::TextWrapped(
+                               "Increase brush size        ]\n"
+                               "Decrease brush size        [\n"
+                               "Pen                        b\n"
+                               "Eraser                     e\n"
+                               "10%%  opacity               1\n"
+                               "20%%  opacity               2\n"
+                               "30%%  opacity               3\n"
+                               "             ...             \n"
+                               "90%%  opacity               9\n"
+                               "100%% opacity               0\n"
+                               "\n"
+                               "Show/Hide Help Window     F1\n"
+                               "Toggle GUI Visibility     Tab\n"
+                               "\n"
+                               "\n"
+                              );
+            if ( closed ) {
+                milton_state->gui->show_help_widget = false;
+            }
+        }
+        ImGui::End();  // Help
+    }
+
+
     ImGui::PopStyleColor(color_stack);
 
 }
 
-void gui_imgui_set_ungrabbed(MiltonGui& gui)
+void gui_imgui_set_ungrabbed(MiltonGui* gui)
 {
-    gui.is_showing_preview = false;
+    unset_flag(gui->flags, MiltonGuiFlags::SHOWING_PREVIEW);
 }
 
 Rect get_bounds_for_picker_and_colors(const ColorPicker& picker)
@@ -490,9 +514,6 @@ void gui_toggle_visibility(MiltonGui* gui)
 
 void gui_toggle_help(MiltonGui* gui)
 {
-    if ( !gui->visible ) {
-        gui_toggle_visibility(gui);
-    }
     gui->show_help_widget = !gui->show_help_widget;
 }
 

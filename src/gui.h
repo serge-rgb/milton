@@ -85,17 +85,25 @@ struct Exporter {
     v2i needle;
 };
 
+// State machine for gui
+enum class MiltonGuiFlags {
+    NONE,
+
+    SHOWING_PREVIEW   = 1 << 0,
+    CHOOSING_BG_COLOR = 1 << 1,
+};
+DECLARE_FLAG(MiltonGuiFlags);
+
 // typedef'd in milton.h
 struct MiltonGui {
-    b32 visible          = true;
-    b32 show_help_widget = false;
+    b32 visible;
+    b32 show_help_widget;
 
     b32 active;  // `active == true` when gui currently owns all user input.
     b32 did_change_color;
     b32 did_hit_button;  // Avoid multiple clicks.
-    b32 is_showing_preview;  // Preview brush shown next to "Brushes" widget
 
-    b32 choosing_bg_color = false;
+    MiltonGuiFlags flags;
 
     ColorPicker picker;
 
@@ -111,7 +119,7 @@ struct MiltonGui {
 // GUI API
 //
 // Call from the main loop before milton_update
-void milton_gui_tick(MiltonInputFlags& input, const MiltonState& milton_state);
+void milton_gui_tick(MiltonInput* input, const MiltonState& milton_state);
 
 
 //

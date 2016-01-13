@@ -34,7 +34,6 @@
 #include "color.h"
 #include "canvas.h"
 
-
 struct MiltonGLState {
     GLuint quad_program;
     GLuint texture;
@@ -146,7 +145,10 @@ struct MiltonState {
 
     i32     num_redos;
 
+    // Read only
+    // Set these with milton_switch_mode and milton_use_previous_mode
     MiltonMode current_mode;
+    MiltonMode last_mode;
 
     b32 request_quality_redraw;  // After drawing with downsampling this gets set to true.
 
@@ -243,10 +245,8 @@ void milton_decrease_brush_size(MiltonState* milton_state);
 float milton_get_pen_alpha(MiltonState* milton_state);
 void milton_set_pen_alpha(MiltonState* milton_state, float alpha);
 
-void milton_set_brush_preview(MiltonState* milton_state, const v2i& pos)
-{
-    milton_state->gui->preview_pos = pos;
-}
+void milton_use_previous_mode(MiltonState* milton_state);
+void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
 
 // Our "game loop" inner function.
 void milton_update(MiltonState* milton_state, MiltonInput* input);
