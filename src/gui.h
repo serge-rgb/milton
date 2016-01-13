@@ -34,10 +34,11 @@ struct PickerData {
 };
 
 struct ColorButton {
-    i32 center_x;
-    i32 center_y;
-    i32 width;
-    i32 height;
+    i32 x;
+    i32 y;
+    i32 w;
+    i32 h;
+
     v4f color;
 
     PickerData picker_data;

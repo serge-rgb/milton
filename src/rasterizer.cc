@@ -1070,17 +1070,18 @@ static void draw_rectangle(u32* raster_buffer,
 }
 #endif
 
+
 // 1-pixel margin
 static void fill_rectangle_with_margin(u32* raster_buffer,
                                        i32 raster_buffer_width, i32 raster_buffer_height,
-                                       i32 center_x, i32 center_y,
-                                       i32 rect_w, i32 rect_h,
+                                       i32 x, i32 y,
+                                       i32 w, i32 h,
                                        v4f rect_color, v4f margin_color)
 {
-    i32 left = max(center_x - rect_w, 0);
-    i32 right = min(center_x + rect_w, raster_buffer_width);
-    i32 top = max(center_y - rect_h, 0);
-    i32 bottom = min(center_y + rect_h, raster_buffer_height);
+    i32 left = max(x, 0);
+    i32 right = min(x + w, raster_buffer_width);
+    i32 top = max(y, 0);
+    i32 bottom = min(y + h, raster_buffer_height);
 
     assert (right >= left);
     assert (bottom >= top);
@@ -1576,8 +1577,8 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
             }
             fill_rectangle_with_margin(raster_buffer,
                                        milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                                       button->center_x, button->center_y,
-                                       button->width, button->height,
+                                       button->x, button->y,
+                                       button->w, button->h,
                                        button->color,
                                        // Black margin
                                        { 0, 0, 0, 1 });

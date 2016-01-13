@@ -18,10 +18,10 @@
 static Rect color_button_as_rect(const ColorButton* button)
 {
     Rect rect = {};
-    rect.left = button->center_x - button->width;
-    rect.right = button->center_x + button->width;
-    rect.top = button->center_y - button->height;
-    rect.bottom = button->center_y + button->height;
+    rect.left = button->x;
+    rect.right = button->x + button->w;
+    rect.top = button->y;
+    rect.bottom = button->y + button->h;
     return rect;
 }
 
@@ -542,19 +542,19 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 
     i32 button_size = (2*bounds_radius_px - (num_buttons - 1) * spacing) / num_buttons;
 
-    i32 current_center_x = 40;
+    i32 current_x = 40 - button_size / 2;
 
     ColorButton* cur_button = &gui->picker.color_buttons;
     for (i32 i = 0; i < num_buttons; ++i) {
         assert (cur_button->next == NULL);
 
-        cur_button->center_x = current_center_x;
-        cur_button->center_y = gui->picker.center.y + bounds_radius_px + 40;
-        cur_button->width = button_size / 2;
-        cur_button->height = button_size / 2;
+        cur_button->x = current_x;
+        cur_button->y = gui->picker.center.y + bounds_radius_px + spacing;
+        cur_button->w = button_size;
+        cur_button->h = button_size;
         cur_button->color = {0.0, 0.0, 0.0, 0.0};
 
-        current_center_x += spacing + button_size;
+        current_x += spacing + button_size;
 
         if (i != (num_buttons - 1)) {
             cur_button->next = arena_alloc_elem(root_arena, ColorButton);
