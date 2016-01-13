@@ -7,32 +7,34 @@ To-Do
     - :)
 
 - Milton v1.0.0
-    -  GUI
-        - "Export" button
-        - Selection rectangle (engine support needed)
-        - History slider
-        - Export buttons
+    -  Application
+        - Export
+            - Render to buffer
             - OS-dependent file-save dialog.
-        - Brush / Eraser
-            - Image Button
+            - JPEG (tiny_jpeg)
+            - stb_image_write (PNG, BMP, TGA)
+        - History slider
         - Layers (w/engine support)
-        - Options
-            - GUI scale
-        - Set background image?
-        - Reduce or remove widget rounding
-        - can 'imgui.ini' be name-changed?
-        - First time run:
-            - Show help widget.
-    - Porting:
-        - Ctrl -> Cmd in OSX. Other cross platform binding issues?
-        - Easytab: Stylus buttons.
-        - Easytab: Distinction between eraser and pen.
-    - Application
         - App data directory
             - Windows (AppData\Local\MiltonPaint)
             - Unix (~/.config/milton_paint)
             - What if directory exists?
-        - DPI-aware (gui scale set by default)
+        - Brush / Eraser
+            - Image Button
+        - ImGUI details:
+            - Move to next version & use its non-shitty SDL impl.
+            - Reduce or remove widget rounding
+            - can 'imgui.ini' be name-changed?
+            - Disable window dragging
+        - DPI-awareness
+            - UI scale option
+            - ?? gui scale set by default
+        - Etc...
+            - Show hello widget on first run?
+    - Porting:
+        - Ctrl -> Cmd in OSX. Other cross platform binding issues?
+        - Easytab: Stylus buttons.
+        - Easytab: Distinction between eraser and pen.
     - Performance:
         - Strokes should be sampled based on relative size
         - memcpy when Panning (most users will benefit hugely)
@@ -43,32 +45,40 @@ To-Do
         - 4x4 Blockgroups (morton-order)
         - AVX backend??
         - Do not redraw when stroking over existing drawing? Only on top layer?
+        - Profiling: .mlt loading
     - Robust save
         - Save to temp file and swap
         - Keep backups
         - Future-proof. Marker for extensions post v1.0
         - Check return values for stdlib funcs.
-    - Profile loading
-        - Is allocation a problem?
-    - Export
-        - JPEG (tiny_jpeg)
-        - stb_image_write (PNG, BMP, TGA)
-    - Brush
-        - Support for general, implicitly defined brushes
     - Debug
         - Input recorder for bug replication
     - Canvas
         - Determine precision limits.
+    - Milton Library
+        - Build as library. Write sample program.
+    - Distribution
+        - Bintray? Github?
+        - Windows.
+            - Installation. WIX?
+        - Linux
+            - Checkinstall? Manual dpkg?
+            - Ubuntu PPA
+            - Freedesktop entry, MIME type
+        - OSX
+            - Bundle
+            - dmg crap
+
+
+
+- Milton v1.0.X
+    - Wacom: (?) Support for pan & rotate.
+
+
+
+- Milton v1.1.0
+    - Brush
+        - Support for general, implicitly defined brushes
     - Playback
         - Store view changes in persist file
         - Playback mode? Separate viewer?
-    - Milton Library
-        - Build as library. Write sample program.
-
-
-============================================================
-====                   1.0 Beta Milestone               ====
-============================================================
-
-- Future
-    - Wacom: (?) Support for pan & rotate.
