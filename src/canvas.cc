@@ -78,9 +78,8 @@ b32 stroke_point_contains_point(v2i p0, i32 r0,
 {
     v2i d = p1 - p0;
     // using manhattan distance, less chance of overflow. Still works well enough for this case.
-    i32 m = abs(d.x) + abs(d.y) + r1;
+    u32 m = abs(d.x) + abs(d.y) + r1;
     //i32 m = magnitude_i(d) + r1;
-    assert(m >= 0);
     b32 contained = (m < r0);
     return contained;
 }
