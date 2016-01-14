@@ -7,11 +7,6 @@ src/template_expand
 src/*.generated.h
 src/*.generated.c
 
-# vurtun/gui
-third_party/gui
-third_party/nanovg
-third_party/build
-
 # Visual Studio crap
 build/Milton.sln
 build/Milton.exp

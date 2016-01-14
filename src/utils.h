@@ -95,8 +95,7 @@ b32 intersect_line_segments(v2i a, v2i b,
 // The mighty rect
 // ---------------
 
-struct Rect
-{
+struct Rect {
     union {
         struct {
             v2i top_left;

@@ -14,6 +14,7 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <imgui.h>
+//#include <imgui_impl_sdl.h>
 #include <imgui_impl_sdl_gl3.h>
 
 struct PlatformInput {
@@ -59,7 +60,8 @@ int milton_main()
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // Init ImGUI
-    ImGui_ImplSDLGL3_Init();
+    //ImGui_ImplSdl_Init(window);
+    ImGui_ImplSdlGL3_Init(window);
 
 
     // ==== Initialize milton
@@ -153,6 +155,9 @@ int milton_main()
         SDL_Event event;
         b32 got_tablet_point_input = false;
         while ( SDL_PollEvent(&event) ) {
+            //ImGui_ImplSdl_ProcessEvent(&event);
+            ImGui_ImplSdlGL3_ProcessEvent(&event);
+
             SDL_Keymod keymod = SDL_GetModState();
             platform_input.is_ctrl_down = (keymod & KMOD_LCTRL) | (keymod & KMOD_RCTRL);
 
@@ -421,12 +426,10 @@ int milton_main()
         }
 #endif
 
-
-        // TODO: get framebuffer size
-        ImGui_ImplSDLGL3_NewFrame(width, height, width, height);
-
-        milton_gui_tick(&milton_input, milton_state);
+        //ImGui_ImplSdl_NewFrame(window);
+        ImGui_ImplSdlGL3_NewFrame();
         {
+# if 0
             int mouse_x;
             int mouse_y;
             SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -437,7 +440,7 @@ int milton_main()
             imgui_io.MouseDown[0] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT));
             imgui_io.MouseDown[1] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_MIDDLE));
             imgui_io.MouseDown[2] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT));
-
+#endif
             // Clear our pointer input because we captured an ImGui widget!
             if (ImGui::GetIO().WantCaptureMouse) {
                 num_point_results = 0;
@@ -445,6 +448,8 @@ int milton_main()
                 set_flag(milton_input.flags, MiltonInputFlags::IMGUI_GRABBED_INPUT);
             }
         }
+
+        milton_gui_tick(&milton_input, milton_state);
 
         if (platform_input.is_panning) {
             set_flag(milton_input.flags, MiltonInputFlags::PANNING);
