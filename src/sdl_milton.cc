@@ -487,6 +487,9 @@ int milton_main()
         platform_input.pan_start = platform_input.pan_point;
         // ==== Update and render
         milton_update(milton_state, &milton_input);
+        if ( !milton_state->running ) {
+            should_quit = true;
+        }
         milton_gl_backend_draw(milton_state);
         ImGui::Render();
         SDL_GL_SwapWindow(window);

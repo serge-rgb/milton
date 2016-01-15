@@ -166,6 +166,9 @@ struct MiltonState {
     // but discard them when using a tablet.
     b32         stroke_is_from_tablet;
 
+    // This is set to false after it's safe to quit
+    b32 running;
+
     // ====
     // Debug helpers
     // ====
@@ -250,4 +253,6 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
 
 // Our "game loop" inner function.
 void milton_update(MiltonState* milton_state, MiltonInput* input);
+
+void milton_try_quit(MiltonState* milton_state);
 

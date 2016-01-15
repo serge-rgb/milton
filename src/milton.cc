@@ -482,6 +482,8 @@ void milton_init(MiltonState* milton_state)
         SDL_CreateThread(renderer_worker_thread, "Milton Render Worker", (void*)params);
     }
     milton_load_assets(milton_state);
+
+    milton_state->running = true;
 }
 
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
@@ -572,6 +574,10 @@ void milton_use_previous_mode(MiltonState* milton_state)
         assert ( !"invalid code path" );
     }
 }
+void milton_try_quit(MiltonState* milton_state)
+{
+    milton_state->running = false;
+}
 
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
@@ -584,8 +590,14 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             (check_flag(input->flags, MiltonInputFlags::REDO));
 
     MiltonRenderFlags render_flags = MiltonRenderFlags::NONE;
+    b32 do_fast_draw               = false;
 
-    b32 do_fast_draw = false;
+    if ( !milton_state->running ) {
+        // Someone tried to kill milton from outside the update. Make sure we save.
+        should_save = true;
+        goto cleanup;
+    }
+
     if ( milton_state->worker_needs_memory ) {
         size_t prev_memory_value = milton_state->worker_memory_size;
         milton_state->worker_memory_size *= 2;
@@ -799,6 +811,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     milton_render(milton_state, render_flags);
 
+cleanup:
     if ( should_save ) {
         milton_save(milton_state);
     }

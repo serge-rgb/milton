@@ -277,6 +277,9 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             if ( ImGui::MenuItem("Export to image...") ) {
                 milton_switch_mode(milton_state, MiltonMode::EXPORTING);
             }
+            if ( ImGui::MenuItem("Quit") ) {
+                milton_try_quit(milton_state);
+            }
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu("Canvas", /*enabled=*/true) ) {
