@@ -35,3 +35,6 @@ build/milton
 build/*.a
 build/*.o
 build/SKIP_HEADERLIBS
+# Eclipse project
+.cproject
+.project

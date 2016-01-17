@@ -3,7 +3,6 @@ To-Do
 
 
 - Bugs
-    - Lower GL dependencies so it runs on crappy hardware (as it should)
     - :)
 
 - Milton v1.0.0
@@ -58,6 +57,7 @@ To-Do
     - Milton Library
         - Build as library. Write sample program.
     - Distribution
+        - Use a build system -- Cmake, probably
         - Bintray? Github?
         - Windows.
             - Installation. WIX?
