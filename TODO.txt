@@ -4,6 +4,7 @@ To-Do
 
 - Bugs
     - :)
+    - WTF. EasyTab not handling input on Linux
 
 - Milton v1.0.0
     -  Application

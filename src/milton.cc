@@ -272,24 +272,6 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     }
 }
 
-static void exporter_input(Exporter* exporter, MiltonInput* input)
-{
-    if ( input->input_count > 0 ) {
-        v2i point = input->points[input->input_count - 1];
-        if ( exporter->state == ExporterState::IDLE ) {
-            exporter->pivot = point;
-            exporter->needle = point;
-            exporter->state = ExporterState::GROWING_RECT;
-        } else if ( exporter->state == ExporterState::GROWING_RECT) {
-            exporter->needle = point;
-        }
-    }
-    if ( check_flag(input->flags, MiltonInputFlags::END_STROKE) &&
-                exporter->state != ExporterState::IDLE ) {
-        exporter->state = ExporterState::IDLE;
-    }
-}
-
 void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;

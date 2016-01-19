@@ -42,9 +42,9 @@
 
 #include "canvas.cc"
 #include "color.cc"
+#include "milton.cc"
 #include "gui.cc"
 #include "memory.cc"
-#include "milton.cc"
 #include "persist.cc"
 #include "profiler.cc"
 #include "rasterizer.cc"

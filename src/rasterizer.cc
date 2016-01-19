@@ -1644,9 +1644,10 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
 
     // If the explorer is active, render regardless of UI being visible
 
-    if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
+    if ( milton_state->current_mode == MiltonMode::EXPORTING  ) {
         Exporter* exporter = &gui->exporter;
-        if ( exporter->state == ExporterState::GROWING_RECT ) {
+        if ( exporter->state == ExporterState::GROWING_RECT ||
+             exporter->state == ExporterState::SELECTED ) {
             auto x = min(exporter->pivot.x, exporter->needle.x);
             auto y = min(exporter->pivot.y, exporter->needle.y);
             auto w = abs(exporter->pivot.x - exporter->needle.x);

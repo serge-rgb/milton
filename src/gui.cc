@@ -242,6 +242,30 @@ static Rect picker_get_bounds(const ColorPicker* picker)
 }
 
 
+static void exporter_init(Exporter* exporter)
+{
+    *exporter = {};
+    exporter->scale = 1;
+}
+
+void exporter_input(Exporter* exporter, MiltonInput* input)
+{
+    if ( input->input_count > 0 ) {
+        v2i point = input->points[input->input_count - 1];
+        if ( exporter->state == ExporterState::EMPTY ||
+             exporter->state == ExporterState::SELECTED ) {
+            exporter->pivot = point;
+            exporter->needle = point;
+            exporter->state = ExporterState::GROWING_RECT;
+        } else if ( exporter->state == ExporterState::GROWING_RECT) {
+            exporter->needle = point;
+        }
+    }
+    if ( check_flag(input->flags, MiltonInputFlags::END_STROKE) && exporter->state != ExporterState::EMPTY ) {
+        exporter->state = ExporterState::SELECTED;
+    }
+}
+
 void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 {
     // ImGui Section
@@ -389,16 +413,41 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
     // Note: The export window is drawn regardless of gui visibility.
     if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
         bool closed;
-        if ( ImGui::Begin("Export...", &closed, default_imgui_window_flags) ) {
+        b32 reset = false;
+
+        ImGui::SetNextWindowPos(ImVec2(100, 30), ImGuiSetCond_Once);
+        ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
+        if ( ImGui::Begin("Export...", &closed, ImGuiWindowFlags_NoCollapse) ) {
             ImGui::Text("Click and drag to select the area to export.");
+
+            Exporter* exporter = &milton_state->gui->exporter;
+            if ( exporter->state == ExporterState::SELECTED ) {
+                int raster_w = abs(exporter->needle.x - exporter->pivot.x);
+                int raster_h = abs(exporter->needle.y - exporter->pivot.y);
+                ImGui::Text("Current selection is %dx%d\n",
+                            raster_w, raster_h);
+                if ( ImGui::InputInt("Scale up", &exporter->scale, 1, /*step_fast=*/2) ) {
+
+                }
+                ImGui::Text("Final image size: %dx%d\n",
+                            raster_w*exporter->scale, raster_h*exporter->scale);
+
+                if ( ImGui::Button("Export selection to image...") ) {
+                }
+            }
         }
 
         if ( ImGui::Button("Cancel") ) {
+            reset = true;
             milton_use_previous_mode(milton_state);
         }
         ImGui::End(); // Export...
         if ( closed ) {
+            reset = true;
             milton_use_previous_mode(milton_state);
+        }
+        if ( reset ) {
+            exporter_init(&milton_state->gui->exporter);
         }
     }
 
@@ -567,6 +616,8 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 
     gui->preview_pos      = {-1, -1};
     gui->preview_pos_prev = {-1, -1};
+
+    exporter_init(&gui->exporter);
 }
 
 // When a selected color is used in a stroke, call this to update the color
