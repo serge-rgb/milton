@@ -14,6 +14,8 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#include "stb_image_write.h"
+
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
 static u32 word_swap_memory_order(u32 word)
@@ -101,6 +103,7 @@ void milton_save(MiltonState* milton_state)
     fwrite(&milton_magic, sizeof(u32), 1, fd);
 
     u32 milton_binary_version = 1;
+
     fwrite(&milton_binary_version, sizeof(u32), 1, fd);
 
     fwrite(milton_state->view, sizeof(CanvasView), 1, fd);
@@ -123,5 +126,5 @@ void milton_save(MiltonState* milton_state)
 
 void milton_save_buffer_to_file(MiltonState* milton_state, u8* buffer, i32 w, i32 h)
 {
-
+    stbi_write_png("out.png", w, h, 4, buffer, 0);
 }

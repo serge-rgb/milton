@@ -29,5 +29,4 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags);
 
 void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
                              i32 x, i32 y,
-                             i32 w, i32 h,
-                             int scale);
+                             i32 w, i32 h, int scale);

@@ -435,13 +435,13 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
                 if ( ImGui::Button("Export selection to image...") ) {
                     // Render to buffer
-                    int bpp = 3;  // bytes per pixel
+                    int bpp = 4;  // bytes per pixel
                     i32 w = raster_w * exporter->scale;
                     i32 h = raster_h * exporter->scale;
                     size_t size = w * h * bpp;
-                    u8* buffer = (u8*)malloc(size);
+                    u8* buffer = (u8*)mlt_malloc(size);
                     if (buffer) {
-                        milton_render_to_buffer(milton_state, buffer, x, y, raster_w, raster_h, exporter->scale);
+                        milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
                         milton_save_buffer_to_file(milton_state, buffer, w, h);
                         mlt_free (buffer);
                     } else {

@@ -74,6 +74,14 @@ template<typename T> Vec2<T> operator* (Vec2<T> a, Vec2<T> b)
     return result;
 }
 
+template<typename T> Vec2<T> operator*= (Vec2<T> a, T factor)
+{
+    Vec2<T> result;
+    result.x *= factor;
+    result.y *= factor;
+    return result;
+}
+
 template<typename T> Vec2<T> operator* (Vec2<T> v, T factor)
 {
     Vec2<T> result;

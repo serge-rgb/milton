@@ -46,7 +46,6 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             "#version 120\n"
             "\n"
             "uniform sampler2D raster_buffer;\n"
-            "uniform float aspect_ratio;\n"
             "varying vec2 coord;\n"
             "\n"
             "void main(void)\n"
@@ -382,8 +381,6 @@ void milton_init(MiltonState* milton_state)
 
     assert (milton_state->num_render_workers);
 
-    // Allocate enough memory for the maximum possible supported resolution. As
-    // of now, it seems like future 8k displays will adopt this resolution.
     milton_state->bytes_per_pixel = 4;
 
     milton_state->strokes = StrokeCord(1024);
@@ -506,7 +503,6 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     if ( new_screen_size.w < milton_state->max_width &&
          new_screen_size.h < milton_state->max_height) {
         milton_state->view->screen_size = new_screen_size;
-        milton_state->view->aspect_ratio = (f32)new_screen_size.w / (f32)new_screen_size.h;
         milton_state->view->screen_center = milton_state->view->screen_size/2;
 
         // Add delta to pan vector

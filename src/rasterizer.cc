@@ -1309,8 +1309,6 @@ static b32 render_blockgroup(MiltonState* milton_state,
             break;
         }
 
-
-        // TODO: use the debug dispatcher.
         if ( SDL_HasSSE2() && !milton_state->DEBUG_sse2_switch ) {
             allocation_ok = rasterize_canvas_block_sse2(&render_arena,
                                                         milton_state->view,
@@ -1430,7 +1428,7 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
         produce_render_work(milton_state, data);
         blockgroup_acc += 1;
 #else
-        Arena blockgroup_arena = arena_push(milton_state->root_arena, (size_t)1024 * 1024);
+        Arena blockgroup_arena = arena_push(milton_state->root_arena, (size_t)128 * 1024 * 1024);
         render_blockgroup(milton_state,
                           &blockgroup_arena,
                           blocks.m_data,
@@ -1767,11 +1765,21 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     u8* saved_buffer = milton_state->canvas_buffer;
     CanvasView saved_view = *milton_state->view;
 
-    /* milton_state->view- */
-    /*     v2i pan_vector = milton_state->view->pan_vector + (pan_delta*milton_state->view->scale); */
+    // Do basically the same thing as milton_resize, without allocating.
+
+    v2i center = milton_state->view->screen_size / 2;
+    v2i pan_delta = center - v2i{x + (w/2), y + (h/2)} ;
+
+    milton_state->view->pan_vector = milton_state->view->pan_vector + (pan_delta*( milton_state->view->scale + scale ));
+    auto test_pan = milton_state->view->pan_vector;
+
+    i32 buf_w = (w - x) * scale;
+    i32 buf_h = (h - y) * scale;
 
     milton_state->canvas_buffer = buffer;
-    milton_state->view->screen_size = { w, h };
+    milton_state->view->screen_size = { buf_w, buf_h };
+    milton_state->view->screen_center = milton_state->view->screen_size / 2;
+    milton_state->view->scale += scale; // TODO <- calculate this
 
 
     // TODO:
@@ -1780,10 +1788,11 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     // dependencies on implementation details of the app
 
     Rect raster_limits;
-    raster_limits.left = 0;
-    raster_limits.top = 0;
-    raster_limits.right = w;
-    raster_limits.bottom = h;
+    raster_limits.left   = 0;
+    raster_limits.top    = 0;
+    raster_limits.right  = buf_w;
+    raster_limits.bottom = buf_h;
+
     // Note:
     // Render canvas must be a blocking function!
     render_canvas(milton_state, raster_limits);
@@ -1791,4 +1800,8 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     // Unset
     milton_state->canvas_buffer = saved_buffer;
     *milton_state->view = saved_view;
+
+    // Testing:
+    milton_state->view->pan_vector = test_pan;
+    milton_state->request_quality_redraw = true;
 }
