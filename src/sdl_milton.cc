@@ -110,7 +110,6 @@ int milton_main()
         milton_die_gracefully("Can't get system info!\n");
     }
 
-
     PlatformInput platform_input = { 0 };
 
     b32 should_quit = false;

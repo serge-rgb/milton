@@ -392,7 +392,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
 
         if ( check_flag(milton_state->gui->flags, MiltonGuiFlags::CHOOSING_BG_COLOR) ) {
-            bool closed;
+            bool closed = false;
             if ( ImGui::Begin("Choose Background Color", &closed, default_imgui_window_flags) ) {
                 ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
                 ImGui::Text("Sup");
@@ -412,7 +412,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
     // Note: The export window is drawn regardless of gui visibility.
     if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
-        bool closed;
+        bool closed = false;
         b32 reset = false;
 
         ImGui::SetNextWindowPos(ImVec2(100, 30), ImGuiSetCond_Once);

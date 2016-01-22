@@ -1429,7 +1429,7 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
         produce_render_work(milton_state, data);
         blockgroup_acc += 1;
 #else
-        Arena blockgroup_arena = arena_push(milton_state->root_arena, (size_t)128 * 1024 * 1024);
+        Arena blockgroup_arena = arena_push(milton_state->root_arena, (size_t)1024 * 1024);
         render_blockgroup(milton_state,
                           &blockgroup_arena,
                           blocks.m_data,

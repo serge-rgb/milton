@@ -31,6 +31,8 @@ To-Do
             - ?? gui scale set by default
         - Etc...
             - Show hello widget on first run?
+    - Debug
+        - Input recorder for bug replication
     - Porting:
         - Ctrl -> Cmd in OSX. Other cross platform binding issues?
         - Easytab: Stylus buttons.
@@ -51,8 +53,6 @@ To-Do
         - Keep backups
         - Future-proof. Marker for extensions post v1.0
         - Check return values for stdlib funcs.
-    - Debug
-        - Input recorder for bug replication
     - Canvas
         - Determine precision limits.
     - Milton Library

@@ -81,7 +81,9 @@ void milton_load(MiltonState* milton_state)
     }
 }
 
-// TODO: handle failures gracefully.
+// TODO: Robust saving.
+//  - Save to temp file and swap!
+//  - Check all stdio function return values
 void milton_save(MiltonState* milton_state)
 {
     size_t num_strokes = milton_state->strokes.count;

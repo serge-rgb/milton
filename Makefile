@@ -16,6 +16,7 @@ MLT_CFLAGS = $(CFLAGS) \
 	     -Wno-write-strings \
 	     -Wno-c++11-compat-deprecated-writable-strings \
 	     -fno-strict-aliasing \
+	     -fno-omit-frame-pointer \
 	     `pkg-config --cflags sdl2`
 
 MLT_LDFLAGS = $(LDFLAGS) -lGL -lX11 -lXi `pkg-config --libs sdl2`
@@ -36,10 +37,10 @@ MLT_SRCS = src/canvas.cc 	src/canvas.h \
 	   src/milton_configuration.h
 
 
-.PHONY all: build/milton_unity
+all: build/milton
 
-build/milton_unity: build/headerlibs_impl.o $(MLT_SRCS)
-	$(CC) $(MLT_CFLAGS) build/headerlibs_impl.o src/milton_unity_build.cc $(MLT_LDFLAGS) -o build/milton_unity
+build/milton: build/headerlibs_impl.o $(MLT_SRCS)
+	$(CC) $(MLT_CFLAGS) build/headerlibs_impl.o src/milton_unity_build.cc $(MLT_LDFLAGS) -o build/milton
 
 build/headerlibs_impl.o: CFLAGS += -Ithird_party
 
