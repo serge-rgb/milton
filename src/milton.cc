@@ -409,7 +409,7 @@ void milton_init(MiltonState* milton_state)
         milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         milton_state->view->downsampling_factor = 1;
-        milton_state->view->canvas_radius_limit = 1024 * 1024 * 512;
+
         milton_state->view->background_color = { 1, 1, 1 };
 #if 0
         milton_state->view->rotation = 0;
@@ -429,6 +429,7 @@ void milton_init(MiltonState* milton_state)
 
     milton_gl_backend_init(milton_state);
     milton_load(milton_state);
+    milton_state->view->canvas_radius_limit = 1u << 30;
 
     // Set default brush sizes.
     for (int i = 0; i < BrushEnum_COUNT; ++i) {
@@ -511,21 +512,13 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
         // Add delta to pan vector
         v2i pan_vector = milton_state->view->pan_vector + (pan_delta*milton_state->view->scale);
 
-        while (pan_vector.x > milton_state->view->canvas_radius_limit)
-        {
-            pan_vector.x -= milton_state->view->canvas_radius_limit;
+        if ( pan_vector.x > milton_state->view->canvas_radius_limit ||
+                pan_vector.x <= -milton_state->view->canvas_radius_limit ) {
+            pan_vector.x = milton_state->view->pan_vector.x;
         }
-        while (pan_vector.x <= -milton_state->view->canvas_radius_limit)
-        {
-            pan_vector.x += milton_state->view->canvas_radius_limit;
-        }
-        while (pan_vector.y > milton_state->view->canvas_radius_limit)
-        {
-            pan_vector.y -= milton_state->view->canvas_radius_limit;
-        }
-        while (pan_vector.y <= -milton_state->view->canvas_radius_limit)
-        {
-            pan_vector.y += milton_state->view->canvas_radius_limit;
+        if ( pan_vector.y > milton_state->view->canvas_radius_limit ||
+                pan_vector.y <= -milton_state->view->canvas_radius_limit ) {
+            pan_vector.y = milton_state->view->pan_vector.y;
         }
         milton_state->view->pan_vector = pan_vector;
     } else {
@@ -632,7 +625,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 // Sensible
 #if 1
         f32 scale_factor = 1.3f;
-        i32 view_scale_limit = 10000;
+        i32 view_scale_limit = 40000;
 // Debug
 #else
         f32 scale_factor = 1.5f;

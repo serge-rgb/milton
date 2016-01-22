@@ -36,8 +36,19 @@ const v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 b32* filter_strokes_to_rect(Arena* arena,
                             StrokeCord strokes,
-                            const Rect rect)
+                            Rect rect)
 {
+
+    v2i center = {
+        (rect.left + rect.right) / 2,
+        (rect.top + rect.bottom) / 2,
+    };
+
+    rect.left = rect.left - center.w;
+    rect.right = rect.right - center.w;
+    rect.top = rect.top - center.h;
+    rect.bottom = rect.bottom - center.h;
+
     size_t num_strokes = count(strokes);
     b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
     if (!mask_array) {
@@ -54,8 +65,8 @@ b32* filter_strokes_to_rect(Arena* arena,
             }
         } else {
             for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
-                v2i a = stroke->points[point_i];
-                v2i b = stroke->points[point_i + 1];
+                v2i a = stroke->points[point_i] - center;
+                v2i b = stroke->points[point_i + 1] - center;
 
                 b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
                                (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||

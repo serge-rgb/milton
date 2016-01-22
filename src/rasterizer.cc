@@ -62,6 +62,7 @@ static b32 clipped_stroke_fills_block(ClippedStroke* clipped_stroke)
     return fills;
 }
 
+// Clipped stroke points are stored relative to the reference point.
 static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke,
                                           Rect canvas_rect, i32 local_scale, v2i reference_point)
 {
@@ -141,7 +142,7 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
 {
     assert ((((rect.left + rect.right) / 2) * local_scale - reference_point.x) == 0);
     assert ((((rect.top + rect.bottom) / 2) * local_scale - reference_point.y) == 0);
-#if 1
+#if 0
     // Perf note: With the current use, this is actually going to be zero.
     v2i rect_center =
     {
@@ -1765,6 +1766,9 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
 
     u8* saved_buffer = milton_state->canvas_buffer;
     CanvasView saved_view = *milton_state->view;
+
+    /* milton_state->view- */
+    /*     v2i pan_vector = milton_state->view->pan_vector + (pan_delta*milton_state->view->scale); */
 
     milton_state->canvas_buffer = buffer;
     milton_state->view->screen_size = { w, h };

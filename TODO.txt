@@ -53,8 +53,6 @@ To-Do
         - Keep backups
         - Future-proof. Marker for extensions post v1.0
         - Check return values for stdlib funcs.
-    - Canvas
-        - Determine precision limits.
     - Milton Library
         - Build as library. Write sample program.
     - Distribution

@@ -441,9 +441,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     size_t size = w * h * bpp;
                     u8* buffer = (u8*)malloc(size);
                     if (buffer) {
-                        milton_render_to_buffer(milton_state,
-                                                buffer,
-                                                x, y, raster_w, raster_h, exporter->scale);
+                        milton_render_to_buffer(milton_state, buffer, x, y, raster_w, raster_h, exporter->scale);
                         milton_save_buffer_to_file(milton_state, buffer, w, h);
                         mlt_free (buffer);
                     } else {

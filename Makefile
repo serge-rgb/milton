@@ -1,7 +1,9 @@
 CC=clang++
 LD=clang++
 
-CFLAGS=-O3 -g
+#CFLAGS = -O0 -g
+CFLAGS = -O3 -g
+
 LDFLAGS = -lm
 
 MLT_CFLAGS = $(CFLAGS) \
