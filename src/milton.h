@@ -61,7 +61,6 @@ enum class MiltonRenderFlags {
     BRUSH_PREVIEW   = 1 << 4,
     BRUSH_HOVER     = 1 << 5,
 };
-
 DECLARE_FLAG(MiltonRenderFlags);
 
 // Render Workers:
@@ -253,6 +252,9 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
 
 // Our "game loop" inner function.
 void milton_update(MiltonState* milton_state, MiltonInput* input);
+
+// persist.cc
+void milton_save_buffer_to_file(MiltonState* milton_state, u8* buffer, i32 w, i32 h);
 
 void milton_try_quit(MiltonState* milton_state);
 

@@ -4,7 +4,6 @@ To-Do
 
 - Bugs
     - :)
-    - WTF. EasyTab not handling input on Linux
 
 - Milton v1.0.0
     -  Application
@@ -13,6 +12,7 @@ To-Do
             - OS-dependent file-save dialog.
             - JPEG (tiny_jpeg)
             - stb_image_write (PNG, BMP, TGA)
+            - dialog when alloc fails
         - History slider
         - Layers (w/engine support)
         - App data directory

@@ -1754,3 +1754,37 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
                    raster_limits.bottom);
     }
 }
+
+void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
+                             i32 x, i32 y,
+                             i32 w, i32 h,
+                             int scale)
+{
+    // Idea:
+    // Set current "canvas buffer" to the one provided...
+
+    u8* saved_buffer = milton_state->canvas_buffer;
+    CanvasView saved_view = *milton_state->view;
+
+    milton_state->canvas_buffer = buffer;
+    milton_state->view->screen_size = { w, h };
+
+
+    // TODO:
+    // When setting this to be a stand-alone library, we will need to change
+    // the signature of render_canvas to only take what it needs, to reduce
+    // dependencies on implementation details of the app
+
+    Rect raster_limits;
+    raster_limits.left = 0;
+    raster_limits.top = 0;
+    raster_limits.right = w;
+    raster_limits.bottom = h;
+    // Note:
+    // Render canvas must be a blocking function!
+    render_canvas(milton_state, raster_limits);
+
+    // Unset
+    milton_state->canvas_buffer = saved_buffer;
+    *milton_state->view = saved_view;
+}

@@ -667,11 +667,11 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if (check_flag( input->flags, MiltonInputFlags::UNDO )) {
-        if ( milton_state->working_stroke.num_points == 0 && milton_state->strokes.count > 0 ) {
+        if ( milton_state->working_stroke.num_points != 0  ) {
+            milton_state->working_stroke.num_points = 0;
+        } else if ( milton_state->strokes.count > 0 ) {
             milton_state->strokes.count--;
             milton_state->num_redos++;
-        } else if ( milton_state->working_stroke.num_points > 0 ) {
-            assert(!"NPE");
         }
         set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
     } else if (check_flag( input->flags, MiltonInputFlags::REDO )) {

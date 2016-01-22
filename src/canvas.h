@@ -29,7 +29,7 @@ struct Stroke {
     i32     num_points;
 };
 
-// IMPORTANT: CanvasView needs to be a flat structure. i.e. No pointers. It gets saved and loaded to disk.
+// IMPORTANT: CanvasView needs to be a flat structure.
 struct CanvasView {
     v2i     screen_size;            // Size in pixels
     f32     aspect_ratio;

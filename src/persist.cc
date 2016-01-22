@@ -118,3 +118,8 @@ void milton_save(MiltonState* milton_state)
 
     fclose(fd);
 }
+
+void milton_save_buffer_to_file(MiltonState* milton_state, u8* buffer, i32 w, i32 h)
+{
+
+}

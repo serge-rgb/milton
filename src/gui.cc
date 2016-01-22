@@ -422,17 +422,33 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
             Exporter* exporter = &milton_state->gui->exporter;
             if ( exporter->state == ExporterState::SELECTED ) {
+                i32 x = min( exporter->needle.x, exporter->pivot.x );
+                i32 y = min( exporter->needle.y, exporter->pivot.y );
                 int raster_w = abs(exporter->needle.x - exporter->pivot.x);
                 int raster_h = abs(exporter->needle.y - exporter->pivot.y);
+
                 ImGui::Text("Current selection is %dx%d\n",
                             raster_w, raster_h);
-                if ( ImGui::InputInt("Scale up", &exporter->scale, 1, /*step_fast=*/2) ) {
-
-                }
-                ImGui::Text("Final image size: %dx%d\n",
-                            raster_w*exporter->scale, raster_h*exporter->scale);
+                if ( ImGui::InputInt("Scale up", &exporter->scale, 1, /*step_fast=*/2) ) {}
+                if ( exporter->scale <= 0 ) exporter->scale = 1;
+                ImGui::Text("Final image size: %dx%d\n", raster_w*exporter->scale, raster_h*exporter->scale);
 
                 if ( ImGui::Button("Export selection to image...") ) {
+                    // Render to buffer
+                    int bpp = 3;  // bytes per pixel
+                    i32 w = raster_w * exporter->scale;
+                    i32 h = raster_h * exporter->scale;
+                    size_t size = w * h * bpp;
+                    u8* buffer = (u8*)malloc(size);
+                    if (buffer) {
+                        milton_render_to_buffer(milton_state,
+                                                buffer,
+                                                x, y, raster_w, raster_h, exporter->scale);
+                        milton_save_buffer_to_file(milton_state, buffer, w, h);
+                        mlt_free (buffer);
+                    } else {
+                        milton_die_gracefully("Buffer too large.");
+                    }
                 }
             }
         }

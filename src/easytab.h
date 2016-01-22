@@ -688,8 +688,11 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
 
             ClassPtr = (XAnyClassPtr) ((uint8_t*)ClassPtr + ClassPtr->length); // TODO: Access this as an array to avoid pointer arithmetic?
         }
+    }
 
-        XSelectExtensionEvent(Disp, Win, EasyTab->EventClasses, EasyTab->NumEventClasses);
+    if (XSelectExtensionEvent(Disp, Win, EasyTab->EventClasses, EasyTab->NumEventClasses))
+    {
+        return EASYTAB_X11_ERROR;
     }
 
     XFreeDeviceList(Devices);

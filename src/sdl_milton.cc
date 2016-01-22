@@ -156,7 +156,7 @@ int milton_main()
         b32 got_tablet_point_input = false;
         while ( SDL_PollEvent(&event) ) {
             //ImGui_ImplSdl_ProcessEvent(&event);
-            ImGui_ImplSdlGL3_ProcessEvent(&event);
+            //ImGui_ImplSdlGL3_ProcessEvent(&event);
 
             SDL_Keymod keymod = SDL_GetModState();
             platform_input.is_ctrl_down = (keymod & KMOD_LCTRL) | (keymod & KMOD_RCTRL);
@@ -184,7 +184,8 @@ int milton_main()
                     break;
 #elif defined(__MACH__)
                 case SDL_SYSWM_COCOA:
-                    // TODO impl
+                    // SDL does not implement this in the version we're using.
+                    // See platform_OSX_SDL_hooks.(h|m) for our SDL hack.
                     break;
 #endif
                 default:
