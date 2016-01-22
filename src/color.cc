@@ -17,9 +17,9 @@
 u32 color_v4f_to_u32(v4f c)
 {
     u32 result = (u32)
-        ((int)(c.r * 255.0f) << 16) |
+        ((int)(c.r * 255.0f) << 0) |
         ((int)(c.g * 255.0f) << 8) |
-        ((int)(c.b * 255.0f) << 0) |
+        ((int)(c.b * 255.0f) << 16) |
         ((int)(c.a * 255.0f) << 24);
     return result;
 }
@@ -27,9 +27,9 @@ u32 color_v4f_to_u32(v4f c)
 v4f color_u32_to_v4f(u32 color)
 {
     v4f result = {
-        (float)(0xff & (color >> 16)) / 255,
-        (float)(0xff & (color >> 8)) / 255,
         (float)(0xff & (color >> 0)) / 255,
+        (float)(0xff & (color >> 8)) / 255,
+        (float)(0xff & (color >> 16)) / 255,
         (float)(0xff & (color >> 24)) / 255,
     };
 

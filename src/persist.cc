@@ -124,7 +124,7 @@ void milton_save(MiltonState* milton_state)
     fclose(fd);
 }
 
-void milton_save_buffer_to_file(MiltonState* milton_state, u8* buffer, i32 w, i32 h)
+void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h)
 {
-    stbi_write_png("out.png", w, h, 4, buffer, 0);
+    stbi_write_png(fname, w, h, 4, buffer, 0);
 }

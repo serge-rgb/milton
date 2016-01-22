@@ -8,11 +8,11 @@ To-Do
 - Milton v1.0.0
     -  Application
         - Export
-            - Render to buffer
             - OS-dependent file-save dialog.
             - JPEG (tiny_jpeg)
-            - stb_image_write (PNG, BMP, TGA)
             - dialog when alloc fails
+            - set resolution
+            - set aspect ratio
         - History slider
         - Layers (w/engine support)
         - App data directory

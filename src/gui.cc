@@ -412,12 +412,12 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
     // Note: The export window is drawn regardless of gui visibility.
     if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
-        bool closed = false;
+        bool opened = true;
         b32 reset = false;
 
         ImGui::SetNextWindowPos(ImVec2(100, 30), ImGuiSetCond_Once);
         ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
-        if ( ImGui::Begin("Export...", &closed, ImGuiWindowFlags_NoCollapse) ) {
+        if ( ImGui::Begin("Export...", &opened, ImGuiWindowFlags_NoCollapse) ) {
             ImGui::Text("Click and drag to select the area to export.");
 
             Exporter* exporter = &milton_state->gui->exporter;
@@ -442,7 +442,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     u8* buffer = (u8*)mlt_malloc(size);
                     if (buffer) {
                         milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
-                        milton_save_buffer_to_file(milton_state, buffer, w, h);
+                        milton_save_buffer_to_file("out.png", buffer, w, h);
                         mlt_free (buffer);
                     } else {
                         milton_die_gracefully("Buffer too large.");
@@ -456,7 +456,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             milton_use_previous_mode(milton_state);
         }
         ImGui::End(); // Export...
-        if ( closed ) {
+        if ( !opened ) {
             reset = true;
             milton_use_previous_mode(milton_state);
         }
@@ -470,8 +470,8 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
         //bool opened;
         ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_Always);
         ImGui::SetNextWindowSize({235, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
-        bool closed;
-        if ( ImGui::Begin("Shortcuts", &closed, default_imgui_window_flags) ) {
+        bool opened = true;
+        if ( ImGui::Begin("Shortcuts", &opened, default_imgui_window_flags) ) {
             ImGui::TextWrapped(
                                "Increase brush size        ]\n"
                                "Decrease brush size        [\n"
@@ -489,7 +489,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                                "\n"
                                "\n"
                               );
-            if ( closed ) {
+            if ( !opened ) {
                 milton_state->gui->show_help_widget = false;
             }
         }

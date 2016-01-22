@@ -50,7 +50,7 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             "\n"
             "void main(void)\n"
             "{\n"
-            "   vec4 color = texture2D(raster_buffer, coord).bgra; \n"
+            "   vec4 color = texture2D(raster_buffer, coord); \n"
             "   gl_FragColor = color; \n"
             //"   out_color = color; \n"
             "}\n";
