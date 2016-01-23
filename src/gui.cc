@@ -126,6 +126,7 @@ static b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
     return hits;
 }
 
+#if 0
 static b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
 {
     v2f fpoint = v2i_to_v2f(point);
@@ -133,6 +134,7 @@ static b32 is_inside_picker_active_area(ColorPicker* picker, v2i point)
                  is_inside_triangle(fpoint, picker->info.a, picker->info.b, picker->info.c);
     return result;
 }
+#endif
 
 static ColorPickResult picker_update(ColorPicker* picker, v2i point)
 {
@@ -396,7 +398,6 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             if ( ImGui::Begin("Choose Background Color", &closed, default_imgui_window_flags) ) {
                 ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
                 ImGui::Text("Sup");
-                float color[3];
                 if ( ImGui::ColorEdit3("Background Color", milton_state->view->background_color.d) ) {
                     set_flag(input->flags, MiltonInputFlags::FULL_REFRESH);
                     set_flag(input->flags, MiltonInputFlags::FAST_DRAW);
@@ -438,7 +439,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     int bpp = 4;  // bytes per pixel
                     i32 w = raster_w * exporter->scale;
                     i32 h = raster_h * exporter->scale;
-                    size_t size = w * h * bpp;
+                    size_t size = (size_t)w * h * bpp;
                     u8* buffer = (u8*)mlt_malloc(size);
                     if (buffer) {
                         milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);

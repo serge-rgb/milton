@@ -51,5 +51,14 @@
 #include "sdl_milton.cc"
 #include "tests.cc"
 #include "utils.cc"
+
+#if defined(_WIN32) && defined(_MSC_VER)
+#pragma warning(push, 0)
+#endif  // _WIN32 && _MSC_VER
+
 #include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
+
+#if defined(_WIN32) && defined(_MSC_VER)
+#pragma warning(pop)
+#endif  // _WIN32 && _MSC_VER
 

@@ -10,6 +10,10 @@
 // SDL,GL3W
 #include <SDL.h>
 #include <SDL_syswm.h>
+
+#include "system_includes.h"
+
+#include "gl_helpers.h"
 //#include <GL/gl3w.h>
 
 // Data
@@ -78,7 +82,7 @@ void ImGui_ImplSdlGL3_RenderDrawLists(ImDrawData* draw_data)
             { 0.0f,                  0.0f,                  -1.0f, 0.0f },
             {-1.0f,                  1.0f,                   0.0f, 1.0f },
         };
-        GLCHK(glUseProgramObjectARB(g_ShaderHandle));
+        GLCHK(glUseProgram((GLuint)g_ShaderHandle));
         GLCHK(glUniform1i(g_AttribLocationTex, 0));
 	GLCHK(glUniformMatrix4fv(g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]));
 	GLCHK(glBindVertexArray(g_VaoHandle));
@@ -89,10 +93,11 @@ void ImGui_ImplSdlGL3_RenderDrawLists(ImDrawData* draw_data)
 		const ImDrawIdx* idx_buffer_offset = 0;
 
 		GLCHK(glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle));
-		GLCHK(glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW));
+		GLCHK(glBufferData(GL_ARRAY_BUFFER,
+				   (GLsizeiptr)(cmd_list->VtxBuffer.size() * sizeof(ImDrawVert)), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW));
 
 		GLCHK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ElementsHandle));
-		GLCHK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW));
+		GLCHK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx)), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW));
 
 		for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); pcmd++)
 		{
@@ -111,13 +116,13 @@ void ImGui_ImplSdlGL3_RenderDrawLists(ImDrawData* draw_data)
 	}
 
 	// Restore modified GL state
-	GLCHK(glUseProgram(last_program));
-	GLCHK(glBindTexture(GL_TEXTURE_2D, last_texture));
-	GLCHK(glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer));
-	GLCHK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_element_array_buffer));
-	GLCHK(glBindVertexArray(last_vertex_array));
-	GLCHK(glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha));
-	GLCHK(glBlendFunc(last_blend_src, last_blend_dst));
+	GLCHK(glUseProgram((GLuint)last_program));
+	GLCHK(glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture));
+	GLCHK(glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_array_buffer));
+	GLCHK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_element_array_buffer));
+	GLCHK(glBindVertexArray((GLuint)last_vertex_array));
+	GLCHK(glBlendEquationSeparate((GLenum)last_blend_equation_rgb, (GLenum)last_blend_equation_alpha));
+	GLCHK(glBlendFunc((GLenum)last_blend_src, (GLenum)last_blend_dst));
 	if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
 	if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
 	if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
@@ -157,7 +162,6 @@ bool ImGui_ImplSdlGL3_ProcessEvent(SDL_Event* event)
 	}
 	case SDL_TEXTINPUT:
 	{
-		ImGuiIO& io = ImGui::GetIO();
 		io.AddInputCharactersUTF8(event->text.text);
 		return true;
 	}
@@ -233,7 +237,7 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects()
 		"}\n";
 
 
-	g_ShaderHandle = glCreateProgramObjectARB();
+	g_ShaderHandle = glCreateProgram();
 
 	g_VertHandle = gl_compile_shader(vertex_shader, GL_VERTEX_SHADER);
 	g_FragHandle = gl_compile_shader(fragment_shader, GL_FRAGMENT_SHADER);

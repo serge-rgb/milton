@@ -39,3 +39,6 @@ build/SKIP_HEADERLIBS
 # Eclipse project
 .cproject
 .project
+
+# Windows build batch script
+build/SKIP_LIB_COMPILATION

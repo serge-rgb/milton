@@ -2,6 +2,10 @@
 
 set mlt_opt_level=%mlt_opt%
 
+
+
+IF NOT EXIST build mkdir build
+
 pushd build
 
 set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
