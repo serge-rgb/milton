@@ -528,7 +528,11 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
             // Brushes are stored and operated in linear space, move to srgb
             // before blitting
+#if FAST_GAMMA
+            acc_color.rgb = linear_to_square(acc_color.rgb);
+#else
             acc_color.rgb = linear_to_sRGB(acc_color.rgb);
+#endif
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 
@@ -940,7 +944,11 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
             // Brushes are stored and operated in linear space, move to srgb
             // before blitting
+#if FAST_GAMMA
+            acc_color.rgb = linear_to_square(acc_color.rgb);
+#else
             acc_color.rgb = linear_to_sRGB(acc_color.rgb);
+#endif
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 

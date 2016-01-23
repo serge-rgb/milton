@@ -30,4 +30,8 @@ v3f linear_to_sRGB(v3f rgb);
 
 v3f sRGB_to_linear(v3f rgb);
 
+v3f linear_to_square(v3f rgb);
+
+v3f square_to_linear(v3f rgb);
+
 

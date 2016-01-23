@@ -52,7 +52,6 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             "{\n"
             "   vec4 color = texture2D(raster_buffer, coord); \n"
             "   gl_FragColor = color; \n"
-            //"   out_color = color; \n"
             "}\n";
 
         GLuint shader_objects[2] = {0};
@@ -138,8 +137,11 @@ static void milton_update_brushes(MiltonState* milton_state)
         assert(brush->radius < FLT_MAX);
         if (i == BrushEnum_PEN) {
             // Alpha is set by the UI
-            brush->color = to_premultiplied(sRGB_to_linear(gui_get_picker_rgb(milton_state->gui)),
-                                            brush->alpha);
+#if FAST_GAMMA
+            brush->color = to_premultiplied(square_to_linear(gui_get_picker_rgb(milton_state->gui)), brush->alpha);
+#else
+            brush->color = to_premultiplied(sRGB_to_linear(gui_get_picker_rgb(milton_state->gui)), brush->alpha);
+#endif
         } else if (i == BrushEnum_ERASER) {
             brush->color = { -1, -1, -1, -1, };
             brush->alpha = 1;

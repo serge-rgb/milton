@@ -131,15 +131,10 @@ v4f to_premultiplied(v3f rgb, f32 a)
     return rgba;
 }
 
+
+
 v3f linear_to_sRGB(v3f rgb)
 {
-#if FAST_GAMMA
-    v3f srgb = {
-        sqrtf(rgb.r),
-        sqrtf(rgb.g),
-        sqrtf(rgb.b),
-    };
-#else
     v3f srgb = rgb;
     for (int i = 0; i < 3; ++i) {
         if (srgb.d[i] <= 0.0031308f) {
@@ -148,19 +143,11 @@ v3f linear_to_sRGB(v3f rgb)
             srgb.d[i] = 1.055f*powf(rgb.d[i], 1.0f/2.4f) - 0.055f;
         }
     }
-#endif
     return srgb;
 }
 
 v3f sRGB_to_linear(v3f rgb)
 {
-#if FAST_GAMMA
-    v3f result = {
-        rgb.r * rgb.r,
-        rgb.g * rgb.g,
-        rgb.b * rgb.b,
-    };
-#else
     v3f result = rgb;
     float* d = result.d;
     for (int i = 0; i < 3; ++i) {
@@ -171,7 +158,28 @@ v3f sRGB_to_linear(v3f rgb)
         }
         ++d;
     }
-#endif
     return result;
 }
 
+
+// Faster versions of gamma space
+
+v3f linear_to_square(v3f rgb)
+{
+    v3f srgb = {
+        sqrtf(rgb.r),
+        sqrtf(rgb.g),
+        sqrtf(rgb.b),
+    };
+    return srgb;
+}
+
+v3f square_to_linear(v3f rgb)
+{
+    v3f result = {
+        rgb.r * rgb.r,
+        rgb.g * rgb.g,
+        rgb.b * rgb.b,
+    };
+    return result;
+}
