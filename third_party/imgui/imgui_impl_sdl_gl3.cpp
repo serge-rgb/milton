@@ -11,8 +11,6 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
-#include "system_includes.h"
-
 #include "gl_helpers.h"
 //#include <GL/gl3w.h>
 

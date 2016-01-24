@@ -7,6 +7,7 @@ CFLAGS = -O3 -g
 LDFLAGS = -lm
 
 MLT_CFLAGS = $(CFLAGS) \
+	     -Isrc 		 \
 	     -Ithird_party       \
 	     -Ithird_party/imgui \
 	     -std=c++11          \
