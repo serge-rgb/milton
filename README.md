@@ -2,22 +2,9 @@
 
 Milton is a modern paint app.
 
-### [Latest release (2015-09-25) pre-alpha](https://github.com/serge-rgb/milton/releases/tag/prealpha002)
+### [Latest release (2016-01-23) pre-alpha 003](https://github.com/serge-rgb/milton/releases/tag/prealpha003)
 
-![alpaca](http://i.imgur.com/k7E8k7r.png)
-
-![alpaca](http://i.imgur.com/fJJZ0Bj.png)
-
-![alpacaGif](http://i.imgur.com/QR8TPDJ.gif)
-
-The Pitch
----------
-
-One problem with digital art tools is that pixels are too constraining. It is liberating to not have to pick a resolution when starting something new, and to be able to export it to any size. Milton wants to provide that freedom.
-
-Milton is open source, and runs on almost any machine. It has an efficient software renderer. It runs well on 10-year old laptops and on supercomputers. It is opinionated. There is no save button because this isn't the 80s anymore. Your work is persistent, with unlimited undo.
-
-It is handmade, data oriented, gamma-correct, and user friendly.
+![Milton screenshot prealpha 3](http://i.imgur.com/osBIZnO.png)
 
 Features
 --------
@@ -27,14 +14,13 @@ Features
     ![zoooom](http://i.imgur.com/fqOhPlr.gif)
 
     You don't pick a resolution, and you don't work with pixels.  Your work is
-    stored as a sequence of commands, and rendered on the fly. Once it's
-    implemented, you will be able to export your work to bitmaps of arbitrary
-    size.
+    stored as a sequence of commands, and rendered on the fly.
+    Whenever you want to, you can export your work to bitmaps of any size.
 
 - Simple
 
     Milton solves a single problem: draw without pixels. It doesn't pretend to be
-    something more than that. The UI will be simple, with a "no-manual-needed" motto.
+    something more than that.
 
 - Persistent
 
@@ -42,12 +28,14 @@ Features
 
 - Wacom support
 
-    Milton currently works with a Wacom intuos pen&touch on Windows and Linux (X11).
-    OSX support is coming.
-
-- Gamma-correct alpha blending and 32-bit floating point per channel
+    Milton currently supports Wacom on Windows Mac and Linux. The Mac version
+    should support any tablet device.
 
 - Software rendered.
+
+    Milton uses OpenGL 2.1 to draw the canvas and many GUI elements. However,
+most of the heavy lifting is done by a CPU software renderer. This is a huge
+win for a one-man-team when attempting to write a reliable application.
 
 - Fast and light-weight
 
@@ -57,7 +45,12 @@ Features
 
 - Open Source
 
-    Milton is licensed under the GPL
+    Milton is licensed under the LGPL
+
+- Open Format
+
+    When version 1 comes out, there will be a simple header-only library to
+load and rasterize Milton paintings for use other programs.
 
 
 What Milton is not:
@@ -69,53 +62,30 @@ lets you draw, sketch and paint.
 User Manual
 ===========
 
-While we get the GUI situation figured out, you can use the keyboard.
+If the GUI makes something not-obvious, please create a github issue!
 
-Keyboard Shortcuts
-------------------
+It's very helpful to drag the mouse (or pen) while pressing `space` to pan the canvas.
+Also, switching between the brush and the eraser with `b` and `e`.
+You can change the brush size with `[` and `]` and control the transparency with the number keys.
 
-| Input                  | Action                |
-| :--------------------: | --------------------: |
-| `Space + Mouse Drag`   | Drag Canvas           |
-| `0 - 9`                | Change brush opacity  |
-| `[`                    | Make brush smaller    |
-| `]`                    | Make brush larger     |
-| `ctrl + z`             | Undo                  |
-| `ctrl + y`             | Redo                  |
-| `ctrl + backspace`     | Clear (not undoable!) |
-
-Your work is kept in a file called MiltonPersist.mlt
-Support for multiple files is coming. But right now you can just pan the canvas
 
 How to Compile
 ==============
 
-Milton targets Windows, Linux and OSX. 64 bit is recommended but not necessary.
-
-Developed on:
-
-* Windows 10 (Intel x64, NVidia GTX770)
-* Linux Mint 17.03 (same machine)
-* OSX 10.11 El Capitan (Macbook Pro mid 2012)
-
-Also known to work on:
-
-* Arch Linux on a laptop with Intel integrated graphics
+Milton targets Windows, Linux and OSX.
 
 Windows
 -------
 
 Requirements:
 
-- CMake (for SDL)
-- Visual Studio 2015 (Community Edition is fine.)
+- Visual Studio >= 2013 (Community Edition is fine.)
 
 0. Open a developer console. You have at least two options:
-    - Open "Visual Studio Command Prompt" and go to Milton's directory.
-    - Use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio 2015 suite in your PATH. It will try to use the 64-bit version
-1. Run `setup.bat` to build SDL
-2. `build.bat`
-3. Milton is compiled to `build\Milton.exe`
+    - Open "Developer Command Prompt" and go to Milton's directory.
+    - (VS2015 only) Use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio 2015 suite in your PATH. It will try to use the 64-bit version
+1. `build.bat` (The first time will compile dependencies, the next times it should be quick)
+2. Milton is compiled to `build\Milton.exe`
 
 Linux
 -----
@@ -141,7 +111,11 @@ Requirements:
 Roadmap
 -------
 
-See TODO.txt
+- [CURRENT] pre-alpha stage. Will go into alpha when all the major features are complete.
+- Alpha testing. Check what features need polishing
+- Version 1 will freeze the file format, improvements will be iterative. Version number will increase if there is a need to break the file format.
+
+For details, see TODO.txt
 
 License
 =======
@@ -150,8 +124,8 @@ Copyright 2015 Sergio Gonzalez. All rights reserved.
 
 Milton is licensed under the GNU Lesser General Public License. See LICENSE.txt.
 
-Thank You
-=========
+Credits and Thanks
+==================
 
 * Inspiration / Education
     * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero

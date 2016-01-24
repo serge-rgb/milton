@@ -42,3 +42,4 @@ build/SKIP_HEADERLIBS
 
 # Windows build batch script
 build/SKIP_LIB_COMPILATION
+build/SETUP_DONE

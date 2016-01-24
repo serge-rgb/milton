@@ -1,17 +1,19 @@
 @echo off
 
+:: ==== NOTE ====
+:: - mlt_opt: Optimized build.
+:: - mlt_nopt: Debug build.
 set mlt_opt_level=%mlt_opt%
 
 
 
 IF NOT EXIST build mkdir build
+IF NOT EXIST build\SETUP_DONE call scripts\setup.bat
 
 pushd build
 
-set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
 
-REM NOTES:
-REM     Define MILTON_FANCY_GL for OpenGL debugging messages.
+set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
 
 set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 
@@ -43,18 +45,37 @@ set mlt_links=..\third_party\glew32s.lib OpenGL32.lib ..\third_party\SDL2-2.0.3\
 :: ---- Compile third_party libs with less warnings
 :: Delete file build\SKIP_LIB_COMPILATION to recompile. Created by default to reduce build times.
 IF EXIST SKIP_LIB_COMPILATION goto skip_lib_compilation
-cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
+echo    [BUILD] -- Building dependencies...
+
+echo    [BUILD] -- ... Debug
+cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
+if %errorlevel% NEQ 0 goto error_lib_compilation
 lib headerlibs_impl.obj
 copy headerlibs_impl.lib headerlibs_impl_opt.lib
 
-cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
+echo    [BUILD] -- ... Release
+cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
+if %errorlevel% NEQ 0 goto error_lib_compilation
 lib headerlibs_impl.obj
 copy headerlibs_impl.lib headerlibs_impl_nopt.lib
+
+goto end_lib_compilation
+:error_lib_compilation
+echo [FATAL] -- Error building dependencies!!
+goto fail
+
+:end_lib_compilation
+
+echo    [BUILD] -- Dependencies built!
+
+echo    [BUILD] --   To rebuild them, call DEL build\SKIP_LIB_COMPILATION
 
 :: Create file to skip this the next time
 ::copy /b SKIP_LIB_COMPILATION +,,
 type nul >>SKIP_LIB_COMPILATION
 :skip_lib_compilation
+
+echo    [BUILD] -- Building Milton...
 
 if "%mlt_opt_level%" == "%mlt_nopt%" set header_links=headerlibs_impl_nopt.lib
 if "%mlt_opt_level%" == "%mlt_opt%" set header_links=headerlibs_impl_opt.lib
@@ -65,8 +86,15 @@ if %errorlevel% equ 0 goto ok
 goto fail
 
 goto ok
-:fail
-popd && (call)
 
 :ok
+echo    [BUILD]  -- Build success!
 popd
+goto end
+
+:fail
+echo    [FATAL] -- ... error building Milton
+popd && (call)
+
+
+:end

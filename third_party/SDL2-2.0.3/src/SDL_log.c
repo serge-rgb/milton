@@ -329,7 +329,7 @@ SDL_LogOutput(void *userdata, int category, SDL_LogPriority priority,
 #ifndef __WINRT__
         BOOL attachResult;
         DWORD attachError;
-        unsigned long charsWritten; 
+        unsigned long charsWritten;
 
         /* Maybe attach console and get stderr handle */
         if (consoleAttached == 0) {
@@ -342,7 +342,7 @@ SDL_LogOutput(void *userdata, int category, SDL_LogPriority priority,
                     } else if (attachError == ERROR_GEN_FAILURE) {
                          OutputDebugString(TEXT("Could not attach to console of parent process\r\n"));
                          consoleAttached = -1;
-                    } else if (attachError == ERROR_ACCESS_DENIED) {  
+                    } else if (attachError == ERROR_ACCESS_DENIED) {
                          /* Already attached */
                         consoleAttached = 1;
                     } else {
@@ -353,7 +353,7 @@ SDL_LogOutput(void *userdata, int category, SDL_LogPriority priority,
                     /* Newly attached */
                     consoleAttached = 1;
                 }
-			
+
                 if (consoleAttached == 1) {
                         stderrHandle = GetStdHandle(STD_ERROR_HANDLE);
                 }
@@ -364,10 +364,10 @@ SDL_LogOutput(void *userdata, int category, SDL_LogPriority priority,
         output = SDL_stack_alloc(char, length);
         SDL_snprintf(output, length, "%s: %s\r\n", SDL_priority_prefixes[priority], message);
         tstr = WIN_UTF8ToString(output);
-        
+
         /* Output to debugger */
         OutputDebugString(tstr);
-       
+
 #ifndef __WINRT__
         /* Screen output to stderr, if console was attached. */
         if (consoleAttached == 1) {

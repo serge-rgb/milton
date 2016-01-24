@@ -5,77 +5,75 @@ To-Do
 - Bugs
     - :)
 
-- Milton v1.0.0
-    -  Application
-        - Export
-            - OS-dependent file-save dialog.
-            - JPEG (tiny_jpeg)
-            - dialog when alloc fails
-            - set resolution
-            - set aspect ratio
-        - History slider
-        - Layers (w/engine support)
-        - App data directory
-            - Windows (AppData\Local\MiltonPaint)
-            - Unix (~/.config/milton_paint)
-            - What if directory exists?
-        - Brush / Eraser
-            - Image Button
-        - ImGUI details:
-            - Move to next version & use its non-shitty SDL impl.
-            - Reduce or remove widget rounding
-            - can 'imgui.ini' be name-changed?
-            - Disable window dragging
-        - DPI-awareness
-            - UI scale option
-            - ?? gui scale set by default
-        - Etc...
-            - Show hello widget on first run?
-    - Debug
-        - Input recorder for bug replication
-    - Porting:
-        - Ctrl -> Cmd in OSX. Other cross platform binding issues?
-        - Easytab: Stylus buttons.
-        - Easytab: Distinction between eraser and pen.
-    - Performance:
-        - Strokes should be sampled based on relative size
-        - memcpy when Panning (most users will benefit hugely)
-        - Adaptive resolution scaling
-        - Undo/Redo: Only redraw necessary area.
-        - Amdahl's curse... Parallelize GUI rendering
-        - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
-        - 4x4 Blockgroups (morton-order)
-        - AVX backend??
-        - Do not redraw when stroking over existing drawing? Only on top layer?
-        - Profiling: .mlt loading
-    - Robust save
-        - Save to temp file and swap
-        - Keep backups
-        - Future-proof. Marker for extensions post v1.0
-        - Check return values for stdlib funcs.
-    - Milton Library
-        - Build as library. Write sample program.
-    - Distribution
-        - Use a build system -- Cmake, probably
-        - Bintray? Github?
-        - Windows.
-            - Installation. WIX?
-        - Linux
-            - Checkinstall? Manual dpkg?
-            - Ubuntu PPA
-            - Freedesktop entry, MIME type
-        - OSX
-            - Bundle
-            - dmg crap
+-  Application
+    - Export
+        - OS-dependent file-save dialog.
+        - JPEG (tiny_jpeg)
+        - dialog when alloc fails
+        - set resolution
+        - set aspect ratio
+    - History slider
+    - Layers (w/engine support)
+    - App data directory
+        - Windows (AppData\Local\MiltonPaint)
+        - Unix (~/.config/milton_paint)
+        - What if directory exists?
+    - Brush / Eraser
+        - Image Button
+    - ImGUI details:
+        - Move to next version & use its non-shitty SDL impl.
+        - Reduce or remove widget rounding
+        - can 'imgui.ini' be name-changed?
+        - Disable window dragging
+    - DPI-awareness
+        - UI scale option
+        - ?? gui scale set by default
+    - Etc...
+        - Show hello widget on first run?
+- Debug layer
+    - Input recorder for bug replication
+- Porting:
+    - Ctrl -> Cmd in OSX. Other cross platform binding issues?
+    - Easytab: Stylus buttons.
+    - Easytab: Distinction between eraser and pen.
+- Translation
+    - Write a system for easy translation. At least do it for Spanish.
+- Performance:
+    - Strokes should be sampled based on relative size
+    - memcpy when Panning (most users will benefit hugely)
+    - Adaptive resolution scaling
+    - Undo/Redo: Only redraw necessary area.
+    - Amdahl's curse... Parallelize GUI rendering
+    - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
+    - 4x4 Blockgroups (morton-order)
+    - AVX backend??
+    - Do not redraw when stroking over existing drawing? Only on top layer?
+- Robust save
+    - Save to temp file and swap. Use stdlib robustly
+    - Keep backups
+    - Future-proof. Marker for extensions post v1.0
+- Milton Library
+    - Refactor. Write sample program.
+- Distribution
+    - Bintray? Github?
+    - Windows.
+        - Installation. WIX? Inno Setup?
+    - Linux
+        - Checkinstall? Manual dpkg?
+        - Ubuntu PPA
+        - Freedesktop entry, MIME type
+    - OSX
+        - Bundle
+        - dmg crap
 
 
 
-- Milton v1.0.X
+- Future
     - Wacom: (?) Support for pan & rotate.
 
 
 
-- Milton v1.1.0
+- Far future
     - Brush
         - Support for general, implicitly defined brushes
     - Playback

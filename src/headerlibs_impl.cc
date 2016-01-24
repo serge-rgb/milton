@@ -39,5 +39,3 @@
 #include "../third_party/imgui/imgui.cpp"
 #include "../third_party/imgui/imgui_draw.cpp"
 
-
-
