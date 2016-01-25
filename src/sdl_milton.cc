@@ -429,18 +429,6 @@ int milton_main()
         //ImGui_ImplSdl_NewFrame(window);
         ImGui_ImplSdlGL3_NewFrame();
         {
-# if 0
-            int mouse_x;
-            int mouse_y;
-            SDL_GetMouseState(&mouse_x, &mouse_y);
-
-            imgui_io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
-
-            // TODO: if focused, else -1,-1
-            imgui_io.MouseDown[0] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT));
-            imgui_io.MouseDown[1] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_MIDDLE));
-            imgui_io.MouseDown[2] = (bool)(SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_RIGHT));
-#endif
             // Clear our pointer input because we captured an ImGui widget!
             if (ImGui::GetIO().WantCaptureMouse) {
                 num_point_results = 0;
@@ -507,3 +495,4 @@ int milton_main()
 
     return 0;
 }
+

@@ -39,7 +39,7 @@ REM 4127 expression is constant. while(0) et al. Useful sometimes? Mostly annoyi
 REM 4514 unreferenced inline function removed
 set comment_for_cleanup=/wd4100 /wd4189 /wd4800 /wd4127
 set mlt_disabled_warnings=%comment_for_cleanup% /wd4820 /wd4255 /wd4668 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027 /wd4514
-set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab
+set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab -I ..\third_party\nativefiledialog\src\include
 set mlt_links=..\third_party\glew32s.lib OpenGL32.lib ..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug\SDL2.lib ..\third_party\SDL2-2.0.3\VisualC\SDLmain\x64\Debug\SDL2main.lib user32.lib gdi32.lib %sdl_link_deps%
 
 :: ---- Compile third_party libs with less warnings
@@ -47,14 +47,14 @@ set mlt_links=..\third_party\glew32s.lib OpenGL32.lib ..\third_party\SDL2-2.0.3\
 IF EXIST SKIP_LIB_COMPILATION goto skip_lib_compilation
 echo    [BUILD] -- Building dependencies...
 
-echo    [BUILD] -- ... Debug
-cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
+echo    [BUILD] -- ... Release
+cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
 if %errorlevel% NEQ 0 goto error_lib_compilation
 lib headerlibs_impl.obj
 copy headerlibs_impl.lib headerlibs_impl_opt.lib
 
-echo    [BUILD] -- ... Release
-cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
+echo    [BUILD] -- ... Debug
+cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
 if %errorlevel% NEQ 0 goto error_lib_compilation
 lib headerlibs_impl.obj
 copy headerlibs_impl.lib headerlibs_impl_nopt.lib
