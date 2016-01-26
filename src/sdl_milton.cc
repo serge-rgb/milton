@@ -139,10 +139,7 @@ int milton_main()
                      return(interval);
                  }, NULL);
 
-    // IMGUI HELLO WORLD SHIT
-    float f = 0.0f;
-    bool show_test_window = true;
-    bool show_another_window = false;
+    ImGui::GetIO().IniFilename = NULL;  // Don't save any imgui.ini file
 
     while(!should_quit) {
         // ==== Handle events

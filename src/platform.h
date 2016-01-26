@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "common.h"
 // EasyTab for drawing tablet support
 #include "easytab.h"
 // ----
@@ -30,4 +31,11 @@ void    milton_fatal(char* message);
 void    milton_die_gracefully(char* message);
 
 
+// I/O stuff
+
+
+// Returns a 0-terminated string with the full path of the target file. NULL if error.
+wchar_t*    platform_save_dialog();
+void        platform_dialog(wchar_t* info, wchar_t* title = L"Info");
+b32         platform_write_data(wchar_t* fname, void* data, int size);
 

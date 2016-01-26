@@ -15,6 +15,7 @@
 
 
 #include "stb_image_write.h"
+#include "tiny_jpeg.h"
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
@@ -124,7 +125,65 @@ void milton_save(MiltonState* milton_state)
     fclose(fd);
 }
 
-void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h)
+// Called by stb_image
+static void write_func(void* context, void* data, int size)
 {
-    stbi_write_png(fname, w, h, 4, buffer, 0);
+    wchar_t* full_path = (wchar_t*)context;
+    b32 ok = platform_write_data(full_path, data, size);
+
+    if ( !ok ) {
+        platform_dialog( L"File could not be written!" );
+    } else {
+        platform_dialog( L"Image exported successfully!", L"Success" );
+    }
+}
+
+void milton_save_buffer_to_file(wchar_t* fname, u8* buffer, i32 w, i32 h)
+{
+    b32 success = false;
+
+    int len = 0;
+    {
+        size_t sz = wcslen(fname);
+        if ( sz > ( (1u << 31) -1 ) ) {
+            milton_die_gracefully("A really, really long file name. This shouldn't happen.");
+        }
+        len = (int)sz;
+    }
+    wchar_t* ext = fname + len;
+
+    // NOTE: This should work with unicode.
+    int ext_len = 0;
+    b32 found = false;
+    {
+        int safety = len;
+        while ( *--ext != '.' ) {
+            if(safety-- == 0) {
+                break;
+            }
+        }
+        if (safety > 0) {
+            found = true;
+            ext_len = len - safety;
+            ++ext;
+        }
+    }
+
+    if ( found ) {
+        for ( int i = 0; i < ext_len; ++i ) {
+            wchar_t c = ext[i];
+            ext[i] = towlower(c);
+        }
+
+        if ( !wcscmp( ext, L"png" ) ) {
+            stbi_write_png_to_func(write_func, fname, w, h, 4, buffer, 0);
+            // TODO: implement encode to func like stb
+        /* } else if ( !wcscmp(ext, L"jpg") || !wcscmp(ext, L"jpeg") ) { */
+        /*     tje_encode_to_file */
+        } else {
+            platform_dialog(L"File extension not handled by Milton\n");
+        }
+    } else {
+        platform_dialog(L"File name missing extension!\n");
+    }
 }

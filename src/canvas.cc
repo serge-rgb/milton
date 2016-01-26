@@ -38,7 +38,6 @@ b32* filter_strokes_to_rect(Arena* arena,
                             StrokeCord strokes,
                             Rect rect)
 {
-
     v2i center = {
         (rect.left + rect.right) / 2,
         (rect.top + rect.bottom) / 2,

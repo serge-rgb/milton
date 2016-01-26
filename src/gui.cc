@@ -441,12 +441,16 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     i32 h = raster_h * exporter->scale;
                     size_t size = (size_t)w * h * bpp;
                     u8* buffer = (u8*)mlt_malloc(size);
-                    if (buffer) {
+                    if ( buffer ) {
+                        opened = false;
                         milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
-                        milton_save_buffer_to_file("out.png", buffer, w, h);
+                        wchar_t* fname = platform_save_dialog();
+                        if ( fname ) {
+                            milton_save_buffer_to_file(fname, buffer, w, h);
+                        }
                         mlt_free (buffer);
                     } else {
-                        milton_die_gracefully("Buffer too large.");
+                        platform_dialog(L"Did not write file. Not enough memory available for operation.");
                     }
                 }
             }

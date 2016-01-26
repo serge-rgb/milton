@@ -1775,9 +1775,7 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     v2i center = milton_state->view->screen_size / 2;
     v2i pan_delta = center - v2i{x + (w/2), y + (h/2)} ;
 
-    milton_state->view->scale += scale;
-    milton_state->view->pan_vector = milton_state->view->pan_vector + (pan_delta*milton_state->view->scale);
-    auto test_pan = milton_state->view->pan_vector;
+    milton_state->view->pan_vector = milton_state->view->pan_vector +(pan_delta*(milton_state->view->scale));
 
     i32 buf_w = w * scale;
     i32 buf_h = h * scale;
@@ -1785,7 +1783,9 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     milton_state->canvas_buffer = buffer;
     milton_state->view->screen_size = { buf_w, buf_h };
     milton_state->view->screen_center = milton_state->view->screen_size / 2;
-    milton_state->view->scale /= scale;
+    if ( scale > 1 ) {
+        milton_state->view->scale = (i32) (milton_state->view->scale * (1.0f/scale));
+    }
 
     // TODO:
     // When setting this to be a stand-alone library, we will need to change

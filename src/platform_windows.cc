@@ -89,19 +89,84 @@ void platform_load_gl_func_pointers()
         exit(EXIT_FAILURE);
     }
 
-    if (GLEW_VERSION_1_4) {
-        if ( glewIsSupported("GL_ARB_shader_objects "
-                             "GL_ARB_vertex_program "
-                             "GL_ARB_fragment_program "
-                             "GL_ARB_vertex_buffer_object ") ) {
-            milton_log("[DEBUG] GL OK.\n");
-        } else {
-            milton_die_gracefully("One or more OpenGL extensions are not supported.\n");
-        }
-    } else {
-        milton_die_gracefully("OpenGL 1.4 not supported.\n");
+    if ( !GLEW_VERSION_2_1 ) {
+        milton_die_gracefully("OpenGL 2.1 not supported.\n");
     }
     // Load extensions
+}
+
+static wchar_t* win32_filter_strings =
+    L"PNG file\0" L"*.png\0"
+    L"JPEG file\0" L"*.jpg\0"
+    L"\0";
+
+wchar_t* platform_save_dialog()
+{
+    static wchar_t save_filename[MAX_PATH];
+
+    save_filename[0] = '\0';
+
+    OPENFILENAMEW ofn = {};
+
+    ofn.lStructSize = sizeof(OPENFILENAME);
+    //ofn.hInstance;
+    ofn.lpstrFilter = (LPCWSTR)win32_filter_strings;
+    ofn.lpstrFile = save_filename;
+    ofn.nMaxFile = MAX_PATH;
+    /* ofn.lpstrInitialDir; */
+    /* ofn.lpstrTitle; */
+    ofn.Flags = OFN_HIDEREADONLY;
+    /* ofn.nFileOffset; */
+    /* ofn.nFileExtension; */
+    ofn.lpstrDefExt = L"png";
+    /* ofn.lCustData; */
+    /* ofn.lpfnHook; */
+    /* ofn.lpTemplateName; */
+
+    auto ok = GetSaveFileNameW(&ofn);
+
+    wchar_t* result = NULL;
+
+    if ( ok ) {
+        result = save_filename;
+    }
+    return result;
+}
+
+void platform_dialog(wchar_t* info, wchar_t* title)
+{
+    MessageBoxW( NULL, //_In_opt_ HWND    hWnd,
+            (LPCWSTR)info, // _In_opt_ LPCTSTR lpText,
+            (LPCWSTR)title,// _In_opt_ LPCTSTR lpCaption,
+            MB_OK//_In_     UINT    uType
+            );
+}
+
+b32 platform_write_data(wchar_t* fname, void* data, int size)
+{
+    b32 result = false;
+
+    HANDLE handle = CreateFileW(
+            (LPCWSTR) fname, //_In_     LPCTSTR               lpFileName,
+            GENERIC_WRITE, //_In_     DWORD                 dwDesiredAccess,
+            0, //_In_     DWORD                 dwShareMode,
+            NULL, //_In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+            CREATE_ALWAYS, //_In_     DWORD                 dwCreationDisposition,
+            FILE_ATTRIBUTE_NORMAL, // _In_     DWORD                 dwFlagsAndAttributes,
+            NULL //_In_opt_ HANDLE                hTemplateFile
+            );
+
+    int sz_written = 0;
+    if ( handle != INVALID_HANDLE_VALUE ) {
+        BOOL write_result = WriteFile(handle, data, (DWORD)size, (LPDWORD)&sz_written, NULL);
+        if ( write_result != FALSE ) {
+            if ( sz_written == size ) {
+                result = true;
+            }
+        }
+        CloseHandle(handle);
+    }
+    return result;
 }
 
 int CALLBACK WinMain(

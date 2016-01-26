@@ -58,7 +58,24 @@ template<typename T> Vec2<T> operator- (Vec2<T> a, Vec2<T> b)
     return result;
 }
 
+template<typename T> Vec2<T> operator-= (Vec2<T> a, Vec2<T> b)
+{
+
+    Vec2<T> result;
+    result.x = a.x - b.x;
+    result.y = a.y - b.y;
+    return result;
+}
+
 template<typename T> Vec2<T> operator+ (Vec2<T> a, Vec2<T> b)
+{
+    Vec2<T> result;
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    return result;
+}
+
+template<typename T> Vec2<T> operator+= (Vec2<T> a, Vec2<T> b)
 {
     Vec2<T> result;
     result.x = a.x + b.x;

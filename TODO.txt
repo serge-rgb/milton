@@ -7,11 +7,10 @@ To-Do
 
 -  Application
     - Export
-        - OS-dependent file-save dialog.
-        - JPEG (tiny_jpeg)
-        - dialog when alloc fails
         - set resolution
         - set aspect ratio
+        - Finish Linux and OSX versions of Dialogs and File I/O
+        - Save / Load canvas
     - History slider
     - Layers (w/engine support)
     - App data directory
@@ -21,9 +20,7 @@ To-Do
     - Brush / Eraser
         - Image Button
     - ImGUI details:
-        - Move to next version & use its non-shitty SDL impl.
         - Reduce or remove widget rounding
-        - can 'imgui.ini' be name-changed?
         - Disable window dragging
     - DPI-awareness
         - UI scale option
@@ -49,7 +46,7 @@ To-Do
     - AVX backend??
     - Do not redraw when stroking over existing drawing? Only on top layer?
 - Robust save
-    - Save to temp file and swap. Use stdlib robustly
+    - Platform-dependent robust save
     - Keep backups
     - Future-proof. Marker for extensions post v1.0
 - Milton Library
