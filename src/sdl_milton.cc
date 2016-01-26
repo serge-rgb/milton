@@ -155,7 +155,7 @@ int milton_main()
         b32 got_tablet_point_input = false;
         while ( SDL_PollEvent(&event) ) {
             //ImGui_ImplSdl_ProcessEvent(&event);
-            //ImGui_ImplSdlGL3_ProcessEvent(&event);
+            ImGui_ImplSdlGL3_ProcessEvent(&event);
 
             SDL_Keymod keymod = SDL_GetModState();
             platform_input.is_ctrl_down = (keymod & KMOD_LCTRL) | (keymod & KMOD_RCTRL);
@@ -308,39 +308,41 @@ int milton_main()
                             set_flag(milton_input.flags, MiltonInputFlags::RESET);
                         }
                     } else {
-                        if (keycode == SDLK_e) {
-                            set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
-                            milton_input.mode_to_set = MiltonMode::ERASER;
-                        } else if (keycode == SDLK_b) {
-                            set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
-                            milton_input.mode_to_set = MiltonMode::PEN;
-                        } else if (keycode == SDLK_r) {
-                            set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
-                            milton_input.mode_to_set = MiltonMode::EXPORTING;
-                        } else if (keycode == SDLK_TAB) {
-                            gui_toggle_visibility(milton_state->gui);
-                        } else if (keycode == SDLK_F1) {
-                            gui_toggle_help(milton_state->gui);
-                        } else if (keycode == SDLK_1) {
-                            milton_set_pen_alpha(milton_state, 0.1f);
-                        } else if (keycode == SDLK_2) {
-                            milton_set_pen_alpha(milton_state, 0.2f);
-                        } else if (keycode == SDLK_3) {
-                            milton_set_pen_alpha(milton_state, 0.3f);
-                        } else if (keycode == SDLK_4) {
-                            milton_set_pen_alpha(milton_state, 0.4f);
-                        } else if (keycode == SDLK_5) {
-                            milton_set_pen_alpha(milton_state, 0.5f);
-                        } else if (keycode == SDLK_6) {
-                            milton_set_pen_alpha(milton_state, 0.6f);
-                        } else if (keycode == SDLK_7) {
-                            milton_set_pen_alpha(milton_state, 0.7f);
-                        } else if (keycode == SDLK_8) {
-                            milton_set_pen_alpha(milton_state, 0.8f);
-                        } else if (keycode == SDLK_9) {
-                            milton_set_pen_alpha(milton_state, 0.9f);
-                        } else if (keycode == SDLK_0) {
-                            milton_set_pen_alpha(milton_state, 1.0f);
+                        if ( !ImGui::GetIO().WantCaptureMouse ) {
+                            if (keycode == SDLK_e) {
+                                set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
+                                milton_input.mode_to_set = MiltonMode::ERASER;
+                            } else if (keycode == SDLK_b) {
+                                set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
+                                milton_input.mode_to_set = MiltonMode::PEN;
+                            } else if (keycode == SDLK_r) {
+                                set_flag(milton_input.flags, MiltonInputFlags::CHANGE_MODE);
+                                milton_input.mode_to_set = MiltonMode::EXPORTING;
+                            } else if (keycode == SDLK_TAB) {
+                                gui_toggle_visibility(milton_state->gui);
+                            } else if (keycode == SDLK_F1) {
+                                gui_toggle_help(milton_state->gui);
+                            } else if (keycode == SDLK_1) {
+                                milton_set_pen_alpha(milton_state, 0.1f);
+                            } else if (keycode == SDLK_2) {
+                                milton_set_pen_alpha(milton_state, 0.2f);
+                            } else if (keycode == SDLK_3) {
+                                milton_set_pen_alpha(milton_state, 0.3f);
+                            } else if (keycode == SDLK_4) {
+                                milton_set_pen_alpha(milton_state, 0.4f);
+                            } else if (keycode == SDLK_5) {
+                                milton_set_pen_alpha(milton_state, 0.5f);
+                            } else if (keycode == SDLK_6) {
+                                milton_set_pen_alpha(milton_state, 0.6f);
+                            } else if (keycode == SDLK_7) {
+                                milton_set_pen_alpha(milton_state, 0.7f);
+                            } else if (keycode == SDLK_8) {
+                                milton_set_pen_alpha(milton_state, 0.8f);
+                            } else if (keycode == SDLK_9) {
+                                milton_set_pen_alpha(milton_state, 0.9f);
+                            } else if (keycode == SDLK_0) {
+                                milton_set_pen_alpha(milton_state, 1.0f);
+                            }
                         }
 #ifndef NDEBUG
                         if (keycode == SDLK_ESCAPE) {
@@ -428,13 +430,11 @@ int milton_main()
 
         //ImGui_ImplSdl_NewFrame(window);
         ImGui_ImplSdlGL3_NewFrame();
-        {
-            // Clear our pointer input because we captured an ImGui widget!
-            if (ImGui::GetIO().WantCaptureMouse) {
-                num_point_results = 0;
-                platform_input.is_pointer_down = false;
-                set_flag(milton_input.flags, MiltonInputFlags::IMGUI_GRABBED_INPUT);
-            }
+        // Clear our pointer input because we captured an ImGui widget!
+        if (ImGui::GetIO().WantCaptureMouse) {
+            num_point_results = 0;
+            platform_input.is_pointer_down = false;
+            set_flag(milton_input.flags, MiltonInputFlags::IMGUI_GRABBED_INPUT);
         }
 
         milton_gui_tick(&milton_input, milton_state);

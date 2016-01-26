@@ -14,14 +14,18 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
 #include "milton.h"
 
+#include "platform.h"
 #include "profiler.h"
 
 #ifndef NDEBUG
 #include "tests.h"
 #endif
+
+// Using stb_image to load our GUI resources.
+#include <stb_image.h>
+
 
 static void milton_gl_backend_init(MiltonState* milton_state)
 {

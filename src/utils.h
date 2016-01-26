@@ -17,6 +17,7 @@
 #pragma once
 
 #include "Arrays.h"
+#include "Vector.h"
 
 #ifdef array_length
 #error "array_length is already defined"

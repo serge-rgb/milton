@@ -16,6 +16,11 @@
 
 #pragma once
 
+#include "define_types.h"
+
+#define MILTON_DESKTOP
+#include "system_includes.h"
+
 #ifdef UNUSED
 #error "Someone else defined UNUSED macro"
 #else
@@ -71,3 +76,11 @@
    TypeName(const TypeName&);                           \
    void operator=(const TypeName&)
 
+
+// Assert implementation
+
+#if defined(assert)
+#error assert already defined
+#else
+#define assert(expr)  do { if ( !(bool)(expr) ) {  (*(u32*)0) = 0xDeAdBeEf;  } } while(0)
+#endif

@@ -13,8 +13,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
+#pragma once
 
-#include "define_types.h"
+// EasyTab for drawing tablet support
+#include "easytab.h"
+// ----
 
 typedef struct TabletState_s TabletState;
 
@@ -25,4 +28,6 @@ void*   platform_allocate(size_t size);
 #define milton_log platform_milton_log
 void    milton_fatal(char* message);
 void    milton_die_gracefully(char* message);
+
+
 

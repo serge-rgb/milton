@@ -14,6 +14,10 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#include "platform.h"
+
+#include "common.h"
+
 
 // The returns value mean different things, but other than that, we're ok
 #ifdef _MSC_VER

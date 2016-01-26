@@ -14,32 +14,16 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "define_types.h"
-#include "Vector.h"
-
-#define MILTON_DESKTOP
-#include "system_includes.h"
-
-#include "platform.h"
-
-// Using stb_image to load our GUI resources.
-#include <stb_image.h>
-// ----
-
-// EasyTab for drawing tablet support
-#include "easytab.h"
-// ----
-
-
 #if defined(_WIN32)
-#include "platform_windows.h"
+#include "platform_windows.cc"
 #elif defined(__linux__) || defined(__MACH__)
-#include "platform_unix.h"
+#include "platform_unix.cc"
 #endif
 
 
 #include "milton.h"
 
+#include "utils.cc"
 #include "canvas.cc"
 #include "color.cc"
 #include "milton.cc"
@@ -50,7 +34,6 @@
 #include "rasterizer.cc"
 #include "sdl_milton.cc"
 #include "tests.cc"
-#include "utils.cc"
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #pragma warning(push, 0)
