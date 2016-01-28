@@ -110,6 +110,8 @@ extern "C"
 // Public interface:
 // ============================================================
 
+#ifndef TJE_HEADER_GUARD
+#define TJE_HEADER_GUARD
 
 // - tje_encode_to_file -
 //
@@ -154,6 +156,13 @@ int tje_encode_to_file_at_quality(const char* dest_path,
                                   const int height,
                                   const int num_components,
                                   const unsigned char* src_data);
+
+#endif // TJE_HEADER_GUARD
+
+
+
+// Implementation: In exactly one of the source files of your application,
+// define TJE_IMPLEMENTATION and include tiny_jpeg.h
 
 // ============================================================
 // Internal

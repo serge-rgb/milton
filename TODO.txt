@@ -11,8 +11,8 @@ To-Do
         - set aspect ratio
         - Finish Linux and OSX versions of Dialogs and File I/O
         - Save / Load canvas
-    - History slider
     - Layers (w/engine support)
+    - History slider
     - App data directory
         - Windows (AppData\Local\MiltonPaint)
         - Unix (~/.config/milton_paint)

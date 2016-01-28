@@ -6,9 +6,9 @@ set sdlmain_done=0
 :sdl
 echo "==== Building SDL ===="
 pushd third_party
-msbuild /maxcpucount SDL2-2.0.3\VisualC\SDL\SDL_VS2013.vcxproj /p:Configuration=Release
+msbuild /maxcpucount SDL2-2.0.3\VisualC\SDL\SDL_VS2013.vcxproj /p:Configuration=Debug
 if %errorlevel% == 0 set sdl_done=1
-msbuild /maxcpucount SDL2-2.0.3\VisualC\SDLmain\SDLmain_VS2013.vcxproj /p:Configuration=Release
+msbuild /maxcpucount SDL2-2.0.3\VisualC\SDLmain\SDLmain_VS2013.vcxproj /p:Configuration=Debug
 if %errorlevel% == 0 set sdlmain_done=1
 popd
 
