@@ -97,6 +97,10 @@ int milton_main()
 
     SDL_SysWMinfo sysinfo;
     SDL_VERSION(&sysinfo.version);
+
+#if defined(_MSC_VER)
+#pragma warning (push, 0)
+#endif
     if ( SDL_GetWindowWMInfo( window, &sysinfo ) ) {
         switch(sysinfo.subsystem) {
 #if defined(_WIN32)
@@ -109,13 +113,14 @@ int milton_main()
             break;
 #endif
         default:
-            // TODO Easytab port
-            // milton_die_gracefully("Runtime system not recognized.");
             break;
         }
     } else {
         milton_die_gracefully("Can't get system info!\n");
     }
+#if defined(_MSC_VER)
+#pragma warning (pop)
+#endif
 
     PlatformInput platform_input = { 0 };
 
@@ -164,6 +169,10 @@ int milton_main()
             SDL_Keymod keymod = SDL_GetModState();
             platform_input.is_ctrl_down = (keymod & KMOD_LCTRL) | (keymod & KMOD_RCTRL);
 
+#if defined(_MSC_VER)
+#pragma warning (push)
+#pragma warning (disable : 4061)
+#endif
             switch ( event.type ) {
             case SDL_QUIT:
                 should_quit = true;
@@ -412,6 +421,9 @@ int milton_main()
             default:
                 break;
             }
+#if defined(_MSC_VER)
+#pragma warning (pop)
+#endif
             if (should_quit) {
                 break;
             }

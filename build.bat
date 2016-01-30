@@ -56,12 +56,15 @@ cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
 if %errorlevel% NEQ 0 goto error_lib_compilation
 lib headerlibs_impl.obj
 copy headerlibs_impl.lib headerlibs_impl_opt.lib
+del headerlibs_impl.lib
 
 echo    [BUILD] -- ... Debug
 cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.cc
 if %errorlevel% NEQ 0 goto error_lib_compilation
 lib headerlibs_impl.obj
 copy headerlibs_impl.lib headerlibs_impl_nopt.lib
+
+del headerlibs_impl.lib
 
 goto end_lib_compilation
 :error_lib_compilation
@@ -85,7 +88,7 @@ if "%mlt_opt_level%" == "%mlt_nopt%" set header_links=headerlibs_impl_nopt.lib
 if "%mlt_opt_level%" == "%mlt_opt%" set header_links=headerlibs_impl_opt.lib
 
 :: ---- Unity build for Milton
-cl %mlt_opt_level% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes%  ..\src\milton_unity_build.cc /FeMilton.exe %mlt_links% %header_links%
+cl %mlt_opt_level% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% ..\src\milton_unity_build.cc /FeMilton.exe %mlt_links% %header_links%
 if %errorlevel% equ 0 goto ok
 goto fail
 
