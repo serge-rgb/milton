@@ -1,0 +1,195 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2664DEED-A326-4779-93FD-47447C229C0A}</ProjectGuid>
+    <RootNamespace>Milton</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>..\..\third_party\glew32s.lib;OpenGL32.lib;Winmm.lib;Version.lib;Shell32.lib;Ole32.lib;OleAut32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>..\..\third_party\glew32s.lib;OpenGL32.lib;Winmm.lib;Version.lib;Shell32.lib;Ole32.lib;OleAut32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>..\..\third_party\glew32s.lib;OpenGL32.lib;Winmm.lib;Version.lib;Shell32.lib;Ole32.lib;OleAut32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <DisableSpecificWarnings>4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>..\..\third_party\glew32s.lib;OpenGL32.lib;Winmm.lib;Version.lib;Shell32.lib;Ole32.lib;OleAut32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\Arrays.h" />
+    <ClInclude Include="..\..\src\canvas.h" />
+    <ClInclude Include="..\..\src\color.h" />
+    <ClInclude Include="..\..\src\common.h" />
+    <ClInclude Include="..\..\src\easytab.h" />
+    <ClInclude Include="..\..\src\gl_helpers.h" />
+    <ClInclude Include="..\..\src\gui.h" />
+    <ClInclude Include="..\..\src\memory.h" />
+    <ClInclude Include="..\..\src\milton.h" />
+    <ClInclude Include="..\..\src\milton_configuration.h" />
+    <ClInclude Include="..\..\src\persist.h" />
+    <ClInclude Include="..\..\src\platform.h" />
+    <ClInclude Include="..\..\src\platform_OSX_SDL_hooks.h" />
+    <ClInclude Include="..\..\src\profiler.h" />
+    <ClInclude Include="..\..\src\rasterizer.h" />
+    <ClInclude Include="..\..\src\system_includes.h" />
+    <ClInclude Include="..\..\src\tests.h" />
+    <ClInclude Include="..\..\src\tiny_jpeg.h" />
+    <ClInclude Include="..\..\src\utils.h" />
+    <ClInclude Include="..\..\src\Vector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\canvas.cc" />
+    <ClCompile Include="..\..\src\color.cc" />
+    <ClCompile Include="..\..\src\gl_helpers.cc" />
+    <ClCompile Include="..\..\src\gui.cc" />
+    <ClCompile Include="..\..\src\memory.cc" />
+    <ClCompile Include="..\..\src\milton.cc" />
+    <ClCompile Include="..\..\src\persist.cc" />
+    <ClCompile Include="..\..\src\platform_windows.cc" />
+    <ClCompile Include="..\..\src\profiler.cc" />
+    <ClCompile Include="..\..\src\rasterizer.cc" />
+    <ClCompile Include="..\..\src\sdl_milton.cc" />
+    <ClCompile Include="..\..\src\tests.cc" />
+    <ClCompile Include="..\..\src\utils.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\third_party\SDL2-2.0.3\VisualC\SDL\SDL_VS2013.vcxproj">
+      <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\HeaderlibsImpl\HeaderlibsImpl.vcxproj">
+      <Project>{7fd30611-e39b-4110-b04f-cb93453f0c62}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

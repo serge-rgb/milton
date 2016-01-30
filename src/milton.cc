@@ -29,6 +29,7 @@
 
 static void milton_gl_backend_init(MiltonState* milton_state)
 {
+    GLuint test = 1;
     // Init quad program
     {
         const char* shader_contents[2];
@@ -249,16 +250,12 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                 if ( ++count >= point_window ) {
                     break;
                 }
-                /* v2i this_point = (v2i){milton_state->working_stroke.points_x[i], milton_state->working_stroke.points_y[i]}; */
-                /* i32 this_radius = (i32)(milton_state->working_stroke.brush.radius * milton_state->working_stroke.pressures[i]); */
                 v2i this_point = milton_state->working_stroke.points[i];
                 i32 this_radius = (i32)(milton_state->working_stroke.brush.radius * milton_state->working_stroke.pressures[i]);
 
-                if ( stroke_point_contains_point(canvas_point, in_radius,
-                                                 this_point, this_radius) ) {
+                if ( stroke_point_contains_point(canvas_point, in_radius, this_point, this_radius) ) {
                     milton_state->working_stroke.num_points -= 1;
-                } else if ( stroke_point_contains_point(this_point, this_radius,
-                                                        canvas_point, in_radius) ) {
+                } else if ( stroke_point_contains_point(this_point, this_radius, canvas_point, in_radius) ) {
                     // If some other point in the past contains this point,
                     // then this point is invalid.
                     passed_inspection = false;

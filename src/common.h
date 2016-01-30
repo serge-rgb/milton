@@ -16,7 +16,22 @@
 
 #pragma once
 
-#include "define_types.h"
+#include <stdint.h>
+
+typedef int8_t      i8;
+typedef int16_t     i16;
+typedef int32_t     i32;
+typedef int64_t     i64;
+
+typedef uint8_t     u8;
+typedef uint16_t    u16;
+typedef uint32_t    u32;
+typedef uint64_t    u64;
+
+typedef float       f32;
+
+typedef i32         b32;
+
 
 #define MILTON_DESKTOP
 #include "system_includes.h"
@@ -49,9 +64,9 @@
 //
 //
 #define DECLARE_FLAG(cl) \
-    void set_flag(cl& f, cl val)    { f = (cl)((int)f | (int)val); }  \
-    void unset_flag(cl& f, cl val)  { f = (cl)((int)f & ~(int)val); } \
-    b32  check_flag(cl flags, cl f) { return (b32)((int)flags & (int)f); }
+    inline void set_flag(cl& f, cl val)    { f = (cl)((int)f | (int)val); }  \
+    inline void unset_flag(cl& f, cl val)  { f = (cl)((int)f & ~(int)val); } \
+    inline b32  check_flag(cl flags, cl f) { return (b32)((int)flags & (int)f); }
 
 //
 // *** Insert at the top of all Milton containers ***
@@ -80,7 +95,7 @@
 // Assert implementation
 
 #if defined(assert)
-#error assert already defined
+//#error assert already defined
 #else
 #define assert(expr)  do { if ( !(bool)(expr) ) {  (*(u32*)0) = 0xDeAdBeEf;  } } while(0)
 #endif

@@ -14,6 +14,9 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#include "color.h"
+
+
 u32 color_v4f_to_u32(v4f c)
 {
     u32 result = (u32)

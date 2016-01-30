@@ -15,6 +15,10 @@
 
 #pragma once
 
+
+#include "common.h"
+
+
 #define mlt_malloc(sz) malloc(sz)
 #define mlt_calloc(n, sz) calloc(n, sz)
 #define mlt_free(ptr) do { if (ptr) { free(ptr); ptr = NULL; } else { assert(!"Freeing null"); } } while(0)

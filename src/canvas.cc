@@ -14,7 +14,16 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-const v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
+#include "canvas.h"
+
+#include "common.h"
+#include "canvas.h"
+#include "memory.h"
+#include "platform.h"
+#include "utils.h"
+
+
+v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
     v2i raster_point = {
         ((view->pan_vector.x + canvas_point.x) / view->scale) + view->screen_center.x,
@@ -23,7 +32,7 @@ const v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
     return raster_point;
 }
 
-const v2i raster_to_canvas(CanvasView* view, v2i raster_point)
+v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 {
     v2i canvas_point = {
         ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x,
@@ -83,8 +92,7 @@ b32* filter_strokes_to_rect(Arena* arena,
 }
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
-b32 stroke_point_contains_point(v2i p0, i32 r0,
-                                v2i p1, i32 r1)
+b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
 {
     v2i d = p1 - p0;
     // using manhattan distance, less chance of overflow. Still works well enough for this case.

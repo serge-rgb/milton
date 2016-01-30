@@ -16,6 +16,10 @@
 
 #pragma once
 
+
+struct MiltonState;
+
+
 void milton_load(MiltonState* milton_state);
 
 void milton_save(MiltonState* milton_state);

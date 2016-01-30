@@ -14,7 +14,10 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#include "canvas.h"
+#include "color.h"
 #include "gui.h"
+#include "milton.h"
 #include "profiler.h"
 
 // Special value for num_points member of `ClippedStroke` to indicate that the
@@ -1555,7 +1558,6 @@ static void copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
 
 static void render_gui_button(u32* raster_buffer, i32 w, i32 h, GuiButton* button)
 {
-    // TODO: If assets are not present. Draw a flat rectangle.
     blit_bitmap(raster_buffer, w, h, 10, 300, &button->bitmap);
 }
 
@@ -1563,7 +1565,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
 {
     const b32 gui_visible = milton_state->gui->visible;  // Some elements are not affected by this, like the hover outline
     b32 redraw = false;
-    Rect picker_rect = get_bounds_for_picker_and_colors(milton_state->gui->picker);
+    Rect picker_rect = get_bounds_for_picker_and_colors(&milton_state->gui->picker);
     Rect clipped = rect_intersect(picker_rect, raster_limits);
     if ( (clipped.left != clipped.right) && clipped.top != clipped.bottom ) {
         redraw = true;

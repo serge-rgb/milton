@@ -26,6 +26,7 @@ int milton_main();
 
 void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}
+void    platform_deallocate_internal(void* ptr);
 #define milton_log platform_milton_log
 void    milton_fatal(char* message);
 void    milton_die_gracefully(char* message);
@@ -38,4 +39,12 @@ void    milton_die_gracefully(char* message);
 wchar_t*    platform_save_dialog();
 void        platform_dialog(wchar_t* info, wchar_t* title = L"Info");
 b32         platform_write_data(wchar_t* fname, void* data, int size);
+void        platform_load_gl_func_pointers();
 
+
+#if defined(_WIN32)
+#define platform_milton_log win32_log
+void win32_log(char *format, ...);
+#elif defined(__linux__) || defined(__MACH__)
+#define platform_milton_log printf
+#endif

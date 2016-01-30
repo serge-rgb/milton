@@ -19,6 +19,9 @@
 
 #include "common.h"
 
+#include "memory.h"
+#include "platform.h"
+
 // Dumb array
 template <typename T> struct Array
 {

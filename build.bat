@@ -17,7 +17,8 @@ set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32
 
 set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 
-set mlt_opt=/O2 /MT
+:: Oy- disable frame pointer omission (equiv. to -f-no-omit-frame-pointer)
+set mlt_opt=/Ox /Oy- /MT
 set mlt_nopt=/Od /MTd
 
 
@@ -42,9 +43,8 @@ set mlt_disabled_warnings=%comment_for_cleanup% /wd4820 /wd4255 /wd4668 /wd4710 
 set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab -I ..\third_party\nativefiledialog\src\include
 
 set sdl_dir=..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug
-set sdlmain_dir=..\third_party\SDL2-2.0.3\VisualC\SDLmain\x64\Debug
 
-set mlt_links=..\third_party\glew32s.lib OpenGL32.lib %sdl_dir%\SDL2.lib %sdlmain_dir%\SDL2main.lib user32.lib gdi32.lib Comdlg32.lib %sdl_link_deps%
+set mlt_links=..\third_party\glew32s.lib OpenGL32.lib %sdl_dir%\SDL2.lib user32.lib gdi32.lib Comdlg32.lib %sdl_link_deps%
 
 :: ---- Compile third_party libs with less warnings
 :: Delete file build\SKIP_LIB_COMPILATION to recompile. Created by default to reduce build times.
@@ -99,6 +99,5 @@ goto end
 :fail
 echo    [FATAL] -- ... error building Milton
 popd && (call)
-
 
 :end

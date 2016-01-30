@@ -8,7 +8,7 @@ echo "==== Building SDL ===="
 pushd third_party
 msbuild /maxcpucount SDL2-2.0.3\VisualC\SDL\SDL_VS2013.vcxproj /p:Configuration=Debug
 if %errorlevel% == 0 set sdl_done=1
-msbuild /maxcpucount SDL2-2.0.3\VisualC\SDLmain\SDLmain_VS2013.vcxproj /p:Configuration=Debug
+::msbuild /maxcpucount SDL2-2.0.3\VisualC\SDLmain\SDLmain_VS2013.vcxproj /p:Configuration=Debug
 if %errorlevel% == 0 set sdlmain_done=1
 popd
 
@@ -17,6 +17,7 @@ if %sdlmain_done% NEQ 1 goto error
 
 
 :ok
+copy third_party\SDL2-2.0.3\VisualC\SDL\X64\Debug\SDL2.dll build\SDL2.dll
 echo    [BUILD] SDL built.
 type nul >>build\SETUP_DONE
 goto end

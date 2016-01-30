@@ -14,7 +14,14 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "stb_image_write.h"
+#include "persist.h"
+
+#include "common.h"
+
+#include <stb_image_write.h>
+
+#include "milton.h"
+#include "platform.h"
 #include "tiny_jpeg.h"
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3

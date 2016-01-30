@@ -15,7 +15,14 @@
 
 #pragma once
 
+#include "common.h"
+
+#include "render_common.h"
 #include "utils.h"
+
+
+struct MiltonInput;
+struct MiltonState;
 
 enum class ColorPickerFlags {
     NOTHING = 0,
@@ -123,7 +130,7 @@ struct MiltonGui {
 // GUI API
 //
 // Call from the main loop before milton_update
-void milton_gui_tick(MiltonInput* input, const MiltonState& milton_state);
+void milton_gui_tick(MiltonInput* input, MiltonState* milton_state);
 
 
 //
@@ -148,4 +155,5 @@ void gui_deactivate(MiltonGui* gui);
 b32     picker_hits_wheel(ColorPicker* picker, v2f point);
 float   picker_wheel_get_angle(ColorPicker* picker, v2f point);
 v3f     picker_hsv_from_point(ColorPicker* picker, v2f point);
-Rect    get_bounds_for_picker_and_colors(const ColorPicker& picker);
+Rect    picker_get_bounds(ColorPicker* picker);
+Rect    get_bounds_for_picker_and_colors(ColorPicker* picker);

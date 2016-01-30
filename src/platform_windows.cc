@@ -40,9 +40,6 @@ void platform_deallocate_internal(void* pointer)
     VirtualFree(pointer, 0, MEM_RELEASE);
 }
 
-void win32_log(char *format, ...);
-#define platform_milton_log win32_log
-
 void win32_log(char *format, ...)
 {
     char message[ 1024 ];

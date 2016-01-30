@@ -140,3 +140,11 @@ b32 is_rect_within_rect(Rect a, Rect b);
 
 Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h);
 
+struct Bitmap {
+    i32 width;
+    i32 height;
+    i32 num_components;
+    u8* data;
+};
+
+

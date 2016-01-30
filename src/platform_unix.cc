@@ -76,10 +76,9 @@ void milton_die_gracefully(char* message)
 }
 
 #ifdef __linux__
-#define platform_load_gl_func_pointers()
+void        platform_load_gl_func_pointers() {}
 #elif __MACH__
-
-#define platform_load_gl_func_pointers()
+void        platform_load_gl_func_pointers() {}
 #endif
 
 typedef struct UnixMemoryHeader_s {

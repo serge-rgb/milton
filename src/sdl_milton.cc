@@ -13,9 +13,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
+
+#include "common.h"
+
 #include <imgui.h>
 //#include <imgui_impl_sdl.h>
 #include <imgui_impl_sdl_gl3.h>
+
+#include "milton.h"
+#include "utils.h"
+
 
 struct PlatformInput {
     b32 is_ctrl_down;

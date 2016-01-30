@@ -14,6 +14,12 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#pragma once
+
+
+#include "utils.h"
+
+
 u32 color_v4f_to_u32(v4f c);
 
 v4f color_u32_to_v4f(u32 color);

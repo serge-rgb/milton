@@ -13,6 +13,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
+
+#include "system_includes.h"
+
+#include "common.h"
+#include "utils.h"
+
+
 // total RAM in bytes
 size_t get_system_RAM()
 {

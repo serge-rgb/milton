@@ -14,6 +14,9 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#pragma once
+
+
 #if defined(_WIN32) && defined(_MSC_VER)
 #pragma warning(push, 0)
 #endif  // _WIN32 && _MSC_VER
@@ -42,14 +45,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Local includes
-#ifdef MILTON_DESKTOP
-
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
-#ifdef _WIN32
-// Only include GLEW in Desktop build
+#if defined(_WIN32)
+
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GL/wglew.h>
@@ -66,8 +66,6 @@
 #include "SDL_opengl.h"
 
 #endif // defined(platform)
-
-#endif // MILTON_DESKTOP
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #pragma warning(pop)

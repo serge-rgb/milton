@@ -20,28 +20,15 @@
 #include "platform_unix.cc"
 #endif
 
-
-#include "milton.h"
-
 #include "utils.cc"
 #include "canvas.cc"
 #include "color.cc"
 #include "milton.cc"
 #include "gui.cc"
+#include "gl_helpers.cc"
 #include "memory.cc"
 #include "persist.cc"
 #include "profiler.cc"
 #include "rasterizer.cc"
 #include "sdl_milton.cc"
 #include "tests.cc"
-
-#if defined(_WIN32) && defined(_MSC_VER)
-#pragma warning(push, 0)
-#endif  // _WIN32 && _MSC_VER
-
-#include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
-
-#if defined(_WIN32) && defined(_MSC_VER)
-#pragma warning(pop)
-#endif  // _WIN32 && _MSC_VER
-

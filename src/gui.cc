@@ -13,7 +13,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
+
+#include "gui.h"
+
 #include <imgui.h>
+
+#include "milton.h"
+
 
 static Rect color_button_as_rect(const ColorButton* button)
 {
@@ -228,7 +234,7 @@ static b32 picker_is_active(ColorPicker* picker)
     return is_active;
 }
 
-static Rect picker_get_bounds(const ColorPicker* picker)
+Rect picker_get_bounds(ColorPicker* picker)
 {
     Rect picker_rect;
     {
@@ -276,7 +282,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
     const float pen_alpha = milton_get_pen_alpha(milton_state);
     assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
     // Spawn below the picker
-    Rect pbounds = get_bounds_for_picker_and_colors(milton_state->gui->picker);
+    Rect pbounds = get_bounds_for_picker_and_colors(&milton_state->gui->picker);
 
     int color_stack = 0;
     ImGui::GetStyle().WindowFillAlphaDefault = 0.9f;  // Redundant for all calls but the first one...
@@ -511,9 +517,9 @@ void gui_imgui_set_ungrabbed(MiltonGui* gui)
     unset_flag(gui->flags, MiltonGuiFlags::SHOWING_PREVIEW);
 }
 
-Rect get_bounds_for_picker_and_colors(const ColorPicker& picker)
+Rect get_bounds_for_picker_and_colors(ColorPicker* picker)
 {
-    Rect result = rect_union(picker_get_bounds(&picker), picker_color_buttons_bounds(&picker));
+    Rect result = rect_union(picker_get_bounds(picker), picker_color_buttons_bounds(picker));
     return result;
 }
 
@@ -655,7 +661,7 @@ b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
                 fabsf(button->color.g - picker_color.g),
                 fabsf(button->color.b - picker_color.b),
             };
-            float epsilon = 0.000001;
+            float epsilon = 0.000001f;
             if (diff.r < epsilon && diff.g < epsilon && diff.b < epsilon) {
                 // Move this button to the start and return.
                 changed = true;

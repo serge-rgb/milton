@@ -13,6 +13,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "memory.h"
+
+
 u8* arena_alloc_bytes(Arena* arena, size_t num_bytes)
 {
     size_t total = arena->count + num_bytes;

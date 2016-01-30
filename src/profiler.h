@@ -18,7 +18,6 @@
 
 // Not the most fancy thing, but it's useful for quick and dirty sessions of optimization.
 
-#include "define_types.h"
 #include "milton_configuration.h"
 
 typedef enum {

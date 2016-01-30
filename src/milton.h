@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "define_types.h"
 #include "milton_configuration.h"
 
 #define MILTON_USE_VAO          1
@@ -29,10 +28,15 @@
 #define SGL_GL_HELPERS_IMPLEMENTATION
 #include "gl_helpers.h"
 
-#include "memory.h"
-#include "utils.h"
-#include "color.h"
 #include "canvas.h"
+#include "color.h"
+#include "gui.h"
+#include "memory.h"
+#include "persist.h"
+#include "render_common.h"
+#include "rasterizer.h"
+#include "utils.h"
+
 
 struct MiltonGLState {
     GLuint quad_program;
@@ -50,18 +54,6 @@ enum class MiltonMode {
     PEN                    = 1 << 1,
     EXPORTING              = 1 << 2,
 };
-
-enum class MiltonRenderFlags {
-    NONE            = 0,
-
-    PICKER_UPDATED  = 1 << 0,
-    FULL_REDRAW     = 1 << 1,
-    FINISHED_STROKE = 1 << 2,
-    PAN_COPY        = 1 << 3,
-    BRUSH_PREVIEW   = 1 << 4,
-    BRUSH_HOVER     = 1 << 5,
-};
-DECLARE_FLAG(MiltonRenderFlags);
 
 // Render Workers:
 //    We have a bunch of workers running on threads, who wait on a lockless
@@ -176,7 +168,6 @@ struct MiltonState {
 #endif
 };
 
-
 enum class MiltonInputFlags {
     NONE = 0,
 
@@ -205,17 +196,6 @@ struct MiltonInput {
     i32  scale;
     v2i  pan_delta;
 };
-
-struct Bitmap {
-    i32 width;
-    i32 height;
-    i32 num_components;
-    u8* data;
-};
-
-#include "gui.h"
-#include "rasterizer.h"
-#include "persist.h"
 
 // See gl_helpers.h for the reason for defining this
 #if defined(__MACH__)

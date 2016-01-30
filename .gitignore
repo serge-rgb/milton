@@ -8,8 +8,6 @@ src/*.generated.h
 src/*.generated.c
 
 # Visual Studio crap
-build/Milton.sln
-build/Milton.exp
 build/Milton.lib
 third_party/SDL2-2.0.3/VisualC
 *.vcxproj.user
@@ -17,6 +15,15 @@ third_party/SDL2-2.0.3/VisualC
 *.opensdf
 *.psess
 *.vsp
+
+Milton_VS2015/**/*.tlog
+Milton_VS2015/**/*.idb
+Milton_VS2015/**/*.iobj
+Milton_VS2015/**/*.ipdb
+Milton_VS2015/**/*.log
+Milton_VS2015/**/*.exp
+Milton_VS2015/**/*.cd
+
 
 
 *.sleepy

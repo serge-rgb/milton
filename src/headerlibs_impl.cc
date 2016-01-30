@@ -38,6 +38,7 @@
 
 #include "../third_party/imgui/imgui.cpp"
 #include "../third_party/imgui/imgui_draw.cpp"
+#include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
 
 #define TJE_IMPLEMENTATION
 #include "../src/tiny_jpeg.h"
