@@ -5,13 +5,18 @@
 :: - mlt_nopt: Debug build.
 set mlt_opt_level=%mlt_opt%
 
-
-
 IF NOT EXIST build mkdir build
-IF NOT EXIST build\SETUP_DONE call scripts\setup.bat
+
+IF EXIST third_party\bin\SDL2.dll goto SDL_OK
+
+:: SDL dll not present for some reason.
+call scripts\setup.bat
+COPY third_party\SDL2-2.0.3\VisualC\SDL\X64\Debug\SDL2.dll third_party\bin\SDL2.dll
+
+
+:SDL_OK
 
 pushd build
-
 
 set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
 
@@ -42,7 +47,8 @@ set comment_for_cleanup=/wd4100 /wd4189 /wd4800 /wd4127
 set mlt_disabled_warnings=%comment_for_cleanup% /wd4820 /wd4255 /wd4668 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027 /wd4514
 set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab -I ..\third_party\nativefiledialog\src\include
 
-set sdl_dir=..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug
+::set sdl_dir=..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug
+set sdl_dir=..\third_party\bin
 
 set mlt_links=..\third_party\glew32s.lib OpenGL32.lib %sdl_dir%\SDL2.lib user32.lib gdi32.lib Comdlg32.lib %sdl_link_deps%
 
