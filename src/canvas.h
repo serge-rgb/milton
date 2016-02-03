@@ -21,23 +21,21 @@
 #include "memory.h"
 #include "utils.h"
 
-struct Arena;
-
-struct Brush {
+typedef struct {
     i32     radius;  // This should be replaced by a BrushType and some union containing brush info.
     v4f     color;
     f32     alpha;
-};
+} Brush;
 
-struct Stroke {
+typedef struct {
     Brush   brush;
     v2i*    points;
     f32*    pressures;
     i32     num_points;
-};
+} Stroke;
 
 // IMPORTANT: CanvasView needs to be a flat structure.
-struct CanvasView {
+typedef struct {
     v2i     screen_size;            // Size in pixels
     i32     scale;                  // Zoom
     v2i     screen_center;          // In pixels
@@ -45,31 +43,7 @@ struct CanvasView {
     i32     downsampling_factor;
     i32     canvas_radius_limit;
     v3f     background_color;
-};
-
-struct StrokeCord {
-    INSERT_ALLOC_OVERRIDES;
-
-    StrokeCord();
-    StrokeCord(size_t chunk_size);
-    // Note: Intentionally not including a destructor because this
-    // should either be freed explicitly or live until everything dies.
-
-    Stroke& operator[](const size_t i);
-
-    struct StrokeCordChunk;
-
-    StrokeCordChunk*    first_chunk;
-    size_t              chunk_size;
-    size_t              count;
-};
-// A "stretchy" array with better locality, but not guarantee of any two
-// pointers being adjacent
-//
-// It's a linked list of chunks. Chunks are fixed-size arrays of length `chunk_size`
-b32     push(StrokeCord& cord, Stroke elem);
-Stroke  pop(StrokeCord& cord, size_t i);
-size_t  count(StrokeCord& cord);
+} CanvasView;
 
 v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
 
@@ -77,8 +51,8 @@ v2i raster_to_canvas(CanvasView* view, v2i raster_point);
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 b32* filter_strokes_to_rect(Arena* arena,
-                            StrokeCord strokes,
-                            const Rect rect);
+                            Stroke* strokes,
+                            Rect rect);
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
 b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1);

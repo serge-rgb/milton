@@ -15,6 +15,10 @@
 
 #pragma once
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "common.h"
 // EasyTab for drawing tablet support
 #include "easytab.h"
@@ -37,7 +41,7 @@ void    milton_die_gracefully(char* message);
 
 // Returns a 0-terminated string with the full path of the target file. NULL if error.
 wchar_t*    platform_save_dialog();
-void        platform_dialog(wchar_t* info, wchar_t* title = L"Info");
+void        platform_dialog(wchar_t* info, wchar_t* title);
 b32         platform_write_data(wchar_t* fname, void* data, int size);
 void        platform_load_gl_func_pointers();
 
@@ -47,4 +51,8 @@ void        platform_load_gl_func_pointers();
 void win32_log(char *format, ...);
 #elif defined(__linux__) || defined(__MACH__)
 #define platform_milton_log printf
+#endif
+
+#if defined(__cplusplus)
+}
 #endif

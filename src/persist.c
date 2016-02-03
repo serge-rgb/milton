@@ -20,6 +20,7 @@
 
 #include <stb_image_write.h>
 
+#include "gui.h"
 #include "milton.h"
 #include "platform.h"
 #include "tiny_jpeg.h"
@@ -67,8 +68,8 @@ void milton_load(MiltonState* milton_state)
             assert (num_strokes >= 0);
 
             for ( i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i ) {
-                push(milton_state->strokes, {});
-                Stroke* stroke = &milton_state->strokes[milton_state->strokes.count - 1];
+                sb_push(milton_state->strokes, (Stroke){0});
+                Stroke* stroke = &sb_peek(milton_state->strokes);
                 fread(&stroke->brush, sizeof(Brush), 1, fd);
                 fread(&stroke->num_points, sizeof(i32), 1, fd);
                 if ( stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0 ) {
@@ -96,8 +97,8 @@ void milton_load(MiltonState* milton_state)
 //  - Check all stdio function return values
 void milton_save(MiltonState* milton_state)
 {
-    size_t num_strokes = milton_state->strokes.count;
-    StrokeCord strokes = milton_state->strokes;
+    size_t num_strokes = sb_count(milton_state->strokes);
+    Stroke* strokes = milton_state->strokes;
     FILE* fd = fopen("MiltonPersist.mlt", "wb");
 
     if (!fd) {
@@ -139,7 +140,7 @@ static void write_func(void* context, void* data, int size)
     b32 ok = platform_write_data(full_path, data, size);
 
     if ( !ok ) {
-        platform_dialog( L"File could not be written!" );
+        platform_dialog( L"File could not be written!", L"Error" );
     } else {
         platform_dialog( L"Image exported successfully!", L"Success" );
     }
@@ -188,9 +189,9 @@ void milton_save_buffer_to_file(wchar_t* fname, u8* buffer, i32 w, i32 h)
         /* } else if ( !wcscmp(ext, L"jpg") || !wcscmp(ext, L"jpeg") ) { */
         /*     tje_encode_to_file */
         } else {
-            platform_dialog(L"File extension not handled by Milton\n");
+            platform_dialog(L"File extension not handled by Milton\n", L"Info");
         }
     } else {
-        platform_dialog(L"File name missing extension!\n");
+        platform_dialog(L"File name missing extension!\n", L"Error");
     }
 }

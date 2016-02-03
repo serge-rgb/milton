@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include "Arrays.h"
-#include "Vector.h"
+#include "vector.h"
 
 #ifdef array_length
 #error "array_length is already defined"
@@ -96,7 +95,7 @@ b32 intersect_line_segments(v2i a, v2i b,
 // The mighty rect
 // ---------------
 
-struct Rect {
+typedef struct {
     union {
         struct {
             v2i top_left;
@@ -109,13 +108,13 @@ struct Rect {
             i32 bottom;
         };
     };
-};
+} Rect;
 
 #define VALIDATE_RECT(rect) assert(rect_is_valid((rect)))
 
 // Splits src_rect into a number of rectangles stored in dest_rects
 // Returns the number of rectangles into which src_rect was split.
-i32 rect_split(StretchArray<Rect>& out_rects, Rect src_rect, i32 width, i32 height);
+i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height);
 
 // Set operations on rectangles
 Rect rect_union(Rect a, Rect b);
@@ -140,11 +139,31 @@ b32 is_rect_within_rect(Rect a, Rect b);
 
 Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h);
 
-struct Bitmap {
+typedef struct {
     i32 width;
     i32 height;
     i32 num_components;
     u8* data;
-};
+} Bitmap;
 
 
+// STB stretchy array
+
+#define sb_free(a)          ((a) ? free(stb__sbraw(a)),0 : 0)
+#define sb_push(a,v)        (stb__sbmaybegrow(a,1), (a)[stb__sbn(a)++] = (v))
+#define sb_reset(a)         (stb__sbn(a) = 0)
+#define sb_pop(a)           ((a)[--stb__sbn(a)])
+#define sb_unpop(a)         (stb__sbn(a)++)
+#define sb_count(a)         ((a) ? stb__sbn(a) : 0)
+#define sb_add(a,n)         (stb__sbmaybegrow(a,n), stb__sbn(a)+=(n), &(a)[stb__sbn(a)-(n)])
+#define sb_peek(a)          ((a)[stb__sbn(a)-1])
+
+#define stb__sbraw(a) ((i32 *) (a) - 2)
+#define stb__sbm(a)   stb__sbraw(a)[0]
+#define stb__sbn(a)   stb__sbraw(a)[1]
+
+#define stb__sbneedgrow(a,n)  ((a)==0 || stb__sbn(a)+(n) >= stb__sbm(a))
+#define stb__sbmaybegrow(a,n) (stb__sbneedgrow(a,(n)) ? stb__sbgrow(a,n) : 0)
+#define stb__sbgrow(a,n)      ((a) = stb__sbgrowf((a), (n), sizeof(*(a))))
+
+void* stb__sbgrowf(void *arr, int increment, int itemsize);

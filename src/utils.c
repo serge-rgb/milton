@@ -28,12 +28,12 @@ size_t get_system_RAM()
 
 v2i v2f_to_v2i(v2f p)
 {
-    return {(i32)p.x, (i32)p.y};
+    return (v2i){(i32)p.x, (i32)p.y};
 }
 
 v2f v2i_to_v2f(v2i p)
 {
-    return {(f32)p.x, (f32)p.y};
+    return (v2f){(f32)p.x, (f32)p.y};
 }
 
 // ---------------
@@ -47,7 +47,7 @@ f32 magnitude(v2f a)
 
 f32 distance(v2f a, v2f b)
 {
-    v2f diff = a - b;
+    v2f diff = sub2f(a, b);
 
     f32 dist = sqrtf(DOT(diff, diff));
 
@@ -120,7 +120,7 @@ v2f closest_point_in_segment_f(i32 ax, i32 ay,
     if (out_t) {
         *out_t = disc / mag_ab;
     }
-    result = {(ax + disc * d_x), (ay + disc * d_y)};
+    result = (v2f){(ax + disc * d_x), (ay + disc * d_y)};
     return result;
 }
 
@@ -140,7 +140,7 @@ v2i closest_point_in_segment(v2i a, v2i b,
     if (out_t) {
         *out_t = disc / mag_ab;
     }
-    result = {(i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y)};
+    result = (v2i){(i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y)};
     return result;
 }
 
@@ -149,10 +149,10 @@ b32 intersect_line_segments(v2i a, v2i b,
                             v2f* out_intersection)
 {
     b32 hit = false;
-    v2i perp = perpendicular(v - u);
-    i32 det = DOT(b - a, perp);
+    v2i perp = perpendicular(sub2i(v, u));
+    i32 det = DOT(sub2i(b, a), perp);
     if (det != 0) {
-        f32 t = (f32)DOT(u - a, perp) / (f32)det;
+        f32 t = (f32)DOT(sub2i(u, a), perp) / (f32)det;
         if (t > 1 && t < 1.001) t = 1;
         if (t < 0 && t > -0.001) t = 1;
 
@@ -166,8 +166,10 @@ b32 intersect_line_segments(v2i a, v2i b,
 }
 
 // Returns the number of rectangles into which src_rect was split.
-i32 rect_split(StretchArray<Rect>& out_rects, Rect src_rect, i32 width, i32 height)
+i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
 {
+    Rect* rects = NULL;
+
     int n_width = (src_rect.right - src_rect.left) / width;
     int n_height = (src_rect.bottom - src_rect.top) / height;
 
@@ -176,7 +178,6 @@ i32 rect_split(StretchArray<Rect>& out_rects, Rect src_rect, i32 width, i32 heig
     }
 
     i32 max_num_rects = (n_width + 1) * (n_height + 1);
-    StretchArray<Rect> rects((size_t)max(max_num_rects / 2, 1));
 
     for ( int h = src_rect.top; h < src_rect.bottom; h += height ) {
         for ( int w = src_rect.left; w < src_rect.right; w += width ) {
@@ -187,13 +188,13 @@ i32 rect_split(StretchArray<Rect>& out_rects, Rect src_rect, i32 width, i32 heig
                 rect.top = h;
                 rect.bottom = min(src_rect.bottom, h + height);
             }
-            push(rects, rect);
+            sb_push(rects, rect);
         }
     }
 
-    assert((i32)count(rects) <= max_num_rects);
-    i32 num_rects = (i32)count(rects);
-    out_rects = rects;
+    assert((i32)sb_count(rects) <= max_num_rects);
+    *out_rects = rects;
+    i32 num_rects = (i32)sb_count(rects);
     return num_rects;
 }
 

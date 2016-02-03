@@ -17,8 +17,7 @@
 #pragma once
 
 
-struct MiltonState;
-
+#include "milton_declares.h"
 
 void milton_load(MiltonState* milton_state);
 

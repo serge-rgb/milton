@@ -15,20 +15,25 @@
 
 
 #if defined(_WIN32)
-#include "platform_windows.cc"
-#elif defined(__linux__) || defined(__MACH__)
-#include "platform_unix.cc"
+#include <Windows.H>
 #endif
 
-#include "utils.cc"
-#include "canvas.cc"
-#include "color.cc"
-#include "milton.cc"
-#include "gui.cc"
-#include "gl_helpers.cc"
-#include "memory.cc"
-#include "persist.cc"
-#include "profiler.cc"
-#include "rasterizer.cc"
-#include "sdl_milton.cc"
-#include "tests.cc"
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+#define EASYTAB_IMPLEMENTATION
+#include "easytab.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
+#define TJE_IMPLEMENTATION
+#include "../src/tiny_jpeg.h"
+
+#if defined(__cplusplus)
+}
+#endif

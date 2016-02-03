@@ -16,15 +16,5 @@
 
 #pragma once
 
-#include "common.h"
 
-typedef enum {
-    MiltonRenderFlags_NONE            = 0,
-
-    MiltonRenderFlags_PICKER_UPDATED  = 1 << 0,
-    MiltonRenderFlags_FULL_REDRAW     = 1 << 1,
-    MiltonRenderFlags_FINISHED_STROKE = 1 << 2,
-    MiltonRenderFlags_PAN_COPY        = 1 << 3,
-    MiltonRenderFlags_BRUSH_PREVIEW   = 1 << 4,
-    MiltonRenderFlags_BRUSH_HOVER     = 1 << 5,
-} MiltonRenderFlags;
+typedef struct MiltonState_s MiltonState;

@@ -14,6 +14,10 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "platform.h"
 
 #include "common.h"
@@ -103,7 +107,7 @@ wchar_t* platform_save_dialog()
 
     save_filename[0] = '\0';
 
-    OPENFILENAMEW ofn = {};
+    OPENFILENAMEW ofn = {0};
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     //ofn.hInstance;
@@ -120,7 +124,7 @@ wchar_t* platform_save_dialog()
     /* ofn.lpfnHook; */
     /* ofn.lpTemplateName; */
 
-    auto ok = GetSaveFileNameW(&ofn);
+    b32 ok = GetSaveFileNameW(&ofn);
 
     wchar_t* result = NULL;
 
@@ -175,3 +179,7 @@ int CALLBACK WinMain(
 {
     milton_main();
 }
+
+#if defined(__cplusplus)
+}
+#endif

@@ -14,10 +14,10 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-struct WorkerParams {
+typedef struct {
     MiltonState* milton_state;
     i32 worker_id;
-};
+} WorkerParams;
 
 // Declared here so that the workers get launched from the init function.
 int renderer_worker_thread(/* WorkerParams* */void* data);

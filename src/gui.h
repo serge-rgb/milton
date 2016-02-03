@@ -13,34 +13,37 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
+
 #pragma once
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #include "common.h"
 
+#include "milton.h"
+#include "memory.h"
 #include "render_common.h"
 #include "utils.h"
 
+typedef enum {
+    ColorPickerFlags_NOTHING = 0,
 
-struct MiltonInput;
-struct MiltonState;
+    ColorPickerFlags_WHEEL_ACTIVE    = (1 << 1),
+    ColorPickerFlags_TRIANGLE_ACTIVE = (1 << 2)
+} ColorPickerFlags;
 
-enum class ColorPickerFlags {
-    NOTHING = 0,
-
-    WHEEL_ACTIVE    = (1 << 1),
-    TRIANGLE_ACTIVE = (1 << 2)
-};
-DECLARE_FLAG(ColorPickerFlags);
-
-struct PickerData {
+typedef struct {
     v2f a;  // Corresponds to value = 0      (black)
     v2f b;  // Corresponds to saturation = 0 (white)
     v2f c;  // Points to chosen hue.         (full color)
 
     v3f  hsv;
-};
+} PickerData;
 
-struct ColorButton {
+typedef struct ColorButton_s ColorButton;
+struct ColorButton_s {
     i32 x;
     i32 y;
     i32 w;
@@ -53,7 +56,7 @@ struct ColorButton {
     ColorButton* next;
 };
 
-struct ColorPicker {
+typedef struct {
     v2i     center;  // In screen pixel coordinates.
     i32     bounds_radius_px;
     Rect    bounds;
@@ -67,26 +70,26 @@ struct ColorPicker {
     ColorButton color_buttons;
 
     ColorPickerFlags flags;
-};
+} ColorPicker;
 
-enum class ColorPickResult {
-    NOTHING,
-    CHANGE_COLOR,
-};
+typedef enum {
+    ColorPickResult_NOTHING,
+    ColorPickResult_CHANGE_COLOR,
+} ColorPickResult;
 
 
-struct GuiButton {
+typedef struct {
     Rect            rect;
     Bitmap          bitmap;
-};
+} GuiButton;
 
-enum class ExporterState {
-    EMPTY,
-    GROWING_RECT,
-    SELECTED,
-};
+typedef enum {
+    ExporterState_EMPTY,
+    ExporterState_GROWING_RECT,
+    ExporterState_SELECTED,
+} ExporterState;
 
-struct Exporter {
+typedef struct {
     ExporterState state;
     // Pivot: The raster point where we click to begin the rectangle
     v2i pivot;
@@ -94,19 +97,17 @@ struct Exporter {
     v2i needle;
 
     int scale;
-};
+} Exporter;
 
 // State machine for gui
-enum class MiltonGuiFlags {
-    NONE,
+typedef enum {
+    MiltonGuiFlags_NONE,
 
-    SHOWING_PREVIEW   = 1 << 0,
-    CHOOSING_BG_COLOR = 1 << 1,
-};
-DECLARE_FLAG(MiltonGuiFlags);
+    MiltonGuiFlags_SHOWING_PREVIEW   = 1 << 0,
+    MiltonGuiFlags_CHOOSING_BG_COLOR = 1 << 1,
+} MiltonGuiFlags;
 
-// typedef'd in milton.h
-struct MiltonGui {
+typedef struct MiltonGui_s {
     b32 visible;
     b32 show_help_widget;
 
@@ -124,7 +125,7 @@ struct MiltonGui {
 
     v2i preview_pos;  // If rendering brush preview, this is where to do it.
     v2i preview_pos_prev;  // Keep the previous position to clear the canvas.
-};
+} MiltonGui;
 
 //
 // GUI API
@@ -157,3 +158,7 @@ float   picker_wheel_get_angle(ColorPicker* picker, v2f point);
 v3f     picker_hsv_from_point(ColorPicker* picker, v2f point);
 Rect    picker_get_bounds(ColorPicker* picker);
 Rect    get_bounds_for_picker_and_colors(ColorPicker* picker);
+
+#if defined(__cplusplus)
+}
+#endif

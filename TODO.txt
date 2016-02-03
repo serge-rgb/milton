@@ -4,6 +4,8 @@ To-Do
 
 - Bugs
     - :)
+    - cursor overlay is black (black background?)
+    - need to lose imgui focus when toggling visibility
 
 -  Application
     - Export
@@ -41,6 +43,7 @@ To-Do
     - Adaptive resolution scaling
     - Undo/Redo: Only redraw necessary area.
     - Amdahl's curse... Parallelize GUI rendering
+    - Align SSE variables
     - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
     - 4x4 Blockgroups (morton-order)
     - AVX backend??

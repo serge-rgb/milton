@@ -14,31 +14,22 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-
-
-
-// ========
-//
-// Keeping this in its own file just to check for bugs in the separation of
-// declarations and implementation in EasyTab.h
-
-
 #if defined(_WIN32)
-#include <Windows.H>
+#include "platform_windows.c"
+#elif defined(__linux__) || defined(__MACH__)
+#include "platform_unix.c"
 #endif
 
-#define EASYTAB_IMPLEMENTATION
-#include "easytab.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-
-#include "../third_party/imgui/imgui.cpp"
-#include "../third_party/imgui/imgui_draw.cpp"
-#include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
-
-#define TJE_IMPLEMENTATION
-#include "../src/tiny_jpeg.h"
+#include "canvas.c"
+#include "color.c"
+#include "gui.c"
+#include "utils.c"
+#include "milton.c"
+#include "sb_grow.c"
+#include "gl_helpers.c"
+#include "memory.c"
+#include "persist.c"
+#include "profiler.c"
+#include "rasterizer.c"
+#include "tests.c"
+#include "vector.c"

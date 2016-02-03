@@ -44,10 +44,10 @@ v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 b32* filter_strokes_to_rect(Arena* arena,
-                            StrokeCord strokes,
+                            Stroke* strokes,
                             Rect rect)
 {
-    v2i center = {
+    v2i center = (v2i){
         (rect.left + rect.right) / 2,
         (rect.top + rect.bottom) / 2,
     };
@@ -57,7 +57,7 @@ b32* filter_strokes_to_rect(Arena* arena,
     rect.top = rect.top - center.h;
     rect.bottom = rect.bottom - center.h;
 
-    size_t num_strokes = count(strokes);
+    size_t num_strokes = (size_t)sb_count(strokes);
     b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
     if (!mask_array) {
         return NULL;
@@ -73,8 +73,8 @@ b32* filter_strokes_to_rect(Arena* arena,
             }
         } else {
             for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
-                v2i a = stroke->points[point_i] - center;
-                v2i b = stroke->points[point_i + 1] - center;
+                v2i a = sub2i(stroke->points[point_i    ], center);
+                v2i b = sub2i(stroke->points[point_i + 1], center);
 
                 b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
                                (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
@@ -94,7 +94,7 @@ b32* filter_strokes_to_rect(Arena* arena,
 // Does point p0 with radius r0 contain point p1 with radius r1?
 b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
 {
-    v2i d = p1 - p0;
+    v2i d = sub2i(p1, p0);
     // using manhattan distance, less chance of overflow. Still works well enough for this case.
     u32 m = (u32)abs(d.x) + abs(d.y) + r1;
     //i32 m = magnitude_i(d) + r1;
@@ -129,83 +129,5 @@ Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
     raster_rect.bot_right = canvas_to_raster(view, canvas_rect.bot_right);
     raster_rect.top_left = canvas_to_raster(view, canvas_rect.top_left);
     return raster_rect;
-}
-
-struct StrokeCord::StrokeCordChunk {
-    Stroke*	     data;
-    StrokeCordChunk* next;
-};
-
-static StrokeCord::StrokeCordChunk* StrokeCord_internal_alloc_chunk(size_t chunk_size)
-{
-    auto* result = (StrokeCord::StrokeCordChunk*)mlt_calloc(1, sizeof(StrokeCord::StrokeCordChunk));
-    if (result) {
-        result->data = (Stroke*)mlt_calloc(chunk_size, sizeof(Stroke));
-        if (!result->data) {
-            result = NULL;
-        }
-    }
-    return result;
-}
-
-StrokeCord::StrokeCord(size_t chunk_size)
-{
-    StrokeCord* cord = (StrokeCord*) mlt_calloc(1, sizeof(StrokeCord));
-    this->count = 0;
-    this->chunk_size = chunk_size;
-    this->first_chunk = StrokeCord_internal_alloc_chunk(chunk_size);
-    if (!this->first_chunk) {
-        milton_die_gracefully("StrokeCord construction failed\n");
-    }
-}
-size_t count(StrokeCord& cord)
-{
-    return cord.count;
-}
-
-b32 push(StrokeCord& cord, Stroke elem)
-{
-    b32 succeeded = false;
-    StrokeCord::StrokeCordChunk* chunk = cord.first_chunk;
-    size_t chunk_i = cord.count / cord.chunk_size;
-    while(chunk_i--) {
-        if (!chunk->next) {
-            chunk->next = StrokeCord_internal_alloc_chunk(cord.chunk_size);
-        }
-        chunk = chunk->next;
-    }
-    if (chunk) {
-        size_t elem_i = cord.count % cord.chunk_size;
-        chunk->data[elem_i] = elem;
-        cord.count += 1;
-        succeeded = true;
-    }
-    return succeeded;
-}
-
-Stroke& StrokeCord::operator[](const size_t i)
-{
-    StrokeCord::StrokeCordChunk* chunk = this->first_chunk;
-    size_t chunk_i = i / this->chunk_size;
-    while(chunk_i--) {
-        chunk = chunk->next;
-        assert (chunk != NULL);
-    }
-    size_t elem_i = i % this->chunk_size;
-    return chunk->data[elem_i];
-}
-
-Stroke pop(StrokeCord* cord, size_t i)
-{
-    StrokeCord::StrokeCordChunk* chunk = cord->first_chunk;
-    size_t chunk_i = i / cord->chunk_size;
-    while(chunk_i--) {
-        chunk = chunk->next;
-        assert (chunk != NULL);
-    }
-    size_t elem_i = i % cord->chunk_size;
-    Stroke result = chunk->data[elem_i];
-    cord->count -= 1;
-    return result;
 }
 

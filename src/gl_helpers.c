@@ -16,6 +16,9 @@
 
 #include "gl_helpers.h"
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 void gl_log(char* str)
 {
@@ -172,3 +175,7 @@ void gl_query_error(const char* expr, const char* file, int line)
 #ifdef _WIN32
 
 #endif  // _WIN32
+
+#if defined(__cplusplus)
+}
+#endif

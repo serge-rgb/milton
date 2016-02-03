@@ -16,6 +16,7 @@
 
 #include "milton.h"
 
+#include "gui.h"
 #include "platform.h"
 #include "profiler.h"
 
@@ -25,7 +26,6 @@
 
 // Using stb_image to load our GUI resources.
 #include <stb_image.h>
-
 
 static void milton_gl_backend_init(MiltonState* milton_state)
 {
@@ -148,7 +148,7 @@ static void milton_update_brushes(MiltonState* milton_state)
             brush->color = to_premultiplied(sRGB_to_linear(gui_get_picker_rgb(milton_state->gui)), brush->alpha);
 #endif
         } else if (i == BrushEnum_ERASER) {
-            brush->color = { -1, -1, -1, -1, };
+            brush->color = (v4f){ -1, -1, -1, -1, };
             brush->alpha = 1;
         }
     }
@@ -159,9 +159,9 @@ static void milton_update_brushes(MiltonState* milton_state)
 static Brush milton_get_brush(MiltonState* milton_state)
 {
     Brush brush = { 0 };
-    if ( milton_state->current_mode == MiltonMode::PEN ) {
+    if ( milton_state->current_mode == MiltonMode_PEN ) {
         brush = milton_state->brushes[BrushEnum_PEN];
-    } else if ( milton_state->current_mode == MiltonMode::ERASER ) {
+    } else if ( milton_state->current_mode == MiltonMode_ERASER ) {
         brush = milton_state->brushes[BrushEnum_ERASER];
     } else {
         assert (!"Picking brush in invalid mode");
@@ -173,9 +173,9 @@ static i32* pointer_to_brush_size(MiltonState* milton_state)
 {
     i32* ptr = NULL;
 
-    if ( milton_state->current_mode == MiltonMode::PEN ) {
+    if ( milton_state->current_mode == MiltonMode_PEN ) {
         ptr = &milton_state->brush_sizes[BrushEnum_PEN];
-    } else if ( milton_state->current_mode == MiltonMode::ERASER ) {
+    } else if ( milton_state->current_mode == MiltonMode_ERASER ) {
         ptr = &milton_state->brush_sizes[BrushEnum_ERASER];
     }
     return ptr;
@@ -190,7 +190,7 @@ static b32 is_user_drawing(MiltonState* milton_state)
 
 static b32 current_mode_is_for_painting(MiltonState* milton_state)
 {
-    b32 result = milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER;
+    b32 result = milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER;
     return result;
 }
 
@@ -305,9 +305,9 @@ void milton_gl_backend_draw(MiltonState* milton_state)
 i32 milton_get_brush_size(MiltonState* milton_state)
 {
     i32 brush_size = 0;
-    if ( milton_state->current_mode == MiltonMode::PEN ) {
+    if ( milton_state->current_mode == MiltonMode_PEN ) {
         brush_size = milton_state->brush_sizes[BrushEnum_PEN];
-    } else if ( milton_state->current_mode == MiltonMode::ERASER ) {
+    } else if ( milton_state->current_mode == MiltonMode_ERASER ) {
         brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
     } else {
         assert (! "milton_get_brush_size called when in invalid mode.");
@@ -386,13 +386,13 @@ void milton_init(MiltonState* milton_state)
 
     milton_state->bytes_per_pixel = 4;
 
-    milton_state->strokes = StrokeCord(1024);
+    milton_state->strokes = NULL;
 
     milton_state->working_stroke.points    = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, v2i);
     milton_state->working_stroke.pressures = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
 
-    milton_state->current_mode = MiltonMode::PEN;
-    milton_state->last_mode = MiltonMode::NONE;
+    milton_state->current_mode = MiltonMode_PEN;
+    milton_state->last_mode = MiltonMode_NONE;
 
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
@@ -410,7 +410,7 @@ void milton_init(MiltonState* milton_state)
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
         milton_state->view->downsampling_factor = 1;
 
-        milton_state->view->background_color = { 1, 1, 1 };
+        milton_state->view->background_color = (v3f){ 1, 1, 1 };
 #if 0
         milton_state->view->rotation = 0;
         for (int d = 0; d < 360; d++)
@@ -452,7 +452,7 @@ void milton_init(MiltonState* milton_state)
     for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
         {
-            *params = { milton_state, i };
+            *params = (WorkerParams){ milton_state, i };
         }
         assert (milton_state->render_worker_arenas[i].ptr == NULL);
         u8* worker_memory = (u8*)mlt_calloc(1, milton_state->worker_memory_size);
@@ -506,10 +506,10 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     if ( new_screen_size.w < milton_state->max_width &&
          new_screen_size.h < milton_state->max_height) {
         milton_state->view->screen_size = new_screen_size;
-        milton_state->view->screen_center = milton_state->view->screen_size/2;
+        milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
 
         // Add delta to pan vector
-        v2i pan_vector = milton_state->view->pan_vector + (pan_delta*milton_state->view->scale);
+        v2i pan_vector = add2i(milton_state->view->pan_vector, (scale2i(pan_delta, milton_state->view->scale)));
 
         if ( pan_vector.x > milton_state->view->canvas_radius_limit ||
                 pan_vector.x <= -milton_state->view->canvas_radius_limit ) {
@@ -531,10 +531,10 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
         milton_state->last_mode = milton_state->current_mode;
         milton_state->current_mode = mode;
 
-        if ( mode == MiltonMode::EXPORTING && milton_state->gui->visible) {
+        if ( mode == MiltonMode_EXPORTING && milton_state->gui->visible) {
             gui_toggle_visibility(milton_state->gui);
         }
-        if ( milton_state->last_mode == MiltonMode::EXPORTING && !milton_state->gui->visible) {
+        if ( milton_state->last_mode == MiltonMode_EXPORTING && !milton_state->gui->visible) {
             gui_toggle_visibility(milton_state->gui);
         }
     }
@@ -542,7 +542,7 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
 
 void milton_use_previous_mode(MiltonState* milton_state)
 {
-    if ( milton_state->last_mode != MiltonMode::NONE ) {
+    if ( milton_state->last_mode != MiltonMode_NONE ) {
         milton_switch_mode(milton_state, milton_state->last_mode);
     } else {
         assert ( !"invalid code path" );
@@ -558,12 +558,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     // TODO: Save redo point?
     b32 should_save =
             //(input->point != NULL) ||
-            (check_flag(input->flags, MiltonInputFlags::END_STROKE)) ||
-            (check_flag(input->flags, MiltonInputFlags::RESET)) ||
-            (check_flag(input->flags, MiltonInputFlags::UNDO)) ||
-            (check_flag(input->flags, MiltonInputFlags::REDO));
+            (check_flag(input->flags, MiltonInputFlags_END_STROKE)) ||
+            (check_flag(input->flags, MiltonInputFlags_RESET)) ||
+            (check_flag(input->flags, MiltonInputFlags_UNDO)) ||
+            (check_flag(input->flags, MiltonInputFlags_REDO));
 
-    MiltonRenderFlags render_flags = MiltonRenderFlags::NONE;
+    MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
     b32 do_fast_draw               = false;
 
     if ( !milton_state->running ) {
@@ -595,11 +595,11 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                    milton_state->worker_memory_size);
 
         milton_state->worker_needs_memory = false;
-        set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
+        render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_fast_draw = true;
     }
 
-    if (check_flag(input->flags, MiltonInputFlags::FAST_DRAW)) {
+    if (check_flag(input->flags, MiltonInputFlags_FAST_DRAW)) {
         do_fast_draw = true;
     }
 
@@ -610,16 +610,16 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->view->downsampling_factor = 1;
         if ( milton_state->request_quality_redraw ) {
             milton_state->request_quality_redraw = false;
-            set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
+            set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
         }
     }
 
-    if (check_flag(input->flags, MiltonInputFlags::FULL_REFRESH)) {
-        set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
+    if (check_flag(input->flags, MiltonInputFlags_FULL_REFRESH)) {
+        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
     }
 
     if (input->scale) {
-        set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
+        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
 
 // Sensible
 #if 1
@@ -643,41 +643,42 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_update_brushes(milton_state);
-    } else if (check_flag(input->flags, MiltonInputFlags::PANNING)) {
+    } else if (check_flag(input->flags, MiltonInputFlags_PANNING)) {
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
         // TODO: What happens with request_quality_redraw?
-        set_flag(render_flags, MiltonRenderFlags::PAN_COPY);
+        set_flag(render_flags, MiltonRenderFlags_PAN_COPY);
     }
 
-    if ( check_flag(input->flags, MiltonInputFlags::CHANGE_MODE) ) {
+    if ( check_flag(input->flags, MiltonInputFlags_CHANGE_MODE) ) {
         milton_switch_mode( milton_state, input->mode_to_set );
-        if ( input->mode_to_set == MiltonMode::PEN ||
-             input->mode_to_set == MiltonMode::ERASER ) {
+        if ( input->mode_to_set == MiltonMode_PEN ||
+             input->mode_to_set == MiltonMode_ERASER ) {
             milton_update_brushes(milton_state);
         }
     }
 
-    if (check_flag( input->flags, MiltonInputFlags::UNDO )) {
+    if (check_flag( input->flags, MiltonInputFlags_UNDO )) {
         if ( milton_state->working_stroke.num_points != 0  ) {
             milton_state->working_stroke.num_points = 0;
-        } else if ( milton_state->strokes.count > 0 ) {
-            milton_state->strokes.count--;
+        } else if ( sb_count(milton_state->strokes) > 0 ) {
+            sb_pop(milton_state->strokes);
             milton_state->num_redos++;
         }
-        set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
-    } else if (check_flag( input->flags, MiltonInputFlags::REDO )) {
+        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+    } else if (check_flag( input->flags, MiltonInputFlags_REDO )) {
         if ( milton_state->num_redos > 0 ) {
-            milton_state->strokes.count++;
+            //milton_state->strokes.count++;
+            sb_unpop(milton_state->strokes);
             milton_state->num_redos--;
         }
-        set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
+        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
     }
 
-    if (check_flag( input->flags, MiltonInputFlags::RESET )) {
+    if (check_flag( input->flags, MiltonInputFlags_RESET )) {
         milton_state->view->scale = MILTON_DEFAULT_SCALE;
-        set_flag(render_flags, MiltonRenderFlags::FULL_REDRAW);
-        milton_state->strokes.count = 0;
+        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+        sb_reset(milton_state->strokes);
         (&milton_state->strokes[0])->num_points = 0;
         milton_state->working_stroke.num_points = 0;
         milton_update_brushes(milton_state);
@@ -686,7 +687,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     // ==== Rotate ======
     if (input->rotation != 0)
     {
-        render_flags |= MiltonRenderFlags::FULL_REDRAW;
+        render_flags |= MiltonRenderFlags_FULL_REDRAW;
     }
     milton_state->view->rotation += input->rotation;
     while (milton_state->view->rotation < 0)
@@ -700,19 +701,19 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 #endif
 
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
-    if ( milton_state->current_mode == MiltonMode::PEN ||
-         milton_state->current_mode == MiltonMode::ERASER ) {
-        set_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
+    if ( milton_state->current_mode == MiltonMode_PEN ||
+         milton_state->current_mode == MiltonMode_ERASER ) {
+        set_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
-    if (check_flag( input->flags, MiltonInputFlags::HOVERING )) {
+    if (check_flag( input->flags, MiltonInputFlags_HOVERING )) {
         milton_state->hover_point = input->hover_point;
         f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
         f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
     }
 
     if ( is_user_drawing(milton_state) || milton_state->gui->active ) {
-        unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
+        unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
     if ( input->input_count > 0 ){
@@ -729,35 +730,35 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
+    if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
         exporter_input(&milton_state->gui->exporter, input);
     }
 
-    if ( check_flag(input->flags, MiltonInputFlags::IMGUI_GRABBED_INPUT) ) {
+    if ( check_flag(input->flags, MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
         // Start drawing the preview if we just grabbed a slider.
-        unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
-        if ( check_flag(milton_state->gui->flags, MiltonGuiFlags::SHOWING_PREVIEW) ) {
-            set_flag(render_flags, MiltonRenderFlags::BRUSH_PREVIEW);
+        unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
+        if ( check_flag(milton_state->gui->flags, MiltonGuiFlags_SHOWING_PREVIEW) ) {
+            set_flag(render_flags, MiltonRenderFlags_BRUSH_PREVIEW);
         }
     } else {
         gui_imgui_set_ungrabbed(milton_state->gui);
     }
 
-    if (check_flag( input->flags, MiltonInputFlags::END_STROKE )) {
+    if (check_flag( input->flags, MiltonInputFlags_END_STROKE )) {
         milton_state->stroke_is_from_tablet = false;
 
         if ( milton_state->gui->active ) {
             gui_deactivate(milton_state->gui);
-            set_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED);
-            unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
+            set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
+            unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
         } else {
             if ( milton_state->working_stroke.num_points > 0 ) {
                 // We used the selected color to draw something. Push.
                 if( gui_mark_color_used(milton_state->gui, milton_state->working_stroke.brush.color.rgb) ) {
-                    set_flag(render_flags, MiltonRenderFlags::PICKER_UPDATED);
+                    set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
                 }
                 // Copy current stroke.
-                auto num_points = milton_state->working_stroke.num_points;
+                i32 num_points = milton_state->working_stroke.num_points;
                 Stroke new_stroke =
                 {
                     milton_state->working_stroke.brush,
@@ -768,19 +769,19 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 memcpy(new_stroke.points, milton_state->working_stroke.points, milton_state->working_stroke.num_points * sizeof(v2i));
                 memcpy(new_stroke.pressures, milton_state->working_stroke.pressures, milton_state->working_stroke.num_points * sizeof(f32));
 
-                push(milton_state->strokes, new_stroke);
+                sb_push(milton_state->strokes, new_stroke);
                 // Clear working_stroke
                 {
                     milton_state->working_stroke.num_points = 0;
                 }
-                set_flag(render_flags, MiltonRenderFlags::FINISHED_STROKE);
+                set_flag(render_flags, MiltonRenderFlags_FINISHED_STROKE);
             }
         }
     }
 
     // Disable hover if panning.
-    if (check_flag( input->flags, MiltonInputFlags::PANNING )) {
-        unset_flag(render_flags, MiltonRenderFlags::BRUSH_HOVER);
+    if (check_flag( input->flags, MiltonInputFlags_PANNING )) {
+        unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
     milton_render(milton_state, render_flags);

@@ -24,7 +24,9 @@
 #define mlt_free(ptr) do { if (ptr) { free(ptr); ptr = NULL; } else { assert(!"Freeing null"); } } while(0)
 #define mlt_realloc realloc
 
-struct Arena {
+typedef struct Arena_s Arena;
+
+struct Arena_s {
     // Memory:
     size_t  size;
     size_t  count;

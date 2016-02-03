@@ -42,56 +42,6 @@ typedef i32         b32;
 #define UNUSED(x) (void*)(&x)
 #endif
 
-//
-// Use enum classes as flags.
-//  Insert right after definition.
-//  Example:
-//      enum class Flag {
-//          NOTHING   = 0,
-//          SOMETHING = 1,
-//          OTHER     = 2,
-//          ANOTHER   = 4,
-//      };
-//      DECLARE_FLAG(Flag);  // <--
-//
-//  Then you can use:
-//      Flag f = NOTHING;
-//      set_flag(f, Flag::SOMETHING);
-//      (...)
-//      if (check_flag(f, Flag::SOMETHING)) {
-//          unset_flag(f, Flag::SOMETHING);
-//      }
-//
-//
-#define DECLARE_FLAG(cl) \
-    inline void set_flag(cl& f, cl val)    { f = (cl)((int)f | (int)val); }  \
-    inline void unset_flag(cl& f, cl val)  { f = (cl)((int)f & ~(int)val); } \
-    inline b32  check_flag(cl flags, cl f) { return (b32)((int)flags & (int)f); }
-
-//
-// *** Insert at the top of all Milton containers ***
-//
-// Use milton's default allocator with C++ new and delete.
-//
-// Note:
-//  In general, new and delete are Evil and Ugly, but templates are nice for
-// creating new language constructs...
-//
-#define INSERT_ALLOC_OVERRIDES \
-    static void* operator new       (std::size_t sz)    { return mlt_calloc(1, sz); }\
-    static void* operator new[]     (std::size_t sz)    { return mlt_calloc(1, sz); }\
-    static void  operator delete    (void* ptr)         { mlt_free(ptr); }\
-    static void  operator delete[]  (void* ptr)         { mlt_free(ptr); }
-
-//
-// Declare after `private:` to avoid copying.
-// A nod to pre-PC Google.
-//
-#define DISALLOW_EVIL_CONSTRUCTORS(TypeName)    \
-   TypeName(const TypeName&);                           \
-   void operator=(const TypeName&)
-
-
 // Assert implementation
 
 #if defined(assert)
@@ -99,3 +49,7 @@ typedef i32         b32;
 #else
 #define assert(expr)  do { if ( !(bool)(expr) ) {  (*(u32*)0) = 0xDeAdBeEf;  } } while(0)
 #endif
+
+#define check_flag(flags, check)    ((flags) & (check))
+#define set_flag(f, s)              ((f) |= (s))
+#define unset_flag(f, s)            ((f) &= ~(s))

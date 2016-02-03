@@ -78,7 +78,9 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -94,7 +96,9 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -112,7 +116,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -132,7 +136,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -141,43 +145,6 @@
       <AdditionalDependencies>..\..\third_party\glew32s.lib;OpenGL32.lib;Winmm.lib;Version.lib;Shell32.lib;Ole32.lib;OleAut32.lib;Imm32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\src\Arrays.h" />
-    <ClInclude Include="..\..\src\canvas.h" />
-    <ClInclude Include="..\..\src\color.h" />
-    <ClInclude Include="..\..\src\common.h" />
-    <ClInclude Include="..\..\src\easytab.h" />
-    <ClInclude Include="..\..\src\gl_helpers.h" />
-    <ClInclude Include="..\..\src\gui.h" />
-    <ClInclude Include="..\..\src\memory.h" />
-    <ClInclude Include="..\..\src\milton.h" />
-    <ClInclude Include="..\..\src\milton_configuration.h" />
-    <ClInclude Include="..\..\src\persist.h" />
-    <ClInclude Include="..\..\src\platform.h" />
-    <ClInclude Include="..\..\src\platform_OSX_SDL_hooks.h" />
-    <ClInclude Include="..\..\src\profiler.h" />
-    <ClInclude Include="..\..\src\rasterizer.h" />
-    <ClInclude Include="..\..\src\system_includes.h" />
-    <ClInclude Include="..\..\src\tests.h" />
-    <ClInclude Include="..\..\src\tiny_jpeg.h" />
-    <ClInclude Include="..\..\src\utils.h" />
-    <ClInclude Include="..\..\src\Vector.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\src\canvas.cc" />
-    <ClCompile Include="..\..\src\color.cc" />
-    <ClCompile Include="..\..\src\gl_helpers.cc" />
-    <ClCompile Include="..\..\src\gui.cc" />
-    <ClCompile Include="..\..\src\memory.cc" />
-    <ClCompile Include="..\..\src\milton.cc" />
-    <ClCompile Include="..\..\src\persist.cc" />
-    <ClCompile Include="..\..\src\platform_windows.cc" />
-    <ClCompile Include="..\..\src\profiler.cc" />
-    <ClCompile Include="..\..\src\rasterizer.cc" />
-    <ClCompile Include="..\..\src\sdl_milton.cc" />
-    <ClCompile Include="..\..\src\tests.cc" />
-    <ClCompile Include="..\..\src\utils.cc" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\third_party\SDL2-2.0.3\VisualC\SDL\SDL_VS2013.vcxproj">
       <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
@@ -188,6 +155,24 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\canvas.c" />
+    <ClCompile Include="..\..\src\color.c" />
+    <ClCompile Include="..\..\src\gl_helpers.c" />
+    <ClCompile Include="..\..\src\gui.c" />
+    <ClCompile Include="..\..\src\guipp.cpp" />
+    <ClCompile Include="..\..\src\memory.c" />
+    <ClCompile Include="..\..\src\milton.c" />
+    <ClCompile Include="..\..\src\persist.c" />
+    <ClCompile Include="..\..\src\platform_windows.c" />
+    <ClCompile Include="..\..\src\profiler.c" />
+    <ClCompile Include="..\..\src\rasterizer.c" />
+    <ClCompile Include="..\..\src\sb_grow.c" />
+    <ClCompile Include="..\..\src\sdl_milton.cpp" />
+    <ClCompile Include="..\..\src\tests.c" />
+    <ClCompile Include="..\..\src\utils.c" />
+    <ClCompile Include="..\..\src\vector.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -16,6 +16,10 @@
 
 #pragma once
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "milton_configuration.h"
 
 #define MILTON_USE_VAO          1
@@ -30,41 +34,40 @@
 
 #include "canvas.h"
 #include "color.h"
-#include "gui.h"
 #include "memory.h"
+#include "milton_declares.h"
 #include "persist.h"
 #include "render_common.h"
 #include "rasterizer.h"
 #include "utils.h"
 
 
-struct MiltonGLState {
+typedef struct {
     GLuint quad_program;
     GLuint texture;
     GLuint vbo;
 #if MILTON_USE_VAO
     GLuint quad_vao;
 #endif
-};
+} MiltonGLState;
 
-enum class MiltonMode {
-    NONE                   = 0,
-
-    ERASER                 = 1 << 0,
-    PEN                    = 1 << 1,
-    EXPORTING              = 1 << 2,
-};
+typedef enum {
+    MiltonMode_NONE                   = 0,
+    MiltonMode_ERASER                 = 1 << 0,
+    MiltonMode_PEN                    = 1 << 1,
+    MiltonMode_EXPORTING              = 1 << 2,
+} MiltonMode;
 
 // Render Workers:
 //    We have a bunch of workers running on threads, who wait on a lockless
 //    queue to take BlockgroupRenderData structures.
 //    When there is work available, they call blockgroup_render_thread with the
 //    appropriate parameters.
-struct BlockgroupRenderData {
+typedef struct {
     i32     block_start;
-};
+} BlockgroupRenderData;
 
-struct RenderQueue {
+typedef struct {
     Rect*   blocks;  // Screen areas to render.
     i32     num_blocks;
     u32*    canvas_buffer;
@@ -76,7 +79,7 @@ struct RenderQueue {
 
     SDL_sem*   work_available;
     SDL_sem*   completed_semaphore;
-};
+} RenderQueue;
 
 enum {
     BrushEnum_PEN,
@@ -104,10 +107,9 @@ static char* MILTONDEBUG_BackendChoiceStrings[DEBUG_BACKEND_CHOICE_count] =
 
 #endif
 
-// Forward  declarations
-struct MiltonGui;
+struct MiltonGui_s;
 
-struct MiltonState {
+struct MiltonState_s {
     u8      bytes_per_pixel;
 
     i32     max_width;
@@ -122,7 +124,7 @@ struct MiltonState {
 
     MiltonGLState* gl;
 
-    MiltonGui* gui;
+    struct MiltonGui_s* gui;
 
     Brush   brushes[BrushEnum_COUNT];
     i32     brush_sizes[BrushEnum_COUNT];  // In screen pixels
@@ -132,7 +134,7 @@ struct MiltonState {
 
     Stroke  working_stroke;
 
-    StrokeCord strokes;
+    Stroke* strokes;
 
     i32     num_redos;
 
@@ -168,23 +170,22 @@ struct MiltonState {
 #endif
 };
 
-enum class MiltonInputFlags {
-    NONE = 0,
+typedef enum {
+    MiltonInputFlags_NONE = 0,
 
-    FULL_REFRESH        = 1 << 0,
-    RESET               = 1 << 1,
-    END_STROKE          = 1 << 2,
-    UNDO                = 1 << 3,
-    REDO                = 1 << 4,
-    CHANGE_MODE         = 1 << 5,
-    FAST_DRAW           = 1 << 6,
-    HOVERING            = 1 << 7,
-    PANNING             = 1 << 8,
-    IMGUI_GRABBED_INPUT = 1 << 9,
-};
-DECLARE_FLAG(MiltonInputFlags);
+    MiltonInputFlags_FULL_REFRESH        = 1 << 0,
+    MiltonInputFlags_RESET               = 1 << 1,
+    MiltonInputFlags_END_STROKE          = 1 << 2,
+    MiltonInputFlags_UNDO                = 1 << 3,
+    MiltonInputFlags_REDO                = 1 << 4,
+    MiltonInputFlags_CHANGE_MODE         = 1 << 5,
+    MiltonInputFlags_FAST_DRAW           = 1 << 6,
+    MiltonInputFlags_HOVERING            = 1 << 7,
+    MiltonInputFlags_PANNING             = 1 << 8,
+    MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 9,
+} MiltonInputFlags;
 
-struct MiltonInput {
+typedef struct {
     MiltonInputFlags flags;
     MiltonMode mode_to_set;
 
@@ -195,7 +196,7 @@ struct MiltonInput {
     v2i  hover_point;
     i32  scale;
     v2i  pan_delta;
-};
+} MiltonInput;
 
 // See gl_helpers.h for the reason for defining this
 #if defined(__MACH__)
@@ -238,3 +239,6 @@ void milton_save_buffer_to_file(wchar_t* fname, u8* buffer, i32 w, i32 h);
 
 void milton_try_quit(MiltonState* milton_state);
 
+#if defined(__cplusplus)
+}
+#endif

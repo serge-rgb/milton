@@ -14,17 +14,26 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#pragma once
-
 #include "common.h"
 
-typedef enum {
-    MiltonRenderFlags_NONE            = 0,
+#include "memory.h"
+#include "utils.h"
 
-    MiltonRenderFlags_PICKER_UPDATED  = 1 << 0,
-    MiltonRenderFlags_FULL_REDRAW     = 1 << 1,
-    MiltonRenderFlags_FINISHED_STROKE = 1 << 2,
-    MiltonRenderFlags_PAN_COPY        = 1 << 3,
-    MiltonRenderFlags_BRUSH_PREVIEW   = 1 << 4,
-    MiltonRenderFlags_BRUSH_HOVER     = 1 << 5,
-} MiltonRenderFlags;
+void* stb__sbgrowf(void *arr, int increment, int itemsize)
+{
+   int dbl_cur = arr ? 2*stb__sbm(arr) : 0;
+   int min_needed = sb_count(arr) + increment;
+   int m = dbl_cur > min_needed ? dbl_cur : min_needed;
+   int *p = (int *) mlt_realloc(arr ? stb__sbraw(arr) : 0, itemsize * m + sizeof(int)*2);
+   if (p) {
+      if (!arr)
+         p[1] = 0;
+      p[0] = m;
+      return p+2;
+   } else {
+      #ifdef STRETCHY_BUFFER_OUT_OF_MEMORY
+      STRETCHY_BUFFER_OUT_OF_MEMORY ;
+      #endif
+      return (void *) (2*sizeof(int)); // try to force a NULL pointer exception later
+   }
+}
