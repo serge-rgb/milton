@@ -39,9 +39,6 @@
  *  Windows
  *  OSX
  *
- * TODO:
- *  - error messages
- *
  * This software is in the public domain. Where that dedication is not
  * recognized, you are granted a perpetual, irrevocable license to copy
  * and modify this file as you see fit.*
@@ -157,6 +154,24 @@ int tje_encode_to_file_at_quality(const char* dest_path,
                                   const int num_components,
                                   const unsigned char* src_data);
 
+// - tje_encode_with_func -
+//
+// Usage
+//  Same as tje_encode_to_file_at_quality, but it takes a callback that knows
+//  how to handle (or ignore) `context`. The callback receives an array `data`
+//  of `size` bytes, which can be written directly to a file. There is no need
+//  to free the data.
+
+typedef void tje_write_func(void* context, void* data, int size);
+
+int tje_encode_with_func(tje_write_func* func,
+                         void* context,
+                         const int quality,
+                         const int width,
+                         const int height,
+                         const int num_components,
+                         const unsigned char* src_data);
+
 #endif // TJE_HEADER_GUARD
 
 
@@ -189,18 +204,14 @@ int tje_encode_to_file_at_quality(const char* dest_path,
 #include <inttypes.h>
 #include <math.h>   // floorf, ceilf
 #include <stdio.h>  // FILE, puts
-#include <string.h> // memcpy
+#include <string.h> // memcpy(float)[rsp+208h]
 
-#if !defined(tje_write)
 
 #define TJEI_BUFFER_SIZE 1024
-#define tje_write tjei_fwrite
 
 // Buffer TJE_BUFFER_SIZE in memory and flush when ready
 static size_t tjei_g_output_buffer_count;
 static uint8_t tjei_g_output_buffer[TJEI_BUFFER_SIZE];
-
-#endif
 
 
 #ifdef _WIN32
@@ -227,6 +238,10 @@ static uint8_t tjei_g_output_buffer[TJEI_BUFFER_SIZE];
 #endif  // NDEBUG
 
 
+typedef struct {
+    void* context;
+    tje_write_func* func;
+} TJEWriteContext;
 
 typedef struct TJEState_s {
     uint8_t     ehuffsize[4][257];
@@ -238,7 +253,7 @@ typedef struct TJEState_s {
     uint8_t     qt_luma[64];
     uint8_t     qt_chroma[64];
 
-    FILE*       fd;
+    TJEWriteContext write_context;
 } TJEState;
 
 // ============================================================
@@ -441,7 +456,7 @@ typedef struct TJEScanHeader_s {
 #pragma pack(pop)
 
 
-static void tjei_fwrite(TJEState* state, void* data, size_t num_bytes, size_t num_elements)
+static void tjei_write(TJEState* state, void* data, size_t num_bytes, size_t num_elements)
 {
     size_t to_write = num_bytes * num_elements;
 
@@ -455,28 +470,27 @@ static void tjei_fwrite(TJEState* state, void* data, size_t num_bytes, size_t nu
 
     // Flush the buffer.
     if ( tjei_g_output_buffer_count == TJEI_BUFFER_SIZE - 1 ) {
-        //fwrite(data, num_bytes, num_elements, state->fd);
-        fwrite(tjei_g_output_buffer, tjei_g_output_buffer_count, 1, state->fd);
+        state->write_context.func(state->write_context.context, tjei_g_output_buffer, (int)tjei_g_output_buffer_count);
         tjei_g_output_buffer_count = 0;
     }
 
     // Recursively calling ourselves with the rest of the buffer.
     if (capped_count < to_write) {
-        tjei_fwrite(state, (uint8_t*)data+capped_count, to_write - capped_count, 1);
+        tjei_write(state, (uint8_t*)data+capped_count, to_write - capped_count, 1);
     }
 }
 
 static void tjei_write_DQT(TJEState* state, uint8_t* matrix, uint8_t id)
 {
     uint16_t DQT = tjei_be_word(0xffdb);
-    tje_write(state, &DQT, sizeof(uint16_t), 1);
+    tjei_write(state, &DQT, sizeof(uint16_t), 1);
     uint16_t len = tjei_be_word(0x0043); // 2(len) + 1(id) + 64(matrix) = 67 = 0x43
-    tje_write(state, &len, sizeof(uint16_t), 1);
+    tjei_write(state, &len, sizeof(uint16_t), 1);
     assert(id < 4);
     uint8_t precision_and_id = id;  // 0x0000 8 bits | 0x00id
-    tje_write(state, &precision_and_id, sizeof(uint8_t), 1);
+    tjei_write(state, &precision_and_id, sizeof(uint8_t), 1);
     // Write matrix
-    tje_write(state, matrix, 64*sizeof(uint8_t), 1);
+    tjei_write(state, matrix, 64*sizeof(uint8_t), 1);
 }
 
 typedef enum {
@@ -502,11 +516,11 @@ static void tjei_write_DHT(TJEState* state,
     assert(id < 4);
     uint8_t tc_th = (uint8_t)((((uint8_t)ht_class) << 4) | id);
 
-    tje_write(state, &DHT, sizeof(uint16_t), 1);
-    tje_write(state, &len, sizeof(uint16_t), 1);
-    tje_write(state, &tc_th, sizeof(uint8_t), 1);
-    tje_write(state, matrix_len, sizeof(uint8_t), 16);
-    tje_write(state, matrix_val, sizeof(uint8_t), (size_t)num_values);
+    tjei_write(state, &DHT, sizeof(uint16_t), 1);
+    tjei_write(state, &len, sizeof(uint16_t), 1);
+    tjei_write(state, &tc_th, sizeof(uint8_t), 1);
+    tjei_write(state, matrix_len, sizeof(uint8_t), 16);
+    tjei_write(state, matrix_val, sizeof(uint8_t), (size_t)num_values);
 }
 // ============================================================
 //  Huffman deflation code.
@@ -600,11 +614,11 @@ TJEI_FORCE_INLINE void tjei_write_bits(TJEState* state,
         // Grab the most significant byte.
         uint8_t c = (uint8_t)((*bitbuffer) >> 24);
         // Write it to file.
-        tje_write(state, &c, 1, 1);
+        tjei_write(state, &c, 1, 1);
         if ( c == 0xff )  {
             // Special case: tell JPEG this is not a marker.
             char z = 0;
-            tje_write(state, &z, 1, 1);
+            tjei_write(state, &z, 1, 1);
         }
         // Pop the stack.
         *bitbuffer <<= 8;
@@ -970,7 +984,7 @@ static int tjei_encode_main(TJEState* state,
         header.y_density = tjei_be_word(0x0060);  // 96 DPI
         header.x_thumb = 0;
         header.y_thumb = 0;
-        tje_write(state, &header, sizeof(TJEJPEGHeader), 1);
+        tjei_write(state, &header, sizeof(TJEJPEGHeader), 1);
     }
     {  // Write comment
         TJEJPEGComment com;
@@ -979,7 +993,7 @@ static int tjei_encode_main(TJEState* state,
         com.com = tjei_be_word(0xfffe);
         com.com_len = tjei_be_word(com_len);
         memcpy(com.com_str, (void*)tjeik_com_str, sizeof(tjeik_com_str)-1);
-        tje_write(state, &com, sizeof(TJEJPEGComment), 1);
+        tjei_write(state, &com, sizeof(TJEJPEGComment), 1);
     }
 
     // Write quantization tables.
@@ -1010,7 +1024,7 @@ static int tjei_encode_main(TJEState* state,
             header.component_spec[i] = spec;
         }
         // Write to file.
-        tje_write(state, &header, sizeof(TJEFrameHeader), 1);
+        tjei_write(state, &header, sizeof(TJEFrameHeader), 1);
     }
 
     tjei_write_DHT(state, state->ht_bits[TJEI_LUMA_DC],   state->ht_vals[TJEI_LUMA_DC], TJEI_DC, 0);
@@ -1041,7 +1055,7 @@ static int tjei_encode_main(TJEState* state,
         header.first = 0;
         header.last  = 63;
         header.ah_al = 0;
-        tje_write(state, &header, sizeof(TJEScanHeader), 1);
+        tjei_write(state, &header, sizeof(TJEScanHeader), 1);
 
     }
     // Write compressed data.
@@ -1133,15 +1147,12 @@ static int tjei_encode_main(TJEState* state,
         }
     }
     uint16_t EOI = tjei_be_word(0xffd9);
-    tje_write(state, &EOI, sizeof(uint16_t), 1);
+    tjei_write(state, &EOI, sizeof(uint16_t), 1);
 
-    // If compiled with buffered IO
-#if defined(TJEI_BUFFER_SIZE)
     if (tjei_g_output_buffer_count) {
-        fwrite(tjei_g_output_buffer, tjei_g_output_buffer_count, 1, state->fd);
+        state->write_context.func(state->write_context.context, tjei_g_output_buffer, (int)tjei_g_output_buffer_count);
         tjei_g_output_buffer_count = 0;
     }
-#endif
 
     return 1;
 }
@@ -1154,6 +1165,12 @@ int tje_encode_to_file(const char* dest_path,
 {
     int res = tje_encode_to_file_at_quality(dest_path, 3, width, height, num_components, src_data);
     return res;
+}
+
+static void tjei_stdlib_func(void* context, void* data, int size)
+{
+    FILE* fd = (FILE*)context;
+    fwrite(data, size, 1, fd);
 }
 
 // Define public interface.
@@ -1170,14 +1187,27 @@ int tje_encode_to_file_at_quality(const char* dest_path,
         return 0;
     }
 
+    int result = tje_encode_with_func(tjei_stdlib_func, fd,
+                                      quality, width, height, num_components, src_data);
+
+    result |= 0 == fclose(fd);
+
+}
+
+int tje_encode_with_func(tje_write_func* func,
+                         void* context,
+                         const int quality,
+                         const int width,
+                         const int height,
+                         const int num_components,
+                         const unsigned char* src_data)
+{
     if (quality < 1 || quality > 3) {
         tje_log("[ERROR] -- Valid 'quality' values are 1 (lowest), 2, or 3 (highest)\n");
         return 0;
     }
 
     TJEState state = { 0 };
-
-    state.fd = fd;
 
     uint8_t qt_factor = 1;
     switch(quality) {
@@ -1207,12 +1237,17 @@ int tje_encode_to_file_at_quality(const char* dest_path,
         break;
     }
 
+    TJEWriteContext wc = { 0 };
+
+    wc.context = context;
+    wc.func = func;
+
+    state.write_context = wc;
+
 
     tjei_huff_expand(&state);
 
     int result = tjei_encode_main(&state, src_data, width, height, num_components);
-
-    result |= 0 == fclose(fd);
 
     return result;
 }
@@ -1228,3 +1263,4 @@ int tje_encode_to_file_at_quality(const char* dest_path,
 #ifdef __cplusplus
 }  // extern C
 #endif
+

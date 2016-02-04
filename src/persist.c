@@ -136,13 +136,16 @@ void milton_save(MiltonState* milton_state)
 // Called by stb_image
 static void write_func(void* context, void* data, int size)
 {
-    wchar_t* full_path = (wchar_t*)context;
-    b32 ok = platform_write_data(full_path, data, size);
+    PlatformFileHandle* h = (PlatformFileHandle*) context;
 
-    if ( !ok ) {
-        platform_dialog( L"File could not be written!", L"Error" );
-    } else {
-        platform_dialog( L"Image exported successfully!", L"Success" );
+    if ( platform_file_handle_is_valid(h) ) {
+        b32 ok = platform_write_data(h, data, size);
+
+        if ( !ok ) {
+            platform_close_file(h);
+            platform_invalidate_file_handle(h);
+            platform_dialog( L"File could not be written!", L"Error" );
+        }
     }
 }
 
@@ -183,13 +186,19 @@ void milton_save_buffer_to_file(wchar_t* fname, u8* buffer, i32 w, i32 h)
             ext[i] = towlower(c);
         }
 
-        if ( !wcscmp( ext, L"png" ) ) {
-            stbi_write_png_to_func(write_func, fname, w, h, 4, buffer, 0);
-            // TODO: implement encode to func like stb
-        /* } else if ( !wcscmp(ext, L"jpg") || !wcscmp(ext, L"jpeg") ) { */
-        /*     tje_encode_to_file */
+        PlatformFileHandle* handle = alloca(platform_file_handle_size());
+
+        if (  platform_open_file_write(fname, handle) ) {
+            if ( !wcscmp( ext, L"png" ) ) {
+                stbi_write_png_to_func(write_func, handle, w, h, 4, buffer, 0);
+            } else if ( !wcscmp(ext, L"jpg") || !wcscmp(ext, L"jpeg") ) {
+                tje_encode_with_func(write_func, handle, 3, w, h, 4, buffer);
+            } else {
+                platform_dialog(L"File extension not handled by Milton\n", L"Info");
+            }
+            platform_close_file(handle);
         } else {
-            platform_dialog(L"File extension not handled by Milton\n", L"Info");
+            platform_dialog ( L"Could not open file", L"Error" );
         }
     } else {
         platform_dialog(L"File name missing extension!\n", L"Error");

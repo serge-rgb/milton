@@ -119,7 +119,7 @@ wchar_t* platform_save_dialog()
     ofn.Flags = OFN_HIDEREADONLY;
     /* ofn.nFileOffset; */
     /* ofn.nFileExtension; */
-    ofn.lpstrDefExt = L"png";
+    ofn.lpstrDefExt = L"jpg";
     /* ofn.lCustData; */
     /* ofn.lpfnHook; */
     /* ofn.lpTemplateName; */
@@ -143,7 +143,11 @@ void platform_dialog(wchar_t* info, wchar_t* title)
             );
 }
 
-b32 platform_write_data(wchar_t* fname, void* data, int size)
+struct PlatformFileHandle_s {
+    HANDLE h;
+};
+
+b32 platform_open_file_write(wchar_t* fname, PlatformFileHandle* out_handle)
 {
     b32 result = false;
 
@@ -157,17 +161,74 @@ b32 platform_write_data(wchar_t* fname, void* data, int size)
             NULL //_In_opt_ HANDLE                hTemplateFile
             );
 
-    int sz_written = 0;
     if ( handle != INVALID_HANDLE_VALUE ) {
-        BOOL write_result = WriteFile(handle, data, (DWORD)size, (LPDWORD)&sz_written, NULL);
+        result = true;
+        out_handle->h = handle;
+    }
+    return result;
+}
+
+b32 platform_write_data(PlatformFileHandle* handle, void* data, int size)
+{
+    b32 result = false;
+
+    int sz_written = 0;
+    if ( handle && handle->h != INVALID_HANDLE_VALUE ) {
+        BOOL write_result = WriteFile(handle->h, data, (DWORD)size, (LPDWORD)&sz_written, NULL);
+
+#if 0
+        LPVOID lpMsgBuf;
+        DWORD dw = GetLastError();
+
+        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                      FORMAT_MESSAGE_FROM_SYSTEM |
+                      FORMAT_MESSAGE_IGNORE_INSERTS,
+                      NULL,
+                      dw,
+                      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                      (LPTSTR) &lpMsgBuf,
+                      0, NULL );
+
+        // Display the error message and exit the process
+        milton_log("%s\n", lpMsgBuf);
+#endif
+
         if ( write_result != FALSE ) {
             if ( sz_written == size ) {
                 result = true;
             }
         }
-        CloseHandle(handle);
     }
     return result;
+}
+
+void platform_close_file(PlatformFileHandle* handle)
+{
+    if ( handle && handle->h != INVALID_HANDLE_VALUE ) {
+        CloseHandle(handle->h);
+        *handle = (PlatformFileHandle){ 0 };
+    }
+}
+
+void platform_invalidate_file_handle(PlatformFileHandle* handle)
+{
+    if ( handle && handle->h != INVALID_HANDLE_VALUE ) {
+        handle->h = INVALID_HANDLE_VALUE;
+    }
+}
+
+size_t platform_file_handle_size()
+{
+    return sizeof(PlatformFileHandle);
+}
+
+b32 platform_file_handle_is_valid(PlatformFileHandle* handle)
+{
+    b32 is_valid = false;
+    if (handle && handle->h != INVALID_HANDLE_VALUE) {
+        is_valid = true;
+    }
+    return is_valid;
 }
 
 int CALLBACK WinMain(
