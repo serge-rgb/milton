@@ -132,7 +132,6 @@ static void milton_load_assets(MiltonState* milton_state)
     gui->brush_button.rect = rect_from_xywh(x, y, bitmap->width, bitmap->height);
 }
 
-
 static void milton_update_brushes(MiltonState* milton_state)
 {
     for (int i = 0; i < BrushEnum_COUNT; ++i ) {
