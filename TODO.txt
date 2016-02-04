@@ -9,6 +9,7 @@ To-Do
 
 -  Application
     - Export
+        - manipulate rectangle shape
         - set resolution
         - set aspect ratio
         - Finish Linux and OSX versions of Dialogs and File I/O
