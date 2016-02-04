@@ -42,6 +42,18 @@ typedef i32         b32;
 #define UNUSED(x) (void*)(&x)
 #endif
 
+#ifdef ALIGN
+#error ALIGN macro already defined.
+#else
+#if defined(_MSC_VER)
+#define ALIGN(n) __declspec(align(n))
+#elif defined(__GNUC__)  // Clang defines this too
+#define ALIGN(n) __attribute__(( aligned (n) ))
+#else
+#error I don't know how to align stuff in this compiler
+#endif
+#endif // ALIGN
+
 // Assert implementation
 
 #if defined(assert)

@@ -685,12 +685,12 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                             PROFILE_BEGIN(load);
 
-                            f32 axs[4];
-                            f32 ays[4];
-                            f32 bxs[4];
-                            f32 bys[4];
-                            f32 aps[4];
-                            f32 bps[4];
+                            ALIGN(16) f32 axs[4];
+                            ALIGN(16) f32 ays[4];
+                            ALIGN(16) f32 bxs[4];
+                            ALIGN(16) f32 bys[4];
+                            ALIGN(16) f32 aps[4];
+                            ALIGN(16) f32 bps[4];
 
                             // NOTE: This loop is not stupid:
                             //  I transformed the data representation to SOA
@@ -716,12 +716,12 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 l_point_i += 1;
                             }
 
-                            __m128 a_x = _mm_loadu_ps(axs);
-                            __m128 a_y = _mm_loadu_ps(ays);
-                            __m128 b_x = _mm_loadu_ps(bxs);
-                            __m128 b_y = _mm_loadu_ps(bys);
-                            __m128 pressure_a = _mm_loadu_ps(aps);
-                            __m128 pressure_b = _mm_loadu_ps(bps);
+                            __m128 a_x = _mm_load_ps(axs);
+                            __m128 a_y = _mm_load_ps(ays);
+                            __m128 b_x = _mm_load_ps(bxs);
+                            __m128 b_y = _mm_load_ps(bys);
+                            __m128 pressure_a = _mm_load_ps(aps);
+                            __m128 pressure_b = _mm_load_ps(bps);
 
                             PROFILE_PUSH(load);
                             PROFILE_BEGIN(work);
@@ -790,23 +790,28 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             PROFILE_PUSH(work);
                             PROFILE_BEGIN(gather);
 
-                            f32 dists[4];
-                            f32 tests_dx[4];
-                            f32 tests_dy[4];
-                            f32 pressures[4];
-                            f32 masks[4];
+                            ALIGN(16) f32 dists[4];
+                            ALIGN(16) f32 tests_dx[4];
+                            ALIGN(16) f32 tests_dy[4];
+                            ALIGN(16) f32 pressures[4];
+                            ALIGN(16) f32 masks[4];
 
-                            _mm_storeu_ps(dists, dist4);
-                            _mm_storeu_ps(tests_dx, test_dx);
-                            _mm_storeu_ps(tests_dy, test_dy);
-                            _mm_storeu_ps(pressures, pressure4);
-                            _mm_storeu_ps(masks, mask);
+                            _mm_store_ps(dists, dist4);
+                            _mm_store_ps(tests_dx, test_dx);
+                            _mm_store_ps(tests_dy, test_dy);
+                            _mm_store_ps(pressures, pressure4);
+                            _mm_store_ps(masks, mask);
 
-#if 0
+                            // Two versions of the "gather" step. A "smart" version (in quotes because there is probably a better, smarter way of doing it) and a naive loop.
+                            // the naive loop used to be faster (before
+                            // aligning the stack variables o__o ). Now they
+                            // are practically the same.
+#if 1
                             __m128 max_pos4 = _mm_set_ps1(FLT_MAX);
                             __m128 min_neg4 = _mm_set_ps1(-FLT_MAX);
-                            __m128 maxed = _mm_andnot_ps(mask, max_pos4);
-                            __m128 minned = _mm_and_ps(mask, min_neg4);
+                            __m128 maxed    = _mm_andnot_ps(mask, max_pos4);
+                            __m128 minned   = _mm_and_ps(mask, min_neg4);
+
                             dist4 = _mm_max_ps(dist4, _mm_xor_ps(maxed, minned));
                             // dist = [a, b, c, d]
                             __m128 m0 = _mm_shuffle_ps(dist4, dist4, 0x71); // m0   = [b, x, d, x]
@@ -820,7 +825,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 int batch_i = -1;
 #ifdef _WIN32
                                 _BitScanForward64((DWORD*)&batch_i, bit);
-#else  // TODO: way to do this in clang? ... yes: __builtin_ctz
+#else  // TODO: in clang&gcc: __builtin_ctz
                                 for (int p = 0; p < 4; ++p) {
                                     if ( bit & (1 << p) ) {
                                         batch_i = p;
@@ -834,7 +839,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                 pressure = pressures[batch_i];
                             }
 
-#else  // Dumb loop is 20% faster.
+#else
                             for ( i32 batch_i = 0; batch_i < 4; ++batch_i ) {
                                 f32 dist = dists[batch_i];
                                 i32 imask = *(i32*)&masks[batch_i];

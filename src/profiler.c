@@ -14,6 +14,12 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "profiler.h"
+#include "platform.h"
+
+#if defined(PROFILER_IMPLEMENTATION)
+u64 g_profiler_ticks[MILTON_PROFILER_COUNT];  // Total cpu clocks
+u64 g_profiler_count[MILTON_PROFILER_COUNT];  // How many calls
+#endif
 
 
 void profiler_output()

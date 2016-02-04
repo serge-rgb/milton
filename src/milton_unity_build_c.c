@@ -29,7 +29,7 @@
 #include "gl_helpers.c"
 #include "memory.c"
 #include "persist.c"
-#include "profiler.c"
 #include "rasterizer.c"
 #include "tests.c"
 #include "vector.c"
+#include "profiler.c"

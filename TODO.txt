@@ -55,6 +55,7 @@ To-Do
 - Milton Library
     - Refactor. Write sample program.
 - Distribution
+    - Get Travis working
     - Bintray? Github?
     - Windows.
         - Installation. WIX? Inno Setup?
