@@ -17,8 +17,6 @@ if %sdlmain_done% NEQ 1 goto error
 
 
 :ok
-copy third_party\SDL2-2.0.3\VisualC\SDL\X64\Debug\SDL2.dll build\SDL2.dll
-copy third_party\SDL2-2.0.3\VisualC\SDL\X64\Debug\SDL2.lib build\SDL2.lib
 echo    [BUILD] SDL built.
 goto end
 

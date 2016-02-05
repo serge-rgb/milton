@@ -99,6 +99,15 @@ void milton_save(MiltonState* milton_state)
 {
     size_t num_strokes = sb_count(milton_state->strokes);
     Stroke* strokes = milton_state->strokes;
+
+#if 0
+    int pid = (int)getpid();
+    char tmp_fname[MAX_PATH] = {0};
+    snprintf(tmp_fname, MAX_PATH, "milton_tmp.%d.mlt", pid);
+
+    platform_fname_at_exe(tmp_fname);
+#endif
+
     FILE* fd = fopen("MiltonPersist.mlt", "wb");
 
     if (!fd) {
@@ -136,32 +145,30 @@ void milton_save(MiltonState* milton_state)
 // Called by stb_image
 static void write_func(void* context, void* data, int size)
 {
-    PlatformFileHandle* h = (PlatformFileHandle*) context;
+    FILE* fd = *(FILE**)context;
 
-    if ( platform_file_handle_is_valid(h) ) {
-        b32 ok = platform_write_data(h, data, size);
-
-        if ( !ok ) {
-            platform_close_file(h);
-            platform_invalidate_file_handle(h);
-            platform_dialog( L"File could not be written!", L"Error" );
+    if ( fd ) {
+        size_t written = fwrite(data, size, 1, fd);
+        if ( written != 1 ) {
+            fclose(fd);
+            *(FILE**)context = NULL;
         }
     }
 }
 
-void milton_save_buffer_to_file(wchar_t* fname, u8* buffer, i32 w, i32 h)
+void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h)
 {
     b32 success = false;
 
     int len = 0;
     {
-        size_t sz = wcslen(fname);
+        size_t sz = strlen(fname);
         if ( sz > ( (1u << 31) -1 ) ) {
             milton_die_gracefully("A really, really long file name. This shouldn't happen.");
         }
         len = (int)sz;
     }
-    wchar_t* ext = fname + len;
+    char* ext = fname + len;
 
     // NOTE: This should work with unicode.
     int ext_len = 0;
@@ -182,25 +189,37 @@ void milton_save_buffer_to_file(wchar_t* fname, u8* buffer, i32 w, i32 h)
 
     if ( found ) {
         for ( int i = 0; i < ext_len; ++i ) {
-            wchar_t c = ext[i];
-            ext[i] = towlower(c);
+            char c = ext[i];
+            ext[i] = (char)tolower(c);
         }
 
-        PlatformFileHandle* handle = alloca(platform_file_handle_size());
+        FILE* fd = NULL;
 
-        if (  platform_open_file_write(fname, handle) ) {
-            if ( !wcscmp( ext, L"png" ) ) {
-                stbi_write_png_to_func(write_func, handle, w, h, 4, buffer, 0);
-            } else if ( !wcscmp(ext, L"jpg") || !wcscmp(ext, L"jpeg") ) {
-                tje_encode_with_func(write_func, handle, 3, w, h, 4, buffer);
+        fd = fopen(fname, "wb");
+
+        if (  fd ) {
+            if ( !strcmp( ext, "png" ) ) {
+                stbi_write_png_to_func(write_func, &fd, w, h, 4, buffer, 0);
+            } else if ( !strcmp(ext, "jpg") || !strcmp(ext, "jpeg") ) {
+                tje_encode_with_func(write_func, &fd, 3, w, h, 4, buffer);
             } else {
-                platform_dialog(L"File extension not handled by Milton\n", L"Info");
+                platform_dialog("File extension not handled by Milton\n", "Info");
             }
-            platform_close_file(handle);
+            // fd might have been set to NULL if write_func failed.
+            if ( fd ) {
+                if ( ferror(fd) ) {
+                    platform_dialog("Unknown error when writing to file :(", "Unknown error");
+                } else {
+                    platform_dialog("Image exported successfully!", "Success");
+                }
+                fclose(fd);
+            } else {
+                platform_dialog("File created, but there was an error writing to it.", "Error");
+            }
         } else {
-            platform_dialog ( L"Could not open file", L"Error" );
+            platform_dialog ( "Could not open file", "Error" );
         }
     } else {
-        platform_dialog(L"File name missing extension!\n", L"Error");
+        platform_dialog("File name missing extension!\n", "Error");
     }
 }

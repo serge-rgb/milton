@@ -38,23 +38,8 @@ void    milton_die_gracefully(char* message);
 
 
 // Returns a 0-terminated string with the full path of the target file. NULL if error.
-wchar_t*    platform_save_dialog();
-void        platform_dialog(wchar_t* info, wchar_t* title);
-
-
-// File I/O
-typedef struct PlatformFileHandle_s PlatformFileHandle;
-
-int     platform_open_file_write(wchar_t* fname, PlatformFileHandle* out_handle);
-b32     platform_write_data(PlatformFileHandle* handle, void* data, int size);
-void    platform_close_file(PlatformFileHandle* handle);
-
-size_t  platform_file_handle_size();  // Returns sizeof(PlatformFileHandle), varies by platform.
-
-void    platform_invalidate_file_handle(PlatformFileHandle* handle);  // In case of error.
-b32     platform_file_handle_is_valid(PlatformFileHandle* handle);
-
-
+char*   platform_save_dialog();
+void    platform_dialog(char* info, char* title);
 
 
 void    platform_load_gl_func_pointers();
@@ -63,6 +48,7 @@ void    platform_load_gl_func_pointers();
 #if defined(_WIN32)
 #define platform_milton_log win32_log
 void win32_log(char *format, ...);
+#define getpid _getpid
 #elif defined(__linux__) || defined(__MACH__)
 #define platform_milton_log printf
 #endif

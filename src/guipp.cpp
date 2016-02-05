@@ -206,6 +206,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                             raster_w, raster_h);
                 if ( ImGui::InputInt("Scale up", &exporter->scale, 1, /*step_fast=*/2) ) {}
                 if ( exporter->scale <= 0 ) exporter->scale = 1;
+                if ( exporter->scale > milton_state->view->scale ) exporter->scale = milton_state->view->scale;
                 ImGui::Text("Final image size: %dx%d\n", raster_w*exporter->scale, raster_h*exporter->scale);
 
                 if ( ImGui::Button("Export selection to image...") ) {
@@ -218,13 +219,13 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     if ( buffer ) {
                         opened = false;
                         milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
-                        wchar_t* fname = platform_save_dialog();
+                        char* fname = platform_save_dialog();
                         if ( fname ) {
                             milton_save_buffer_to_file(fname, buffer, w, h);
                         }
                         mlt_free (buffer);
                     } else {
-                        platform_dialog(L"Did not write file. Not enough memory available for operation.", L"Error");
+                        platform_dialog("Did not write file. Not enough memory available for operation.", "Error");
                     }
                 }
             }

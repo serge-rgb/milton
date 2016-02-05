@@ -33,7 +33,6 @@ typedef float       f32;
 typedef i32         b32;
 
 
-#define MILTON_DESKTOP
 #include "system_includes.h"
 
 #ifdef UNUSED

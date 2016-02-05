@@ -600,8 +600,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     // Get the linked list of clipped strokes.
     b32 allocation_ok = true;
     i32 local_scale =  (view->scale <= 8) ?  4 : 1;
-    __m128 local_scale4 = _mm_set_ps1((float)local_scale);
 
+    __m128 local_scale4 = _mm_set_ps1((float)local_scale);
     {
         reference_point.x *= local_scale;
         reference_point.y *= local_scale;
@@ -639,8 +639,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     for ( i32 pixel_j = raster_block.top;
           pixel_j < raster_block.bottom;
           pixel_j += downsample_factor ) {
-        i32 i =  (((raster_block.left - view->screen_center.x) *
-                    view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
+        i32 i = (((raster_block.left - view->screen_center.x) *
+                  view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
 
         for ( i32 pixel_i = raster_block.left;
               pixel_i < raster_block.right;
@@ -650,7 +650,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
             ClippedStroke* list_iter = stroke_list;
 
-            while(list_iter) {
+            while( list_iter ) {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
                 b32 is_eraser = equ4f(clipped_stroke->brush.color, (v4f){ -1, -1, -1, -1 });
@@ -1698,7 +1698,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
 
     // Figure out what `raster_limits` should be.
     {
-        if (check_flag(render_flags, MiltonRenderFlags_FULL_REDRAW)) {
+        if ( check_flag(render_flags, MiltonRenderFlags_FULL_REDRAW) ) {
             raster_limits.left = 0;
             raster_limits.right = milton_state->view->screen_size.w;
             raster_limits.top = 0;
@@ -1726,7 +1726,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
             raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
         }
 
-        if (check_flag( render_flags, MiltonRenderFlags_FINISHED_STROKE )) {
+        if ( check_flag( render_flags, MiltonRenderFlags_FINISHED_STROKE )) {
             size_t index = sb_count(milton_state->strokes) - 1;
             Rect canvas_rect = bounding_box_for_last_n_points(&milton_state->strokes[index], 4);
             raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
@@ -1794,7 +1794,7 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     milton_state->view->screen_size = (v2i){ buf_w, buf_h };
     milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
     if ( scale > 1 ) {
-        milton_state->view->scale = (i32) (milton_state->view->scale * (1.0f/scale));
+        milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
     }
 
     // TODO:

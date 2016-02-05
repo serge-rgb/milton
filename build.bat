@@ -29,7 +29,7 @@ set mlt_opt=/Ox /Oy- /MT
 set mlt_nopt=/Od /MTd
 
 
-set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /fp:fast /nologo /FC /EHsc
+set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /nologo /FC /EHsc
 
 REM 4100 Unreferenced func param (cleanup)
 REM 4820 struct padding
@@ -102,7 +102,7 @@ if %errorlevel% neq 0 goto fail
 cl %mlt_opt_level% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_cpp.cpp
 if %errorlevel% neq 0 goto fail
-cl milton_unity_build_c.obj milton_unity_build_cpp.obj /FeMilton.exe %mlt_links% %header_links%
+cl %mlt_compiler_flags% milton_unity_build_c.obj milton_unity_build_cpp.obj /FeMilton.exe %mlt_links% %header_links%
 if %errorlevel% neq 0 goto fail
 
 :ok

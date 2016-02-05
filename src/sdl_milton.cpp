@@ -152,7 +152,12 @@ int milton_main()
                      return(interval);
                  }, NULL);
 
-    ImGui::GetIO().IniFilename = NULL;  // Don't save any imgui.ini file
+    // ImGui setup
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.IniFilename = NULL;  // Don't save any imgui.ini file
+    }
+
 
     while(!should_quit) {
         // ==== Handle events
@@ -482,8 +487,8 @@ int milton_main()
         }
 
 
-        // Set flags --
-        milton_input.flags = (MiltonInputFlags)input_flags;
+        // Re-cast... This is dumb
+        milton_input.flags = (MiltonInputFlags)( input_flags | (int)milton_input.flags );
 
         assert (num_point_results <= num_pressure_results);
 

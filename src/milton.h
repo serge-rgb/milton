@@ -28,6 +28,7 @@ extern "C" {
 #define MILTON_DEFAULT_SCALE    (1 << 10)
 #define NO_PRESSURE_INFO        -1.0f
 #define MAX_INPUT_BUFFER_ELEMS  32
+#define MILTON_MINIMUM_SCALE    (1 << 4)
 
 #define SGL_GL_HELPERS_IMPLEMENTATION
 #include "gl_helpers.h"
@@ -235,7 +236,7 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
 void milton_update(MiltonState* milton_state, MiltonInput* input);
 
 // persist.cc
-void milton_save_buffer_to_file(wchar_t* fname, u8* buffer, i32 w, i32 h);
+void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h);
 
 void milton_try_quit(MiltonState* milton_state);
 

@@ -66,26 +66,29 @@ b32* filter_strokes_to_rect(Arena* arena,
     for (size_t stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
         Stroke* stroke = &strokes[stroke_i];
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
-        VALIDATE_RECT(stroke_rect);
-        if (stroke->num_points == 1) {
-            if (is_inside_rect(stroke_rect, stroke->points[0])) {
-                mask_array[stroke_i] = true;
-            }
-        } else {
-            for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
-                v2i a = sub2i(stroke->points[point_i    ], center);
-                v2i b = sub2i(stroke->points[point_i + 1], center);
-
-                b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
-                               (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
-                               (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
-                               (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
-
-                if (inside) {
+        if ( rect_is_valid(stroke_rect) ) {
+            if (stroke->num_points == 1) {
+                if (is_inside_rect(stroke_rect, stroke->points[0])) {
                     mask_array[stroke_i] = true;
-                    break;
+                }
+            } else {
+                for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
+                    v2i a = sub2i(stroke->points[point_i    ], center);
+                    v2i b = sub2i(stroke->points[point_i + 1], center);
+
+                    b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
+                                   (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
+                                   (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
+                                   (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
+
+                    if (inside) {
+                        mask_array[stroke_i] = true;
+                        break;
+                    }
                 }
             }
+        } else {
+            milton_log("Discarging stroke %x because of invalid rect.\n", stroke);
         }
     }
     return mask_array;
