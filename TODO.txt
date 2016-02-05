@@ -7,19 +7,15 @@ To-Do
     - cursor overlay is black (black background?)
     - need to lose imgui focus when toggling visibility
 
--  Application
+- Application
     - Export
         - manipulate rectangle shape
         - set resolution
         - set aspect ratio
-        - Finish Linux and OSX versions of Dialogs and File I/O
         - Save / Load canvas
+        - Finish Linux and OSX versions of Dialogs and File I/O
     - Layers (w/engine support)
     - History slider
-    - App data directory
-        - Windows (AppData\Local\MiltonPaint)
-        - Unix (~/.config/milton_paint)
-        - What if directory exists?
     - Brush / Eraser
         - Image Button
     - ImGUI details:
@@ -50,8 +46,6 @@ To-Do
     - AVX backend??
     - Do not redraw when stroking over existing drawing? Only on top layer?
 - Robust save
-    - Platform-dependent robust save
-    - Keep backups
     - Future-proof. Marker for extensions post v1.0
 - Milton Library
     - Refactor. Write sample program.

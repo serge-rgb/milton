@@ -21,6 +21,7 @@ extern "C" {
 #include "platform.h"
 
 #include "common.h"
+#include "memory.h"
 
 
 // The returns value mean different things, but other than that, we're ok
@@ -141,6 +142,38 @@ void platform_dialog(char* info, char* title)
                  (LPCSTR)title,// _In_opt_ LPCTSTR lpCaption,
                  MB_OK//_In_     UINT    uType
                );
+}
+
+void platform_fname_at_exe(char* fname, i32 len)
+{
+    char* base = SDL_GetBasePath();  // SDL returns utf8 path!
+    char* tmp = mlt_calloc(1, len);
+    strncpy(tmp, fname, len);
+    fname[0] = '\0';
+    strncat(fname, base, len);
+    size_t pathlen = strlen(fname);
+    strncat(fname + pathlen, tmp, len-pathlen);
+    mlt_free(tmp) ;
+}
+
+void platform_move_file(char* src, char* dest)
+{
+    b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
+    if ( !ok ) {
+        platform_dialog("Could not move file", "Error");
+    }
+}
+
+void platform_fname_at_config(char* fname, i32 len)
+{
+    char* base = SDL_GetPrefPath(NULL, "milton");
+    char* tmp = mlt_calloc(1, len);
+    strncpy(tmp, fname, len);
+    fname[0] = '\0';
+    strncat(fname, base, len);
+    size_t pathlen = strlen(fname);
+    strncat(fname + pathlen, tmp, len-pathlen);
+    mlt_free(tmp) ;
 }
 
 int CALLBACK WinMain(

@@ -23,7 +23,7 @@ extern "C" {
 #include "milton_configuration.h"
 
 #define MILTON_USE_VAO          1
-#define RENDER_QUEUE_SIZE       (1 << 13)
+#define RENDER_QUEUE_SIZE       (1 << 20)
 #define STROKE_MAX_POINTS       2048
 #define MILTON_DEFAULT_SCALE    (1 << 10)
 #define NO_PRESSURE_INFO        -1.0f

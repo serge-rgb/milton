@@ -41,8 +41,11 @@ void    milton_die_gracefully(char* message);
 char*   platform_save_dialog();
 void    platform_dialog(char* info, char* title);
 
-
 void    platform_load_gl_func_pointers();
+
+void    platform_fname_at_exe(char* fname, i32 len);
+void    platform_move_file(char* src, char* dest);
+void    platform_fname_at_config(char* fname, i32 len);
 
 
 #if defined(_WIN32)

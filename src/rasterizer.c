@@ -1398,7 +1398,9 @@ static void produce_render_work(MiltonState* milton_state,
     RenderQueue* render_queue = milton_state->render_queue;
     i32 lock_err = SDL_LockMutex(milton_state->render_queue->mutex);
     if ( !lock_err ) {
-        render_queue->blockgroup_render_data[render_queue->index++] = blockgroup_render_data;
+        if ( render_queue->index < RENDER_QUEUE_SIZE ) {
+            render_queue->blockgroup_render_data[render_queue->index++] = blockgroup_render_data;
+        }
         SDL_UnlockMutex(render_queue->mutex);
     }
     else {

@@ -627,7 +627,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 // Debug
 #else
         f32 scale_factor = 1.5f;
-        i32 view_scale_limit = 1 << 18;
+        i32 view_scale_limit = 1 << 20;
 #endif
 
         // Some info on the reasoning behind choosing the values for different

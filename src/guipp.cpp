@@ -206,7 +206,10 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                             raster_w, raster_h);
                 if ( ImGui::InputInt("Scale up", &exporter->scale, 1, /*step_fast=*/2) ) {}
                 if ( exporter->scale <= 0 ) exporter->scale = 1;
-                if ( exporter->scale > milton_state->view->scale ) exporter->scale = milton_state->view->scale;
+                i32 max_scale = milton_state->view->scale / 2;
+                if ( exporter->scale > max_scale) {
+                    exporter->scale = max_scale;
+                }
                 ImGui::Text("Final image size: %dx%d\n", raster_w*exporter->scale, raster_h*exporter->scale);
 
                 if ( ImGui::Button("Export selection to image...") ) {

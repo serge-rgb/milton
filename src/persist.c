@@ -40,106 +40,181 @@ static u32 word_swap_memory_order(u32 word)
             (u32)(hhi);
 }
 
+// Forward decl.
+static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
+
+// Will allocate memory so that if the read fails, we will restore what was
+// originally in there.
+static b32 fread_checked(void* dst, size_t sz, size_t count, FILE* fd)
+{
+    return fread_checked_impl(dst, sz, count, fd, true);
+}
+
+static b32 fread_checked_nocopy(void* dst, size_t sz, size_t count, FILE* fd)
+{
+    return fread_checked_impl(dst, sz, count, fd, false);
+}
+
+static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy)
+{
+    b32 ok = false;
+
+    char* raw_data = NULL;
+    if ( copy ) {
+        raw_data = mlt_calloc(count, sz);
+        memcpy(raw_data, dst, count*sz);
+    }
+
+    size_t read = fread(dst, sz, count, fd);
+    if ( read == count ) {
+        if ( !ferror(fd) ) {
+            ok = true;
+        }
+    }
+
+    if ( copy  ) {
+        if ( !ok ) {
+            memcpy(dst, raw_data, count*sz);
+        }
+        mlt_free(raw_data);
+    }
+
+    return ok;
+}
+
+static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
+{
+    b32 ok = false;
+
+    size_t written = fwrite(data, sz, count, fd);
+    if (written == count) {
+        if ( !ferror(fd) ) {
+            ok = true;
+        }
+    }
+
+    return ok;
+}
+
+
 void milton_load(MiltonState* milton_state)
 {
     FILE* fd = fopen("MiltonPersist.mlt", "rb");
-    b32 valid = true;
+    b32 ok = true;  // fread check
+
     if ( fd ) {
         u32 milton_magic = (u32)-1;
-        fread(&milton_magic, sizeof(u32), 1, fd);
+        if ( ok ) { ok = fread_checked(&milton_magic, sizeof(u32), 1, fd); }
         u32 milton_binary_version = (u32)-1;
-        fread(&milton_binary_version, sizeof(u32), 1, fd);
+        if ( ok ) { ok = fread_checked(&milton_binary_version, sizeof(u32), 1, fd); }
 
-        assert (milton_binary_version == 1);
+        if (milton_binary_version != 1) {
+            ok = false;
+        }
 
-        fread(milton_state->view, sizeof(CanvasView), 1, fd);
+        if ( ok ) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
 
         milton_magic = word_swap_memory_order(milton_magic);
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
             assert (!"Magic number not found");
-            valid = false;
+            ok = false;
         }
 
-        if (valid) {
+        if ( ok ) {
             i32 num_strokes = -1;
-            fread(&num_strokes, sizeof(i32), 1, fd);
+            if ( ok ) { ok = fread_checked(&num_strokes, sizeof(i32), 1, fd); }
 
             assert (num_strokes >= 0);
 
-            for ( i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i ) {
+            for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
                 sb_push(milton_state->strokes, (Stroke){0});
                 Stroke* stroke = &sb_peek(milton_state->strokes);
-                fread(&stroke->brush, sizeof(Brush), 1, fd);
-                fread(&stroke->num_points, sizeof(i32), 1, fd);
+                if ( ok ) { ok = fread_checked(&stroke->brush, sizeof(Brush), 1, fd); }
+                if ( ok ) { ok = fread_checked(&stroke->num_points, sizeof(i32), 1, fd); }
                 if ( stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0 ) {
                     milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
-                    // Corrupt file. Avoid this read
-                    continue;       // Do not allocate, just move on.
+                    ok = false;
+                    sb_reset(milton_state->strokes);
+                    // Corrupt file. Avoid
+                    break;
                 }
-                // TODO: Loading a large drawing will result in many calloc
-                // calls that can be reduced in various ways. Check if this is a problem.
-                stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
-                stroke->points    = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
-
-                fread(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
-                fread(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
+                if ( ok ) {
+                    stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
+                    ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
+                    if ( !ok ) mlt_free(stroke->pressures);
+                }
+                if ( ok ) {
+                    stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
+                    ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
+                    if ( !ok ) mlt_free (stroke->points);
+                }
             }
 
-            fread(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
+            if ( ok ) { ok = fread_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
         }
         fclose(fd);
     }
+    if ( !ok ) {
+        platform_dialog("Tried to load a corrupted Milton file", "Error");
+    }
 }
 
-// TODO: Robust saving.
-//  - Save to temp file and swap!
-//  - Check all stdio function return values
 void milton_save(MiltonState* milton_state)
 {
     size_t num_strokes = sb_count(milton_state->strokes);
     Stroke* strokes = milton_state->strokes;
 
-#if 0
     int pid = (int)getpid();
     char tmp_fname[MAX_PATH] = {0};
     snprintf(tmp_fname, MAX_PATH, "milton_tmp.%d.mlt", pid);
 
-    platform_fname_at_exe(tmp_fname);
-#endif
+    platform_fname_at_exe(tmp_fname, MAX_PATH);
 
-    FILE* fd = fopen("MiltonPersist.mlt", "wb");
+    FILE* fd = fopen(tmp_fname, "wb");
 
-    if (!fd) {
+    b32 ok = true;
+
+    if ( fd ) {
+        u32 milton_magic = word_swap_memory_order(MILTON_MAGIC_NUMBER);
+
+        fwrite(&milton_magic, sizeof(u32), 1, fd);
+
+        u32 milton_binary_version = 1;
+
+        if ( ok && !fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd)) { ok = false; }
+        if ( ok && !fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd)) { ok = false; }
+        if ( ok && !fwrite_checked(&num_strokes, sizeof(i32), 1, fd)) { ok = false; }
+        if ( ok ) {
+            for ( size_t stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
+                Stroke* stroke = &strokes[stroke_i];
+                assert(stroke->num_points > 0);
+                if ( ok ) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
+                if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
+                if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
+                if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
+                if ( !ok ) {
+                    break;
+                }
+            }
+        } else {
+            ok = false;
+        }
+
+        if ( ok ) { ok = fwrite_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
+
+        fclose(fd);
+
+        if ( ok ) {
+            platform_move_file(tmp_fname, "MiltonPersist.mlt");
+        } else {
+            milton_log("[DEBUG]: Saving to temp file %s failed. \n", tmp_fname);
+        }
+    } else {
         assert (!"Could not create file");
         return;
     }
 
-    // Note: assuming little-endian.
-    u32 milton_magic = word_swap_memory_order(MILTON_MAGIC_NUMBER);
-
-    fwrite(&milton_magic, sizeof(u32), 1, fd);
-
-    u32 milton_binary_version = 1;
-
-    fwrite(&milton_binary_version, sizeof(u32), 1, fd);
-
-    fwrite(milton_state->view, sizeof(CanvasView), 1, fd);
-
-    fwrite(&num_strokes, sizeof(i32), 1, fd);
-
-    for (size_t stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
-        Stroke* stroke = &strokes[stroke_i];
-        assert(stroke->num_points > 0);
-        fwrite(&stroke->brush, sizeof(Brush), 1, fd);
-        fwrite(&stroke->num_points, sizeof(i32), 1, fd);
-        fwrite(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
-        fwrite(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
-    }
-
-    fwrite(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd);
-
-    fclose(fd);
 }
 
 // Called by stb_image
