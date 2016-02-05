@@ -235,9 +235,6 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
 // Our "game loop" inner function.
 void milton_update(MiltonState* milton_state, MiltonInput* input);
 
-// persist.cc
-void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h);
-
 void milton_try_quit(MiltonState* milton_state);
 
 #if defined(__cplusplus)
