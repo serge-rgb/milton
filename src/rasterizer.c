@@ -220,6 +220,32 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
     return false;
 }
 
+static b32 stroke_is_not_tiny(Stroke* stroke, CanvasView* view)
+{
+    b32 not_tiny = false;
+    Rect bounds = {
+        .left = 1 << 30,
+        .right = -1<<30,
+        .top = 1<<30,
+        .bottom = -1<<30,
+    };
+
+    for ( i32 i = 0; i < stroke->num_points; ++i ) {
+        v2i p = stroke->points[i];
+        if ( p.x < bounds.left ) bounds.left = p.x;
+        if ( p.y < bounds.top ) bounds.top = p.y;
+        if ( p.x > bounds.right ) bounds.right = p.x;
+        if ( p.y > bounds.bottom ) bounds.bottom = p.y;
+    }
+
+    bounds.top_left = canvas_to_raster(view, bounds.top_left);
+    bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
+
+    not_tiny = rect_area(bounds) > 4;
+
+    return not_tiny;
+}
+
 // Fills a linked list of strokes that this block needs to render.
 // Returns true if allocation succeeded, false if not.
 static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
@@ -254,33 +280,35 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             unclipped_stroke = &strokes[stroke_i];
         }
         assert(unclipped_stroke);
-        Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
-        ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
-                                                            enlarged_block, local_scale, reference_point);
-        // ALlocation failed.
-        // Handle this gracefully; this will cause more memory for render workers.
-        if ( !clipped_stroke ) {
-            *allocation_ok = false;
-            return NULL;
-        }
-
-        if ( clipped_stroke->num_points ) {
-            // Empty strokes ignored.
-            ClippedStroke* list_head = clipped_stroke;
-
-            list_head->next = stroke_list;
-            if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
-                                          clipped_stroke->clipped_points,
-                                          clipped_stroke->num_points,
-                                          clipped_stroke->brush,
-                                          view) ) {
-                // Set num_points = 0. Since we are ignoring empty strokes
-                // (which should not get here in the first place), we can use 0
-                // to denote a stroke that fills the block, saving ourselves a
-                // boolean struct member.
-                list_head->num_points = CLIPPED_STROKE_FILLS_BLOCK;
+        if ( stroke_is_not_tiny(unclipped_stroke, view) ) {
+            Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
+            ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
+                                                                enlarged_block, local_scale, reference_point);
+            // ALlocation failed.
+            // Handle this gracefully; this will cause more memory for render workers.
+            if ( !clipped_stroke ) {
+                *allocation_ok = false;
+                return NULL;
             }
-            stroke_list = list_head;
+
+            if ( clipped_stroke->num_points ) {
+                // Empty strokes ignored.
+                ClippedStroke* list_head = clipped_stroke;
+
+                list_head->next = stroke_list;
+                if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
+                                              clipped_stroke->clipped_points,
+                                              clipped_stroke->num_points,
+                                              clipped_stroke->brush,
+                                              view) ) {
+                    // Set num_points = 0. Since we are ignoring empty strokes
+                    // (which should not get here in the first place), we can use 0
+                    // to denote a stroke that fills the block, saving ourselves a
+                    // boolean struct member.
+                    list_head->num_points = CLIPPED_STROKE_FILLS_BLOCK;
+                }
+                stroke_list = list_head;
+            }
         }
     }
 
