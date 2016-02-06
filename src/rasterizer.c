@@ -221,25 +221,40 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
 static b32 stroke_is_not_tiny(Stroke* stroke, CanvasView* view)
 {
     b32 not_tiny = false;
-    Rect bounds = {
-        .left = 1 << 30,
-        .right = -1<<30,
-        .top = 1<<30,
-        .bottom = -1<<30,
-    };
+    i32 threshold_px = 4;
+    i32 threshold_px_rt = 2;  // the sqrt, for checking distance instead of area..
 
-    for ( i32 i = 0; i < stroke->num_points; ++i ) {
-        v2i p = stroke->points[i];
-        if ( p.x < bounds.left ) bounds.left = p.x;
-        if ( p.y < bounds.top ) bounds.top = p.y;
-        if ( p.x > bounds.right ) bounds.right = p.x;
-        if ( p.y > bounds.bottom ) bounds.bottom = p.y;
+    // Do a quick early check. If the first & last points are far apart, it is not tiny.
+    {
+        v2i first = canvas_to_raster(view, stroke->points[0]);
+        v2i last = canvas_to_raster(view, stroke->points[stroke->num_points - 1]);
+        i32 dist = (i32)manhattan_distance(first, last);
+        if ( dist > threshold_px_rt ) {
+            not_tiny = true;
+        }
     }
 
-    bounds.top_left = canvas_to_raster(view, bounds.top_left);
-    bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
+    if ( !not_tiny ) {
+        Rect bounds = {
+            .left = 1 << 30,
+            .right = -1<<30,
+            .top = 1<<30,
+            .bottom = -1<<30,
+        };
 
-    not_tiny = rect_area(bounds) > 4;
+        for ( i32 i = 0; i < stroke->num_points; ++i ) {
+            v2i p = stroke->points[i];
+            if ( p.x < bounds.left ) bounds.left = p.x;
+            if ( p.y < bounds.top ) bounds.top = p.y;
+            if ( p.x > bounds.right ) bounds.right = p.x;
+            if ( p.y > bounds.bottom ) bounds.bottom = p.y;
+        }
+
+        bounds.top_left = canvas_to_raster(view, bounds.top_left);
+        bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
+
+        not_tiny = rect_area(bounds) > threshold_px;
+    }
 
     return not_tiny;
 }

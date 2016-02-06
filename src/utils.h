@@ -56,6 +56,8 @@ f32 magnitude(v2f a);
 
 f32 distance(v2f a, v2f b);
 
+i32 manhattan_distance(v2i a, v2i b);
+
 f32 deegrees_to_radians(int d);
 
 f32 radians_to_degrees(f32 r);

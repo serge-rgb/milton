@@ -54,6 +54,12 @@ f32 distance(v2f a, v2f b)
     return dist;
 }
 
+i32 manhattan_distance(v2i a, v2i b)
+{
+   i32 dist = abs(a.x - b.x) + abs(a.y - b.y);
+   return dist;
+}
+
 f32 deegrees_to_radians(int d)
 {
     assert (0 <= d && d < 360);
