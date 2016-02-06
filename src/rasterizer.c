@@ -176,10 +176,8 @@ static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_po
             v2f ab = {(f32)(bx - ax), (f32)(by - ay)};
             f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
 
-
             // Note (v2i){0} is the center of the rect.
             v2f p  = closest_point_in_segment_f(ax, ay, bx, by, ab, mag_ab2, (v2i){0}, NULL);
-
 
             f32 pressure = min(p_a, p_b);
 
@@ -1720,61 +1718,159 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
     }
 }
 
-void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
+void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2i pan_delta)
 {
     // `raster_limits` is the part of the screen (in pixels) that should be updated
     // with what's on the canvas.
     Rect raster_limits = { 0 };
 
-    // Figure out what `raster_limits` should be.
-    {
-        if ( check_flag(render_flags, MiltonRenderFlags_FULL_REDRAW) ) {
-            raster_limits.left = 0;
-            raster_limits.right = milton_state->view->screen_size.w;
-            raster_limits.top = 0;
-            raster_limits.bottom = milton_state->view->screen_size.h;
-            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
-        } else if ( milton_state->working_stroke.num_points > 1 ) {
-            Stroke* stroke = &milton_state->working_stroke;
-
-            raster_limits = bounding_box_for_last_n_points(stroke, 20);
-            raster_limits = canvas_rect_to_raster_rect(milton_state->view, raster_limits);
-            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
-            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
-            raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
-
-        } else if ( milton_state->working_stroke.num_points == 1 ) {
-            Stroke* stroke = &milton_state->working_stroke;
-            v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
-            i32 raster_radius = stroke->brush.radius / milton_state->view->scale;
-            raster_radius = max(raster_radius, milton_state->block_width);
-            raster_limits.left   = -raster_radius + point.x;
-            raster_limits.right  = raster_radius  + point.x;
-            raster_limits.top    = -raster_radius + point.y;
-            raster_limits.bottom = raster_radius  + point.y;
-            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
-            raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
-        }
-
-        if ( check_flag( render_flags, MiltonRenderFlags_FINISHED_STROKE )) {
-            size_t index = sb_count(milton_state->strokes) - 1;
-            Rect canvas_rect = bounding_box_for_last_n_points(&milton_state->strokes[index], 4);
-            raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
-            raster_limits = rect_stretch(raster_limits, milton_state->block_width);
-            raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
-        }
-    }
-
+    //  - If the screen is panning, copy the part of the buffer we can reuse.
+    //  - For whatever reason, we might be asked a full redraw.
+    //  - If we don't get a full redraw, then figure out what to draw based on the
+    //      current working stroke.
 
 #if MILTON_ENABLE_PROFILING
-    // Draw everything every frame when profiling.
-    {
+        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+#endif
+
+    if ( check_flag(render_flags, MiltonRenderFlags_PAN_COPY) ) {
+        v2i dst = {0};  // Starting point to copy canvas buffer
+        if ( pan_delta.x > 0 ) {
+            dst.x = pan_delta.x;
+        }
+        if ( pan_delta.y > 0 ) {
+            dst.y = pan_delta.y;
+        }
+
+        v2i src = {0};  // Starting point of source canvas buffer.
+        if ( pan_delta.x < 0 ) {
+            src.x = -pan_delta.x;
+        }
+        if ( pan_delta.y < 0 ) {
+            src.y = -pan_delta.y;
+        }
+
+        CanvasView* view = milton_state->view;
+
+        // Dimensions of rectangle
+        v2i size = {
+            view->screen_size.w - abs(pan_delta.x),
+            view->screen_size.h - abs(pan_delta.y),
+        };
+
+        // Copy the canvas buffer to the raster buffer. We will use the raster
+        // buffer as temporary storage. It will be rewritten later.
+        memcpy(milton_state->raster_buffer, milton_state->canvas_buffer,
+               milton_state->bytes_per_pixel * view->screen_size.w * view->screen_size.h);
+
+        i32 bpp = milton_state->bytes_per_pixel;
+        u32* pixels_src = ((u32*)milton_state->raster_buffer) + (src.y*view->screen_size.w + src.x);
+        u32* pixels_dst = ((u32*)milton_state->canvas_buffer) + (dst.y*view->screen_size.w + dst.x);
+
+        for ( int j = 0; j < size.h; ++j ) {
+            for ( int i = 0; i < size.w; ++i ) {
+                *pixels_dst++ = *pixels_src++;
+            }
+            pixels_dst += view->screen_size.w - size.w;
+            pixels_src += view->screen_size.w - size.w;
+        }
+
+        // Now, call render canvas on two new rectangles representing the 'dirty' area.
+        //
+        //  +-----------.---+
+        //  |           .   |
+        //  |  copied   . V |
+        //  |............   |  V: Vertical rectangle
+        //  |    H      .   |  H: Horizontal rectangle
+        //  +---------------+
+
+
+        i32 pad = milton_state->block_width;
+
+        Rect vertical = {0};
+        Rect horizontal = {0};
+
+        horizontal.left  = 0;
+        horizontal.right = view->screen_size.w;
+
+        vertical.top = 0;
+        vertical.bottom = view->screen_size.h;
+
+        if ( pan_delta.x > 0 ) {
+            vertical.left  = 0;
+            vertical.right = pan_delta.x + pad;
+        } else {
+            vertical.left  = view->screen_size.w + pan_delta.x - pad;
+            vertical.right = view->screen_size.w;
+        }
+
+        if ( pan_delta.y > 0 ) {
+            horizontal.top    = 0;
+            horizontal.bottom = pan_delta.y + pad;
+        } else if ( pan_delta.y < 0 ) {
+            horizontal.top    = view->screen_size.h + pan_delta.y - pad;
+            horizontal.bottom = view->screen_size.h;
+        }
+
+        milton_log("Got a pan delta of %d, %d\n", pan_delta.x, pan_delta.y);
+        // Extend the rects to cover at least one block
+        {
+            int vw = vertical.right - vertical.left;
+            int vh = vertical.bottom - vertical.top;
+            int hw = horizontal.right - horizontal.left;
+            int hh = horizontal.bottom - horizontal.top;
+            if (vw > 0 && vw < pad) {
+                vw = pad;
+            }
+            if (vh > 0 && vh < pad) {
+                vw = pad;
+            }
+            if (hw > 0 && vw < pad) {
+                vw = pad;
+            }
+            if (hh > 0 && hh < pad) {
+                vw = pad;
+            }
+        }
+
+
+        render_canvas(milton_state, horizontal);
+        render_canvas(milton_state, vertical);
+    }
+
+    if ( check_flag(render_flags, MiltonRenderFlags_FULL_REDRAW) ) {
         raster_limits.left = 0;
         raster_limits.right = milton_state->view->screen_size.w;
         raster_limits.top = 0;
         raster_limits.bottom = milton_state->view->screen_size.h;
+        raster_limits = rect_stretch(raster_limits, milton_state->block_width);
+    } else if ( milton_state->working_stroke.num_points > 1 ) {
+        Stroke* stroke = &milton_state->working_stroke;
+
+        raster_limits = bounding_box_for_last_n_points(stroke, 20);
+        raster_limits = canvas_rect_to_raster_rect(milton_state->view, raster_limits);
+        raster_limits = rect_stretch(raster_limits, milton_state->block_width);
+        raster_limits = rect_stretch(raster_limits, milton_state->block_width);
+        raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
+
+    } else if ( milton_state->working_stroke.num_points == 1 ) {
+        Stroke* stroke = &milton_state->working_stroke;
+        v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
+        i32 raster_radius = stroke->brush.radius / milton_state->view->scale;
+        raster_radius = max(raster_radius, milton_state->block_width);
+        raster_limits.left   = -raster_radius + point.x;
+        raster_limits.right  = raster_radius  + point.x;
+        raster_limits.top    = -raster_radius + point.y;
+        raster_limits.bottom = raster_radius  + point.y;
+        raster_limits = rect_stretch(raster_limits, milton_state->block_width);
+        raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
+    } else if ( check_flag( render_flags, MiltonRenderFlags_FINISHED_STROKE )) {
+        size_t index = sb_count(milton_state->strokes) - 1;
+        Rect canvas_rect = bounding_box_for_last_n_points(&milton_state->strokes[index], 4);
+        raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
+        raster_limits = rect_stretch(raster_limits, milton_state->block_width);
+        raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
     }
-#endif
 
     if (rect_is_valid(raster_limits)) {
         render_canvas(milton_state, raster_limits);
@@ -1782,14 +1878,10 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags)
         // Copy the whole thing. Makes gui elements redraw fast.
         // Disabling this would mean keeping track of GUI updates for
         // canvas redrawing.
-#if 1
-        {
-            raster_limits.left = 0;
-            raster_limits.right = milton_state->view->screen_size.w;
-            raster_limits.top = 0;
-            raster_limits.bottom = milton_state->view->screen_size.h;
-        }
-#endif
+        raster_limits.left = 0;
+        raster_limits.right = milton_state->view->screen_size.w;
+        raster_limits.top = 0;
+        raster_limits.bottom = milton_state->view->screen_size.h;
         copy_canvas_to_raster_buffer(milton_state, raster_limits);
 
         render_gui(milton_state, raster_limits, render_flags);

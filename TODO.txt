@@ -35,7 +35,6 @@ To-Do
 - Translation
     - Write a system for easy translation. At least do it for Spanish.
 - Performance:
-    - memcpy when Panning (most users will benefit hugely)
     - cache of stroke bounding rects
     - Adaptive resolution scaling
     - Undo/Redo: Only redraw necessary area.

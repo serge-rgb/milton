@@ -230,6 +230,7 @@ int milton_main()
                     platform_input.is_pointer_down = true;
                     if ( platform_input.is_panning ) {
                         platform_input.pan_start = { event.button.x, event.button.y };
+                        platform_input.pan_point = platform_input.pan_start;  // No huge pan_delta at beginning of pan.
                     }
                 }
                 break;
@@ -265,9 +266,6 @@ int milton_main()
                             milton_input.points[num_point_results++] = input_point;
                         } else if ( platform_input.is_panning ) {
                             platform_input.pan_point = input_point;
-
-                            set_flag(input_flags, MiltonInputFlags_FAST_DRAW);
-                            set_flag(input_flags, MiltonInputFlags_FULL_REFRESH);
                         }
                         unset_flag(input_flags, MiltonInputFlags_HOVERING);
                     } else {
@@ -437,7 +435,7 @@ int milton_main()
             if (should_quit) {
                 break;
             }
-        }
+        }  // ==== End of SDL event loop
 
         if ( platform_input.is_pointer_down && check_flag(input_flags, MiltonInputFlags_HOVERING) ) {
             milton_input.hover_point = {-100, -100};
@@ -465,9 +463,15 @@ int milton_main()
 
         milton_gui_tick(&milton_input, milton_state);
 
-        if (platform_input.is_panning) {
-            set_flag(input_flags, MiltonInputFlags_PANNING);
-            num_point_results = 0;
+        // Clear pan delta if we are zooming
+        if ( milton_input.scale != 0 ) {
+            milton_input.pan_delta = {};
+        } else {
+            if (platform_input.is_panning) {
+                set_flag(input_flags, MiltonInputFlags_PANNING);
+                set_flag(input_flags, MiltonInputFlags_FAST_DRAW);
+                num_point_results = 0;
+            }
         }
 
 #if 0

@@ -510,12 +510,10 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
         // Add delta to pan vector
         v2i pan_vector = add2i(milton_state->view->pan_vector, (scale2i(pan_delta, milton_state->view->scale)));
 
-        if ( pan_vector.x > milton_state->view->canvas_radius_limit ||
-                pan_vector.x <= -milton_state->view->canvas_radius_limit ) {
+        if ( pan_vector.x > milton_state->view->canvas_radius_limit || pan_vector.x <= -milton_state->view->canvas_radius_limit ) {
             pan_vector.x = milton_state->view->pan_vector.x;
         }
-        if ( pan_vector.y > milton_state->view->canvas_radius_limit ||
-                pan_vector.y <= -milton_state->view->canvas_radius_limit ) {
+        if ( pan_vector.y > milton_state->view->canvas_radius_limit || pan_vector.y <= -milton_state->view->canvas_radius_limit ) {
             pan_vector.y = milton_state->view->pan_vector.y;
         }
         milton_state->view->pan_vector = pan_vector;
@@ -603,7 +601,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( do_fast_draw ) {
-        milton_state->view->downsampling_factor = 2;
+        milton_state->view->downsampling_factor = 4;  // IMPORTANT: Must be a power of two!
         milton_state->request_quality_redraw = true;
     } else {
         milton_state->view->downsampling_factor = 1;
@@ -669,11 +667,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_update_brushes(milton_state);
-    } else if (check_flag(input->flags, MiltonInputFlags_PANNING)) {
+    } else if ( check_flag(input->flags, MiltonInputFlags_PANNING )) {
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
-        // TODO: What happens with request_quality_redraw?
-        set_flag(render_flags, MiltonRenderFlags_PAN_COPY);
+        if ( !equ2i(input->pan_delta, (v2i){0}) ) {
+            set_flag(render_flags, MiltonRenderFlags_PAN_COPY);
+        }
     }
 
     if ( check_flag(input->flags, MiltonInputFlags_CHANGE_MODE) ) {
@@ -810,7 +809,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
-    milton_render(milton_state, render_flags);
+    milton_render(milton_state, render_flags, input->pan_delta);
 
 cleanup:
     if ( should_save ) {
