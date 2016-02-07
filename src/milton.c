@@ -561,7 +561,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             (check_flag(input->flags, MiltonInputFlags_REDO));
 
     MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
-    b32 do_fast_draw               = false;
 
     if ( !milton_state->running ) {
         // Someone tried to kill milton from outside the update. Make sure we save.
@@ -593,22 +592,17 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
         milton_state->worker_needs_memory = false;
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
-        do_fast_draw = true;
     }
 
-    if (check_flag(input->flags, MiltonInputFlags_FAST_DRAW)) {
-        do_fast_draw = true;
+    if ( milton_state->request_quality_redraw ) {
+        milton_state->view->downsampling_factor = 1;  // See how long it takes to redraw at full quality
+        milton_state->request_quality_redraw = false;
+        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
     }
 
-    if ( do_fast_draw ) {
-        milton_state->view->downsampling_factor = 4;  // IMPORTANT: Must be a power of two!
-        milton_state->request_quality_redraw = true;
-    } else {
-        milton_state->view->downsampling_factor = 1;
-        if ( milton_state->request_quality_redraw ) {
-            milton_state->request_quality_redraw = false;
-            set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
-        }
+    if ( check_flag(input->flags, MiltonInputFlags_FAST_DRAW) ) {
+        set_flag(render_flags, MiltonRenderFlags_DRAW_ITERATIVELY);
+        milton_state->request_quality_redraw = true;  // Next update loop.
     }
 
     if (check_flag(input->flags, MiltonInputFlags_FULL_REFRESH)) {

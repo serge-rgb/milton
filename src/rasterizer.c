@@ -1517,6 +1517,27 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
     PROFILE_PUSH(render_canvas);
 }
 
+// Call render_canvas with increasing quality until it is too slow.
+static void render_canvas_iteratively(MiltonState* milton_state, Rect raster_limits)
+{
+    CanvasView* view = milton_state->view;
+    i32 original_df = view->downsampling_factor;
+
+
+    i32 time_ms = 0;
+    view->downsampling_factor = 4;
+
+    while ( view->downsampling_factor > 1 && time_ms < 15 ) {
+        i32 start_ms = SDL_GetTicks();
+        render_canvas(milton_state, raster_limits);
+        time_ms = SDL_GetTicks() - start_ms;
+
+        view->downsampling_factor /= 2;
+    }
+
+    view->downsampling_factor = original_df;
+}
+
 static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* view)
 {
     v4f background_color =
@@ -1827,7 +1848,6 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
             horizontal.bottom = view->screen_size.h;
         }
 
-        milton_log("Got a pan delta of %d, %d\n", pan_delta.x, pan_delta.y);
         // Extend the rects to cover at least one block
         {
             int vw = vertical.right - vertical.left;
@@ -1849,8 +1869,8 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
         }
 
 
-        render_canvas(milton_state, horizontal);
-        render_canvas(milton_state, vertical);
+        render_canvas_iteratively(milton_state, horizontal);
+        render_canvas_iteratively(milton_state, vertical);
     }
 
     if ( check_flag(render_flags, MiltonRenderFlags_FULL_REDRAW) ) {
@@ -1888,7 +1908,11 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
     }
 
     if (rect_is_valid(raster_limits)) {
-        render_canvas(milton_state, raster_limits);
+        if ( check_flag(render_flags, MiltonRenderFlags_DRAW_ITERATIVELY) ) {
+            render_canvas_iteratively(milton_state, raster_limits);
+        } else {
+            render_canvas(milton_state, raster_limits);
+        }
 
         // Copy the whole thing. Makes gui elements redraw fast.
         // Disabling this would mean keeping track of GUI updates for

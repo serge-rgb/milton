@@ -168,6 +168,7 @@ int milton_main()
 
         SDL_Event event;
         b32 got_tablet_point_input = false;
+        b32 stopped_panning = false;
 
         i32 input_flags = (i32)milton_input.flags;
 
@@ -250,6 +251,7 @@ int milton_main()
                     } else if (platform_input.is_panning) {
                         if (!platform_input.is_space_down) {
                             platform_input.is_panning = false;
+                            stopped_panning = true;
                         }
                     }
                     platform_input.is_pointer_down = false;
@@ -390,6 +392,7 @@ int milton_main()
                     if (!platform_input.is_pointer_down)
                     {
                         platform_input.is_panning = false;
+                        stopped_panning = true;
                     }
                 }
             } break;
@@ -437,6 +440,10 @@ int milton_main()
             }
         }  // ==== End of SDL event loop
 
+        if ( stopped_panning ) {
+            milton_state->request_quality_redraw = true;
+        }
+
         if ( platform_input.is_pointer_down && check_flag(input_flags, MiltonInputFlags_HOVERING) ) {
             milton_input.hover_point = {-100, -100};
         }
@@ -469,7 +476,6 @@ int milton_main()
         } else {
             if (platform_input.is_panning) {
                 set_flag(input_flags, MiltonInputFlags_PANNING);
-                set_flag(input_flags, MiltonInputFlags_FAST_DRAW);
                 num_point_results = 0;
             }
         }

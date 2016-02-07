@@ -171,7 +171,6 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 if ( ImGui::ColorEdit3("Background Color", milton_state->view->background_color.d) ) {
                     i32 f = input->flags;
                     set_flag(f, (i32)MiltonInputFlags_FULL_REFRESH);
-                    set_flag(f, (i32)MiltonInputFlags_FAST_DRAW);
                     input->flags = (MiltonInputFlags)f;
                 }
                 if ( closed ) {
