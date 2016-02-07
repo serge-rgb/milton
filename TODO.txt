@@ -35,6 +35,7 @@ To-Do
 - Translation
     - Write a system for easy translation. At least do it for Spanish.
 - Performance:
+    - Input gathering thread.
     - Undo/Redo: Only redraw necessary area.
     - Amdahl's curse... Parallelize GUI rendering
     - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)

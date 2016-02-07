@@ -1523,16 +1523,14 @@ static void render_canvas_iteratively(MiltonState* milton_state, Rect raster_lim
     CanvasView* view = milton_state->view;
     i32 original_df = view->downsampling_factor;
 
-
     i32 time_ms = 0;
-    view->downsampling_factor = 4;
+    view->downsampling_factor = 8;  // Starts at 4, the loop divides at the start.
 
     while ( view->downsampling_factor > 1 && time_ms < 15 ) {
+        view->downsampling_factor /= 2;
         i32 start_ms = SDL_GetTicks();
         render_canvas(milton_state, raster_limits);
-        time_ms = SDL_GetTicks() - start_ms;
-
-        view->downsampling_factor /= 2;
+        time_ms += SDL_GetTicks() - start_ms;
     }
 
     view->downsampling_factor = original_df;
@@ -1770,23 +1768,13 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 #endif
 
     if ( check_flag(render_flags, MiltonRenderFlags_PAN_COPY) ) {
-        v2i dst = {0};  // Starting point to copy canvas buffer
-        if ( pan_delta.x > 0 ) {
-            dst.x = pan_delta.x;
-        }
-        if ( pan_delta.y > 0 ) {
-            dst.y = pan_delta.y;
-        }
-
-        v2i src = {0};  // Starting point of source canvas buffer.
-        if ( pan_delta.x < 0 ) {
-            src.x = -pan_delta.x;
-        }
-        if ( pan_delta.y < 0 ) {
-            src.y = -pan_delta.y;
-        }
-
         CanvasView* view = milton_state->view;
+
+        // Copy the canvas buffer to the raster buffer. We will use the raster
+        // buffer as temporary storage. It will be rewritten later.
+        memcpy(milton_state->raster_buffer, milton_state->canvas_buffer,
+               milton_state->bytes_per_pixel * view->screen_size.w * view->screen_size.h);
+
 
         // Dimensions of rectangle
         v2i size = {
@@ -1794,28 +1782,11 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
             view->screen_size.h - abs(pan_delta.y),
         };
 
-        // Copy the canvas buffer to the raster buffer. We will use the raster
-        // buffer as temporary storage. It will be rewritten later.
-        memcpy(milton_state->raster_buffer, milton_state->canvas_buffer,
-               milton_state->bytes_per_pixel * view->screen_size.w * view->screen_size.h);
-
-        i32 bpp = milton_state->bytes_per_pixel;
-        u32* pixels_src = ((u32*)milton_state->raster_buffer) + (src.y*view->screen_size.w + src.x);
-        u32* pixels_dst = ((u32*)milton_state->canvas_buffer) + (dst.y*view->screen_size.w + dst.x);
-
-        for ( int j = 0; j < size.h; ++j ) {
-            for ( int i = 0; i < size.w; ++i ) {
-                *pixels_dst++ = *pixels_src++;
-            }
-            pixels_dst += view->screen_size.w - size.w;
-            pixels_src += view->screen_size.w - size.w;
-        }
-
-        // Now, call render canvas on two new rectangles representing the 'dirty' area.
+        // Call render canvas on two new rectangles representing the 'dirty' area.
         //
         //  +-----------.---+
         //  |           .   |
-        //  |  copied   . V |
+        //  | memcpy    . V |
         //  |............   |  V: Vertical rectangle
         //  |    H      .   |  H: Horizontal rectangle
         //  +---------------+
@@ -1871,6 +1842,35 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 
         render_canvas_iteratively(milton_state, horizontal);
         render_canvas_iteratively(milton_state, vertical);
+
+        v2i dst = {0};  // Starting point to copy canvas buffer
+        if ( pan_delta.x > 0 ) {
+            dst.x = pan_delta.x;
+        }
+        if ( pan_delta.y > 0 ) {
+            dst.y = pan_delta.y;
+        }
+
+        v2i src = {0};  // Starting point of source canvas buffer.
+        if ( pan_delta.x < 0 ) {
+            src.x = -pan_delta.x;
+        }
+        if ( pan_delta.y < 0 ) {
+            src.y = -pan_delta.y;
+        }
+
+        i32 bpp = milton_state->bytes_per_pixel;
+        u32* pixels_src = ((u32*)milton_state->raster_buffer) + (src.y*view->screen_size.w + src.x);
+        u32* pixels_dst = ((u32*)milton_state->canvas_buffer) + (dst.y*view->screen_size.w + dst.x);
+
+        for ( int j = 0; j < size.h; ++j ) {
+            for ( int i = 0; i < size.w; ++i ) {
+                *pixels_dst++ = *pixels_src++;
+            }
+            pixels_dst += view->screen_size.w - size.w;
+            pixels_src += view->screen_size.w - size.w;
+        }
+
     }
 
     if ( check_flag(render_flags, MiltonRenderFlags_FULL_REDRAW) ) {
