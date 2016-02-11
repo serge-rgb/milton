@@ -550,6 +550,32 @@ void milton_try_quit(MiltonState* milton_state)
     milton_state->running = false;
 }
 
+void milton_expand_render_memory(MiltonState* milton_state)
+{
+    if ( milton_state->worker_needs_memory ) {
+        size_t prev_memory_value = milton_state->worker_memory_size;
+        milton_state->worker_memory_size *= 2;
+        size_t needed_size = milton_state->worker_memory_size;
+
+        for (int i = 0; i < milton_state->num_render_workers; ++i) {
+            if (milton_state->render_worker_arenas[i].ptr != NULL) {
+                mlt_free(milton_state->render_worker_arenas[i].ptr);
+            }
+            u8* new_memory = (u8*)mlt_calloc(1, needed_size);
+            milton_state->render_worker_arenas[i] = arena_init(new_memory, needed_size);
+            if (milton_state->render_worker_arenas[i].ptr == NULL) {
+                milton_die_gracefully("Failed to realloc worker arena\n");
+            }
+        }
+
+        milton_log("[DEBUG] Assigning more memory per worker. From %lu to %lu\n",
+                   prev_memory_value,
+                   milton_state->worker_memory_size);
+
+        milton_state->worker_needs_memory = false;
+    }
+
+}
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
     // TODO: Save redo point?
@@ -569,28 +595,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( milton_state->worker_needs_memory ) {
-        size_t prev_memory_value = milton_state->worker_memory_size;
-        milton_state->worker_memory_size *= 2;
-        size_t needed_size = milton_state->worker_memory_size;
-
-        for (int i = 0; i < milton_state->num_render_workers; ++i)
-        {
-            if (milton_state->render_worker_arenas[i].ptr != NULL) {
-                mlt_free(milton_state->render_worker_arenas[i].ptr);
-            }
-            u8* new_memory = (u8*)mlt_calloc(1, needed_size);
-            milton_state->render_worker_arenas[i] = arena_init(new_memory, needed_size);
-            if (milton_state->render_worker_arenas[i].ptr == NULL)
-            {
-                milton_die_gracefully("Failed to realloc worker arena\n");
-            }
-        }
-
-        milton_log("[DEBUG] Assigning more memory per worker. From %lu to %lu\n",
-                   prev_memory_value,
-                   milton_state->worker_memory_size);
-
-        milton_state->worker_needs_memory = false;
+        milton_expand_render_memory(milton_state);
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
     }
 

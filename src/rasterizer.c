@@ -1879,7 +1879,8 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
         raster_limits.top = 0;
         raster_limits.bottom = milton_state->view->screen_size.h;
         raster_limits = rect_stretch(raster_limits, milton_state->block_width);
-    } else if ( milton_state->working_stroke.num_points > 1 ) {
+    }
+    else if ( milton_state->working_stroke.num_points > 1 ) {
         Stroke* stroke = &milton_state->working_stroke;
 
         raster_limits = bounding_box_for_last_n_points(stroke, 20);
@@ -1888,7 +1889,8 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
         raster_limits = rect_stretch(raster_limits, milton_state->block_width);
         raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
 
-    } else if ( milton_state->working_stroke.num_points == 1 ) {
+    }
+    else if ( milton_state->working_stroke.num_points == 1 ) {
         Stroke* stroke = &milton_state->working_stroke;
         v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
         i32 raster_radius = stroke->brush.radius / milton_state->view->scale;
@@ -1899,7 +1901,8 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
         raster_limits.bottom = raster_radius  + point.y;
         raster_limits = rect_stretch(raster_limits, milton_state->block_width);
         raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
-    } else if ( check_flag( render_flags, MiltonRenderFlags_FINISHED_STROKE )) {
+    }
+    else if ( check_flag( render_flags, MiltonRenderFlags_FINISHED_STROKE )) {
         size_t index = sb_count(milton_state->strokes) - 1;
         Rect canvas_rect = bounding_box_for_last_n_points(&milton_state->strokes[index], 4);
         raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
@@ -1969,9 +1972,10 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     raster_limits.right  = buf_w;
     raster_limits.bottom = buf_h;
 
-    // Note:
-    // Render canvas must be a blocking function!
-    render_canvas(milton_state, raster_limits);
+    // render_canvas will set worker_needs_memory to true if it fails to render.
+    while ( render_canvas(milton_state, raster_limits), milton_state->worker_needs_memory ) {
+        milton_expand_render_memory(milton_state);
+    }
 
     // Unset
     milton_state->canvas_buffer = saved_buffer;

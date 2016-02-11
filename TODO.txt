@@ -6,6 +6,7 @@ To-Do
     - :)
     - cursor overlay is black (black background?)
     - need to lose imgui focus when toggling visibility
+    - image exported even if renderer requests memory
 
 - Application
     - Export

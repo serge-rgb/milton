@@ -235,6 +235,9 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
 // Our "game loop" inner function.
 void milton_update(MiltonState* milton_state, MiltonInput* input);
 
+// If memory has been requested after rendering failed, this function will realloc.
+void milton_expand_render_memory(MiltonState* milton_state);
+
 void milton_try_quit(MiltonState* milton_state);
 
 #if defined(__cplusplus)
