@@ -843,10 +843,44 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             _mm_store_ps(pressures, pressure4);
                             _mm_store_ps(masks, mask);
 
-                            // Two versions of the "gather" step. A "smart" version (in quotes because there is probably a better, smarter way of doing it) and a naive loop.
-                            // the naive loop used to be faster (before
-                            // aligning the stack variables o__o ). Now they
-                            // are practically the same.
+                            // Two versions of the "gather" step. A "smart" version (in quotes
+                            // because there is probably a better, smarter way of doing it) and a
+                            // "dumb" naive loop.  The dumb loop is just slightly faster. Here is
+                            // the output from a test run, with a very intricate drawing:
+                            /**
+                              (2016-02-14) Note that the gather step gets faster, and the inner loop
+                              measuerments don't change that much. This may have something to do
+                              with the dumb loop freeing the SIMD unit for other work? No idea.
+
+                              tl;dr : "dumb" loop is 1.08 times faster.
+
+                              Note that the
+                                        SMART
+
+                                        ===== Profiler output ==========
+                                          render_canvas:         ncalls:              10, clocks_per_call:      2101567716
+                                                   sse2:         ncalls:           10000, clocks_per_call:        17619835
+                                               preamble:         ncalls:           10000, clocks_per_call:          200762
+                                                   load:         ncalls:       453752510, clocks_per_call:              76
+                                                   work:         ncalls:       453752510, clocks_per_call:              87
+                                                 gather:         ncalls:       453752510, clocks_per_call:              45
+                                               sampling:         ncalls:       237962700, clocks_per_call:              99
+                                        total_work_loop:         ncalls:           10000, clocks_per_call:        17418932
+                                        ================================
+
+                                        DUMB
+
+                                        ===== Profiler output ==========
+                                          render_canvas:         ncalls:              10, clocks_per_call:      1938976982
+                                                   sse2:         ncalls:           10000, clocks_per_call:        17452576
+                                               preamble:         ncalls:           10000, clocks_per_call:          204913
+                                                   load:         ncalls:       453752510, clocks_per_call:              77
+                                                   work:         ncalls:       453752510, clocks_per_call:              69
+                                                 gather:         ncalls:       453752510, clocks_per_call:              54
+                                               sampling:         ncalls:       237962700, clocks_per_call:             103
+                                        total_work_loop:         ncalls:           10000, clocks_per_call:        17247544
+                                        ================================
+                              **/
 #if 1
                             __m128 max_pos4 = _mm_set_ps1(FLT_MAX);
                             __m128 min_neg4 = _mm_set_ps1(-FLT_MAX);
