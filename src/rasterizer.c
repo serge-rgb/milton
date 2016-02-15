@@ -1394,41 +1394,41 @@ int renderer_worker_thread(void* data)
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;
     i32 id = params->worker_id;
-    RenderQueue* render_queue = milton_state->render_queue;
+    RenderStack* render_stack = milton_state->render_stack;
 
     for ( ;; ) {
-        int err = SDL_SemWait(render_queue->work_available);
+        int err = SDL_SemWait(render_stack->work_available);
         if ( err != 0 ) {
             milton_fatal("Failure obtaining semaphore inside render worker");
         }
-        err = SDL_LockMutex(render_queue->mutex);
+        err = SDL_LockMutex(render_stack->mutex);
         if ( err != 0 ) {
             milton_fatal("Failure locking render queue mutex");
         }
         i32 index = -1;
         BlockgroupRenderData blockgroup_data = { 0 };
         {
-            index = --render_queue->index;
+            index = --render_stack->index;
             assert (index >= 0);
-            assert (index <  RENDER_QUEUE_SIZE);
-            blockgroup_data = render_queue->blockgroup_render_data[index];
-            SDL_UnlockMutex(render_queue->mutex);
+            assert (index <  RENDER_STACK_SIZE);
+            blockgroup_data = render_stack->blockgroup_render_data[index];
+            SDL_UnlockMutex(render_stack->mutex);
         }
 
         assert (index >= 0);
 
         b32 allocation_ok = render_blockgroup(milton_state,
                                               &milton_state->render_worker_arenas[id],
-                                              render_queue->blocks,
-                                              blockgroup_data.block_start, render_queue->num_blocks,
-                                              render_queue->canvas_buffer);
+                                              render_stack->blocks,
+                                              blockgroup_data.block_start, render_stack->num_blocks,
+                                              render_stack->canvas_buffer);
         if ( !allocation_ok ) {
             milton_state->worker_needs_memory = true;
         }
 
         arena_reset(&milton_state->render_worker_arenas[id]);
 
-        SDL_SemPost(render_queue->completed_semaphore);
+        SDL_SemPost(render_stack->completed_semaphore);
     }
 }
 
@@ -1436,19 +1436,19 @@ int renderer_worker_thread(void* data)
 static void produce_render_work(MiltonState* milton_state,
                                 BlockgroupRenderData blockgroup_render_data)
 {
-    RenderQueue* render_queue = milton_state->render_queue;
-    i32 lock_err = SDL_LockMutex(milton_state->render_queue->mutex);
+    RenderStack* render_stack = milton_state->render_stack;
+    i32 lock_err = SDL_LockMutex(milton_state->render_stack->mutex);
     if ( !lock_err ) {
-        if ( render_queue->index < RENDER_QUEUE_SIZE ) {
-            render_queue->blockgroup_render_data[render_queue->index++] = blockgroup_render_data;
+        if ( render_stack->index < RENDER_STACK_SIZE ) {
+            render_stack->blockgroup_render_data[render_stack->index++] = blockgroup_render_data;
         }
-        SDL_UnlockMutex(render_queue->mutex);
+        SDL_UnlockMutex(render_stack->mutex);
     }
     else {
         assert (!"Lock failure not handled");
     }
 
-    SDL_SemPost(render_queue->work_available);
+    SDL_SemPost(render_stack->work_available);
 }
 #endif
 
@@ -1466,11 +1466,11 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
         milton_fatal("Not handling this error.");
     }
 
-    RenderQueue* render_queue = milton_state->render_queue;
+    RenderStack* render_stack = milton_state->render_stack;
     {
-        render_queue->blocks = blocks;
-        render_queue->num_blocks = (i32)sb_count(blocks);
-        render_queue->canvas_buffer = (u32*)milton_state->canvas_buffer;
+        render_stack->blocks = blocks;
+        render_stack->num_blocks = (i32)sb_count(blocks);
+        render_stack->canvas_buffer = (u32*)milton_state->canvas_buffer;
     }
 
     const i32 blocks_per_blockgroup = milton_state->blocks_per_blockgroup;
@@ -1505,7 +1505,7 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
     // Wait for workers to finish.
 
     while(blockgroup_acc) {
-        i32 waited_err = SDL_SemWait(milton_state->render_queue->completed_semaphore);
+        i32 waited_err = SDL_SemWait(milton_state->render_stack->completed_semaphore);
         if (!waited_err) {
             --blockgroup_acc;
         }

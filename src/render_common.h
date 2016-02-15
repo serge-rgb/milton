@@ -18,6 +18,32 @@
 
 #include "common.h"
 
+#define RENDER_STACK_SIZE       (1 << 20)
+
+// Render Workers:
+//    We have a bunch of workers running on threads, who wait on a lockless
+//    queue to take BlockgroupRenderData structures.
+//    When there is work available, they call blockgroup_render_thread with the
+//    appropriate parameters.
+typedef struct {
+    i32     block_start;
+} BlockgroupRenderData;
+
+typedef struct {
+    Rect*   blocks;  // Screen areas to render.
+    i32     num_blocks;
+    u32*    canvas_buffer;
+
+    // LIFO work queue
+    SDL_mutex*              mutex;
+    BlockgroupRenderData    blockgroup_render_data[RENDER_STACK_SIZE];
+    i32                     index;
+
+    SDL_sem*   work_available;
+    SDL_sem*   completed_semaphore;
+} RenderStack;
+
+
 typedef enum {
     MiltonRenderFlags_NONE              = 0,
 

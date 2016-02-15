@@ -364,11 +364,11 @@ float milton_get_pen_alpha(MiltonState* milton_state)
 void milton_init(MiltonState* milton_state)
 {
     // Initialize render queue
-    milton_state->render_queue = arena_alloc_elem(milton_state->root_arena, RenderQueue);
+    milton_state->render_stack = arena_alloc_elem(milton_state->root_arena, RenderStack);
     {
-        milton_state->render_queue->work_available      = SDL_CreateSemaphore(0);
-        milton_state->render_queue->completed_semaphore = SDL_CreateSemaphore(0);
-        milton_state->render_queue->mutex               = SDL_CreateMutex();
+        milton_state->render_stack->work_available      = SDL_CreateSemaphore(0);
+        milton_state->render_stack->completed_semaphore = SDL_CreateSemaphore(0);
+        milton_state->render_stack->mutex               = SDL_CreateMutex();
     }
 
     milton_state->num_render_workers = SDL_GetCPUCount();
