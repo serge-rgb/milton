@@ -339,7 +339,8 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
     return stroke_list;
 }
 
-// returns false if allocation failed
+// Receives a stretchy array of strokes and rasterizes it to the specified block of pixels.
+// Returns false if allocation failed.
 static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                        CanvasView* view,
                                        Stroke* strokes,
@@ -431,7 +432,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
-#if 0 // Visualize it with black
+#if 1 // Visualize it with black
                     v4f dst = {0, 0, 0, is_eraser? 1 : clipped_stroke->brush.color.a};
 #else
                     v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
@@ -593,6 +594,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
     return true;
 }
 
+
+// For a more readable implementation that does the same thing. See rasterize_canvas_block_slow.
 static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                        CanvasView* view,
                                        Stroke* strokes,
@@ -735,9 +738,9 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                             // NOTE: This loop is not stupid:
                             //  I transformed the data representation to SOA
-                            //  form. There was no measureable difference even
+                            //  form. There was no measurable difference even
                             //  though this loop turned into 4 _mm_load_ps
-                            //  instructions.
+                            //  intrinsics.
                             //
                             // We can comfortably get 4 elements because the
                             // points are allocated with enough trailing zeros.
@@ -881,7 +884,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                         total_work_loop:         ncalls:           10000, clocks_per_call:        17247544
                                         ================================
                               **/
-#if 1
+#if 0
                             __m128 max_pos4 = _mm_set_ps1(FLT_MAX);
                             __m128 min_neg4 = _mm_set_ps1(-FLT_MAX);
                             __m128 maxed    = _mm_andnot_ps(mask, max_pos4);

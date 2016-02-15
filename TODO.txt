@@ -6,7 +6,6 @@ To-Do
     - :)
     - cursor overlay is black (black background?)
     - need to lose imgui focus when toggling visibility
-    - image exported even if renderer requests memory
 
 - Application
     - Export
@@ -19,14 +18,29 @@ To-Do
     - History slider
     - Brush / Eraser
         - Image Button
+    - UI
+        - add zoom keys, menu options (for zoom and other features)
     - ImGUI details:
         - Reduce or remove widget rounding
         - Disable window dragging
+        - liberally licensed font
     - DPI-awareness
         - UI scale option
         - ?? gui scale set by default
     - Etc...
         - Show hello widget on first run?
+    - Wacom:
+        - Gestures (Windows)
+        - Gestures (OSX)
+    - Wacom: Gesture support
+        - Windows
+        - OSX
+    - Far future
+        - Brush
+            - Support for general, implicitly defined brushes
+        - Playback
+            - Store view changes in persist file
+            - Playback mode? Separate viewer?
 - Debug layer
     - Input recorder for bug replication
 - Porting:
@@ -60,16 +74,3 @@ To-Do
         - Bundle
         - dmg crap
 
-
-
-- Future
-    - Wacom: (?) Support for pan & rotate.
-
-
-
-- Far future
-    - Brush
-        - Support for general, implicitly defined brushes
-    - Playback
-        - Store view changes in persist file
-        - Playback mode? Separate viewer?
