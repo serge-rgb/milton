@@ -20,6 +20,9 @@ To-Do
         - Image Button
     - UI
         - add zoom keys, menu options (for zoom and other features)
+        - async progress dialog (windows)
+        - async progress dialog (mac)
+        - async progress dialog (linux)
     - ImGUI details:
         - Reduce or remove widget rounding
         - Disable window dragging

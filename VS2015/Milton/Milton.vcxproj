@@ -87,6 +87,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>vcruntime.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>copy $(MSBuildProjectDirectory)\..\..\third_party\SDL2-2.0.3\VisualC\SDL\Win32\$(TargetedSDKConfiguration)\SDL2.dll $(TargetDir)\SDL2.dll</Command>
