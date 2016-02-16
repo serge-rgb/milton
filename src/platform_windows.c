@@ -86,15 +86,13 @@ void platform_load_gl_func_pointers()
     GLenum glew_err = glewInit();
 
     if (glew_err != GLEW_OK) {
-        milton_log("glewInit failed with error: %s\nExiting.\n",
-                   glewGetErrorString(glew_err));
-        exit(EXIT_FAILURE);
+        milton_log("glewInit failed with error: %s\nExiting.\n", glewGetErrorString(glew_err));
+        milton_die_gracefully("glewInit failed");
     }
 
     if ( !GLEW_VERSION_2_1 ) {
         milton_die_gracefully("OpenGL 2.1 not supported.\n");
     }
-    // Load extensions
 }
 
 static char* win32_filter_strings =

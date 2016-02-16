@@ -1,10 +1,7 @@
 # Milton saves
 *.mlt
-# imgui save
-imgui.ini
 
 # Visual Studio crap
-build/Milton.lib
 third_party/SDL2-2.0.3/VisualC
 *.vcxproj.user
 *.sdf
@@ -12,16 +9,18 @@ third_party/SDL2-2.0.3/VisualC
 *.psess
 *.vsp
 
-Milton_VS2015/**/*.tlog
-Milton_VS2015/**/*.idb
-Milton_VS2015/**/*.iobj
-Milton_VS2015/**/*.ipdb
-Milton_VS2015/**/*.log
-Milton_VS2015/**/*.exp
-Milton_VS2015/**/*.cd
-Milton_VS2015/Milton/x64
-Milton_VS2015/Milton/x86
+VS2015/**/*.tlog
+VS2015/**/*.idb
+VS2015/**/*.iobj
+VS2015/**/*.ipdb
+VS2015/**/*.log
+VS2015/**/*.exp
+VS2015/**/*.cd
+VS2015/**/*.dll
+VS2015/Milton/x64
+VS2015/Milton/x86
 
+# Windows profiler
 *.sleepy
 
 # SDL build
@@ -33,11 +32,4 @@ third_party/SDL2-2.0.3/libtool
 third_party/SDL2-2.0.3/sdl2-config
 third_party/SDL2-2.0.3/sdl2.pc
 
-# build directory
-build
-
-
-# Eclipse project
-.cproject
-.project
 

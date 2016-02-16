@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Milton", "Milton\Milton.vcxproj", "{2664DEED-A326-4779-93FD-47447C229C0A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7FD30611-E39B-4110-B04F-CB93453F0C62} = {7FD30611-E39B-4110-B04F-CB93453F0C62}
+		{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68} = {81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HeaderlibsImpl", "HeaderlibsImpl\HeaderlibsImpl.vcxproj", "{7FD30611-E39B-4110-B04F-CB93453F0C62}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SDL2", "..\third_party\SDL2-2.0.3\VisualC\SDL\SDL_VS2013.vcxproj", "{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glew_static", "..\third_party\glew-1.13.0\build\vc12\glew_static.vcxproj", "{664E6F0D-6784-4760-9565-D54F8EB1EDF4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2664DEED-A326-4779-93FD-47447C229C0A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2664DEED-A326-4779-93FD-47447C229C0A}.Debug|Win32.Build.0 = Debug|Win32
+		{2664DEED-A326-4779-93FD-47447C229C0A}.Debug|x64.ActiveCfg = Debug|x64
+		{2664DEED-A326-4779-93FD-47447C229C0A}.Debug|x64.Build.0 = Debug|x64
+		{2664DEED-A326-4779-93FD-47447C229C0A}.Release|Win32.ActiveCfg = Release|Win32
+		{2664DEED-A326-4779-93FD-47447C229C0A}.Release|Win32.Build.0 = Release|Win32
+		{2664DEED-A326-4779-93FD-47447C229C0A}.Release|x64.ActiveCfg = Release|x64
+		{2664DEED-A326-4779-93FD-47447C229C0A}.Release|x64.Build.0 = Release|x64
+		{7FD30611-E39B-4110-B04F-CB93453F0C62}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7FD30611-E39B-4110-B04F-CB93453F0C62}.Debug|Win32.Build.0 = Debug|Win32
+		{7FD30611-E39B-4110-B04F-CB93453F0C62}.Debug|x64.ActiveCfg = Debug|x64
+		{7FD30611-E39B-4110-B04F-CB93453F0C62}.Debug|x64.Build.0 = Debug|x64
+		{7FD30611-E39B-4110-B04F-CB93453F0C62}.Release|Win32.ActiveCfg = Release|Win32
+		{7FD30611-E39B-4110-B04F-CB93453F0C62}.Release|Win32.Build.0 = Release|Win32
+		{7FD30611-E39B-4110-B04F-CB93453F0C62}.Release|x64.ActiveCfg = Release|x64
+		{7FD30611-E39B-4110-B04F-CB93453F0C62}.Release|x64.Build.0 = Release|x64
+		{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}.Debug|Win32.ActiveCfg = Debug|Win32
+		{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}.Debug|x64.ActiveCfg = Debug|x64
+		{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}.Debug|x64.Build.0 = Debug|x64
+		{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}.Release|Win32.ActiveCfg = Release|Win32
+		{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}.Release|x64.ActiveCfg = Release|x64
+		{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}.Release|x64.Build.0 = Release|x64
+		{664E6F0D-6784-4760-9565-D54F8EB1EDF4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{664E6F0D-6784-4760-9565-D54F8EB1EDF4}.Debug|Win32.Build.0 = Debug|Win32
+		{664E6F0D-6784-4760-9565-D54F8EB1EDF4}.Debug|x64.ActiveCfg = Debug|x64
+		{664E6F0D-6784-4760-9565-D54F8EB1EDF4}.Debug|x64.Build.0 = Debug|x64
+		{664E6F0D-6784-4760-9565-D54F8EB1EDF4}.Release|Win32.ActiveCfg = Release|Win32
+		{664E6F0D-6784-4760-9565-D54F8EB1EDF4}.Release|Win32.Build.0 = Release|Win32
+		{664E6F0D-6784-4760-9565-D54F8EB1EDF4}.Release|x64.ActiveCfg = Release|x64
+		{664E6F0D-6784-4760-9565-D54F8EB1EDF4}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
