@@ -20,6 +20,8 @@ VS2015/**/*.dll
 VS2015/Milton/x64
 VS2015/Milton/x86
 
+
+
 # Windows profiler
 *.sleepy
 
@@ -33,3 +35,5 @@ third_party/SDL2-2.0.3/sdl2-config
 third_party/SDL2-2.0.3/sdl2.pc
 
 
+# glew build
+third_party/glew-1.13.0/build/vc12/tmp/*
