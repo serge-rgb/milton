@@ -1192,6 +1192,7 @@ int tje_encode_to_file_at_quality(const char* dest_path,
 
     result |= 0 == fclose(fd);
 
+    return result;
 }
 
 int tje_encode_with_func(tje_write_func* func,
