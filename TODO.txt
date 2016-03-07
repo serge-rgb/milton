@@ -32,12 +32,9 @@ To-Do
         - ?? gui scale set by default
     - Etc...
         - Show hello widget on first run?
-    - Wacom:
-        - Gestures (Windows)
-        - Gestures (OSX)
-    - Wacom: Gesture support
-        - Windows
-        - OSX
+    - Tablet:
+        - Port to Windows API (support non-Wacom devices)
+        - Gestures (OSX, Windows)
     - Far future
         - Brush
             - Support for general, implicitly defined brushes
