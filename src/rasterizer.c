@@ -567,7 +567,9 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                         }
                     }
                 }
-                if ( acc_color.a > 0.999999 ) {
+
+                // An epsilon value is just not a Good Idea. Whatever value I choose, there is a complex drawing that will look bad.
+                if ( acc_color.a >= 1.0f ) {
                     break;
                 }
             }
@@ -1024,7 +1026,9 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     }
                     PROFILE_PUSH(sampling);
                 }
-                if ( acc_color.a > 0.999999 ) {
+
+                // An epsilon value is just not a Good Idea. Whatever value I choose, there is a complex drawing that will look bad.
+                if ( acc_color.a >= 1.0f ) {
                     break;
                 }
             }
