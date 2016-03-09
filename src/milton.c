@@ -584,7 +584,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     b32 should_save =
             //(input->point != NULL) ||
             (check_flag(input->flags, MiltonInputFlags_END_STROKE)) ||
-            (check_flag(input->flags, MiltonInputFlags_RESET)) ||
             (check_flag(input->flags, MiltonInputFlags_UNDO)) ||
             (check_flag(input->flags, MiltonInputFlags_REDO));
 
@@ -701,14 +700,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
     }
 
-    if (check_flag( input->flags, MiltonInputFlags_RESET )) {
-        milton_state->view->scale = MILTON_DEFAULT_SCALE;
-        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
-        sb_reset(milton_state->strokes);
-        (&milton_state->strokes[0])->num_points = 0;
-        milton_state->working_stroke.num_points = 0;
-        milton_update_brushes(milton_state);
-    }
 #if 0
     // ==== Rotate ======
     if (input->rotation != 0)

@@ -128,12 +128,11 @@ typedef struct MiltonState
 #endif
 } MiltonState;
 
-typedef enum
+typedef enum MiltonInputFlags
 {
     MiltonInputFlags_NONE = 0,
 
     MiltonInputFlags_FULL_REFRESH        = 1 << 0,
-    MiltonInputFlags_RESET               = 1 << 1,
     MiltonInputFlags_END_STROKE          = 1 << 2,
     MiltonInputFlags_UNDO                = 1 << 3,
     MiltonInputFlags_REDO                = 1 << 4,
@@ -144,7 +143,7 @@ typedef enum
     MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 9,
 } MiltonInputFlags;
 
-typedef struct
+typedef struct MiltonInput
 {
     MiltonInputFlags flags;
     MiltonMode mode_to_set;

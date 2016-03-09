@@ -21,7 +21,8 @@
 #define MILTON_TABLET_EVT_QUEUE_SIZE 512
 
 
-struct MiltonPressureQueue {
+struct MiltonPressureQueue
+{
     int count;
     float pressures[MILTON_TABLET_EVT_QUEUE_SIZE];
 };

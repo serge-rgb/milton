@@ -158,16 +158,15 @@ int milton_main()
         io.IniFilename = NULL;  // Don't save any imgui.ini file
     }
 
+    // ---- Main loop ----
 
-    while(!should_quit) {
-        // ==== Handle events
+    while( !should_quit ) {
         ImGuiIO& imgui_io = ImGui::GetIO();
 
         i32 num_pressure_results = 0;
         i32 num_point_results = 0;
 
         SDL_Event event;
-        b32 got_tablet_point_input = false;
         b32 stopped_panning = false;
 
         i32 input_flags = (i32)milton_input.flags;
@@ -241,14 +240,15 @@ int milton_main()
                 }
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     // Add final point
-                    if (!platform_input.is_panning && platform_input.is_pointer_down) {
+                    if ( !platform_input.is_panning && platform_input.is_pointer_down ) {
                         set_flag(input_flags, MiltonInputFlags_END_STROKE);
                         input_point = { event.button.x, event.button.y };
                         milton_input.points[num_point_results++] = input_point;
                         // Start drawing hover as soon as we stop the stroke.
                         milton_input.hover_point = input_point;
                         set_flag(input_flags, MiltonInputFlags_HOVERING);
-                    } else if (platform_input.is_panning) {
+                    }
+                    else if ( platform_input.is_panning ) {
                         if (!platform_input.is_space_down) {
                             platform_input.is_panning = false;
                             stopped_panning = true;
@@ -264,9 +264,10 @@ int milton_main()
                     }
                     input_point = { event.motion.x, event.motion.y };
                     if (platform_input.is_pointer_down) {
-                        if ( !platform_input.is_panning && !got_tablet_point_input ) {
+                        if ( !platform_input.is_panning ) {
                             milton_input.points[num_point_results++] = input_point;
-                        } else if ( platform_input.is_panning ) {
+                        }
+                        else if ( platform_input.is_panning ) {
                             platform_input.pan_point = input_point;
                         }
                         unset_flag(input_flags, MiltonInputFlags_HOVERING);
@@ -299,7 +300,8 @@ int milton_main()
                     {
                         if ( keycode == SDLK_LEFTBRACKET ) {
                             milton_decrease_brush_size(milton_state);
-                        } else if ( keycode == SDLK_RIGHTBRACKET ) {
+                        }
+                        else if ( keycode == SDLK_RIGHTBRACKET ) {
                             milton_increase_brush_size(milton_state);
                         }
                         if ( platform_input.is_ctrl_down ) {
@@ -311,8 +313,8 @@ int milton_main()
                                 set_flag(input_flags, MiltonInputFlags_REDO);
                             }
                         }
-                    }
 
+                    }
                     if (event.key.repeat) {
                         break;
                     }
@@ -326,10 +328,8 @@ int milton_main()
                         platform_input.is_panning = true;
                         // Stahp
                     }
-                    if (platform_input.is_ctrl_down) {
-                        if (keycode == SDLK_BACKSPACE) {
-                            set_flag(input_flags, MiltonInputFlags_RESET);
-                        }
+                    if ( platform_input.is_ctrl_down ) {  // Ctrl-KEY with no key repeats.
+                        // ...
                     } else {
                         if ( !ImGui::GetIO().WantCaptureMouse ) {
                             if (keycode == SDLK_e) {
@@ -386,23 +386,19 @@ int milton_main()
 
                 SDL_Keycode keycode = event.key.keysym.sym;
 
-                if (keycode == SDLK_SPACE)
-                {
+                if ( keycode == SDLK_SPACE ) {
                     platform_input.is_space_down = false;
-                    if (!platform_input.is_pointer_down)
-                    {
+                    if ( !platform_input.is_pointer_down ) {
                         platform_input.is_panning = false;
                         stopped_panning = true;
                     }
                 }
             } break;
             case SDL_WINDOWEVENT: {
-                if (window_id != event.window.windowID)
-                {
+                if ( window_id != event.window.windowID ) {
                     break;
                 }
-                switch (event.window.event)
-                {
+                switch ( event.window.event ) {
                     // Just handle every event that changes the window size.
                 case SDL_WINDOWEVENT_RESIZED:
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
@@ -412,10 +408,10 @@ int milton_main()
                     glViewport(0, 0, width, height);
                     break;
                 case SDL_WINDOWEVENT_LEAVE:
-                    if (event.window.windowID != window_id) {
+                    if ( event.window.windowID != window_id ) {
                         break;
                     }
-                    if (platform_input.is_pointer_down) {
+                    if ( platform_input.is_pointer_down ) {
                         platform_input.is_pointer_down = false;
                         set_flag(input_flags, MiltonInputFlags_END_STROKE);
                     }
@@ -435,10 +431,10 @@ int milton_main()
 #if defined(_MSC_VER)
 #pragma warning (pop)
 #endif
-            if (should_quit) {
+            if ( should_quit ) {
                 break;
             }
-        }  // ==== End of SDL event loop
+        }  // ---- End of SDL event loop
 
         if ( stopped_panning ) {
             milton_state->request_quality_redraw = true;
@@ -447,6 +443,7 @@ int milton_main()
         if ( platform_input.is_pointer_down && check_flag(input_flags, MiltonInputFlags_HOVERING) ) {
             milton_input.hover_point = {-100, -100};
         }
+
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
 #if defined(__MACH__)
         assert( num_pressure_results == 0 );
@@ -459,7 +456,6 @@ int milton_main()
         }
 #endif
 
-        //ImGui_ImplSdl_NewFrame(window);
         ImGui_ImplSdlGL3_NewFrame();
         // Clear our pointer input because we captured an ImGui widget!
         if (ImGui::GetIO().WantCaptureMouse) {
@@ -486,7 +482,7 @@ int milton_main()
 #endif
 
         // Mouse input, fill with NO_PRESSURE_INFO
-        if (num_pressure_results == 0 && !got_tablet_point_input) {
+        if (num_pressure_results == 0 ) {
             for (int i = num_pressure_results; i < num_point_results; ++i) {
                 milton_input.pressures[num_pressure_results++] = NO_PRESSURE_INFO;
             }
@@ -495,7 +491,6 @@ int milton_main()
         if (num_pressure_results < num_point_results) {
             num_point_results = num_pressure_results;
         }
-
 
         // Re-cast... This is dumb
         milton_input.flags = (MiltonInputFlags)( input_flags | (int)milton_input.flags );
