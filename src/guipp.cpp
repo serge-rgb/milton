@@ -161,16 +161,17 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             }
         }
 
-
-
         if ( check_flag(milton_state->gui->flags, MiltonGuiFlags_CHOOSING_BG_COLOR) ) {
             bool closed = false;
             if ( ImGui::Begin("Choose Background Color", &closed, default_imgui_window_flags) ) {
                 ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
                 ImGui::Text("Sup");
-                if ( ImGui::ColorEdit3("Background Color", milton_state->view->background_color.d) ) {
+                v3f bg = milton_state->view->background_color;
+                if ( ImGui::ColorEdit3("Background Color", bg.d) ) {
+                    milton_state->view->background_color = clamp_01(bg);
                     i32 f = input->flags;
                     set_flag(f, (i32)MiltonInputFlags_FULL_REFRESH);
+                    set_flag(f, (i32)MiltonInputFlags_FAST_DRAW);
                     input->flags = (MiltonInputFlags)f;
                 }
                 if ( closed ) {

@@ -40,4 +40,8 @@ v3f linear_to_square(v3f rgb);
 
 v3f square_to_linear(v3f rgb);
 
+v3f clamp_255(v3f color);
+
+v3f clamp_01(v3f color);
+
 

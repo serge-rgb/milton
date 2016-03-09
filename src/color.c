@@ -65,6 +65,33 @@ v4f blend_v4f(v4f dst, v4f src)
     return result;
 }
 
+v3f clamp_01(v3f color)
+{
+    v3f result = color;
+    for ( int i = 0; i < 3; ++i ) {
+        if ( result.d[i] > 1.0f ) {
+            result.d[i] = 1.0f;
+        }
+        if ( result.d[i] < 0.0f ) {
+            result.d[i] = 0.0f;
+        }
+    }
+    return result;
+}
+v3f clamp_255(v3f color)
+{
+    v3f result = color;
+    for ( int i = 0; i < 3; ++i ) {
+        if ( result.d[i] > 255.0f ) {
+            result.d[i] = 255.0f;
+        }
+        if ( result.d[i] < 0.0f ) {
+            result.d[i] = 0.0f;
+        }
+    }
+    return result;
+}
+
 v3f hsv_to_rgb(v3f hsv)
 {
     v3f rgb = { 0 };

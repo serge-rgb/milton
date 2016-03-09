@@ -1801,7 +1801,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
     //      current working stroke.
 
 #if MILTON_ENABLE_PROFILING
-        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+    set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
 #endif
 
     if ( check_flag(render_flags, MiltonRenderFlags_PAN_COPY) ) {
@@ -1842,17 +1842,17 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 
         if ( pan_delta.x > 0 ) {
             vertical.left  = 0;
-            vertical.right = pan_delta.x + pad;
+            vertical.right = max(pan_delta.x, pad);
         } else {
-            vertical.left  = view->screen_size.w + pan_delta.x - pad;
+            vertical.left  = view->screen_size.w + min(pan_delta.x, -pad);
             vertical.right = view->screen_size.w;
         }
 
         if ( pan_delta.y > 0 ) {
             horizontal.top    = 0;
-            horizontal.bottom = pan_delta.y + pad;
+            horizontal.bottom = max(pan_delta.y, pad);
         } else if ( pan_delta.y < 0 ) {
-            horizontal.top    = view->screen_size.h + pan_delta.y - pad;
+            horizontal.top    = view->screen_size.h + min(pan_delta.y, -pad);
             horizontal.bottom = view->screen_size.h;
         }
 

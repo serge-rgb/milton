@@ -141,7 +141,8 @@ b32 is_rect_within_rect(Rect a, Rect b);
 
 Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h);
 
-typedef struct {
+typedef struct
+{
     i32 width;
     i32 height;
     i32 num_components;

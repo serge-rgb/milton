@@ -21,13 +21,15 @@
 #include "memory.h"
 #include "utils.h"
 
-typedef struct {
+typedef struct
+{
     i32     radius;  // This should be replaced by a BrushType and some union containing brush info.
     v4f     color;
     f32     alpha;
 } Brush;
 
-typedef struct {
+typedef struct
+{
     Brush   brush;
     v2i*    points;
     f32*    pressures;
@@ -35,7 +37,8 @@ typedef struct {
 } Stroke;
 
 // IMPORTANT: CanvasView needs to be a flat structure.
-typedef struct {
+typedef struct
+{
     v2i     screen_size;            // Size in pixels
     i32     scale;                  // Zoom
     v2i     screen_center;          // In pixels

@@ -87,7 +87,7 @@ static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
     b32 ok = false;
 
     size_t written = fwrite(data, sz, count, fd);
-    if (written == count) {
+    if ( written == count ) {
         if ( !ferror(fd) ) {
             ok = true;
         }

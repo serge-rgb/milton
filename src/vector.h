@@ -18,16 +18,14 @@
 
 #include "common.h"
 
-typedef struct {
-    union
-    {
-        struct
-        {
+typedef struct
+{
+    union {
+        struct {
             float x;
             float y;
         };
-        struct
-        {
+        struct {
             float w;
             float h;
         };
@@ -35,16 +33,14 @@ typedef struct {
     };
 } v2f;
 
-typedef struct {
-    union
-    {
-        struct
-        {
+typedef struct
+{
+    union {
+        struct {
             i32 x;
             i32 y;
         };
-        struct
-        {
+        struct {
             i32 w;
             i32 h;
         };
@@ -73,23 +69,20 @@ v2i divide2i(v2i a, i32 factor);
 
 v2i perpendicular (v2i a);
 
-typedef struct {
-    union
-    {
-        struct
-        {
+typedef struct
+{
+    union {
+        struct {
             float x;
             float y;
             float z;
         };
-        struct
-        {
+        struct {
             float r;
             float g;
             float b;
         };
-        struct
-        {
+        struct {
             float h;
             float s;
             float v;
@@ -98,23 +91,20 @@ typedef struct {
     };
 } v3f;
 
-typedef struct {
-    union
-    {
-        struct
-        {
+typedef struct
+{
+    union {
+        struct {
             i32 x;
             i32 y;
             i32 z;
         };
-        struct
-        {
+        struct {
             i32 r;
             i32 g;
             i32 b;
         };
-        struct
-        {
+        struct {
             i32 h;
             i32 s;
             i32 v;
@@ -132,30 +122,26 @@ v3f scale3f(v3f a, float factor);
 
 v3i scale3i(v3i a, i32 factor);
 
-typedef struct {
-    union
-    {
-        struct
-        {
+typedef struct
+{
+    union {
+        struct {
             float x;
             float y;
             float z;
             float w;
         };
-        struct
-        {
+        struct {
             float r;
             float g;
             float b;
             float a;
         };
-        union
-        {
+        union {
             v3f rgb;
             float  pad__a;
         };
-        union
-        {
+        union {
             v3f xyz;
             float  pad__w;
         };
