@@ -20,6 +20,7 @@ VS2015/**/*.cd
 VS2015/**/*.dll
 VS2015/Milton/x64
 VS2015/Milton/x86
+*.opendb
 
 
 # Windows profiler

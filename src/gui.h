@@ -27,14 +27,16 @@ extern "C" {
 #include "render_common.h"
 #include "utils.h"
 
-typedef enum {
+typedef enum
+{
     ColorPickerFlags_NOTHING = 0,
 
     ColorPickerFlags_WHEEL_ACTIVE    = (1 << 1),
     ColorPickerFlags_TRIANGLE_ACTIVE = (1 << 2)
 } ColorPickerFlags;
 
-typedef struct {
+typedef struct
+{
     v2f a;  // Corresponds to value = 0      (black)
     v2f b;  // Corresponds to saturation = 0 (white)
     v2f c;  // Points to chosen hue.         (full color)
@@ -43,7 +45,8 @@ typedef struct {
 } PickerData;
 
 typedef struct ColorButton_s ColorButton;
-struct ColorButton_s {
+struct ColorButton_s
+{
     i32 x;
     i32 y;
     i32 w;
@@ -56,7 +59,8 @@ struct ColorButton_s {
     ColorButton* next;
 };
 
-typedef struct {
+typedef struct
+{
     v2i     center;  // In screen pixel coordinates.
     i32     bounds_radius_px;
     Rect    bounds;
@@ -72,24 +76,28 @@ typedef struct {
     ColorPickerFlags flags;
 } ColorPicker;
 
-typedef enum {
+typedef enum
+{
     ColorPickResult_NOTHING,
     ColorPickResult_CHANGE_COLOR,
 } ColorPickResult;
 
 
-typedef struct {
+typedef struct
+{
     Rect            rect;
     Bitmap          bitmap;
 } GuiButton;
 
-typedef enum {
+typedef enum
+{
     ExporterState_EMPTY,
     ExporterState_GROWING_RECT,
     ExporterState_SELECTED,
 } ExporterState;
 
-typedef struct {
+struct Exporter
+{
     ExporterState state;
     // Pivot: The raster point where we click to begin the rectangle
     v2i pivot;
@@ -97,17 +105,20 @@ typedef struct {
     v2i needle;
 
     int scale;
-} Exporter;
+};
+typedef struct Exporter Exporter;
 
 // State machine for gui
-typedef enum {
+typedef enum MiltonGuiFlags
+{
     MiltonGuiFlags_NONE,
 
     MiltonGuiFlags_SHOWING_PREVIEW   = 1 << 0,
     MiltonGuiFlags_CHOOSING_BG_COLOR = 1 << 1,
 } MiltonGuiFlags;
 
-typedef struct MiltonGui_s {
+typedef struct MiltonGui
+{
     b32 visible;
     b32 show_help_widget;
 

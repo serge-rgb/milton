@@ -21,6 +21,8 @@
 
 #include "gui.h"
 #include "platform.h"
+#include "rasterizer.h"
+#include "persist.h"
 
 static void exporter_init(Exporter* exporter)
 {

@@ -14,7 +14,18 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-typedef struct {
+#pragma once
+
+#include "milton.h"
+
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+
+typedef struct WorkerParams
+{
     MiltonState* milton_state;
     i32 worker_id;
 } WorkerParams;
@@ -30,3 +41,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
                              i32 x, i32 y,
                              i32 w, i32 h, int scale);
+
+#if defined(__cplusplus)
+}
+#endif

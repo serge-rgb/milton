@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "rasterizer.h"
 
 #include "canvas.h"
 #include "color.h"
@@ -20,21 +21,23 @@
 #include "milton.h"
 #include "platform.h"
 #include "profiler.h"
+#include "render_common.h"
 
 // Special value for num_points member of `ClippedStroke` to indicate that the
 // block should be flood-filled
 #define CLIPPED_STROKE_FILLS_BLOCK 0
 
 // Always accessed together. Keeping them sequential to save some cache misses.
-typedef struct ClippedPoint_s {
+typedef struct ClippedPoint
+{
     i32 x;
     i32 y;
     f32 pressure;
 } ClippedPoint;
 
-typedef struct ClippedStroke_s ClippedStroke;
-
-struct ClippedStroke_s {
+typedef struct ClippedStroke ClippedStroke;
+struct ClippedStroke
+{
     // Same contents as a stroke, but these points are stored in relative
     // coordinates to the center of the block. This helps with FP precision. We
     // create them per block. Each block gets an array of ClippedStroke which

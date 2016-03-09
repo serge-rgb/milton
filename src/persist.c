@@ -108,7 +108,7 @@ void milton_load(MiltonState* milton_state)
         u32 milton_binary_version = (u32)-1;
         if ( ok ) { ok = fread_checked(&milton_binary_version, sizeof(u32), 1, fd); }
 
-        if (milton_binary_version != 1) {
+        if ( milton_binary_version != 1 ) {
             ok = false;
         }
 

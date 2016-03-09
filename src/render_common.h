@@ -25,11 +25,13 @@
 //    queue to take BlockgroupRenderData structures.
 //    When there is work available, they call blockgroup_render_thread with the
 //    appropriate parameters.
-typedef struct {
+typedef struct BlockgroupRenderData
+{
     i32     block_start;
 } BlockgroupRenderData;
 
-typedef struct {
+typedef struct RenderStack
+{
     Rect*   blocks;  // Screen areas to render.
     i32     num_blocks;
     u32*    canvas_buffer;
@@ -44,7 +46,8 @@ typedef struct {
 } RenderStack;
 
 
-typedef enum {
+typedef enum MiltonRenderFlags
+{
     MiltonRenderFlags_NONE              = 0,
 
     MiltonRenderFlags_PICKER_UPDATED    = 1 << 0,

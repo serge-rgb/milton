@@ -26,7 +26,8 @@
 
 typedef struct Arena_s Arena;
 
-struct Arena_s {
+struct Arena_s
+{
     // Memory:
     size_t  size;
     size_t  count;

@@ -35,14 +35,12 @@ extern "C" {
 #include "canvas.h"
 #include "color.h"
 #include "memory.h"
-#include "milton_declares.h"
-#include "persist.h"
 #include "render_common.h"
-#include "rasterizer.h"
 #include "utils.h"
 
 
-typedef struct {
+typedef struct MiltonGLState
+{
     GLuint quad_program;
     GLuint texture;
     GLuint vbo;
@@ -51,7 +49,8 @@ typedef struct {
 #endif
 } MiltonGLState;
 
-typedef enum {
+typedef enum MiltonMode
+{
     MiltonMode_NONE                   = 0,
     MiltonMode_ERASER                 = 1 << 0,
     MiltonMode_PEN                    = 1 << 1,
@@ -65,28 +64,10 @@ enum {
     BrushEnum_COUNT,
 };
 
-#ifndef NDEBUG
-typedef enum {
-    DEBUG_BACKEND_CHOICE_avx,
-    DEBUG_BACKEND_CHOICE_sse2,
-    DEBUG_BACKEND_CHOICE_scalar,
+struct MiltonGui;
 
-    DEBUG_BACKEND_CHOICE_count,
-} MILTONDEBUG_BackendChoice;
-
-
-static char* MILTONDEBUG_BackendChoiceStrings[DEBUG_BACKEND_CHOICE_count] =
+typedef struct MiltonState
 {
-    "DEBUG_BACKEND_CHOICE_avx",
-    "DEBUG_BACKEND_CHOICE_sse2",
-    "DEBUG_BACKEND_CHOICE_scalar",
-};
-
-#endif
-
-struct MiltonGui_s;
-
-struct MiltonState_s {
     u8      bytes_per_pixel;
 
     i32     max_width;
@@ -101,7 +82,7 @@ struct MiltonState_s {
 
     MiltonGLState* gl;
 
-    struct MiltonGui_s* gui;
+    struct MiltonGui* gui;
 
     Brush   brushes[BrushEnum_COUNT];
     i32     brush_sizes[BrushEnum_COUNT];  // In screen pixels
@@ -145,9 +126,10 @@ struct MiltonState_s {
 #ifndef NDEBUG
     b32 DEBUG_sse2_switch;
 #endif
-};
+} MiltonState;
 
-typedef enum {
+typedef enum
+{
     MiltonInputFlags_NONE = 0,
 
     MiltonInputFlags_FULL_REFRESH        = 1 << 0,
@@ -162,7 +144,8 @@ typedef enum {
     MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 9,
 } MiltonInputFlags;
 
-typedef struct {
+typedef struct
+{
     MiltonInputFlags flags;
     MiltonMode mode_to_set;
 
@@ -186,8 +169,6 @@ typedef struct {
 #define glGenVertexArrays glGenVertexArraysAPPLE
 #define glBindVertexArray glBindVertexArrayAPPLE
 #endif
-
-
 
 void milton_init(MiltonState* milton_state);
 

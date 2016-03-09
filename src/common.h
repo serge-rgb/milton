@@ -32,6 +32,9 @@ typedef float       f32;
 
 typedef i32         b32;
 
+#define type(name) \
+        typedef struct name name; \
+        struct name
 
 #include "system_includes.h"
 

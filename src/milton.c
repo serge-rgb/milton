@@ -18,7 +18,9 @@
 
 #include "gui.h"
 #include "platform.h"
+#include "persist.h"
 #include "profiler.h"
+#include "rasterizer.h"
 
 #ifndef NDEBUG
 #include "tests.h"
