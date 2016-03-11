@@ -1,9 +1,9 @@
 @echo off
-
-:: ==== NOTE ====
-:: - mlt_opt: Optimized build.
-:: - mlt_nopt: Debug build.
-set mlt_opt_level=%mlt_nopt%
+:: ---- Build type
+::
+:: - 1: Optimized build.
+:: - 0: Debug build.
+set mlt_opt_level=1
 
 IF NOT EXIST build mkdir build
 
@@ -19,14 +19,17 @@ COPY third_party\SDL2-2.0.3\VisualC\SDL\X64\Debug\SDL2.dll third_party\bin\SDL2.
 IF NOT EXIST build\SDL2.dll copy third_party\bin\SDL2.dll build\SDL2.dll
 
 pushd build
-
-set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
+::set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
 
 set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 
+:: ---- Define opt & nopt flags
 :: Oy- disable frame pointer omission (equiv. to -f-no-omit-frame-pointer)
 set mlt_opt=/Ox /Oy- /MT
 set mlt_nopt=/Od /MTd
+
+if %mlt_opt_level% == 0 set mlt_opt_flags=%mlt_nopt%
+if %mlt_opt_level% == 1 set mlt_opt_flags=%mlt_opt%
 
 
 set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /nologo /FC /EHsc
@@ -55,7 +58,7 @@ set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SD
 ::set sdl_dir=..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug
 set sdl_dir=..\third_party\bin
 
-set mlt_links=..\third_party\glew32s.lib OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib %sdl_link_deps% %sdl_dir%\SDL2.lib
+set mlt_link_flags=..\third_party\glew32s.lib OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib %sdl_dir%\SDL2.lib /SAFESEH:NO
 
 :: ---- Compile third_party libs with less warnings
 :: Delete file build\SKIP_LIB_COMPILATION to recompile. Created by default to reduce build times.
@@ -92,17 +95,17 @@ type nul >>SKIP_LIB_COMPILATION
 
 echo    [BUILD] -- Building Milton...
 
-if "%mlt_opt_level%" == "%mlt_nopt%" set header_links=headerlibs_impl_nopt.lib
-if "%mlt_opt_level%" == "%mlt_opt%" set header_links=headerlibs_impl_opt.lib
+if %mlt_opt_level% == 0 set header_links=headerlibs_impl_nopt.lib
+if %mlt_opt_level% == 1 set header_links=headerlibs_impl_opt.lib
 
 :: ---- Unity build for Milton
-cl %mlt_opt_level% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
+cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_c.c
 if %errorlevel% neq 0 goto fail
-cl %mlt_opt_level% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
+cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_cpp.cpp
 if %errorlevel% neq 0 goto fail
-cl %mlt_compiler_flags% milton_unity_build_c.obj milton_unity_build_cpp.obj /FeMilton.exe %mlt_links% %header_links%
+link milton_unity_build_c.obj milton_unity_build_cpp.obj /OUT:Milton.exe %mlt_link_flags% %header_links%
 if %errorlevel% neq 0 goto fail
 
 :ok
