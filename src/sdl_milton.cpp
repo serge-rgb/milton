@@ -35,7 +35,7 @@ struct PlatformInput
     v2i pan_point;
 };
 
-int milton_main()
+int milton_main(MiltonStartupFlags startup_flags)
 {
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
@@ -161,6 +161,11 @@ int milton_main()
 
     // ---- Main loop ----
 
+#if MILTON_DEBUG
+    if ( milton_state->DEBUG_replaying ) {
+
+    } else
+#endif
     while( !should_quit ) {
         ImGuiIO& imgui_io = ImGui::GetIO();
 

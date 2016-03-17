@@ -22,6 +22,8 @@ extern "C" {
 
 #include "common.h"
 #include "memory.h"
+#include "milton_configuration.h"
+#include "utils.h"
 
 
 // The returns value mean different things, but other than that, we're ok
@@ -174,6 +176,22 @@ void platform_fname_at_config(char* fname, i32 len)
     mlt_free(tmp) ;
 }
 
+static MiltonStartupFlags win32_parse_cmdline()
+{
+    MiltonStartupFlags startup_flags = { 0 };
+#if MILTON_DEBUG
+    startup_flags.record = true;
+#endif
+
+    char* cmdline = GetCommandLineA();
+
+    char** tokens = str_tokenize(cmdline);
+    // Do something
+    str_free(tokens);
+
+    return startup_flags;
+}
+
 int CALLBACK WinMain(
         HINSTANCE hInstance,
         HINSTANCE hPrevInstance,
@@ -181,9 +199,8 @@ int CALLBACK WinMain(
         int nCmdShow
         )
 {
-    char* cmdline = GetCommandLineA();
-    milton_log("%s\n", cmdline);
-    milton_main();
+    MiltonStartupFlags flags = win32_parse_cmdline();
+    milton_main(flags);
 }
 
 #if defined(__cplusplus)

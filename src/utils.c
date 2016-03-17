@@ -366,3 +366,70 @@ Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h)
     return rect;
 }
 
+typedef enum TokenizeFSM
+{
+    TOKENIZE_EATING,
+    TOKENIZE_WHITESPACE
+} TokenizeFSM;
+
+static b32 is_whitespace(char c)
+{
+    if ( c == ' ' ||
+         c == '\t' ||
+         c == '\n' ||
+         c == '\0' ||
+         c == '\r' ||
+         c == '\v' ||
+         c == '\f' ) {
+        return true;
+    }
+    return false;
+}
+
+char** str_tokenize(char* input)
+{
+    TokenizeFSM fsm = TOKENIZE_WHITESPACE;
+
+    char** tokens = NULL;
+    char* start = input;
+
+    for (char* it = input; it && *it != '\0'; ++it) {
+        switch(fsm) {
+        case TOKENIZE_EATING: {
+            b32 is_last_char = (*(it+1) == '\0');
+            if ( is_whitespace(*it) || is_last_char ) {
+                // Create a new token
+                i32 len = (i32)(it - start);
+                if ( is_last_char && !is_whitespace(*it) ) {
+                    ++len;
+                    ++it;
+                }
+                char* tok = mlt_calloc(len+1, 1);
+                strncpy(tok, start, len);
+                tok[len] = '\0';
+                sb_push(tokens, tok);
+                fsm = TOKENIZE_WHITESPACE;
+            }
+            break;
+        }
+        case TOKENIZE_WHITESPACE: {
+            if ( !is_whitespace(*it) ) {
+                start = it;
+                fsm = TOKENIZE_EATING;
+            }
+            break;
+        }
+        default: break;
+        }
+    }
+
+    return tokens;
+}
+
+void str_free(char** strings)
+{
+   i32 count_strings = sb_count(strings);
+   for ( i32 i = 0; i < count_strings; ++i ) {
+       mlt_free(strings[i]);
+   }
+}

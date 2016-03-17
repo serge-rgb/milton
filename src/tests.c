@@ -20,18 +20,22 @@
 #include "tests.h"
 
 #include "memory.h"
+#include "utils.h"
 
 static void milton_cord_tests(Arena* arena);
 static void milton_blend_tests();
 static void milton_startup_tests();
 static void milton_math_tests();
+static void milton_str_tests();
 
 void milton_run_tests(MiltonState* milton_state)
 {
 	milton_math_tests();
 	milton_blend_tests();
 	milton_startup_tests();
+	milton_str_tests();
 }
+
 static void milton_startup_tests()
 {
     v3f rgb = hsv_to_rgb((v3f){ 0,0,0 });
@@ -74,6 +78,21 @@ static void milton_math_tests()
     assert(hit);
     assert(intersection.y == 0);
     assert(intersection.x >= 0.99999 && intersection.x <= 1.00001f);
+}
+
+static void milton_str_tests()
+{
+    char* a = "hello world";
+    char* b = "     hello  world ";
+    char* c = NULL;
+
+    char** ta = str_tokenize(a);
+    char** tb = str_tokenize(b);
+    char** tc = str_tokenize(c);
+
+    str_free(ta);
+    str_free(tb);
+    str_free(tc);
 }
 
 #else

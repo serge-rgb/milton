@@ -24,9 +24,16 @@ extern "C" {
 #include "easytab.h"
 // ----
 
+
+typedef struct MiltonStartupFlags
+{
+    b32 replay;
+    b32 record;
+} MiltonStartupFlags;
+
 typedef struct TabletState_s TabletState;
 
-int milton_main();
+int milton_main(MiltonStartupFlags startup_flags);
 
 void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}

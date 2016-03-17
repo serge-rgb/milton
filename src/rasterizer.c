@@ -279,11 +279,6 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 
     // Fill linked list with strokes clipped to this block
     for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
-
-        if ( stroke_i == num_strokes - 1 ) {
-            int foo =1;
-        }
-
         if ( stroke_i < num_strokes && !stroke_masks[stroke_i] ) {
             // Stroke masks is of size num_strokes, but we use stroke_i ==
             // num_strokes to indicate the current "working stroke"

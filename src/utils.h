@@ -150,7 +150,7 @@ typedef struct
 } Bitmap;
 
 
-// STB stretchy array
+// STB stretchy buffer
 
 #define sb_free(a)          ((a) ? free(stb__sbraw(a)),0 : 0)
 #define sb_push(a,v)        (stb__sbmaybegrow(a,1), (a)[stb__sbn(a)++] = (v))
@@ -170,3 +170,11 @@ typedef struct
 #define stb__sbgrow(a,n)      ((a) = stb__sbgrowf((a), (n), sizeof(*(a))))
 
 void* stb__sbgrowf(void *arr, int increment, int itemsize);
+
+// ASCII String utils
+
+// Returns a stretchy buffer of malloc'ed strings.
+char** str_tokenize(char* in);
+
+// Takes a stretchy buffer returned from str_* util functions.
+void str_free(char** strings);

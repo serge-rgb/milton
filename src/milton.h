@@ -127,6 +127,7 @@ typedef struct MiltonState
     // ====
 #if MILTON_DEBUG
     b32 DEBUG_sse2_switch;
+    b32 DEBUG_replaying;
 #endif
 } MiltonState;
 
