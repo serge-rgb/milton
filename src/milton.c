@@ -606,9 +606,16 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
     }
 
+    i32 now = SDL_GetTicks();
+
     if ( check_flag(input->flags, MiltonInputFlags_FAST_DRAW) ) {
         set_flag(render_flags, MiltonRenderFlags_DRAW_ITERATIVELY);
+        milton_state->quality_redraw_time = now;
+    }
+    else if ( milton_state->quality_redraw_time > 0 &&
+              (now - milton_state->quality_redraw_time) > QUALITY_REDRAW_TIMEOUT_MS ) {
         milton_state->request_quality_redraw = true;  // Next update loop.
+        milton_state->quality_redraw_time = 0;
     }
 
     if (check_flag(input->flags, MiltonInputFlags_FULL_REFRESH)) {

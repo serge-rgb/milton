@@ -1505,11 +1505,6 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 
     if ( num_blocks > 0 ) assert(blocks != NULL);
 
-    if ( num_blocks < 0 ) {
-        milton_log ("[ERROR] Transient arena did not have enough memory for canvas block.\n");
-        milton_fatal("Not handling this error.");
-    }
-
     RenderStack* render_stack = milton_state->render_stack;
     {
         render_stack->blocks = blocks;

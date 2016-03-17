@@ -1,6 +1,7 @@
 To-Do
 =====
 
+Items marked *! needed before "Releasing"
 
 - Bugs
     - :)
@@ -9,20 +10,24 @@ To-Do
 
 - Application
     - Export
+        *! Finish Linux and OSX versions of Dialogs and File I/O
         - manipulate rectangle shape
         - set resolution
         - set aspect ratio
         - Save / Load canvas
-        - Finish Linux and OSX versions of Dialogs and File I/O
-    - Layers (w/engine support)
+    *! Layers (w/engine support)
     - History slider
-    - Brush / Eraser
-        - Image Button
+    - Tablet:
+        *! Port to Windows API (support non-Wacom devices)
+        - Gestures (OSX, Windows)
     - UI
-        - add zoom keys, menu options (for zoom and other features)
+        *! add zoom keys, menu options (for zoom and other features)
+        *! Write a system for easy translation. At least do it for Spanish.
         - async progress dialog (windows)
         - async progress dialog (mac)
         - async progress dialog (linux)
+    - Brush / Eraser
+        - Image Button
     - ImGUI details:
         - Reduce or remove widget rounding
         - Disable window dragging
@@ -32,9 +37,6 @@ To-Do
         - ?? gui scale set by default
     - Etc...
         - Show hello widget on first run?
-    - Tablet:
-        - Port to Windows API (support non-Wacom devices)
-        - Gestures (OSX, Windows)
     - Far future
         - Brush
             - Support for general, implicitly defined brushes
@@ -47,8 +49,6 @@ To-Do
     - Ctrl -> Cmd in OSX. Other cross platform binding issues?
     - Easytab: Stylus buttons.
     - Easytab: Distinction between eraser and pen.
-- Translation
-    - Write a system for easy translation. At least do it for Spanish.
 - Performance:
     - Input gathering thread.
     - Undo/Redo: Only redraw necessary area.

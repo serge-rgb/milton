@@ -22,12 +22,13 @@ extern "C" {
 
 #include "milton_configuration.h"
 
-#define MILTON_USE_VAO          1
-#define STROKE_MAX_POINTS       2048
-#define MILTON_DEFAULT_SCALE    (1 << 10)
-#define NO_PRESSURE_INFO        -1.0f
-#define MAX_INPUT_BUFFER_ELEMS  32
-#define MILTON_MINIMUM_SCALE    (1 << 4)
+#define MILTON_USE_VAO              1
+#define STROKE_MAX_POINTS           2048
+#define MILTON_DEFAULT_SCALE        (1 << 10)
+#define NO_PRESSURE_INFO            -1.0f
+#define MAX_INPUT_BUFFER_ELEMS      32
+#define MILTON_MINIMUM_SCALE        (1 << 4)
+#define QUALITY_REDRAW_TIMEOUT_MS   200
 
 #define SGL_GL_HELPERS_IMPLEMENTATION
 #include "gl_helpers.h"
@@ -101,6 +102,7 @@ typedef struct MiltonState
     MiltonMode current_mode;
     MiltonMode last_mode;
 
+    i32 quality_redraw_time;
     b32 request_quality_redraw;  // After drawing with downsampling this gets set to true.
 
     i32             num_render_workers;

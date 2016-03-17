@@ -58,7 +58,7 @@ set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SD
 ::set sdl_dir=..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug
 set sdl_dir=..\third_party\bin
 
-set mlt_link_flags=..\third_party\glew32s.lib OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib %sdl_dir%\SDL2.lib /SAFESEH:NO
+set mlt_link_flags=..\third_party\glew32s.lib OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib %sdl_dir%\SDL2.lib /SAFESEH:NO /DEBUG
 
 :: ---- Compile third_party libs with less warnings
 :: Delete file build\SKIP_LIB_COMPILATION to recompile. Created by default to reduce build times.

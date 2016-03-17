@@ -80,7 +80,7 @@ int milton_main()
     // Using platform_allocate because stdlib calloc will be really slow.
     void* big_chunk_of_memory = platform_allocate(sz_root_arena);
 
-    if (!big_chunk_of_memory) {
+    if ( !big_chunk_of_memory ) {
         milton_fatal("Could allocate virtual memory for Milton.");
     }
 
