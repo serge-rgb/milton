@@ -1631,7 +1631,7 @@ static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_
                         i32 x, i32 y, Bitmap* bitmap)
 {
 
-    if (!bitmap->data) {
+    if ( !bitmap->data ) {
         // Fail silently when bitmap is NULL. Will happen until the Git situation is resolved...
         return;
     }
@@ -1658,8 +1658,8 @@ static void copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
 {
     u32* raster_ptr = (u32*)milton_state->raster_buffer;
     u32* canvas_ptr = (u32*)milton_state->canvas_buffer;
-    for (i32 j = rect.top; j <= rect.bottom; ++j) {
-        for (i32 i = rect.left; i <= rect.right; ++i) {
+    for ( i32 j = rect.top; j <= rect.bottom; ++j ) {
+        for ( i32 i = rect.left; i <= rect.right; ++i ) {
             i32 bufi = j*milton_state->view->screen_size.w + i;
             raster_ptr[bufi] = canvas_ptr[bufi];
         }
