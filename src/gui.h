@@ -27,7 +27,7 @@ extern "C" {
 #include "render_common.h"
 #include "utils.h"
 
-typedef enum
+typedef enum ColorPickerFlags
 {
     ColorPickerFlags_NOTHING = 0,
 
@@ -35,7 +35,7 @@ typedef enum
     ColorPickerFlags_TRIANGLE_ACTIVE = (1 << 2)
 } ColorPickerFlags;
 
-typedef struct
+typedef struct PickerData
 {
     v2f a;  // Corresponds to value = 0      (black)
     v2f b;  // Corresponds to saturation = 0 (white)
@@ -59,7 +59,7 @@ struct ColorButton_s
     ColorButton* next;
 };
 
-typedef struct
+typedef struct ColorPicker
 {
     v2i     center;  // In screen pixel coordinates.
     i32     bounds_radius_px;

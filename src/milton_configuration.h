@@ -19,12 +19,16 @@
 // for micro-tweaks. Use a sampling profiler for higher-level performance info
 #define MILTON_ENABLE_PROFILING 0
 
+// When MILTON_DEBUG is 1,
+//  -
+#define MILTON_DEBUG 1
+
 // Yup
 #define MILTON_MULTITHREADED 1
 
 // 0 - Use strict SRGB definition
 // 1 - Use a power curve of 2.
-#define FAST_GAMMA 1
+#define FAST_GAMMA 0
 
 
 // By default, when activating the internal profiler with

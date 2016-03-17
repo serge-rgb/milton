@@ -68,7 +68,7 @@ b32* filter_strokes_to_rect(Arena* arena,
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
         if ( rect_is_valid(stroke_rect) ) {
             if (stroke->num_points == 1) {
-                if (is_inside_rect(stroke_rect, stroke->points[0])) {
+                if ( is_inside_rect(stroke_rect, sub2i(stroke->points[0], center)) ) {
                     mask_array[stroke_i] = true;
                 }
             } else {

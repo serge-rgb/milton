@@ -263,7 +263,6 @@ static b32 stroke_is_not_tiny(Stroke* stroke, CanvasView* view)
 }
 
 // Fills a linked list of strokes that this block needs to render.
-// Returns true if allocation succeeded, false if not.
 static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                             CanvasView* view,
                                             Stroke* strokes,
@@ -280,6 +279,11 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 
     // Fill linked list with strokes clipped to this block
     for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
+
+        if ( stroke_i == num_strokes - 1 ) {
+            int foo =1;
+        }
+
         if ( stroke_i < num_strokes && !stroke_masks[stroke_i] ) {
             // Stroke masks is of size num_strokes, but we use stroke_i ==
             // num_strokes to indicate the current "working stroke"
@@ -296,7 +300,11 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             unclipped_stroke = &strokes[stroke_i];
         }
         assert(unclipped_stroke);
-        if ( stroke_is_not_tiny(unclipped_stroke, view) ) {
+
+
+        b32 single_point = unclipped_stroke->num_points == 1;
+
+        if ( single_point || stroke_is_not_tiny(unclipped_stroke, view) ) {
             Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
             ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
                                                                 enlarged_block, local_scale, reference_point);
@@ -1411,7 +1419,11 @@ static b32 render_blockgroup(MiltonState* milton_state,
             break;
         }
 
+#if MILTON_DEBUG
         if ( SDL_HasSSE2() && !milton_state->DEBUG_sse2_switch ) {
+#else
+        if ( SDL_HasSSE2() ) {
+#endif
             allocation_ok = rasterize_canvas_block_sse2(&render_arena,
                                                         milton_state->view,
                                                         milton_state->strokes,

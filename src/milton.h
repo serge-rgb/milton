@@ -85,17 +85,17 @@ typedef struct MiltonState
 
     struct MiltonGui* gui;
 
+    // ---- The Painting
     Brush   brushes[BrushEnum_COUNT];
     i32     brush_sizes[BrushEnum_COUNT];  // In screen pixels
+    Stroke  working_stroke;
+    Stroke* strokes;
+    i32     num_redos;
+    // ----  // gui->picker.info also stored
 
     CanvasView* view;
     v2i     hover_point;  // Track the pointer when not stroking..
 
-    Stroke  working_stroke;
-
-    Stroke* strokes;
-
-    i32     num_redos;
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
@@ -125,7 +125,7 @@ typedef struct MiltonState
     // ====
     // Debug helpers
     // ====
-#ifndef NDEBUG
+#if MILTON_DEBUG
     b32 DEBUG_sse2_switch;
 #endif
 } MiltonState;

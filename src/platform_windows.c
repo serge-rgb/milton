@@ -181,6 +181,8 @@ int CALLBACK WinMain(
         int nCmdShow
         )
 {
+    char* cmdline = GetCommandLineA();
+    milton_log("%s\n", cmdline);
     milton_main();
 }
 

@@ -22,7 +22,7 @@
 #include "profiler.h"
 #include "rasterizer.h"
 
-#ifndef NDEBUG
+#if MILTON_DEBUG
 #include "tests.h"
 #endif
 
@@ -448,7 +448,10 @@ void milton_init(MiltonState* milton_state)
     }
 
     milton_set_pen_alpha(milton_state, 0.8f);
+
+#if MILTON_DEBUG
     milton_run_tests(milton_state);
+#endif
 
     for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);

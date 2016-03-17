@@ -14,6 +14,9 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+
+#if MILTON_DEBUG
+
 #include "tests.h"
 
 #include "memory.h"
@@ -25,13 +28,10 @@ static void milton_math_tests();
 
 void milton_run_tests(MiltonState* milton_state)
 {
-    milton_math_tests();
-    milton_blend_tests();
-    milton_startup_tests();
+	milton_math_tests();
+	milton_blend_tests();
+	milton_startup_tests();
 }
-
-#ifndef NDEBUG
-
 static void milton_startup_tests()
 {
     v3f rgb = hsv_to_rgb((v3f){ 0,0,0 });
@@ -76,4 +76,12 @@ static void milton_math_tests()
     assert(intersection.x >= 0.99999 && intersection.x <= 1.00001f);
 }
 
-#endif
+#else
+
+// Avoid empty translation unit warning.
+#if defined(_WIN32) && defined(_MSC_VER)
+#pragma warning(push, 0)
+
+#endif  // _WIN32 && _MSC_VER
+
+#endif  // MILTON_DEBUG

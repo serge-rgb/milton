@@ -30,6 +30,9 @@
 #include "memory.c"
 #include "persist.c"
 #include "rasterizer.c"
-#include "tests.c"
 #include "vector.c"
 #include "profiler.c"
+
+#if MILTON_DEBUG
+#include "tests.c"
+#endif

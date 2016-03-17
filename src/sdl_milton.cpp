@@ -25,7 +25,8 @@
 #include "utils.h"
 
 
-struct PlatformInput {
+struct PlatformInput
+{
     b32 is_ctrl_down;
     b32 is_space_down;
     b32 is_pointer_down;  // Left click or wacom input
@@ -240,7 +241,7 @@ int milton_main()
                 }
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     // Add final point
-                    if ( !platform_input.is_panning && platform_input.is_pointer_down ) {
+                     if ( !platform_input.is_panning && platform_input.is_pointer_down ) {
                         set_flag(input_flags, MiltonInputFlags_END_STROKE);
                         input_point = { event.button.x, event.button.y };
                         milton_input.points[num_point_results++] = input_point;
@@ -367,7 +368,7 @@ int milton_main()
                                 milton_set_pen_alpha(milton_state, 1.0f);
                             }
                         }
-#ifndef NDEBUG
+#if MILTON_DEBUG
                         if (keycode == SDLK_ESCAPE) {
                             should_quit = true;
                         }
