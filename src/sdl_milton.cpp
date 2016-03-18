@@ -329,7 +329,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
 // ---- milton_main
 
-int milton_main(const MiltonStartupFlags startup_flags)
+int milton_main(MiltonStartupFlags startup_flags)
 {
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
@@ -419,7 +419,6 @@ int milton_main(const MiltonStartupFlags startup_flags)
 #pragma warning (pop)
 #endif
 
-    // milton_input.flags = MiltonInputFlags_FULL_REFRESH;  // Full draw on first launch
     milton_resize(milton_state, {}, {platform_state.width, platform_state.height});
 
     platform_state.window_id = SDL_GetWindowID(window);
@@ -458,6 +457,13 @@ int milton_main(const MiltonStartupFlags startup_flags)
         ImGuiIO& imgui_io = ImGui::GetIO();
 
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
+
+        // TODO: Is a static the best choice?
+        static b32 first_run = true;
+        if ( first_run ) {
+            first_run = false;
+            milton_input.flags = MiltonInputFlags_FULL_REFRESH;
+        }
 
         if ( platform_state.stopped_panning ) {
             milton_state->request_quality_redraw = true;
