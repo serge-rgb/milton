@@ -14,6 +14,7 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
+#include "milton_configuration.h"
 
 #if MILTON_DEBUG
 

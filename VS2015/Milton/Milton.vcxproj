@@ -80,7 +80,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4505;4100;4201;4204;4191;5027</DisableSpecificWarnings>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
@@ -102,7 +102,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4505;4100;4201;4204;4191;5027</DisableSpecificWarnings>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
@@ -125,7 +125,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4505;4100;4201;4204;4191;5027</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -148,7 +148,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>-I ..\..\third_party\ -I ..\..\third_party\imgui -I ..\..\third_party\SDL2-2.0.3\include -D_CRT_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4668;4505;4100;4800;4127;4201;4204;4191;5027;4514</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4700;4305;4255;4800;4514;4127;4189;4710;4711;4820;4505;4100;4201;4204;4191;5027</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -181,6 +181,7 @@
     <ClCompile Include="..\..\src\gl_helpers.c" />
     <ClCompile Include="..\..\src\gui.c" />
     <ClCompile Include="..\..\src\guipp.cpp" />
+    <ClCompile Include="..\..\src\history_debugger.c" />
     <ClCompile Include="..\..\src\memory.c" />
     <ClCompile Include="..\..\src\milton.c" />
     <ClCompile Include="..\..\src\persist.c" />
