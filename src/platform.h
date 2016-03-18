@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
+
 #pragma once
 
 #if defined(__cplusplus)
@@ -21,14 +22,30 @@ extern "C" {
 
 #include "common.h"
 // EasyTab for drawing tablet support
+
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4668)
+#endif
+
 #include "easytab.h"
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 // ----
 
+typedef enum HistoryDebug
+{
+    HistoryDebug_NOTHING,
+
+    HistoryDebug_RECORD,
+    HistoryDebug_REPLAY,
+} HistoryDebug;
 
 typedef struct MiltonStartupFlags
 {
-    b32 replay;
-    b32 record;
+    HistoryDebug history_debug;
 } MiltonStartupFlags;
 
 typedef struct TabletState_s TabletState;

@@ -179,14 +179,25 @@ void platform_fname_at_config(char* fname, i32 len)
 static MiltonStartupFlags win32_parse_cmdline()
 {
     MiltonStartupFlags startup_flags = { 0 };
+
+    // Debug configuration always records...
 #if MILTON_DEBUG
-    startup_flags.record = true;
+    startup_flags.history_debug = HistoryDebug_RECORD;
 #endif
 
     char* cmdline = GetCommandLineA();
 
     char** tokens = str_tokenize(cmdline);
-    // Do something
+
+    for ( i32 token_i = 0; token_i < sb_count(tokens); ++token_i ) {
+        if ( !strcmp(tokens[token_i], "record") ) {
+            startup_flags.history_debug = HistoryDebug_RECORD;
+        }
+        if ( !strcmp(tokens[token_i], "replay") ) {
+            startup_flags.history_debug = HistoryDebug_REPLAY;
+        }
+    }
+
     str_free(tokens);
 
     return startup_flags;

@@ -14,26 +14,15 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#if defined(_WIN32)
-#include "platform_windows.c"
-#elif defined(__linux__) || defined(__MACH__)
-#include "platform_unix.c"
-#endif
+#include "history_debugger.h"
 
-#include "canvas.c"
-#include "color.c"
-#include "gui.c"
-#include "utils.c"
-#include "history_debugger.c"
-#include "milton.c"
-#include "sb_grow.c"
-#include "gl_helpers.c"
-#include "memory.c"
-#include "persist.c"
-#include "rasterizer.c"
-#include "vector.c"
-#include "profiler.c"
 
-#if MILTON_DEBUG
-#include "tests.c"
-#endif
+// Format for history debug file.
+//
+// [1] u32 n            -   number of inputs
+// [n] MiltonInput i    -   inputs
+
+void history_debugger_append(MiltonInput* milton_input)
+{
+
+}

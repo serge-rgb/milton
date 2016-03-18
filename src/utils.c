@@ -432,4 +432,5 @@ void str_free(char** strings)
    for ( i32 i = 0; i < count_strings; ++i ) {
        mlt_free(strings[i]);
    }
+   sb_free(strings);
 }

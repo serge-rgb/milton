@@ -3,7 +3,7 @@
 ::
 :: - 1: Optimized build.
 :: - 0: Debug build.
-set mlt_opt_level=0
+set mlt_opt_level=1
 
 IF NOT EXIST build mkdir build
 
@@ -37,7 +37,6 @@ set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /nologo /FC /EHsc
 REM 4100 Unreferenced func param (cleanup)
 REM 4820 struct padding
 REM 4255 () != (void)
-REM 4668 Macro not defined. Subst w/0
 REM 4710 Func not inlined
 REM 4711 Auto inline
 REM 4189 Init. Not ref
@@ -52,7 +51,7 @@ REM 4305 truncate T to bool
 REM 4430 Uninitialized local var
 REM 4700 Uninitialized local var
 set comment_for_cleanup=/wd4100 /wd4189 /wd4800 /wd4127 /wd4700
-set mlt_disabled_warnings=%comment_for_cleanup% /wd4305 /wd4820 /wd4255 /wd4668 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027 /wd4514
+set mlt_disabled_warnings=%comment_for_cleanup% /wd4305 /wd4820 /wd4255 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027 /wd4514
 set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab -I ..\third_party\nativefiledialog\src\include
 
 ::set sdl_dir=..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug
