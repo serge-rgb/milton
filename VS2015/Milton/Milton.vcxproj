@@ -182,6 +182,7 @@
     <ClCompile Include="..\..\src\gui.c" />
     <ClCompile Include="..\..\src\guipp.cpp" />
     <ClCompile Include="..\..\src\history_debugger.c" />
+    <ClCompile Include="..\..\src\localization.c" />
     <ClCompile Include="..\..\src\memory.c" />
     <ClCompile Include="..\..\src\milton.c" />
     <ClCompile Include="..\..\src\persist.c" />

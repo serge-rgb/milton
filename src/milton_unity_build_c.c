@@ -32,6 +32,7 @@
 #include "persist.c"
 #include "rasterizer.c"
 #include "vector.c"
+#include "localization.c"
 #include "profiler.c"
 
 #if MILTON_DEBUG

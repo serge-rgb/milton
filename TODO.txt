@@ -50,6 +50,7 @@ Items marked *! needed before "Releasing"
     - Easytab: Stylus buttons.
     - Easytab: Distinction between eraser and pen.
 - Performance:
+    *! Make iterative rendering split the screen into chunks
     - Input gathering thread.
     *! Undo/Redo: Only redraw necessary area.
     - Amdahl's curse... Parallelize GUI rendering

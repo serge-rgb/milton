@@ -20,6 +20,7 @@
 #include <imgui.h>
 
 #include "gui.h"
+#include "localization.h"
 #include "platform.h"
 #include "rasterizer.h"
 #include "persist.h"
@@ -58,31 +59,27 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
     ImGui::PushStyleColor(ImGuiCol_TextDisabled,   ImVec4{.9f,.3f,.3f,1}); ++menu_style_stack;
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4{.3f,.3f,.6f,1}); ++menu_style_stack;
     if ( ImGui::BeginMainMenuBar() ) {
-        if ( ImGui::BeginMenu("File") ) {
-            if ( ImGui::MenuItem("Open Milton Canvas") ) {
+        if ( ImGui::BeginMenu(LOC(file)) ) {
+            if ( ImGui::MenuItem(LOC(open_milton_canvas)) ) {
 
             }
-            if ( ImGui::MenuItem("Export to image...") ) {
+            if ( ImGui::MenuItem(LOC(export_to_image_DOTS)) ) {
                 milton_switch_mode(milton_state, MiltonMode_EXPORTING);
             }
-            if ( ImGui::MenuItem("Quit") ) {
+            if ( ImGui::MenuItem(LOC(quit)) ) {
                 milton_try_quit(milton_state);
             }
             ImGui::EndMenu();
         }
-        if ( ImGui::BeginMenu("Canvas", /*enabled=*/true) ) {
-            if ( ImGui::MenuItem("Set Background Color") ) {
+        if ( ImGui::BeginMenu(LOC(canvas), /*enabled=*/true) ) {
+            if ( ImGui::MenuItem(LOC(set_background_color)) ) {
                 i32 f = (i32)milton_state->gui->flags;
                 set_flag(f, (int)MiltonGuiFlags_CHOOSING_BG_COLOR);
                 milton_state->gui->flags = (MiltonGuiFlags)f;
             }
             ImGui::EndMenu();
         }
-        if ( ImGui::BeginMenu("Help") ) {
-            const char* help_window_title = milton_state->gui->show_help_widget ? "Hide Keyboard Shortcuts" : "Show Keyboard Shortcuts";
-            if ( ImGui::MenuItem(help_window_title) ) {
-                gui_toggle_help(milton_state->gui);
-            }
+        if ( ImGui::BeginMenu(LOC(help)) ) {
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -104,10 +101,10 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
         b32 show_brush_window = (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER);
 
         if ( show_brush_window) {
-            if ( ImGui::Begin("Brushes", NULL, default_imgui_window_flags) ) {
+            if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
                 if ( milton_state->current_mode == MiltonMode_PEN ) {
                     float mut_alpha = pen_alpha;
-                    ImGui::SliderFloat("Opacity", &mut_alpha, 0.1f, 1.0f);
+                    ImGui::SliderFloat(LOC(opacity), &mut_alpha, 0.1f, 1.0f);
                     if ( mut_alpha != pen_alpha ) {
                         milton_set_pen_alpha(milton_state, mut_alpha);
                         i32 f = milton_state->gui->flags;
@@ -119,7 +116,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 const auto size = milton_get_brush_size(milton_state);
                 auto mut_size = size;
 
-                ImGui::SliderInt("Brush Size", &mut_size, 1, k_max_brush_size);
+                ImGui::SliderInt(LOC(brush_size), &mut_size, 1, k_max_brush_size);
 
                 if ( mut_size != size ) {
                     milton_set_brush_size(milton_state, mut_size);
@@ -131,7 +128,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
                 {
                     if ( milton_state->current_mode != MiltonMode_PEN ) {
-                        if (ImGui::Button("Switch to Pen")) {
+                        if (ImGui::Button(LOC(switch_to_pen))) {
                             i32 f = input->flags;
                             set_flag(f, MiltonInputFlags_CHANGE_MODE);
                             input->flags = (MiltonInputFlags)f;
@@ -140,7 +137,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     }
 
                     if ( milton_state->current_mode != MiltonMode_ERASER ) {
-                        if (ImGui::Button("Switch to Eraser")) {
+                        if (ImGui::Button(LOC(switch_to_eraser))) {
                             i32 f = input->flags;
                             set_flag(f, (i32)MiltonInputFlags_CHANGE_MODE);
                             input->flags = (MiltonInputFlags)f;
@@ -165,11 +162,11 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
         if ( check_flag(milton_state->gui->flags, MiltonGuiFlags_CHOOSING_BG_COLOR) ) {
             bool closed = false;
-            if ( ImGui::Begin("Choose Background Color", &closed, default_imgui_window_flags) ) {
+            if ( ImGui::Begin(LOC(choose_background_color), &closed, default_imgui_window_flags) ) {
                 ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
                 ImGui::Text("Sup");
                 v3f bg = milton_state->view->background_color;
-                if ( ImGui::ColorEdit3("Background Color", bg.d) ) {
+                if ( ImGui::ColorEdit3(LOC(background_color), bg.d) ) {
                     milton_state->view->background_color = clamp_01(bg);
                     i32 f = input->flags;
                     set_flag(f, (i32)MiltonInputFlags_FULL_REFRESH);
@@ -194,8 +191,8 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
         ImGui::SetNextWindowPos(ImVec2(100, 30), ImGuiSetCond_Once);
         ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
-        if ( ImGui::Begin("Export...", &opened, ImGuiWindowFlags_NoCollapse) ) {
-            ImGui::Text("Click and drag to select the area to export.");
+        if ( ImGui::Begin(LOC(export_DOTS), &opened, ImGuiWindowFlags_NoCollapse) ) {
+            ImGui::Text(LOC(MSG_click_and_drag_instruction));
 
             Exporter* exporter = &milton_state->gui->exporter;
             if ( exporter->state == ExporterState_SELECTED ) {
@@ -204,17 +201,18 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 int raster_w = abs(exporter->needle.x - exporter->pivot.x);
                 int raster_h = abs(exporter->needle.y - exporter->pivot.y);
 
-                ImGui::Text("Current selection is %dx%d\n",
+                ImGui::Text("%s: %dx%d\n",
+                            LOC(current_selection),
                             raster_w, raster_h);
-                if ( ImGui::InputInt("Scale up", &exporter->scale, 1, /*step_fast=*/2) ) {}
+                if ( ImGui::InputInt(LOC(scale_up), &exporter->scale, 1, /*step_fast=*/2) ) {}
                 if ( exporter->scale <= 0 ) exporter->scale = 1;
                 i32 max_scale = milton_state->view->scale / 2;
                 if ( exporter->scale > max_scale) {
                     exporter->scale = max_scale;
                 }
-                ImGui::Text("Final image size: %dx%d\n", raster_w*exporter->scale, raster_h*exporter->scale);
+                ImGui::Text("%s: %dx%d\n", LOC(final_image_size), raster_w*exporter->scale, raster_h*exporter->scale);
 
-                if ( ImGui::Button("Export selection to image...") ) {
+                if ( ImGui::Button(LOC(export_selection_to_image_DOTS)) ) {
                     // Render to buffer
                     int bpp = 4;  // bytes per pixel
                     i32 w = raster_w * exporter->scale;
@@ -230,13 +228,14 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                         }
                         mlt_free (buffer);
                     } else {
-                        platform_dialog("Did not write file. Not enough memory available for operation.", "Error");
+                        platform_dialog(LOC(MSG_memerr_did_not_write), //""
+                                        LOC(error));
                     }
                 }
             }
         }
 
-        if ( ImGui::Button("Cancel") ) {
+        if ( ImGui::Button(LOC(cancel)) ) {
             reset = true;
             milton_use_previous_mode(milton_state);
         }
@@ -251,6 +250,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
     }
 
     // Shortcut help. Also shown regardless of UI visibility.
+    // TODO: Remove this.
     if ( milton_state->gui->show_help_widget ) {
         //bool opened;
         ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_Always);

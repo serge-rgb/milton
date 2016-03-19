@@ -70,5 +70,8 @@
     <ClCompile Include="..\..\src\history_debugger.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\localization.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

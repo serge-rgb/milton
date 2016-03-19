@@ -14,10 +14,20 @@
 // along with Milton.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#include "history_debugger.h"
+#pragma once
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+#define LOC(str) get_localized_string(TXT_ ## str)
+
+#include "localization_txt_enums.h"
+
+// str -- A string, translated and present in the tables within localization.c
+char* get_localized_string(int id);
 
 
-void history_debugger_append(MiltonInput* milton_input)
-{
-    // Nothing here yet...
+#if defined(__cplusplus)
 }
+#endif

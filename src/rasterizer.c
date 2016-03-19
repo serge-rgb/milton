@@ -438,7 +438,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
-#if 1 // Visualize it with black
+#if 0 // Visualize it with black
                     v4f dst = {0, 0, 0, is_eraser? 1 : clipped_stroke->brush.color.a};
 #else
                     v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
@@ -532,9 +532,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                 fdists[13] = a2 + b4;
                                 fdists[14] = a3 + b4;
                                 fdists[15] = a4 + b4;
-
                             }
-
 
                             // Perf note: We remove the sqrtf call when it's
                             // safe to square the radius
@@ -1570,13 +1568,14 @@ static void render_canvas_iteratively(MiltonState* milton_state, Rect raster_lim
     i32 original_df = view->downsampling_factor;
 
     i32 time_ms = 0;
-    view->downsampling_factor = 8;  // Starts at 4, the loop divides at the start.
+    view->downsampling_factor = 8;
 
-    while ( view->downsampling_factor > 1 && time_ms < 15 ) {
-        view->downsampling_factor /= 2;
+    while ( view->downsampling_factor > 0 && time_ms < 30 ) {
+        milton_log("iterative: %d\n", view->downsampling_factor);
         i32 start_ms = SDL_GetTicks();
         render_canvas(milton_state, raster_limits);
         time_ms += SDL_GetTicks() - start_ms;
+        view->downsampling_factor /= 2;
     }
 
     view->downsampling_factor = original_df;
