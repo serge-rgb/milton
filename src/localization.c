@@ -62,29 +62,29 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         "Cancel", /* TXT_cancel                         , */
     },
     { // Spanish
-        /* TXT_open_milton_canvas, */
-        /* TXT_export_to_image_DOTS, */
-        /* TXT_quit, */
-        /* TXT_canvas, */
-        /* TXT_set_background_color, */
-        /* TXT_help, */
-        /* TXT_brushes                        , */
-        /* TXT_opacity                        , */
-        /* TXT_brush_size                     , */
-        /* TXT_switch_to_pen                  , */
-        /* TXT_switch_to_eraser               , */
-        /* TXT_choose_background_color        , */
-        /* TXT_background_color               , */
-        /* TXT_export_DOTS                    , */
-        /* TXT_MSG_click_and_drag_instruction , */
-        /* TXT_current_selection              , */
-        /* TXT_scale_up                       , */
-        /* TXT_final_image_size               , */
-        /* TXT_export_selection_to_image_DOTS , */
-        /* TXT_MSG_memerr_did_not_write       , */
-        /* TXT_error                          , */
-        /* TXT_cancel                         , */
-        0,
+        "Archivo",/* TXT_file, */
+        "Abrir Lienzo",/* TXT_open_milton_canvas, */
+        "Exportar a Imagen...",/* TXT_export_to_image_DOTS, */
+        "Salir",/* TXT_quit, */
+        "Lienzo",/* TXT_canvas, */
+        "Cambiar Color de Fondo",/* TXT_set_background_color, */
+        "Ayuda",/* TXT_help, */
+        "Brochas",/* TXT_brushes                        , */
+        "Opacidad",/* TXT_opacity                        , */
+        "Tamaño",/* TXT_brush_size                     , */
+        "Usar pluma",/* TXT_switch_to_pen                  , */
+        "Usar goma",/* TXT_switch_to_eraser               , */
+        "Escoger color de fondo",/* TXT_choose_background_color        , */
+        "Color",/* TXT_background_color               , */
+        "Exportar...",/* TXT_export_DOTS                    , */
+        "Haz click y Arrastra",/* TXT_MSG_click_and_drag_instruction , */
+        "Selección actual",/* TXT_current_selection              , */
+        "Escalar",/* TXT_scale_up                       , */
+        "Tamaño final",/* TXT_final_image_size               , */
+        "Exportar Selección a Imagen...",/* TXT_export_selection_to_image_DOTS , */
+        "No se escribió archivo. No hay suficiente memoria.",/* TXT_MSG_memerr_did_not_write       , */
+        "Error",/* TXT_error                          , */
+        "Cancelar",/* TXT_cancel                         , */
     }
 };
 
@@ -93,6 +93,7 @@ char* get_localized_string(int id)
 {
     //char* result = g_localized_strings[LOC_Foobar][id];
     char* result = g_localized_strings[LOC_English][id];
+    //char* result = g_localized_strings[LOC_Spanish][id];
     if ( !result ) {
         return "STRING NEEDS LOCALIZATION";
     }

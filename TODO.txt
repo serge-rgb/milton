@@ -22,7 +22,6 @@ Items marked *! needed before "Releasing"
         - Gestures (OSX, Windows)
     - UI
         *! add zoom keys, menu options (for zoom and other features)
-        *! Write a system for easy translation. At least do it for Spanish.
         - async progress dialog (windows)
         - async progress dialog (mac)
         - async progress dialog (linux)
