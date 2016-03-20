@@ -217,7 +217,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     // Stahp
                 }
                 if ( platform_state->is_ctrl_down ) {  // Ctrl-KEY with no key repeats.
-                    // ...
+                    if ( keycode == SDLK_e ) {
+                        set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
+                        milton_input.mode_to_set = MiltonMode_EXPORTING;
+                    }
                 } else {
                     if ( !ImGui::GetIO().WantCaptureMouse ) {
                         if (keycode == SDLK_e) {
@@ -226,9 +229,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         } else if (keycode == SDLK_b) {
                             set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                             milton_input.mode_to_set = MiltonMode_PEN;
-                        } else if (keycode == SDLK_r) {
-                            set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
-                            milton_input.mode_to_set = MiltonMode_EXPORTING;
                         } else if (keycode == SDLK_TAB) {
                             gui_toggle_visibility(milton_state->gui);
                         } else if (keycode == SDLK_F1) {

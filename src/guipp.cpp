@@ -72,10 +72,24 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu(LOC(canvas), /*enabled=*/true) ) {
-            if ( ImGui::MenuItem(LOC(set_background_color)) ) {
-                i32 f = (i32)milton_state->gui->flags;
-                set_flag(f, (int)MiltonGuiFlags_CHOOSING_BG_COLOR);
-                milton_state->gui->flags = (MiltonGuiFlags)f;
+            //if ( ImGui::MenuItem(LOC(set_background_color)) ) {
+            if ( ImGui::BeginMenu(LOC(set_background_color)) ) {
+                //ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
+                v3f bg = milton_state->view->background_color;
+                if ( ImGui::ColorEdit3(LOC(color), bg.d) ) {
+                    milton_state->view->background_color = clamp_01(bg);
+                    i32 f = input->flags;
+                    set_flag(f, (i32)MiltonInputFlags_FULL_REFRESH);
+                    set_flag(f, (i32)MiltonInputFlags_FAST_DRAW);
+                    input->flags = (MiltonInputFlags)f;
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+        if ( ImGui::BeginMenu(LOC(view)) ) {
+            if ( ImGui::MenuItem(LOC(toggle_gui_visibility)) ) {
+                gui_toggle_visibility(milton_state->gui);
             }
             ImGui::EndMenu();
         }
@@ -159,29 +173,6 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 milton_state->gui->preview_pos = pos;
             }
         }
-
-        if ( check_flag(milton_state->gui->flags, MiltonGuiFlags_CHOOSING_BG_COLOR) ) {
-            bool closed = false;
-            if ( ImGui::Begin(LOC(choose_background_color), &closed, default_imgui_window_flags) ) {
-                ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
-                ImGui::Text("Sup");
-                v3f bg = milton_state->view->background_color;
-                if ( ImGui::ColorEdit3(LOC(background_color), bg.d) ) {
-                    milton_state->view->background_color = clamp_01(bg);
-                    i32 f = input->flags;
-                    set_flag(f, (i32)MiltonInputFlags_FULL_REFRESH);
-                    set_flag(f, (i32)MiltonInputFlags_FAST_DRAW);
-                    input->flags = (MiltonInputFlags)f;
-                }
-                if ( closed ) {
-                    i32 f = milton_state->gui->flags;
-                    unset_flag(f, (i32)MiltonGuiFlags_CHOOSING_BG_COLOR);
-                    milton_state->gui->flags = (MiltonGuiFlags)f;
-                }
-            }
-            ImGui::End();
-        }
-
     } // Visible
 
     // Note: The export window is drawn regardless of gui visibility.

@@ -17,6 +17,7 @@
 #include "localization.h"
 
 #include "common.h"
+#include "memory.h"
 
 enum Languages
 {
@@ -29,8 +30,6 @@ enum Languages
 
 static int g_chosen_language = LOC_English;
 
-static i32 g_uids[1024];
-
 static char* g_localized_strings[LOC_Count][TXT_Count] =
 {
     { // Foo
@@ -42,7 +41,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         "Export to Image...",
         "Quit",/* TXT_quit, */
         "Canvas",/* TXT_canvas, */
-        "Set background color",/* TXT_set_background_color, */
+        "Set Background Color",/* TXT_set_background_color, */
         "Help",/* TXT_help, */
         "Brushes", /* TXT_brushes                        , */
         "Opacity", /* TXT_opacity                        , */
@@ -50,7 +49,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         "Switch to pen", /* TXT_switch_to_pen                  , */
         "Switch to eraser", /* TXT_switch_to_eraser               , */
         "Choose background color", /* TXT_choose_background_color        , */
-        "Background color", /* TXT_background_color               , */
+        "Color", /* TXT_color               , */
         "Export...", /* TXT_export_DOTS                    , */
         "Click and drag to select the area to export.", /* TXT_MSG_click_and_drag_instruction , */
         "Current selection", /* TXT_current_selection              , */
@@ -60,6 +59,8 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         "Did not write file. Not enough memory available for operation.", /* TXT_MSG_memerr_did_not_write       , */
         "Error", /* TXT_error                          , */
         "Cancel", /* TXT_cancel                         , */
+        "View",/* TXT_view                            , */
+        "Toggle GUI Visibility",/* TXT_toggle_gui_visibility           , */
     },
     { // Spanish
         "Archivo",/* TXT_file, */
@@ -75,7 +76,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         "Usar pluma",/* TXT_switch_to_pen                  , */
         "Usar goma",/* TXT_switch_to_eraser               , */
         "Escoger color de fondo",/* TXT_choose_background_color        , */
-        "Color",/* TXT_background_color               , */
+        "Color",/* TXT_color               , */
         "Exportar...",/* TXT_export_DOTS                    , */
         "Haz click y Arrastra",/* TXT_MSG_click_and_drag_instruction , */
         "Selección actual",/* TXT_current_selection              , */
@@ -85,17 +86,65 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         "No se escribió archivo. No hay suficiente memoria.",/* TXT_MSG_memerr_did_not_write       , */
         "Error",/* TXT_error                          , */
         "Cancelar",/* TXT_cancel                         , */
+        "Vista",/* TXT_view                            , */
+        "Mostrar/Ocultar Interfaz",/* TXT_toggle_gui_visibility           , */
     }
 };
+
+// Non-Mac:
+//  C(x) => [Ctrl+x]
+#if !defined(__MACH__)
+#define C(s) "Ctrl+" s
+#else
+#define C(s) "CMD+" s
+#endif
+
+// Exclusively NULL pointers except for translated strings which represent a command.
+static char* g_command_abbreviations[TXT_Count] =
+{
+    [TXT_export_to_image_DOTS] = C("E"),
+    [TXT_quit]                  = "ESC",
+    [TXT_toggle_gui_visibility] = "TAB",
+};
+
+#undef C
+
+// These get malloc'd once in case that the corresponding text includes a command shortcut (see g_command_abbreviations)
+static char* g_baked_strings_with_commands[TXT_Count];
 
 // str -- A string, translated and present in the tables within localization.c
 char* get_localized_string(int id)
 {
-    //char* result = g_localized_strings[LOC_Foobar][id];
-    char* result = g_localized_strings[LOC_English][id];
-    //char* result = g_localized_strings[LOC_Spanish][id];
-    if ( !result ) {
-        return "STRING NEEDS LOCALIZATION";
+    // TODO: Grab this from system
+    i32 loc = LOC_English;
+
+    char* result = g_localized_strings[loc][id];
+    if ( result ) {
+        char* cmd = g_command_abbreviations[id];
+
+        // Include keyboard shortcut in string
+        if ( cmd ) {
+            if ( !g_baked_strings_with_commands[id] ) {
+                char* name  = g_localized_strings[loc][id];
+                char* spacer = " - ";
+
+                size_t len = strlen(name) + strlen(spacer) + strlen(cmd) + 2 /*[]*/+ 1/*\n*/;
+                char* with_cmd = mlt_calloc(len, 1);
+
+                strncat_s(with_cmd, len, name, strlen(name));
+                strncat_s(with_cmd, len, spacer, strlen(spacer));
+
+                strncat_s(with_cmd, len, "[", 1);
+                strncat_s(with_cmd, len, cmd, strlen(cmd));
+                strncat_s(with_cmd, len, "]", 1);
+
+                g_baked_strings_with_commands[id] = with_cmd;
+            }
+            result = g_baked_strings_with_commands[id];
+        }
+    } else {
+        result = "STRING NEEDS LOCALIZATION";
     }
+
     return result;
 }
