@@ -1443,26 +1443,28 @@ int renderer_worker_thread(void* data)
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;
     i32 id = params->worker_id;
-    RenderStack* render_stack = milton_state->render_stack;
+    volatile RenderStack* render_stack = milton_state->render_stack;
 
     for ( ;; ) {
         int err = SDL_SemWait(render_stack->work_available);
         if ( err != 0 ) {
             milton_fatal("Failure obtaining semaphore inside render worker");
         }
-        err = SDL_LockMutex(render_stack->mutex);
-        if ( err != 0 ) {
-            milton_fatal("Failure locking render queue mutex");
-        }
-        i32 index = -1;
         BlockgroupRenderData blockgroup_data = { 0 };
+        i32 index = -1;
+
         {
+            err = SDL_LockMutex(render_stack->mutex);
+            if ( err != 0 ) {
+                milton_fatal("Failure locking render queue mutex");
+            }
             index = --render_stack->index;
-            assert (index >= 0);
-            assert (index <  RENDER_STACK_SIZE);
-            blockgroup_data = render_stack->blockgroup_render_data[index];
             SDL_UnlockMutex(render_stack->mutex);
         }
+
+        assert (index >= 0);
+        assert (index <  RENDER_STACK_SIZE);
+        blockgroup_data = render_stack->blockgroup_render_data[index];
 
         assert (index >= 0);
 
@@ -1486,15 +1488,17 @@ static void produce_render_work(MiltonState* milton_state,
                                 BlockgroupRenderData blockgroup_render_data)
 {
     RenderStack* render_stack = milton_state->render_stack;
-    i32 lock_err = SDL_LockMutex(milton_state->render_stack->mutex);
-    if ( !lock_err ) {
-        if ( render_stack->index < RENDER_STACK_SIZE ) {
-            render_stack->blockgroup_render_data[render_stack->index++] = blockgroup_render_data;
+
+    {
+        i32 lock_err = SDL_LockMutex(milton_state->render_stack->mutex);
+        if ( !lock_err ) {
+            if ( render_stack->index < RENDER_STACK_SIZE ) {
+                render_stack->blockgroup_render_data[render_stack->index++] = blockgroup_render_data;
+            }
+            SDL_UnlockMutex(render_stack->mutex);
+        } else {
+            assert (!"Lock failure not handled");
         }
-        SDL_UnlockMutex(render_stack->mutex);
-    }
-    else {
-        assert (!"Lock failure not handled");
     }
 
     SDL_SemPost(render_stack->work_available);

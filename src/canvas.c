@@ -47,16 +47,6 @@ b32* filter_strokes_to_rect(Arena* arena,
                             Stroke* strokes,
                             Rect rect)
 {
-    v2i center = (v2i){
-        (rect.left + rect.right) / 2,
-        (rect.top + rect.bottom) / 2,
-    };
-
-    rect.left = rect.left - center.w;
-    rect.right = rect.right - center.w;
-    rect.top = rect.top - center.h;
-    rect.bottom = rect.bottom - center.h;
-
     size_t num_strokes = (size_t)sb_count(strokes);
     b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
     if (!mask_array) {
@@ -68,13 +58,13 @@ b32* filter_strokes_to_rect(Arena* arena,
         Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
         if ( rect_is_valid(stroke_rect) ) {
             if (stroke->num_points == 1) {
-                if ( is_inside_rect(stroke_rect, sub2i(stroke->points[0], center)) ) {
+                if ( is_inside_rect(stroke_rect, stroke->points[0]) ) {
                     mask_array[stroke_i] = true;
                 }
             } else {
                 for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
-                    v2i a = sub2i(stroke->points[point_i    ], center);
-                    v2i b = sub2i(stroke->points[point_i + 1], center);
+                    v2i a = stroke->points[point_i    ];
+                    v2i b = stroke->points[point_i + 1];
 
                     b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
                                    (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||

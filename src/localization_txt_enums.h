@@ -16,13 +16,13 @@
 
 enum Texts
 {
-    TXT_file,
-    TXT_open_milton_canvas,
-    TXT_export_to_image_DOTS,
-    TXT_quit,
-    TXT_canvas,
-    TXT_set_background_color,
-    TXT_help,
+    TXT_file                           ,
+    TXT_open_milton_canvas             ,
+    TXT_export_to_image_DOTS           ,
+    TXT_quit                           ,
+    TXT_canvas                         ,
+    TXT_set_background_color           ,
+    TXT_help                           ,
     TXT_brushes                        ,
     TXT_opacity                        ,
     TXT_brush_size                     ,
@@ -39,6 +39,8 @@ enum Texts
     TXT_MSG_memerr_did_not_write       ,
     TXT_error                          ,
     TXT_cancel                         ,
+    // ==== DO NOT RE-ORDER ABOVE THIS LINE
+    // ==== TRANSLATION COMPLETED UNTIL THIS POINT: English, Spanish
 
     TXT_Count,
 };
