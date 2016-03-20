@@ -195,7 +195,6 @@ static b32 current_mode_is_for_painting(MiltonState* milton_state)
     return result;
 }
 
-
 static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 {
     if ( input->input_count == 0 ) {
@@ -408,10 +407,12 @@ void milton_init(MiltonState* milton_state)
     // Set the view
     {
         milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
-        milton_state->view->scale = MILTON_DEFAULT_SCALE;
-        milton_state->view->downsampling_factor = 1;
-
-        milton_state->view->background_color = (v3f){ 1, 1, 1 };
+        *milton_state->view = (CanvasView) {
+            .scale               = MILTON_DEFAULT_SCALE,
+            .downsampling_factor = 1,
+            .num_layers          = 1,
+            .background_color    = (v3f){ 1, 1, 1 },
+        };
 #if 0
         milton_state->view->rotation = 0;
         for (int d = 0; d < 360; d++)
@@ -579,13 +580,65 @@ void milton_expand_render_memory(MiltonState* milton_state)
 
         milton_state->worker_needs_memory = false;
     }
-
 }
+
+Stroke layer_pop_top_stroke(MiltonState* milton_state)
+{
+    i32 layer = milton_state->view->working_layer;
+    Stroke* strokes = milton_state->strokes;
+
+    // TODO
+    //  - Keep sorted
+    //
+
+    Stroke result = {0};
+
+    for (i32 i = sb_count(strokes)-1; i >= 0; --i) {
+        if ( strokes[i].layer == layer ) {
+            result = strokes[i];
+
+            // Now move everything down...
+            for ( int j = i+1; j < sb_count(strokes); ++j ) {
+                strokes[j-1] = strokes[j];
+            }
+            sb_pop(strokes);
+            break;
+        }
+    }
+
+    return result;
+}
+
+// Push stroke at the top of the current layer
+static void layer_push_stroke(MiltonState* milton_state, Stroke stroke)
+{
+    sb_push(milton_state->strokes, stroke);
+    // TODO
+    //  - Keep sorted
+}
+
+Stroke layer_get_top_stroke(MiltonState* milton_state)
+{
+    i32 layer = milton_state->view->working_layer;
+    Stroke* strokes = milton_state->strokes;
+
+    // TODO
+    //  - Keep sorted
+
+    for (i32 i = sb_count(strokes)-1; i >= 0; --i) {
+        if ( strokes[i].layer == layer ) {
+            return strokes[i];
+        }
+    }
+
+    assert ("This function should always return!!!");
+    return (Stroke){0};
+}
+
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
     // TODO: Save redo point?
     b32 should_save =
-            //(input->point != NULL) ||
             (check_flag(input->flags, MiltonInputFlags_END_STROKE)) ||
             (check_flag(input->flags, MiltonInputFlags_UNDO)) ||
             (check_flag(input->flags, MiltonInputFlags_REDO));
@@ -693,21 +746,18 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    if (check_flag( input->flags, MiltonInputFlags_UNDO )) {
-        if ( milton_state->working_stroke.num_points != 0  ) {
-            milton_state->working_stroke.num_points = 0;
-        } else if ( sb_count(milton_state->strokes) > 0 ) {
-            sb_pop(milton_state->strokes);
-            milton_state->num_redos++;
+    {
+        if (check_flag( input->flags, MiltonInputFlags_UNDO )) {
+            Stroke stroke = layer_pop_top_stroke(milton_state);
+            sb_push(milton_state->redo_stack, stroke);
+            set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
         }
-        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
-    } else if (check_flag( input->flags, MiltonInputFlags_REDO )) {
-        if ( milton_state->num_redos > 0 ) {
-            //milton_state->strokes.count++;
-            sb_unpop(milton_state->strokes);
-            milton_state->num_redos--;
+        else if ( check_flag(input->flags, MiltonInputFlags_REDO ) ) {
+            if (sb_count(milton_state->redo_stack) > 0) {
+                layer_push_stroke(milton_state, sb_pop(milton_state->redo_stack));
+                set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+            }
         }
-        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
     }
 
 #if 0
@@ -753,7 +803,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             }
 
             // Clear redo stack
-            milton_state->num_redos = 0;
+            sb_reset(milton_state->redo_stack);
         }
     }
 
@@ -801,6 +851,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 {
                     milton_state->working_stroke.num_points = 0;
                 }
+
                 set_flag(render_flags, MiltonRenderFlags_FINISHED_STROKE);
             }
         }

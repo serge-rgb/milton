@@ -152,24 +152,24 @@ typedef struct
 
 // STB stretchy buffer
 
-#define sb_free(a)          ((a) ? free(stb__sbraw(a)),0 : 0)
-#define sb_push(a,v)        (stb__sbmaybegrow(a,1), (a)[stb__sbn(a)++] = (v))
-#define sb_reset(a)         (stb__sbn(a) = 0)
-#define sb_pop(a)           ((a)[--stb__sbn(a)])
-#define sb_unpop(a)         (stb__sbn(a)++)
-#define sb_count(a)         ((a) ? stb__sbn(a) : 0)
-#define sb_add(a,n)         (stb__sbmaybegrow(a,n), stb__sbn(a)+=(n), &(a)[stb__sbn(a)-(n)])
-#define sb_peek(a)          ((a)[stb__sbn(a)-1])
+#define sb_free(a)          ((a) ? free(sb__sbraw(a)),0 : 0)
+#define sb_push(a,v)        (sb__sbmaybegrow(a,1), (a)[sb__sbn(a)++] = (v))
+#define sb_reset(a)         ((a) ? (sb__sbn(a) = 0) : 0)
+#define sb_pop(a)           ((a)[--sb__sbn(a)])
+#define sb_unpop(a)         (sb__sbn(a)++)
+#define sb_count(a)         ((a) ? sb__sbn(a) : 0)
+#define sb_add(a,n)         (sb__sbmaybegrow(a,n), sb__sbn(a)+=(n), &(a)[sb__sbn(a)-(n)])
+#define sb_peek(a)          ((a)[sb__sbn(a)-1])
 
-#define stb__sbraw(a) ((i32 *) (a) - 2)
-#define stb__sbm(a)   stb__sbraw(a)[0]
-#define stb__sbn(a)   stb__sbraw(a)[1]
+#define sb__sbraw(a) ((i32 *) (a) - 2)
+#define sb__sbm(a)   sb__sbraw(a)[0]
+#define sb__sbn(a)   sb__sbraw(a)[1]
 
-#define stb__sbneedgrow(a,n)  ((a)==0 || stb__sbn(a)+(n) >= stb__sbm(a))
-#define stb__sbmaybegrow(a,n) (stb__sbneedgrow(a,(n)) ? stb__sbgrow(a,n) : 0)
-#define stb__sbgrow(a,n)      ((a) = stb__sbgrowf((a), (n), sizeof(*(a))))
+#define sb__sbneedgrow(a,n)  ((a)==0 || sb__sbn(a)+(n) >= sb__sbm(a))
+#define sb__sbmaybegrow(a,n) (sb__sbneedgrow(a,(n)) ? sb__sbgrow(a,n) : 0)
+#define sb__sbgrow(a,n)      ((a) = sb__sbgrowf((a), (n), sizeof(*(a))))
 
-void* stb__sbgrowf(void *arr, int increment, int itemsize);
+void* sb__sbgrowf(void *arr, int increment, int itemsize);
 
 // ASCII String utils
 

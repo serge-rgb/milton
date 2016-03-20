@@ -41,6 +41,7 @@ enum Texts
     TXT_cancel                          ,
     TXT_view                            ,
     TXT_toggle_gui_visibility           ,
+    TXT_layers                          ,
     // ==== DO NOT RE-ORDER ABOVE THIS LINE
     // ==== TRANSLATION COMPLETED UNTIL THIS POINT: English, Spanish
 

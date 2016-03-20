@@ -170,9 +170,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 if (event.wheel.windowID != platform_state->window_id) {
                     break;
                 }
-
-                milton_input.scale += event.wheel.y;
-                set_flag(input_flags, MiltonInputFlags_FAST_DRAW);
+                if ( !ImGui::GetIO().WantCaptureMouse ) {
+                    milton_input.scale += event.wheel.y;
+                    set_flag(input_flags, MiltonInputFlags_FAST_DRAW);
+                }
 
                 break;
             }

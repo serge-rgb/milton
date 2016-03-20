@@ -109,8 +109,9 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
         /* ImGuiSetCond_FirstUseEver */
 
+        const f32 brush_windwow_height = 109;
         ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Always);
-        ImGui::SetNextWindowSize({271, 109}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
+        ImGui::SetNextWindowSize({271, brush_windwow_height}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
 
         b32 show_brush_window = (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER);
 
@@ -173,6 +174,46 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 milton_state->gui->preview_pos = pos;
             }
         }
+
+        // Layer window
+        ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiSetCond_FirstUseEver);
+        if ( ImGui::Begin(LOC(layers)) ) {
+            CanvasView* view = milton_state->view;
+            // left
+            ImGui::BeginChild("left pane", ImVec2(150, 0), true);
+            for (int i = 0; i < view->num_layers; ++i) {
+                char label[128];
+                sprintf(label, "Layer %d", i+1);
+                if (ImGui::Selectable(label, view->working_layer == i)) {
+                    view->working_layer = i;
+                }
+            }
+            ImGui::EndChild();
+            ImGui::SameLine();
+
+            // right
+            ImGui::BeginGroup();
+            //ImGui::BeginChild("item view", ImVec2(0, -30-ImGui::GetItemsLineHeightWithSpacing()));
+            ImGui::BeginChild("item view", ImVec2(0, 50));
+            if (ImGui::Button("New Layer")) {
+                view->num_layers++;
+            }
+            ImGui::Separator();
+            ImGui::EndChild();
+            ImGui::BeginChild("buttons");
+            ImGui::Text("Layer %d", view->working_layer+1);
+            if (ImGui::Button("Rename")) {}
+            ImGui::Text("Move");
+            if (ImGui::Button("Up")) {}
+            ImGui::SameLine();
+            if (ImGui::Button("Down")) {}
+            if (ImGui::Button("Reset to 1")) { view->working_layer = 0 ; view->num_layers = 1; }
+            //ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
+            ImGui::EndChild();
+            ImGui::EndGroup();
+
+        } ImGui::End();
     } // Visible
 
     // Note: The export window is drawn regardless of gui visibility.

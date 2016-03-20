@@ -88,14 +88,16 @@ typedef struct MiltonState
     // ---- The Painting
     Brush   brushes[BrushEnum_COUNT];
     i32     brush_sizes[BrushEnum_COUNT];  // In screen pixels
-    Stroke  working_stroke;
+
     Stroke* strokes;
-    i32     num_redos;
+    Stroke  working_stroke;
     // ----  // gui->picker.info also stored
+
+    // Stretchy buffer for redo/undo
+    Stroke* redo_stack;
 
     CanvasView* view;
     v2i     hover_point;  // Track the pointer when not stroking..
-
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
@@ -198,6 +200,10 @@ void milton_update(MiltonState* milton_state, MiltonInput* input);
 void milton_expand_render_memory(MiltonState* milton_state);
 
 void milton_try_quit(MiltonState* milton_state);
+
+// Get the topmost stroke for current layer.
+Stroke layer_get_top_stroke(MiltonState* milton_state);
+Stroke layer_pop_top_stroke(MiltonState* milton_state);
 
 #if defined(__cplusplus)
 }

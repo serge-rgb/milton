@@ -61,6 +61,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         "Cancel", /* TXT_cancel                         , */
         "View",/* TXT_view                            , */
         "Toggle GUI Visibility",/* TXT_toggle_gui_visibility           , */
+        "Layers",/* TXT_layers                          , */
     },
     { // Spanish
         "Archivo",/* TXT_file, */
@@ -88,6 +89,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         "Cancelar",/* TXT_cancel                         , */
         "Vista",/* TXT_view                            , */
         "Mostrar/Ocultar Interfaz",/* TXT_toggle_gui_visibility           , */
+        "Capas",/* TXT_layers                          , */
     }
 };
 

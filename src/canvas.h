@@ -21,31 +21,34 @@
 #include "memory.h"
 #include "utils.h"
 
-typedef struct
+typedef struct Brush
 {
-    i32     radius;  // This should be replaced by a BrushType and some union containing brush info.
-    v4f     color;
-    f32     alpha;
+    i32 radius;  // This should be replaced by a BrushType and some union containing brush info.
+    v4f color;
+    f32 alpha;
 } Brush;
 
-typedef struct
+typedef struct Stroke
 {
     Brush   brush;
     v2i*    points;
     f32*    pressures;
     i32     num_points;
+    i32     layer;
 } Stroke;
 
 // IMPORTANT: CanvasView needs to be a flat structure.
-typedef struct
+typedef struct CanvasView
 {
-    v2i     screen_size;            // Size in pixels
-    i32     scale;                  // Zoom
-    v2i     screen_center;          // In pixels
-    v2i     pan_vector;             // In canvas scale
-    i32     downsampling_factor;
-    i32     canvas_radius_limit;
-    v3f     background_color;
+    v2i screen_size;            // Size in pixels
+    i32 scale;                  // Zoom
+    v2i screen_center;          // In pixels
+    v2i pan_vector;             // In canvas scale
+    i32 downsampling_factor;
+    i32 canvas_radius_limit;
+    v3f background_color;
+    i32 working_layer;
+    i32 num_layers;
 } CanvasView;
 
 v2i canvas_to_raster(CanvasView* view, v2i canvas_point);

@@ -149,6 +149,10 @@ void milton_load(MiltonState* milton_state)
                     ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
                     if ( !ok ) mlt_free (stroke->points);
                 }
+
+                if ( ok ) {
+                    ok = fread_checked(&stroke->layer, sizeof(i32), 1, fd);
+                }
             }
 
             if ( ok ) { ok = fread_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
@@ -193,6 +197,7 @@ void milton_save(MiltonState* milton_state)
                 if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
                 if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
                 if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
+                if ( ok ) { ok = fwrite_checked(&stroke->layer, sizeof(i32), 1, fd); }
                 if ( !ok ) {
                     break;
                 }

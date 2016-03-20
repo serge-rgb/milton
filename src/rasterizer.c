@@ -78,7 +78,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
         return NULL;
     }
 
-    clipped_stroke->next = NULL;
+    clipped_stroke->next  = NULL;
     clipped_stroke->brush = in_stroke->brush;
 
     // ... now substitute the point data with an array of our own.
@@ -396,6 +396,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                                        strokes, stroke_masks, working_stroke,
                                                        canvas_block, local_scale, reference_point,
                                                        &allocation_ok);
+
+
     if (!allocation_ok) {
         // Request more memory
         return false;
@@ -661,6 +663,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                                        working_stroke,
                                                        canvas_block, local_scale, reference_point,
                                                        &allocation_ok);
+
     if ( !allocation_ok ) {
         // Request more memory
         return false;
@@ -1391,7 +1394,7 @@ static b32 render_blockgroup(MiltonState* milton_state,
                 raster_to_canvas(milton_state->view, raster_blockgroup_rect.bot_right);
     }
 
-    // Filter strokes to this blockgroup.
+    // Filter strokes to this blockgroup.https://www.twitch.tv/garlandobloom
     b32* stroke_masks = filter_strokes_to_rect(blockgroup_arena,
                                                milton_state->strokes,
                                                canvas_blockgroup_rect);
@@ -1575,7 +1578,6 @@ static void render_canvas_iteratively(MiltonState* milton_state, Rect raster_lim
     view->downsampling_factor = 8;
 
     while ( view->downsampling_factor > 0 && time_ms < 30 ) {
-        milton_log("iterative: %d\n", view->downsampling_factor);
         i32 start_ms = SDL_GetTicks();
         render_canvas(milton_state, raster_limits);
         time_ms += SDL_GetTicks() - start_ms;
