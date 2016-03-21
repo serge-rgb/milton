@@ -35,6 +35,7 @@ typedef struct Stroke
     f32*    pressures;
     i32     num_points;
     i32     layer;
+    i32     id;  // Chronologically increasing. For undo/redo.
 } Stroke;
 
 // IMPORTANT: CanvasView needs to be a flat structure.

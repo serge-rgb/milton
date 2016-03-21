@@ -1456,18 +1456,15 @@ int renderer_worker_thread(void* data)
         BlockgroupRenderData blockgroup_data = { 0 };
         i32 index = -1;
 
-        {
-            err = SDL_LockMutex(render_stack->mutex);
-            if ( err != 0 ) {
-                milton_fatal("Failure locking render queue mutex");
-            }
-            index = --render_stack->index;
-            SDL_UnlockMutex(render_stack->mutex);
+        err = SDL_LockMutex(render_stack->mutex);
+        if ( err != 0 ) {
+            milton_fatal("Failure locking render queue mutex");
         }
-
+        index = --render_stack->index;
         assert (index >= 0);
         assert (index <  RENDER_STACK_SIZE);
         blockgroup_data = render_stack->blockgroup_render_data[index];
+        SDL_UnlockMutex(render_stack->mutex);
 
         assert (index >= 0);
 
