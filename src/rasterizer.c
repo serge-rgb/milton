@@ -1056,7 +1056,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                 }
             }
 
-
             i += canvas_jump;
         }
         j += canvas_jump;
@@ -1090,6 +1089,13 @@ static void draw_ring(u32* pixels,
             // Rotated grid AA
             int samples = 0;
             {
+                // Rotated 2x2 grid
+                //  The u,v magic values are related to a 2d rotation by some angle,
+                //  I should have commented this before forgetting
+                //        ()--------()
+                //       /         /
+                //     /         /
+                //   ()--------()
                 f32 u = 0.223607f;
                 f32 v = 0.670820f;
 
@@ -1249,8 +1255,7 @@ static void rectangle_margin(u32* raster_buffer,
 }
 
 
-static void rasterize_color_picker(ColorPicker* picker,
-                                   Rect draw_rect)
+static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
 {
     // Wheel
     for ( int j = draw_rect.top; j < draw_rect.bottom; ++j ) {
@@ -1261,6 +1266,13 @@ static void rasterize_color_picker(ColorPicker* picker,
 
             int samples = 0;
             {
+                // Rotated 2x2 grid
+                //  The u,v magic values are related to a 2d rotation by some angle,
+                //  I should have commented this before forgetting
+                //        ()--------()
+                //       /         /
+                //     /         /
+                //   ()--------()
                 f32 u = 0.223607f;
                 f32 v = 0.670820f;
 
@@ -1296,6 +1308,13 @@ static void rasterize_color_picker(ColorPicker* picker,
             // MSAA!!
             int samples = 0;
             {
+                // Rotated 2x2 grid
+                //  The u,v magic values are related to a 2d rotation by some angle,
+                //  I should have commented this before forgetting
+                //        ()--------()
+                //       /         /
+                //     /         /
+                //   ()--------()
                 f32 u = 0.223607f;
                 f32 v = 0.670820f;
 

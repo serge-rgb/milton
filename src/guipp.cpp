@@ -143,7 +143,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
                 {
                     if ( milton_state->current_mode != MiltonMode_PEN ) {
-                        if (ImGui::Button(LOC(switch_to_pen))) {
+                        if ( ImGui::Button(LOC(switch_to_pen)) ) {
                             i32 f = input->flags;
                             set_flag(f, MiltonInputFlags_CHANGE_MODE);
                             input->flags = (MiltonInputFlags)f;
@@ -152,7 +152,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     }
 
                     if ( milton_state->current_mode != MiltonMode_ERASER ) {
-                        if (ImGui::Button(LOC(switch_to_eraser))) {
+                        if ( ImGui::Button(LOC(switch_to_eraser)) ) {
                             i32 f = input->flags;
                             set_flag(f, (i32)MiltonInputFlags_CHANGE_MODE);
                             input->flags = (MiltonInputFlags)f;
@@ -182,10 +182,10 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             CanvasView* view = milton_state->view;
             // left
             ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-            for (int i = 0; i < view->num_layers; ++i) {
+            for ( int i = 0; i < view->num_layers; ++i ) {
                 char label[128];
                 sprintf(label, "Layer %d", i+1);
-                if (ImGui::Selectable(label, view->working_layer == i)) {
+                if ( ImGui::Selectable(label, view->working_layer == i) ) {
                     view->working_layer = i;
                 }
             }
@@ -196,19 +196,19 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             ImGui::BeginGroup();
             //ImGui::BeginChild("item view", ImVec2(0, -30-ImGui::GetItemsLineHeightWithSpacing()));
             ImGui::BeginChild("item view", ImVec2(0, 50));
-            if (ImGui::Button("New Layer")) {
+            if ( ImGui::Button("New Layer") ) {
                 view->num_layers++;
             }
             ImGui::Separator();
             ImGui::EndChild();
             ImGui::BeginChild("buttons");
             ImGui::Text("Layer %d", view->working_layer+1);
-            if (ImGui::Button("Rename")) {}
+            if ( ImGui::Button("Rename") ) {}
             ImGui::Text("Move");
-            if (ImGui::Button("Up")) {}
+            if ( ImGui::Button("Up") ) {}
             ImGui::SameLine();
-            if (ImGui::Button("Down")) {}
-            if (ImGui::Button("Reset to 1")) { view->working_layer = 0 ; view->num_layers = 1; }
+            if ( ImGui::Button("Down") ) {}
+            if ( ImGui::Button("Reset to 1") ) { view->working_layer = 0 ; view->num_layers = 1; }
             //ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
             ImGui::EndChild();
             ImGui::EndGroup();
@@ -260,7 +260,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                         }
                         mlt_free (buffer);
                     } else {
-                        platform_dialog(LOC(MSG_memerr_did_not_write), //""
+                        platform_dialog(LOC(MSG_memerr_did_not_write),
                                         LOC(error));
                     }
                 }

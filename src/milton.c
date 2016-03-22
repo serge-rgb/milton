@@ -188,7 +188,6 @@ static b32 is_user_drawing(MiltonState* milton_state)
     return result;
 }
 
-
 static b32 current_mode_is_for_painting(MiltonState* milton_state)
 {
     b32 result = milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER;
