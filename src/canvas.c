@@ -143,7 +143,7 @@ Stroke* layer_push_stroke(Layer* layer, Stroke stroke)
 
 void layer_toggle_visibility(Layer* layer)
 {
-    b32 visible = layer->flags | LayerFlags_VISIBLE;
+    b32 visible = layer->flags & LayerFlags_VISIBLE;
     if ( visible ) {
         layer->flags &= ~LayerFlags_VISIBLE;
     } else {

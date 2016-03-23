@@ -385,9 +385,6 @@ void milton_init(MiltonState* milton_state)
 
     milton_state->bytes_per_pixel = 4;
 
-    // TODO: free-painting function
-    milton_new_layer(milton_state);  // Fill out first layer
-
     milton_state->working_stroke.points    = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, v2i);
     milton_state->working_stroke.pressures = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
 
@@ -428,6 +425,10 @@ void milton_init(MiltonState* milton_state)
 
     milton_state->gui = arena_alloc_elem(milton_state->root_arena, MiltonGui);
     gui_init(milton_state->root_arena, milton_state->gui);
+
+    // TODO: free-painting function
+    milton_new_layer(milton_state);  // Fill out first layer
+
 
     milton_gl_backend_init(milton_state);
     milton_load(milton_state);
@@ -585,16 +586,17 @@ void milton_expand_render_memory(MiltonState* milton_state)
 
 void milton_new_layer(MiltonState* milton_state)
 {
-    Layer* layer = mlt_calloc(1, sizeof(Layer));
-
     i32 id = 0; {  // Find highest id;
         Layer* it = milton_state->root_layer;
         while ( it ) {
-            if ( it->id > id ) { layer->id = id + 1; }
+            if ( it->id >= id ) {
+                id = it->id + 1;
+            }
             it = it->next;
         }
     }
 
+    Layer* layer = mlt_calloc(1, sizeof(Layer));
     *layer = (Layer) {
         .id = id,
         .name = mlt_calloc(MAX_LAYER_NAME_LEN, sizeof(char)),
@@ -605,12 +607,20 @@ void milton_new_layer(MiltonState* milton_state)
     if ( milton_state->root_layer ) {
         Layer* top = layer_get_topmost(milton_state->root_layer);
         top->next = layer;
-        milton_state->working_layer = top->next;
+        layer->prev = top;
+        milton_set_working_layer(milton_state, top->next);
     } else {
         milton_state->root_layer = layer;
-        milton_state->working_layer = layer;
+        milton_set_working_layer(milton_state, layer);
     }
 }
+
+void milton_set_working_layer(MiltonState* milton_state, Layer* layer)
+{
+    milton_state->working_layer = layer;
+    milton_state->view->working_layer_id = layer->id;
+}
+
 
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {

@@ -187,10 +187,8 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
             Layer* layer = milton_state->root_layer;
             while ( layer ) {
-                //if ( ImGui::Selectable(layer->name, milton_state->working_layer == layer) ) {
-                if ( ImGui::Selectable(layer->name, true) ) {
-                    view->working_layer_id = layer->id;
-                    milton_state->working_layer = layer;
+                if ( ImGui::Selectable(layer->name, milton_state->working_layer == layer) ) {
+                    milton_set_working_layer(milton_state, layer);
                 }
                 layer = layer->next;
             }
@@ -213,7 +211,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             if ( ImGui::Button("Up") ) {}
             ImGui::SameLine();
             if ( ImGui::Button("Down") ) {}
-            static bool v = true;
+            bool v = milton_state->working_layer->flags & LayerFlags_VISIBLE;
             if ( ImGui::Checkbox("Visible", &v) ) {
                 layer_toggle_visibility(milton_state->working_layer);
             }

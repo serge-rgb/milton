@@ -206,6 +206,7 @@ void milton_expand_render_memory(MiltonState* milton_state);
 void milton_try_quit(MiltonState* milton_state);
 
 void milton_new_layer(MiltonState* milton_state);
+void milton_set_working_layer(MiltonState* milton_state, Layer* layer);
 
 #if defined(__cplusplus)
 }
