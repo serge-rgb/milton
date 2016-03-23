@@ -32,6 +32,7 @@ struct Arena_s
 Arena arena_init(void* base, size_t size);
 Arena arena_spawn(Arena* parent, size_t size);
 void  arena_reset(Arena* arena);
+void  arena_reset_noclear(Arena* arena);
 
 // ==== Temporary arenas.
 // Usage:

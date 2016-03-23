@@ -66,7 +66,7 @@ v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
 v2i raster_to_canvas(CanvasView* view, v2i raster_point);
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
-void filter_strokes_to_rect(Layer* root_layer, Rect rect);
+void update_stroke_masks(Layer* root_layer, Rect rect);
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
 b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1);

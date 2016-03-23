@@ -76,3 +76,7 @@ void arena_reset(Arena* arena)
     arena->count = 0;
 }
 
+void arena_reset_noclear(Arena* arena)
+{
+    arena->count = 0;
+}

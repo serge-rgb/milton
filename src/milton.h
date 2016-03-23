@@ -139,6 +139,9 @@ typedef enum MiltonInputFlags
     MiltonInputFlags_PANNING             = 1 << 8,
     MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 9,
 } MiltonInputFlags;
+#if defined(__cplusplus)
+#define MiltonInputFlags int
+#endif
 
 typedef struct MiltonInput
 {

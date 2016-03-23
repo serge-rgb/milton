@@ -175,6 +175,15 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
             Layer* layer = milton_state->root_layer;
             while ( layer ) {
+                bool v = layer->flags & LayerFlags_VISIBLE;
+                ImGui::PushID(layer->id);
+                if ( ImGui::Checkbox("##select", &v) ) {
+                    layer_toggle_visibility(layer);
+                    input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+                    input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
+                }
+                ImGui::PopID();
+                ImGui::SameLine();
                 if ( ImGui::Selectable(layer->name, milton_state->working_layer == layer) ) {
                     milton_set_working_layer(milton_state, layer);
                 }
@@ -199,10 +208,6 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             if ( ImGui::Button("Up") ) {}
             ImGui::SameLine();
             if ( ImGui::Button("Down") ) {}
-            bool v = milton_state->working_layer->flags & LayerFlags_VISIBLE;
-            if ( ImGui::Checkbox("Visible", &v) ) {
-                layer_toggle_visibility(milton_state->working_layer);
-            }
             if ( ImGui::Button("Reset to 1") ) { view->working_layer_id = 0; view->num_layers = 1; }
             //ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
             ImGui::EndChild();

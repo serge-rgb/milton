@@ -12,12 +12,14 @@
 #define MILTON_DEBUG 1
 
 // Yup
-#define MILTON_MULTITHREADED 0
+#define MILTON_MULTITHREADED 1
 
 // 0 - Use strict SRGB definition
 // 1 - Use a power curve of 2.
 #define FAST_GAMMA 1
 
+// Experiment in the renderer using (c|m)alloc in hot code. See it slow to a crawl.
+#define TRY_MALLOC 0
 
 // By default, when activating the internal profiler with
 // MILTON_ENABLE_PROFILING, we will turn miltithreading off. If MT is ever

@@ -61,24 +61,34 @@ static b32 clipped_stroke_fills_block(ClippedStroke* clipped_stroke)
 static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke,
                                           Rect canvas_rect, i32 local_scale, v2i reference_point)
 {
+#if TRY_MALLOC
+    ClippedStroke* clipped_stroke = mlt_calloc(1, sizeof(ClippedStroke));
+#else
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
+#endif
     if (!clipped_stroke) {
         return NULL;
     }
 
+    clipped_stroke->num_points = 0;
     clipped_stroke->next  = NULL;
     clipped_stroke->brush = in_stroke->brush;
 
+    i32 points_allocated = in_stroke->num_points * 2 + 8;
+
     // ... now substitute the point data with an array of our own.
     if (in_stroke->num_points > 0) {
-        clipped_stroke->num_points = 0;
-
         // Add enough zeroed-out points to align the arrays to a multiple of 4
         // points so that the renderer can comfortably load from the arrays
         // without bounds checking.
-        i32 points_allocated = in_stroke->num_points * 2 + 4;
 
+#if TRY_MALLOC
+        clipped_stroke->clipped_points = malloc(points_allocated * sizeof(ClippedPoint));
+        assert ( clipped_stroke->clipped_points );
+#else
         clipped_stroke->clipped_points = arena_alloc_array(render_arena, points_allocated, ClippedPoint);
+#endif
+        //memset(clipped_stroke->clipped_points, 0, points_allocated * sizeof(ClippedPoint));
     } else {
         milton_log("WARNING: An empty stroke was received to clip.\n");
         return clipped_stroke;
@@ -95,7 +105,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
             clipped_stroke->clipped_points[0].y = in_stroke->points[0].y * local_scale - reference_point.y;
             clipped_stroke->clipped_points[0].pressure = in_stroke->pressures[0];
         }
-    } else if ( in_stroke->num_points > 1 ){
+    } else if ( in_stroke->num_points > 1 ) {
         i32 num_points = in_stroke->num_points;
         for (i32 point_i = 0; point_i < num_points - 1; ++point_i) {
             v2i a = in_stroke->points[point_i];
@@ -127,6 +137,11 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
         // We should have already handled the pathological case of the empty stroke.
         assert (!"invalid code path");
     }
+
+
+    // SSE loop will eat up extra items to avoid a conditional, it expects zero'ed data.
+    memset(clipped_stroke->clipped_points + clipped_stroke->num_points, 0, 8 * sizeof(ClippedPoint));
+
     return clipped_stroke;
 }
 
@@ -263,7 +278,12 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
     ClippedStroke* stroke_list = NULL;
     *allocation_ok = true;
     Layer* layer = root_layer;
-    while (layer) {
+    while ( layer ) {
+        if ( !(layer->flags & LayerFlags_VISIBLE) ) {
+            layer = layer->next;
+            continue;
+        }
+
         Stroke* strokes = layer->strokes;
         size_t num_strokes = sb_count(strokes);
         b32* stroke_masks = layer->masks;
@@ -277,7 +297,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             }
             Stroke* unclipped_stroke = NULL;
             if ( stroke_i == num_strokes ) {
-                if ( working_stroke->num_points ) {
+                if ( layer->next == NULL && working_stroke->num_points ) {  // Topmost layer: Use working stroke
                     unclipped_stroke = working_stroke;
                 } else {
                     break;
@@ -318,6 +338,11 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                         list_head->num_points = CLIPPED_STROKE_FILLS_BLOCK;
                     }
                     stroke_list = list_head;
+#if TRY_MALLOC
+                } else {
+                    mlt_free(clipped_stroke->clipped_points);
+                    mlt_free(clipped_stroke);
+#endif
                 }
             }
         }
@@ -592,6 +617,17 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
         }
         j += canvas_jump;
     }
+
+#if TRY_MALLOC
+    ClippedStroke* list_iter = stroke_list;
+    while ( list_iter ) {
+        mlt_free(list_iter->clipped_points);
+        ClippedStroke* next = list_iter->next;
+        mlt_free(list_iter);
+        list_iter = next;
+    }
+#endif
+
     return true;
 }
 
@@ -1405,7 +1441,7 @@ static b32 render_blockgroup(MiltonState* milton_state,
                 raster_to_canvas(milton_state->view, raster_blockgroup_rect.bot_right);
     }
 
-    filter_strokes_to_rect(milton_state->root_layer, canvas_blockgroup_rect);
+    update_stroke_masks(milton_state->root_layer, canvas_blockgroup_rect);
 
     Arena render_arena = { 0 };
     if ( allocation_ok ) {
@@ -1436,7 +1472,8 @@ static b32 render_blockgroup(MiltonState* milton_state,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
         }
-        arena_reset(&render_arena);
+        arena_reset_noclear(&render_arena);
+        //arena_reset(&render_arena);
     }
     return allocation_ok;
 }
@@ -1477,7 +1514,7 @@ int renderer_worker_thread(void* data)
             milton_state->worker_needs_memory = true;
         }
 
-        arena_reset(&milton_state->render_worker_arenas[id]);
+        arena_reset_noclear(&milton_state->render_worker_arenas[id]);
 
         SDL_SemPost(render_stack->completed_semaphore);
     }
@@ -1562,6 +1599,10 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 #endif
 
     sb_free(blocks);
+
+    // Clear masks
+    for ( Layer* layer = milton_state->root_layer; layer; layer = layer->next )
+        for ( int i = 0; i < sb_count(layer->strokes); ++i ) { layer->masks[i] = false; }
     PROFILE_PUSH(render_canvas);
 }
 

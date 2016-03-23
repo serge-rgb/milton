@@ -31,9 +31,13 @@ v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 }
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
-void filter_strokes_to_rect(Layer* layer, Rect rect)
+void update_stroke_masks(Layer* layer, Rect rect)
 {
     while ( layer ) {
+        if ( !(layer->flags & LayerFlags_VISIBLE) ) {
+            layer = layer->next;
+            continue;
+        }
         Stroke* strokes = layer->strokes;
         if ( layer->masks_count < sb_count(layer->strokes) ) {
             if ( layer->masks ) mlt_free(layer->masks);

@@ -588,6 +588,7 @@ void milton_new_layer(MiltonState* milton_state)
     *layer = (Layer) {
         .id = id,
         .name = mlt_calloc(MAX_LAYER_NAME_LEN, sizeof(char)),
+        .masks = NULL,
         .flags = LayerFlags_VISIBLE,
     };
     snprintf(layer->name, 1024, "Layer %d", layer->id);
