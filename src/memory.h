@@ -18,6 +18,7 @@
 
 #include "common.h"
 
+// TODO: out of memory handler.
 
 #define mlt_malloc(sz) malloc(sz)
 #define mlt_calloc(n, sz) calloc(n, sz)

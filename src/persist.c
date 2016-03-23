@@ -114,6 +114,9 @@ void milton_load(MiltonState* milton_state)
 
         if ( ok ) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
 
+        // TODO LOAD MULTIPLE LAYERS
+        milton_state->view->num_layers = 1;
+
         milton_magic = word_swap_memory_order(milton_magic);
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
@@ -128,14 +131,14 @@ void milton_load(MiltonState* milton_state)
             assert (num_strokes >= 0);
 
             for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
-                sb_push(milton_state->strokes, (Stroke){0});
-                Stroke* stroke = &sb_peek(milton_state->strokes);
+                Stroke* stroke = layer_push_stroke(milton_state->root_layer, (Stroke){0});
+
                 if ( ok ) { ok = fread_checked(&stroke->brush, sizeof(Brush), 1, fd); }
                 if ( ok ) { ok = fread_checked(&stroke->num_points, sizeof(i32), 1, fd); }
                 if ( stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0 ) {
                     milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
                     ok = false;
-                    sb_reset(milton_state->strokes);
+                    sb_reset(milton_state->root_layer->strokes);
                     // Corrupt file. Avoid
                     break;
                 }
@@ -151,7 +154,7 @@ void milton_load(MiltonState* milton_state)
                 }
 
                 if ( ok ) {
-                    ok = fread_checked(&stroke->layer, sizeof(i32), 1, fd);
+                    ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
                 }
                 if ( ok ) {
                     ok = fread_checked(&stroke->id, sizeof(i32), 1, fd);
@@ -169,8 +172,8 @@ void milton_load(MiltonState* milton_state)
 
 void milton_save(MiltonState* milton_state)
 {
-    size_t num_strokes = sb_count(milton_state->strokes);
-    Stroke* strokes = milton_state->strokes;
+    size_t num_strokes = sb_count(milton_state->root_layer->strokes);
+    Stroke* strokes = milton_state->root_layer->strokes;
 
     int pid = (int)getpid();
     char tmp_fname[MAX_PATH] = {0};
@@ -200,7 +203,7 @@ void milton_save(MiltonState* milton_state)
                 if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
                 if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
                 if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
-                if ( ok ) { ok = fwrite_checked(&stroke->layer, sizeof(i32), 1, fd); }
+                if ( ok ) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
                 if ( ok ) { ok = fwrite_checked(&stroke->id, sizeof(i32), 1, fd); }
                 if ( !ok ) {
                     break;

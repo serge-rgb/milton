@@ -265,8 +265,7 @@ static b32 stroke_is_not_tiny(Stroke* stroke, CanvasView* view)
 // Fills a linked list of strokes that this block needs to render.
 static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                             CanvasView* view,
-                                            Stroke* strokes,
-                                            b32* stroke_masks,
+                                            Layer* root_layer,
                                             Stroke* working_stroke,
                                             Rect canvas_block,
                                             i32 local_scale,
@@ -275,73 +274,79 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 {
     ClippedStroke* stroke_list = NULL;
     *allocation_ok = true;
-    size_t num_strokes = sb_count(strokes);
+    Layer* layer = root_layer;
+    while (layer) {
+        Stroke* strokes = layer->strokes;
+        size_t num_strokes = sb_count(strokes);
+        b32* stroke_masks = layer->masks;
 
-    // Fill linked list with strokes clipped to this block
-    for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
-        if ( stroke_i < num_strokes && !stroke_masks[stroke_i] ) {
-            // Stroke masks is of size num_strokes, but we use stroke_i ==
-            // num_strokes to indicate the current "working stroke"
-            continue;
-        }
-        Stroke* unclipped_stroke = NULL;
-        if ( stroke_i == num_strokes ) {
-            if ( working_stroke->num_points ) {
-                unclipped_stroke = working_stroke;
+        // Fill linked list with strokes clipped to this block
+        for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
+            if ( stroke_i < num_strokes && !stroke_masks[stroke_i] ) {
+                // Stroke masks is of size num_strokes, but we use stroke_i ==
+                // num_strokes to indicate the current "working stroke"
+                continue;
+            }
+            Stroke* unclipped_stroke = NULL;
+            if ( stroke_i == num_strokes ) {
+                if ( working_stroke->num_points ) {
+                    unclipped_stroke = working_stroke;
+                } else {
+                    break;
+                }
             } else {
+                unclipped_stroke = &strokes[stroke_i];
+            }
+            assert(unclipped_stroke);
+
+
+            b32 single_point = unclipped_stroke->num_points == 1;
+
+            if ( single_point || stroke_is_not_tiny(unclipped_stroke, view) ) {
+                Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
+                ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
+                                                                    enlarged_block, local_scale, reference_point);
+                // ALlocation failed.
+                // Handle this gracefully; this will cause more memory for render workers.
+                if ( !clipped_stroke ) {
+                    *allocation_ok = false;
+                    return NULL;
+                }
+
+                if ( clipped_stroke->num_points ) {
+                    // Empty strokes ignored.
+                    ClippedStroke* list_head = clipped_stroke;
+
+                    list_head->next = stroke_list;
+                    if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
+                                                  clipped_stroke->clipped_points,
+                                                  clipped_stroke->num_points,
+                                                  clipped_stroke->brush,
+                                                  view) ) {
+                        // Set num_points = 0. Since we are ignoring empty strokes
+                        // (which should not get here in the first place), we can use 0
+                        // to denote a stroke that fills the block, saving ourselves a
+                        // boolean struct member.
+                        list_head->num_points = CLIPPED_STROKE_FILLS_BLOCK;
+                    }
+                    stroke_list = list_head;
+                }
+            }
+        }
+
+        // Set our `stroke_list` to end at the first opaque stroke that fills
+        // this block.
+        ClippedStroke* list_iter = stroke_list;
+        while (list_iter) {
+            if ( clipped_stroke_fills_block(list_iter) && list_iter->brush.color.a == 1.0f ) {
+                list_iter->next = NULL;
                 break;
             }
-        } else {
-            unclipped_stroke = &strokes[stroke_i];
+            list_iter = list_iter->next;
         }
-        assert(unclipped_stroke);
 
-
-        b32 single_point = unclipped_stroke->num_points == 1;
-
-        if ( single_point || stroke_is_not_tiny(unclipped_stroke, view) ) {
-            Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
-            ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
-                                                                enlarged_block, local_scale, reference_point);
-            // ALlocation failed.
-            // Handle this gracefully; this will cause more memory for render workers.
-            if ( !clipped_stroke ) {
-                *allocation_ok = false;
-                return NULL;
-            }
-
-            if ( clipped_stroke->num_points ) {
-                // Empty strokes ignored.
-                ClippedStroke* list_head = clipped_stroke;
-
-                list_head->next = stroke_list;
-                if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
-                                              clipped_stroke->clipped_points,
-                                              clipped_stroke->num_points,
-                                              clipped_stroke->brush,
-                                              view) ) {
-                    // Set num_points = 0. Since we are ignoring empty strokes
-                    // (which should not get here in the first place), we can use 0
-                    // to denote a stroke that fills the block, saving ourselves a
-                    // boolean struct member.
-                    list_head->num_points = CLIPPED_STROKE_FILLS_BLOCK;
-                }
-                stroke_list = list_head;
-            }
-        }
+        layer = layer->next;
     }
-
-    // Set our `stroke_list` to end at the first opaque stroke that fills
-    // this block.
-    ClippedStroke* list_iter = stroke_list;
-    while (list_iter) {
-        if ( clipped_stroke_fills_block(list_iter) && list_iter->brush.color.a == 1.0f ) {
-            list_iter->next = NULL;
-            break;
-        }
-        list_iter = list_iter->next;
-    }
-
     return stroke_list;
 }
 
@@ -349,8 +354,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 // Returns false if allocation failed.
 static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                        CanvasView* view,
-                                       Stroke* strokes,
-                                       b32* stroke_masks,
+                                       Layer* root_layer,
                                        Stroke* working_stroke,
                                        u32* pixels,
                                        Rect raster_block)
@@ -393,7 +397,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
         reference_point.y *= local_scale;
     }
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
-                                                       strokes, stroke_masks, working_stroke,
+                                                       root_layer,
+                                                       working_stroke,
                                                        canvas_block, local_scale, reference_point,
                                                        &allocation_ok);
 
@@ -606,8 +611,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 // For a more readable implementation that does the same thing. See rasterize_canvas_block_slow.
 static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                        CanvasView* view,
-                                       Stroke* strokes,
-                                       b32* stroke_masks,
+                                       Layer* root_layer,
                                        Stroke* working_stroke,
                                        u32* pixels,
                                        Rect raster_block)
@@ -659,7 +663,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
         reference_point.y *= local_scale;
     }
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
-                                                       strokes, stroke_masks,
+                                                       root_layer,
                                                        working_stroke,
                                                        canvas_block, local_scale, reference_point,
                                                        &allocation_ok);
@@ -1413,16 +1417,7 @@ static b32 render_blockgroup(MiltonState* milton_state,
                 raster_to_canvas(milton_state->view, raster_blockgroup_rect.bot_right);
     }
 
-    // Filter strokes to this blockgroup.https://www.twitch.tv/garlandobloom
-    b32* stroke_masks = filter_strokes_to_rect(blockgroup_arena,
-                                               milton_state->strokes,
-                                               canvas_blockgroup_rect);
-
-
-
-    if (!stroke_masks) {
-        allocation_ok = false;
-    }
+    filter_strokes_to_rect(milton_state->root_layer, canvas_blockgroup_rect);
 
     Arena render_arena = { 0 };
     if ( allocation_ok ) {
@@ -1441,16 +1436,14 @@ static b32 render_blockgroup(MiltonState* milton_state,
 #endif
             allocation_ok = rasterize_canvas_block_sse2(&render_arena,
                                                         milton_state->view,
-                                                        milton_state->strokes,
-                                                        stroke_masks,
+                                                        milton_state->root_layer,
                                                         &milton_state->working_stroke,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
         } else {
             allocation_ok = rasterize_canvas_block_slow(&render_arena,
                                                         milton_state->view,
-                                                        milton_state->strokes,
-                                                        stroke_masks,
+                                                        milton_state->root_layer,
                                                         &milton_state->working_stroke,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
@@ -1970,8 +1963,9 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
         raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
     }
     else if ( check_flag( render_flags, MiltonRenderFlags_FINISHED_STROKE )) {
-        size_t index = sb_count(milton_state->strokes) - 1;
-        Rect canvas_rect = bounding_box_for_last_n_points(&milton_state->strokes[index], 4);
+        Stroke* strokes = milton_state->working_layer->strokes;
+        size_t index = sb_count(strokes) - 1;
+        Rect canvas_rect = bounding_box_for_last_n_points(&strokes[index], 4);
         raster_limits = canvas_rect_to_raster_rect(milton_state->view, canvas_rect);
         raster_limits = rect_stretch(raster_limits, milton_state->block_width);
         raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);

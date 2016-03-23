@@ -115,6 +115,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
         b32 show_brush_window = (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER);
 
+        // Brush Window
         if ( show_brush_window) {
             if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
                 if ( milton_state->current_mode == MiltonMode_PEN ) {
@@ -175,6 +176,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             }
         }
 
+
         // Layer window
         ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_Always);
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiSetCond_FirstUseEver);
@@ -182,12 +184,15 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             CanvasView* view = milton_state->view;
             // left
             ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-            for ( int i = 0; i < view->num_layers; ++i ) {
-                char label[128];
-                sprintf(label, "Layer %d", i+1);
-                if ( ImGui::Selectable(label, view->working_layer == i) ) {
-                    view->working_layer = i;
+
+            Layer* layer = milton_state->root_layer;
+            while ( layer ) {
+                //if ( ImGui::Selectable(layer->name, milton_state->working_layer == layer) ) {
+                if ( ImGui::Selectable(layer->name, true) ) {
+                    view->working_layer_id = layer->id;
+                    milton_state->working_layer = layer;
                 }
+                layer = layer->next;
             }
             ImGui::EndChild();
             ImGui::SameLine();
@@ -197,18 +202,22 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             //ImGui::BeginChild("item view", ImVec2(0, -30-ImGui::GetItemsLineHeightWithSpacing()));
             ImGui::BeginChild("item view", ImVec2(0, 50));
             if ( ImGui::Button("New Layer") ) {
-                view->num_layers++;
+                milton_new_layer(milton_state);
             }
             ImGui::Separator();
             ImGui::EndChild();
             ImGui::BeginChild("buttons");
-            ImGui::Text("Layer %d", view->working_layer+1);
+            ImGui::Text(milton_state->working_layer->name);
             if ( ImGui::Button("Rename") ) {}
             ImGui::Text("Move");
             if ( ImGui::Button("Up") ) {}
             ImGui::SameLine();
             if ( ImGui::Button("Down") ) {}
-            if ( ImGui::Button("Reset to 1") ) { view->working_layer = 0 ; view->num_layers = 1; }
+            static bool v = true;
+            if ( ImGui::Checkbox("Visible", &v) ) {
+                layer_toggle_visibility(milton_state->working_layer);
+            }
+            if ( ImGui::Button("Reset to 1") ) { view->working_layer_id = 0; view->num_layers = 1; }
             //ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
             ImGui::EndChild();
             ImGui::EndGroup();
@@ -223,6 +232,8 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
         ImGui::SetNextWindowPos(ImVec2(100, 30), ImGuiSetCond_Once);
         ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
+
+        // Export window
         if ( ImGui::Begin(LOC(export_DOTS), &opened, ImGuiWindowFlags_NoCollapse) ) {
             ImGui::Text(LOC(MSG_click_and_drag_instruction));
 

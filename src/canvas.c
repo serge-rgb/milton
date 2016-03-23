@@ -43,45 +43,46 @@ v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 }
 
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
-b32* filter_strokes_to_rect(Arena* arena,
-                            Stroke* strokes,
-                            Rect rect)
+void filter_strokes_to_rect(Layer* layer, Rect rect)
 {
-    size_t num_strokes = (size_t)sb_count(strokes);
-    b32* mask_array = arena_alloc_array(arena, num_strokes, b32);
-    if (!mask_array) {
-        return NULL;
-    }
+    while ( layer ) {
+        Stroke* strokes = layer->strokes;
+        if ( layer->masks_count < sb_count(layer->strokes) ) {
+            if ( layer->masks ) mlt_free(layer->masks);
+            layer->masks_count = 2*sb_count(layer->strokes);
+            layer->masks = mlt_calloc(layer->masks_count, sizeof(b32));
+        }
 
-    for (size_t stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
-        Stroke* stroke = &strokes[stroke_i];
-        Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
-        if ( rect_is_valid(stroke_rect) ) {
-            if (stroke->num_points == 1) {
-                if ( is_inside_rect(stroke_rect, stroke->points[0]) ) {
-                    mask_array[stroke_i] = true;
-                }
-            } else {
-                for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
-                    v2i a = stroke->points[point_i    ];
-                    v2i b = stroke->points[point_i + 1];
+        for (i32 stroke_i = 0; stroke_i < sb_count(layer->strokes); ++stroke_i) {
+            Stroke* stroke = &strokes[stroke_i];
+            Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
+            if ( rect_is_valid(stroke_rect) ) {
+                if (stroke->num_points == 1) {
+                    if ( is_inside_rect(stroke_rect, stroke->points[0]) ) {
+                        layer->masks[stroke_i] = true;
+                    }
+                } else {
+                    for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
+                        v2i a = stroke->points[point_i    ];
+                        v2i b = stroke->points[point_i + 1];
 
-                    b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
-                                   (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
-                                   (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
-                                   (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
+                        b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
+                                       (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
+                                       (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
+                                       (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
 
-                    if (inside) {
-                        mask_array[stroke_i] = true;
-                        break;
+                        if (inside) {
+                            layer->masks[stroke_i] = true;
+                            break;
+                        }
                     }
                 }
+            } else {
+                milton_log("Discarging stroke %x because of invalid rect.\n", stroke);
             }
-        } else {
-            milton_log("Discarging stroke %x because of invalid rect.\n", stroke);
         }
+        layer = layer->next;
     }
-    return mask_array;
 }
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
@@ -124,3 +125,38 @@ Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
     return raster_rect;
 }
 
+Layer* layer_get_topmost(Layer* root)
+{
+    Layer* layer = root;
+    while ( layer->next ) {
+        layer = layer->next;
+    }
+    return layer;
+}
+
+// Push stroke at the top of the current layer
+Stroke* layer_push_stroke(Layer* layer, Stroke stroke)
+{
+    sb_push(layer->strokes, stroke);
+    return &sb_peek(layer->strokes);
+}
+
+void layer_toggle_visibility(Layer* layer)
+{
+    b32 visible = layer->flags | LayerFlags_VISIBLE;
+    if ( visible ) {
+        layer->flags &= ~LayerFlags_VISIBLE;
+    } else {
+        layer->flags |= LayerFlags_VISIBLE;
+    }
+}
+
+i32 number_of_layers(Layer* layer)
+{
+    int n = 0;
+    while ( layer ) {
+        ++n;
+        layer = layer->next;
+    }
+    return n;
+}

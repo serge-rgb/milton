@@ -29,6 +29,7 @@ extern "C" {
 #define MAX_INPUT_BUFFER_ELEMS      32
 #define MILTON_MINIMUM_SCALE        (1 << 4)
 #define QUALITY_REDRAW_TIMEOUT_MS   200
+#define MAX_LAYER_NAME_LEN          1024
 
 #define SGL_GL_HELPERS_IMPLEMENTATION
 #include "gl_helpers.h"
@@ -89,7 +90,10 @@ typedef struct MiltonState
     Brush   brushes[BrushEnum_COUNT];
     i32     brush_sizes[BrushEnum_COUNT];  // In screen pixels
 
-    Stroke* strokes;
+    Layer*  root_layer;
+    Layer*  working_layer;
+    i32     num_strokes;
+
     Stroke  working_stroke;
     // ----  // gui->picker.info also stored
 
@@ -201,9 +205,7 @@ void milton_expand_render_memory(MiltonState* milton_state);
 
 void milton_try_quit(MiltonState* milton_state);
 
-// Get the topmost stroke for current layer.
-Stroke layer_get_top_stroke(MiltonState* milton_state);
-Stroke layer_pop_top_stroke(MiltonState* milton_state);
+void milton_new_layer(MiltonState* milton_state);
 
 #if defined(__cplusplus)
 }

@@ -169,6 +169,14 @@ typedef struct
 #define sb__sbmaybegrow(a,n) (sb__sbneedgrow(a,(n)) ? sb__sbgrow(a,n) : 0)
 #define sb__sbgrow(a,n)      ((a) = sb__sbgrowf((a), (n), sizeof(*(a))))
 
+#define sb_delete_at_idx(a, i) \
+        do {\
+            if (sb_count(a)) for (int _i=i;_i<sb_count((a))-1;++_i) {\
+                (a)[i]=(a)[i+1];\
+            }\
+            sb_pop(a);\
+        } while(0)
+
 void* sb__sbgrowf(void *arr, int increment, int itemsize);
 
 // ASCII String utils
@@ -178,3 +186,4 @@ char** str_tokenize(char* in);
 
 // Takes a stretchy buffer returned from str_* util functions.
 void str_free(char** strings);
+

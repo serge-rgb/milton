@@ -201,8 +201,8 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     }
 
     //milton_log("Stroke input with %d packets\n", input->input_count);
-    milton_state->working_stroke.brush = milton_get_brush(milton_state);
-    milton_state->working_stroke.layer = milton_state->view->working_layer;
+    milton_state->working_stroke.brush    = milton_get_brush(milton_state);
+    milton_state->working_stroke.layer_id = milton_state->view->working_layer_id;
 
     for (int input_i = 0; input_i < input->input_count; ++input_i) {
         v2i in_point = input->points[input_i];
@@ -385,7 +385,8 @@ void milton_init(MiltonState* milton_state)
 
     milton_state->bytes_per_pixel = 4;
 
-    milton_state->strokes = NULL;
+    // TODO: free-painting function
+    milton_new_layer(milton_state);  // Fill out first layer
 
     milton_state->working_stroke.points    = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, v2i);
     milton_state->working_stroke.pressures = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
@@ -468,6 +469,7 @@ void milton_init(MiltonState* milton_state)
 
         SDL_CreateThread(renderer_worker_thread, "Milton Render Worker", (void*)params);
     }
+
     milton_load_assets(milton_state);
 
     milton_state->running = true;
@@ -581,57 +583,33 @@ void milton_expand_render_memory(MiltonState* milton_state)
     }
 }
 
-// Push stroke at the top of the current layer
-static void layer_push_stroke(MiltonState* milton_state, Stroke stroke)
+void milton_new_layer(MiltonState* milton_state)
 {
-    sb_push(milton_state->strokes, stroke);
-    // TODO
-    //  - Keep sorted
-}
+    Layer* layer = mlt_calloc(1, sizeof(Layer));
 
-Stroke layer_get_top_stroke(MiltonState* milton_state)
-{
-    i32 layer = milton_state->view->working_layer;
-    Stroke* strokes = milton_state->strokes;
-
-    // TODO
-    //  - Keep sorted
-
-    for (i32 i = sb_count(strokes)-1; i >= 0; --i) {
-        if ( strokes[i].layer == layer ) {
-            return strokes[i];
+    i32 id = 0; {  // Find highest id;
+        Layer* it = milton_state->root_layer;
+        while ( it ) {
+            if ( it->id > id ) { layer->id = id + 1; }
+            it = it->next;
         }
     }
 
-    assert ("This function should always return!!!");
-    return (Stroke){0};
-}
+    *layer = (Layer) {
+        .id = id,
+        .name = mlt_calloc(MAX_LAYER_NAME_LEN, sizeof(char)),
+        .flags = LayerFlags_VISIBLE,
+    };
+    snprintf(layer->name, 1024, "Layer %d", layer->id);
 
-static Stroke pop_stroke_at_idx(MiltonState* milton_state, i32 idx)
-{
-    assert (idx < sb_count(milton_state->strokes));
-
-    Stroke result = milton_state->strokes[idx];
-    for ( int i = idx; i < sb_count(milton_state->strokes) - 1; ++i ) {
-        milton_state->strokes[i] = milton_state->strokes[i+1];
+    if ( milton_state->root_layer ) {
+        Layer* top = layer_get_topmost(milton_state->root_layer);
+        top->next = layer;
+        milton_state->working_layer = top->next;
+    } else {
+        milton_state->root_layer = layer;
+        milton_state->working_layer = layer;
     }
-    sb_pop(milton_state->strokes);
-    return result;
-}
-
-static Stroke pop_latest_stroke(MiltonState* milton_state)
-{
-    i32 found_idx = -1;
-    i32 max_id = -1;
-    for ( int i = 0; i < sb_count(milton_state->strokes); ++i ) {
-        Stroke* s = &milton_state->strokes[i];
-        if ( s->id > max_id ) {
-            found_idx = i;
-            max_id = s->id;
-        }
-    }
-    Stroke found = pop_stroke_at_idx(milton_state, found_idx);
-    return found;
 }
 
 void milton_update(MiltonState* milton_state, MiltonInput* input)
@@ -745,6 +723,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
+#if 0
     {
         if (check_flag( input->flags, MiltonInputFlags_UNDO )) {
             Stroke stroke = pop_latest_stroke(milton_state);
@@ -758,6 +737,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             }
         }
     }
+#endif
 
 #if 0
     // ==== Rotate ======
@@ -841,14 +821,14 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                     .points = (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i)),
                     .pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32)),
                     .num_points = num_points,
-                    .layer = milton_state->view->working_layer,
-                    .id = sb_count(milton_state->strokes),
+                    .layer_id = milton_state->view->working_layer_id,
+                    .id = milton_state->num_strokes,
                 };
 
                 memcpy(new_stroke.points, milton_state->working_stroke.points, milton_state->working_stroke.num_points * sizeof(v2i));
                 memcpy(new_stroke.pressures, milton_state->working_stroke.pressures, milton_state->working_stroke.num_points * sizeof(f32));
 
-                sb_push(milton_state->strokes, new_stroke);
+                layer_push_stroke(milton_state->working_layer, new_stroke);
                 // Clear working_stroke
                 {
                     milton_state->working_stroke.num_points = 0;
