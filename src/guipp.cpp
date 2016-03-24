@@ -208,8 +208,6 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             if ( ImGui::Button("Up") ) {}
             ImGui::SameLine();
             if ( ImGui::Button("Down") ) {}
-            if ( ImGui::Button("Reset to 1") ) { view->working_layer_id = 0; view->num_layers = 1; }
-            //ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
             ImGui::EndChild();
             ImGui::EndGroup();
 

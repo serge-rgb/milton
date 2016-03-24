@@ -111,9 +111,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
             v2i a = in_stroke->points[point_i];
             v2i b = in_stroke->points[point_i + 1];
 
-            f32 pressure_a = in_stroke->pressures[point_i];
-            f32 pressure_b = in_stroke->pressures[point_i + 1];
-
             // Very conservative...
             b32 maybe_inside = !((a.x > canvas_rect.right  && b.x > canvas_rect.right) ||
                                  (a.x < canvas_rect.left   && b.x < canvas_rect.left) ||
@@ -126,6 +123,9 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
                 clipped_stroke->clipped_points[clipped_stroke->num_points].y     = a.y * local_scale - reference_point.y;
                 clipped_stroke->clipped_points[clipped_stroke->num_points + 1].x = b.x * local_scale - reference_point.x;
                 clipped_stroke->clipped_points[clipped_stroke->num_points + 1].y = b.y * local_scale - reference_point.y;
+
+                f32 pressure_a = in_stroke->pressures[point_i];
+                f32 pressure_b = in_stroke->pressures[point_i + 1];
 
                 clipped_stroke->clipped_points[clipped_stroke->num_points].pressure     = pressure_a;
                 clipped_stroke->clipped_points[clipped_stroke->num_points + 1].pressure = pressure_b;
@@ -270,6 +270,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                             CanvasView* view,
                                             Layer* root_layer,
                                             Stroke* working_stroke,
+                                            b32* stroke_masks,
                                             Rect canvas_block,
                                             i32 local_scale,
                                             v2i reference_point,
@@ -278,6 +279,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
     ClippedStroke* stroke_list = NULL;
     *allocation_ok = true;
     Layer* layer = root_layer;
+    size_t layer_stroke_i = 0;
     while ( layer ) {
         if ( !(layer->flags & LayerFlags_VISIBLE) ) {
             layer = layer->next;
@@ -286,11 +288,10 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 
         Stroke* strokes = layer->strokes;
         size_t num_strokes = sb_count(strokes);
-        b32* stroke_masks = layer->masks;
 
         // Fill linked list with strokes clipped to this block
-        for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
-            if ( stroke_i < num_strokes && !stroke_masks[stroke_i] ) {
+        for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i, ++layer_stroke_i ) {
+            if ( stroke_i < num_strokes && !stroke_masks[layer_stroke_i] ) {
                 // Stroke masks is of size num_strokes, but we use stroke_i ==
                 // num_strokes to indicate the current "working stroke"
                 continue;
@@ -369,6 +370,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                        CanvasView* view,
                                        Layer* root_layer,
                                        Stroke* working_stroke,
+                                       b32* stroke_masks,
                                        u32* pixels,
                                        Rect raster_block)
 {
@@ -412,6 +414,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
                                                        root_layer,
                                                        working_stroke,
+                                                       stroke_masks,
                                                        canvas_block, local_scale, reference_point,
                                                        &allocation_ok);
 
@@ -637,6 +640,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                        CanvasView* view,
                                        Layer* root_layer,
                                        Stroke* working_stroke,
+                                       b32* stroke_masks,
                                        u32* pixels,
                                        Rect raster_block)
 {
@@ -689,6 +693,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
                                                        root_layer,
                                                        working_stroke,
+                                                       stroke_masks,
                                                        canvas_block, local_scale, reference_point,
                                                        &allocation_ok);
 
@@ -1441,7 +1446,7 @@ static b32 render_blockgroup(MiltonState* milton_state,
                 raster_to_canvas(milton_state->view, raster_blockgroup_rect.bot_right);
     }
 
-    update_stroke_masks(milton_state->root_layer, canvas_blockgroup_rect);
+    b32* stroke_masks = create_stroke_masks(milton_state->root_layer, canvas_blockgroup_rect);
 
     Arena render_arena = { 0 };
     if ( allocation_ok ) {
@@ -1462,6 +1467,7 @@ static b32 render_blockgroup(MiltonState* milton_state,
                                                         milton_state->view,
                                                         milton_state->root_layer,
                                                         &milton_state->working_stroke,
+                                                        stroke_masks,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
         } else {
@@ -1469,12 +1475,14 @@ static b32 render_blockgroup(MiltonState* milton_state,
                                                         milton_state->view,
                                                         milton_state->root_layer,
                                                         &milton_state->working_stroke,
+                                                        stroke_masks,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
         }
         arena_reset_noclear(&render_arena);
         //arena_reset(&render_arena);
     }
+    sb_free(stroke_masks);
     return allocation_ok;
 }
 
@@ -1600,9 +1608,6 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 
     sb_free(blocks);
 
-    // Clear masks
-    for ( Layer* layer = milton_state->root_layer; layer; layer = layer->next )
-        for ( int i = 0; i < sb_count(layer->strokes); ++i ) { layer->masks[i] = false; }
     PROFILE_PUSH(render_canvas);
 }
 

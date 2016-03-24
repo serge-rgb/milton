@@ -18,6 +18,9 @@
 // 1 - Use a power curve of 2.
 #define FAST_GAMMA 1
 
+// Force things to be a bit slower
+#define RESTRICT_NUM_THREADS_TO_2 1
+
 // Experiment in the renderer using (c|m)alloc in hot code. See it slow to a crawl.
 #define TRY_MALLOC 0
 

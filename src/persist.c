@@ -87,7 +87,7 @@ static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
 
 void milton_load(MiltonState* milton_state)
 {
-    FILE* fd = fopen("MiltonPersist.mlt", "rb");
+    FILE* fd = fopen("MiltonPersist.mlt", "rb+");
     b32 ok = true;  // fread check
 
     if ( fd ) {
@@ -102,9 +102,6 @@ void milton_load(MiltonState* milton_state)
 
         if ( ok ) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
 
-        // TODO LOAD MULTIPLE LAYERS
-        milton_state->view->num_layers = 1;
-
         milton_magic = word_swap_memory_order(milton_magic);
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
@@ -112,45 +109,63 @@ void milton_load(MiltonState* milton_state)
             ok = false;
         }
 
-        if ( ok ) {
-            i32 num_strokes = -1;
-            if ( ok ) { ok = fread_checked(&num_strokes, sizeof(i32), 1, fd); }
+        i32 num_layers = 1;
+        if ( ok ) { ok = fread_checked(&num_layers, sizeof(i32), 1, fd); }
 
-            assert (num_strokes >= 0);
+        milton_state->root_layer = NULL;
+        milton_state->working_layer = NULL;
 
-            for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
-                Stroke* stroke = layer_push_stroke(milton_state->root_layer, (Stroke){0});
+        for (int layer_i = 0; layer_i < num_layers; ++layer_i ) {
+            i32 len = 0;
+            if ( ok ) { ok = fread_checked(&len, sizeof(i32), 1, fd); }
 
-                if ( ok ) { ok = fread_checked(&stroke->brush, sizeof(Brush), 1, fd); }
-                if ( ok ) { ok = fread_checked(&stroke->num_points, sizeof(i32), 1, fd); }
-                if ( stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0 ) {
-                    milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
-                    ok = false;
-                    sb_reset(milton_state->root_layer->strokes);
-                    // Corrupt file. Avoid
-                    break;
-                }
-                if ( ok ) {
-                    stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
-                    ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
-                    if ( !ok ) mlt_free(stroke->pressures);
-                }
-                if ( ok ) {
-                    stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
-                    ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
-                    if ( !ok ) mlt_free (stroke->points);
-                }
+            milton_new_layer(milton_state);
+            Layer* layer = milton_state->working_layer;
 
-                if ( ok ) {
-                    ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
-                }
-                if ( ok ) {
-                    ok = fread_checked(&stroke->id, sizeof(i32), 1, fd);
-                }
+            if ( ok ) {
+                mlt_free(layer->name);
+                layer->name = mlt_calloc(len, 1);
+                ok = fread_checked(layer->name, sizeof(char), len, fd);
             }
 
-            if ( ok ) { ok = fread_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
+            if ( ok ) {
+                size_t num_strokes = 0;
+                if ( ok ) { ok = fread_checked(&num_strokes, sizeof(size_t), 1, fd); }
+
+                for ( size_t stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
+                    Stroke* stroke = layer_push_stroke(layer, (Stroke){0});
+
+                    if ( ok ) { ok = fread_checked(&stroke->brush, sizeof(Brush), 1, fd); }
+                    if ( ok ) { ok = fread_checked(&stroke->num_points, sizeof(i32), 1, fd); }
+                    if ( stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0 ) {
+                        milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
+                        ok = false;
+                        sb_reset(milton_state->root_layer->strokes);
+                        // Corrupt file. Avoid
+                        break;
+                    }
+                    if ( ok ) {
+                        stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
+                        ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
+                        if ( !ok ) mlt_free(stroke->pressures);
+                    }
+                    if ( ok ) {
+                        stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
+                        ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
+                        if ( !ok ) mlt_free (stroke->points);
+                    }
+
+                    if ( ok ) {
+                        ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
+                    }
+                    if ( ok ) {
+                        ok = fread_checked(&stroke->id, sizeof(i32), 1, fd);
+                    }
+                }
+
+            }
         }
+        if ( ok ) { ok = fread_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
         fclose(fd);
     }
     if ( !ok ) {
@@ -160,9 +175,6 @@ void milton_load(MiltonState* milton_state)
 
 void milton_save(MiltonState* milton_state)
 {
-    size_t num_strokes = sb_count(milton_state->root_layer->strokes);
-    Stroke* strokes = milton_state->root_layer->strokes;
-
     int pid = (int)getpid();
     char tmp_fname[MAX_PATH] = {0};
     snprintf(tmp_fname, MAX_PATH, "milton_tmp.%d.mlt", pid);
@@ -180,26 +192,41 @@ void milton_save(MiltonState* milton_state)
 
         u32 milton_binary_version = 1;
 
-        if ( ok && !fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd)) { ok = false; }
-        if ( ok && !fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd)) { ok = false; }
-        if ( ok && !fwrite_checked(&num_strokes, sizeof(i32), 1, fd)) { ok = false; }
-        if ( ok ) {
-            for ( size_t stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
-                Stroke* stroke = &strokes[stroke_i];
-                assert(stroke->num_points > 0);
-                if ( ok ) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
-                if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
-                if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
-                if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
-                if ( ok ) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
-                if ( ok ) { ok = fwrite_checked(&stroke->id, sizeof(i32), 1, fd); }
-                if ( !ok ) {
-                    break;
+        if ( ok ) { ok = fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd);   }
+        if ( ok ) { ok = fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
+
+        i32 num_layers = number_of_layers(milton_state->root_layer);
+        if ( ok ) { ok = fwrite_checked(&num_layers, sizeof(i32), 1, fd); }
+
+        i32 TEST = 0;
+        for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next ) {
+            Stroke* strokes = layer->strokes;
+            size_t num_strokes = sb_count(strokes);
+            char* name = layer->name;
+            size_t len = strlen(name) + 1;
+            if ( ok ) { ok = fwrite_checked(&len, sizeof(i32), 1, fd); }
+            if ( ok ) { ok = fwrite_checked(name, sizeof(char), len, fd); }
+            if ( ok ) { ok = fwrite_checked(&num_strokes, sizeof(size_t), 1, fd); }
+            if ( ok ) {
+                for ( size_t stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
+                    Stroke* stroke = &strokes[stroke_i];
+                    assert(stroke->num_points > 0);
+                    if ( ok ) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
+                    if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
+                    if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
+                    if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
+                    if ( ok ) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
+                    if ( ok ) { ok = fwrite_checked(&stroke->id, sizeof(i32), 1, fd); }
+                    if ( !ok ) {
+                        break;
+                    }
                 }
+            } else {
+                ok = false;
             }
-        } else {
-            ok = false;
+            ++TEST;
         }
+        assert (TEST == num_layers);
 
         if ( ok ) { ok = fwrite_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
 

@@ -40,7 +40,6 @@ typedef struct CanvasView
     i32 num_layers;
 } CanvasView;
 
-
 enum LayerFlags
 {
     LayerFlags_VISIBLE = (1<<0),
@@ -51,8 +50,6 @@ typedef struct Layer
     i32 id;
 
     Stroke* strokes;  // stretchy
-    b32*    masks;
-    i32     masks_count;
     char*   name;
 
     i32     flags;
@@ -65,8 +62,9 @@ v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
 
 v2i raster_to_canvas(CanvasView* view, v2i raster_point);
 
+// Thread-safe
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
-void update_stroke_masks(Layer* root_layer, Rect rect);
+b32* create_stroke_masks(Layer* root_layer, Rect rect);
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
 b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1);

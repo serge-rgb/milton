@@ -360,6 +360,9 @@ void milton_init(MiltonState* milton_state)
     }
 
     milton_state->num_render_workers = SDL_GetCPUCount();
+#if RESTRICT_NUM_THREADS_TO_2
+    milton_state->num_render_workers = 2;
+#endif
 
     milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
 
@@ -485,7 +488,7 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
 
     size_t buffer_size = (size_t) milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
 
-    if (do_realloc) {
+    if ( do_realloc ) {
         u8* raster_buffer = milton_state->raster_buffer;
         u8* canvas_buffer = milton_state->canvas_buffer;
         if ( raster_buffer ) mlt_free(raster_buffer);
@@ -499,7 +502,7 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     }
 
     if ( new_screen_size.w < milton_state->max_width &&
-         new_screen_size.h < milton_state->max_height) {
+         new_screen_size.h < milton_state->max_height ) {
         milton_state->view->screen_size = new_screen_size;
         milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
 
@@ -588,12 +591,11 @@ void milton_new_layer(MiltonState* milton_state)
     *layer = (Layer) {
         .id = id,
         .name = mlt_calloc(MAX_LAYER_NAME_LEN, sizeof(char)),
-        .masks = NULL,
         .flags = LayerFlags_VISIBLE,
     };
     snprintf(layer->name, 1024, "Layer %d", layer->id);
 
-    if ( milton_state->root_layer ) {
+    if ( milton_state->root_layer != NULL ) {
         Layer* top = layer_get_topmost(milton_state->root_layer);
         top->next = layer;
         layer->prev = top;
