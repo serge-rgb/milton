@@ -320,6 +320,13 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
 int milton_main(MiltonStartupFlags startup_flags)
 {
+    // TODO: windows scaling support
+#if 0
+#if defined(_WIN32)
+    // TODO: Try to load DLL instead of linking directly
+    SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
+#endif
+#endif
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
     SDL_Init(SDL_INIT_VIDEO);
@@ -331,6 +338,8 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetSwapInterval(0);
 
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -414,7 +423,7 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     // Every 100ms, call this callback to send us an event so we don't wait for user input.
     // Called periodically to force updates that don't depend on user input.
-    SDL_AddTimer(100,
+    SDL_AddTimer(10,
                  [](u32 interval, void *param) {
                      SDL_Event event;
                      SDL_UserEvent userevent;

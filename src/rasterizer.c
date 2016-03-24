@@ -298,7 +298,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             }
             Stroke* unclipped_stroke = NULL;
             if ( stroke_i == num_strokes ) {
-                if ( layer->next == NULL && working_stroke->num_points ) {  // Topmost layer: Use working stroke
+                if ( layer->id == working_stroke->layer_id && working_stroke->num_points ) {  // Topmost layer: Use working stroke
                     unclipped_stroke = working_stroke;
                 } else {
                     break;

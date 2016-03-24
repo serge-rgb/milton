@@ -21,6 +21,19 @@ extern "C" {
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif
+
+#if defined(_WIN32)
+    // ShellScalingApi.h
+typedef enum _PROCESS_DPI_AWARENESS {
+  PROCESS_DPI_UNAWARE            = 0,
+  PROCESS_SYSTEM_DPI_AWARE       = 1,
+  PROCESS_PER_MONITOR_DPI_AWARE  = 2
+} PROCESS_DPI_AWARENESS;
+
+HRESULT WINAPI SetProcessDpiAwareness(
+  _In_ PROCESS_DPI_AWARENESS value
+);
+#endif
 // ----
 
 typedef enum HistoryDebug

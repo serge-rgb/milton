@@ -217,7 +217,8 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             else if ( is_renaming ) {
                 if ( ImGui::InputText("##rename",
                                       milton_state->working_layer->name,
-                                      MAX_LAYER_NAME_LEN,
+                                      13,
+                                      //MAX_LAYER_NAME_LEN,
                                       ImGuiInputTextFlags_EnterReturnsTrue
                                       //,ImGuiInputTextFlags flags = 0, ImGuiTextEditCallback callback = NULL, void* user_data = NULL
                                      ) ) {
@@ -270,6 +271,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             }
             else if ( deleting ) {
                 ImGui::Text("Are you sure?");
+                ImGui::Text("Can't be undone.");
                 if ( ImGui::Button("Yes") ) {
                     milton_delete_working_layer(milton_state);
                     deleting = false;

@@ -81,6 +81,8 @@ Layer* layer_get_topmost(Layer* root);
 // Get the topmost stroke for current layer.
 Stroke layer_get_top_stroke(Layer* layer);
 
+Layer* layer_get_by_id(Layer* root_layer, i32 id);
+
 void layer_toggle_visibility(Layer* layer);
 
 Stroke* layer_push_stroke(Layer* layer, Stroke stroke);

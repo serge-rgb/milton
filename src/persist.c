@@ -109,7 +109,7 @@ void milton_load(MiltonState* milton_state)
             ok = false;
         }
 
-        i32 num_layers = 1;
+        i32 num_layers = 0;
         if ( ok ) { ok = fread_checked(&num_layers, sizeof(i32), 1, fd); }
 
         milton_state->root_layer = NULL;
@@ -122,9 +122,9 @@ void milton_load(MiltonState* milton_state)
             milton_new_layer(milton_state);
             Layer* layer = milton_state->working_layer;
 
-            if ( ok ) {
-                ok = fread_checked(layer->name, sizeof(char), len, fd);
-            }
+            if ( ok ) { ok = fread_checked(layer->name, sizeof(char), len, fd); }
+
+            if ( ok ) { ok = fread_checked(&layer->id, sizeof(i32), 1, fd); }
 
             if ( ok ) {
                 size_t num_strokes = 0;
@@ -157,7 +157,6 @@ void milton_load(MiltonState* milton_state)
                         ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
                     }
                 }
-
             }
         }
         if ( ok ) { ok = fread_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
@@ -165,6 +164,27 @@ void milton_load(MiltonState* milton_state)
     }
     if ( !ok ) {
         platform_dialog("Tried to load a corrupted Milton file", "Error");
+    } else {
+        i32 id = milton_state->view->working_layer_id;
+        {
+            Layer* layer = milton_state->root_layer;
+            while (layer) {
+                if ( layer->id == id ) {
+                    milton_state->working_layer = layer;
+                    break;
+                }
+                layer = layer->next;
+            }
+        }
+        assert (sb_count(milton_state->history) == 0);
+        // load history
+        for ( Layer* layer = milton_state->root_layer; layer; layer = layer->next ) {
+            Stroke* strokes = layer->strokes;
+            for ( int i = 0; i < sb_count(strokes); ++i ) {
+                HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
+                sb_push(milton_state->history, h);
+            }
+        }
     }
 }
 
@@ -190,19 +210,18 @@ void milton_save(MiltonState* milton_state)
         if ( ok ) { ok = fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd);   }
         if ( ok ) { ok = fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
 
-        //i32 num_layers = number_of_layers(milton_state->root_layer);
-        i32 num_layers = 1;
+        i32 num_layers = number_of_layers(milton_state->root_layer);
         if ( ok ) { ok = fwrite_checked(&num_layers, sizeof(i32), 1, fd); }
 
         i32 TEST = 0;
-        //for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next ) {
-        Layer* layer = milton_state->root_layer; {
+        for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next ) {
             Stroke* strokes = layer->strokes;
             size_t num_strokes = sb_count(strokes);
             char* name = layer->name;
             size_t len = strlen(name) + 1;
             if ( ok ) { ok = fwrite_checked(&len, sizeof(i32), 1, fd); }
             if ( ok ) { ok = fwrite_checked(name, sizeof(char), len, fd); }
+            if ( ok ) { ok = fwrite_checked(&layer->id, sizeof(i32), 1, fd); }
             if ( ok ) { ok = fwrite_checked(&num_strokes, sizeof(size_t), 1, fd); }
             if ( ok ) {
                 for ( size_t stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {

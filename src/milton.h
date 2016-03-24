@@ -55,10 +55,16 @@ enum
     BrushEnum_COUNT,
 };
 
-typedef enum HistoryElement
+enum HistoryElementType
 {
-    HistoryElement_STROKE,
-    HistoryElement_LAYER,
+    HistoryElement_STROKE_ADD,
+    HistoryElement_LAYER_DELETE,
+};
+
+typedef struct HistoryElement
+{
+    int type;
+    i32 layer_id;  // HistoryElement_STROKE_ADD
 } HistoryElement;
 
 struct MiltonGui;
@@ -95,9 +101,11 @@ typedef struct MiltonState
 
     // Stretchy buffer for redo/undo
     // - History data  (stretchy buffers)
+    HistoryElement* history;
     HistoryElement* redo_stack;
-    Layer**         layer_graveyard;
-    Stroke**        stroke_graveyard;
+    // TODO: implement undo for layer delete (?)
+    //Layer**         layer_graveyard;
+    Stroke*         stroke_graveyard;
 
 
     v2i hover_point;  // Track the pointer when not stroking..

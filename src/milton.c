@@ -182,6 +182,24 @@ static b32 current_mode_is_for_painting(MiltonState* milton_state)
     return result;
 }
 
+static void clear_stroke_redo(MiltonState* milton_state)
+{
+    while ( sb_count(milton_state->stroke_graveyard) ) {
+        Stroke s = sb_pop(milton_state->stroke_graveyard);
+        mlt_free(s.points);
+        mlt_free(s.pressures);
+    }
+    for ( int i = 0; i < sb_count(milton_state->redo_stack); ++i ) {
+        HistoryElement h = milton_state->redo_stack[i];
+        if (h.type == HistoryElement_STROKE_ADD) {
+            for ( int j = i; j < sb_count(milton_state->redo_stack)-1; ++j ) {
+                milton_state->redo_stack[j] = milton_state->redo_stack[j+1];
+            }
+            sb_pop(milton_state->redo_stack);
+        }
+    }
+}
+
 static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 {
     if ( input->input_count == 0 ) {
@@ -621,9 +639,9 @@ void milton_delete_working_layer(MiltonState* milton_state)
         if ( layer->prev )
             layer->prev->next = layer->next;
 
-        sb_push(milton_state->layer_graveyard, layer);
-        sb_push(milton_state->redo_stack, HistoryElement_LAYER);
-
+        /* sb_push(milton_state->layer_graveyard, layer); */
+        /* HistoryElement h = { HistoryElement_LAYER_DELETE, -1 }; */
+        /* sb_push(milton_state->history, h); */
 
         if (layer->next)
             milton_state->working_layer = layer->next;
@@ -744,38 +762,46 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-#if 0
-    {
+    { // Undo / Redo
         if (check_flag( input->flags, MiltonInputFlags_UNDO )) {
-            Stroke stroke = pop_latest_stroke(milton_state);
-            sb_push(milton_state->redo_stack, stroke);
-            set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+            if ( sb_count(milton_state->history) ) {
+                HistoryElement h = sb_pop(milton_state->history);
+                switch (h.type) {
+                case HistoryElement_STROKE_ADD: {
+                    Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
+                    assert (sb_count(l->strokes) > 0);
+
+                    Stroke stroke = sb_pop(l->strokes);
+                    sb_push(milton_state->stroke_graveyard, stroke);
+                    set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+
+                } break;
+                case HistoryElement_LAYER_DELETE: {
+
+                } break;
+                }
+                sb_push(milton_state->redo_stack, h);
+            }
         }
         else if ( check_flag(input->flags, MiltonInputFlags_REDO ) ) {
-            if (sb_count(milton_state->redo_stack) > 0) {
-                layer_push_stroke(milton_state, sb_pop(milton_state->redo_stack));
+            if ( sb_count(milton_state->redo_stack) > 0 ) {
+                HistoryElement h = sb_pop(milton_state->redo_stack);
+                switch (h.type) {
+                case HistoryElement_STROKE_ADD: {
+                    Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
+                    Stroke stroke = sb_pop(milton_state->stroke_graveyard);
+                    sb_push(l->strokes, stroke);
+                    sb_push(milton_state->history, h);
+                    set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+
+                } break;
+                case HistoryElement_LAYER_DELETE: {
+                } break;
+                }
                 set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
             }
         }
     }
-#endif
-
-#if 0
-    // ==== Rotate ======
-    if (input->rotation != 0)
-    {
-        render_flags |= MiltonRenderFlags_FULL_REDRAW;
-    }
-    milton_state->view->rotation += input->rotation;
-    while (milton_state->view->rotation < 0)
-    {
-        milton_state->view->rotation += 360;
-    }
-    while (milton_state->view->rotation >= 360)
-    {
-        milton_state->view->rotation -= 360;
-    }
-#endif
 
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
     if ( milton_state->current_mode == MiltonMode_PEN ||
@@ -801,9 +827,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             } else if (!milton_state->gui->active) {
                 milton_stroke_input(milton_state, input);
             }
-
-            // Clear redo stack
-            sb_reset(milton_state->redo_stack);
         }
     }
 
@@ -821,6 +844,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         gui_imgui_set_ungrabbed(milton_state->gui);
     }
 
+
+    // ---- End stroke
     if (check_flag( input->flags, MiltonInputFlags_END_STROKE )) {
         milton_state->stroke_is_from_tablet = false;
 
@@ -849,10 +874,14 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 memcpy(new_stroke.pressures, milton_state->working_stroke.pressures, milton_state->working_stroke.num_points * sizeof(f32));
 
                 layer_push_stroke(milton_state->working_layer, new_stroke);
+                HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
+                sb_push(milton_state->history, h);
                 // Clear working_stroke
                 {
                     milton_state->working_stroke.num_points = 0;
                 }
+
+                clear_stroke_redo(milton_state);
 
                 set_flag(render_flags, MiltonRenderFlags_FINISHED_STROKE);
             }

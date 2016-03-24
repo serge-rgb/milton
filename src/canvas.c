@@ -30,6 +30,7 @@ v2i raster_to_canvas(CanvasView* view, v2i raster_point)
     return canvas_point;
 }
 
+// Thread-safe
 b32* create_stroke_masks(Layer* layer, Rect rect)
 {
     b32* masks = NULL;
@@ -122,6 +123,15 @@ Layer* layer_get_topmost(Layer* root)
         layer = layer->next;
     }
     return layer;
+}
+Layer* layer_get_by_id(Layer* root_layer, i32 id)
+{
+    for(Layer* layer = root_layer; layer; layer = layer->next) {
+        if ( layer->id == id ) {
+            return layer;
+        }
+    }
+    return root_layer;
 }
 
 // Push stroke at the top of the current layer

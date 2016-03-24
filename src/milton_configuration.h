@@ -11,8 +11,7 @@
 //  -
 #define MILTON_DEBUG 1
 
-// Yup
-#define MILTON_MULTITHREADED 1
+#define MILTON_MULTITHREADED 0
 
 // 0 - Use strict SRGB definition
 // 1 - Use a power curve of 2.
