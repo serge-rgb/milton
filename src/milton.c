@@ -612,6 +612,26 @@ void milton_set_working_layer(MiltonState* milton_state, Layer* layer)
     milton_state->view->working_layer_id = layer->id;
 }
 
+void milton_delete_working_layer(MiltonState* milton_state)
+{
+    Layer* layer = milton_state->working_layer;
+    if ( layer->next || layer->prev ) {
+        if ( layer->next )
+            layer->next->prev = layer->prev;
+        if ( layer->prev )
+            layer->prev->next = layer->next;
+
+        sb_push(milton_state->layer_graveyard, layer);
+        sb_push(milton_state->redo_stack, HistoryElement_LAYER);
+
+
+        if (layer->next)
+            milton_state->working_layer = layer->next;
+        else
+            milton_state->working_layer = layer->prev;
+    }
+}
+
 
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
@@ -823,7 +843,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                     .pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32)),
                     .num_points = num_points,
                     .layer_id = milton_state->view->working_layer_id,
-                    .id = milton_state->num_strokes,
                 };
 
                 memcpy(new_stroke.points, milton_state->working_stroke.points, milton_state->working_stroke.num_points * sizeof(v2i));

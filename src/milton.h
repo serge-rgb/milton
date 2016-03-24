@@ -47,49 +47,60 @@ typedef enum MiltonMode
     MiltonMode_EXPORTING              = 1 << 2,
 } MiltonMode;
 
-enum {
+enum
+{
     BrushEnum_PEN,
     BrushEnum_ERASER,
 
     BrushEnum_COUNT,
 };
 
+typedef enum HistoryElement
+{
+    HistoryElement_STROKE,
+    HistoryElement_LAYER,
+} HistoryElement;
+
 struct MiltonGui;
 
 typedef struct MiltonState
 {
-    u8      bytes_per_pixel;
+    u8  bytes_per_pixel;
 
-    i32     max_width;
-    i32     max_height;
-    u8*     raster_buffer;
-    u8*     canvas_buffer;
+    i32 max_width;
+    i32 max_height;
+    u8* raster_buffer;
+    u8* canvas_buffer;
 
     // The screen is rendered in blockgroups
     // Each blockgroup is rendered in blocks of size (block_width*block_width).
-    i32     blocks_per_blockgroup;
-    i32     block_width;
+    i32 blocks_per_blockgroup;
+    i32 block_width;
 
     MiltonGLState* gl;
 
     struct MiltonGui* gui;
 
     // ---- The Painting
-    Brush   brushes[BrushEnum_COUNT];
-    i32     brush_sizes[BrushEnum_COUNT];  // In screen pixels
+    Brush       brushes[BrushEnum_COUNT];
+    i32         brush_sizes[BrushEnum_COUNT];  // In screen pixels
 
-    Layer*  root_layer;
-    Layer*  working_layer;
-    i32     num_strokes;
+    Layer*      root_layer;
+    Layer*      working_layer;
 
-    Stroke  working_stroke;
-    // ----  // gui->picker.info also stored
-
-    // Stretchy buffer for redo/undo
-    Stroke* redo_stack;
+    Stroke      working_stroke;
 
     CanvasView* view;
-    v2i     hover_point;  // Track the pointer when not stroking..
+    // ----  // gui->picker.info also stored (TODO: store color history buttons)
+
+    // Stretchy buffer for redo/undo
+    // - History data  (stretchy buffers)
+    HistoryElement* redo_stack;
+    Layer**         layer_graveyard;
+    Stroke**        stroke_graveyard;
+
+
+    v2i hover_point;  // Track the pointer when not stroking..
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
@@ -111,7 +122,7 @@ typedef struct MiltonState
 
     // Quick and dirty way to count MOUSE_UP events as stroke points for mouse
     // but discard them when using a tablet.
-    b32         stroke_is_from_tablet;
+    b32 stroke_is_from_tablet;
 
     // This is set to false after it's safe to quit
     b32 running;
@@ -198,6 +209,7 @@ void milton_try_quit(MiltonState* milton_state);
 
 void milton_new_layer(MiltonState* milton_state);
 void milton_set_working_layer(MiltonState* milton_state, Layer* layer);
+void milton_delete_working_layer(MiltonState* milton_state);
 
 #if defined(__cplusplus)
 }

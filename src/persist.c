@@ -123,8 +123,6 @@ void milton_load(MiltonState* milton_state)
             Layer* layer = milton_state->working_layer;
 
             if ( ok ) {
-                mlt_free(layer->name);
-                layer->name = mlt_calloc(len, 1);
                 ok = fread_checked(layer->name, sizeof(char), len, fd);
             }
 
@@ -157,9 +155,6 @@ void milton_load(MiltonState* milton_state)
 
                     if ( ok ) {
                         ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
-                    }
-                    if ( ok ) {
-                        ok = fread_checked(&stroke->id, sizeof(i32), 1, fd);
                     }
                 }
 
@@ -195,11 +190,13 @@ void milton_save(MiltonState* milton_state)
         if ( ok ) { ok = fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd);   }
         if ( ok ) { ok = fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
 
-        i32 num_layers = number_of_layers(milton_state->root_layer);
+        //i32 num_layers = number_of_layers(milton_state->root_layer);
+        i32 num_layers = 1;
         if ( ok ) { ok = fwrite_checked(&num_layers, sizeof(i32), 1, fd); }
 
         i32 TEST = 0;
-        for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next ) {
+        //for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next ) {
+        Layer* layer = milton_state->root_layer; {
             Stroke* strokes = layer->strokes;
             size_t num_strokes = sb_count(strokes);
             char* name = layer->name;
@@ -216,7 +213,6 @@ void milton_save(MiltonState* milton_state)
                     if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
                     if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
                     if ( ok ) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
-                    if ( ok ) { ok = fwrite_checked(&stroke->id, sizeof(i32), 1, fd); }
                     if ( !ok ) {
                         break;
                     }
