@@ -11,14 +11,14 @@
 //  -
 #define MILTON_DEBUG 1
 
-#define MILTON_MULTITHREADED 0
+#define MILTON_MULTITHREADED 1
 
 // 0 - Use strict SRGB definition
 // 1 - Use a power curve of 2.
 #define FAST_GAMMA 1
 
 // Force things to be a bit slower
-#define RESTRICT_NUM_THREADS_TO_2 1
+#define RESTRICT_NUM_THREADS_TO_2 0
 
 // Experiment in the renderer using (c|m)alloc in hot code. See it slow to a crawl.
 #define TRY_MALLOC 0

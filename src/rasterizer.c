@@ -279,7 +279,6 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
     ClippedStroke* stroke_list = NULL;
     *allocation_ok = true;
     Layer* layer = root_layer;
-    size_t layer_stroke_i = 0;
     while ( layer ) {
         if ( !(layer->flags & LayerFlags_VISIBLE) ) {
             layer = layer->next;
@@ -290,8 +289,14 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
         size_t num_strokes = sb_count(strokes);
 
         // Fill linked list with strokes clipped to this block
-        for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i, ++layer_stroke_i ) {
-            if ( stroke_i < num_strokes && !stroke_masks[layer_stroke_i] ) {
+        for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
+
+            // Sum of strokes before this layer.
+            size_t total_stroke_i = stroke_i;
+            for ( Layer* l=root_layer; l!=layer; l=l->next)
+                if (l->flags & LayerFlags_VISIBLE) total_stroke_i += sb_count(l->strokes);
+
+            if ( stroke_i < num_strokes && !stroke_masks[total_stroke_i] ) {
                 // Stroke masks is of size num_strokes, but we use stroke_i ==
                 // num_strokes to indicate the current "working stroke"
                 continue;
@@ -347,7 +352,6 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                 }
             }
         }
-
         // Set our `stroke_list` to end at the first opaque stroke that fills
         // this block.
         ClippedStroke* list_iter = stroke_list;
