@@ -146,7 +146,7 @@ typedef struct
 #define sb_pop(a)           ((a)[--sb__sbn(a)])
 #define sb_unpop(a)         (sb__sbn(a)++)
 #define sb_count(a)         ((a) ? sb__sbn(a) : 0)
-#define sb_add(a,n)         (sb__sbmaybegrow(a,n), sb__sbn(a)+=(n), &(a)[sb__sbn(a)-(n)])
+#define sb_reserve(a,n)     (sb__sbmaybegrow(a,n), sb__sbn(a)+=(n), &(a)[sb__sbn(a)-(n)])
 #define sb_peek(a)          ((a)[sb__sbn(a)-1])
 
 #define sb__sbraw(a) ((i32 *) (a) - 2)
