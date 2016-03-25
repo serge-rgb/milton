@@ -24,60 +24,71 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         0
     },
     { // English
-        "File",
-        "Open Milton Canvas",
-        "Export to Image...",
-        "Quit",/* TXT_quit, */
-        "Canvas",/* TXT_canvas, */
-        "Set Background Color",/* TXT_set_background_color, */
-        "Help",/* TXT_help, */
-        "Brushes", /* TXT_brushes                        , */
-        "Opacity", /* TXT_opacity                        , */
-        "Brush size", /* TXT_brush_size                     , */
-        "Switch to pen", /* TXT_switch_to_pen                  , */
-        "Switch to eraser", /* TXT_switch_to_eraser               , */
-        "Choose background color", /* TXT_choose_background_color        , */
-        "Color", /* TXT_color               , */
-        "Export...", /* TXT_export_DOTS                    , */
-        "Click and drag to select the area to export.", /* TXT_MSG_click_and_drag_instruction , */
-        "Current selection", /* TXT_current_selection              , */
-        "Scale up", /* TXT_scale_up                       , */
-        "Final image size", /* TXT_final_image_size               , */
-        "Export selection to image...", /* TXT_export_selection_to_image_DOTS , */
-        "Did not write file. Not enough memory available for operation.", /* TXT_MSG_memerr_did_not_write       , */
-        "Error", /* TXT_error                          , */
-        "Cancel", /* TXT_cancel                         , */
-        "View",/* TXT_view                            , */
-        "Toggle GUI Visibility",/* TXT_toggle_gui_visibility           , */
-        "Layers",/* TXT_layers                          , */
+        [TXT_file]                           = "File",
+        [TXT_open_milton_canvas]             = "Open Milton Canvas",
+        [TXT_export_to_image_DOTS]           = "Export to Image...",
+        [TXT_quit]                           = "Quit",
+        [TXT_canvas]                         = "Canvas",
+        [TXT_set_background_color]           = "Set Background Color",
+        [TXT_help]                           = "Help",
+        [TXT_brushes]                        = "Brushes",
+        [TXT_opacity]                        = "Opacity",
+        [TXT_brush_size]                     = "Brush size",
+        [TXT_switch_to_pen]                  = "Switch to pen",
+        [TXT_switch_to_eraser]               = "Switch to eraser",
+        [TXT_choose_background_color]        = "Choose background color",
+        [TXT_color]                          = "Color",
+        [TXT_export_DOTS]                    = "Export...",
+        [TXT_MSG_click_and_drag_instruction] = "Click and drag to select the area to export.",
+        [TXT_current_selection]              = "Current selection",
+        [TXT_scale_up]                       = "Scale up",
+        [TXT_final_image_size]               = "Final image size",
+        [TXT_export_selection_to_image_DOTS] = "Export selection to image...",
+        [TXT_MSG_memerr_did_not_write]       = "Did not write file. Not enough memory available for operation.",
+        [TXT_error]                          = "Error",
+        [TXT_cancel]                         = "Cancel",
+        [TXT_view]                           = "View",
+        [TXT_toggle_gui_visibility]          = "Toggle GUI Visibility",
+        [TXT_layers]                         = "Layers",
+        [TXT_new_layer]                      = "New Layer",
+        [TXT_rename]                         = "Rename",
+        [TXT_move]                           = "Move",
+        [TXT_up]                             = "Up",
+        [TXT_down]                           = "Down",
+        [TXT_are_you_sure]                   = "Are you sure?",
+        [TXT_cant_be_undone]                 = "Can't be undone",
+        [TXT_yes]                            = "Yes",
+        [TXT_no]                             = "No",
+        [TXT_ok]                             = "OK",
+        [TXT_delete]                         = "Delete",
     },
     { // Spanish
-        "Archivo",/* TXT_file, */
-        "Abrir Lienzo",/* TXT_open_milton_canvas, */
-        "Exportar a Imagen...",/* TXT_export_to_image_DOTS, */
-        "Salir",/* TXT_quit, */
-        "Lienzo",/* TXT_canvas, */
-        "Cambiar Color de Fondo",/* TXT_set_background_color, */
-        "Ayuda",/* TXT_help, */
-        "Brochas",/* TXT_brushes                        , */
-        "Opacidad",/* TXT_opacity                        , */
-        "Tamaño",/* TXT_brush_size                     , */
-        "Usar pluma",/* TXT_switch_to_pen                  , */
-        "Usar goma",/* TXT_switch_to_eraser               , */
-        "Escoger color de fondo",/* TXT_choose_background_color        , */
-        "Color",/* TXT_color               , */
-        "Exportar...",/* TXT_export_DOTS                    , */
-        "Haz click y Arrastra",/* TXT_MSG_click_and_drag_instruction , */
-        "Selección actual",/* TXT_current_selection              , */
-        "Escalar",/* TXT_scale_up                       , */
-        "Tamaño final",/* TXT_final_image_size               , */
-        "Exportar Selección a Imagen...",/* TXT_export_selection_to_image_DOTS , */
-        "No se escribió archivo. No hay suficiente memoria.",/* TXT_MSG_memerr_did_not_write       , */
-        "Error",/* TXT_error                          , */
-        "Cancelar",/* TXT_cancel                         , */
-        "Vista",/* TXT_view                            , */
-        "Mostrar/Ocultar Interfaz",/* TXT_toggle_gui_visibility           , */
-        "Capas",/* TXT_layers                          , */
+        [TXT_file]                           = "Archivo",/* TXT_file, */
+        [TXT_open_milton_canvas]             = "Abrir Lienzo",/* TXT_open_milton_canvas, */
+        [TXT_export_to_image_DOTS]           = "Exportar a Imagen...",/* TXT_export_to_image_DOTS, */
+        [TXT_quit]                           = "Salir",/* TXT_quit, */
+        [TXT_canvas]                         = "Lienzo",/* TXT_canvas, */
+        [TXT_set_background_color]           = "Cambiar Color de Fondo",/* TXT_set_background_color, */
+        [TXT_help]                           = "Ayuda",/* TXT_help, */
+        [TXT_brushes]                        = "Brochas",/* TXT_brushes                        , */
+        [TXT_opacity]                        = "Opacidad",/* TXT_opacity                        , */
+        [TXT_brush_size]                     = "Tamaño",/* TXT_brush_size                     , */
+        [TXT_switch_to_pen]                  = "Usar pluma",/* TXT_switch_to_pen                  , */
+        [TXT_switch_to_eraser]               = "Usar goma",/* TXT_switch_to_eraser               , */
+        [TXT_choose_background_color]        = "Escoger color de fondo",/* TXT_choose_background_color        , */
+        [TXT_color]                          = "Color",/* TXT_color               , */
+        [TXT_export_DOTS]                    = "Exportar...",/* TXT_export_DOTS                    , */
+        [TXT_MSG_click_and_drag_instruction] = "Haz click y Arrastra",/* TXT_MSG_click_and_drag_instruction , */
+        [TXT_current_selection]              = "Selección actual",/* TXT_current_selection              , */
+        [TXT_scale_up]                       = "Escalar",/* TXT_scale_up                       , */
+        [TXT_final_image_size]               = "Tamaño final",/* TXT_final_image_size               , */
+        [TXT_export_selection_to_image_DOTS] = "Exportar Selección a Imagen...",/* TXT_export_selection_to_image_DOTS , */
+        [TXT_MSG_memerr_did_not_write]       = "No se escribió archivo. No hay suficiente memoria.",/* TXT_MSG_memerr_did_not_write       , */
+        [TXT_error]                          = "Error",/* TXT_error                          , */
+        [TXT_cancel]                         = "Cancelar",/* TXT_cancel                         , */
+        [TXT_view]                           = "Vista",/* TXT_view                            , */
+        [TXT_toggle_gui_visibility]          = "Mostrar/Ocultar Interfaz",/* TXT_toggle_gui_visibility           , */
+        [TXT_layers]                         = "Capas",/* TXT_layers                          , */
     }
 };
 

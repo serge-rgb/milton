@@ -198,7 +198,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             ImGui::BeginGroup();
             //ImGui::BeginChild("item view", ImVec2(0, -30-ImGui::GetItemsLineHeightWithSpacing()));
             ImGui::BeginChild("item view", ImVec2(0, 25));
-            if ( ImGui::Button("New Layer") ) {
+            if ( ImGui::Button(LOC(new_layer)) ) {
                 milton_new_layer(milton_state);
             }
             ImGui::Separator();
@@ -209,7 +209,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             if ( is_renaming == false ) {
                 ImGui::Text(milton_state->working_layer->name);
                 ImGui::Indent();
-                if ( ImGui::Button("Rename") ) {
+                if ( ImGui::Button(LOC(rename)) ) {
                     is_renaming = true;
                 }
                 ImGui::Unindent();
@@ -225,20 +225,20 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     is_renaming = false;
                 }
                 ImGui::SameLine();
-                if ( ImGui::Button("Ok") ) {
+                if ( ImGui::Button(LOC(ok)) ) {
                     is_renaming = false;
                 }
             }
-            ImGui::Text("Move");
+            ImGui::Text(LOC(move));
 
             Layer* a = NULL;
             Layer* b = NULL;
-            if ( ImGui::Button("Up") ) {
+            if ( ImGui::Button(LOC(up)) ) {
                 b = milton_state->working_layer;
                 a = b->next;
             }
             ImGui::SameLine();
-            if ( ImGui::Button("Down") ) {
+            if ( ImGui::Button(LOC(down)) ) {
                 a = milton_state->working_layer;
                 b = a->prev;
             }
@@ -265,19 +265,19 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
             static bool deleting = false;
             if ( deleting == false ) {
-                if ( ImGui::Button("Delete") ) {
+                if ( ImGui::Button(LOC(delete)) ) {
                     deleting = true;
                 }
             }
             else if ( deleting ) {
-                ImGui::Text("Are you sure?");
-                ImGui::Text("Can't be undone.");
-                if ( ImGui::Button("Yes") ) {
+                ImGui::Text(LOC(are_you_sure));
+                ImGui::Text(LOC(cant_be_undone));
+                if ( ImGui::Button(LOC(yes)) ) {
                     milton_delete_working_layer(milton_state);
                     deleting = false;
                 }
                 ImGui::SameLine();
-                if ( ImGui::Button("No") ) {
+                if ( ImGui::Button(LOC(no)) ) {
                     deleting = false;
                 }
             }

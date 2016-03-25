@@ -338,7 +338,6 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetSwapInterval(0);
 
     SDL_Window* window = SDL_CreateWindow("Milton",

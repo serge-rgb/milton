@@ -2,6 +2,7 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
+// Re-ordering is OK.
 enum Texts
 {
     TXT_file                            ,
@@ -30,8 +31,18 @@ enum Texts
     TXT_view                            ,
     TXT_toggle_gui_visibility           ,
     TXT_layers                          ,
-    // ==== DO NOT RE-ORDER ABOVE THIS LINE
     // ==== TRANSLATION COMPLETED UNTIL THIS POINT: English, Spanish
+    TXT_new_layer      ,
+    TXT_rename         ,
+    TXT_move           ,
+    TXT_up             ,
+    TXT_down           ,
+    TXT_are_you_sure   ,
+    TXT_cant_be_undone ,
+    TXT_yes            ,
+    TXT_no             ,
+    TXT_ok     ,
+    TXT_delete ,
 
     TXT_Count,
 };
