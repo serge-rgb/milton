@@ -59,6 +59,16 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             }
             ImGui::EndMenu();
         }
+        if ( ImGui::BeginMenu(LOC(edit))) {
+            if ( ImGui::MenuItem(LOC(undo) )) {
+                input->flags |= MiltonInputFlags_UNDO;
+            }
+            if ( ImGui::MenuItem(LOC(redo) )) {
+                input->flags |= MiltonInputFlags_REDO;
+            }
+            ImGui::EndMenu();
+        }
+
         if ( ImGui::BeginMenu(LOC(canvas), /*enabled=*/true) ) {
             //if ( ImGui::MenuItem(LOC(set_background_color)) ) {
             if ( ImGui::BeginMenu(LOC(set_background_color)) ) {
@@ -73,6 +83,39 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 }
                 ImGui::EndMenu();
             }
+            if ( ImGui::MenuItem(LOC(zoom_in)) ) {
+                input->scale++;
+            }
+            if ( ImGui::MenuItem(LOC(zoom_out)) ) {
+                input->scale--;
+            }
+            ImGui::EndMenu();
+        }
+        if ( ImGui::BeginMenu(LOC(tools)) ) {
+            // Brush
+            if ( ImGui::MenuItem(LOC(brush)) ) {
+                set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
+                input->mode_to_set = MiltonMode_PEN;
+            }
+            if ( ImGui::BeginMenu(LOC(brush_opacity)) ) {
+                float opacities[] = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f };
+                for ( int i = 0; i < array_count(opacities); ++i ) {
+                    char entry[128] = {0};
+                    snprintf(entry, array_count(entry), "%s %d%% - [%d]",
+                             LOC(set_opacity_to), (int)(100 * opacities[i]), i == 9 ? 0 : i+1);
+                    if ( ImGui::MenuItem(entry) ) {
+                        milton_set_pen_alpha(milton_state, opacities[i]);
+                    }
+                }
+                ImGui::EndMenu();
+            }
+            // Eraser
+            if ( ImGui::MenuItem(LOC(eraser)) ) {
+                set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
+                input->mode_to_set = MiltonMode_ERASER;
+            }
+            //
+            // Decrease / increase brush size
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu(LOC(view)) ) {
@@ -107,8 +150,11 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
         if ( show_brush_window) {
             if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
                 if ( milton_state->current_mode == MiltonMode_PEN ) {
-                    float mut_alpha = pen_alpha;
-                    ImGui::SliderFloat(LOC(opacity), &mut_alpha, 0.1f, 1.0f);
+                    float mut_alpha = pen_alpha*100;
+                    ImGui::SliderFloat(LOC(opacity), &mut_alpha, 1, 100, "%.0f%%");
+
+                    mut_alpha /= 100.0f;
+                    if ( mut_alpha > 1.0f ) mut_alpha = 1.0f;
                     if ( mut_alpha != pen_alpha ) {
                         milton_set_pen_alpha(milton_state, mut_alpha);
                         i32 f = milton_state->gui->flags;
@@ -132,7 +178,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
                 {
                     if ( milton_state->current_mode != MiltonMode_PEN ) {
-                        if ( ImGui::Button(LOC(switch_to_pen)) ) {
+                        if ( ImGui::Button(LOC(switch_to_brush)) ) {
                             i32 f = input->flags;
                             set_flag(f, MiltonInputFlags_CHANGE_MODE);
                             input->flags = (MiltonInputFlags)f;
@@ -355,40 +401,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
     }
 
     // Shortcut help. Also shown regardless of UI visibility.
-    // TODO: Remove this.
-    if ( milton_state->gui->show_help_widget ) {
-        //bool opened;
-        ImGui::SetNextWindowPos(ImVec2(365, 92), ImGuiSetCond_Always);
-        ImGui::SetNextWindowSize({235, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
-        bool opened = true;
-        if ( ImGui::Begin("Shortcuts", &opened, default_imgui_window_flags) ) {
-            ImGui::TextWrapped(
-                               "Increase brush size        ]\n"
-                               "Decrease brush size        [\n"
-                               "Pen                        b\n"
-                               "Eraser                     e\n"
-                               "10%%  opacity               1\n"
-                               "20%%  opacity               2\n"
-                               "30%%  opacity               3\n"
-                               "             ...             \n"
-                               "90%%  opacity               9\n"
-                               "100%% opacity               0\n"
-                               "\n"
-                               "Show/Hide Help Window     F1\n"
-                               "Toggle GUI Visibility     Tab\n"
-                               "\n"
-                               "\n"
-                              );
-            if ( !opened ) {
-                milton_state->gui->show_help_widget = false;
-            }
-        }
-        ImGui::End();  // Help
-    }
-
-
     ImGui::PopStyleColor(color_stack);
-
 }
 
 

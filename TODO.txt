@@ -15,13 +15,11 @@ Items marked *! needed before "Releasing"
         - set resolution
         - set aspect ratio
         - Save / Load canvas
-    *! Layers (w/engine support)
     - History slider
     - Tablet:
         *! Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
     - UI
-        *! add zoom keys, menu options (for zoom and other features)
         - async progress dialog (windows)
         - async progress dialog (mac)
         - async progress dialog (linux)
@@ -49,6 +47,7 @@ Items marked *! needed before "Releasing"
     - Easytab: Stylus buttons.
     - Easytab: Distinction between eraser and pen.
 - Performance:
+    *! Async rendering
     *! Make iterative rendering split the screen into chunks
     - Input gathering thread.
     *! Undo/Redo: Only redraw necessary area.

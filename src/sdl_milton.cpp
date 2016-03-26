@@ -20,6 +20,7 @@ struct PlatformState
     i32 height;
 
     b32 is_ctrl_down;
+    b32 is_shift_down;
     b32 is_space_down;
     b32 is_pointer_down;  // Left click or wacom input
     b32 is_panning;
@@ -53,6 +54,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
         SDL_Keymod keymod = SDL_GetModState();
         platform_state->is_ctrl_down = (keymod & KMOD_LCTRL) | (keymod & KMOD_RCTRL);
+        platform_state->is_shift_down = (keymod & KMOD_SHIFT);
 
 
 #if defined(_MSC_VER)
@@ -160,7 +162,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 }
                 if ( !ImGui::GetIO().WantCaptureMouse ) {
                     milton_input.scale += event.wheel.y;
-                    set_flag(input_flags, MiltonInputFlags_FAST_DRAW);
                 }
 
                 break;
@@ -183,11 +184,17 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     }
                     if ( platform_state->is_ctrl_down ) {
                         if (keycode == SDLK_z) {
-                            set_flag(input_flags, MiltonInputFlags_UNDO);
+                            if ( platform_state->is_shift_down ) {
+                                set_flag(input_flags, MiltonInputFlags_REDO);
+                            } else {
+                                set_flag(input_flags, MiltonInputFlags_UNDO);
+                            }
                         }
-                        if (keycode == SDLK_y)
-                        {
-                            set_flag(input_flags, MiltonInputFlags_REDO);
+                        else if ( keycode == SDLK_EQUALS ) {
+                            milton_input.scale++;
+                        }
+                        else if ( keycode == SDLK_MINUS ) {
+                            milton_input.scale--;
                         }
                     }
 
@@ -497,6 +504,7 @@ int milton_main(MiltonStartupFlags startup_flags)
         // Clear pan delta if we are zooming
         if ( milton_input.scale != 0 ) {
             milton_input.pan_delta = {};
+            set_flag(input_flags, MiltonInputFlags_FAST_DRAW);
         } else {
             if (platform_state.is_panning) {
                 set_flag(input_flags, MiltonInputFlags_PANNING);

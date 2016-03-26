@@ -34,7 +34,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         [TXT_brushes]                        = "Brushes",
         [TXT_opacity]                        = "Opacity",
         [TXT_brush_size]                     = "Brush size",
-        [TXT_switch_to_pen]                  = "Switch to pen",
+        [TXT_switch_to_brush]                = "Switch to brush",
         [TXT_switch_to_eraser]               = "Switch to eraser",
         [TXT_choose_background_color]        = "Choose background color",
         [TXT_color]                          = "Color",
@@ -61,34 +61,45 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         [TXT_no]                             = "No",
         [TXT_ok]                             = "OK",
         [TXT_delete]                         = "Delete",
+        [TXT_edit]                           = "Edit",
+        [TXT_undo]                           = "Undo",
+        [TXT_redo]                           = "Redo",
+        [TXT_tools]                          = "Tools",
+        [TXT_brush]                          = "Brush",
+        [TXT_eraser]                         = "Eraser",
+        [TXT_zoom_in]                        = "Zoom In",
+        [TXT_zoom_out]                       = "Zoom Out",
+        [TXT_brush_opacity]                  = "Brush Opacity",
+        [TXT_set_opacity_to]                 = "Set brush opacity to",
     },
+
     { // Spanish
-        [TXT_file]                           = "Archivo",/* TXT_file, */
-        [TXT_open_milton_canvas]             = "Abrir Lienzo",/* TXT_open_milton_canvas, */
-        [TXT_export_to_image_DOTS]           = "Exportar a Imagen...",/* TXT_export_to_image_DOTS, */
-        [TXT_quit]                           = "Salir",/* TXT_quit, */
-        [TXT_canvas]                         = "Lienzo",/* TXT_canvas, */
-        [TXT_set_background_color]           = "Cambiar Color de Fondo",/* TXT_set_background_color, */
-        [TXT_help]                           = "Ayuda",/* TXT_help, */
-        [TXT_brushes]                        = "Brochas",/* TXT_brushes                        , */
-        [TXT_opacity]                        = "Opacidad",/* TXT_opacity                        , */
-        [TXT_brush_size]                     = "Tamaño",/* TXT_brush_size                     , */
-        [TXT_switch_to_pen]                  = "Usar pluma",/* TXT_switch_to_pen                  , */
-        [TXT_switch_to_eraser]               = "Usar goma",/* TXT_switch_to_eraser               , */
-        [TXT_choose_background_color]        = "Escoger color de fondo",/* TXT_choose_background_color        , */
-        [TXT_color]                          = "Color",/* TXT_color               , */
-        [TXT_export_DOTS]                    = "Exportar...",/* TXT_export_DOTS                    , */
-        [TXT_MSG_click_and_drag_instruction] = "Haz click y Arrastra",/* TXT_MSG_click_and_drag_instruction , */
-        [TXT_current_selection]              = "Selección actual",/* TXT_current_selection              , */
-        [TXT_scale_up]                       = "Escalar",/* TXT_scale_up                       , */
-        [TXT_final_image_size]               = "Tamaño final",/* TXT_final_image_size               , */
-        [TXT_export_selection_to_image_DOTS] = "Exportar Selección a Imagen...",/* TXT_export_selection_to_image_DOTS , */
-        [TXT_MSG_memerr_did_not_write]       = "No se escribió archivo. No hay suficiente memoria.",/* TXT_MSG_memerr_did_not_write       , */
-        [TXT_error]                          = "Error",/* TXT_error                          , */
-        [TXT_cancel]                         = "Cancelar",/* TXT_cancel                         , */
-        [TXT_view]                           = "Vista",/* TXT_view                            , */
-        [TXT_toggle_gui_visibility]          = "Mostrar/Ocultar Interfaz",/* TXT_toggle_gui_visibility           , */
-        [TXT_layers]                         = "Capas",/* TXT_layers                          , */
+        [TXT_file]                           = "Archivo",
+        [TXT_open_milton_canvas]             = "Abrir Lienzo",
+        [TXT_export_to_image_DOTS]           = "Exportar a Imagen...",
+        [TXT_quit]                           = "Salir",
+        [TXT_canvas]                         = "Lienzo",
+        [TXT_set_background_color]           = "Cambiar Color de Fondo",
+        [TXT_help]                           = "Ayuda",
+        [TXT_brushes]                        = "Brochas",
+        [TXT_opacity]                        = "Opacidad",
+        [TXT_brush_size]                     = "Tamaño",
+        [TXT_switch_to_brush]                = "Usar brocha",
+        [TXT_switch_to_eraser]               = "Usar goma",
+        [TXT_choose_background_color]        = "Escoger color de fondo",
+        [TXT_color]                          = "Color",
+        [TXT_export_DOTS]                    = "Exportar...",
+        [TXT_MSG_click_and_drag_instruction] = "Haz click y Arrastra",
+        [TXT_current_selection]              = "Selección actual",
+        [TXT_scale_up]                       = "Escalar",
+        [TXT_final_image_size]               = "Tamaño final",
+        [TXT_export_selection_to_image_DOTS] = "Exportar Selección a Imagen...",
+        [TXT_MSG_memerr_did_not_write]       = "No se escribió archivo. No hay suficiente memoria.",
+        [TXT_error]                          = "Error",
+        [TXT_cancel]                         = "Cancelar",
+        [TXT_view]                           = "Vista",
+        [TXT_toggle_gui_visibility]          = "Mostrar/Ocultar Interfaz",
+        [TXT_layers]                         = "Capas",
     }
 };
 
@@ -103,9 +114,15 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
 // Exclusively NULL pointers except for translated strings which represent a command.
 static char* g_command_abbreviations[TXT_Count] =
 {
-    [TXT_export_to_image_DOTS] = C("E"),
+    [TXT_export_to_image_DOTS]  = C("E"),
     [TXT_quit]                  = "ESC",
     [TXT_toggle_gui_visibility] = "TAB",
+    [TXT_brush]                 = "B",
+    [TXT_eraser]                = "E",
+    [TXT_undo]                  = C("Z"),
+    [TXT_redo]                  = C("Shift+Z"),
+    [TXT_zoom_in]               = C(" +"),
+    [TXT_zoom_out]              = C(" -"),
 };
 
 #undef C

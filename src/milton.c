@@ -458,7 +458,7 @@ void milton_init(MiltonState* milton_state)
         }
     }
 
-    milton_set_pen_alpha(milton_state, 0.8f);
+    milton_set_pen_alpha(milton_state, 1.0f);
 
 #if MILTON_DEBUG
     milton_run_tests(milton_state);
@@ -471,7 +471,7 @@ void milton_init(MiltonState* milton_state)
         }
         assert (milton_state->render_worker_arenas[i].ptr == NULL);
         u8* worker_memory = (u8*)mlt_calloc(1, milton_state->worker_memory_size);
-        if (!worker_memory) {
+        if ( !worker_memory ) {
             milton_die_gracefully("Platform allocation failed");
         }
         milton_state->render_worker_arenas[i] = arena_init(worker_memory,

@@ -6,10 +6,10 @@
 
 #include "vector.h"
 
-#ifdef array_length
-#error "array_length is already defined"
+#ifdef array_count
+#error "array_count is already defined"
 #else
-#define array_length(arr) (sizeof((arr)) / sizeof((arr)[0]))
+#define array_count(arr) (sizeof((arr)) / sizeof((arr)[0]))
 #endif
 
 #ifndef min
