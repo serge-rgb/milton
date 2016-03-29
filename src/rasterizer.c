@@ -1601,7 +1601,7 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 #if MILTON_MULTITHREADED
     // Wait for workers to finish.
 
-    while(blockgroup_acc) {
+    while ( blockgroup_acc ) {
         i32 waited_err = SDL_SemWait(milton_state->render_stack->completed_semaphore);
         if (!waited_err) {
             --blockgroup_acc;

@@ -300,13 +300,16 @@ v3f gui_get_picker_rgb(MiltonGui* gui)
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
 b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
 {
+    b32 accepts = false;
     v2i point = input->points[0];
-    b32 accepts = picker_is_accepting_input(&gui->picker, point);
-    if ( !gui->did_hit_button &&
-         !picker_is_active(&gui->picker) &&
-         picker_hit_history_buttons(&gui->picker, point)) {
-        accepts = true;
-        gui->did_hit_button = true;
+    if ( gui->visible ) {
+        accepts = picker_is_accepting_input(&gui->picker, point);
+        if ( !gui->did_hit_button &&
+             !picker_is_active(&gui->picker) &&
+             picker_hit_history_buttons(&gui->picker, point)) {
+            accepts = true;
+            gui->did_hit_button = true;
+        }
     }
     return accepts;
 }
@@ -318,10 +321,8 @@ MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* inpu
     ColorPickResult pick_result = picker_update(&milton_state->gui->picker, point);
     if ( pick_result == ColorPickResult_CHANGE_COLOR &&
          milton_state->current_mode == MiltonMode_PEN ) {
-        milton_state->gui->did_change_color = true;
-        v3f rgb = hsv_to_rgb(milton_state->gui->picker.info.hsv);
-        milton_state->brushes[BrushEnum_PEN].color =
-                to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha);
+        /* v3f rgb = hsv_to_rgb(milton_state->gui->picker.info.hsv); */
+        /* milton_state->brushes[BrushEnum_PEN].color = to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha); */
     }
 
     set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
@@ -451,6 +452,5 @@ void gui_deactivate(MiltonGui* gui)
 
     // Reset transient values
     gui->active = false;
-    gui->did_change_color = false;
     gui->did_hit_button = false;
 }

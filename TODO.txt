@@ -1,8 +1,6 @@
 To-Do
 =====
 
-Items marked *! needed before "Releasing"
-
 - Bugs
     - :)
     - cursor overlay is black (black background?)
@@ -10,14 +8,14 @@ Items marked *! needed before "Releasing"
 
 - Application
     - Export
-        *! Finish Linux and OSX versions of Dialogs and File I/O
+        *- Finish Linux and OSX versions of Dialogs and File I/O
         - manipulate rectangle shape
         - set resolution
         - set aspect ratio
-        - Save / Load canvas
+        *- Save / Load canvas
     - History slider
     - Tablet:
-        *! Port to Windows API (support non-Wacom devices)
+        *- Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
     - UI
         - async progress dialog (windows)
@@ -26,9 +24,8 @@ Items marked *! needed before "Releasing"
     - Brush / Eraser
         - Image Button
     - ImGUI details:
-        *! Reduce or remove widget rounding
+        *- Reduce or remove widget rounding
         - Disable window dragging
-        *! liberally licensed font
     - DPI-awareness
         - UI scale option
         - ?? gui scale set by default
@@ -41,35 +38,35 @@ Items marked *! needed before "Releasing"
             - Store view changes in persist file
             - Playback mode? Separate viewer?
 - Debug layer
-    *! Input recorder for bug replication
+    *- Input recorder for bug replication
 - Porting:
     - Ctrl -> Cmd in OSX. Other cross platform binding issues?
     - Easytab: Stylus buttons.
     - Easytab: Distinction between eraser and pen.
 - Performance:
-    *! Async rendering
-    *! Make iterative rendering split the screen into chunks
+    *- Async rendering
+    *- Make iterative rendering split the screen into chunks
     - Input gathering thread.
-    *! Undo/Redo: Only redraw necessary area.
+    *- Undo/Redo: Only redraw necessary area.
     - Amdahl's curse... Parallelize GUI rendering
     - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
     - 4x4 Blockgroups (morton-order)
     - AVX backend??
     - Do not redraw when stroking over existing drawing? Only on top layer?
 - Robust save
-    *! Future-proof. Marker for extensions post v1.0
+    *- Future-proof. Marker for extensions post v1.0
 - Milton Library
     - Refactor. Write sample program.
 - Distribution
-    *! Get Travis working
+    *- Get Travis working
     - Bintray? Github?
-    *! Windows.
+    *- Windows.
         - Installation. WIX? Inno Setup?
-    *! Linux
+    *- Linux
         - Checkinstall? Manual dpkg?
         - Ubuntu PPA
         - Freedesktop entry, MIME type
-    *! OSX
+    *- OSX
         - Bundle
         - dmg crap
 

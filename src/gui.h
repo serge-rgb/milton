@@ -110,7 +110,6 @@ typedef struct MiltonGui
     b32 show_help_widget;
 
     b32 active;  // `active == true` when gui currently owns all user input.
-    b32 did_change_color;
     b32 did_hit_button;  // Avoid multiple clicks.
 
     MiltonGuiFlags flags;

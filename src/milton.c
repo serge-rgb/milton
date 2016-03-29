@@ -822,8 +822,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if ( input->input_count > 0 ){
         if ( current_mode_is_for_painting(milton_state) ) {
             if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
+                render_flags |= gui_process_input(milton_state, input);
                 milton_update_brushes(milton_state);
-                set_flag(render_flags, gui_process_input(milton_state, input));
             } else if (!milton_state->gui->active) {
                 milton_stroke_input(milton_state, input);
             }
