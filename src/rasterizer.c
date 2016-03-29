@@ -11,9 +11,13 @@
 #include "profiler.h"
 #include "render_common.h"
 
-// Special value for num_points member of `ClippedStroke` to indicate that the
-// block should be flood-filled
-#define CLIPPED_STROKE_FILLS_BLOCK 0
+
+// Special values for ClippedStroke.num_points
+enum ClippedStrokeFlags
+{
+    ClippedStroke_FILLS_BLOCK  = -1,
+    ClippedStroke_IS_LAYERMARK = -2,
+};
 
 // Always accessed together. Keeping them sequential to save some cache misses.
 typedef struct ClippedPoint
@@ -50,10 +54,15 @@ struct ClippedStroke
     ClippedStroke*  next;
 };
 
+static b32 clipped_stroke_is_layermark(ClippedStroke* clipped_stroke)
+{
+    b32 fills = (clipped_stroke->num_points == ClippedStroke_IS_LAYERMARK);
+    return fills;
+}
 
 static b32 clipped_stroke_fills_block(ClippedStroke* clipped_stroke)
 {
-    b32 fills = clipped_stroke->num_points == CLIPPED_STROKE_FILLS_BLOCK;
+    b32 fills = (clipped_stroke->num_points == ClippedStroke_FILLS_BLOCK);
     return fills;
 }
 
@@ -61,11 +70,8 @@ static b32 clipped_stroke_fills_block(ClippedStroke* clipped_stroke)
 static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke,
                                           Rect canvas_rect, i32 local_scale, v2i reference_point)
 {
-#if TRY_MALLOC
-    ClippedStroke* clipped_stroke = mlt_calloc(1, sizeof(ClippedStroke));
-#else
     ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
-#endif
+
     if (!clipped_stroke) {
         return NULL;
     }
@@ -82,12 +88,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
         // points so that the renderer can comfortably load from the arrays
         // without bounds checking.
 
-#if TRY_MALLOC
-        clipped_stroke->clipped_points = malloc(points_allocated * sizeof(ClippedPoint));
-        assert ( clipped_stroke->clipped_points );
-#else
         clipped_stroke->clipped_points = arena_alloc_array(render_arena, points_allocated, ClippedPoint);
-#endif
         //memset(clipped_stroke->clipped_points, 0, points_allocated * sizeof(ClippedPoint));
     } else {
         milton_log("WARNING: An empty stroke was received to clip.\n");
@@ -285,70 +286,79 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             continue;
         }
 
+        if ( layer != root_layer ) {
+            ClippedStroke* layer_mark = arena_alloc_elem(render_arena, ClippedStroke);
+            if ( !layer_mark ) {
+                *allocation_ok = false;
+            } else {
+                *layer_mark = (ClippedStroke){0};
+                layer_mark->num_points = ClippedStroke_IS_LAYERMARK;
+                layer_mark->next = stroke_list;
+                stroke_list = layer_mark;
+
+            }
+        }
+
         Stroke* strokes = layer->strokes;
         size_t num_strokes = sb_count(strokes);
 
         // Fill linked list with strokes clipped to this block
-        for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
+        if ( allocation_ok ) {
+            for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
+                // Sum of strokes before this layer.
+                size_t total_stroke_i = stroke_i;
+                for ( Layer* l=root_layer; l!=layer; l=l->next)
+                    if (l->flags & LayerFlags_VISIBLE) total_stroke_i += sb_count(l->strokes);
 
-            // Sum of strokes before this layer.
-            size_t total_stroke_i = stroke_i;
-            for ( Layer* l=root_layer; l!=layer; l=l->next)
-                if (l->flags & LayerFlags_VISIBLE) total_stroke_i += sb_count(l->strokes);
-
-            if ( stroke_i < num_strokes && !stroke_masks[total_stroke_i] ) {
-                // Stroke masks is of size num_strokes, but we use stroke_i ==
-                // num_strokes to indicate the current "working stroke"
-                continue;
-            }
-            Stroke* unclipped_stroke = NULL;
-            if ( stroke_i == num_strokes ) {
-                if ( layer->id == working_stroke->layer_id && working_stroke->num_points ) {  // Topmost layer: Use working stroke
-                    unclipped_stroke = working_stroke;
-                } else {
-                    break;
+                if ( stroke_i < num_strokes && !stroke_masks[total_stroke_i] ) {
+                    // Stroke masks is of size num_strokes, but we use stroke_i ==
+                    // num_strokes to indicate the current "working stroke"
+                    continue;
                 }
-            } else {
-                unclipped_stroke = &strokes[stroke_i];
-            }
-            assert(unclipped_stroke);
-
-
-            b32 single_point = unclipped_stroke->num_points == 1;
-
-            if ( single_point || stroke_is_not_tiny(unclipped_stroke, view) ) {
-                Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
-                ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
-                                                                    enlarged_block, local_scale, reference_point);
-                // ALlocation failed.
-                // Handle this gracefully; this will cause more memory for render workers.
-                if ( !clipped_stroke ) {
-                    *allocation_ok = false;
-                    return NULL;
-                }
-
-                if ( clipped_stroke->num_points ) {
-                    // Empty strokes ignored.
-                    ClippedStroke* list_head = clipped_stroke;
-
-                    list_head->next = stroke_list;
-                    if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
-                                                  clipped_stroke->clipped_points,
-                                                  clipped_stroke->num_points,
-                                                  clipped_stroke->brush,
-                                                  view) ) {
-                        // Set num_points = 0. Since we are ignoring empty strokes
-                        // (which should not get here in the first place), we can use 0
-                        // to denote a stroke that fills the block, saving ourselves a
-                        // boolean struct member.
-                        list_head->num_points = CLIPPED_STROKE_FILLS_BLOCK;
+                Stroke* unclipped_stroke = NULL;
+                if ( stroke_i == num_strokes ) {
+                    if ( layer->id == working_stroke->layer_id && working_stroke->num_points ) {  // Topmost layer: Use working stroke
+                        unclipped_stroke = working_stroke;
+                    } else {
+                        break;
                     }
-                    stroke_list = list_head;
-#if TRY_MALLOC
                 } else {
-                    mlt_free(clipped_stroke->clipped_points);
-                    mlt_free(clipped_stroke);
-#endif
+                    unclipped_stroke = &strokes[stroke_i];
+                }
+                assert(unclipped_stroke);
+
+
+                b32 single_point = unclipped_stroke->num_points == 1;
+
+                if ( single_point || stroke_is_not_tiny(unclipped_stroke, view) ) {
+                    Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
+                    ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
+                                                                        enlarged_block, local_scale, reference_point);
+                    // ALlocation failed.
+                    // Handle this gracefully; this will cause more memory for render workers.
+                    if ( !clipped_stroke ) {
+                        *allocation_ok = false;
+                        return NULL;
+                    }
+
+                    if ( clipped_stroke->num_points ) {
+                        // Empty strokes ignored.
+                        ClippedStroke* list_head = clipped_stroke;
+
+                        list_head->next = stroke_list;
+                        if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
+                                                      clipped_stroke->clipped_points,
+                                                      clipped_stroke->num_points,
+                                                      clipped_stroke->brush,
+                                                      view) ) {
+                            // Set num_points = 0. Since we are ignoring empty strokes
+                            // (which should not get here in the first place), we can use 0
+                            // to denote a stroke that fills the block, saving ourselves a
+                            // boolean struct member.
+                            list_head->num_points = ClippedStroke_FILLS_BLOCK;
+                        }
+                        stroke_list = list_head;
+                    }
                 }
             }
         }
@@ -458,22 +468,32 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
             ClippedStroke* list_iter = stroke_list;
 
-            while(list_iter) {
+            while ( list_iter ) {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
                 b32 is_eraser = (equ4f(clipped_stroke->brush.color, (v4f){ -1, -1, -1, -1 }));
+
+                if ( clipped_stroke_is_layermark(clipped_stroke) ) {
+                    // Do something
+                }
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
 #if 0 // Visualize it with black
                     v4f dst = {0, 0, 0, is_eraser? 1 : clipped_stroke->brush.color.a};
-#else
-                    v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
-#endif
                     acc_color = blend_v4f(dst, acc_color);
-                } else {
+#else
+                    if ( is_eraser )  {
+                        v4f dst = background_color;
+                        acc_color = blend_v4f(dst, acc_color);
+                    } else {
+                        /* v4f dst = is_eraser? background_color : clipped_stroke->brush.color; */
+                        v4f dst = clipped_stroke->brush.color;
+                        acc_color = blend_v4f(dst, acc_color);
+                    }
+#endif
+                } else if ( clipped_stroke->num_points > 0 ) {
                     // Slow path. There are pixels not inside.
-                    assert (clipped_stroke->num_points > 0);
                     ClippedPoint* points = clipped_stroke->clipped_points;
 
                     //v2f min_points[4] = {0};
@@ -524,55 +544,53 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                         //  This sampling is for a circular brush.
                         //  Should dispatch on brush type. And do it for SSE impl too.
                         int samples = 0;
+                        f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
+                        f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
+                        u32 radius = (u32)(clipped_stroke->brush.radius * pressure * local_scale);
+                        f32 fdists[16];
                         {
-                            f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
-                            f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
-                            u32 radius = (u32)(clipped_stroke->brush.radius * pressure * local_scale);
-                            f32 fdists[16];
-                            {
-                                f32 a1 = (dx - f3) * (dx - f3);
-                                f32 a2 = (dx - f1) * (dx - f1);
-                                f32 a3 = (dx + f1) * (dx + f1);
-                                f32 a4 = (dx + f3) * (dx + f3);
+                            f32 a1 = (dx - f3) * (dx - f3);
+                            f32 a2 = (dx - f1) * (dx - f1);
+                            f32 a3 = (dx + f1) * (dx + f1);
+                            f32 a4 = (dx + f3) * (dx + f3);
 
-                                f32 b1 = (dy - f3) * (dy - f3);
-                                f32 b2 = (dy - f1) * (dy - f1);
-                                f32 b3 = (dy + f1) * (dy + f1);
-                                f32 b4 = (dy + f3) * (dy + f3);
+                            f32 b1 = (dy - f3) * (dy - f3);
+                            f32 b2 = (dy - f1) * (dy - f1);
+                            f32 b3 = (dy + f1) * (dy + f1);
+                            f32 b4 = (dy + f3) * (dy + f3);
 
-                                fdists[0]  = a1 + b1;
-                                fdists[1]  = a2 + b1;
-                                fdists[2]  = a3 + b1;
-                                fdists[3]  = a4 + b1;
+                            fdists[0]  = a1 + b1;
+                            fdists[1]  = a2 + b1;
+                            fdists[2]  = a3 + b1;
+                            fdists[3]  = a4 + b1;
 
-                                fdists[4]  = a1 + b2;
-                                fdists[5]  = a2 + b2;
-                                fdists[6]  = a3 + b2;
-                                fdists[7]  = a4 + b2;
+                            fdists[4]  = a1 + b2;
+                            fdists[5]  = a2 + b2;
+                            fdists[6]  = a3 + b2;
+                            fdists[7]  = a4 + b2;
 
-                                fdists[8]  = a1 + b3;
-                                fdists[9]  = a2 + b3;
-                                fdists[10] = a3 + b3;
-                                fdists[11] = a4 + b3;
+                            fdists[8]  = a1 + b3;
+                            fdists[9]  = a2 + b3;
+                            fdists[10] = a3 + b3;
+                            fdists[11] = a4 + b3;
 
-                                fdists[12] = a1 + b4;
-                                fdists[13] = a2 + b4;
-                                fdists[14] = a3 + b4;
-                                fdists[15] = a4 + b4;
+                            fdists[12] = a1 + b4;
+                            fdists[13] = a2 + b4;
+                            fdists[14] = a3 + b4;
+                            fdists[15] = a4 + b4;
+                        }
+
+                        // Perf note: We remove the sqrtf call when it's
+                        // safe to square the radius
+                        if (radius >= ( 1 << 16 )) {
+                            for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
+                                samples += (sqrtf(fdists[sample_i]) < radius);
                             }
+                        } else {
+                            u32 sq_radius = radius * radius;
 
-                            // Perf note: We remove the sqrtf call when it's
-                            // safe to square the radius
-                            if (radius >= ( 1 << 16 )) {
-                                for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
-                                    samples += (sqrtf(fdists[sample_i]) < radius);
-                                }
-                            } else {
-                                u32 sq_radius = radius * radius;
-
-                                for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
-                                    samples += (fdists[sample_i] < sq_radius);
-                                }
+                            for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
+                                samples += (fdists[sample_i] < sq_radius);
                             }
                         }
 
@@ -597,10 +615,11 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                 }
 
                 // An epsilon value is just not a Good Idea. Whatever value I choose, there is a complex drawing that will look bad.
-                if ( acc_color.a >= 1.0f ) {
-                    break;
-                }
-            }
+                // TODO: RE-enable
+                /* if ( acc_color.a >= 1.0f ) { */
+                /*     break; */
+                /* } */
+            } // --- while ( list_iter )
 
             // Blend onto the background whatever is accumulated.
             acc_color = blend_v4f(background_color, acc_color);
@@ -624,16 +643,6 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
         }
         j += canvas_jump;
     }
-
-#if TRY_MALLOC
-    ClippedStroke* list_iter = stroke_list;
-    while ( list_iter ) {
-        mlt_free(list_iter->clipped_points);
-        ClippedStroke* next = list_iter->next;
-        mlt_free(list_iter);
-        list_iter = next;
-    }
-#endif
 
     return true;
 }
