@@ -56,13 +56,20 @@ struct ClippedStroke
 
 static b32 clipped_stroke_is_layermark(ClippedStroke* clipped_stroke)
 {
-    b32 fills = (clipped_stroke->num_points == ClippedStroke_IS_LAYERMARK);
+    b32 fills = false;
+    if ( clipped_stroke ) {
+        fills = (clipped_stroke->num_points == ClippedStroke_IS_LAYERMARK);
+    }
     return fills;
 }
 
 static b32 clipped_stroke_fills_block(ClippedStroke* clipped_stroke)
 {
-    b32 fills = (clipped_stroke->num_points == ClippedStroke_FILLS_BLOCK);
+
+    b32 fills = false;
+    if ( clipped_stroke ) {
+        fills = (clipped_stroke->num_points == ClippedStroke_FILLS_BLOCK);
+    }
     return fills;
 }
 
@@ -286,7 +293,8 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             continue;
         }
 
-        if ( layer != root_layer ) {
+        if ( layer != root_layer &&
+             clipped_stroke_is_layermark(stroke_list) == false ) {
             ClippedStroke* layer_mark = arena_alloc_elem(render_arena, ClippedStroke);
             if ( !layer_mark ) {
                 *allocation_ok = false;
@@ -295,7 +303,6 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                 layer_mark->num_points = ClippedStroke_IS_LAYERMARK;
                 layer_mark->next = stroke_list;
                 stroke_list = layer_mark;
-
             }
         }
 
@@ -307,8 +314,11 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             for ( size_t stroke_i = 0; stroke_i <= num_strokes; ++stroke_i ) {
                 // Sum of strokes before this layer.
                 size_t total_stroke_i = stroke_i;
-                for ( Layer* l=root_layer; l!=layer; l=l->next)
-                    if (l->flags & LayerFlags_VISIBLE) total_stroke_i += sb_count(l->strokes);
+                for ( Layer* l=root_layer; l!=layer; l=l->next ) {
+                    if (l->flags & LayerFlags_VISIBLE) {
+                        total_stroke_i += sb_count(l->strokes);
+                    }
+                }
 
                 if ( stroke_i < num_strokes && !stroke_masks[total_stroke_i] ) {
                     // Stroke masks is of size num_strokes, but we use stroke_i ==
@@ -467,15 +477,20 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
             v4f acc_color = { 0 };
 
             ClippedStroke* list_iter = stroke_list;
+            b32 pixel_erased = false;
 
             while ( list_iter ) {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
-                b32 is_eraser = (equ4f(clipped_stroke->brush.color, (v4f){ -1, -1, -1, -1 }));
 
                 if ( clipped_stroke_is_layermark(clipped_stroke) ) {
-                    // Do something
+                    pixel_erased = false;
+                    continue;
+                } else if ( pixel_erased ) {
+                    continue;
                 }
+
+                b32 is_eraser = (equ4f(clipped_stroke->brush.color, (v4f){ -1, -1, -1, -1 }));
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
@@ -484,10 +499,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     acc_color = blend_v4f(dst, acc_color);
 #else
                     if ( is_eraser )  {
-                        v4f dst = background_color;
-                        acc_color = blend_v4f(dst, acc_color);
+                        pixel_erased = true;
                     } else {
-                        /* v4f dst = is_eraser? background_color : clipped_stroke->brush.color; */
                         v4f dst = clipped_stroke->brush.color;
                         acc_color = blend_v4f(dst, acc_color);
                     }
@@ -496,7 +509,6 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     // Slow path. There are pixels not inside.
                     ClippedPoint* points = clipped_stroke->clipped_points;
 
-                    //v2f min_points[4] = {0};
                     f32 min_dist = FLT_MAX;
                     f32 dx = 0;
                     f32 dy = 0;
@@ -599,26 +611,29 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                             // Do blending
                             // ---------------
 
-                            f32 coverage = (f32)samples / 16.0f;
+                            if ( is_eraser ) {
+                                pixel_erased = true;
+                            } else {
+                                f32 coverage = (f32)samples / 16.0f;
 
-                            v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
-                            {
-                                dst.r *= coverage;
-                                dst.g *= coverage;
-                                dst.b *= coverage;
-                                dst.a *= coverage;
+                                v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
+                                {
+                                    dst.r *= coverage;
+                                    dst.g *= coverage;
+                                    dst.b *= coverage;
+                                    dst.a *= coverage;
+                                }
+
+                                acc_color = blend_v4f(dst, acc_color);
                             }
-
-                            acc_color = blend_v4f(dst, acc_color);
                         }
                     }
                 }
 
-                // An epsilon value is just not a Good Idea. Whatever value I choose, there is a complex drawing that will look bad.
-                // TODO: RE-enable
-                /* if ( acc_color.a >= 1.0f ) { */
-                /*     break; */
-                /* } */
+                // This pixel is done if alpha == 1. This is is why stroke_list is reversed.
+                if ( acc_color.a >= 1.0f ) {
+                    break;
+                }
             } // --- while ( list_iter )
 
             // Blend onto the background whatever is accumulated.
@@ -748,22 +763,30 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
             v4f acc_color = { 0 };
 
             ClippedStroke* list_iter = stroke_list;
+            b32 pixel_erased = false;
 
             while( list_iter ) {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
+
+                if ( clipped_stroke_is_layermark(clipped_stroke) ) {
+                    pixel_erased = false;
+                    continue;
+                } else if ( pixel_erased ) {
+                    continue;
+                }
+
                 b32 is_eraser = equ4f(clipped_stroke->brush.color, (v4f){ -1, -1, -1, -1 });
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
-#if 0 // Visualize it with black
-                    v4f dst = {0, 0, 0, is_eraser? 1 : clipped_stroke->brush.color.a};
-#else
-                    v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
-#endif
-                    acc_color = blend_v4f(dst, acc_color);
-                } else {
-                    assert(clipped_stroke->num_points > 0);
+                    if ( is_eraser )  {
+                        pixel_erased = true;
+                    } else {
+                        v4f dst = clipped_stroke->brush.color;
+                        acc_color = blend_v4f(dst, acc_color);
+                    }
+                } else if ( clipped_stroke->num_points > 0 ) {
                     // Slow path. There are pixels not inside.
                     ClippedPoint* points = clipped_stroke->clipped_points;
 
@@ -1061,23 +1084,27 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             // Do blending
                             // ---------------
 
-                            f32 coverage = (f32)samples / 16.0f;
+                            if ( is_eraser ) {
+                                pixel_erased = true;
+                            } else {
+                                f32 coverage = (f32)samples / 16.0f;
 
-                            v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
-                            {
-                                dst.r *= coverage;
-                                dst.g *= coverage;
-                                dst.b *= coverage;
-                                dst.a *= coverage;
+                                v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
+                                {
+                                    dst.r *= coverage;
+                                    dst.g *= coverage;
+                                    dst.b *= coverage;
+                                    dst.a *= coverage;
+                                }
+
+                                acc_color = blend_v4f(dst, acc_color);
                             }
-
-                            acc_color = blend_v4f(dst, acc_color);
                         }
                     }
                     PROFILE_PUSH(sampling);
                 }
 
-                // An epsilon value is just not a Good Idea. Whatever value I choose, there is a complex drawing that will look bad.
+                // This pixel is done if alpha == 1. This is is why stroke_list is reversed.
                 if ( acc_color.a >= 1.0f ) {
                     break;
                 }

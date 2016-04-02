@@ -861,7 +861,8 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 void EasyTab_Unload()
 {
     if (EasyTab->Context) { EasyTab->WTClose(EasyTab->Context); }
-    if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); }
+    // TODO(sergio): This has a memory leak, appverifier nags about it
+    /* if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); } */
     free(EasyTab);
     EasyTab = NULL;
 }

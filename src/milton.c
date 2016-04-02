@@ -461,7 +461,6 @@ void milton_init(MiltonState* milton_state)
     milton_set_pen_alpha(milton_state, 1.0f);
 
 #if MILTON_DEBUG
-    milton_state->DEBUG_sse2_switch = true;
     milton_run_tests(milton_state);
 #endif
 

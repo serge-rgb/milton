@@ -95,8 +95,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             if (er == EASYTAB_OK) {  // Event was handled.
                 if (EasyTab->Pressure > 0) {
                     platform_state->is_pointer_down = true;
-                    milton_input.points[platform_state->num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
-                    milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure;
+                    if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
+                        milton_input.points[platform_state->num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
+                        milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure;
+                    }
                 }
             }
         } break;
@@ -563,6 +565,7 @@ int milton_main(MiltonStartupFlags startup_flags)
         SDL_WaitEvent(NULL);
     }
 
+    EasyTab_Unload();
 
     // Release pages. Not really necessary but we don't want to piss off leak
     // detectors, do we?

@@ -3,17 +3,13 @@
 
 #pragma once
 
-// Self-profiling counters. Currently only active on Windows. Should be used
-// for micro-tweaks. Use a sampling profiler for higher-level performance info
-#define MILTON_ENABLE_PROFILING 0
-
 // When MILTON_DEBUG is 1,
 //  - Asserts
 //  - Fixed location arena allocations
 //  - Runtime renderer implementation switching
 #define MILTON_DEBUG 1
 
-#define MILTON_MULTITHREADED 0
+#define MILTON_MULTITHREADED 1
 
 // 0 - Use strict SRGB definition
 // 1 - Use a power curve of 2.
@@ -21,6 +17,11 @@
 
 // Force things to be a bit slower
 #define RESTRICT_NUM_THREADS_TO_2 0
+
+// Self-profiling counters. Currently only active on Windows. Should be used
+// for micro-tweaks. Use a sampling profiler for higher-level performance info
+#define MILTON_ENABLE_PROFILING 0
+
 
 // By default, when activating the internal profiler with
 // MILTON_ENABLE_PROFILING, we will turn miltithreading off. If MT is ever

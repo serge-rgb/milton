@@ -5,6 +5,8 @@ To-Do
     - :)
     - cursor overlay is black (black background?)
     - need to lose imgui focus when toggling visibility
+    - single point strokes sometimes self-destruct
+    - dragging window -> stroke input (!!!)
 
 - Application
     - Export
@@ -14,6 +16,7 @@ To-Do
         - set aspect ratio
         *- Save / Load canvas
     - History slider
+    *- Eye dropper
     - Tablet:
         *- Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
@@ -38,7 +41,7 @@ To-Do
             - Store view changes in persist file
             - Playback mode? Separate viewer?
 - Debug layer
-    *- Input recorder for bug replication
+    - Input recorder for bug replication
 - Porting:
     - Ctrl -> Cmd in OSX. Other cross platform binding issues?
     - Easytab: Stylus buttons.
@@ -46,7 +49,6 @@ To-Do
 - Performance:
     *- Async rendering
     *- Make iterative rendering split the screen into chunks
-    - Input gathering thread.
     *- Undo/Redo: Only redraw necessary area.
     - Amdahl's curse... Parallelize GUI rendering
     - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
