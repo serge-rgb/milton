@@ -40,7 +40,8 @@ void  arena_reset_noclear(Arena* arena);
 //      use_temporary_arena(&child.arena);
 //      arena_pop(child);
 Arena  arena_push(Arena* parent, size_t size);
-void   arena_pop (Arena* child);
+void   arena_pop(Arena* child);
+void   arena_pop_noclear(Arena* child);
 
 #define     arena_alloc_elem(arena, T)          (T *)arena_alloc_bytes((arena), sizeof(T))
 #define     arena_alloc_array(arena, count, T)  (T *)arena_alloc_bytes((arena), (count) * sizeof(T))

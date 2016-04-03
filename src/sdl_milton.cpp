@@ -11,6 +11,7 @@
 #include "history_debugger.h"
 #include "milton.h"
 #include "platform.h"
+#include "profiler.h"
 #include "utils.h"
 
 
@@ -258,6 +259,9 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         platform_state->should_quit = true;
                     }
                     if ( keycode == SDLK_F4 ) {
+                        milton_log("[DEBUG]: Switching to %s renderer.\n",
+                                   milton_state->DEBUG_sse2_switch ? "SSE" : "slow");
+                        profiler_reset();
                         milton_state->DEBUG_sse2_switch = !milton_state->DEBUG_sse2_switch;
                     }
 #endif

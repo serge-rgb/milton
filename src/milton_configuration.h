@@ -13,15 +13,23 @@
 
 // 0 - Use strict SRGB definition
 // 1 - Use a power curve of 2.
-#define FAST_GAMMA 1
+#define FAST_GAMMA 0
 
 // Force things to be a bit slower
 #define RESTRICT_NUM_THREADS_TO_2 0
+
+
+
+// -- Esoteric / Stupid stuff.
+
+
 
 // Self-profiling counters. Currently only active on Windows. Should be used
 // for micro-tweaks. Use a sampling profiler for higher-level performance info
 #define MILTON_ENABLE_PROFILING 0
 
+// Every render_canvas call will re-draw using all renderers.
+#define MILTON_USE_ALL_RENDERERS 0
 
 // By default, when activating the internal profiler with
 // MILTON_ENABLE_PROFILING, we will turn miltithreading off. If MT is ever

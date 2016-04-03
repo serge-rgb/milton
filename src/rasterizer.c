@@ -7,6 +7,7 @@
 #include "color.h"
 #include "gui.h"
 #include "milton.h"
+#include "milton_configuration.h"
 #include "platform.h"
 #include "profiler.h"
 #include "render_common.h"
@@ -1498,6 +1499,7 @@ static b32 render_blockgroup(MiltonState* milton_state,
             break;
         }
 
+#if MILTON_USE_ALL_RENDERERS == 0
 #if MILTON_DEBUG
         if ( SDL_HasSSE2() && !milton_state->DEBUG_sse2_switch ) {
 #else
@@ -1519,6 +1521,23 @@ static b32 render_blockgroup(MiltonState* milton_state,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
         }
+#else  // MILTON_USE_ALL_RENDERERS == 1
+        // Use a sampling profiler to compare speeds
+        allocation_ok = rasterize_canvas_block_sse2(&render_arena,
+                                                    milton_state->view,
+                                                    milton_state->root_layer,
+                                                    &milton_state->working_stroke,
+                                                    stroke_masks,
+                                                    raster_buffer,
+                                                    blocks[block_start + block_i]);
+        allocation_ok = rasterize_canvas_block_slow(&render_arena,
+                                                    milton_state->view,
+                                                    milton_state->root_layer,
+                                                    &milton_state->working_stroke,
+                                                    stroke_masks,
+                                                    raster_buffer,
+                                                    blocks[block_start + block_i]);
+#endif // MILTON_USE_ALL_RENDERERS
         arena_reset_noclear(&render_arena);
         //arena_reset(&render_arena);
     }
@@ -1613,7 +1632,6 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
         if ( block_i >= num_blocks ) {
             break;
         }
-
 #if MILTON_MULTITHREADED
         BlockgroupRenderData data =
         {

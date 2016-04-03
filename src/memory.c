@@ -66,8 +66,18 @@ void arena_pop(Arena* child)
     char* ptr = (char*)(parent->ptr) + parent->count;
     memset(ptr, 0, child->count);
     parent->num_children -= 1;
+}
 
-    //*child = Arena();
+void   arena_pop_noclear(Arena* child)
+{
+    Arena* parent = child->parent;
+    assert(parent);
+
+    // Assert that this child was the latest push.
+    assert ((parent->num_children - 1) == child->id);
+
+    parent->count -= child->size;
+    parent->num_children -= 1;
 }
 
 void arena_reset(Arena* arena)
