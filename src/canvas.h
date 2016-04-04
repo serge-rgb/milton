@@ -88,3 +88,6 @@ void layer_toggle_visibility(Layer* layer);
 Stroke* layer_push_stroke(Layer* layer, Stroke stroke);
 
 i32 number_of_layers(Layer* root);
+
+
+void stroke_free(Stroke* stroke);

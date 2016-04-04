@@ -58,7 +58,7 @@ enum
 enum HistoryElementType
 {
     HistoryElement_STROKE_ADD,
-    HistoryElement_LAYER_DELETE,
+    //HistoryElement_LAYER_DELETE,
 };
 
 typedef struct HistoryElement
@@ -86,6 +86,7 @@ typedef struct MiltonState
     MiltonGLState* gl;
 
     struct MiltonGui* gui;
+    char* mlt_file_path;
 
     // ---- The Painting
     Brush       brushes[BrushEnum_COUNT];
@@ -149,14 +150,17 @@ typedef enum MiltonInputFlags
     MiltonInputFlags_NONE = 0,
 
     MiltonInputFlags_FULL_REFRESH        = 1 << 0,
-    MiltonInputFlags_END_STROKE          = 1 << 2,
-    MiltonInputFlags_UNDO                = 1 << 3,
-    MiltonInputFlags_REDO                = 1 << 4,
-    MiltonInputFlags_CHANGE_MODE         = 1 << 5,
-    MiltonInputFlags_FAST_DRAW           = 1 << 6,
-    MiltonInputFlags_HOVERING            = 1 << 7,
-    MiltonInputFlags_PANNING             = 1 << 8,
-    MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 9,
+    MiltonInputFlags_END_STROKE          = 1 << 1,
+    MiltonInputFlags_UNDO                = 1 << 2,
+    MiltonInputFlags_REDO                = 1 << 3,
+    MiltonInputFlags_CHANGE_MODE         = 1 << 4,
+    MiltonInputFlags_FAST_DRAW           = 1 << 5,
+    MiltonInputFlags_HOVERING            = 1 << 6,
+    MiltonInputFlags_PANNING             = 1 << 7,
+    MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 8,
+    MiltonInputFlags_SAVE_FILE           = 1 << 9,
+    MiltonInputFlags_OPEN_FILE           = 1 << 10,
+    MiltonInputFlags_NEW_CANVAS          = 1 << 11,
 } MiltonInputFlags;
 #if defined(__cplusplus)
 #define MiltonInputFlags int
@@ -189,6 +193,12 @@ typedef struct MiltonInput
 #endif
 
 void milton_init(MiltonState* milton_state);
+
+// Expects absolute path
+void milton_set_canvas_file(MiltonState* milton_state, char* fname);
+void milton_set_default_canvas_file(MiltonState* milton_state);
+
+void milton_reset_canvas(MiltonState* milton_state);
 
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size);
 

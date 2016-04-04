@@ -53,6 +53,8 @@ enum Texts
     TXT_zoom_out                                    ,
     TXT_brush_opacity                               ,
     TXT_set_opacity_to                              ,
+    TXT_save_milton_canvas_as_DOTS                  ,
+    TXT_new_milton_canvas                           ,
 
     TXT_Count,
 };

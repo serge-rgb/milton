@@ -107,6 +107,18 @@ static void milton_gl_backend_init(MiltonState* milton_state)
     }
 }
 
+static void milton_set_default_view(CanvasView* view)
+{
+    *view = (CanvasView) {
+        .scale               = MILTON_DEFAULT_SCALE,
+        .downsampling_factor = 1,
+        .num_layers          = 1,
+        .background_color    = (v3f){ 1, 1, 1 },
+        .canvas_radius_limit = 1u << 30,
+    };
+}
+
+
 static void milton_load_assets(MiltonState* milton_state)
 {
     MiltonGui* gui = milton_state->gui;
@@ -279,6 +291,29 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     }
 }
 
+void milton_set_canvas_file(MiltonState* milton_state, char* fname)
+{
+    if (milton_state->mlt_file_path != NULL) {
+        mlt_free(milton_state->mlt_file_path);
+    }
+    u64 len = strlen(fname);
+    if (len > MAX_PATH) {
+        milton_log("milton_set_canvas_file: fname was too long %lu\n", len);
+        fname = "MiltonPersist.mlt";
+    }
+    milton_state->mlt_file_path = fname;
+    milton_set_last_canvas_fname(fname);
+}
+
+// Helper function
+void milton_set_default_canvas_file(MiltonState* milton_state)
+{
+    char* f = mlt_calloc(MAX_PATH, sizeof(*f));
+    strncpy(f, "MiltonPersist.mlt", MAX_PATH);
+    platform_fname_at_config(f, MAX_PATH);
+    milton_set_canvas_file(milton_state, f);
+}
+
 void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;
@@ -410,38 +445,25 @@ void milton_init(MiltonState* milton_state)
     milton_state->block_width = 32;
 #endif
 
-    // Set the view
-    {
-        milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
-        *milton_state->view = (CanvasView) {
-            .scale               = MILTON_DEFAULT_SCALE,
-            .downsampling_factor = 1,
-            .num_layers          = 1,
-            .background_color    = (v3f){ 1, 1, 1 },
-        };
-#if 0
-        milton_state->view->rotation = 0;
-        for (int d = 0; d < 360; d++)
-        {
-            f32 r = deegrees_to_radians(d);
-            f32 c = cosf(r);
-            f32 s = sinf(r);
-            milton_state->view->cos_sin_table[d][0] = c;
-            milton_state->view->cos_sin_table[d][1] = s;
-        }
-#endif
-    }
+    milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
+    milton_set_default_view(milton_state->view);
 
     milton_state->gui = arena_alloc_elem(milton_state->root_arena, MiltonGui);
     gui_init(milton_state->root_arena, milton_state->gui);
 
-    // TODO: free-painting function
-    milton_new_layer(milton_state);  // Fill out first layer
-
-
     milton_gl_backend_init(milton_state);
+
+    { // Get/Set Milton Canvas (.mlt) file
+        char* last_fname = milton_get_last_canvas_fname();
+        if (last_fname) {
+            milton_set_canvas_file(milton_state, last_fname);
+        } else {
+            milton_set_default_canvas_file(milton_state);
+        }
+    }
+
+    // Note: This will fill out uninitialized data like default layers.
     milton_load(milton_state);
-    milton_state->view->canvas_radius_limit = 1u << 30;
 
     // Set default brush sizes.
     for (int i = 0; i < BrushEnum_COUNT; ++i) {
@@ -537,6 +559,34 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     } else {
         assert(!"DEBUG: new screen size is more than we can handle.");
     }
+}
+
+void milton_reset_canvas(MiltonState* milton_state)
+{
+    Layer* l = milton_state->root_layer;
+    while ( l != NULL ) {
+        for ( i32 si = 0; si < sb_count(l->strokes); ++si ) {
+            stroke_free(&l->strokes[si]);
+        }
+        sb_free(l->strokes);
+        mlt_free(l->name);
+
+        Layer* next = l->next;
+        mlt_free(l);
+        l = next;
+    }
+    milton_state->root_layer = NULL;
+    milton_state->working_layer = NULL;
+    // New Root
+    milton_new_layer(milton_state);
+
+    // Clear history
+    sb_reset(milton_state->history);
+    sb_reset(milton_state->redo_stack);
+    sb_reset(milton_state->stroke_graveyard);
+
+    // New View
+    milton_set_default_view(milton_state->view);
 }
 
 void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
@@ -655,6 +705,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
     // TODO: Save redo point?
     b32 should_save =
+            (check_flag(input->flags, MiltonInputFlags_OPEN_FILE)) ||
+            (check_flag(input->flags, MiltonInputFlags_SAVE_FILE)) ||
             (check_flag(input->flags, MiltonInputFlags_END_STROKE)) ||
             (check_flag(input->flags, MiltonInputFlags_UNDO)) ||
             (check_flag(input->flags, MiltonInputFlags_REDO));
@@ -666,6 +718,14 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         should_save = true;
         goto cleanup;
     }
+
+    if (input->flags & MiltonInputFlags_OPEN_FILE) {
+        // TODO: Clear resources
+        milton_load(milton_state);
+        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        input->flags |= MiltonInputFlags_FAST_DRAW;
+    }
+
 
     if ( milton_state->worker_needs_memory ) {
         milton_expand_render_memory(milton_state);
@@ -776,9 +836,9 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                     set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
 
                 } break;
-                case HistoryElement_LAYER_DELETE: {
+                /* case HistoryElement_LAYER_DELETE: { */
 
-                } break;
+                /* } break; */
                 }
                 sb_push(milton_state->redo_stack, h);
             }
@@ -795,8 +855,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                     set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
 
                 } break;
-                case HistoryElement_LAYER_DELETE: {
-                } break;
+                /* case HistoryElement_LAYER_DELETE: { */
+                /* } break; */
                 }
                 set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
             }

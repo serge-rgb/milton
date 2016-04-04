@@ -85,22 +85,41 @@ void platform_load_gl_func_pointers()
     }
 }
 
-static char* win32_filter_strings =
+static char* win32_filter_strings_image =
     "PNG file\0" "*.png\0"
     "JPEG file\0" "*.jpg\0"
     "\0";
 
-char* platform_save_dialog()
-{
-    static char save_filename[MAX_PATH];
+static char* win32_filter_strings_milton =
+    "MLT file\0" "*.mlt\0"
+    "\0";
 
-    save_filename[0] = '\0';
+void win32_set_OFN_filter(OPENFILENAMEA* ofn, FileKind kind)
+{
+    switch(kind) {
+    case FileKind_IMAGE: {
+        ofn->lpstrFilter = (LPCSTR)win32_filter_strings_image;
+        ofn->lpstrDefExt = "jpg";
+    } break;
+    case FileKind_MILTON_CANVAS: {
+        ofn->lpstrFilter = (LPCSTR)win32_filter_strings_milton;
+        ofn->lpstrDefExt = "mlt";
+    } break;
+    default: {
+        INVALID_CODE_PATH;
+    }
+    }
+}
+
+char* platform_save_dialog(FileKind kind)
+{
+    char* save_filename = mlt_calloc(MAX_PATH, sizeof(char));
 
     OPENFILENAMEA ofn = {0};
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     //ofn.hInstance;
-    ofn.lpstrFilter = (LPCSTR)win32_filter_strings;
+    win32_set_OFN_filter(&ofn, kind);
     ofn.lpstrFile = save_filename;
     ofn.nMaxFile = MAX_PATH;
     /* ofn.lpstrInitialDir; */
@@ -108,7 +127,7 @@ char* platform_save_dialog()
     ofn.Flags = OFN_HIDEREADONLY;
     /* ofn.nFileOffset; */
     /* ofn.nFileExtension; */
-    ofn.lpstrDefExt = "jpg";
+    //ofn.lpstrDefExt = "jpg";
     /* ofn.lCustData; */
     /* ofn.lpfnHook; */
     /* ofn.lpTemplateName; */
@@ -117,10 +136,31 @@ char* platform_save_dialog()
 
     char* result = NULL;
 
-    if ( ok ) {
-        result = save_filename;
+    if (!ok) {
+        mlt_free(save_filename);
+        return NULL;
     }
-    return result;
+    return save_filename;
+}
+
+char* platform_open_dialog(FileKind kind)
+{
+    OPENFILENAMEA ofn = {0};
+
+    char* fname = mlt_calloc(MAX_PATH, sizeof(*fname));
+
+    ofn.lStructSize = sizeof(OPENFILENAME);
+    win32_set_OFN_filter(&ofn, kind);
+    ofn.lpstrFile = fname;
+    ofn.nMaxFile = MAX_PATH;
+
+    b32 ok = GetOpenFileNameA(&ofn);
+    if (ok == false) {
+        free(fname);
+        milton_log("[ERROR] could not open file! Error is %d\n", CommDlgExtendedError());
+        return NULL;
+    }
+    return fname;
 }
 
 void platform_dialog(char* info, char* title)
@@ -144,6 +184,15 @@ void platform_fname_at_exe(char* fname, i32 len)
     mlt_free(tmp) ;
 }
 
+void platform_delete_file_at_config(char* fname)
+{
+    char* full = mlt_calloc(MAX_PATH, sizeof(*full));
+    strncpy(full, fname, MAX_PATH);
+    platform_fname_at_config(full, MAX_PATH);
+    DeleteFileA(full);
+    mlt_free(full);
+}
+
 void platform_move_file(char* src, char* dest)
 {
     b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
@@ -154,7 +203,7 @@ void platform_move_file(char* src, char* dest)
 
 void platform_fname_at_config(char* fname, i32 len)
 {
-    char* base = SDL_GetPrefPath(NULL, "milton");
+    char* base = SDL_GetPrefPath("MiltonPaint", "data");
     char* tmp = mlt_calloc(1, len);
     strncpy(tmp, fname, len);
     fname[0] = '\0';

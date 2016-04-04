@@ -14,7 +14,6 @@ To-Do
         - manipulate rectangle shape
         - set resolution
         - set aspect ratio
-        *- Save / Load canvas
     - History slider
     *- Eye dropper
     - Tablet:
@@ -24,7 +23,6 @@ To-Do
         - async progress dialog (windows)
         - async progress dialog (mac)
         - async progress dialog (linux)
-    - Brush / Eraser
         - Image Button
     - ImGUI details:
         *- Reduce or remove widget rounding
@@ -40,7 +38,8 @@ To-Do
         - Playback
             - Store view changes in persist file
             - Playback mode? Separate viewer?
-- Debug layer
+- Polish and/or Debug layer
+    - Memory allocation profiler.
     - Input recorder for bug replication
 - Porting:
     - Ctrl -> Cmd in OSX. Other cross platform binding issues?
@@ -52,6 +51,7 @@ To-Do
     *- Undo/Redo: Only redraw necessary area.
     - Amdahl's curse... Parallelize GUI rendering
     - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
+        *- Refactor: Do a simple screen cull before rendering, instead of passing the whole thing.
     - 4x4 Blockgroups (morton-order)
     - AVX backend??
     - Do not redraw when stroking over existing drawing? Only on top layer?

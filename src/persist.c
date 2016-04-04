@@ -87,7 +87,8 @@ static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
 
 void milton_load(MiltonState* milton_state)
 {
-    FILE* fd = fopen("MiltonPersist.mlt", "rb+");
+    assert(milton_state->mlt_file_path);
+    FILE* fd = fopen(milton_state->mlt_file_path, "rb+");
     b32 ok = true;  // fread check
 
     if ( fd ) {
@@ -101,12 +102,12 @@ void milton_load(MiltonState* milton_state)
         }
 
         if ( ok ) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
+        milton_state->view->screen_size = (v2i){0};
 
         milton_magic = word_swap_memory_order(milton_magic);
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
-            assert (!"Magic number not found");
-            ok = false;
+            milton_die_gracefully("MLT file could not be loaded. Possible endianness mismatch.");
         }
 
         i32 num_layers = 0;
@@ -170,9 +171,10 @@ void milton_load(MiltonState* milton_state)
     }
     if ( !ok ) {
         platform_dialog("Tried to load a corrupted Milton file", "Error");
+        milton_reset_canvas(milton_state);
     } else {
         i32 id = milton_state->view->working_layer_id;
-        {
+        {  // Use working_layer_id to make working_layer point to the correct thing
             Layer* layer = milton_state->root_layer;
             while (layer) {
                 if ( layer->id == id ) {
@@ -191,7 +193,7 @@ void milton_save(MiltonState* milton_state)
     char tmp_fname[MAX_PATH] = {0};
     snprintf(tmp_fname, MAX_PATH, "milton_tmp.%d.mlt", pid);
 
-    platform_fname_at_exe(tmp_fname, MAX_PATH);
+    platform_fname_at_config(tmp_fname, MAX_PATH);
 
     FILE* fd = fopen(tmp_fname, "wb");
 
@@ -249,15 +251,50 @@ void milton_save(MiltonState* milton_state)
         fclose(fd);
 
         if ( ok ) {
-            platform_move_file(tmp_fname, "MiltonPersist.mlt");
+            platform_move_file(tmp_fname, milton_state->mlt_file_path);
         } else {
             milton_log("[DEBUG]: Saving to temp file %s failed. \n", tmp_fname);
         }
     } else {
-        assert (!"Could not create file");
+        milton_die_gracefully("Could not create file");
         return;
     }
 
+}
+
+void milton_set_last_canvas_fname(char* last_fname)
+{
+    char* full = mlt_calloc(MAX_PATH, sizeof(char));
+    strcpy(full, "last_canvas_fname");
+    platform_fname_at_config(full, MAX_PATH);
+    FILE* fd = fopen(full, "wb");
+    if (fd) {
+        u64 len = strlen(last_fname)+1;
+        fwrite(&len, sizeof(len), 1, fd);
+        fwrite(last_fname, sizeof(char), MAX_PATH, fd);
+        fclose(fd);
+    }
+    mlt_free(full);
+}
+
+char* milton_get_last_canvas_fname()
+{
+    char* full = mlt_calloc(MAX_PATH, sizeof(char));
+    strcpy(full, "last_canvas_fname");
+    platform_fname_at_config(full, MAX_PATH);
+    FILE* fd = fopen(full, "rb+");
+    if (fd) {
+        u64 len = 0;
+        fread(&len, sizeof(len), 1, fd);
+        if (len > MAX_PATH) {
+            mlt_free(full);
+        } else {
+            fread(full, sizeof(char), len, fd);
+        }
+    } else {
+        mlt_free(full);
+    }
+    return full;
 }
 
 // Called by stb_image

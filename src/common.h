@@ -52,6 +52,8 @@ typedef i32         b32;
 #define assert(expr)  do { if ( !(bool)(expr) ) {  (*(u32*)0) = 0xDeAdBeEf;  } } while(0)
 #endif
 
+#define INVALID_CODE_PATH assert(!"Invalid code path");
+
 #define check_flag(flags, check)    ((flags) & (check))
 #define set_flag(f, s)              ((f) |= (s))
 #define unset_flag(f, s)            ((f) &= ~(s))

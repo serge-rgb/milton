@@ -160,3 +160,9 @@ i32 number_of_layers(Layer* layer)
     }
     return n;
 }
+
+void stroke_free(Stroke* stroke)
+{
+    mlt_free(stroke->points);
+    mlt_free(stroke->pressures);
+}

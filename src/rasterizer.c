@@ -1550,7 +1550,7 @@ int renderer_worker_thread(void* data)
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;
     i32 id = params->worker_id;
-    volatile RenderStack* render_stack = milton_state->render_stack;
+    RenderStack* render_stack = milton_state->render_stack;
 
     for ( ;; ) {
         int err = SDL_SemWait(render_stack->work_available);

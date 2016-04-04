@@ -24,6 +24,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         0
     },
     { // English
+        0,
         [TXT_file]                           = "File",
         [TXT_open_milton_canvas]             = "Open Milton Canvas",
         [TXT_export_to_image_DOTS]           = "Export to Image...",
@@ -71,9 +72,12 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         [TXT_zoom_out]                       = "Zoom Out",
         [TXT_brush_opacity]                  = "Brush Opacity",
         [TXT_set_opacity_to]                 = "Set brush opacity to",
+        [TXT_save_milton_canvas_as_DOTS]     = "Save Milton Canvas As...",
+        [TXT_new_milton_canvas]              = "New Milton Canvas",
     },
 
     { // Spanish
+        0,
         [TXT_file]                           = "Archivo",
         [TXT_open_milton_canvas]             = "Abrir Lienzo",
         [TXT_export_to_image_DOTS]           = "Exportar a Imagen...",

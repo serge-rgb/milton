@@ -5,7 +5,7 @@
 #pragma once
 
 #include "milton.h"
-
+#include "render_common.h"
 
 #if defined(__cplusplus)
 extern "C" {

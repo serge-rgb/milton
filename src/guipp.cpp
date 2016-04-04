@@ -42,14 +42,34 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
     //ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{.1f,.1f,.1f,1}); ++color_stack;
 
 
+    // Menu ----
     int menu_style_stack = 0;
     ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4{.3f,.3f,.3f,1}); ++menu_style_stack;
     ImGui::PushStyleColor(ImGuiCol_TextDisabled,   ImVec4{.9f,.3f,.3f,1}); ++menu_style_stack;
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4{.3f,.3f,.6f,1}); ++menu_style_stack;
     if ( ImGui::BeginMainMenuBar() ) {
         if ( ImGui::BeginMenu(LOC(file)) ) {
+            if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
+                milton_set_default_canvas_file(milton_state);
+                milton_reset_canvas(milton_state);
+                input->flags |= MiltonInputFlags_FULL_REFRESH;
+            }
             if ( ImGui::MenuItem(LOC(open_milton_canvas)) ) {
-
+                // TODO: If current canvas is MiltonPersist, then prompt to save
+                char* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+                if (fname) {
+                    milton_set_canvas_file(milton_state, fname);
+                    input->flags |= MiltonInputFlags_OPEN_FILE;
+                }
+            }
+            if (ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS))) {
+                char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                if (name) {
+                    milton_log("Saving to %s\n", name);
+                    milton_set_canvas_file(milton_state, name);
+                    input->flags |= MiltonInputFlags_SAVE_FILE;
+                    platform_delete_file_at_config("MiltonPersist.mlt");  // Make sure that this is cleared for the future.
+                }
             }
             if ( ImGui::MenuItem(LOC(export_to_image_DOTS)) ) {
                 milton_switch_mode(milton_state, MiltonMode_EXPORTING);
@@ -70,9 +90,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
         }
 
         if ( ImGui::BeginMenu(LOC(canvas), /*enabled=*/true) ) {
-            //if ( ImGui::MenuItem(LOC(set_background_color)) ) {
             if ( ImGui::BeginMenu(LOC(set_background_color)) ) {
-                //ImGui::SetWindowSize({271, 109}, ImGuiSetCond_Always);
                 v3f bg = milton_state->view->background_color;
                 if ( ImGui::ColorEdit3(LOC(color), bg.d) ) {
                     milton_state->view->background_color = clamp_01(bg);
@@ -98,8 +116,8 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 input->mode_to_set = MiltonMode_PEN;
             }
             if ( ImGui::BeginMenu(LOC(brush_opacity)) ) {
-                float opacities[] = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f };
-                for ( int i = 0; i < array_count(opacities); ++i ) {
+                f32 opacities[] = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f };
+                for ( i32 i = 0; i < array_count(opacities); ++i ) {
                     char entry[128] = {0};
                     snprintf(entry, array_count(entry), "%s %d%% - [%d]",
                              LOC(set_opacity_to), (int)(100 * opacities[i]), i == 9 ? 0 : i+1);
@@ -114,7 +132,6 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
                 input->mode_to_set = MiltonMode_ERASER;
             }
-            //
             // Decrease / increase brush size
             ImGui::EndMenu();
         }
@@ -127,12 +144,17 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
         if ( ImGui::BeginMenu(LOC(help)) ) {
             ImGui::EndMenu();
         }
+        // TODO: Date..
+        if ( ImGui::BeginMenu("    Last saved XX:XX:XX", /*bool enabled = */false) )  {
+            ImGui::EndMenu();
+        }
         ImGui::EndMainMenuBar();
     }
     ImGui::PopStyleColor(menu_style_stack);
 
-    // TODO (IMPORTANT): Add a "reset UI" option? widgets might get outside the viewport without a way to get back.
 
+    // GUI Windows ----
+    // TODO (IMPORTANT): Add a "reset UI" option? widgets might get outside the viewport without a way to get back.
 
     if ( milton_state->gui->visible ) {
 
@@ -240,9 +262,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             ImGui::EndChild();
             ImGui::SameLine();
 
-            // right
             ImGui::BeginGroup();
-            //ImGui::BeginChild("item view", ImVec2(0, -30-ImGui::GetItemsLineHeightWithSpacing()));
             ImGui::BeginChild("item view", ImVec2(0, 25));
             if ( ImGui::Button(LOC(new_layer)) ) {
                 milton_new_layer(milton_state);
@@ -252,7 +272,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             ImGui::BeginChild("buttons");
 
             static b32 is_renaming = false;
-            if ( is_renaming == false ) {
+            if (is_renaming == false) {
                 ImGui::Text(milton_state->working_layer->name);
                 ImGui::Indent();
                 if ( ImGui::Button(LOC(rename)) ) {
@@ -260,7 +280,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 }
                 ImGui::Unindent();
             }
-            else if ( is_renaming ) {
+            else if (is_renaming) {
                 if ( ImGui::InputText("##rename",
                                       milton_state->working_layer->name,
                                       13,
@@ -373,7 +393,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     if ( buffer ) {
                         opened = false;
                         milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
-                        char* fname = platform_save_dialog();
+                        char* fname = platform_save_dialog(FileKind_IMAGE);
                         if ( fname ) {
                             milton_save_buffer_to_file(fname, buffer, w, h);
                         }
