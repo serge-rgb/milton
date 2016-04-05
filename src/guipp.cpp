@@ -55,15 +55,34 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 input->flags |= MiltonInputFlags_FULL_REFRESH;
                 milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
             }
+            b32 save_requested = false;
             if ( ImGui::MenuItem(LOC(open_milton_canvas)) ) {
-                // TODO: If current canvas is MiltonPersist, then prompt to save
-                char* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
-                if (fname) {
-                    milton_set_canvas_file(milton_state, fname);
-                    input->flags |= MiltonInputFlags_OPEN_FILE;
+                // If current canvas is MiltonPersist, then prompt to save
+                b32 can_open = true;
+                if ( (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ) {
+                    can_open = false;
+                    if (platform_dialog_yesno("The default canvas will be cleared, save the current work?", "Save?")) {
+                        char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                        if (name) {
+                            can_open = true;
+                            milton_log("Saving to %s\n", name);
+                            milton_set_canvas_file(milton_state, name);
+                            milton_save(milton_state);
+                            platform_delete_file_at_config("MiltonPersist.mlt");
+                        }
+                    } else {
+                        can_open = true;
+                    }
+                }
+                if ( can_open ) {
+                    char* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+                    if (fname) {
+                        milton_set_canvas_file(milton_state, fname);
+                        input->flags |= MiltonInputFlags_OPEN_FILE;
+                    }
                 }
             }
-            if (ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS))) {
+            if (ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested) {
                 char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                 if (name) {
                     milton_log("Saving to %s\n", name);
@@ -145,11 +164,11 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
         if ( ImGui::BeginMenu(LOC(help)) ) {
             ImGui::EndMenu();
         }
-        // TODO: Date..
-        char saved_msg[1024];
-        snprintf(saved_msg, 1024, "    %s Last Saved XX:XX:XX",
+
+        char msg[1024];
+        snprintf(msg, 1024, "    %s Last Saved XX:XX:XX",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" : "");
-        if ( ImGui::BeginMenu(saved_msg, /*bool enabled = */false) )  {
+        if ( ImGui::BeginMenu(msg, /*bool enabled = */false) )  {
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();

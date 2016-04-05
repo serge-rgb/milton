@@ -124,7 +124,8 @@ char* platform_save_dialog(FileKind kind)
     ofn.nMaxFile = MAX_PATH;
     /* ofn.lpstrInitialDir; */
     /* ofn.lpstrTitle; */
-    ofn.Flags = OFN_HIDEREADONLY;
+    //ofn.Flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+    ofn.Flags = OFN_OVERWRITEPROMPT;
     /* ofn.nFileOffset; */
     /* ofn.nFileExtension; */
     //ofn.lpstrDefExt = "jpg";
@@ -153,6 +154,7 @@ char* platform_open_dialog(FileKind kind)
     win32_set_OFN_filter(&ofn, kind);
     ofn.lpstrFile = fname;
     ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_FILEMUSTEXIST;
 
     b32 ok = GetOpenFileNameA(&ofn);
     if (ok == false) {
@@ -161,6 +163,16 @@ char* platform_open_dialog(FileKind kind)
         return NULL;
     }
     return fname;
+}
+
+b32 platform_dialog_yesno(char* info, char* title)
+{
+    i32 yes = MessageBoxA(NULL, //_In_opt_ HWND    hWnd,
+                          (LPCSTR)info, // _In_opt_ LPCTSTR lpText,
+                          (LPCSTR)title,// _In_opt_ LPCTSTR lpCaption,
+                          MB_YESNO//_In_     UINT    uType
+                         );
+    return yes == IDYES;
 }
 
 void platform_dialog(char* info, char* title)

@@ -78,6 +78,7 @@ char*   platform_open_dialog(FileKind kind);
 char*   platform_save_dialog(FileKind kind);
 
 void    platform_dialog(char* info, char* title);
+b32     platform_dialog_yesno(char* info, char* title);
 
 void    platform_load_gl_func_pointers();
 
