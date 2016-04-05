@@ -601,6 +601,11 @@ void milton_reset_canvas(MiltonState* milton_state)
 
     // New View
     milton_set_default_view(milton_state->view);
+
+    // Reset color buttons
+    for ( ColorButton* b = &milton_state->gui->picker.color_buttons; b!=NULL; b=b->next ) {
+        b->color = (v4f){0};
+    }
 }
 
 void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)

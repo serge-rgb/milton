@@ -161,11 +161,28 @@ void milton_load(MiltonState* milton_state)
             }
         }
         if ( ok ) { ok = fread_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
+
+        // Buttons
+        if ( ok ) {
+            i32 button_count = 0;
+            MiltonGui* gui = milton_state->gui;
+            ColorButton* pp = &gui->picker.color_buttons;
+
+            if ( ok ) { ok = fread_checked(&button_count, sizeof(i32), 1, fd); }
+            if ( ok ) {
+                for ( i32 i = 0;
+                      pp!=NULL && i < button_count;
+                      ++i, pp=pp->next ) {
+                    fread_checked(&pp->color, sizeof(v4f), 1, fd);
+                }
+            }
+        }
+
         if ( ok ) {
             i32 history_count = 0;
-            ok = fread_checked(&history_count, sizeof(history_count), 1, fd);
-            sb_reserve(milton_state->history, (i32)history_count);
-            ok = fread_checked_nocopy(milton_state->history, sizeof(*milton_state->history), history_count, fd);
+            if (ok) { ok = fread_checked(&history_count, sizeof(history_count), 1, fd); }
+            if (ok) { sb_reserve(milton_state->history, (i32)history_count); }
+            if (ok) { ok = fread_checked_nocopy(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
         }
         fclose(fd);
     }
@@ -243,6 +260,22 @@ void milton_save(MiltonState* milton_state)
         assert (TEST == num_layers);
 
         if ( ok ) { ok = fwrite_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
+
+        // Buttons
+        if ( ok ) {
+            i32 button_count = 0;
+            MiltonGui* gui = milton_state->gui;
+            // Count buttons
+            for ( ColorButton* b = &gui->picker.color_buttons; b!= NULL; b = b->next, button_count++ ) { }
+            // Write
+            if ( ok ) { ok = fwrite_checked(&button_count, sizeof(i32), 1, fd); }
+            if ( ok ) {
+                for ( ColorButton* b = &gui->picker.color_buttons; ok && b!= NULL; b = b->next ) {
+                    ok = fwrite_checked(&b->color, sizeof(v4f), 1, fd);
+                }
+            }
+        }
+
 
         i32 history_count = sb_count(milton_state->history);
         if ( ok ) { ok = fwrite_checked(&history_count, sizeof(history_count), 1, fd); }
