@@ -82,7 +82,7 @@ void    platform_dialog(char* info, char* title);
 void    platform_load_gl_func_pointers();
 
 void    platform_fname_at_exe(char* fname, i32 len);
-void    platform_move_file(char* src, char* dest);
+b32     platform_move_file(char* src, char* dest);
 void    platform_delete_file_at_config(char* fname);
 void    platform_fname_at_config(char* fname, i32 len);
 

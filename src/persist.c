@@ -251,7 +251,10 @@ void milton_save(MiltonState* milton_state)
         fclose(fd);
 
         if ( ok ) {
-            platform_move_file(tmp_fname, milton_state->mlt_file_path);
+            ok = platform_move_file(tmp_fname, milton_state->mlt_file_path);
+            if ( !ok ) {
+                milton_reset_canvas(milton_state);
+            }
         } else {
             milton_log("[DEBUG]: Saving to temp file %s failed. \n", tmp_fname);
         }
@@ -259,7 +262,6 @@ void milton_save(MiltonState* milton_state)
         milton_die_gracefully("Could not create file");
         return;
     }
-
 }
 
 void milton_set_last_canvas_fname(char* last_fname)
@@ -275,6 +277,11 @@ void milton_set_last_canvas_fname(char* last_fname)
         fclose(fd);
     }
     mlt_free(full);
+}
+
+void milton_unset_last_canvas_fname()
+{
+    platform_delete_file_at_config("last_canvas_fname");
 }
 
 char* milton_get_last_canvas_fname()

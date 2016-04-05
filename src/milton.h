@@ -73,6 +73,8 @@ typedef struct MiltonState
 {
     u8  bytes_per_pixel;
 
+    b32 flags;  // See MiltonStateFlags
+
     i32 max_width;
     i32 max_height;
     u8* raster_buffer;
@@ -117,7 +119,6 @@ typedef struct MiltonState
     MiltonMode last_mode;
 
     i32 quality_redraw_time;
-    b32 request_quality_redraw;  // After drawing with downsampling this gets set to true.
 
     i32             num_render_workers;
     RenderStack*    render_stack;
@@ -127,14 +128,9 @@ typedef struct MiltonState
     Arena*      render_worker_arenas;
 
     size_t      worker_memory_size;
-    b32         worker_needs_memory;
 
-    // Quick and dirty way to count MOUSE_UP events as stroke points for mouse
-    // but discard them when using a tablet.
-    b32 stroke_is_from_tablet;
 
     // This is set to false after it's safe to quit
-    b32 running;
 
     // ====
     // Debug helpers
@@ -144,6 +140,16 @@ typedef struct MiltonState
     b32 DEBUG_replaying;
 #endif
 } MiltonState;
+
+enum MiltonStateFlags
+{
+    MiltonStateFlags_RUNNING                = 1<<0,
+    MiltonStateFlags_STROKE_IS_FROM_TABLET  = 1<<1, // Quick and dirty way to count MOUSE_UP events as stroke points for mouse but discard them when using a tablet.
+    MiltonStateFlags_REQUEST_QUALITY_REDRAW = 1<<2,
+    MiltonStateFlags_WORKER_NEEDS_MEMORY    = 1<<3,
+    MiltonStateFlags_NEW_CANVAS             = 1<<4,
+    MiltonStateFlags_DEFAULT_CANVAS         = 1<<5,
+};
 
 typedef enum MiltonInputFlags
 {
@@ -160,7 +166,6 @@ typedef enum MiltonInputFlags
     MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 8,
     MiltonInputFlags_SAVE_FILE           = 1 << 9,
     MiltonInputFlags_OPEN_FILE           = 1 << 10,
-    MiltonInputFlags_NEW_CANVAS          = 1 << 11,
 } MiltonInputFlags;
 #if defined(__cplusplus)
 #define MiltonInputFlags int

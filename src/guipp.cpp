@@ -53,6 +53,7 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 milton_set_default_canvas_file(milton_state);
                 milton_reset_canvas(milton_state);
                 input->flags |= MiltonInputFlags_FULL_REFRESH;
+                milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
             }
             if ( ImGui::MenuItem(LOC(open_milton_canvas)) ) {
                 // TODO: If current canvas is MiltonPersist, then prompt to save
@@ -145,7 +146,10 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
             ImGui::EndMenu();
         }
         // TODO: Date..
-        if ( ImGui::BeginMenu("    Last saved XX:XX:XX", /*bool enabled = */false) )  {
+        char saved_msg[1024];
+        snprintf(saved_msg, 1024, "    %s Last Saved XX:XX:XX",
+                 (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" : "");
+        if ( ImGui::BeginMenu(saved_msg, /*bool enabled = */false) )  {
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();

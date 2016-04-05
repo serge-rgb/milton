@@ -1578,7 +1578,7 @@ int renderer_worker_thread(void* data)
                                               blockgroup_data.block_start, render_stack->num_blocks,
                                               render_stack->canvas_buffer);
         if ( !allocation_ok ) {
-            milton_state->worker_needs_memory = true;
+            milton_state->flags |= MiltonStateFlags_WORKER_NEEDS_MEMORY;
         }
 
         arena_reset_noclear(&milton_state->render_worker_arenas[id]);
@@ -2126,7 +2126,7 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     raster_limits.bottom = buf_h;
 
     // render_canvas will set worker_needs_memory to true if it fails to render.
-    while ( render_canvas(milton_state, raster_limits), milton_state->worker_needs_memory ) {
+    while ( render_canvas(milton_state, raster_limits), (milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY) ) {
         milton_expand_render_memory(milton_state);
     }
 

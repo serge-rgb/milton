@@ -476,7 +476,7 @@ int milton_main(MiltonStartupFlags startup_flags)
         }
 
         if ( platform_state.stopped_panning ) {
-            milton_state->request_quality_redraw = true;
+            milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
         }
 
         /* if ( platform_state.is_pointer_down && check_flag(milton_input.flags, MiltonInputFlags_HOVERING) ) { */
@@ -560,7 +560,7 @@ int milton_main(MiltonStartupFlags startup_flags)
         platform_state.pan_start = platform_state.pan_point;
         // ==== Update and render
         milton_update(milton_state, &milton_input);
-        if ( !milton_state->running ) {
+        if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
             platform_state.should_quit = true;
         }
         milton_gl_backend_draw(milton_state);

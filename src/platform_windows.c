@@ -193,12 +193,10 @@ void platform_delete_file_at_config(char* fname)
     mlt_free(full);
 }
 
-void platform_move_file(char* src, char* dest)
+b32 platform_move_file(char* src, char* dest)
 {
     b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
-    if ( !ok ) {
-        platform_dialog("Could not move file", "Error");
-    }
+    return ok;
 }
 
 void platform_fname_at_config(char* fname, i32 len)

@@ -233,12 +233,12 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         {
             f32 pressure_min = 0.20f;
             pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
-            milton_state->stroke_is_from_tablet = true;
+            milton_state->flags |= MiltonStateFlags_STROKE_IS_FROM_TABLET;
         }
 
         // We haven't received pressure info, assume mouse input
-        if (input->pressures[input_i] == NO_PRESSURE_INFO && !milton_state->stroke_is_from_tablet)
-        {
+        if (input->pressures[input_i] == NO_PRESSURE_INFO
+            && !(milton_state->flags & MiltonStateFlags_STROKE_IS_FROM_TABLET)) {
             pressure = 1.0f;
         }
 
@@ -291,18 +291,31 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     }
 }
 
-void milton_set_canvas_file(MiltonState* milton_state, char* fname)
+void milton_set_canvas_file_(MiltonState* milton_state, char* fname, b32 is_default)
 {
-    if (milton_state->mlt_file_path != NULL) {
+    if ( is_default )
+        milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+    else
+        milton_state->flags &= ~MiltonStateFlags_DEFAULT_CANVAS;
+
+    if (milton_state->mlt_file_path != NULL)
         mlt_free(milton_state->mlt_file_path);
-    }
+
     u64 len = strlen(fname);
     if (len > MAX_PATH) {
         milton_log("milton_set_canvas_file: fname was too long %lu\n", len);
         fname = "MiltonPersist.mlt";
     }
     milton_state->mlt_file_path = fname;
-    milton_set_last_canvas_fname(fname);
+    if ( !is_default )
+        milton_set_last_canvas_fname(fname);
+    else
+        milton_unset_last_canvas_fname();
+}
+
+void milton_set_canvas_file(MiltonState* milton_state, char* fname)
+{
+    milton_set_canvas_file_(milton_state, fname, false);
 }
 
 // Helper function
@@ -311,7 +324,8 @@ void milton_set_default_canvas_file(MiltonState* milton_state)
     char* f = mlt_calloc(MAX_PATH, sizeof(*f));
     strncpy(f, "MiltonPersist.mlt", MAX_PATH);
     platform_fname_at_config(f, MAX_PATH);
-    milton_set_canvas_file(milton_state, f);
+    milton_set_canvas_file_(milton_state, f, true);
+    milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
 }
 
 void milton_gl_backend_draw(MiltonState* milton_state)
@@ -504,7 +518,7 @@ void milton_init(MiltonState* milton_state)
 
     milton_load_assets(milton_state);
 
-    milton_state->running = true;
+    milton_state->flags |= MiltonStateFlags_RUNNING;
 }
 
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
@@ -614,12 +628,12 @@ void milton_use_previous_mode(MiltonState* milton_state)
 }
 void milton_try_quit(MiltonState* milton_state)
 {
-    milton_state->running = false;
+    milton_state->flags &= ~MiltonStateFlags_RUNNING;
 }
 
 void milton_expand_render_memory(MiltonState* milton_state)
 {
-    if ( milton_state->worker_needs_memory ) {
+    if ( milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY ) {
         size_t prev_memory_value = milton_state->worker_memory_size;
         milton_state->worker_memory_size *= 2;
         size_t needed_size = milton_state->worker_memory_size;
@@ -639,7 +653,7 @@ void milton_expand_render_memory(MiltonState* milton_state)
                    prev_memory_value,
                    milton_state->worker_memory_size);
 
-        milton_state->worker_needs_memory = false;
+        milton_state->flags &= ~MiltonStateFlags_WORKER_NEEDS_MEMORY;
     }
 }
 
@@ -713,28 +727,27 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
 
-    if ( !milton_state->running ) {
+    if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
         // Someone tried to kill milton from outside the update. Make sure we save.
         should_save = true;
         goto cleanup;
     }
 
     if (input->flags & MiltonInputFlags_OPEN_FILE) {
-        // TODO: Clear resources
         milton_load(milton_state);
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
         input->flags |= MiltonInputFlags_FAST_DRAW;
     }
 
 
-    if ( milton_state->worker_needs_memory ) {
+    if ( milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY ) {
         milton_expand_render_memory(milton_state);
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
     }
 
-    if ( milton_state->request_quality_redraw ) {
+    if ( milton_state->flags & MiltonStateFlags_REQUEST_QUALITY_REDRAW ) {
         milton_state->view->downsampling_factor = 1;  // See how long it takes to redraw at full quality
-        milton_state->request_quality_redraw = false;
+        milton_state->flags &= ~MiltonStateFlags_REQUEST_QUALITY_REDRAW;
         set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
     }
 
@@ -746,7 +759,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
     else if ( milton_state->quality_redraw_time > 0 &&
               (now - milton_state->quality_redraw_time) > QUALITY_REDRAW_TIMEOUT_MS ) {
-        milton_state->request_quality_redraw = true;  // Next update loop.
+        milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;  // Next update loop.
         milton_state->quality_redraw_time = 0;
     }
 
@@ -907,7 +920,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     // ---- End stroke
     if (check_flag( input->flags, MiltonInputFlags_END_STROKE )) {
-        milton_state->stroke_is_from_tablet = false;
+        milton_state->flags &= ~MiltonStateFlags_STROKE_IS_FROM_TABLET;
 
         if ( milton_state->gui->active ) {
             gui_deactivate(milton_state->gui);
