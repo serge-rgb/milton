@@ -51,7 +51,7 @@ To-Do
     *- Undo/Redo: Only redraw necessary area.
     - Amdahl's curse... Parallelize GUI rendering
     - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
-        *- Refactor: Do a simple screen cull before rendering, instead of passing the whole thing.
+        *- Refactor: Do a simple screen cull before rendering, instead of parsing the whole thing.
     - 4x4 Blockgroups (morton-order)
     - AVX backend??
     - Do not redraw when stroking over existing drawing? Only on top layer?

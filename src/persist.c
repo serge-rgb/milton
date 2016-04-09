@@ -286,7 +286,7 @@ void milton_save(MiltonState* milton_state)
         if ( ok ) {
             ok = platform_move_file(tmp_fname, milton_state->mlt_file_path);
             if ( !ok ) {
-                milton_reset_canvas(milton_state);
+                milton_log("Could not move file. Moving on. Avoiding this save.");
             }
         } else {
             milton_log("[DEBUG]: Saving to temp file %s failed. \n", tmp_fname);

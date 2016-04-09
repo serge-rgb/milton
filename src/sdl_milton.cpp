@@ -25,6 +25,7 @@ struct PlatformState
     b32 is_space_down;
     b32 is_pointer_down;  // Left click or wacom input
     b32 is_panning;
+    b32 was_exporting;
     v2i pan_start;
     v2i pan_point;
 
@@ -34,7 +35,60 @@ struct PlatformState
     i32 num_pressure_results;
     i32 num_point_results;
     b32 stopped_panning;
+
+    // SDL Cursors
+    SDL_Cursor* cursor_default;
+    SDL_Cursor* cursor_hand;
+    SDL_Cursor* cursor_crosshair;
+    SDL_Cursor* cursor_sizeall;
 };
+
+static b32 g_cursor_count = 0;
+static void cursor_hide()
+{
+#if defined(_WIN32)
+    /* CURSORINFO info; */
+    /* GetCursorInfo(&info); */
+    /* if ( info.flags & CURSOR_SHOWING ) { */
+    while (g_cursor_count >= 0) {
+        ShowCursor(FALSE);
+        g_cursor_count--;
+    }
+
+    /* } */
+#else
+    // TODO: haven't checked if this works.
+    int lvl = SDL_ShowCursor(-1);
+    if ( lvl >= 0 ) {
+        assert ( lvl == 1 );
+        int res = SDL_ShowCursor(0);
+        if (res < 0) {
+            assert(!"wtf");
+        }
+    }
+#endif
+}
+
+static void cursor_set_and_show(SDL_Cursor* cursor)
+{
+#if defined(_WIN32)
+    /* CURSORINFO info; */
+    /* GetCursorInfo(&info); */
+    /* if ( !(info.flags & CURSOR_SHOWING) ) { */
+    while (g_cursor_count < 0) {
+        ShowCursor(TRUE);
+        g_cursor_count++;
+    }
+    /* } */
+#else
+    int lvl = SDL_ShowCursor(-1);
+    if ( lvl < 0 ) {
+        assert ( lvl == -1 );
+        SDL_ShowCursor(1);
+    }
+#endif
+    SDL_SetCursor(cursor);
+}
 
 MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 {
@@ -457,6 +511,15 @@ int milton_main(MiltonStartupFlags startup_flags)
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = NULL;  // Don't save any imgui.ini file
     }
+    // Initalize system cursors
+    {
+        platform_state.cursor_default = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+        platform_state.cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+        platform_state.cursor_crosshair = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+        platform_state.cursor_sizeall = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+
+        cursor_set_and_show(platform_state.cursor_default);
+    }
 
     // ---- Main loop ----
 
@@ -479,9 +542,27 @@ int milton_main(MiltonStartupFlags startup_flags)
             milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
         }
 
-        /* if ( platform_state.is_pointer_down && check_flag(milton_input.flags, MiltonInputFlags_HOVERING) ) { */
-        /*     milton_input.hover_point = {-100, -100}; */
-        /* } */
+        // Handle system cursor
+        if ( platform_state.is_panning ) {
+            cursor_set_and_show(platform_state.cursor_sizeall);
+        }
+        else if ( platform_state.stopped_panning ) {
+            milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+            cursor_set_and_show(platform_state.cursor_default);
+        }
+        else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
+            cursor_set_and_show(platform_state.cursor_crosshair);
+            platform_state.was_exporting = true;
+        }
+        else if ( platform_state.was_exporting ) {
+            cursor_set_and_show(platform_state.cursor_default);
+            platform_state.was_exporting = false;
+        }
+        else if ( ImGui::GetIO().WantCaptureMouse ) {
+            cursor_set_and_show(platform_state.cursor_default);
+        } else {
+            cursor_hide();
+        }
 
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
 #if defined(__MACH__)
@@ -503,6 +584,7 @@ int milton_main(MiltonStartupFlags startup_flags)
             platform_state.num_point_results = 0;
             platform_state.is_pointer_down = false;
             set_flag(input_flags, MiltonInputFlags_IMGUI_GRABBED_INPUT);
+            // TODO: Enable cursor
         }
 
         milton_gui_tick(&milton_input, milton_state);

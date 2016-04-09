@@ -41,7 +41,6 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
 
     //ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{.1f,.1f,.1f,1}); ++color_stack;
 
-
     // Menu ----
     int menu_style_stack = 0;
     ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4{.3f,.3f,.3f,1}); ++menu_style_stack;

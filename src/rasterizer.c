@@ -1594,7 +1594,7 @@ static void produce_render_work(MiltonState* milton_state,
     RenderStack* render_stack = milton_state->render_stack;
 
     {
-        i32 lock_err = SDL_LockMutex(milton_state->render_stack->mutex);
+        i32 lock_err = SDL_LockMutex(render_stack->mutex);
         if ( !lock_err ) {
             if ( render_stack->index < RENDER_STACK_SIZE ) {
                 render_stack->blockgroup_render_data[render_stack->index++] = blockgroup_render_data;
