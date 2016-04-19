@@ -30,52 +30,6 @@ v2i raster_to_canvas(CanvasView* view, v2i raster_point)
     return canvas_point;
 }
 
-// Thread-safe
-b32* create_stroke_masks(Layer* layer, Rect rect)
-{
-    b32* masks = NULL;
-    while ( layer ) {
-        if ( !(layer->flags & LayerFlags_VISIBLE) ) {
-            layer = layer->next;
-            continue;
-        }
-        Stroke* strokes = layer->strokes;
-
-        for (i32 stroke_i = 0; stroke_i < sb_count(layer->strokes); ++stroke_i) {
-            Stroke* stroke = &strokes[stroke_i];
-            Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
-            b32 thismask = false;
-            if ( rect_is_valid(stroke_rect) ) {
-                if (stroke->num_points == 1) {
-                    if ( is_inside_rect(stroke_rect, stroke->points[0]) ) {
-                        thismask = true;
-                    }
-                } else {
-                    for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
-                        v2i a = stroke->points[point_i    ];
-                        v2i b = stroke->points[point_i + 1];
-
-                        b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
-                                       (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
-                                       (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
-                                       (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
-
-                        if (inside) {
-                            thismask = true;
-                            break;
-                        }
-                    }
-                }
-                sb_push(masks, thismask);
-            } else {
-                milton_log("Discarging stroke %x because of invalid rect.\n", stroke);
-            }
-        }
-        layer = layer->next;
-    }
-    return masks;
-}
-
 // Does point p0 with radius r0 contain point p1 with radius r1?
 b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
 {

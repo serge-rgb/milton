@@ -276,10 +276,10 @@ static b32 stroke_is_not_tiny(Stroke* stroke, CanvasView* view)
 
 // Fills a linked list of strokes that this block needs to render.
 static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
+                                            i32 worker_id,
                                             CanvasView* view,
                                             Layer* root_layer,
                                             Stroke* working_stroke,
-                                            b32* stroke_masks,
                                             Rect canvas_block,
                                             i32 local_scale,
                                             v2i reference_point,
@@ -321,11 +321,14 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                     }
                 }
 
+                /*
                 if ( stroke_i < num_strokes && !stroke_masks[total_stroke_i] ) {
                     // Stroke masks is of size num_strokes, but we use stroke_i ==
                     // num_strokes to indicate the current "working stroke"
                     continue;
                 }
+                */
+
                 Stroke* unclipped_stroke = NULL;
                 if ( stroke_i == num_strokes ) {
                     if ( layer->id == working_stroke->layer_id && working_stroke->num_points ) {  // Topmost layer: Use working stroke
@@ -338,6 +341,10 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                 }
                 assert(unclipped_stroke);
 
+                if (unclipped_stroke->visibility[worker_id] == false) {
+                    // Skip strokes that have been clipped.
+                    continue;
+                }
 
                 b32 single_point = unclipped_stroke->num_points == 1;
 
@@ -392,10 +399,10 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 // Receives a stretchy array of strokes and rasterizes it to the specified block of pixels.
 // Returns false if allocation failed.
 static b32 rasterize_canvas_block_slow(Arena* render_arena,
+                                       i32 worker_id,
                                        CanvasView* view,
                                        Layer* root_layer,
                                        Stroke* working_stroke,
-                                       b32* stroke_masks,
                                        u32* pixels,
                                        Rect raster_block)
 {
@@ -436,10 +443,11 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
         reference_point.x *= local_scale;
         reference_point.y *= local_scale;
     }
-    ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
+    ClippedStroke* stroke_list = clip_strokes_to_block(render_arena,
+                                                       worker_id,
+                                                       view,
                                                        root_layer,
                                                        working_stroke,
-                                                       stroke_masks,
                                                        canvas_block, local_scale, reference_point,
                                                        &allocation_ok);
 
@@ -666,10 +674,10 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
 // For a more readable implementation that does the same thing. See rasterize_canvas_block_slow.
 static b32 rasterize_canvas_block_sse2(Arena* render_arena,
+                                       i32 worker_id,
                                        CanvasView* view,
                                        Layer* root_layer,
                                        Stroke* working_stroke,
-                                       b32* stroke_masks,
                                        u32* pixels,
                                        Rect raster_block)
 {
@@ -719,10 +727,11 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
         reference_point.x *= local_scale;
         reference_point.y *= local_scale;
     }
-    ClippedStroke* stroke_list = clip_strokes_to_block(render_arena, view,
+    ClippedStroke* stroke_list = clip_strokes_to_block(render_arena,
+                                                       worker_id,
+                                                       view,
                                                        root_layer,
                                                        working_stroke,
-                                                       stroke_masks,
                                                        canvas_block, local_scale, reference_point,
                                                        &allocation_ok);
 
@@ -1458,8 +1467,63 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
     }
 }
 
+static b32 stroke_intersects_rect(Stroke* stroke, Rect rect)
+{
+    b32 result = false;
+    Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
+    if ( rect_is_valid(stroke_rect) ) {
+        if (stroke->num_points == 1) {
+            if ( is_inside_rect(stroke_rect, stroke->points[0]) ) {
+                result = true;
+            }
+        } else {
+            for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i) {
+                v2i a = stroke->points[point_i    ];
+                v2i b = stroke->points[point_i + 1];
+
+                b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
+                               (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
+                               (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
+                               (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
+
+                if (inside) {
+                    result = true;
+                    break;
+                }
+            }
+        }
+    } else {
+        milton_log("Stroke intersection invalid!");
+    }
+    return result;
+}
+
+static void fill_stroke_masks_for_worker(Layer* layer, Rect rect, i32 worker_id)
+{
+    while ( layer ) {
+        if ( !(layer->flags & LayerFlags_VISIBLE) )
+        {
+            layer = layer->next;
+            continue;
+        }
+        Stroke* strokes = layer->strokes;
+
+        // TODO: pre-clip strokes
+        for (i32 stroke_i = 0;
+             stroke_i < sb_count(layer->strokes) && layer->strokes[stroke_i].visibility[worker_id];
+             ++stroke_i)
+        {
+            Stroke* stroke = strokes + stroke_i;
+            stroke->visibility[worker_id] = stroke_intersects_rect(stroke, rect);
+        }
+        layer = layer->next;
+    }
+}
+
+
 // Returns false if there were allocation errors
 static b32 render_blockgroup(MiltonState* milton_state,
+                             i32 worker_id,
                              Arena* blockgroup_arena,
                              Rect* blocks,
                              i32 block_start, i32 num_blocks,
@@ -1487,7 +1551,7 @@ static b32 render_blockgroup(MiltonState* milton_state,
                 raster_to_canvas(milton_state->view, raster_blockgroup_rect.bot_right);
     }
 
-    b32* stroke_masks = create_stroke_masks(milton_state->root_layer, canvas_blockgroup_rect);
+    fill_stroke_masks_for_worker(milton_state->root_layer, canvas_blockgroup_rect, worker_id);
 
     Arena render_arena = { 0 };
     if ( allocation_ok ) {
@@ -1506,42 +1570,41 @@ static b32 render_blockgroup(MiltonState* milton_state,
         if ( SDL_HasSSE2() ) {
 #endif
             allocation_ok = rasterize_canvas_block_sse2(&render_arena,
+                                                        worker_id,
                                                         milton_state->view,
                                                         milton_state->root_layer,
                                                         &milton_state->working_stroke,
-                                                        stroke_masks,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
         } else {
             allocation_ok = rasterize_canvas_block_slow(&render_arena,
+                                                        worker_id,
                                                         milton_state->view,
                                                         milton_state->root_layer,
                                                         &milton_state->working_stroke,
-                                                        stroke_masks,
                                                         raster_buffer,
                                                         blocks[block_start + block_i]);
         }
 #else  // MILTON_USE_ALL_RENDERERS == 1
         // Use a sampling profiler to compare speeds
         allocation_ok = rasterize_canvas_block_sse2(&render_arena,
+                                                    worker_id,
                                                     milton_state->view,
                                                     milton_state->root_layer,
                                                     &milton_state->working_stroke,
-                                                    stroke_masks,
                                                     raster_buffer,
                                                     blocks[block_start + block_i]);
         allocation_ok = rasterize_canvas_block_slow(&render_arena,
+                                                    worker_id,
                                                     milton_state->view,
                                                     milton_state->root_layer,
                                                     &milton_state->working_stroke,
-                                                    stroke_masks,
                                                     raster_buffer,
                                                     blocks[block_start + block_i]);
 #endif // MILTON_USE_ALL_RENDERERS
         arena_reset_noclear(&render_arena);
         //arena_reset(&render_arena);
     }
-    sb_free(stroke_masks);
     return allocation_ok;
 }
 
@@ -1549,7 +1612,7 @@ int renderer_worker_thread(void* data)
 {
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;
-    i32 id = params->worker_id;
+    i32 worker_id = params->worker_id;
     RenderStack* render_stack = milton_state->render_stack;
 
     for ( ;; ) {
@@ -1573,7 +1636,8 @@ int renderer_worker_thread(void* data)
         assert (index >= 0);
 
         b32 allocation_ok = render_blockgroup(milton_state,
-                                              &milton_state->render_worker_arenas[id],
+                                              worker_id,
+                                              &milton_state->render_worker_arenas[worker_id],
                                               render_stack->blocks,
                                               blockgroup_data.block_start, render_stack->num_blocks,
                                               render_stack->canvas_buffer);
@@ -1581,7 +1645,7 @@ int renderer_worker_thread(void* data)
             milton_state->flags |= MiltonStateFlags_WORKER_NEEDS_MEMORY;
         }
 
-        arena_reset_noclear(&milton_state->render_worker_arenas[id]);
+        arena_reset_noclear(&milton_state->render_worker_arenas[worker_id]);
 
         SDL_SemPost(render_stack->completed_semaphore);
     }
@@ -1612,6 +1676,26 @@ static void produce_render_work(MiltonState* milton_state,
 static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 {
     PROFILE_BEGIN(render_canvas);
+
+    {  // Clip strokes outside of raster_limits
+        Layer* lay = milton_state->root_layer;
+        while(lay) {
+            if ((lay->flags & LayerFlags_VISIBLE)) {
+                for (i32 si=0; si < sb_count(lay->strokes); ++si)  {
+                    Stroke* s = lay->strokes + si;
+                    for(int wi = 0; wi < milton_state->num_render_workers; ++wi) {
+                        Rect limits =
+                        {
+                            .top_left = raster_to_canvas(milton_state->view, raster_limits.top_left),
+                            .bot_right = raster_to_canvas(milton_state->view, raster_limits.bot_right),
+                        };
+                        s->visibility[wi] = stroke_intersects_rect(s, limits);
+                    }
+                }
+            }
+            lay = lay->next;
+        }
+    }
 
     Rect* blocks = NULL;
     i32 num_blocks = rect_split(&blocks, raster_limits, milton_state->block_width, milton_state->block_width);

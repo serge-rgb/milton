@@ -11,12 +11,14 @@
 
 #define MILTON_MULTITHREADED 1
 
+#define MAX_NUM_WORKERS 64
+// Force things to be a bit slower
+#define RESTRICT_NUM_WORKERS_TO_2 0
+
+
 // 0 - Use strict SRGB definition
 // 1 - Use a power curve of 2.
 #define FAST_GAMMA 0
-
-// Force things to be a bit slower
-#define RESTRICT_NUM_THREADS_TO_2 0
 
 
 

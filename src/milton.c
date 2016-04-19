@@ -426,8 +426,8 @@ void milton_init(MiltonState* milton_state)
         milton_state->render_stack->mutex               = SDL_CreateMutex();
     }
 
-    milton_state->num_render_workers = SDL_GetCPUCount();
-#if RESTRICT_NUM_THREADS_TO_2
+    milton_state->num_render_workers = min(SDL_GetCPUCount(), MAX_NUM_WORKERS);
+#if RESTRICT_NUM_WORKERS_TO_2
     milton_state->num_render_workers = 2;
 #endif
 

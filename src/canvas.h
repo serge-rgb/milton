@@ -23,6 +23,7 @@ typedef struct Stroke
     f32*    pressures;
     i32     num_points;
     i32     layer_id;
+    b32     visibility[MAX_NUM_WORKERS];
 } Stroke;
 
 // IMPORTANT: CanvasView needs to be a flat structure.
