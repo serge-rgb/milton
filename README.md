@@ -62,7 +62,7 @@ If the GUI makes something not-obvious, please create a github issue!
 
 It's very helpful to drag the mouse (or pen) while pressing `space` to pan the
 canvas.  Also, switching between the brush and the eraser with `b` and `e`.
-You can change the brush siz[Imgur](http://i.imgur.com/7UmXTlD.png)e with `[` and `]` and control the transparency
+You can change the brush size with `[` and `]` and control the transparency
 with the number keys.
 
 
