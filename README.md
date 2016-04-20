@@ -4,7 +4,8 @@ Milton is a modern paint app.
 
 ### [Latest release (2016-01-23) pre-alpha 003](https://github.com/serge-rgb/milton/releases/tag/prealpha003)
 
-![Milton screenshot prealpha 3](http://i.imgur.com/osBIZnO.png)
+![Milton Paint girl](http://i.imgur.com/7UmXTlD.png)
+
 
 Features
 --------
@@ -14,13 +15,13 @@ Features
     ![zoooom](http://i.imgur.com/fqOhPlr.gif)
 
     You don't pick a resolution, and you don't work with pixels.  Your work is
-    stored as a sequence of commands, and rendered on the fly.
-    Whenever you want to, you can export your work to bitmaps of any size.
+stored as a sequence of commands, and rendered on the fly.  Whenever you want
+to, you can export your work to bitmaps of any size.
 
 - Simple
 
-    Milton solves a single problem: draw without pixels. It doesn't pretend to be
-    something more than that.
+    Milton solves a single problem: draw without pixels. It doesn't pretend to
+be something more than that.
 
 - Persistent
 
@@ -29,28 +30,23 @@ Features
 - Wacom support
 
     Milton currently supports Wacom on Windows Mac and Linux. The Mac version
-    should support any tablet device.
+supports any tablet device.
 
 - Software rendered.
 
-    Milton uses OpenGL 2.1 to draw the canvas and many GUI elements. However,
-most of the heavy lifting is done by a CPU software renderer. This is a huge
-win for a one-man-team when attempting to write a reliable application.
+    Milton features a software rasterizer by design, for reliability and
+flexibility.
 
-- Fast and light-weight
+- Light-weight
 
 - Multi-platform
 
-    Windows, Linux, OSX
+    Windows, Linux, OSX (Linux and OSX versions are In-Progress)
 
 - Open Source
 
-    Milton is licensed under the LGPL
+    Milton is MIT-licensed
 
-- Open Format
-
-    When version 1 comes out, there will be a simple header-only library to
-load and rasterize Milton paintings for use other programs.
 
 
 What Milton is not:
@@ -64,9 +60,10 @@ User Manual
 
 If the GUI makes something not-obvious, please create a github issue!
 
-It's very helpful to drag the mouse (or pen) while pressing `space` to pan the canvas.
-Also, switching between the brush and the eraser with `b` and `e`.
-You can change the brush size with `[` and `]` and control the transparency with the number keys.
+It's very helpful to drag the mouse (or pen) while pressing `space` to pan the
+canvas.  Also, switching between the brush and the eraser with `b` and `e`.
+You can change the brush siz[Imgur](http://i.imgur.com/7UmXTlD.png)e with `[` and `]` and control the transparency
+with the number keys.
 
 
 How to Compile
@@ -90,6 +87,8 @@ Requirements:
 Linux
 -----
 
+_PORT IN PROGRESS_
+
 Requirements:
 
 - SDL2 development libraries. On Ubuntu, this is `apt-get install libsdl2-dev`
@@ -100,6 +99,8 @@ Just run `make`
 OSX
 ---
 
+_PORT IN PROGRESS_
+
 Requirements:
 
 - CMake (for building SDL)
@@ -107,15 +108,6 @@ Requirements:
 1. `./setup_osx.sh` to download dependencies and build SDL
 2. `./build_osx.sh`
 3. Milton is compiled to `./build/milton`
-
-Roadmap
--------
-
-- [CURRENT] pre-alpha stage. Will go into alpha when all the major features are complete.
-- Alpha testing. Check what features need polishing
-- Version 1 will freeze the file format, improvements will be iterative. Version number will increase if there is a need to break the file format.
-
-For details, see TODO.txt
 
 
 License
@@ -144,11 +136,8 @@ License
 Credits and Thanks
 ==================
 
-* Inspiration / Education
-    * Casey Muratori. This program would be very different (and much slower) if not for Handmade Hero
-
 * Art
-    * Milton's logo by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
+    * Milton's logo and first artwork by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
 
 * Code
     * [Apoorva Joshi](http://apoorvaj.io) - Author of [Papaya](https://github.com/ApoorvaJ/Papaya) for joining forces and creating [EasyTab](https://github.com/ApoorvaJ/EasyTab).
@@ -171,4 +160,7 @@ Credits and Thanks
     * Santiago Montesinos
     * Aarón Reyes García
     * Vane Ugalde
+
+* Inspiration / Education
+    * Casey Muratori for Handmade Hero
 

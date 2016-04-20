@@ -8,16 +8,17 @@ To-Do
     - single point strokes sometimes self-destruct
     - dragging window -> stroke input (!!!)
 
+*- Port to Windows API (support non-Wacom devices)
+*- Finish Linux and OSX versions of Dialogs and File I/O
+*- Eye dropper
+
 - Application
     - Export
-        *- Finish Linux and OSX versions of Dialogs and File I/O
-        - manipulate rectangle shape
-        - set resolution
-        - set aspect ratio
+        - manipulate rectangle shape?
+        - set resolution?
+        - set aspect ratio?
     - History slider
-    *- Eye dropper
     - Tablet:
-        *- Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
     - UI
         - async progress dialog (windows)
@@ -25,14 +26,14 @@ To-Do
         - async progress dialog (linux)
         - Image Button
     - ImGUI details:
-        *- Reduce or remove widget rounding
+        - Reduce or remove widget rounding
         - Disable window dragging
     - DPI-awareness
         - UI scale option
         - ?? gui scale set by default
     - Etc...
         - Show hello widget on first run?
-    - Far future
+    - Future
         - Brush
             - Support for general, implicitly defined brushes
         - Playback
@@ -46,9 +47,9 @@ To-Do
     - Easytab: Stylus buttons.
     - Easytab: Distinction between eraser and pen.
 - Performance:
-    *- Async rendering
-    *- Make iterative rendering split the screen into chunks
-    *- Undo/Redo: Only redraw necessary area.
+    - Async rendering
+    - Make iterative rendering split the screen into chunks
+    - Undo/Redo: Only redraw necessary area.
     - Amdahl's curse... Parallelize GUI rendering
     - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
     - 4x4 Blockgroups (morton-order)
