@@ -15,6 +15,12 @@
 #include "utils.h"
 
 
+enum PanningFSM
+{
+    PanningFSM_NOTHING,
+    PanningFSM_WAITING_POINTER,
+};
+
 struct PlatformState
 {
     i32 width;
@@ -23,7 +29,11 @@ struct PlatformState
     b32 is_ctrl_down;
     b32 is_shift_down;
     b32 is_space_down;
-    b32 is_pointer_down;  // Left click or wacom input
+    b32 is_pointer_down;
+
+    int panning_fsm;
+    b32 receiving_tablet_input;
+
     b32 is_panning;
     b32 was_exporting;
     v2i pan_start;
@@ -92,7 +102,11 @@ static void cursor_set_and_show(SDL_Cursor* cursor)
 
 MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 {
+
     MiltonInput milton_input = {};
+
+    b32 pointer_up = false;
+    b32 got_pen_input = false;
 
     v2i input_point = {};
 
@@ -148,11 +162,21 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
             }
             if (er == EASYTAB_OK) {  // Event was handled.
-                if (EasyTab->Pressure > 0) {
+                if (platform_state->panning_fsm != PanningFSM_WAITING_POINTER &&
+                    EasyTab->Pressure > 0)
+                {
                     platform_state->is_pointer_down = true;
-                    if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
-                        milton_input.points[platform_state->num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
-                        milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure;
+                    got_pen_input = true;
+                    if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
+                    {
+                        if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
+                        {
+                            milton_input.points[platform_state->num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
+                        }
+                        if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
+                        {
+                            milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure;
+                        }
                     }
                 }
             }
@@ -174,22 +198,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 break;
             }
             if (event.button.button == SDL_BUTTON_LEFT) {
-                // Add final point
-                if ( !platform_state->is_panning && platform_state->is_pointer_down ) {
-                    set_flag(input_flags, MiltonInputFlags_END_STROKE);
-                    input_point = { event.button.x, event.button.y };
-                    milton_input.points[platform_state->num_point_results++] = input_point;
-                    // Start drawing hover as soon as we stop the stroke.
-                    milton_input.hover_point = input_point;
-                    set_flag(input_flags, MiltonInputFlags_HOVERING);
-                }
-                else if ( platform_state->is_panning ) {
-                    if (!platform_state->is_space_down) {
-                        platform_state->is_panning = false;
-                        platform_state->stopped_panning = true;
-                    }
-                }
-                platform_state->is_pointer_down = false;
+                pointer_up = true;
             }
             break;
         case SDL_MOUSEMOTION:
@@ -331,11 +340,15 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             SDL_Keycode keycode = event.key.keysym.sym;
 
             if ( keycode == SDLK_SPACE ) {
-                platform_state->is_space_down = false;
-                if ( !platform_state->is_pointer_down ) {
-                    platform_state->is_panning = false;
+                if (platform_state->is_panning) {
+                    if (platform_state->is_pointer_down) {
+                        platform_state->panning_fsm = PanningFSM_WAITING_POINTER;
+                    } else {
+                        platform_state->is_panning = false;
                     platform_state->stopped_panning = true;
+                    }
                 }
+                platform_state->is_space_down = false;
             }
         } break;
         case SDL_WINDOWEVENT: {
@@ -356,8 +369,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     break;
                 }
                 if ( platform_state->is_pointer_down ) {
-                    platform_state->is_pointer_down = false;
-                    set_flag(input_flags, MiltonInputFlags_END_STROKE);
+                    pointer_up = true;
                 }
                 break;
                 // --- A couple of events we might want to catch later...
@@ -379,7 +391,46 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             break;
         }
     }  // ---- End of SDL event loop
+
+    b32 lost_tablet_input = got_pen_input == false && platform_state->receiving_tablet_input;
+    if ( lost_tablet_input ) {
+        pointer_up  = true;
+        platform_state->is_pointer_down = false;
+    }
+    platform_state->receiving_tablet_input = got_pen_input;
+
+    if ( pointer_up ) {
+        // Add final point
+        if ( !platform_state->is_panning && platform_state->is_pointer_down ) {
+            set_flag(input_flags, MiltonInputFlags_END_STROKE);
+            input_point = { event.button.x, event.button.y };
+
+            if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS) {
+                milton_input.points[platform_state->num_point_results++] = input_point;
+            }
+            // Start drawing hover as soon as we stop the stroke.
+            milton_input.hover_point = input_point;
+            set_flag(input_flags, MiltonInputFlags_HOVERING);
+        }
+        else if ( platform_state->is_panning ) {
+            if (!platform_state->is_space_down) {
+                platform_state->is_panning = false;
+                platform_state->stopped_panning = true;
+            }
+        }
+        platform_state->is_pointer_down = false;
+    }
+
+    if (platform_state->stopped_panning && platform_state->receiving_tablet_input) {
+        platform_state->panning_fsm = PanningFSM_WAITING_POINTER;
+    }
+
+    if (platform_state->panning_fsm == PanningFSM_WAITING_POINTER) {
+        platform_state->num_point_results = 0;
+    }
+
     milton_input.flags = (MiltonInputFlags)input_flags;
+
     return milton_input;
 }
 
@@ -540,6 +591,7 @@ int milton_main(MiltonStartupFlags startup_flags)
 
         if ( platform_state.stopped_panning ) {
             milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+            platform_state.panning_fsm = PanningFSM_NOTHING;
         }
 
         // Handle system cursor

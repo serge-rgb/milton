@@ -1695,6 +1695,10 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
             }
             lay = lay->next;
         }
+
+        for (int wi=0; wi< milton_state->num_render_workers; ++wi) {
+            milton_state->working_stroke.visibility[wi] = true;
+        }
     }
 
     Rect* blocks = NULL;

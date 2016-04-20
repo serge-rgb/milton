@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "memory.h"
+#include "milton_configuration.h"
 #include "utils.h"
 
 typedef struct Brush

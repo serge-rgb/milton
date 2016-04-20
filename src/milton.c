@@ -891,6 +891,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->hover_point = input->hover_point;
         f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
         f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
+        set_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
     if ( is_user_drawing(milton_state) || milton_state->gui->active ) {
