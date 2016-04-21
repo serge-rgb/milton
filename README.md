@@ -1,10 +1,10 @@
-[![Stories in Ready](https://badge.waffle.io/serge-rgb/milton.png?label=ready&title=Ready)](https://waffle.io/serge-rgb/milton)
 ![MiltonLogo](http://i.imgur.com/hXxloIS.png)
 
-Milton is a modern paint app.
+[Milton](https://github.com/serge-rgb/milton) is a modern paint app.
 
 ### [Latest release (2016-01-23) pre-alpha 003](https://github.com/serge-rgb/milton/releases/tag/prealpha003)
 
+[![Stories in Ready](https://badge.waffle.io/serge-rgb/milton.png?label=ready&title=Ready)](https://waffle.io/serge-rgb/milton)
 [![Join the chat at https://gitter.im/serge-rgb/milton](https://badges.gitter.im/serge-rgb/milton.svg)](https://gitter.im/serge-rgb/milton?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ![Milton Paint girl](http://i.imgur.com/7UmXTlD.png)
