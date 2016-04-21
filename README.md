@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/serge-rgb/milton.png?label=ready&title=Ready)](https://waffle.io/serge-rgb/milton)
 ![MiltonLogo](http://i.imgur.com/hXxloIS.png)
 
 Milton is a modern paint app.
