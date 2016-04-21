@@ -77,8 +77,8 @@ typedef struct MiltonState
 
     i32 max_width;
     i32 max_height;
-    u8* raster_buffer;
-    u8* canvas_buffer;
+    u8* raster_buffer; // Final image goes here
+    u8* canvas_buffer; // Rasterized canvas stored here
 
     // The screen is rendered in blockgroups
     // Each blockgroup is rendered in blocks of size (block_width*block_width).

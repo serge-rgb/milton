@@ -128,7 +128,8 @@ typedef struct MiltonGui
 // GUI API
 //
 // Call from the main loop before milton_update
-void milton_gui_tick(MiltonInput* input, MiltonState* milton_state);
+typedef struct PlatformState PlatformState;
+void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state);
 
 
 //
@@ -144,10 +145,6 @@ void                gui_imgui_set_ungrabbed(MiltonGui* gui);
 
 void exporter_input(Exporter* exporter, MiltonInput* input);
 
-// When a selected color is used in a stroke, call this to update the color
-// button list.
-b32  gui_mark_color_used(MiltonGui* gui, v3f stroke_color);
-void gui_deactivate(MiltonGui* gui);
 
 // Color Picker API
 b32     picker_hits_wheel(ColorPicker* picker, v2f point);
@@ -155,6 +152,13 @@ float   picker_wheel_get_angle(ColorPicker* picker, v2f point);
 v3f     picker_hsv_from_point(ColorPicker* picker, v2f point);
 Rect    picker_get_bounds(ColorPicker* picker);
 Rect    get_bounds_for_picker_and_colors(ColorPicker* picker);
+// When a selected color is used in a stroke, call this to update the color
+// button list.
+b32  gui_mark_color_used(MiltonGui* gui, v3f stroke_color);
+void gui_deactivate(MiltonGui* gui);
+
+// Eye Dropper
+void eyedropper_input(MiltonGui* gui, u8* canvas_buffer, i32 w, i32 h, v2i point);
 
 #if defined(__cplusplus)
 }

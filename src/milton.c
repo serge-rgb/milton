@@ -898,7 +898,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
-    if ( input->input_count > 0 ){
+    if ( input->input_count > 0 ) {
         if ( current_mode_is_for_painting(milton_state) ) {
             if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
                 render_flags |= gui_process_input(milton_state, input);
@@ -911,6 +911,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
         exporter_input(&milton_state->gui->exporter, input);
+    }
+
+    if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
+        if ( check_flag(input->flag, MiltonInputFlags_END_STROKE) ) {
+            v2i point = input->points[input->input_count-1];
+            eyedropper_input(&milton_state->gui, milton_state->canvas_buffer, point);
+        }
     }
 
     if ( check_flag(input->flags, MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {

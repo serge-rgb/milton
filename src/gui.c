@@ -234,6 +234,16 @@ Rect picker_get_bounds(ColorPicker* picker)
     return picker_rect;
 }
 
+void eyedropper_input(MiltonGui* gui, u8* canvas_buffer, i32 w, i32 h, v2i point)
+{
+    v4f color = color_u32_to_v4f(canvas_buffer[point.y*w+point.x]);
+#if FAST_GAMMA
+    color.rgb = square_to_linear(color.rgb);
+#else
+    color.rgb = sRGB_to_linear(color.rgb);
+#endif
+    gui_mark_color_used(gui, color.rgb);
+}
 
 static void exporter_init(Exporter* exporter)
 {
@@ -454,3 +464,4 @@ void gui_deactivate(MiltonGui* gui)
     gui->active = false;
     gui->did_hit_button = false;
 }
+

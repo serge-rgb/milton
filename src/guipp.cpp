@@ -10,6 +10,7 @@
 #include "gui.h"
 #include "localization.h"
 #include "platform.h"
+#include "platform_common.h"
 #include "rasterizer.h"
 #include "persist.h"
 
@@ -19,7 +20,7 @@ static void exporter_init(Exporter* exporter)
     exporter->scale = 1;
 }
 
-void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
+void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
@@ -151,6 +152,12 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                 set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
                 input->mode_to_set = MiltonMode_ERASER;
             }
+            // Panning
+            char* move_str = platform_state->is_panning==false? LOC(move_canvas) : LOC(stop_moving_canvas);
+            if ( ImGui::MenuItem(move_str) ) {
+                platform_state->is_panning = !platform_state->is_panning;
+                platform_state->panning_locked = true;
+            }
             // Decrease / increase brush size
             ImGui::EndMenu();
         }
@@ -279,7 +286,6 @@ void milton_gui_tick(MiltonInput* input, MiltonState* milton_state)
                     milton_set_working_layer(milton_state, layer);
                 }
                 layer = layer->prev;
-
             }
             ImGui::EndChild();
             ImGui::SameLine();

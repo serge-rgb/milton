@@ -54,6 +54,8 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         [TXT_new_layer]                      = "New Layer",
         [TXT_rename]                         = "Rename",
         [TXT_move]                           = "Move",
+        [TXT_move_canvas]                    = "Move canvas",
+        [TXT_stop_moving_canvas]             = "Stop moving",
         [TXT_up]                             = "Up",
         [TXT_down]                           = "Down",
         [TXT_are_you_sure]                   = "Are you sure?",
@@ -115,6 +117,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
 #define C(s) "CMD+" s
 #endif
 
+// TODO: Translate keys...
 // Exclusively NULL pointers except for translated strings which represent a command.
 static char* g_command_abbreviations[TXT_Count] =
 {
@@ -127,6 +130,8 @@ static char* g_command_abbreviations[TXT_Count] =
     [TXT_redo]                  = C("Shift+Z"),
     [TXT_zoom_in]               = C(" +"),
     [TXT_zoom_out]              = C(" -"),
+    [TXT_move_canvas]           = "SPACE",
+    [TXT_stop_moving_canvas]    = "SPACE",
 };
 
 #undef C

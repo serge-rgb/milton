@@ -35,6 +35,8 @@ enum Texts
     TXT_new_layer                                   ,
     TXT_rename                                      ,
     TXT_move                                        ,
+    TXT_move_canvas                                 ,
+    TXT_stop_moving_canvas                          ,
     TXT_up                                          ,
     TXT_down                                        ,
     TXT_are_you_sure                                ,

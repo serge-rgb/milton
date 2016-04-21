@@ -11,8 +11,10 @@
 #include "history_debugger.h"
 #include "milton.h"
 #include "platform.h"
+#include "platform_common.h"
 #include "profiler.h"
 #include "utils.h"
+
 
 
 enum PanningFSM
@@ -21,51 +23,14 @@ enum PanningFSM
     PanningFSM_WAITING_POINTER,
 };
 
-struct PlatformState
-{
-    i32 width;
-    i32 height;
-
-    b32 is_ctrl_down;
-    b32 is_shift_down;
-    b32 is_space_down;
-    b32 is_pointer_down;
-
-    int panning_fsm;
-    b32 receiving_tablet_input;
-
-    b32 is_panning;
-    b32 was_exporting;
-    v2i pan_start;
-    v2i pan_point;
-
-    b32 should_quit;
-    u32 window_id;
-
-    i32 num_pressure_results;
-    i32 num_point_results;
-    b32 stopped_panning;
-
-    // SDL Cursors
-    SDL_Cursor* cursor_default;
-    SDL_Cursor* cursor_hand;
-    SDL_Cursor* cursor_crosshair;
-    SDL_Cursor* cursor_sizeall;
-};
-
 static b32 g_cursor_count = 0;
 static void cursor_hide()
 {
 #if defined(_WIN32)
-    /* CURSORINFO info; */
-    /* GetCursorInfo(&info); */
-    /* if ( info.flags & CURSOR_SHOWING ) { */
     while (g_cursor_count >= 0) {
         ShowCursor(FALSE);
         g_cursor_count--;
     }
-
-    /* } */
 #else
     // TODO: haven't checked if this works.
     int lvl = SDL_ShowCursor(-1);
@@ -79,17 +44,31 @@ static void cursor_hide()
 #endif
 }
 
+static void turn_panning_on(PlatformState* p)
+{
+    p->is_space_down = true;
+    p->is_panning = true;
+}
+
+static void turn_panning_off(PlatformState* p)
+{
+    if (p->is_panning) {
+        if (p->is_pointer_down) {
+            p->panning_fsm = PanningFSM_WAITING_POINTER;
+        } else {
+            p->is_panning = false;
+            p->stopped_panning = true;
+        }
+    }
+}
+
 static void cursor_set_and_show(SDL_Cursor* cursor)
 {
 #if defined(_WIN32)
-    /* CURSORINFO info; */
-    /* GetCursorInfo(&info); */
-    /* if ( !(info.flags & CURSOR_SHOWING) ) { */
     while (g_cursor_count < 0) {
         ShowCursor(TRUE);
         g_cursor_count++;
     }
-    /* } */
 #else
     int lvl = SDL_ShowCursor(-1);
     if ( lvl < 0 ) {
@@ -102,7 +81,6 @@ static void cursor_set_and_show(SDL_Cursor* cursor)
 
 MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 {
-
     MiltonInput milton_input = {};
 
     b32 pointer_up = false;
@@ -162,19 +140,14 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
             }
             if (er == EASYTAB_OK) {  // Event was handled.
-                if (platform_state->panning_fsm != PanningFSM_WAITING_POINTER &&
-                    EasyTab->Pressure > 0)
-                {
+                if ( platform_state->panning_fsm != PanningFSM_WAITING_POINTER && EasyTab->Pressure > 0 ) {
                     platform_state->is_pointer_down = true;
                     got_pen_input = true;
-                    if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
-                    {
-                        if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
-                        {
+                    if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
+                        if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS) {
                             milton_input.points[platform_state->num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
                         }
-                        if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
-                        {
+                        if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS) {
                             milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure;
                         }
                     }
@@ -274,8 +247,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 set_flag(input_flags, MiltonInputFlags_END_STROKE);
 
                 if (keycode == SDLK_SPACE) {
-                    platform_state->is_space_down = true;
-                    platform_state->is_panning = true;
+                    turn_panning_on(platform_state);
                     // Stahp
                 }
                 if ( platform_state->is_ctrl_down ) {  // Ctrl-KEY with no key repeats.
@@ -340,14 +312,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             SDL_Keycode keycode = event.key.keysym.sym;
 
             if ( keycode == SDLK_SPACE ) {
-                if (platform_state->is_panning) {
-                    if (platform_state->is_pointer_down) {
-                        platform_state->panning_fsm = PanningFSM_WAITING_POINTER;
-                    } else {
-                        platform_state->is_panning = false;
-                    platform_state->stopped_panning = true;
-                    }
-                }
+                turn_panning_off(platform_state);
                 platform_state->is_space_down = false;
             }
         } break;
@@ -412,7 +377,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             milton_input.hover_point = input_point;
             set_flag(input_flags, MiltonInputFlags_HOVERING);
         }
-        else if ( platform_state->is_panning ) {
+        else if ( platform_state->is_panning && !platform_state->panning_locked ) {
             if (!platform_state->is_space_down) {
                 platform_state->is_panning = false;
                 platform_state->stopped_panning = true;
@@ -636,10 +601,9 @@ int milton_main(MiltonStartupFlags startup_flags)
             platform_state.num_point_results = 0;
             platform_state.is_pointer_down = false;
             set_flag(input_flags, MiltonInputFlags_IMGUI_GRABBED_INPUT);
-            // TODO: Enable cursor
         }
 
-        milton_gui_tick(&milton_input, milton_state);
+        milton_imgui_tick(&milton_input, &platform_state, milton_state);
 
         // Clear pan delta if we are zooming
         if ( milton_input.scale != 0 ) {
