@@ -24,6 +24,7 @@ enum PanningFSM
 };
 
 static b32 g_cursor_count = 0;
+#if 0
 static void cursor_hide()
 {
 #if defined(_WIN32)
@@ -43,6 +44,7 @@ static void cursor_hide()
     }
 #endif
 }
+#endif
 
 static void turn_panning_on(PlatformState* p)
 {
@@ -159,6 +161,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 break;
             }
             if ( event.button.button == SDL_BUTTON_LEFT ) {
+                set_flag(input_flags, MiltonInputFlags_CLICK);
+                milton_input.click = { event.button.x, event.button.y };
                 platform_state->is_pointer_down = true;
                 if ( platform_state->is_panning ) {
                     platform_state->pan_start = { event.button.x, event.button.y };
@@ -263,6 +267,9 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         } else if (keycode == SDLK_b) {
                             set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                             milton_input.mode_to_set = MiltonMode_PEN;
+                        } else if (keycode == SDLK_i) {
+                            set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
+                            milton_input.mode_to_set = MiltonMode_EYEDROPPER;
                         } else if (keycode == SDLK_TAB) {
                             gui_toggle_visibility(milton_state->gui);
                         } else if (keycode == SDLK_F1) {
@@ -578,7 +585,7 @@ int milton_main(MiltonStartupFlags startup_flags)
         else if ( ImGui::GetIO().WantCaptureMouse ) {
             cursor_set_and_show(platform_state.cursor_default);
         } else {
-            cursor_hide();
+            //cursor_hide();
         }
 
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook

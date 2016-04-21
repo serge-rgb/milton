@@ -45,6 +45,7 @@ typedef enum MiltonMode
     MiltonMode_ERASER                 = 1 << 0,
     MiltonMode_PEN                    = 1 << 1,
     MiltonMode_EXPORTING              = 1 << 2,
+    MiltonMode_EYEDROPPER              = 1 << 3,
 } MiltonMode;
 
 enum
@@ -166,6 +167,7 @@ typedef enum MiltonInputFlags
     MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 8,
     MiltonInputFlags_SAVE_FILE           = 1 << 9,
     MiltonInputFlags_OPEN_FILE           = 1 << 10,
+    MiltonInputFlags_CLICK               = 1 << 11,
 } MiltonInputFlags;
 #if defined(__cplusplus)
 #define MiltonInputFlags int
@@ -180,6 +182,7 @@ typedef struct MiltonInput
     f32  pressures[MAX_INPUT_BUFFER_ELEMS];
     i32  input_count;
 
+    v2i  click;
     v2i  hover_point;
     i32  scale;
     v2i  pan_delta;

@@ -18,6 +18,8 @@ v4f blend_v4f(v4f dst, v4f src);
 
 v3f hsv_to_rgb(v3f hsv);
 
+v3f rgb_to_hsv(v3f rgb);
+
 v4f to_premultiplied(v3f rgb, f32 a);
 
 v3f linear_to_sRGB(v3f rgb);

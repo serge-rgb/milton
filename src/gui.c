@@ -5,6 +5,7 @@
 #include "gui.h"
 
 #include "milton.h"
+#include "utils.h"
 
 
 static Rect color_button_as_rect(const ColorButton* button)
@@ -17,9 +18,8 @@ static Rect color_button_as_rect(const ColorButton* button)
     return rect;
 }
 
-static void picker_update_wheel(ColorPicker* picker, v2f polar_point)
+static void picker_update_points(ColorPicker* picker, float angle)
 {
-    float angle = picker_wheel_get_angle(picker, polar_point);
     picker->info.hsv.h = radians_to_degrees(angle);
     // Update the triangle
     float radius = 0.9f * (picker->wheel_radius - picker->wheel_half_width);
@@ -39,6 +39,13 @@ static void picker_update_wheel(ColorPicker* picker, v2f polar_point)
         point = add2f(point, center);
         picker->info.a = point;
     }
+}
+
+
+static void picker_update_wheel(ColorPicker* picker, v2f polar_point)
+{
+    float angle = picker_wheel_get_angle(picker, polar_point);
+    picker_update_points(picker, angle);
 }
 
 static b32 picker_hits_triangle(ColorPicker* picker, v2f fpoint)
@@ -212,6 +219,24 @@ static void picker_init(ColorPicker* picker)
     picker->info.hsv = (v3f){ 0, 1, 1 };
 }
 
+static void picker_from_rgb(ColorPicker* picker, v3f rgb)
+{
+    v3f hsv = rgb_to_hsv(rgb);
+    picker->info.hsv = hsv;
+    float angle = hsv.h * 2*kPi;
+    picker_update_points(picker, angle);
+    /* // Barycentric to cartesian */
+    /* f32 a = hsv.s; */
+    /* f32 b = 1 - hsv.v; */
+    /* f32 c = 1 - a - b; */
+
+    /* v2f point = add2f(add2f((scale2f(picker->info.c,a)), scale2f(picker->info.b,b)), scale2f(picker->info.a,c)); */
+
+    /* // De-center */
+    /* point.x -= picker->center.x - picker->bounds_radius_px; */
+    /* point.y -= picker->center.y - picker->bounds_radius_px; */
+}
+
 static b32 picker_is_active(ColorPicker* picker)
 {
     b32 is_active = check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE) || check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE);
@@ -234,15 +259,10 @@ Rect picker_get_bounds(ColorPicker* picker)
     return picker_rect;
 }
 
-void eyedropper_input(MiltonGui* gui, u8* canvas_buffer, i32 w, i32 h, v2i point)
+void eyedropper_input(MiltonGui* gui, u32* canvas_buffer, i32 w, i32 h, v2i point)
 {
     v4f color = color_u32_to_v4f(canvas_buffer[point.y*w+point.x]);
-#if FAST_GAMMA
-    color.rgb = square_to_linear(color.rgb);
-#else
-    color.rgb = sRGB_to_linear(color.rgb);
-#endif
-    gui_mark_color_used(gui, color.rgb);
+    picker_from_rgb(&gui->picker, color.rgb);
 }
 
 static void exporter_init(Exporter* exporter)

@@ -158,7 +158,7 @@ b32  gui_mark_color_used(MiltonGui* gui, v3f stroke_color);
 void gui_deactivate(MiltonGui* gui);
 
 // Eye Dropper
-void eyedropper_input(MiltonGui* gui, u8* canvas_buffer, i32 w, i32 h, v2i point);
+void eyedropper_input(MiltonGui* gui, u32* canvas_buffer, i32 w, i32 h, v2i point);
 
 #if defined(__cplusplus)
 }

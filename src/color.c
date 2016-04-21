@@ -80,6 +80,41 @@ v3f clamp_255(v3f color)
     return result;
 }
 
+v3f rgb_to_hsv(v3f rgb)
+{
+    v3f hsv = {0};
+    float fmin = min( rgb.r, min(rgb.g, rgb.b) );
+    float fmax = max( rgb.r, max(rgb.g, rgb.b) );
+    hsv.v = fmax;
+    float chroma = fmax - fmin;
+
+    if (chroma != 0) {
+        if (rgb.r == fmax) {
+            hsv.h = (rgb.g - rgb.b) / chroma;
+            if (hsv.h < 0.0f) {
+                hsv.h += 6.0f;
+            }
+        } else if(rgb.g == fmax) {
+            hsv.h = ((rgb.b - rgb.r) / chroma) + 2.0f;
+        } else {
+            //rgb.b == fmax
+            hsv.h = ((rgb.r - rgb.g) / chroma) + 4.0f;
+        }
+
+        hsv.h *= 60.0f;
+        hsv.s = chroma / fmax;
+    }
+    hsv.v = fmax;
+
+    hsv.h /= 360;
+
+    for (int i=0;i<3;++i) {
+        if (hsv.d[i] < 0) hsv.d[i]=0;
+        if (hsv.d[i] > 1) hsv.d[i]=1;
+    }
+    return hsv;
+}
+
 v3f hsv_to_rgb(v3f hsv)
 {
     v3f rgb = { 0 };

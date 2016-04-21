@@ -164,8 +164,6 @@ static Brush milton_get_brush(MiltonState* milton_state)
         brush = milton_state->brushes[BrushEnum_PEN];
     } else if ( milton_state->current_mode == MiltonMode_ERASER ) {
         brush = milton_state->brushes[BrushEnum_ERASER];
-    } else {
-        assert (!"Picking brush in invalid mode");
     }
     return brush;
 }
@@ -363,8 +361,6 @@ i32 milton_get_brush_size(MiltonState* milton_state)
         brush_size = milton_state->brush_sizes[BrushEnum_PEN];
     } else if ( milton_state->current_mode == MiltonMode_ERASER ) {
         brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
-    } else {
-        assert (! "milton_get_brush_size called when in invalid mode.");
     }
     return brush_size;
 }
@@ -914,9 +910,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
-        if ( check_flag(input->flag, MiltonInputFlags_END_STROKE) ) {
-            v2i point = input->points[input->input_count-1];
-            eyedropper_input(&milton_state->gui, milton_state->canvas_buffer, point);
+        if ( check_flag(input->flags, MiltonInputFlags_CLICK) ) {
+            v2i point = input->click;
+            eyedropper_input(milton_state->gui, (u32*)milton_state->canvas_buffer,
+                             milton_state->view->screen_size.w,
+                             milton_state->view->screen_size.h,
+                             point);
+            render_flags |= MiltonRenderFlags_PICKER_UPDATED;
         }
     }
 
