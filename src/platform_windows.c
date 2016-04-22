@@ -194,13 +194,24 @@ void platform_fname_at_exe(char* fname, i32 len)
     mlt_free(tmp) ;
 }
 
-void platform_delete_file_at_config(char* fname)
+b32 platform_delete_file_at_config(char* fname, int error_tolerance)
 {
+    b32 ok = true;
     char* full = mlt_calloc(MAX_PATH, sizeof(*full));
     strncpy(full, fname, MAX_PATH);
     platform_fname_at_config(full, MAX_PATH);
-    DeleteFileA(full);
+    int r = DeleteFileA(full);
+    if (r == 0) {
+        ok = false;
+
+        int err = GetLastError();
+        if ( (error_tolerance&DeleteErrorTolerance_OK_NOT_EXIST) &&
+             err == ERROR_FILE_NOT_FOUND) {
+            ok = true;
+        }
+    }
     mlt_free(full);
+    return ok;
 }
 
 b32 platform_move_file(char* src, char* dest)

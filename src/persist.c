@@ -307,7 +307,11 @@ void milton_set_last_canvas_fname(char* last_fname)
 
 void milton_unset_last_canvas_fname()
 {
-    platform_delete_file_at_config("last_canvas_fname");
+    b32 del = platform_delete_file_at_config("last_canvas_fname",DeleteErrorTolerance_OK_NOT_EXIST);
+    if (del == false) {
+        platform_dialog("The default canvas could not be set to open the next time you run Milton. Please contact the developers.",
+                        "Important");
+    }
 }
 
 char* milton_get_last_canvas_fname()
@@ -324,6 +328,7 @@ char* milton_get_last_canvas_fname()
         } else {
             fread(full, sizeof(char), len, fd);
         }
+        fclose(fd);
     } else {
         mlt_free(full);
     }

@@ -84,7 +84,13 @@ void    platform_load_gl_func_pointers();
 
 void    platform_fname_at_exe(char* fname, i32 len);
 b32     platform_move_file(char* src, char* dest);
-void    platform_delete_file_at_config(char* fname);
+
+enum DeleteErrorTolerance
+{
+    DeleteErrorTolerance_NONE         = 1<<0,
+    DeleteErrorTolerance_OK_NOT_EXIST = 1<<1,
+};
+b32     platform_delete_file_at_config(char* fname, int error_tolerance);
 void    platform_fname_at_config(char* fname, i32 len);
 
 void    platform_open_help_link();

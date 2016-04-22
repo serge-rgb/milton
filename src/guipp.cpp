@@ -61,6 +61,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 b32 can_open = true;
                 if ( (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ) {
                     can_open = false;
+                    // TODO: translate
                     if (platform_dialog_yesno("The default canvas will be cleared, save the current work?", "Save?")) {
                         char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                         if (name) {
@@ -68,7 +69,11 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                             milton_log("Saving to %s\n", name);
                             milton_set_canvas_file(milton_state, name);
                             milton_save(milton_state);
-                            platform_delete_file_at_config("MiltonPersist.mlt");
+                            b32 del = platform_delete_file_at_config("MiltonPersist.mlt",DeleteErrorTolerance_OK_NOT_EXIST);
+                            if (del == false) {
+                                platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                                                "Info");
+                            }
                         }
                     } else {
                         can_open = true;
@@ -88,7 +93,11 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                     milton_log("Saving to %s\n", name);
                     milton_set_canvas_file(milton_state, name);
                     input->flags |= MiltonInputFlags_SAVE_FILE;
-                    platform_delete_file_at_config("MiltonPersist.mlt");  // Make sure that this is cleared for the future.
+                    b32 del = platform_delete_file_at_config("MiltonPersist.mlt", DeleteErrorTolerance_OK_NOT_EXIST);
+                    if (del == false) {
+                        platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                                        "Info");
+                    }
                 }
             }
             if ( ImGui::MenuItem(LOC(export_to_image_DOTS)) ) {
