@@ -440,6 +440,11 @@ void milton_init(MiltonState* milton_state)
 
     milton_state->working_stroke.points    = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, v2i);
     milton_state->working_stroke.pressures = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
+    // Make the working stroke visible
+    for (int wi=0; wi< milton_state->num_render_workers; ++wi) {
+        milton_state->working_stroke.visibility[wi] = true;
+    }
+
 
     milton_state->current_mode = MiltonMode_PEN;
     milton_state->last_mode = MiltonMode_NONE;

@@ -1508,7 +1508,7 @@ static void fill_stroke_masks_for_worker(Layer* layer, Rect rect, i32 worker_id)
         Stroke* strokes = layer->strokes;
 
         for (i32 stroke_i = 0;
-             stroke_i < sb_count(layer->strokes) && layer->strokes[stroke_i].visibility[worker_id];
+             stroke_i < sb_count(layer->strokes);
              ++stroke_i)
         {
             Stroke* stroke = strokes + stroke_i;
@@ -1675,27 +1675,27 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 {
     PROFILE_BEGIN(render_canvas);
 
+    if (0)
     {  // Clip strokes outside of raster_limits
         Layer* lay = milton_state->root_layer;
         while(lay) {
-            if ((lay->flags & LayerFlags_VISIBLE)) {
+            //if ((lay->flags & LayerFlags_VISIBLE)) {
                 for (i32 si=0; si < sb_count(lay->strokes); ++si)  {
                     Stroke* s = lay->strokes + si;
-                    for(int wi = 0; wi < milton_state->num_render_workers; ++wi) {
+                    //for(int wi = 0; wi < milton_state->num_render_workers; ++wi) {
+                    for(int wi = 0; wi < MAX_NUM_WORKERS; ++wi) {
                         Rect limits =
                         {
                             .top_left = raster_to_canvas(milton_state->view, raster_limits.top_left),
                             .bot_right = raster_to_canvas(milton_state->view, raster_limits.bot_right),
                         };
                         s->visibility[wi] = stroke_intersects_rect(s, limits);
+                        s->visibility[wi] = true;
+
                     }
                 }
-            }
+            //}
             lay = lay->next;
-        }
-
-        for (int wi=0; wi< milton_state->num_render_workers; ++wi) {
-            milton_state->working_stroke.visibility[wi] = true;
         }
     }
 

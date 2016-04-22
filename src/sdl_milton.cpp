@@ -16,7 +16,6 @@
 #include "utils.h"
 
 
-
 enum PanningFSM
 {
     PanningFSM_NOTHING,
@@ -536,10 +535,10 @@ int milton_main(MiltonStartupFlags startup_flags)
     }
     // Initalize system cursors
     {
-        platform_state.cursor_default = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-        platform_state.cursor_hand = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+        platform_state.cursor_default   = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+        platform_state.cursor_hand      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
         platform_state.cursor_crosshair = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-        platform_state.cursor_sizeall = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+        platform_state.cursor_sizeall   = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
 
         cursor_set_and_show(platform_state.cursor_default);
     }
@@ -588,7 +587,7 @@ int milton_main(MiltonStartupFlags startup_flags)
         }
         else if ( ImGui::GetIO().WantCaptureMouse ) {
             cursor_set_and_show(platform_state.cursor_default);
-        } else {
+        } else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
             cursor_hide();
         }
 
