@@ -609,14 +609,11 @@ int milton_main(MiltonStartupFlags startup_flags)
             int x = 0;
             int y = 0;
             SDL_GetMouseState(&x, &y);
-            milton_log("%d, %d\n", x, y);
-            if (
-                 x > milton_state->view->screen_size.w - pad   ||
+            if ( x > milton_state->view->screen_size.w - pad   ||
                  x < pad                                       ||
                  y > milton_state->view->screen_size.h - pad   ||
                  y < pad
-               )
-            {
+               ) {
                 cursor_show();
             }
         }

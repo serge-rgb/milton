@@ -721,6 +721,7 @@ void milton_delete_working_layer(MiltonState* milton_state)
         else
             milton_state->working_layer = layer->prev;
     }
+    milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
 }
 
 

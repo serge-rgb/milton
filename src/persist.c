@@ -169,7 +169,6 @@ void milton_load(MiltonState* milton_state)
         milton_state->view->working_layer_id = saved_working_layer_id;
         if ( ok ) { ok = fread_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
 
-
         // Buttons
         if ( ok ) {
             i32 button_count = 0;
