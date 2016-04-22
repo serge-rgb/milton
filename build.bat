@@ -3,7 +3,7 @@
 ::
 :: - 1: Optimized build.
 :: - 0: Debug build.
-set mlt_opt_level=0
+set mlt_opt_level=1
 
 IF NOT EXIST build mkdir build
 
@@ -17,6 +17,7 @@ COPY third_party\SDL2-2.0.3\VisualC\SDL\X64\Debug\SDL2.dll third_party\bin\SDL2.
 :SDL_OK
 
 IF NOT EXIST build\SDL2.dll copy third_party\bin\SDL2.dll build\SDL2.dll
+IF NOT EXIST build\milton_icon.ico copy milton_icon.ico build\milton_icon.ico
 ::IF NOT EXIST build\carlito.ttf
 
 pushd build
@@ -86,6 +87,9 @@ goto fail
 
 :end_lib_compilation
 
+copy ..\Milton.rc Milton.rc
+rc /r Milton.rc
+
 echo    [BUILD] -- Dependencies built!
 
 echo    [BUILD] --   To rebuild them, call DEL build\SKIP_LIB_COMPILATION
@@ -106,12 +110,10 @@ cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %m
 if %errorlevel% neq 0 goto fail
 
 :: 4302 4311 truncation in SetClassLongW
-cl %mlt_opt_flags% %mlt_compiler_flags% ^
-/wd4302 /wd4311 ^
-%mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
+cl %mlt_opt_flags% %mlt_compiler_flags%  /wd4302 /wd4311 %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_cpp.cpp
 if %errorlevel% neq 0 goto fail
-link milton_unity_build_c.obj milton_unity_build_cpp.obj /OUT:Milton.exe %mlt_link_flags% %header_links%
+link milton_unity_build_c.obj milton_unity_build_cpp.obj /OUT:Milton.exe %mlt_link_flags% %header_links% Milton.res
 if %errorlevel% neq 0 goto fail
 
 :ok

@@ -32,6 +32,7 @@ static char* g_localized_strings[Language_COUNT][TXT_Count] =
         [TXT_canvas]                         = "Canvas",
         [TXT_set_background_color]           = "Set Background Color",
         [TXT_help]                           = "Help",
+        [TXT_help_me]                        = "Help me!",
         [TXT_brushes]                        = "Brushes",
         [TXT_opacity]                        = "Opacity",
         [TXT_brush_size]                     = "Brush size",

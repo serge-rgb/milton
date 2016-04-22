@@ -9,7 +9,7 @@ enum Texts
     TXT_file                                        ,
     TXT_open_milton_canvas                          ,
     TXT_export_to_image_DOTS                        ,
-    TXT_quit                                        ,
+    TXT_quit                                       ,
     TXT_canvas                                      ,
     TXT_set_background_color                        ,
     TXT_help                                        ,
@@ -33,6 +33,7 @@ enum Texts
     TXT_toggle_gui_visibility                       ,
     TXT_layers                                      ,
     // ==== TRANSLATION COMPLETED UNTIL THIS POINT .
+    TXT_help_me                                     ,
     TXT_new_layer                                   ,
     TXT_rename                                      ,
     TXT_move                                        ,

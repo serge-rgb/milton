@@ -8,7 +8,8 @@ To-Do
     - single point strokes sometimes self-destruct
     - dragging window -> stroke input (!!!)
 
-
+- Build system
+    - Move to Tundra instead of having a unity build.bat & a Visual Studio solution.
 - Application
     - Port to Windows API (support non-Wacom devices)
     - Export

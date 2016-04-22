@@ -181,7 +181,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu(LOC(help)) ) {
-            if ( ImGui::MenuItem(LOC(toggle_gui_visibility)) ) {
+            if ( ImGui::MenuItem(LOC(help_me)) ) {
                 platform_open_help_link();
             }
             ImGui::EndMenu();

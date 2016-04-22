@@ -451,20 +451,18 @@ int milton_main(MiltonStartupFlags startup_flags)
     }
 
 #if defined(_WIN32)
-    //platform_setup_icon(window);
     {
-//        WindowClass.hIcon = (HICON)LoadImage(0, IcoPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
-
         int si = sizeof(HICON);
         HINSTANCE handle = GetModuleHandle(nullptr);
-        HICON icon //= //LoadIcon(handle, "IDI_MAIN_ICON");
-                    = (HICON)LoadImageA(0, "milton.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+        char icopath[MAX_PATH] = "milton_icon.ico";
+        platform_fname_at_exe(icopath, MAX_PATH);
+        HICON icon = (HICON)LoadImageA(0, icopath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
         if(icon != NULL) {
             SDL_SysWMinfo wminfo;
             SDL_VERSION(&wminfo.version);
             if(SDL_GetWindowWMInfo(window, &wminfo)) {
                 HWND hwnd = wminfo.info.win.window;
-                SetClassLongA(hwnd, (LONG)GCL_HICON, reinterpret_cast<LONG>(icon));
+                SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
             }
         }
     }
