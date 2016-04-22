@@ -44,6 +44,22 @@ static void cursor_hide()
 #endif
 }
 
+static void cursor_show()
+{
+#if defined(_WIN32)
+    while (g_cursor_count < 0) {
+        ShowCursor(TRUE);
+        g_cursor_count++;
+    }
+#else
+    int lvl = SDL_ShowCursor(-1);
+    if ( lvl < 0 ) {
+        assert ( lvl == -1 );
+        SDL_ShowCursor(1);
+    }
+#endif
+}
+
 static void turn_panning_on(PlatformState* p)
 {
     p->is_space_down = true;
@@ -64,18 +80,7 @@ static void turn_panning_off(PlatformState* p)
 
 static void cursor_set_and_show(SDL_Cursor* cursor)
 {
-#if defined(_WIN32)
-    while (g_cursor_count < 0) {
-        ShowCursor(TRUE);
-        g_cursor_count++;
-    }
-#else
-    int lvl = SDL_ShowCursor(-1);
-    if ( lvl < 0 ) {
-        assert ( lvl == -1 );
-        SDL_ShowCursor(1);
-    }
-#endif
+    cursor_show();
     SDL_SetCursor(cursor);
 }
 
@@ -329,8 +334,15 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             }
             switch ( event.window.event ) {
                 // Just handle every event that changes the window size.
+            case SDL_WINDOWEVENT_MOVED:
+                platform_state->num_point_results = 0;
+                platform_state->num_pressure_results = 0;
+                platform_state->is_pointer_down = false;
+                break;
             case SDL_WINDOWEVENT_RESIZED:
             case SDL_WINDOWEVENT_SIZE_CHANGED:
+            case SDL_WINDOWEVENT_MINIMIZED:
+            case SDL_WINDOWEVENT_MAXIMIZED:
                 platform_state->width = event.window.data1;
                 platform_state->height = event.window.data2;
                 set_flag(input_flags, MiltonInputFlags_FULL_REFRESH);
@@ -343,6 +355,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 if ( platform_state->is_pointer_down ) {
                     pointer_up = true;
                 }
+                cursor_show();
                 break;
                 // --- A couple of events we might want to catch later...
             case SDL_WINDOWEVENT_ENTER:
@@ -587,8 +600,25 @@ int milton_main(MiltonStartupFlags startup_flags)
         }
         else if ( ImGui::GetIO().WantCaptureMouse ) {
             cursor_set_and_show(platform_state.cursor_default);
-        } else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
+        }
+        else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
             cursor_hide();
+        }
+        { // Show resize icon
+            int pad = 20;
+            int x = 0;
+            int y = 0;
+            SDL_GetMouseState(&x, &y);
+            milton_log("%d, %d\n", x, y);
+            if (
+                 x > milton_state->view->screen_size.w - pad   ||
+                 x < pad                                       ||
+                 y > milton_state->view->screen_size.h - pad   ||
+                 y < pad
+               )
+            {
+                cursor_show();
+            }
         }
 
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook

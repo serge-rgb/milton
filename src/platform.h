@@ -87,6 +87,8 @@ b32     platform_move_file(char* src, char* dest);
 void    platform_delete_file_at_config(char* fname);
 void    platform_fname_at_config(char* fname, i32 len);
 
+void    platform_open_help_link();
+
 
 #if defined(_WIN32)
 #define platform_milton_log win32_log

@@ -137,7 +137,7 @@ static char* g_command_abbreviations[TXT_Count] =
     [TXT_stop_moving_canvas]    = "SPACE",
     [TXT_decrease_brush_size]   = C("]"),
     [TXT_increase_brush_size]   = C("["),
-    [TXT_eye_dropper]           = "I",
+    [TXT_eye_dropper]           = "i",
     [TXT_switch_to_brush]       = "B",
     [TXT_switch_to_eraser]      = "E",
 };
