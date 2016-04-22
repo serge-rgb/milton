@@ -15,19 +15,6 @@
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
-static u32 word_swap_memory_order(u32 word)
-{
-    u8 llo = (u8) (word & 0x000000ff);
-    u8 lhi = (u8)((word & 0x0000ff00) >> 8);
-    u8 hlo = (u8)((word & 0x00ff0000) >> 16);
-    u8 hhi = (u8)((word & 0xff000000) >> 24);
-    return
-            (u32)(llo) << 24 |
-            (u32)(lhi) << 16 |
-            (u32)(hlo) << 8  |
-            (u32)(hhi);
-}
-
 // Forward decl.
 static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
 
@@ -108,8 +95,6 @@ void milton_load(MiltonState* milton_state)
         milton_state->view->screen_size = (v2i){0};
         // The process of loading changes state. working_layer_id changes when creating layers.
         i32 saved_working_layer_id = milton_state->view->working_layer_id;
-
-        milton_magic = word_swap_memory_order(milton_magic);
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
             milton_die_gracefully("MLT file could not be loaded. Possible endianness mismatch.");
@@ -224,7 +209,7 @@ void milton_save(MiltonState* milton_state)
     b32 ok = true;
 
     if ( fd ) {
-        u32 milton_magic = word_swap_memory_order(MILTON_MAGIC_NUMBER);
+        u32 milton_magic = MILTON_MAGIC_NUMBER;
 
         fwrite(&milton_magic, sizeof(u32), 1, fd);
 

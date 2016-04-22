@@ -107,7 +107,6 @@ typedef struct MiltonState
     // - History data  (stretchy buffers)
     HistoryElement* history;
     HistoryElement* redo_stack;
-    // TODO: implement undo for layer delete (?)
     //Layer**         layer_graveyard;
     Stroke*         stroke_graveyard;
 

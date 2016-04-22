@@ -63,11 +63,9 @@ void milton_fatal(char* message)
     exit(EXIT_FAILURE);
 }
 
-// TODO: Show a message box, and then die
 void milton_die_gracefully(char* message)
 {
-    milton_log("*** [FATAL] ***: \n\t");
-    puts(message);
+    platform_dialog(message, "Fatal Error");
     exit(EXIT_FAILURE);
 }
 

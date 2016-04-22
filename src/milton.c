@@ -554,9 +554,12 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
         milton_state->raster_buffer      = (u8*)mlt_calloc(1, buffer_size);
         milton_state->canvas_buffer      = (u8*)mlt_calloc(1, buffer_size);
 
-        // TODO: handle this failure gracefully.
-        assert(milton_state->raster_buffer);
-        assert(milton_state->canvas_buffer);
+        if (milton_state->raster_buffer == NULL) {
+            milton_die_gracefully("Could not allocate enough memory for raster buffer.");
+        }
+        if (milton_state->canvas_buffer == NULL) {
+            milton_die_gracefully("Could not allocate enough memory for canvas buffer.");
+        }
     }
 
     if ( new_screen_size.w < milton_state->max_width &&
@@ -712,10 +715,6 @@ void milton_delete_working_layer(MiltonState* milton_state)
         if ( layer->prev )
             layer->prev->next = layer->next;
 
-        /* sb_push(milton_state->layer_graveyard, layer); */
-        /* HistoryElement h = { HistoryElement_LAYER_DELETE, -1 }; */
-        /* sb_push(milton_state->history, h); */
-
         if (layer->next)
             milton_state->working_layer = layer->next;
         else
@@ -727,7 +726,6 @@ void milton_delete_working_layer(MiltonState* milton_state)
 
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
-    // TODO: Save redo point?
     b32 should_save =
             (check_flag(input->flags, MiltonInputFlags_OPEN_FILE)) ||
             (check_flag(input->flags, MiltonInputFlags_SAVE_FILE)) ||

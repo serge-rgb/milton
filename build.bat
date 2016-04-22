@@ -3,7 +3,7 @@
 ::
 :: - 1: Optimized build.
 :: - 0: Debug build.
-set mlt_opt_level=1
+set mlt_opt_level=0
 
 IF NOT EXIST build mkdir build
 
@@ -68,6 +68,7 @@ echo    [BUILD] -- Building dependencies...
 
 echo    [BUILD] -- ... Release
 cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.c
+
 cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl_cpp.cpp
 if %errorlevel% NEQ 0 goto error_lib_compilation
 lib headerlibs_impl.obj headerlibs_impl_cpp.obj /out:headerlibs_impl_opt.lib
@@ -103,7 +104,11 @@ if %mlt_opt_level% == 1 set header_links=headerlibs_impl_opt.lib
 cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_c.c
 if %errorlevel% neq 0 goto fail
-cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
+
+:: 4302 4311 truncation in SetClassLongW
+cl %mlt_opt_flags% %mlt_compiler_flags% ^
+/wd4302 /wd4311 ^
+%mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_cpp.cpp
 if %errorlevel% neq 0 goto fail
 link milton_unity_build_c.obj milton_unity_build_cpp.obj /OUT:Milton.exe %mlt_link_flags% %header_links%

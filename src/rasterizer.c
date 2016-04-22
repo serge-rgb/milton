@@ -1802,7 +1802,6 @@ static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* v
             u32 picker_i = (u32) (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
 
 
-            // TODO: Premultiplied?
             v4f dest = color_u32_to_v4f(picker->pixels[picker_i]);
 
             v4f result = blend_v4f(dest, background_color);
@@ -1956,7 +1955,6 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
                       (v4f){0});
             gui->preview_pos_prev = gui->preview_pos;
             gui->preview_pos = (v2i){ -1, -1 };
-            // TODO: Request redraw rect here.
         }
     }
 

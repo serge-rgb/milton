@@ -341,8 +341,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 break;
             case SDL_WINDOWEVENT_RESIZED:
             case SDL_WINDOWEVENT_SIZE_CHANGED:
-            case SDL_WINDOWEVENT_MINIMIZED:
-            case SDL_WINDOWEVENT_MAXIMIZED:
                 platform_state->width = event.window.data1;
                 platform_state->height = event.window.data2;
                 set_flag(input_flags, MiltonInputFlags_FULL_REFRESH);
@@ -451,6 +449,27 @@ int milton_main(MiltonStartupFlags startup_flags)
         milton_log("[ERROR] -- Exiting. SDL could not create window\n");
         exit(EXIT_FAILURE);
     }
+
+#if defined(_WIN32)
+    //platform_setup_icon(window);
+    {
+//        WindowClass.hIcon = (HICON)LoadImage(0, IcoPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+
+        int si = sizeof(HICON);
+        HINSTANCE handle = GetModuleHandle(nullptr);
+        HICON icon //= //LoadIcon(handle, "IDI_MAIN_ICON");
+                    = (HICON)LoadImageA(0, "milton.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+        if(icon != NULL) {
+            SDL_SysWMinfo wminfo;
+            SDL_VERSION(&wminfo.version);
+            if(SDL_GetWindowWMInfo(window, &wminfo)) {
+                HWND hwnd = wminfo.info.win.window;
+                SetClassLongA(hwnd, (LONG)GCL_HICON, reinterpret_cast<LONG>(icon));
+            }
+        }
+    }
+#endif
+
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
     if (!gl_context) {
@@ -464,8 +483,8 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     // ==== Initialize milton
     //  Total (static) memory requirement for Milton
-    // TODO: Calculate how much is the arena using before shipping.
-    size_t sz_root_arena = (size_t)1 * 1024 * 1024 * 1024;
+    //size_t sz_root_arena = (size_t)1 * 1024 * 1024 * 1024;
+    size_t sz_root_arena = (size_t)10 * 1024 * 1024;  // 10 MB is roughly the non-dynamic required memory for Milton
 
     // Using platform_allocate because stdlib calloc will be really slow.
     void* big_chunk_of_memory = platform_allocate(sz_root_arena);

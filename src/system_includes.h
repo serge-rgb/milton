@@ -18,6 +18,7 @@
 /* #define WIN32_LEAN_AND_MEAN */
 #include <windows.h>
 #include <windowsx.h>
+#define GCL_HICON -14
 #endif
 
 // SDL
