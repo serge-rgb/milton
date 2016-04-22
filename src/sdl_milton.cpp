@@ -20,7 +20,7 @@
 enum PanningFSM
 {
     PanningFSM_NOTHING,
-    PanningFSM_WAITING_POINTER,
+    PanningFSM_MOUSE_PANNING,
 };
 
 static b32 g_cursor_count = 0;
@@ -55,7 +55,7 @@ static void turn_panning_off(PlatformState* p)
 {
     if (p->is_panning) {
         if (p->is_pointer_down) {
-            p->panning_fsm = PanningFSM_WAITING_POINTER;
+            p->panning_fsm = PanningFSM_MOUSE_PANNING;
         } else {
             p->is_panning = false;
             p->stopped_panning = true;
@@ -141,7 +141,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
             }
             if (er == EASYTAB_OK) {  // Event was handled.
-                if ( platform_state->panning_fsm != PanningFSM_WAITING_POINTER && EasyTab->Pressure > 0 ) {
+                if ( platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && EasyTab->Pressure > 0 ) {
                     platform_state->is_pointer_down = true;
                     got_pen_input = true;
                     if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
@@ -368,7 +368,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
     b32 lost_tablet_input = got_pen_input == false && platform_state->receiving_tablet_input;
     if ( lost_tablet_input ) {
         pointer_up  = true;
-        platform_state->is_pointer_down = false;
     }
     platform_state->receiving_tablet_input = got_pen_input;
 
@@ -395,10 +394,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
     }
 
     if (platform_state->stopped_panning && platform_state->receiving_tablet_input) {
-        platform_state->panning_fsm = PanningFSM_WAITING_POINTER;
+        platform_state->panning_fsm = PanningFSM_MOUSE_PANNING;  // keep panning until we stop receiving input.
     }
 
-    if (platform_state->panning_fsm == PanningFSM_WAITING_POINTER) {
+    if (platform_state->panning_fsm == PanningFSM_MOUSE_PANNING) {
         platform_state->num_point_results = 0;
     }
 

@@ -9,16 +9,16 @@
 
 enum Languages
 {
-    LOC_Foobar,
-    LOC_English,
-    LOC_Spanish,
+    Language_FOOBAR,
+    Language_ENGLISH,
+    Language_SPANISH,
 
-    LOC_Count,
+    Language_COUNT,
 };
 
-static int g_chosen_language = LOC_English;
+static int g_chosen_language = Language_ENGLISH;
 
-static char* g_localized_strings[LOC_Count][TXT_Count] =
+static char* g_localized_strings[Language_COUNT][TXT_Count] =
 {
     { // Foo
         0
@@ -149,7 +149,7 @@ static char* g_baked_strings_with_commands[TXT_Count];
 char* get_localized_string(int id)
 {
     // TODO: Grab this from system
-    i32 loc = LOC_English;
+    i32 loc = Language_ENGLISH;
 
     char* result = g_localized_strings[loc][id];
     if ( result ) {

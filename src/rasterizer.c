@@ -1501,14 +1501,12 @@ static b32 stroke_intersects_rect(Stroke* stroke, Rect rect)
 static void fill_stroke_masks_for_worker(Layer* layer, Rect rect, i32 worker_id)
 {
     while ( layer ) {
-        if ( !(layer->flags & LayerFlags_VISIBLE) )
-        {
+        if ( !(layer->flags & LayerFlags_VISIBLE) ) {
             layer = layer->next;
             continue;
         }
         Stroke* strokes = layer->strokes;
 
-        // TODO: pre-clip strokes
         for (i32 stroke_i = 0;
              stroke_i < sb_count(layer->strokes) && layer->strokes[stroke_i].visibility[worker_id];
              ++stroke_i)

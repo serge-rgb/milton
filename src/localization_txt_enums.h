@@ -3,6 +3,7 @@
 
 
 // Re-ordering is OK.
+// See LOC macro.
 enum Texts
 {
     TXT_file                                        ,

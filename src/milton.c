@@ -498,7 +498,11 @@ void milton_init(MiltonState* milton_state)
     for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
         {
-            *params = (WorkerParams){ milton_state, i };
+            *params = (WorkerParams)
+            {
+                milton_state,
+                .worker_id = i
+            };
         }
         assert (milton_state->render_worker_arenas[i].ptr == NULL);
         u8* worker_memory = (u8*)mlt_calloc(1, milton_state->worker_memory_size);
