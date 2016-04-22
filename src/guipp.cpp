@@ -135,7 +135,16 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
                 input->mode_to_set = MiltonMode_PEN;
             }
-            if ( ImGui::BeginMenu(LOC(brush_opacity)) ) {
+            if ( ImGui::BeginMenu(LOC(brush_options)) ) {
+                // Decrease / increase brush size
+                if ( ImGui::MenuItem(LOC(decrease_brush_size)) ) {
+                    for(int i=0;i<5;++i) milton_decrease_brush_size(milton_state);
+                }
+                if ( ImGui::MenuItem(LOC(increase_brush_size)) ) {
+                    for(int i=0;i<5;++i) milton_increase_brush_size(milton_state);
+                }
+                // Opacity shortcuts
+
                 f32 opacities[] = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f };
                 for ( i32 i = 0; i < array_count(opacities); ++i ) {
                     char entry[128] = {0};
@@ -158,7 +167,6 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 platform_state->is_panning = !platform_state->is_panning;
                 platform_state->panning_locked = true;
             }
-            // Decrease / increase brush size
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu(LOC(view)) ) {

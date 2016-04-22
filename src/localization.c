@@ -72,10 +72,12 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         [TXT_eraser]                         = "Eraser",
         [TXT_zoom_in]                        = "Zoom In",
         [TXT_zoom_out]                       = "Zoom Out",
-        [TXT_brush_opacity]                  = "Brush Opacity",
+        [TXT_brush_options]                  = "Brush Options",
         [TXT_set_opacity_to]                 = "Set brush opacity to",
         [TXT_save_milton_canvas_as_DOTS]     = "Save Milton Canvas As...",
         [TXT_new_milton_canvas]              = "New Milton Canvas",
+        [TXT_decrease_brush_size]            = "Decrease Brush Size",
+        [TXT_increase_brush_size]            = "Increase Brush Size",
     },
 
     { // Spanish
@@ -132,6 +134,8 @@ static char* g_command_abbreviations[TXT_Count] =
     [TXT_zoom_out]              = C(" -"),
     [TXT_move_canvas]           = "SPACE",
     [TXT_stop_moving_canvas]    = "SPACE",
+    [TXT_decrease_brush_size]   = C("]"),
+    [TXT_increase_brush_size]   = C("["),
 };
 
 #undef C

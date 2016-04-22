@@ -31,7 +31,7 @@ enum Texts
     TXT_view                                        ,
     TXT_toggle_gui_visibility                       ,
     TXT_layers                                      ,
-   // ==== TRANSLATION COMPLETED UNTIL THIS POINT .
+    // ==== TRANSLATION COMPLETED UNTIL THIS POINT .
     TXT_new_layer                                   ,
     TXT_rename                                      ,
     TXT_move                                        ,
@@ -53,10 +53,12 @@ enum Texts
     TXT_eraser                                      ,
     TXT_zoom_in                                     ,
     TXT_zoom_out                                    ,
-    TXT_brush_opacity                               ,
+    TXT_brush_options                               ,
     TXT_set_opacity_to                              ,
     TXT_save_milton_canvas_as_DOTS                  ,
     TXT_new_milton_canvas                           ,
+    TXT_decrease_brush_size                         ,
+    TXT_increase_brush_size                         ,
 
     TXT_Count,
 };
