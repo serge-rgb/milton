@@ -167,6 +167,11 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 platform_state->is_panning = !platform_state->is_panning;
                 platform_state->panning_locked = true;
             }
+            // Eye Dropper
+            if ( ImGui::MenuItem(LOC(eye_dropper)) ) {
+                set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
+                input->mode_to_set = MiltonMode_EYEDROPPER;
+            }
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu(LOC(view)) ) {
@@ -193,15 +198,18 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
     // GUI Windows ----
     // TODO (IMPORTANT): Add a "reset UI" option? widgets might get outside the viewport without a way to get back.
 
-    if ( milton_state->gui->visible ) {
+    b32 should_show_windows = milton_state->current_mode != MiltonMode_EYEDROPPER &&
+                                milton_state->current_mode != MiltonMode_EXPORTING;
+
+    if ( milton_state->gui->visible && should_show_windows ) {
 
         /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
         /* ImGuiSetCond_FirstUseEver */
 
         const f32 brush_windwow_height = 109;
-        ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_Always);
-        ImGui::SetNextWindowSize({271, brush_windwow_height}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
+        ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize({271, brush_windwow_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
         b32 show_brush_window = (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER);
 
@@ -271,7 +279,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
 
 
         // Layer window
-        ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiSetCond_FirstUseEver);
         if ( ImGui::Begin(LOC(layers)) ) {
             CanvasView* view = milton_state->view;
@@ -394,8 +402,8 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         bool opened = true;
         b32 reset = false;
 
-        ImGui::SetNextWindowPos(ImVec2(100, 30), ImGuiSetCond_Once);
-        ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_Always);  // We don't want to set it *every* time, the user might have preferences
+        ImGui::SetNextWindowPos(ImVec2(100, 30), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
         // Export window
         if ( ImGui::Begin(LOC(export_DOTS), &opened, ImGuiWindowFlags_NoCollapse) ) {

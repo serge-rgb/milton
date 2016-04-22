@@ -24,7 +24,7 @@ enum PanningFSM
 };
 
 static b32 g_cursor_count = 0;
-#if 0
+
 static void cursor_hide()
 {
 #if defined(_WIN32)
@@ -44,7 +44,6 @@ static void cursor_hide()
     }
 #endif
 }
-#endif
 
 static void turn_panning_on(PlatformState* p)
 {
@@ -161,8 +160,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 break;
             }
             if ( event.button.button == SDL_BUTTON_LEFT ) {
-                set_flag(input_flags, MiltonInputFlags_CLICK);
-                milton_input.click = { event.button.x, event.button.y };
+                if ( !ImGui::GetIO().WantCaptureMouse ) {
+                    set_flag(input_flags, MiltonInputFlags_CLICK);
+                    milton_input.click = { event.button.x, event.button.y };
+                }
                 platform_state->is_pointer_down = true;
                 if ( platform_state->is_panning ) {
                     platform_state->pan_start = { event.button.x, event.button.y };
@@ -450,11 +451,6 @@ int milton_main(MiltonStartupFlags startup_flags)
     milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-    // Init ImGUI
-    //ImGui_ImplSdl_Init(window);
-    ImGui_ImplSdlGL3_Init(window);
-
-
     // ==== Initialize milton
     //  Total (static) memory requirement for Milton
     // TODO: Calculate how much is the arena using before shipping.
@@ -529,6 +525,11 @@ int milton_main(MiltonStartupFlags startup_flags)
                      return(interval);
                  }, NULL);
 
+    // Init ImGUI
+    //ImGui_ImplSdl_Init(window);
+    ImGui_ImplSdlGL3_Init(window);
+
+
     // ImGui setup
     {
         ImGuiIO& io = ImGui::GetIO();
@@ -566,7 +567,7 @@ int milton_main(MiltonStartupFlags startup_flags)
             platform_state.panning_fsm = PanningFSM_NOTHING;
         }
 
-        // Handle system cursor
+        // Handle system cursor and platform state related to current_mode
         if ( platform_state.is_panning ) {
             cursor_set_and_show(platform_state.cursor_sizeall);
         }
@@ -582,10 +583,14 @@ int milton_main(MiltonStartupFlags startup_flags)
             cursor_set_and_show(platform_state.cursor_default);
             platform_state.was_exporting = false;
         }
+        else if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
+            cursor_set_and_show(platform_state.cursor_crosshair);
+            platform_state.is_pointer_down = false;
+        }
         else if ( ImGui::GetIO().WantCaptureMouse ) {
             cursor_set_and_show(platform_state.cursor_default);
         } else {
-            //cursor_hide();
+            cursor_hide();
         }
 
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook

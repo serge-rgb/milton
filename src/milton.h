@@ -150,6 +150,7 @@ enum MiltonStateFlags
     MiltonStateFlags_WORKER_NEEDS_MEMORY    = 1<<3,
     MiltonStateFlags_NEW_CANVAS             = 1<<4,
     MiltonStateFlags_DEFAULT_CANVAS         = 1<<5,
+    MiltonStateFlags_IGNORE_NEXT_STROKE     = 1<<6,
 };
 
 typedef enum MiltonInputFlags

@@ -78,6 +78,7 @@ static char* g_localized_strings[LOC_Count][TXT_Count] =
         [TXT_new_milton_canvas]              = "New Milton Canvas",
         [TXT_decrease_brush_size]            = "Decrease Brush Size",
         [TXT_increase_brush_size]            = "Increase Brush Size",
+        [TXT_eye_dropper]                    = "Eye Dropper",
     },
 
     { // Spanish
@@ -136,6 +137,7 @@ static char* g_command_abbreviations[TXT_Count] =
     [TXT_stop_moving_canvas]    = "SPACE",
     [TXT_decrease_brush_size]   = C("]"),
     [TXT_increase_brush_size]   = C("["),
+    [TXT_eye_dropper]           = "i",
 };
 
 #undef C

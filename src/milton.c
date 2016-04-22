@@ -227,8 +227,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
         f32 pressure = NO_PRESSURE_INFO;
 
-        if (input->pressures[input_i] != NO_PRESSURE_INFO)
-        {
+        if (input->pressures[input_i] != NO_PRESSURE_INFO) {
             f32 pressure_min = 0.20f;
             pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
             milton_state->flags |= MiltonStateFlags_STROKE_IS_FROM_TABLET;
@@ -909,17 +908,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         exporter_input(&milton_state->gui->exporter, input);
     }
 
-    if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
-        if ( check_flag(input->flags, MiltonInputFlags_CLICK) ) {
-            v2i point = input->click;
-            eyedropper_input(milton_state->gui, (u32*)milton_state->canvas_buffer,
-                             milton_state->view->screen_size.w,
-                             milton_state->view->screen_size.h,
-                             point);
-            render_flags |= MiltonRenderFlags_PICKER_UPDATED;
-        }
-    }
-
     if ( check_flag(input->flags, MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
         // Start drawing the preview if we just grabbed a slider.
         unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
@@ -930,47 +918,66 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         gui_imgui_set_ungrabbed(milton_state->gui);
     }
 
+    if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
+        if ( check_flag(input->flags, MiltonInputFlags_CLICK) ) {
+            v2i point = input->click;
+            eyedropper_input(milton_state->gui, (u32*)milton_state->canvas_buffer,
+                             milton_state->view->screen_size.w,
+                             milton_state->view->screen_size.h,
+                             point);
+            render_flags |= MiltonRenderFlags_PICKER_UPDATED;
+            milton_switch_mode(milton_state, MiltonMode_PEN);
+            milton_update_brushes(milton_state);
+        }
+        milton_state->flags |= MiltonStateFlags_IGNORE_NEXT_STROKE;
+    }
 
     // ---- End stroke
     if (check_flag( input->flags, MiltonInputFlags_END_STROKE )) {
         milton_state->flags &= ~MiltonStateFlags_STROKE_IS_FROM_TABLET;
 
-        if ( milton_state->gui->active ) {
-            gui_deactivate(milton_state->gui);
-            set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
-            unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
-        } else {
-            if ( milton_state->working_stroke.num_points > 0 ) {
-                // We used the selected color to draw something. Push.
-                if( gui_mark_color_used(milton_state->gui, milton_state->working_stroke.brush.color.rgb) ) {
-                    set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
+        if (! (milton_state->flags & MiltonStateFlags_IGNORE_NEXT_STROKE) ) {
+            if ( milton_state->gui->active ) {
+                gui_deactivate(milton_state->gui);
+                set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
+                unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
+            } else {
+                if ( milton_state->working_stroke.num_points > 0 ) {
+                    // We used the selected color to draw something. Push.
+                    if( gui_mark_color_used(milton_state->gui, milton_state->working_stroke.brush.color.rgb) ) {
+                        set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
+                    }
+                    // Copy current stroke.
+                    i32 num_points = milton_state->working_stroke.num_points;
+                    Stroke new_stroke =
+                    {
+                        .brush = milton_state->working_stroke.brush,
+                        .points = (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i)),
+                        .pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32)),
+                        .num_points = num_points,
+                        .layer_id = milton_state->view->working_layer_id,
+                    };
+
+                    memcpy(new_stroke.points, milton_state->working_stroke.points,
+                           milton_state->working_stroke.num_points * sizeof(v2i));
+                    memcpy(new_stroke.pressures, milton_state->working_stroke.pressures,
+                           milton_state->working_stroke.num_points * sizeof(f32));
+
+                    layer_push_stroke(milton_state->working_layer, new_stroke);
+                    HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
+                    sb_push(milton_state->history, h);
+                    // Clear working_stroke
+                    {
+                        milton_state->working_stroke.num_points = 0;
+                    }
+
+                    clear_stroke_redo(milton_state);
+
+                    set_flag(render_flags, MiltonRenderFlags_FINISHED_STROKE);
                 }
-                // Copy current stroke.
-                i32 num_points = milton_state->working_stroke.num_points;
-                Stroke new_stroke =
-                {
-                    .brush = milton_state->working_stroke.brush,
-                    .points = (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i)),
-                    .pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32)),
-                    .num_points = num_points,
-                    .layer_id = milton_state->view->working_layer_id,
-                };
-
-                memcpy(new_stroke.points, milton_state->working_stroke.points, milton_state->working_stroke.num_points * sizeof(v2i));
-                memcpy(new_stroke.pressures, milton_state->working_stroke.pressures, milton_state->working_stroke.num_points * sizeof(f32));
-
-                layer_push_stroke(milton_state->working_layer, new_stroke);
-                HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
-                sb_push(milton_state->history, h);
-                // Clear working_stroke
-                {
-                    milton_state->working_stroke.num_points = 0;
-                }
-
-                clear_stroke_redo(milton_state);
-
-                set_flag(render_flags, MiltonRenderFlags_FINISHED_STROKE);
             }
+        } else {
+            milton_state->flags &= ~MiltonStateFlags_IGNORE_NEXT_STROKE;
         }
     }
 

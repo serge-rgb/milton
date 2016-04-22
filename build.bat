@@ -17,6 +17,7 @@ COPY third_party\SDL2-2.0.3\VisualC\SDL\X64\Debug\SDL2.dll third_party\bin\SDL2.
 :SDL_OK
 
 IF NOT EXIST build\SDL2.dll copy third_party\bin\SDL2.dll build\SDL2.dll
+::IF NOT EXIST build\carlito.ttf
 
 pushd build
 ::set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib

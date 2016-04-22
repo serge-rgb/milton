@@ -59,6 +59,7 @@ enum Texts
     TXT_new_milton_canvas                           ,
     TXT_decrease_brush_size                         ,
     TXT_increase_brush_size                         ,
+    TXT_eye_dropper,
 
     TXT_Count,
 };

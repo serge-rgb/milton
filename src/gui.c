@@ -225,16 +225,6 @@ static void picker_from_rgb(ColorPicker* picker, v3f rgb)
     picker->info.hsv = hsv;
     float angle = hsv.h * 2*kPi;
     picker_update_points(picker, angle);
-    /* // Barycentric to cartesian */
-    /* f32 a = hsv.s; */
-    /* f32 b = 1 - hsv.v; */
-    /* f32 c = 1 - a - b; */
-
-    /* v2f point = add2f(add2f((scale2f(picker->info.c,a)), scale2f(picker->info.b,b)), scale2f(picker->info.a,c)); */
-
-    /* // De-center */
-    /* point.x -= picker->center.x - picker->bounds_radius_px; */
-    /* point.y -= picker->center.y - picker->bounds_radius_px; */
 }
 
 static b32 picker_is_active(ColorPicker* picker)
@@ -262,6 +252,7 @@ Rect picker_get_bounds(ColorPicker* picker)
 void eyedropper_input(MiltonGui* gui, u32* canvas_buffer, i32 w, i32 h, v2i point)
 {
     v4f color = color_u32_to_v4f(canvas_buffer[point.y*w+point.x]);
+
     picker_from_rgb(&gui->picker, color.rgb);
 }
 

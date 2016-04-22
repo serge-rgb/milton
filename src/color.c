@@ -88,25 +88,23 @@ v3f rgb_to_hsv(v3f rgb)
     hsv.v = fmax;
     float chroma = fmax - fmin; // in [0,1]
 
+    // Dividing every sector by 2 so that the hexagon length is 1.0
     if (chroma != 0) {
-        if (rgb.r == fmax) { // R sector  [0, 1/3)
+        if (rgb.r == fmax) { // R sector
             hsv.h = (rgb.g - rgb.b) / chroma;
             if (hsv.h < 0.0f) {
-                hsv.h += 1.0f;
+                hsv.h += 6.0f;
             }
-        } else if(rgb.g == fmax) {  // G sector  [1/3, 4/6)
-            hsv.h = ((rgb.b - rgb.r) / chroma) + 2.0f/6.0f;
+        } else if(rgb.g == fmax) {  // G sector
+            hsv.h = ((rgb.b - rgb.r) / chroma) + 2.0f;
         } else { // B sector
-            hsv.h = ((rgb.r - rgb.g) / chroma) + 4.0f/6.0f;  // [4/6, 1)
-            //-- hsv.h = ((rgb.r - rgb.g) / chroma) + 4.0f;  // [4, 6)
+            hsv.h = ((rgb.r - rgb.g) / chroma) + 4.0f;
         }
+        hsv.h /= 6.0f;
 
-        //-- hsv.h *= 60.0f;
         hsv.s = chroma / fmax;
     }
     hsv.v = fmax;
-
-    //-- hsv.h /= 360;
 
     for (int i=0;i<3;++i) {
         if (hsv.d[i] < 0) hsv.d[i]=0;

@@ -8,15 +8,14 @@ To-Do
     - single point strokes sometimes self-destruct
     - dragging window -> stroke input (!!!)
 
-*- Port to Windows API (support non-Wacom devices)
-*- Finish Linux and OSX versions of Dialogs and File I/O
-*- Eye dropper
 
 - Application
+    - Port to Windows API (support non-Wacom devices)
     - Export
         - manipulate rectangle shape?
         - set resolution?
         - set aspect ratio?
+    - Finish Linux and OSX versions of Dialogs and File I/O
     - History slider
     - Tablet:
         - Gestures (OSX, Windows)
