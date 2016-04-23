@@ -3,6 +3,8 @@
 
 #pragma once
 
+#define MILTON_VERSION "1.1.0"
+
 // When MILTON_DEBUG is 1,
 //  - Asserts
 //  - Fixed location arena allocations

@@ -88,6 +88,9 @@ goto fail
 :end_lib_compilation
 
 copy ..\Milton.rc Milton.rc
+copy ..\third_party\Carlito.LICENSE
+copy ..\third_party\Carlito.ttf
+
 rc /r Milton.rc
 
 echo    [BUILD] -- Dependencies built!

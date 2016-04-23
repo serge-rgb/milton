@@ -93,7 +93,8 @@ enum DeleteErrorTolerance
 b32     platform_delete_file_at_config(char* fname, int error_tolerance);
 void    platform_fname_at_config(char* fname, i32 len);
 
-void    platform_open_help_link();
+// Does *not* verify link. Do not expose to user facing inputs.
+void    platform_open_link(char* link);
 
 
 #if defined(_WIN32)

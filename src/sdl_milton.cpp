@@ -181,6 +181,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             }
             if (event.button.button == SDL_BUTTON_LEFT) {
                 pointer_up = true;
+                set_flag(input_flags, MiltonInputFlags_CLICKUP);
             }
             break;
         case SDL_MOUSEMOTION:
@@ -351,7 +352,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     break;
                 }
                 if ( platform_state->is_pointer_down ) {
-                    pointer_up = true;
+                    // Not enough info..
+                     pointer_up = true;
+                    //platform_state->is_pointer_down = false;
+                    //set_flag(input_flags, MiltonInputFlags_END_STROKE);
                 }
                 cursor_show();
                 break;
@@ -378,6 +382,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
     b32 lost_tablet_input = got_pen_input == false && platform_state->receiving_tablet_input;
     if ( lost_tablet_input ) {
         pointer_up  = true;
+        set_flag(input_flags, MiltonInputFlags_CLICKUP);
     }
     platform_state->receiving_tablet_input = got_pen_input;
 
@@ -534,9 +539,9 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     platform_state.window_id = SDL_GetWindowID(window);
 
-    // Every 100ms, call this callback to send us an event so we don't wait for user input.
+    // Every X ms, call this callback to send us an event so we don't wait for user input.
     // Called periodically to force updates that don't depend on user input.
-    SDL_AddTimer(10,
+    SDL_AddTimer(100,
                  [](u32 interval, void *param) {
                      SDL_Event event;
                      SDL_UserEvent userevent;
@@ -562,6 +567,9 @@ int milton_main(MiltonStartupFlags startup_flags)
     {
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = NULL;  // Don't save any imgui.ini file
+        char fname[MAX_PATH] = "carlito.ttf";
+        platform_fname_at_exe(fname, MAX_PATH);
+        ImFont* im_font =  io.Fonts->ImFontAtlas::AddFontFromFileTTF(fname, 14);
     }
     // Initalize system cursors
     {
@@ -575,10 +583,7 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     // ---- Main loop ----
 
-    if ( startup_flags.history_debug == HistoryDebug_REPLAY ) {
-
-    }
-    else while( !platform_state.should_quit ) {
+    while( !platform_state.should_quit ) {
         ImGuiIO& imgui_io = ImGui::GetIO();
 
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);

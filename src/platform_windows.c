@@ -181,6 +181,7 @@ void platform_dialog(char* info, char* title)
                  MB_OK//_In_     UINT    uType
                );
 }
+void    platform_milton_dialog();
 
 void platform_fname_at_exe(char* fname, i32 len)
 {
@@ -259,9 +260,9 @@ static MiltonStartupFlags win32_parse_cmdline()
     return startup_flags;
 }
 
-void platform_open_help_link()
+void platform_open_link(char* link)
 {
-    ShellExecute(NULL, "open", "https://github.com/serge-rgb/milton#user-manual", NULL, NULL, SW_SHOWNORMAL);
+    ShellExecute(NULL, "open", link, NULL, NULL, SW_SHOWNORMAL);
 }
 
 int CALLBACK WinMain(

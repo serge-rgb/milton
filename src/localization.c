@@ -80,6 +80,9 @@ static char* g_localized_strings[Language_COUNT][TXT_Count] =
         [TXT_decrease_brush_size]            = "Decrease Brush Size",
         [TXT_increase_brush_size]            = "Increase Brush Size",
         [TXT_eye_dropper]                    = "Eye Dropper",
+        [TXT_milton_version]                 = "Milton Version",
+        [TXT_website]                        = "Website"
+
     },
 
     { // Spanish

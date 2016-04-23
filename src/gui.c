@@ -79,7 +79,6 @@ static Rect picker_color_buttons_bounds(const ColorPicker* picker)
     return bounds;
 }
 
-
 static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
 {
     Rect button_rect = picker_color_buttons_bounds(picker);
@@ -295,20 +294,24 @@ Rect get_bounds_for_picker_and_colors(ColorPicker* picker)
 v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
 {
     float area = orientation(picker->info.a, picker->info.b, picker->info.c);
-    assert (area != 0);
-    float inv_area = 1.0f / area;
-    float s = orientation(picker->info.b, point, picker->info.a) * inv_area;
-    if (s > 1) { s = 1; }
-    if (s < 0) { s = 0; }
-    float v = 1 - (orientation(point, picker->info.c, picker->info.a) * inv_area);
-    if (v > 1) { v = 1; }
-    if (v < 0) { v = 0; }
+    v3f hsv = {0};
+    if (area != 0) {
+        float inv_area = 1.0f / area;
+        float s = orientation(picker->info.b, point, picker->info.a) * inv_area;
+        if (s > 1) { s = 1; }
+        if (s < 0) { s = 0; }
+        float v = 1 - (orientation(point, picker->info.c, picker->info.a) * inv_area);
+        if (v > 1) { v = 1; }
+        if (v < 0) { v = 0; }
 
-    v3f hsv = {
-        picker->info.hsv.h,
-        s,
-        v,
-    };
+        hsv = (v3f){
+            picker->info.hsv.h,
+            s,
+            v,
+        };
+    } else {
+        int wtf =1;
+    }
     return hsv;
 }
 

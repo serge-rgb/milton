@@ -50,10 +50,20 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
     if ( ImGui::BeginMainMenuBar() ) {
         if ( ImGui::BeginMenu(LOC(file)) ) {
             if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
-                milton_set_default_canvas_file(milton_state);
-                milton_reset_canvas(milton_state);
-                input->flags |= MiltonInputFlags_FULL_REFRESH;
-                milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+                b32 ok = true;
+                if (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) {
+                    if (platform_dialog_yesno("Your canvas has not been saved to a file. You will lose it. Continue?", "Continue?")) {
+                        ok = true;
+                    } else {
+                        ok = false;
+                    }
+                }
+                if (ok) {
+                    milton_set_default_canvas_file(milton_state);
+                    milton_reset_canvas(milton_state);
+                    input->flags |= MiltonInputFlags_FULL_REFRESH;
+                    milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+                }
             }
             b32 save_requested = false;
             if ( ImGui::MenuItem(LOC(open_milton_canvas)) ) {
@@ -62,7 +72,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 if ( (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ) {
                     can_open = false;
                     // TODO: translate
-                    if (platform_dialog_yesno("The default canvas will be cleared, save the current work?", "Save?")) {
+                    if (platform_dialog_yesno("This canvas will be lost if you dont save it to a file. Save it?", "Save?")) {
                         char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                         if (name) {
                             can_open = true;
@@ -180,6 +190,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             if ( ImGui::MenuItem(LOC(eye_dropper)) ) {
                 set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
                 input->mode_to_set = MiltonMode_EYEDROPPER;
+                milton_state->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;
             }
             ImGui::EndMenu();
         }
@@ -191,7 +202,16 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         }
         if ( ImGui::BeginMenu(LOC(help)) ) {
             if ( ImGui::MenuItem(LOC(help_me)) ) {
-                platform_open_help_link();
+                platform_open_link("https://github.com/serge-rgb/milton#user-manual");
+            }
+            if ( ImGui::MenuItem(LOC(milton_version)) ) {
+                char buffer[1024];
+                snprintf(buffer, array_count(buffer),
+                         "Milton version %s.", MILTON_VERSION);
+                platform_dialog(buffer, "Milton Version");
+            }
+            if ( ImGui::MenuItem(LOC(website)) ) {
+                platform_open_link("http://miltonpaint.com");
             }
             ImGui::EndMenu();
         }
@@ -293,7 +313,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
 
         // Layer window
         ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(300, 220), ImGuiSetCond_FirstUseEver);
         if ( ImGui::Begin(LOC(layers)) ) {
             CanvasView* view = milton_state->view;
             // left
