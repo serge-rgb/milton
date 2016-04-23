@@ -8,6 +8,8 @@
 #include "utils.h"
 
 
+static v4f k_eraser_color = {2,3,4,5};
+
 u32 color_v4f_to_u32(v4f c);
 
 v4f color_u32_to_v4f(u32 color);

@@ -149,8 +149,7 @@ static void milton_update_brushes(MiltonState* milton_state)
             brush->color = to_premultiplied(sRGB_to_linear(gui_get_picker_rgb(milton_state->gui)), brush->alpha);
 #endif
         } else if (i == BrushEnum_ERASER) {
-            brush->color = (v4f){ -1, -1, -1, -1, };
-            brush->alpha = 1;
+            brush->color = k_eraser_color;
         }
     }
 
@@ -372,6 +371,7 @@ void milton_set_brush_size(MiltonState* milton_state, i32 size)
             milton_update_brushes(milton_state);
         }
     }
+    milton_state->flags |= MiltonStateFlags_BRUSH_SIZE_CHANGED;
 }
 
 // For keyboard shortcut.
@@ -927,7 +927,11 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
-        exporter_input(&milton_state->gui->exporter, input);
+        b32 changed = exporter_input(&milton_state->gui->exporter, input);
+        if ( changed ) {
+            render_flags |= MiltonRenderFlags_UI_UPDATED;
+        }
+
     }
 
     if ( check_flag(input->flags, MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
@@ -956,7 +960,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                              milton_state->view->screen_size.w,
                              milton_state->view->screen_size.h,
                              point);
-            render_flags |= MiltonRenderFlags_PICKER_UPDATED;
+            render_flags |= MiltonRenderFlags_UI_UPDATED;
         }
         if(input->flags & MiltonInputFlags_CLICKUP) {
             if (! (milton_state->flags & MiltonStateFlags_IGNORE_NEXT_CLICKUP) ) {
@@ -974,13 +978,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
         if ( milton_state->gui->active ) {
             gui_deactivate(milton_state->gui);
-            set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
+            set_flag(render_flags, MiltonRenderFlags_UI_UPDATED);
             unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
         } else {
             if ( milton_state->working_stroke.num_points > 0 ) {
                 // We used the selected color to draw something. Push.
                 if( gui_mark_color_used(milton_state->gui, milton_state->working_stroke.brush.color.rgb) ) {
-                    set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
+                    set_flag(render_flags, MiltonRenderFlags_UI_UPDATED);
                 }
                 // Copy current stroke.
                 i32 num_points = milton_state->working_stroke.num_points;
@@ -1016,6 +1020,17 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     // Disable hover if panning.
     if (check_flag( input->flags, MiltonInputFlags_PANNING )) {
         unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
+    }
+
+    // If the brush size was changed, set up the renderer
+    if ( check_flag(milton_state->flags, MiltonStateFlags_BRUSH_SIZE_CHANGED) ) {
+        milton_state->flags &= ~MiltonStateFlags_BRUSH_SIZE_CHANGED;
+        render_flags |= MiltonRenderFlags_BRUSH_CHANGE;
+    }
+
+    if ( check_flag(milton_state->gui->flags, MiltonGuiFlags_NEEDS_REDRAW) ) {
+        milton_state->gui->flags &= ~MiltonGuiFlags_NEEDS_REDRAW;
+        render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
     milton_render(milton_state, render_flags, input->pan_delta);

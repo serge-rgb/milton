@@ -261,9 +261,11 @@ static void exporter_init(Exporter* exporter)
     exporter->scale = 1;
 }
 
-void exporter_input(Exporter* exporter, MiltonInput* input)
+b32 exporter_input(Exporter* exporter, MiltonInput* input)
 {
+    b32 changed = false;
     if ( input->input_count > 0 ) {
+        changed = true;
         v2i point = input->points[input->input_count - 1];
         if ( exporter->state == ExporterState_EMPTY ||
              exporter->state == ExporterState_SELECTED ) {
@@ -276,7 +278,9 @@ void exporter_input(Exporter* exporter, MiltonInput* input)
     }
     if ( check_flag(input->flags, MiltonInputFlags_END_STROKE) && exporter->state != ExporterState_EMPTY ) {
         exporter->state = ExporterState_SELECTED;
+        changed = true;
     }
+    return changed;
 }
 
 void gui_imgui_set_ungrabbed(MiltonGui* gui)
@@ -347,7 +351,7 @@ MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* inpu
         /* milton_state->brushes[BrushEnum_PEN].color = to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha); */
     }
 
-    set_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED);
+    set_flag(render_flags, MiltonRenderFlags_UI_UPDATED);
     milton_state->gui->active = true;
 
 
@@ -356,6 +360,7 @@ MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* inpu
 
 void gui_toggle_visibility(MiltonGui* gui)
 {
+    gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
     gui->visible = !gui->visible;
 }
 

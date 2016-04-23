@@ -294,8 +294,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
             continue;
         }
 
-        if ( layer != root_layer &&
-             clipped_stroke_is_layermark(stroke_list) == false ) {
+        if ( layer != root_layer && clipped_stroke_is_layermark(stroke_list) == false ) {
             ClippedStroke* layer_mark = arena_alloc_elem(render_arena, ClippedStroke);
             if ( !layer_mark ) {
                 *allocation_ok = false;
@@ -499,7 +498,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     continue;
                 }
 
-                b32 is_eraser = (equ4f(clipped_stroke->brush.color, (v4f){ -1, -1, -1, -1 }));
+                b32 is_eraser = (equ4f(clipped_stroke->brush.color, k_eraser_color));
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
@@ -786,7 +785,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     continue;
                 }
 
-                b32 is_eraser = equ4f(clipped_stroke->brush.color, (v4f){ -1, -1, -1, -1 });
+                b32 is_eraser = equ4f(clipped_stroke->brush.color, k_eraser_color);
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
@@ -1215,24 +1214,24 @@ static void draw_circle(u32* raster_buffer,
     i32 top    = max(center_y - radius, 0);
     i32 bottom = min(center_y + radius, raster_buffer_height);
 
-    assert (right >= left);
-    assert (bottom >= top);
+    if((right >= left)
+       &&(bottom >= top)) {
+        for ( i32 j = top; j < bottom; ++j ) {
+            for ( i32 i = left; i < right; ++i ) {
+                i32 index = j * raster_buffer_width + i;
 
-    for ( i32 j = top; j < bottom; ++j ) {
-        for ( i32 i = left; i < right; ++i ) {
-            i32 index = j * raster_buffer_width + i;
 
+                //TODO: AA
+                f32 dist = distance((v2f){ (f32)i, (f32)j },
+                                    (v2f){ (f32)center_x, (f32)center_y });
 
-            //TODO: AA
-            f32 dist = distance((v2f){ (f32)i, (f32)j },
-                                (v2f){ (f32)center_x, (f32)center_y });
-
-            if (dist < radius) {
-                //u32 dst_color = color_v4f_to_u32(to_premultiplied(color_u32_to_v4f(raster_buffer[index]).rgb, 1.0f));
-                u32 dst_color = raster_buffer[index];
-                v4f blended = blend_v4f(color_u32_to_v4f(dst_color), src_color);
-                u32 color = color_v4f_to_u32(blended);
-                raster_buffer[index] = color;
+                if (dist < radius) {
+                    //u32 dst_color = color_v4f_to_u32(to_premultiplied(color_u32_to_v4f(raster_buffer[index]).rgb, 1.0f));
+                    u32 dst_color = raster_buffer[index];
+                    v4f blended = blend_v4f(color_u32_to_v4f(dst_color), src_color);
+                    u32 color = color_v4f_to_u32(blended);
+                    raster_buffer[index] = color;
+                }
             }
         }
     }
@@ -1279,20 +1278,20 @@ static void fill_rectangle_with_margin(u32* raster_buffer,
     i32 top = max(y, 0);
     i32 bottom = min(y + h, raster_buffer_height);
 
-    assert (right >= left);
-    assert (bottom >= top);
+    if ( (right >= left)
+         &&(bottom >= top)) {
+        for ( i32 j = top; j < bottom; ++j ) {
+            for ( i32 i = left; i < right; ++i ) {
+                i32 index = j * raster_buffer_width + i;
 
-    for ( i32 j = top; j < bottom; ++j ) {
-        for ( i32 i = left; i < right; ++i ) {
-            i32 index = j * raster_buffer_width + i;
+                u32 dst_color = raster_buffer[index];
+                v4f src_color = (i == left || i == right - 1 ||
+                                 j == top || j == bottom - 1) ? margin_color : rect_color;
 
-            u32 dst_color = raster_buffer[index];
-            v4f src_color = (i == left || i == right - 1 ||
-                             j == top || j == bottom - 1) ? margin_color : rect_color;
-
-            v4f blended = blend_v4f(color_u32_to_v4f(dst_color), src_color);
-            u32 color = color_v4f_to_u32(blended);
-            raster_buffer[index] = color;
+                v4f blended = blend_v4f(color_u32_to_v4f(dst_color), src_color);
+                u32 color = color_v4f_to_u32(blended);
+                raster_buffer[index] = color;
+            }
         }
     }
 }
@@ -1880,7 +1879,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
     }
     u32* raster_buffer = (u32*)milton_state->raster_buffer;
     MiltonGui* gui = milton_state->gui;
-    if ( gui_visible && (redraw || (check_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED))) ) {
+    if ( gui_visible && (redraw || (check_flag(render_flags, MiltonRenderFlags_UI_UPDATED))) ) {
         render_picker(&milton_state->gui->picker,
                       raster_buffer,
                       milton_state->view);
@@ -2169,17 +2168,17 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 
     MiltonGui* gui = milton_state->gui;
 
-    if ((render_flags & MiltonRenderFlags_PICKER_UPDATED)
+    if ((render_flags & MiltonRenderFlags_UI_UPDATED)
         || (render_flags & MiltonRenderFlags_BRUSH_HOVER)
         || canvas_modified) {
 
         static v2i static_hp = {-1};
         v2i hp  = milton_state->hover_point;
-        b32 hovering = (hp.x != static_hp.x || hp.y != static_hp.y);
+        b32 hovering = (render_flags&MiltonRenderFlags_BRUSH_CHANGE) || (hp.x != static_hp.x || hp.y != static_hp.y);
         static_hp = hp;
 
         b32 should_copy = hovering || canvas_modified ||
-                (render_flags & MiltonRenderFlags_PICKER_UPDATED) || (render_flags & MiltonRenderFlags_FULL_REDRAW);
+                (render_flags & MiltonRenderFlags_UI_UPDATED) || (render_flags & MiltonRenderFlags_FULL_REDRAW);
 
         if (should_copy) { // only copy canvas to buffer if hovering
             Rect copy_rect = {0};

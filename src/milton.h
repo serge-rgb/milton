@@ -150,6 +150,7 @@ enum MiltonStateFlags
     MiltonStateFlags_NEW_CANVAS             = 1<<4,
     MiltonStateFlags_DEFAULT_CANVAS         = 1<<5,
     MiltonStateFlags_IGNORE_NEXT_CLICKUP    = 1<<6,  // When selecting eyedropper from menu, avoid the click from selecting the color...
+    MiltonStateFlags_BRUSH_SIZE_CHANGED     = 1<<7,
 };
 
 typedef enum MiltonInputFlags
