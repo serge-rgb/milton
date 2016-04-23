@@ -309,8 +309,6 @@ v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
             s,
             v,
         };
-    } else {
-        int wtf =1;
     }
     return hsv;
 }

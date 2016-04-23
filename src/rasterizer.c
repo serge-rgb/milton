@@ -1881,7 +1881,6 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
     u32* raster_buffer = (u32*)milton_state->raster_buffer;
     MiltonGui* gui = milton_state->gui;
     if ( gui_visible && (redraw || (check_flag(render_flags, MiltonRenderFlags_PICKER_UPDATED))) ) {
-
         render_picker(&milton_state->gui->picker,
                       raster_buffer,
                       milton_state->view);
@@ -2168,14 +2167,19 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
                    raster_limits.bottom);
     }
 
-    if (( (render_flags & MiltonRenderFlags_PICKER_UPDATED) || (render_flags & MiltonRenderFlags_BRUSH_HOVER)) || canvas_modified) {
+    MiltonGui* gui = milton_state->gui;
+
+    if ((render_flags & MiltonRenderFlags_PICKER_UPDATED)
+        || (render_flags & MiltonRenderFlags_BRUSH_HOVER)
+        || canvas_modified) {
 
         static v2i static_hp = {-1};
         v2i hp  = milton_state->hover_point;
         b32 hovering = (hp.x != static_hp.x || hp.y != static_hp.y);
         static_hp = hp;
 
-        b32 should_copy = hovering || canvas_modified || (render_flags & MiltonRenderFlags_PICKER_UPDATED);
+        b32 should_copy = hovering || canvas_modified ||
+                (render_flags & MiltonRenderFlags_PICKER_UPDATED) || (render_flags & MiltonRenderFlags_FULL_REDRAW);
 
         if (should_copy) { // only copy canvas to buffer if hovering
             Rect copy_rect = {0};
@@ -2188,13 +2192,14 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 
         raster_limits = (Rect){0};
 
-        if ((render_flags & MiltonRenderFlags_PICKER_UPDATED)
-            || (render_flags & MiltonRenderFlags_FULL_REDRAW)
-            || (render_flags & MiltonRenderFlags_PAN_COPY)) {
-            MiltonGui* gui = milton_state->gui;
+
+        // Add picker to render rect
+        if ((should_copy || (render_flags & MiltonRenderFlags_PAN_COPY))) {
             raster_limits = rect_union(raster_limits, get_bounds_for_picker_and_colors(&gui->picker));
         }
-        if (render_flags & MiltonRenderFlags_BRUSH_HOVER && hovering) {
+
+
+        if ((render_flags & MiltonRenderFlags_BRUSH_HOVER) && hovering) {
             Rect hr = {0};
 
             int pad = milton_state->block_width / 2;
