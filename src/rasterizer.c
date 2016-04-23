@@ -1990,6 +1990,9 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
 
 void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2i pan_delta)
 {
+    b32 canvas_modified = false;    // Avoid needless work when program is idle by keeping track
+                                    // of when everything needs to be redrawn. The gui needs to know
+                                    // about the canvas.
     // `raster_limits` is the part of the screen (in pixels) that should be updated
     // with what's on the canvas.
     Rect raster_limits = { 0 };
@@ -2004,6 +2007,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 #endif
 
     if ( check_flag(render_flags, MiltonRenderFlags_PAN_COPY) ) {
+        canvas_modified = true;
         CanvasView* view = milton_state->view;
 
         // Copy the canvas buffer to the raster buffer. We will use the raster
@@ -2148,22 +2152,14 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
     }
 
     if (rect_is_valid(raster_limits)) {
-        if ( check_flag(render_flags, MiltonRenderFlags_DRAW_ITERATIVELY) ) {
-            render_canvas_iteratively(milton_state, raster_limits);
-        } else {
-            render_canvas(milton_state, raster_limits);
+        if (rect_area(raster_limits) != 0) {
+            canvas_modified = true;
+            if ( check_flag(render_flags, MiltonRenderFlags_DRAW_ITERATIVELY) ) {
+                render_canvas_iteratively(milton_state, raster_limits);
+            } else {
+                render_canvas(milton_state, raster_limits);
+            }
         }
-
-        // Copy the whole thing. Makes gui elements redraw fast.
-        // Disabling this would mean keeping track of GUI updates for
-        // canvas redrawing.
-        raster_limits.left = 0;
-        raster_limits.right = milton_state->view->screen_size.w;
-        raster_limits.top = 0;
-        raster_limits.bottom = milton_state->view->screen_size.h;
-        copy_canvas_to_raster_buffer(milton_state, raster_limits);
-
-        render_gui(milton_state, raster_limits, render_flags);
     } else {
         milton_log("WARNING: Tried to render with invalid rect: (l r t b): %d %d %d %d\n",
                    raster_limits.left,
@@ -2171,6 +2167,49 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
                    raster_limits.top,
                    raster_limits.bottom);
     }
+
+    if (( (render_flags & MiltonRenderFlags_PICKER_UPDATED) || (render_flags & MiltonRenderFlags_BRUSH_HOVER)) || canvas_modified) {
+
+        static v2i static_hp = {-1};
+        v2i hp  = milton_state->hover_point;
+        b32 hovering = (hp.x != static_hp.x || hp.y != static_hp.y);
+        static_hp = hp;
+
+        b32 should_copy = hovering || canvas_modified || (render_flags & MiltonRenderFlags_PICKER_UPDATED);
+
+        if (should_copy) { // only copy canvas to buffer if hovering
+            Rect copy_rect = {0};
+            copy_rect.left = 0;
+            copy_rect.right = milton_state->view->screen_size.w;
+            copy_rect.top = 0;
+            copy_rect.bottom = milton_state->view->screen_size.h;
+            copy_canvas_to_raster_buffer(milton_state, copy_rect);
+        }
+
+        raster_limits = (Rect){0};
+
+        if ((render_flags & MiltonRenderFlags_PICKER_UPDATED)
+            || (render_flags & MiltonRenderFlags_FULL_REDRAW)
+            || (render_flags & MiltonRenderFlags_PAN_COPY)) {
+            MiltonGui* gui = milton_state->gui;
+            raster_limits = rect_union(raster_limits, get_bounds_for_picker_and_colors(&gui->picker));
+        }
+        if (render_flags & MiltonRenderFlags_BRUSH_HOVER && hovering) {
+            Rect hr = {0};
+
+            int pad = milton_state->block_width / 2;
+
+            hr.left   = hp.x - pad;
+            hr.right  = hp.x + pad;
+            hr.top    = hp.y - pad;
+            hr.bottom = hp.y + pad;
+
+            raster_limits = rect_union(raster_limits, hr);
+        }
+
+        render_gui(milton_state, raster_limits, render_flags);
+    }
+
 }
 
 void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
@@ -2197,11 +2236,6 @@ void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     if ( scale > 1 ) {
         milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
     }
-
-    // TODO:
-    // When setting this to be a stand-alone library, we will need to change
-    // the signature of render_canvas to only take what it needs, to reduce
-    // dependencies on implementation details of the app
 
     Rect raster_limits;
     raster_limits.left   = 0;

@@ -97,7 +97,9 @@ void milton_load(MiltonState* milton_state)
         i32 saved_working_layer_id = milton_state->view->working_layer_id;
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
-            milton_die_gracefully("MLT file could not be loaded. Possible endianness mismatch.");
+            platform_dialog("MLT file could not be loaded. Possible endianness mismatch.", "Problem");
+            milton_unset_last_canvas_fname();
+            ok=false;
         }
 
         i32 num_layers = 0;
@@ -309,8 +311,7 @@ void milton_unset_last_canvas_fname()
 {
     b32 del = platform_delete_file_at_config("last_canvas_fname",DeleteErrorTolerance_OK_NOT_EXIST);
     if (del == false) {
-        platform_dialog("The default canvas could not be set to open the next time you run Milton. Please contact the developers.",
-                        "Important");
+        platform_dialog("The default canvas could not be set to open the next time you run Milton. Please contact the developers.", "Important");
     }
 }
 

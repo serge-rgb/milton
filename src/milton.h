@@ -149,7 +149,7 @@ enum MiltonStateFlags
     MiltonStateFlags_WORKER_NEEDS_MEMORY    = 1<<3,
     MiltonStateFlags_NEW_CANVAS             = 1<<4,
     MiltonStateFlags_DEFAULT_CANVAS         = 1<<5,
-    MiltonStateFlags_IGNORE_NEXT_STROKE     = 1<<6,
+    MiltonStateFlags_IGNORE_NEXT_CLICKUP    = 1<<6,  // When selecting eyedropper from menu, avoid the click from selecting the color...
 };
 
 typedef enum MiltonInputFlags
@@ -168,6 +168,7 @@ typedef enum MiltonInputFlags
     MiltonInputFlags_SAVE_FILE           = 1 << 9,
     MiltonInputFlags_OPEN_FILE           = 1 << 10,
     MiltonInputFlags_CLICK               = 1 << 11,
+    MiltonInputFlags_CLICKUP             = 1 << 12,
 } MiltonInputFlags;
 #if defined(__cplusplus)
 #define MiltonInputFlags int
