@@ -220,10 +220,10 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
 #if 0
         snprintf(msg, 1024, "    %s Last Saved XX:XX:XX",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" : "");
-#endif
         if ( ImGui::BeginMenu(msg, /*bool enabled = */false) )  {
             ImGui::EndMenu();
         }
+#endif
         ImGui::EndMainMenuBar();
     }
     ImGui::PopStyleColor(menu_style_stack);

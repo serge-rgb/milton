@@ -611,13 +611,13 @@ void milton_reset_canvas(MiltonState* milton_state)
 
     // Reset color buttons
     for ( ColorButton* b = &milton_state->gui->picker.color_buttons; b!=NULL; b=b->next ) {
-        b->color = (v4f){0};
+        b->rgba = (v4f){0};
     }
 
     // gui init
     {
         MiltonGui* gui = milton_state->gui;
-        gui->picker.info.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
+        gui->picker.data.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
         gui->visible = true;
 
         picker_init(&gui->picker);
@@ -1030,6 +1030,9 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     if ( check_flag(milton_state->gui->flags, MiltonGuiFlags_NEEDS_REDRAW) ) {
         milton_state->gui->flags &= ~MiltonGuiFlags_NEEDS_REDRAW;
+        render_flags |= MiltonRenderFlags_UI_UPDATED;
+    }
+    if ( check_flag(milton_state->gui->flags, MiltonGuiFlags_SHOWING_PREVIEW) ) {
         render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 

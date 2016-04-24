@@ -232,6 +232,9 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         milton_increase_brush_size(milton_state);
                     }
                     if ( platform_state->is_ctrl_down ) {
+                        if (keycode == SDLK_q) {
+                            platform_state->should_quit = true;
+                        }
                         if (keycode == SDLK_z) {
                             if ( platform_state->is_shift_down ) {
                                 set_flag(input_flags, MiltonInputFlags_REDO);
@@ -303,9 +306,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         }
                     }
 #if MILTON_DEBUG
-                    if (keycode == SDLK_ESCAPE) {
-                        platform_state->should_quit = true;
-                    }
                     if ( keycode == SDLK_F4 ) {
                         milton_log("[DEBUG]: Switching to %s renderer.\n",
                                    milton_state->DEBUG_sse2_switch ? "SSE" : "slow");

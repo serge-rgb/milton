@@ -154,20 +154,20 @@ void milton_load(MiltonState* milton_state)
             }
         }
         milton_state->view->working_layer_id = saved_working_layer_id;
-        if ( ok ) { ok = fread_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
+        if ( ok ) { ok = fread_checked(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd); }
 
         // Buttons
         if ( ok ) {
             i32 button_count = 0;
             MiltonGui* gui = milton_state->gui;
-            ColorButton* pp = &gui->picker.color_buttons;
+            ColorButton* btn = &gui->picker.color_buttons;
 
             if ( ok ) { ok = fread_checked(&button_count, sizeof(i32), 1, fd); }
             if ( ok ) {
                 for ( i32 i = 0;
-                      pp!=NULL && i < button_count;
-                      ++i, pp=pp->next ) {
-                    fread_checked(&pp->color, sizeof(v4f), 1, fd);
+                      btn!=NULL && i < button_count;
+                      ++i, btn=btn->next ) {
+                    fread_checked(&btn->rgba, sizeof(v4f), 1, fd);
                 }
             }
         }
@@ -179,22 +179,24 @@ void milton_load(MiltonState* milton_state)
             if (ok) { ok = fread_checked_nocopy(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
         }
         fclose(fd);
-    }
-    if ( !ok ) {
-        platform_dialog("Tried to load a corrupted Milton file", "Error");
-        milton_reset_canvas(milton_state);
-    } else {
-        i32 id = milton_state->view->working_layer_id;
-        {  // Use working_layer_id to make working_layer point to the correct thing
-            Layer* layer = milton_state->root_layer;
-            while (layer) {
-                if ( layer->id == id ) {
-                    milton_state->working_layer = layer;
-                    break;
+        if ( !ok ) {
+            platform_dialog("Tried to load a corrupted Milton file", "Error");
+            milton_reset_canvas(milton_state);
+        } else {
+            i32 id = milton_state->view->working_layer_id;
+            {  // Use working_layer_id to make working_layer point to the correct thing
+                Layer* layer = milton_state->root_layer;
+                while (layer) {
+                    if ( layer->id == id ) {
+                        milton_state->working_layer = layer;
+                        break;
+                    }
+                    layer = layer->next;
                 }
-                layer = layer->next;
             }
         }
+    } else {
+        milton_reset_canvas(milton_state);
     }
 }
 
@@ -254,7 +256,7 @@ void milton_save(MiltonState* milton_state)
         }
         assert (TEST == num_layers);
 
-        if ( ok ) { ok = fwrite_checked(&milton_state->gui->picker.info, sizeof(PickerData), 1, fd); }
+        if ( ok ) { ok = fwrite_checked(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd); }
 
         // Buttons
         if ( ok ) {
@@ -266,7 +268,7 @@ void milton_save(MiltonState* milton_state)
             if ( ok ) { ok = fwrite_checked(&button_count, sizeof(i32), 1, fd); }
             if ( ok ) {
                 for ( ColorButton* b = &gui->picker.color_buttons; ok && b!= NULL; b = b->next ) {
-                    ok = fwrite_checked(&b->color, sizeof(v4f), 1, fd);
+                    ok = fwrite_checked(&b->rgba, sizeof(v4f), 1, fd);
                 }
             }
         }

@@ -40,9 +40,7 @@ struct ColorButton_s
     i32 w;
     i32 h;
 
-    v4f color;
-
-    PickerData picker_data;
+    v4f rgba;
 
     ColorButton* next;
 };
@@ -57,7 +55,7 @@ typedef struct ColorPicker
 
     u32*    pixels;  // Blit this to render picker
 
-    PickerData info;
+    PickerData data;
 
     ColorButton color_buttons;
 

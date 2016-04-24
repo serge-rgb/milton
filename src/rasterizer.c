@@ -1414,10 +1414,10 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
                 f32 u = 0.223607f;
                 f32 v = 0.670820f;
 
-                samples += (int)is_inside_triangle(add2f(point, (v2f){-u, -v}), picker->info.a, picker->info.b, picker->info.c);
-                samples += (int)is_inside_triangle(add2f(point, (v2f){-v, u}), picker->info.a, picker->info.b, picker->info.c);
-                samples += (int)is_inside_triangle(add2f(point, (v2f){u, v}), picker->info.a, picker->info.b, picker->info.c);
-                samples += (int)is_inside_triangle(add2f(point, (v2f){v, u}), picker->info.a, picker->info.b, picker->info.c);
+                samples += (int)is_inside_triangle(add2f(point, (v2f){-u, -v}), picker->data.a, picker->data.b, picker->data.c);
+                samples += (int)is_inside_triangle(add2f(point, (v2f){-v, u}), picker->data.a, picker->data.b, picker->data.c);
+                samples += (int)is_inside_triangle(add2f(point, (v2f){u, v}), picker->data.a, picker->data.b, picker->data.c);
+                samples += (int)is_inside_triangle(add2f(point, (v2f){v, u}), picker->data.a, picker->data.b, picker->data.c);
             }
 
             if (samples > 0) {
@@ -1442,7 +1442,7 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
         i32 ring_radius = 5;
         i32 ring_girth = 1;
 
-        v3f hsv = picker->info.hsv;
+        v3f hsv = picker->data.hsv;
 
         v3f rgb = hsv_to_rgb(hsv);
 
@@ -1464,7 +1464,7 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
         f32 b = 1 - hsv.v;
         f32 c = 1 - a - b;
 
-        v2f point = add2f(add2f((scale2f(picker->info.c,a)), scale2f(picker->info.b,b)), scale2f(picker->info.a,c));
+        v2f point = add2f(add2f((scale2f(picker->data.c,a)), scale2f(picker->data.b,b)), scale2f(picker->data.a,c));
 
         // De-center
         point.x -= picker->center.x - picker->bounds_radius_px;
@@ -1902,14 +1902,14 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
         // Render history buttons for picker
         ColorButton* button = &milton_state->gui->picker.color_buttons;
         while(button) {
-            if (button->color.a == 0) {
+            if (button->rgba.a == 0) {
                 break;
             }
             fill_rectangle_with_margin(raster_buffer,
                                        milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                                        button->x, button->y,
                                        button->w, button->h,
-                                       button->color,
+                                       button->rgba,
                                        // Black margin
                                        (v4f){ 0, 0, 0, 1 });
             button = button->next;
@@ -1927,7 +1927,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
                     milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                     x, y,
                     circle_radius,
-                    color_rgb_to_rgba(hsv_to_rgb(gui->picker.info.hsv), 1.0f));
+                    color_rgb_to_rgba(hsv_to_rgb(gui->picker.data.hsv), 1.0f));
         draw_ring(raster_buffer,
                   milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                   x, y,
@@ -1954,7 +1954,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
             preview_color.rgb = milton_state->view->background_color;
             preview_color.a = 1;
             if ( milton_state->current_mode == MiltonMode_PEN ) {
-                preview_color = to_premultiplied(hsv_to_rgb(gui->picker.info.hsv), milton_get_pen_alpha(milton_state));
+                preview_color = to_premultiplied(hsv_to_rgb(gui->picker.data.hsv), milton_get_pen_alpha(milton_state));
             }
             draw_circle(raster_buffer,
                         milton_state->view->screen_size.w, milton_state->view->screen_size.h,
@@ -1997,7 +1997,12 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
                   milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                   milton_state->hover_point.x, milton_state->hover_point.y,
                   radius, 1,
-                  (v4f){0});
+                  (v4f){0,0,0,1});
+        draw_ring(raster_buffer,
+                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                  milton_state->hover_point.x, milton_state->hover_point.y,
+                  radius+1, 1,
+                  (v4f){1,1,1,1});
     }
 }
 
