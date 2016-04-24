@@ -920,7 +920,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
                 render_flags |= gui_process_input(milton_state, input);
                 milton_update_brushes(milton_state);
-            } else if (!milton_state->gui->active) {
+            } else if (!milton_state->gui->active && (milton_state->working_layer->flags & LayerFlags_VISIBLE)) {
                 milton_stroke_input(milton_state, input);
             }
         }
