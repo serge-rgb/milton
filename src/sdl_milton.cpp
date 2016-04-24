@@ -486,8 +486,11 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     // ==== Initialize milton
     //  Total (static) memory requirement for Milton
-    //size_t sz_root_arena = (size_t)1 * 1024 * 1024 * 1024;
+#if MILTON_DEBUG
+    size_t sz_root_arena = (size_t)1 * 1024 * 1024 * 1024;
+#else
     size_t sz_root_arena = (size_t)10 * 1024 * 1024;  // 10 MB is roughly the non-dynamic required memory for Milton
+#endif
 
     // Using platform_allocate because stdlib calloc will be really slow.
     void* big_chunk_of_memory = platform_allocate(sz_root_arena);

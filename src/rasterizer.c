@@ -372,7 +372,12 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                             // (which should not get here in the first place), we can use 0
                             // to denote a stroke that fills the block, saving ourselves a
                             // boolean struct member.
-                            list_head->num_points = ClippedStroke_FILLS_BLOCK;
+                            //
+                            // TODO(FIXME) To ship on time for
+                            // handmade.netowork, removing this optimization as
+                            // a workaround for a very tricky bug
+                            //
+                            //list_head->num_points = ClippedStroke_FILLS_BLOCK;
                         }
                         stroke_list = list_head;
                     }
@@ -502,9 +507,14 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
+                    // i.e. We can assume this pixel will have 16 samples of clipped_stroke.
 #if 0 // Visualize it with black
-                    v4f dst = {0, 0, 0, is_eraser? 1 : clipped_stroke->brush.color.a};
-                    acc_color = blend_v4f(dst, acc_color);
+                    if ( is_eraser )  {
+                        pixel_erased = true;
+                    } else {
+                        v4f dst = {0,0,0,1};
+                        acc_color = blend_v4f(dst, acc_color);
+                    }
 #else
                     if ( is_eraser )  {
                         pixel_erased = true;
@@ -513,8 +523,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                         acc_color = blend_v4f(dst, acc_color);
                     }
 #endif
-                } else if ( clipped_stroke->num_points > 0 ) {
-                    // Slow path. There are pixels not inside.
+                } else if ( clipped_stroke->num_points > 0 ) {  // Slow path. There are pixels not inside.
                     ClippedPoint* points = clipped_stroke->clipped_points;
 
                     f32 min_dist = FLT_MAX;
@@ -624,7 +633,8 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                             } else {
                                 f32 coverage = (f32)samples / 16.0f;
 
-                                v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
+                                //v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
+                                v4f dst = clipped_stroke->brush.color;
                                 {
                                     dst.r *= coverage;
                                     dst.g *= coverage;
@@ -787,6 +797,9 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                 b32 is_eraser = equ4f(clipped_stroke->brush.color, k_eraser_color);
 
+#if 1
+                { // FIXME: workaround
+#else
                 // Fast path.
                 if ( clipped_stroke_fills_block(clipped_stroke) ) {
                     if ( is_eraser )  {
@@ -796,6 +809,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         acc_color = blend_v4f(dst, acc_color);
                     }
                 } else if ( clipped_stroke->num_points > 0 ) {
+#endif
                     // Slow path. There are pixels not inside.
                     ClippedPoint* points = clipped_stroke->clipped_points;
 
@@ -1098,7 +1112,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             } else {
                                 f32 coverage = (f32)samples / 16.0f;
 
-                                v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
+                                v4f dst = clipped_stroke->brush.color;
                                 {
                                     dst.r *= coverage;
                                     dst.g *= coverage;
@@ -1728,6 +1742,7 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 #else
         Arena blockgroup_arena = arena_push(milton_state->root_arena, (size_t)128 * 1024 * 1024);
         render_blockgroup(milton_state,
+                          0,
                           &blockgroup_arena,
                           blocks,
                           block_i, num_blocks,

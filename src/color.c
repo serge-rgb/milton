@@ -4,6 +4,7 @@
 
 #include "color.h"
 
+v4f k_eraser_color = {23,34,45,56};
 
 u32 color_v4f_to_u32(v4f c)
 {

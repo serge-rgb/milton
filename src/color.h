@@ -8,7 +8,7 @@
 #include "utils.h"
 
 
-static v4f k_eraser_color = {2,3,4,5};
+extern v4f k_eraser_color; // unlikely vector to appear as an rgb [0,1]x3 value
 
 u32 color_v4f_to_u32(v4f c);
 
