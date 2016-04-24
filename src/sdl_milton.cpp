@@ -603,37 +603,44 @@ int milton_main(MiltonStartupFlags startup_flags)
             platform_state.panning_fsm = PanningFSM_NOTHING;
         }
 
-        // Handle system cursor and platform state related to current_mode
-        if ( platform_state.is_panning ) {
-            cursor_set_and_show(platform_state.cursor_sizeall);
-        }
-        else if ( platform_state.stopped_panning ) {
-            milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
-            cursor_set_and_show(platform_state.cursor_default);
-        }
-        else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
-            cursor_set_and_show(platform_state.cursor_crosshair);
-            platform_state.was_exporting = true;
-        }
-        else if ( platform_state.was_exporting ) {
-            cursor_set_and_show(platform_state.cursor_default);
-            platform_state.was_exporting = false;
-        }
-        else if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
-            cursor_set_and_show(platform_state.cursor_crosshair);
-            platform_state.is_pointer_down = false;
-        }
-        else if ( ImGui::GetIO().WantCaptureMouse ) {
-            cursor_set_and_show(platform_state.cursor_default);
-        }
-        else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
-            cursor_hide();
-        }
-        { // Show resize icon
-            int pad = 20;
+        {
             int x = 0;
             int y = 0;
             SDL_GetMouseState(&x, &y);
+
+            // Handle system cursor and platform state related to current_mode
+            if ( platform_state.is_panning ) {
+                cursor_set_and_show(platform_state.cursor_sizeall);
+            }
+            else if ( platform_state.stopped_panning ) {
+                milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+                cursor_set_and_show(platform_state.cursor_default);
+            }
+            else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
+                cursor_set_and_show(platform_state.cursor_crosshair);
+                platform_state.was_exporting = true;
+            }
+            else if ( platform_state.was_exporting ) {
+                cursor_set_and_show(platform_state.cursor_default);
+                platform_state.was_exporting = false;
+            }
+            else if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
+                cursor_set_and_show(platform_state.cursor_crosshair);
+                platform_state.is_pointer_down = false;
+            }
+            else if ( ImGui::GetIO().WantCaptureMouse ) {
+                cursor_set_and_show(platform_state.cursor_default);
+            }
+            else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
+                cursor_hide();
+            }
+            if (is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x, y)) {
+                // Show cursor if hovering over custom gui
+                cursor_show();
+            }
+
+            // Show resize icon
+            int pad = 20;
             if ( x > milton_state->view->screen_size.w - pad   ||
                  x < pad                                       ||
                  y > milton_state->view->screen_size.h - pad   ||
