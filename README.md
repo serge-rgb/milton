@@ -7,8 +7,13 @@
 [![Stories in Ready](https://badge.waffle.io/serge-rgb/milton.png?label=ready&title=Ready)](https://waffle.io/serge-rgb/milton)
 [![Join the chat at https://gitter.im/serge-rgb/milton](https://badges.gitter.im/serge-rgb/milton.svg)](https://gitter.im/serge-rgb/milton?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-![Milton Paint girl](http://i.imgur.com/7UmXTlD.png)
+![Milton Paint ss](http://i.imgur.com/hjMxPDb.png)
 
+Milton is an open source application that lets you Just Paint®.
+
+There are no pixels, you can paint with (almost) infinite detail. It feels raster-based but it works with vectors.
+It is not an image editor. It is not a vector graphics editor. It is a program that lets you draw, sketch and paint.
+There is no save button, your work is persistent with unlimited undo.
 
 Features
 --------
@@ -33,18 +38,16 @@ be something more than that.
 - Wacom support
 
     Milton currently supports Wacom on Windows Mac and Linux. The Mac version
-supports any tablet device.
+supports any tablet device. General tablet support on Windows is WIP.
 
 - Software rendered.
 
     Milton features a software rasterizer by design, for reliability and
 flexibility.
 
-- Light-weight
-
 - Multi-platform
 
-    Windows, Linux, OSX (Linux and OSX versions are In-Progress)
+    Windows only at the moment. Linux and OSX coming in the near future.
 
 - Open Source
 
@@ -67,6 +70,8 @@ It's very helpful to drag the mouse (or pen) while pressing `space` to pan the
 canvas.  Also, switching between the brush and the eraser with `b` and `e`.
 You can change the brush size with `[` and `]` and control the transparency
 with the number keys.
+
+Here is the  [latest video tutorial](https://www.youtube.com/watch?v=g27gHio2Ohk)
 
 
 How to Compile
