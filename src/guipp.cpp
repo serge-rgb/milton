@@ -202,7 +202,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         }
         if ( ImGui::BeginMenu(LOC(help)) ) {
             if ( ImGui::MenuItem(LOC(help_me)) ) {
-                platform_open_link("https://github.com/serge-rgb/milton#user-manual");
+                platform_open_link("https://www.youtube.com/watch?v=g27gHio2Ohk");
             }
             if ( ImGui::MenuItem(LOC(milton_version)) ) {
                 char buffer[1024];

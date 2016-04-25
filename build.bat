@@ -7,28 +7,21 @@ set mlt_opt_level=1
 
 IF NOT EXIST build mkdir build
 
-IF EXIST third_party\bin\SDL2.dll goto SDL_OK
-
-:: SDL dll not present for some reason.
-call scripts\setup.bat
-COPY third_party\SDL2-2.0.3\VisualC\SDL\X64\Debug\SDL2.dll third_party\bin\SDL2.dll
-
-
-:SDL_OK
-
-IF NOT EXIST build\SDL2.dll copy third_party\bin\SDL2.dll build\SDL2.dll
+IF NOT EXIST build\SDL2.lib copy third_party\bin\SDL2.lib build\SDL2.lib
+IF NOT EXIST build\SDL2.pdb copy third_party\bin\SDL2.pdb build\SDL2.pdb
 IF NOT EXIST build\milton_icon.ico copy milton_icon.ico build\milton_icon.ico
 ::IF NOT EXIST build\carlito.ttf
 
 pushd build
-::set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
+set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
 
 set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 
 :: ---- Define opt & nopt flags
 :: Oy- disable frame pointer omission (equiv. to -f-no-omit-frame-pointer)
 set mlt_opt=/Ox /Oy- /MT
-set mlt_nopt=/Od /MTd
+set mlt_nopt=/Od /MT
+:: both are /MT to match static SDL. Live and learn
 
 if %mlt_opt_level% == 0 set mlt_opt_flags=%mlt_nopt%
 if %mlt_opt_level% == 1 set mlt_opt_flags=%mlt_opt%
@@ -60,7 +53,7 @@ set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SD
 set sdl_dir=..\third_party\bin
 
 :: shell32.lib -- ShellExcecute to open help
-set mlt_link_flags=..\third_party\glew32s.lib OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib Shell32.lib %sdl_dir%\SDL2.lib /SAFESEH:NO /DEBUG
+set mlt_link_flags=..\third_party\glew32s.lib OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib Shell32.lib /SAFESEH:NO /DEBUG
 
 :: ---- Compile third_party libs with less warnings
 :: Delete file build\SKIP_LIB_COMPILATION to recompile. Created by default to reduce build times.
@@ -116,7 +109,7 @@ if %errorlevel% neq 0 goto fail
 cl %mlt_opt_flags% %mlt_compiler_flags%  /wd4302 /wd4311 %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_cpp.cpp
 if %errorlevel% neq 0 goto fail
-link milton_unity_build_c.obj milton_unity_build_cpp.obj /OUT:Milton.exe %mlt_link_flags% %header_links% Milton.res
+link milton_unity_build_c.obj milton_unity_build_cpp.obj /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
 if %errorlevel% neq 0 goto fail
 
 :ok
