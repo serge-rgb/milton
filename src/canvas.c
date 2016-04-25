@@ -80,12 +80,13 @@ Layer* layer_get_topmost(Layer* root)
 }
 Layer* layer_get_by_id(Layer* root_layer, i32 id)
 {
+    Layer* l = NULL;
     for(Layer* layer = root_layer; layer; layer = layer->next) {
         if ( layer->id == id ) {
-            return layer;
+            l = layer;
         }
     }
-    return root_layer;
+    return l;
 }
 
 // Push stroke at the top of the current layer

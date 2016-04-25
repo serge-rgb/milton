@@ -103,7 +103,9 @@ void milton_load(MiltonState* milton_state)
         }
 
         i32 num_layers = 0;
+        i32 layer_guid = 0;
         if ( ok ) { ok = fread_checked(&num_layers, sizeof(i32), 1, fd); }
+        if ( ok ) { ok = fread_checked(&layer_guid, sizeof(i32), 1, fd); }
 
         milton_state->root_layer = NULL;
         milton_state->working_layer = NULL;
@@ -194,6 +196,7 @@ void milton_load(MiltonState* milton_state)
                     layer = layer->next;
                 }
             }
+            milton_state->layer_guid = layer_guid;
         }
     } else {
         milton_reset_canvas(milton_state);
@@ -224,6 +227,7 @@ void milton_save(MiltonState* milton_state)
 
         i32 num_layers = number_of_layers(milton_state->root_layer);
         if ( ok ) { ok = fwrite_checked(&num_layers, sizeof(i32), 1, fd); }
+        if ( ok ) { ok = fwrite_checked(&milton_state->layer_guid, sizeof(i32), 1, fd); }
 
         i32 TEST = 0;
         for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next ) {

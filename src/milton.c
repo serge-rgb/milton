@@ -596,6 +596,8 @@ void milton_reset_canvas(MiltonState* milton_state)
         mlt_free(l);
         l = next;
     }
+
+    milton_state->layer_guid = 0;
     milton_state->root_layer = NULL;
     milton_state->working_layer = NULL;
     // New Root
@@ -627,6 +629,7 @@ void milton_reset_canvas(MiltonState* milton_state)
 
         exporter_init(&gui->exporter);
     }
+    milton_update_brushes(milton_state);
 }
 
 void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
@@ -685,15 +688,8 @@ void milton_expand_render_memory(MiltonState* milton_state)
 
 void milton_new_layer(MiltonState* milton_state)
 {
-    i32 id = 0; {  // Find highest id;
-        Layer* it = milton_state->root_layer;
-        while ( it ) {
-            if ( it->id >= id ) {
-                id = it->id + 1;
-            }
-            it = it->next;
-        }
-    }
+    i32 id = milton_state->layer_guid++;
+    milton_log("Increased guid to %d\n", milton_state->layer_guid);
 
     Layer* layer = mlt_calloc(1, sizeof(Layer));
     *layer = (Layer) {
@@ -724,16 +720,17 @@ void milton_delete_working_layer(MiltonState* milton_state)
 {
     Layer* layer = milton_state->working_layer;
     if ( layer->next || layer->prev ) {
-        if ( layer->next )
-            layer->next->prev = layer->prev;
-        if ( layer->prev )
-            layer->prev->next = layer->next;
+        if ( layer->next ) layer->next->prev = layer->prev;
+        if ( layer->prev ) layer->prev->next = layer->next;
 
-        if (layer->next)
-            milton_state->working_layer = layer->next;
-        else
-            milton_state->working_layer = layer->prev;
+        Layer* wl = NULL;
+        if (layer->next) wl = layer->next;
+        else wl = layer->prev;
+        milton_set_working_layer(milton_state, wl);
     }
+    if ( layer == milton_state->root_layer )
+        milton_state->root_layer = milton_state->working_layer;
+    mlt_free(layer);
     milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
 }
 
@@ -859,16 +856,33 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     { // Undo / Redo
         if (check_flag( input->flags, MiltonInputFlags_UNDO )) {
+            // Grab undo elements. They might be from deleted layers, so discard dead results.
+            while ( sb_count(milton_state->history) ) {
+                HistoryElement h = sb_pop(milton_state->history);
+                Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
+                if ( l ) { // found a thing to undo.
+                    if ( sb_count(l->strokes) ) {
+                        Stroke stroke = sb_pop(l->strokes);
+                        sb_push(milton_state->stroke_graveyard, stroke);
+                        sb_push(milton_state->redo_stack, h);
+                        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+                    }
+                    break;
+                }
+            }
+#if 0
             if ( sb_count(milton_state->history) ) {
                 HistoryElement h = sb_pop(milton_state->history);
                 switch (h.type) {
                 case HistoryElement_STROKE_ADD: {
                     Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
-                    assert (sb_count(l->strokes) > 0);
+                    if (l!=) {
+                        assert (sb_count(l->strokes) > 0);
 
-                    Stroke stroke = sb_pop(l->strokes);
-                    sb_push(milton_state->stroke_graveyard, stroke);
-                    set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+                        Stroke stroke = sb_pop(l->strokes);
+                        sb_push(milton_state->stroke_graveyard, stroke);
+                        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+                    }
 
                 } break;
                 /* case HistoryElement_LAYER_DELETE: { */
@@ -877,17 +891,24 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 }
                 sb_push(milton_state->redo_stack, h);
             }
+#endif
         }
         else if ( check_flag(input->flags, MiltonInputFlags_REDO ) ) {
-            if ( sb_count(milton_state->redo_stack) > 0 ) {
+            while ( sb_count(milton_state->redo_stack) > 0 ) {
                 HistoryElement h = sb_pop(milton_state->redo_stack);
                 switch (h.type) {
                 case HistoryElement_STROKE_ADD: {
                     Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
-                    Stroke stroke = sb_pop(milton_state->stroke_graveyard);
-                    sb_push(l->strokes, stroke);
-                    sb_push(milton_state->history, h);
-                    set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+                    if (l) {
+                        Stroke stroke = sb_pop(milton_state->stroke_graveyard);
+                        if (stroke.layer_id == h.layer_id) {
+                            sb_push(l->strokes, stroke);
+                            sb_push(milton_state->history, h);
+                            set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
+                            break;
+                        }
+                        stroke = sb_pop(milton_state->stroke_graveyard);  // Keep popping in case the graveyard has info from deleted layers
+                    }
 
                 } break;
                 /* case HistoryElement_LAYER_DELETE: { */

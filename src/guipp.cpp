@@ -50,20 +50,33 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
     if ( ImGui::BeginMainMenuBar() ) {
         if ( ImGui::BeginMenu(LOC(file)) ) {
             if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
-                b32 ok = true;
+                b32 yes = true;
                 if (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) {
-                    if (platform_dialog_yesno("Your canvas has not been saved to a file. You will lose it. Continue?", "Continue?")) {
-                        ok = true;
+                    if (platform_dialog_yesno("Your canvas will be lost. Save it?", "Save?")) {
+                        yes = true;
                     } else {
-                        ok = false;
+                        yes = false;
                     }
                 }
-                if (ok) {
-                    milton_set_default_canvas_file(milton_state);
-                    milton_reset_canvas(milton_state);
-                    input->flags |= MiltonInputFlags_FULL_REFRESH;
-                    milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+                if (yes) {
+                    char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                    if (name) {
+                        milton_log("Saving to %s\n", name);
+                        milton_set_canvas_file(milton_state, name);
+                        milton_save(milton_state);
+                        b32 del = platform_delete_file_at_config("MiltonPersist.mlt", DeleteErrorTolerance_OK_NOT_EXIST);
+                        if (del == false) {
+                            platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
+                                            "Info");
+                        }
+                    }
                 }
+
+                // New Canvas
+                milton_set_default_canvas_file(milton_state);
+                milton_reset_canvas(milton_state);
+                input->flags |= MiltonInputFlags_FULL_REFRESH;
+                milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
             }
             b32 save_requested = false;
             if ( ImGui::MenuItem(LOC(open_milton_canvas)) ) {
@@ -406,22 +419,26 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
             }
 
-            static bool deleting = false;
-            if ( deleting == false ) {
-                if ( ImGui::Button(LOC(delete)) ) {
-                    deleting = true;
+            if ( milton_state->working_layer->next ||
+                 milton_state->working_layer->prev )
+            {
+                static bool deleting = false;
+                if ( deleting == false ) {
+                    if ( ImGui::Button(LOC(delete)) ) {
+                        deleting = true;
+                    }
                 }
-            }
-            else if ( deleting ) {
-                ImGui::Text(LOC(are_you_sure));
-                ImGui::Text(LOC(cant_be_undone));
-                if ( ImGui::Button(LOC(yes)) ) {
-                    milton_delete_working_layer(milton_state);
-                    deleting = false;
-                }
-                ImGui::SameLine();
-                if ( ImGui::Button(LOC(no)) ) {
-                    deleting = false;
+                else if ( deleting ) {
+                    ImGui::Text(LOC(are_you_sure));
+                    ImGui::Text(LOC(cant_be_undone));
+                    if ( ImGui::Button(LOC(yes)) ) {
+                        milton_delete_working_layer(milton_state);
+                        deleting = false;
+                    }
+                    ImGui::SameLine();
+                    if ( ImGui::Button(LOC(no)) ) {
+                        deleting = false;
+                    }
                 }
             }
             ImGui::EndChild();

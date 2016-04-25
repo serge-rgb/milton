@@ -1688,30 +1688,6 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 {
     PROFILE_BEGIN(render_canvas);
 
-    if (0)
-    {  // Clip strokes outside of raster_limits
-        Layer* lay = milton_state->root_layer;
-        while(lay) {
-            //if ((lay->flags & LayerFlags_VISIBLE)) {
-                for (i32 si=0; si < sb_count(lay->strokes); ++si)  {
-                    Stroke* s = lay->strokes + si;
-                    //for(int wi = 0; wi < milton_state->num_render_workers; ++wi) {
-                    for(int wi = 0; wi < MAX_NUM_WORKERS; ++wi) {
-                        Rect limits =
-                        {
-                            .top_left = raster_to_canvas(milton_state->view, raster_limits.top_left),
-                            .bot_right = raster_to_canvas(milton_state->view, raster_limits.bot_right),
-                        };
-                        s->visibility[wi] = stroke_intersects_rect(s, limits);
-                        s->visibility[wi] = true;
-
-                    }
-                }
-            //}
-            lay = lay->next;
-        }
-    }
-
     Rect* blocks = NULL;
     i32 num_blocks = rect_split(&blocks, raster_limits, milton_state->block_width, milton_state->block_width);
 

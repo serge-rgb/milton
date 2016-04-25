@@ -95,6 +95,7 @@ typedef struct MiltonState
     Brush       brushes[BrushEnum_COUNT];
     i32         brush_sizes[BrushEnum_COUNT];  // In screen pixels
 
+    i32         layer_guid;  // to create unique ids;
     Layer*      root_layer;
     Layer*      working_layer;
 

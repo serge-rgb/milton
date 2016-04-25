@@ -9,7 +9,7 @@
 //  - Asserts
 //  - Fixed location arena allocations
 //  - Runtime renderer implementation switching
-#define MILTON_DEBUG 0
+#define MILTON_DEBUG 1
 
 #define MILTON_MULTITHREADED 1
 
