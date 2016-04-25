@@ -714,7 +714,7 @@ void milton_set_working_layer(MiltonState* milton_state, Layer* layer)
 {
     milton_state->working_layer = layer;
     milton_state->view->working_layer_id = layer->id;
-}
+} 
 
 void milton_delete_working_layer(MiltonState* milton_state)
 {
