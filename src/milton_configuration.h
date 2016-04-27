@@ -7,8 +7,9 @@
 
 // When MILTON_DEBUG is 1,
 //  - Asserts
-//  - Fixed location arena allocations
-//  - Runtime renderer implementation switching
+//  - Fixed address root_arena
+//  -  very large root_arena
+//  - Runtime renderer implementation switching with F4
 #define MILTON_DEBUG 1
 
 #define MILTON_MULTITHREADED 1

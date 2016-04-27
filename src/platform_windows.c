@@ -19,10 +19,21 @@ extern "C" {
 #define snprintf sprintf_s
 #endif
 
+#if MILTON_DEBUG
+#define HEAP_BEGIN_ADDRESS ((LPVOID)(1<<18))  // Location to begin allocations
+#else
 #define HEAP_BEGIN_ADDRESS NULL
+#endif
 
-void* platform_allocate(size_t size)
+void*   platform_allocate_bounded_memory(size_t size)
 {
+#if MILTON_DEBUG
+    static b32 once_check = false;
+    if ( once_check ) {
+        INVALID_CODE_PATH;
+    }
+    once_check = true;
+#endif
     return VirtualAlloc(HEAP_BEGIN_ADDRESS,
                         (size),
                         MEM_COMMIT | MEM_RESERVE,

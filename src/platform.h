@@ -53,7 +53,7 @@ typedef struct TabletState_s TabletState;
 
 int milton_main(MiltonStartupFlags startup_flags);
 
-void*   platform_allocate(size_t size);
+void*   platform_allocate_bounded_memory(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}
 void    platform_deallocate_internal(void* ptr);
 #define milton_log platform_milton_log

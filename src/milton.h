@@ -125,7 +125,7 @@ typedef struct MiltonState
     RenderStack*    render_stack;
 
     // Heap
-    Arena*      root_arena;         // Persistent memory.
+    Arena*      root_arena;         // Bounded allocations
     Arena*      render_worker_arenas;
 
     size_t      worker_memory_size;

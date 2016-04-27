@@ -484,10 +484,10 @@ int milton_main(MiltonStartupFlags startup_flags)
 #endif
 
     // Using platform_allocate because stdlib calloc will be really slow.
-    void* big_chunk_of_memory = platform_allocate(sz_root_arena);
+    void* big_chunk_of_memory = platform_allocate_bounded_memory(sz_root_arena);
 
     if ( !big_chunk_of_memory ) {
-        milton_fatal("Could allocate virtual memory for Milton.");
+        milton_fatal("Could allocate bounded virtual memory for Milton.\n");
     }
 
     Arena root_arena = arena_init(big_chunk_of_memory, sz_root_arena);
