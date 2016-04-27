@@ -89,7 +89,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
     MiltonInput milton_input = {};
 
     b32 pointer_up = false;
-    b32 got_pen_input = false;
 
     v2i input_point = {};
 
@@ -147,7 +146,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             if (er == EASYTAB_OK) {  // Event was handled.
                 if ( platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && EasyTab->Pressure > 0 ) {
                     platform_state->is_pointer_down = true;
-                    got_pen_input = true;
                     if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
                         if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS) {
                             milton_input.points[platform_state->num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
@@ -378,13 +376,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             break;
         }
     }  // ---- End of SDL event loop
-
-    b32 lost_tablet_input = got_pen_input == false && platform_state->receiving_tablet_input;
-    if ( lost_tablet_input ) {
-        pointer_up  = true;
-        set_flag(input_flags, MiltonInputFlags_CLICKUP);
-    }
-    platform_state->receiving_tablet_input = got_pen_input;
 
     if ( pointer_up ) {
         // Add final point
