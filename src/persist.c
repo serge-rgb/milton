@@ -328,7 +328,7 @@ char* milton_get_last_canvas_fname()
     platform_fname_at_config(full, MAX_PATH);
     FILE* fd = fopen(full, "rb+");
     if (fd) {
-        u64 len = 0;
+        size_t len = 0;
         fread(&len, sizeof(len), 1, fd);
         if (len > MAX_PATH) {
             mlt_free(full);

@@ -203,7 +203,7 @@ float picker_wheel_get_angle(ColorPicker* picker, v2f point)
     return angle;
 }
 
-static void picker_init(ColorPicker* picker)
+void picker_init(ColorPicker* picker)
 {
     v2f fpoint = {
         (f32)picker->center.x + (int)(picker->wheel_radius),
@@ -242,7 +242,7 @@ void eyedropper_input(MiltonGui* gui, u32* canvas_buffer, i32 w, i32 h, v2i poin
     picker_from_rgb(&gui->picker, color.rgb);
 }
 
-static void exporter_init(Exporter* exporter)
+void exporter_init(Exporter* exporter)
 {
     *exporter = (Exporter){0};
     exporter->scale = 1;

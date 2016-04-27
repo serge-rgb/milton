@@ -142,10 +142,12 @@ b32                 gui_consume_input(MiltonGui* gui, MiltonInput* input);
 MiltonRenderFlags   gui_process_input(MiltonState* milton_state, MiltonInput* input);
 void                gui_imgui_set_ungrabbed(MiltonGui* gui);
 
+void exporter_init(Exporter* exporter);
 b32 exporter_input(Exporter* exporter, MiltonInput* input);  // True if exporter changed
 
 
 // Color Picker API
+void    picker_init(ColorPicker* picker);
 b32     picker_hits_wheel(ColorPicker* picker, v2f point);
 float   picker_wheel_get_angle(ColorPicker* picker, v2f point);
 v3f     picker_hsv_from_point(ColorPicker* picker, v2f point);

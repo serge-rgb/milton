@@ -77,20 +77,18 @@ Here is the  [latest video tutorial](https://www.youtube.com/watch?v=g27gHio2Ohk
 How to Compile
 ==============
 
-Milton targets Windows, Linux and OSX.
+Milton targets Windows, Linux and OSX. All 64 bit.
 
 Windows
 -------
 
-Requirements:
-
-- Visual Studio >= 2013 (Community Edition is fine.)
-
 0. Open a developer console. You have at least two options:
     - Open "Developer Command Prompt" and go to Milton's directory.
-    - (VS2015 only) Use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio 2015 suite in your PATH. It will try to use the 64-bit version
+    - Alternatively, use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio 2015 suite in your PATH. It will try to use the 64-bit version
 1. `build.bat` (The first time will compile dependencies, the next times it should be quick)
 2. Milton is compiled to `build\Milton.exe`
+
+There is a Visual studio solution provided in VS2015\MiltonPaint.sln.
 
 Linux
 -----

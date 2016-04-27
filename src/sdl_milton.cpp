@@ -572,7 +572,12 @@ int milton_main(MiltonStartupFlags startup_flags)
         io.IniFilename = NULL;  // Don't save any imgui.ini file
         char fname[MAX_PATH] = "carlito.ttf";
         platform_fname_at_exe(fname, MAX_PATH);
-        ImFont* im_font =  io.Fonts->ImFontAtlas::AddFontFromFileTTF(fname, 14);
+        FILE* fd_sentinel = fopen(fname, "rb");
+
+        if (fd_sentinel) {
+            fclose(fd_sentinel);
+            ImFont* im_font =  io.Fonts->ImFontAtlas::AddFontFromFileTTF(fname, 14);
+        }
     }
     // Initalize system cursors
     {
