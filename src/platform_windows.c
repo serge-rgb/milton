@@ -226,9 +226,40 @@ b32 platform_delete_file_at_config(char* fname, int error_tolerance)
     return ok;
 }
 
+static void win32_print_error(int err)
+{
+    LPTSTR error_text = NULL;
+
+    FormatMessage(
+                  // use system message tables to retrieve error text
+                  FORMAT_MESSAGE_FROM_SYSTEM
+                  // allocate buffer on local heap for error text
+                  |FORMAT_MESSAGE_ALLOCATE_BUFFER
+                  // Important! will fail otherwise, since we're not
+                  // (and CANNOT) pass insertion parameters
+                  |FORMAT_MESSAGE_IGNORE_INSERTS,
+                  NULL,    // unused with FORMAT_MESSAGE_FROM_SYSTEM
+                  err,
+                  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                  (LPTSTR)&error_text,  // output
+                  0, // minimum size for output buffer
+                  NULL);   // arguments - see note
+
+    if ( error_text ) {
+        milton_log(error_text);
+        LocalFree(error_text);
+    }
+    milton_log("last error is %d\n", err);
+}
+
 b32 platform_move_file(char* src, char* dest)
 {
     b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
+    if (!ok) {
+        int err = GetLastError();
+        win32_print_error(err);
+        int foo =1;
+    }
     return ok;
 }
 
@@ -274,6 +305,20 @@ static MiltonStartupFlags win32_parse_cmdline()
 void platform_open_link(char* link)
 {
     ShellExecute(NULL, "open", link, NULL, NULL, SW_SHOWNORMAL);
+}
+
+WallTime platform_get_walltime()
+{
+    WallTime wt = {0};
+    {
+        SYSTEMTIME ST;
+        GetLocalTime(&ST);
+        wt.h = ST.wHour;
+        wt.m = ST.wMinute;
+        wt.s = ST.wSecond;
+        wt.ms = ST.wMilliseconds;
+    }
+    return wt;
 }
 
 int CALLBACK WinMain(

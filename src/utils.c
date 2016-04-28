@@ -423,3 +423,18 @@ void str_free(char** strings)
    }
    sb_free(strings);
 }
+
+char* str_trim_to_last_slash(char* str)
+{
+    char* cool_char = str;
+    for( char* iter = str;
+         *iter != '\0';
+         iter++)
+    {
+        if ((*iter == '/' || *iter == '\\')) {
+            cool_char = (iter+1);
+        }
+    }
+    return cool_char;
+}
+

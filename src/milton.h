@@ -89,7 +89,10 @@ typedef struct MiltonState
     MiltonGLState* gl;
 
     struct MiltonGui* gui;
-    char* mlt_file_path;
+
+    // Persistence
+    char*       mlt_file_path;
+    WallTime    last_save_time;
 
     // ---- The Painting
     Brush       brushes[BrushEnum_COUNT];
@@ -152,6 +155,7 @@ enum MiltonStateFlags
     MiltonStateFlags_DEFAULT_CANVAS         = 1<<5,
     MiltonStateFlags_IGNORE_NEXT_CLICKUP    = 1<<6,  // When selecting eyedropper from menu, avoid the click from selecting the color...
     MiltonStateFlags_BRUSH_SIZE_CHANGED     = 1<<7,
+    MiltonStateFlags_LAST_SAVE_FAILED       = 1<<8,
 };
 
 typedef enum MiltonInputFlags

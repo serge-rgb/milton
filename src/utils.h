@@ -175,3 +175,33 @@ char** str_tokenize(char* in);
 // Takes a stretchy buffer returned from str_* util functions.
 void str_free(char** strings);
 
+// Returns a pointer in the same string to the first char that does not have any (back)slashes in front.
+char* str_trim_to_last_slash(char* str);
+
+// -----------
+// TIME
+// -----------
+
+typedef struct WallTime
+{
+    union
+    {
+        struct
+        {
+            i32 hours;
+            i32 minutes;
+            i32 seconds;
+            i32 milliseconds;
+        };
+        struct
+        {
+            i32 h;
+            i32 m;
+            i32 s;
+            i32 ms;
+        };
+    };
+} WallTime;
+// Use platform_get_walltime to fill struct.
+
+

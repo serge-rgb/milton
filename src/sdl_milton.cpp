@@ -24,7 +24,7 @@ enum PanningFSM
 
 static b32 g_cursor_count = 0;
 
-static void cursor_hide()
+void cursor_hide()
 {
 #if defined(_WIN32)
     while (g_cursor_count >= 0) {
@@ -44,7 +44,7 @@ static void cursor_hide()
 #endif
 }
 
-static void cursor_show()
+void cursor_show()
 {
 #if defined(_WIN32)
     while (g_cursor_count < 0) {
@@ -80,7 +80,6 @@ static void turn_panning_off(PlatformState* p)
 
 static void cursor_set_and_show(SDL_Cursor* cursor)
 {
-    cursor_show();
     SDL_SetCursor(cursor);
 }
 
@@ -114,7 +113,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 #endif
         switch ( event.type ) {
         case SDL_QUIT:
-            platform_state->should_quit = true;
+            cursor_show();
+            milton_try_quit(milton_state);
             break;
         case SDL_SYSWMEVENT: {
             f32 pressure = NO_PRESSURE_INFO;
@@ -231,7 +231,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     }
                     if ( platform_state->is_ctrl_down ) {
                         if (keycode == SDLK_q) {
-                            platform_state->should_quit = true;
+                            milton_try_quit(milton_state);
                         }
                         if (keycode == SDLK_z) {
                             if ( platform_state->is_shift_down ) {
@@ -397,10 +397,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             }
         }
         platform_state->is_pointer_down = false;
-    }
-
-    if (platform_state->stopped_panning && platform_state->receiving_tablet_input) {
-        platform_state->panning_fsm = PanningFSM_MOUSE_PANNING;  // keep panning until we stop receiving input.
     }
 
     if (platform_state->panning_fsm == PanningFSM_MOUSE_PANNING) {

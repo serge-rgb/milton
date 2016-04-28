@@ -21,7 +21,6 @@ struct PlatformState
     b32 is_pointer_down;
 
     int panning_fsm;
-    b32 receiving_tablet_input;
 
     b32 is_panning;
     b32 panning_locked; // locked when panning from GUI

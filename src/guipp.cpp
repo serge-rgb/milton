@@ -111,6 +111,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 }
             }
             if (ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested) {
+                // NOTE(possible refactor): There is a copy of this at milton.c end of file
                 char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                 if (name) {
                     milton_log("Saving to %s\n", name);
@@ -230,9 +231,12 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         }
 
         char msg[1024];
-#if 0
-        snprintf(msg, 1024, "    %s Last Saved XX:XX:XX",
-                 (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" : "");
+#if 1
+        WallTime lst = milton_state->last_save_time;
+        snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d",
+                 (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" :
+                 str_trim_to_last_slash(milton_state->mlt_file_path),
+                 lst.hours, lst.minutes, lst.seconds);
         if ( ImGui::BeginMenu(msg, /*bool enabled = */false) )  {
             ImGui::EndMenu();
         }

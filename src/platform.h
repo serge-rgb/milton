@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 #include "common.h"
+#include "utils.h"
 // EasyTab for drawing tablet support
 
 #if defined(_MSC_VER)
@@ -22,6 +23,7 @@ extern "C" {
 #pragma warning(pop)
 #endif
 
+#if 0
 #if defined(_WIN32)
     // ShellScalingApi.h
 typedef enum _PROCESS_DPI_AWARENESS {
@@ -35,6 +37,7 @@ HRESULT WINAPI SetProcessDpiAwareness(
 );
 #endif
 // ----
+#endif
 
 typedef enum HistoryDebug
 {
@@ -61,6 +64,9 @@ void    milton_fatal(char* message);
 void    milton_die_gracefully(char* message);
 
 
+
+void cursor_show();
+void cursor_hide();
 
 typedef enum FileKind
 {
@@ -95,6 +101,8 @@ void    platform_fname_at_config(char* fname, i32 len);
 
 // Does *not* verify link. Do not expose to user facing inputs.
 void    platform_open_link(char* link);
+
+WallTime platform_get_walltime();
 
 
 #if defined(_WIN32)

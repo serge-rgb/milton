@@ -12,6 +12,7 @@
 #include "milton.h"
 #include "platform.h"
 #include "tiny_jpeg.h"
+#include "utils.h"
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
@@ -75,7 +76,7 @@ static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
 void milton_load(MiltonState* milton_state)
 {
     assert(milton_state->mlt_file_path);
-    FILE* fd = fopen(milton_state->mlt_file_path, "rb+");
+    FILE* fd = fopen(milton_state->mlt_file_path, "rb");
     b32 ok = true;  // fread check
 
     if ( fd ) {
@@ -180,9 +181,12 @@ void milton_load(MiltonState* milton_state)
             if (ok) { sb_reserve(milton_state->history, (i32)history_count); }
             if (ok) { ok = fread_checked_nocopy(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
         }
-        fclose(fd);
+        int err = fclose(fd);
+        if ( err != 0 ) {
+            ok = false;
+        }
         if ( !ok ) {
-            platform_dialog("Tried to load a corrupted Milton file", "Error");
+            platform_dialog("Tried to load a corrupted Milton file or there was an error reading from disk.", "Error");
             milton_reset_canvas(milton_state);
         } else {
             i32 id = milton_state->view->working_layer_id;
@@ -205,96 +209,119 @@ void milton_load(MiltonState* milton_state)
 
 void milton_save(MiltonState* milton_state)
 {
-    int pid = (int)getpid();
-    char tmp_fname[MAX_PATH] = {0};
-    snprintf(tmp_fname, MAX_PATH, "milton_tmp.%d.mlt", pid);
+    milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
-    platform_fname_at_config(tmp_fname, MAX_PATH);
+    WallTime last_w = milton_state->last_save_time;
+    WallTime this_w = platform_get_walltime();
 
-    FILE* fd = fopen(tmp_fname, "wb");
+    // If they are the same, we can wait a second. Otherwise, we just don't save modulo a minute.
+    if ( this_w.seconds != last_w.seconds ) {
+        int pid = (int)getpid();
+        char tmp_fname[MAX_PATH] = {0};
+        snprintf(tmp_fname, MAX_PATH, "milton_tmp.%d.mlt", pid);
 
-    b32 ok = true;
+        platform_fname_at_config(tmp_fname, MAX_PATH);
 
-    if ( fd ) {
-        u32 milton_magic = MILTON_MAGIC_NUMBER;
+        FILE* fd = fopen(tmp_fname, "wb");
 
-        fwrite(&milton_magic, sizeof(u32), 1, fd);
+        b32 ok = true;
 
-        u32 milton_binary_version = 1;
+        if ( fd ) {
+            u32 milton_magic = MILTON_MAGIC_NUMBER;
 
-        if ( ok ) { ok = fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd);   }
-        if ( ok ) { ok = fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
+            fwrite(&milton_magic, sizeof(u32), 1, fd);
 
-        i32 num_layers = number_of_layers(milton_state->root_layer);
-        if ( ok ) { ok = fwrite_checked(&num_layers, sizeof(i32), 1, fd); }
-        if ( ok ) { ok = fwrite_checked(&milton_state->layer_guid, sizeof(i32), 1, fd); }
+            u32 milton_binary_version = 1;
 
-        i32 TEST = 0;
-        for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next ) {
-            Stroke* strokes = layer->strokes;
-            i32 num_strokes = sb_count(strokes);
-            char* name = layer->name;
-            i32 len = (i32)(strlen(name) + 1);
-            if ( ok ) { ok = fwrite_checked(&len, sizeof(i32), 1, fd); }
-            if ( ok ) { ok = fwrite_checked(name, sizeof(char), len, fd); }
-            if ( ok ) { ok = fwrite_checked(&layer->id, sizeof(i32), 1, fd); }
-            if ( ok ) { ok = fwrite_checked(&layer->flags, sizeof(layer->flags), 1, fd); }
-            if ( ok ) { ok = fwrite_checked(&num_strokes, sizeof(i32), 1, fd); }
+            if ( ok ) { ok = fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd);   }
+            if ( ok ) { ok = fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
+
+            i32 num_layers = number_of_layers(milton_state->root_layer);
+            if ( ok ) { ok = fwrite_checked(&num_layers, sizeof(i32), 1, fd); }
+            if ( ok ) { ok = fwrite_checked(&milton_state->layer_guid, sizeof(i32), 1, fd); }
+
+            i32 TEST = 0;
+            for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next ) {
+                Stroke* strokes = layer->strokes;
+                i32 num_strokes = sb_count(strokes);
+                char* name = layer->name;
+                i32 len = (i32)(strlen(name) + 1);
+                if ( ok ) { ok = fwrite_checked(&len, sizeof(i32), 1, fd); }
+                if ( ok ) { ok = fwrite_checked(name, sizeof(char), len, fd); }
+                if ( ok ) { ok = fwrite_checked(&layer->id, sizeof(i32), 1, fd); }
+                if ( ok ) { ok = fwrite_checked(&layer->flags, sizeof(layer->flags), 1, fd); }
+                if ( ok ) { ok = fwrite_checked(&num_strokes, sizeof(i32), 1, fd); }
+                if ( ok ) {
+                    for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
+                        Stroke* stroke = &strokes[stroke_i];
+                        assert(stroke->num_points > 0);
+                        if ( ok ) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
+                        if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
+                        if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (i32)stroke->num_points, fd); }
+                        if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (i32)stroke->num_points, fd); }
+                        if ( ok ) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
+                        if ( !ok ) {
+                            break;
+                        }
+                    }
+                } else {
+                    ok = false;
+                }
+                ++TEST;
+            }
+            assert (TEST == num_layers);
+
+            if ( ok ) { ok = fwrite_checked(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd); }
+
+            // Buttons
             if ( ok ) {
-                for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
-                    Stroke* stroke = &strokes[stroke_i];
-                    assert(stroke->num_points > 0);
-                    if ( ok ) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
-                    if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
-                    if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (i32)stroke->num_points, fd); }
-                    if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (i32)stroke->num_points, fd); }
-                    if ( ok ) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
-                    if ( !ok ) {
-                        break;
+                i32 button_count = 0;
+                MiltonGui* gui = milton_state->gui;
+                // Count buttons
+                for ( ColorButton* b = &gui->picker.color_buttons; b!= NULL; b = b->next, button_count++ ) { }
+                // Write
+                if ( ok ) { ok = fwrite_checked(&button_count, sizeof(i32), 1, fd); }
+                if ( ok ) {
+                    for ( ColorButton* b = &gui->picker.color_buttons; ok && b!= NULL; b = b->next ) {
+                        ok = fwrite_checked(&b->rgba, sizeof(v4f), 1, fd);
                     }
                 }
-            } else {
-                ok = false;
             }
-            ++TEST;
-        }
-        assert (TEST == num_layers);
 
-        if ( ok ) { ok = fwrite_checked(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd); }
+            i32 history_count = sb_count(milton_state->history);
+            if ( ok ) { ok = fwrite_checked(&history_count, sizeof(history_count), 1, fd); }
+            if ( ok ) { ok = fwrite_checked(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
 
-        // Buttons
-        if ( ok ) {
-            i32 button_count = 0;
-            MiltonGui* gui = milton_state->gui;
-            // Count buttons
-            for ( ColorButton* b = &gui->picker.color_buttons; b!= NULL; b = b->next, button_count++ ) { }
-            // Write
-            if ( ok ) { ok = fwrite_checked(&button_count, sizeof(i32), 1, fd); }
-            if ( ok ) {
-                for ( ColorButton* b = &gui->picker.color_buttons; ok && b!= NULL; b = b->next ) {
-                    ok = fwrite_checked(&b->rgba, sizeof(v4f), 1, fd);
+            int file_error = ferror(fd);
+            ok = false;
+            if ( file_error == 0 ) {
+                int close_ret = fclose(fd);
+                if ( close_ret == 0 ) {
+                    ok = platform_move_file(tmp_fname, milton_state->mlt_file_path);
+                    if ( ok ) {
+                        //  \o/
+                        milton_state->last_save_time = platform_get_walltime();
+                        milton_state->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
+                    } else {
+                        milton_log("Could not move file. Moving on. Avoiding this save.\n");
+                    }
+                    if (!ok) {
+                    }
+                } else {
+                    milton_log("File error when closing handle. Error code %d. \n", close_ret);
                 }
+            } else {
+                milton_log("File IO error. Error code %d. \n", file_error);
             }
-        }
 
-
-        i32 history_count = sb_count(milton_state->history);
-        if ( ok ) { ok = fwrite_checked(&history_count, sizeof(history_count), 1, fd); }
-        if ( ok ) { ok = fwrite_checked(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
-
-        fclose(fd);
-
-        if ( ok ) {
-            ok = platform_move_file(tmp_fname, milton_state->mlt_file_path);
-            if ( !ok ) {
-                milton_log("Could not move file. Moving on. Avoiding this save.");
-            }
         } else {
-            milton_log("[DEBUG]: Saving to temp file %s failed. \n", tmp_fname);
+            milton_die_gracefully("Could not create file for saving! ");
+            return;
         }
+
     } else {
-        milton_die_gracefully("Could not create file");
-        return;
+        // We didn't really fail if we didn't actually try. Remove flag.
+        milton_state->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
     }
 }
 
@@ -315,7 +342,7 @@ void milton_set_last_canvas_fname(char* last_fname)
 
 void milton_unset_last_canvas_fname()
 {
-    b32 del = platform_delete_file_at_config("last_canvas_fname",DeleteErrorTolerance_OK_NOT_EXIST);
+    b32 del = platform_delete_file_at_config("last_canvas_fname", DeleteErrorTolerance_OK_NOT_EXIST);
     if (del == false) {
         platform_dialog("The default canvas could not be set to open the next time you run Milton. Please contact the developers.", "Important");
     }
@@ -328,7 +355,7 @@ char* milton_get_last_canvas_fname()
     platform_fname_at_config(full, MAX_PATH);
     FILE* fd = fopen(full, "rb+");
     if (fd) {
-        size_t len = 0;
+        u64 len = 0;
         fread(&len, sizeof(len), 1, fd);
         if (len > MAX_PATH) {
             mlt_free(full);

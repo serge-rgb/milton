@@ -449,6 +449,7 @@ void milton_init(MiltonState* milton_state)
     milton_state->current_mode = MiltonMode_PEN;
     milton_state->last_mode = MiltonMode_NONE;
 
+
     milton_state->gl = arena_alloc_elem(milton_state->root_arena, MiltonGLState);
 
 #if 1
@@ -476,6 +477,7 @@ void milton_init(MiltonState* milton_state)
         }
     }
 
+    milton_state->last_save_time = platform_get_walltime();
     // Note: This will fill out uninitialized data like default layers.
     milton_load(milton_state);
 
@@ -655,6 +657,7 @@ void milton_use_previous_mode(MiltonState* milton_state)
         assert ( !"invalid code path" );
     }
 }
+
 void milton_try_quit(MiltonState* milton_state)
 {
     milton_state->flags &= ~MiltonStateFlags_RUNNING;
@@ -714,7 +717,7 @@ void milton_set_working_layer(MiltonState* milton_state, Layer* layer)
 {
     milton_state->working_layer = layer;
     milton_state->view->working_layer_id = layer->id;
-} 
+}
 
 void milton_delete_working_layer(MiltonState* milton_state)
 {
@@ -1060,8 +1063,35 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     milton_render(milton_state, render_flags, input->pan_delta);
 
 cleanup:
+    cursor_show();
     if ( should_save ) {
         milton_save(milton_state);
+        b32 test = false;
+        if ( !(milton_state->flags & MiltonStateFlags_RUNNING) &&
+                       (test || (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED
+                                 )
+                        )
+           ) {
+            char msg[1024];
+            WallTime lst = milton_state->last_save_time;
+            snprintf(msg, 1024, "Save failed. Last save was %.2d:%.2d:%.2d. Try another file?",
+                     lst.hours, lst.minutes, lst.seconds);
+            b32 another = platform_dialog_yesno(msg, "Save to another file?");
+            if ( another ) {
+                // NOTE(possible refactor): There is similar code. Guipp.cpp save_milton_canvas
+                char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                if (name) {
+                    milton_log("Saving to %s\n", name);
+                    milton_set_canvas_file(milton_state, name);
+                    milton_save(milton_state);
+                    b32 del = platform_delete_file_at_config("MiltonPersist.mlt", DeleteErrorTolerance_OK_NOT_EXIST);
+                    if (del == false) {
+                        platform_dialog("Could not delete default canvas."
+                                        " Contents will be still there when you create a new canvas.", "Info");
+                    }
+                }
+            }
+        }
     }
     profiler_output();
 }
