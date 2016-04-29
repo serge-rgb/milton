@@ -47,12 +47,14 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
     ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4{.3f,.3f,.3f,1}); ++menu_style_stack;
     ImGui::PushStyleColor(ImGuiCol_TextDisabled,   ImVec4{.9f,.3f,.3f,1}); ++menu_style_stack;
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   ImVec4{.3f,.3f,.6f,1}); ++menu_style_stack;
+    // TODO: translate
+    char* default_will_be_lost = "The default canvas will be cleared. Save it?";
     if ( ImGui::BeginMainMenuBar() ) {
         if ( ImGui::BeginMenu(LOC(file)) ) {
             if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
-                b32 yes = true;
+                b32 yes = false;
                 if (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) {
-                    if (platform_dialog_yesno("Your canvas will be lost. Save it?", "Save?")) {
+                    if (platform_dialog_yesno(default_will_be_lost, "Save?")) {
                         yes = true;
                     } else {
                         yes = false;
@@ -84,8 +86,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 b32 can_open = true;
                 if ( (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ) {
                     can_open = false;
-                    // TODO: translate
-                    if (platform_dialog_yesno("This canvas will be lost if you dont save it to a file. Save it?", "Save?")) {
+                    if (platform_dialog_yesno(default_will_be_lost, "Save?")) {
                         char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                         if (name) {
                             can_open = true;
@@ -230,8 +231,8 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             ImGui::EndMenu();
         }
 
+#if 0
         char msg[1024];
-#if 1
         WallTime lst = milton_state->last_save_time;
         snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" :

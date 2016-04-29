@@ -477,7 +477,7 @@ void milton_init(MiltonState* milton_state)
         }
     }
 
-    milton_state->last_save_time = platform_get_walltime();
+    milton_state->last_save_time = (WallTime){0};
     // Note: This will fill out uninitialized data like default layers.
     milton_load(milton_state);
 
@@ -1066,12 +1066,7 @@ cleanup:
     cursor_show();
     if ( should_save ) {
         milton_save(milton_state);
-        b32 test = false;
-        if ( !(milton_state->flags & MiltonStateFlags_RUNNING) &&
-                       (test || (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED
-                                 )
-                        )
-           ) {
+        if ( (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
             char msg[1024];
             WallTime lst = milton_state->last_save_time;
             snprintf(msg, 1024, "Save failed. Last save was %.2d:%.2d:%.2d. Try another file?",

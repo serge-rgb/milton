@@ -302,6 +302,15 @@ void milton_save(MiltonState* milton_state)
                         //  \o/
                         milton_state->last_save_time = platform_get_walltime();
                         milton_state->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
+                        {
+                            char msg[1024];
+                            WallTime lst = milton_state->last_save_time;
+                            snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d\n",
+                                       (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" :
+                                       str_trim_to_last_slash(milton_state->mlt_file_path),
+                                       lst.hours, lst.minutes, lst.seconds);
+                            milton_log(msg);
+                        }
                     } else {
                         milton_log("Could not move file. Moving on. Avoiding this save.\n");
                     }
@@ -318,7 +327,6 @@ void milton_save(MiltonState* milton_state)
             milton_die_gracefully("Could not create file for saving! ");
             return;
         }
-
     } else {
         // We didn't really fail if we didn't actually try. Remove flag.
         milton_state->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
