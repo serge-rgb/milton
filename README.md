@@ -1,19 +1,18 @@
 ![MiltonLogo](http://i.imgur.com/hXxloIS.png)
 
-[Milton](https://github.com/serge-rgb/milton) is a modern paint app.
-
-### [Latest release (2016-01-23) pre-alpha 003](https://github.com/serge-rgb/milton/releases/tag/prealpha003)
-
-[![Stories in Ready](https://badge.waffle.io/serge-rgb/milton.png?label=ready&title=Ready)](https://waffle.io/serge-rgb/milton)
-[![Join the chat at https://gitter.im/serge-rgb/milton](https://badges.gitter.im/serge-rgb/milton.svg)](https://gitter.im/serge-rgb/milton?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-![Milton Paint ss](http://i.imgur.com/hjMxPDb.png)
-
-Milton is an open source application that lets you Just Paint®.
+[Milton](https://github.com/serge-rgb/milton) is an open source application that lets you Just Paint.
 
 There are no pixels, you can paint with (almost) infinite detail. It feels raster-based but it works with vectors.
 It is not an image editor. It is not a vector graphics editor. It is a program that lets you draw, sketch and paint.
 There is no save button, your work is persistent with unlimited undo.
+
+### [Latest release](https://github.com/serge-rgb/milton/releases/)
+
+[![Stories in Ready](https://badge.waffle.io/serge-rgb/milton.png?label=ready&title=Ready)](https://waffle.io/serge-rgb/milton)
+[![Join the chat at https://gitter.im/serge-rgb/milton](https://badges.gitter.im/serge-rgb/milton.svg)](https://gitter.im/serge-rgb/milton?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+![Milton Paint ss](http://i.imgur.com/4pdHeeI.png)
+
 
 Features
 --------
@@ -143,7 +142,7 @@ Credits and Thanks
 ==================
 
 * Art
-    * Milton's logo and first artwork by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
+    * Milton's logo and artwork by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
 
 * Code
     * [Apoorva Joshi](http://apoorvaj.io) - Author of [Papaya](https://github.com/ApoorvaJ/Papaya) for joining forces and creating [EasyTab](https://github.com/ApoorvaJ/EasyTab).
