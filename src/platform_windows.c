@@ -122,6 +122,7 @@ void win32_set_OFN_filter(OPENFILENAMEA* ofn, FileKind kind)
 
 char* platform_save_dialog(FileKind kind)
 {
+    cursor_show();
     char* save_filename = mlt_calloc(MAX_PATH, sizeof(char));
 
     OPENFILENAMEA ofn = {0};
@@ -155,6 +156,7 @@ char* platform_save_dialog(FileKind kind)
 
 char* platform_open_dialog(FileKind kind)
 {
+    cursor_show();
     OPENFILENAMEA ofn = {0};
 
     char* fname = mlt_calloc(MAX_PATH, sizeof(*fname));
@@ -176,6 +178,7 @@ char* platform_open_dialog(FileKind kind)
 
 b32 platform_dialog_yesno(char* info, char* title)
 {
+    cursor_show();
     i32 yes = MessageBoxA(NULL, //_In_opt_ HWND    hWnd,
                           (LPCSTR)info, // _In_opt_ LPCTSTR lpText,
                           (LPCSTR)title,// _In_opt_ LPCTSTR lpCaption,
@@ -186,13 +189,13 @@ b32 platform_dialog_yesno(char* info, char* title)
 
 void platform_dialog(char* info, char* title)
 {
+    cursor_show();
     MessageBoxA( NULL, //_In_opt_ HWND    hWnd,
                  (LPCSTR)info, // _In_opt_ LPCTSTR lpText,
                  (LPCSTR)title,// _In_opt_ LPCTSTR lpCaption,
                  MB_OK//_In_     UINT    uType
                );
 }
-void    platform_milton_dialog();
 
 void platform_fname_at_exe(char* fname, i32 len)
 {

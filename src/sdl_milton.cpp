@@ -174,6 +174,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     set_flag(input_flags, MiltonInputFlags_CLICK);
                     milton_input.click = { event.button.x, event.button.y };
                 }
+
+                if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS ) {
+                    milton_input.points[platform_state->num_point_results++] = { event.button.x, event.button.y };
+                }
                 platform_state->is_pointer_down = true;
                 if ( platform_state->is_panning ) {
                     platform_state->pan_start = { event.button.x, event.button.y };

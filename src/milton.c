@@ -215,9 +215,11 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         return;
     }
 
+    Stroke* ws = &milton_state->working_stroke;
+
     //milton_log("Stroke input with %d packets\n", input->input_count);
-    milton_state->working_stroke.brush    = milton_get_brush(milton_state);
-    milton_state->working_stroke.layer_id = milton_state->view->working_layer_id;
+    ws->brush    = milton_get_brush(milton_state);
+    ws->layer_id = milton_state->view->working_layer_id;
 
     for (int input_i = 0; input_i < input->input_count; ++input_i) {
         v2i in_point = input->points[input_i];
@@ -239,7 +241,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         b32 not_the_first = false;
-        if ( milton_state->working_stroke.num_points >= 1 ) {
+        if ( ws->num_points >= 1 ) {
             not_the_first = true;
         }
 
@@ -253,21 +255,25 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         if ( passed_inspection && not_the_first ) {
-            i32 in_radius = (i32)(pressure * milton_state->working_stroke.brush.radius);
+            i32 in_radius = (i32)(pressure * ws->brush.radius);
 
             // Limit the number of points we check so that we don't mess with the stroke too much.
             int point_window = 4;
             int count = 0;
-            // Pop every point that is contained by the new one.
-            for ( i32 i = milton_state->working_stroke.num_points - 1; i >= 0; --i ) {
+            // Pop every point that is contained by the new one, but don't leave it empty
+            for ( i32 i = ws->num_points - 1; i >= 0; --i ) {
                 if ( ++count >= point_window ) {
                     break;
                 }
-                v2i this_point = milton_state->working_stroke.points[i];
-                i32 this_radius = (i32)(milton_state->working_stroke.brush.radius * milton_state->working_stroke.pressures[i]);
+                v2i this_point = ws->points[i];
+                i32 this_radius = (i32)(ws->brush.radius * ws->pressures[i]);
 
                 if ( stroke_point_contains_point(canvas_point, in_radius, this_point, this_radius) ) {
-                    milton_state->working_stroke.num_points -= 1;
+                    if ( ws->num_points > 1 ) {
+                        --ws->num_points;
+                    } else {
+                        break;
+                    }
                 } else if ( stroke_point_contains_point(this_point, this_radius, canvas_point, in_radius) ) {
                     // If some other point in the past contains this point,
                     // then this point is invalid.
@@ -278,11 +284,21 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         // Cleared to be appended.
-        if ( passed_inspection ) {
+        if ( passed_inspection && ws->num_points < STROKE_MAX_POINTS ) {
             // Add to current stroke.
-            int index = milton_state->working_stroke.num_points++;
-            milton_state->working_stroke.points[index] = canvas_point;
-            milton_state->working_stroke.pressures[index] = pressure;
+            int index = ws->num_points++;
+            ws->points[index] = canvas_point;
+            ws->pressures[index] = pressure;
+        }
+    }
+
+    // Validate. remove points that are standing in the same place, even if they have different pressures.
+    for ( i32 np = 0; np < ws->num_points-1; ++np ) {
+        if ( equ2i(ws->points[np], ws->points[np+1])) {
+            for ( i32 new_i = np; new_i < ws->num_points-1; ++new_i ) {
+                ws->points[new_i] = ws->points[new_i+1];
+            }
+            --ws->num_points;
         }
     }
 }
@@ -1086,10 +1102,13 @@ cleanup:
     }
     if ( should_save ) {
         milton_save(milton_state);
-        if ( (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
+        // We're about to close and the last save failed.
+        // milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED; // TEST
+        if ( !(milton_state->flags & MiltonStateFlags_RUNNING) &&
+             (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
             char msg[1024];
             WallTime lst = milton_state->last_save_time;
-            snprintf(msg, 1024, "Save failed. Last save was %.2d:%.2d:%.2d. Try another file?",
+            snprintf(msg, 1024, "Closing, but the last save failed. The last successful save was at %.2d:%.2d:%.2d. Try saving to another file?",
                      lst.hours, lst.minutes, lst.seconds);
             b32 another = platform_dialog_yesno(msg, "Save to another file?");
             if ( another ) {
