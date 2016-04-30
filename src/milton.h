@@ -92,6 +92,7 @@ typedef struct MiltonState
 
     // Persistence
     char*       mlt_file_path;
+    u32         mlt_binary_version;
     WallTime    last_save_time;
 
     // ---- The Painting

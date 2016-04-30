@@ -261,7 +261,6 @@ b32 platform_move_file(char* src, char* dest)
     if (!ok) {
         int err = GetLastError();
         win32_print_error(err);
-        int foo =1;
     }
     return ok;
 }

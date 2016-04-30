@@ -85,7 +85,9 @@ void milton_load(MiltonState* milton_state)
         u32 milton_binary_version = (u32)-1;
         if ( ok ) { ok = fread_checked(&milton_binary_version, sizeof(u32), 1, fd); }
 
-        if ( milton_binary_version != 1 ) {
+        if (ok) { milton_state->mlt_binary_version = milton_binary_version; }
+
+        if ( milton_binary_version > 2 ) {
             ok = false;
         }
 
@@ -175,6 +177,14 @@ void milton_load(MiltonState* milton_state)
             }
         }
 
+        // Brush
+        if ( milton_binary_version >= 2 ) {
+            // PEN, ERASER
+            if ( ok ) { ok = fread_checked(&milton_state->brushes, sizeof(Brush), BrushEnum_COUNT, fd); }
+            // Sizes
+            if ( ok ) { ok = fread_checked(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd); }
+        }
+
         if ( ok ) {
             i32 history_count = 0;
             if (ok) { ok = fread_checked(&history_count, sizeof(history_count), 1, fd); }
@@ -201,6 +211,7 @@ void milton_load(MiltonState* milton_state)
                 }
             }
             milton_state->layer_guid = layer_guid;
+            milton_update_brushes(milton_state);
         }
     } else {
         milton_reset_canvas(milton_state);
@@ -231,7 +242,7 @@ void milton_save(MiltonState* milton_state)
 
             fwrite(&milton_magic, sizeof(u32), 1, fd);
 
-            u32 milton_binary_version = 1;
+            u32 milton_binary_version = milton_state->mlt_binary_version;
 
             if ( ok ) { ok = fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd);   }
             if ( ok ) { ok = fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
@@ -287,6 +298,15 @@ void milton_save(MiltonState* milton_state)
                     }
                 }
             }
+
+            // Brush
+            if ( milton_binary_version >= 2 ) {
+                // PEN, ERASER
+                if ( ok ) { ok = fwrite_checked(&milton_state->brushes, sizeof(Brush), BrushEnum_COUNT, fd); }
+                // Sizes
+                if ( ok ) { ok = fwrite_checked(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd); }
+            }
+
 
             i32 history_count = sb_count(milton_state->history);
             if ( ok ) { ok = fwrite_checked(&history_count, sizeof(history_count), 1, fd); }

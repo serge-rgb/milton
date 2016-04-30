@@ -493,10 +493,6 @@ void milton_init(MiltonState* milton_state)
         }
     }
 
-    milton_state->last_save_time = (WallTime){0};
-    // Note: This will fill out uninitialized data like default layers.
-    milton_load(milton_state);
-
     // Set default brush sizes.
     for (int i = 0; i < BrushEnum_COUNT; ++i) {
         switch (i) {
@@ -511,8 +507,12 @@ void milton_init(MiltonState* milton_state)
             break;
         }
     }
-
     milton_set_pen_alpha(milton_state, 1.0f);
+
+    milton_state->mlt_binary_version = 2;
+    milton_state->last_save_time = (WallTime){0};
+    // Note: This will fill out uninitialized data like default layers.
+    milton_load(milton_state);
 
 #if MILTON_DEBUG
     milton_run_tests(milton_state);
@@ -602,6 +602,7 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
 
 void milton_reset_canvas(MiltonState* milton_state)
 {
+    milton_state->mlt_binary_version = 2;
     Layer* l = milton_state->root_layer;
     while ( l != NULL ) {
         for ( i32 si = 0; si < sb_count(l->strokes); ++si ) {
@@ -1103,25 +1104,38 @@ cleanup:
     if ( should_save ) {
         milton_save(milton_state);
         // We're about to close and the last save failed.
-        // milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED; // TEST
+        //milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED; // TEST
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) &&
              (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
-            char msg[1024];
-            WallTime lst = milton_state->last_save_time;
-            snprintf(msg, 1024, "Closing, but the last save failed. The last successful save was at %.2d:%.2d:%.2d. Try saving to another file?",
-                     lst.hours, lst.minutes, lst.seconds);
-            b32 another = platform_dialog_yesno(msg, "Save to another file?");
-            if ( another ) {
-                // NOTE(possible refactor): There is similar code. Guipp.cpp save_milton_canvas
-                char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
-                if (name) {
-                    milton_log("Saving to %s\n", name);
-                    milton_set_canvas_file(milton_state, name);
-                    milton_save(milton_state);
-                    b32 del = platform_delete_file_at_config("MiltonPersist.mlt", DeleteErrorTolerance_OK_NOT_EXIST);
-                    if (del == false) {
-                        platform_dialog("Could not delete default canvas."
-                                        " Contents will be still there when you create a new canvas.", "Info");
+
+            // TODO: Why the fuck does MoveFileExA fail?! Ask someone who knows this stuff.
+            // Wait a second and try again. If this fails, prompt to save somewhere else.
+            SDL_Delay(2000);
+            milton_save(milton_state);
+
+            if ( (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
+                char msg[1024];
+                WallTime lst = milton_state->last_save_time;
+                snprintf(msg, 1024, "Milton failed to save this canvas. The last successful save was at %.2d:%.2d:%.2d. Try saving to another file?",
+                         lst.hours, lst.minutes, lst.seconds);
+                b32 another = platform_dialog_yesno(msg, "Try another file?");
+                if ( another ) {
+                    // NOTE(possible refactor): There is similar code. Guipp.cpp save_milton_canvas
+                    char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                    if (name) {
+                        milton_log("Saving to %s\n", name);
+                        milton_set_canvas_file(milton_state, name);
+                        milton_save(milton_state);
+                        if ( (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
+                            platform_dialog("Could not save, but the mlt file still exists.", "Info");
+                        } else {
+                            platform_dialog("Success.", "Info");
+                        }
+                        b32 del = platform_delete_file_at_config("MiltonPersist.mlt", DeleteErrorTolerance_OK_NOT_EXIST);
+                        if (del == false) {
+                            platform_dialog("Could not delete default canvas."
+                                            " Contents will be still there when you create a new canvas.", "Info");
+                        }
                     }
                 }
             }
