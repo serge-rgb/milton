@@ -3,7 +3,6 @@ To-Do
 
 - Bugs
     - :)
-    - cursor overlay is black (black background?)
     - need to lose imgui focus when toggling visibility
     - single point strokes sometimes self-destruct
 
@@ -60,9 +59,6 @@ To-Do
     - Refactor. Write sample program.
 - Distribution
     *- Get Travis working
-    - Bintray? Github?
-    *- Windows.
-        - Installation. WIX? Inno Setup?
     *- Linux
         - Checkinstall? Manual dpkg?
         - Ubuntu PPA

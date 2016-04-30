@@ -81,6 +81,7 @@ static void turn_panning_off(PlatformState* p)
 static void cursor_set_and_show(SDL_Cursor* cursor)
 {
     SDL_SetCursor(cursor);
+    cursor_show();
 }
 
 MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
@@ -105,6 +106,13 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
         SDL_Keymod keymod = SDL_GetModState();
         platform_state->is_ctrl_down = (keymod & KMOD_LCTRL) | (keymod & KMOD_RCTRL);
         platform_state->is_shift_down = (keymod & KMOD_SHIFT);
+
+#if 0
+        if ( (keymod & KMOD_ALT) ) {
+            set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
+            milton_input.mode_to_set = MiltonMode_EYEDROPPER;
+        }
+#endif
 
 
 #if defined(_MSC_VER)
@@ -143,14 +151,14 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 break;  // Are we in Wayland yet?
 
             }
-            if (er == EASYTAB_OK) {  // Event was handled.
+            if ( er == EASYTAB_OK ) {  // Event was handled.
                 if ( platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && EasyTab->Pressure > 0 ) {
                     platform_state->is_pointer_down = true;
                     if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
-                        if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS) {
+                        if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
                             milton_input.points[platform_state->num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
                         }
-                        if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS) {
+                        if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS ) {
                             milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure;
                         }
                     }
@@ -158,7 +166,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             }
         } break;
         case SDL_MOUSEBUTTONDOWN:
-            if (event.button.windowID != platform_state->window_id) {
+            if ( event.button.windowID != platform_state->window_id ) {
                 break;
             }
             if ( event.button.button == SDL_BUTTON_LEFT ) {
@@ -174,21 +182,21 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             }
             break;
         case SDL_MOUSEBUTTONUP:
-            if (event.button.windowID != platform_state->window_id) {
+            if ( event.button.windowID != platform_state->window_id ) {
                 break;
             }
-            if (event.button.button == SDL_BUTTON_LEFT) {
+            if ( event.button.button == SDL_BUTTON_LEFT ) {
                 pointer_up = true;
                 set_flag(input_flags, MiltonInputFlags_CLICKUP);
             }
             break;
         case SDL_MOUSEMOTION:
             {
-                if (event.motion.windowID != platform_state->window_id) {
+                if ( event.motion.windowID != platform_state->window_id ) {
                     break;
                 }
                 input_point = { event.motion.x, event.motion.y };
-                if (platform_state->is_pointer_down) {
+                if ( platform_state->is_pointer_down ) {
                     if ( !platform_state->is_panning ) {
                         milton_input.points[platform_state->num_point_results++] = input_point;
                     }
@@ -204,7 +212,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             }
         case SDL_MOUSEWHEEL:
             {
-                if (event.wheel.windowID != platform_state->window_id) {
+                if ( event.wheel.windowID != platform_state->window_id ) {
                     break;
                 }
                 if ( !ImGui::GetIO().WantCaptureMouse ) {
@@ -230,10 +238,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         milton_increase_brush_size(milton_state);
                     }
                     if ( platform_state->is_ctrl_down ) {
-                        if (keycode == SDLK_q) {
-                            milton_try_quit(milton_state);
-                        }
-                        if (keycode == SDLK_z) {
+                        if ( keycode == SDLK_z ) {
                             if ( platform_state->is_shift_down ) {
                                 set_flag(input_flags, MiltonInputFlags_REDO);
                             } else {
@@ -257,7 +262,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 platform_state->is_pointer_down = false;
                 set_flag(input_flags, MiltonInputFlags_END_STROKE);
 
-                if (keycode == SDLK_SPACE) {
+                if ( keycode == SDLK_SPACE ) {
                     turn_panning_on(platform_state);
                     // Stahp
                 }
@@ -266,40 +271,43 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                         milton_input.mode_to_set = MiltonMode_EXPORTING;
                     }
+                    if ( keycode == SDLK_q ) {
+                        milton_try_quit(milton_state);
+                    }
                 } else {
                     if ( !ImGui::GetIO().WantCaptureMouse ) {
-                        if (keycode == SDLK_e) {
+                        if ( keycode == SDLK_e ) {
                             set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                             milton_input.mode_to_set = MiltonMode_ERASER;
-                        } else if (keycode == SDLK_b) {
+                        } else if ( keycode == SDLK_b ) {
                             set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                             milton_input.mode_to_set = MiltonMode_PEN;
-                        } else if (keycode == SDLK_i) {
+                        } else if ( keycode == SDLK_i ) {
                             set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                             milton_input.mode_to_set = MiltonMode_EYEDROPPER;
-                        } else if (keycode == SDLK_TAB) {
+                        } else if ( keycode == SDLK_TAB ) {
                             gui_toggle_visibility(milton_state->gui);
-                        } else if (keycode == SDLK_F1) {
+                        } else if ( keycode == SDLK_F1 ) {
                             gui_toggle_help(milton_state->gui);
-                        } else if (keycode == SDLK_1) {
+                        } else if ( keycode == SDLK_1 ) {
                             milton_set_pen_alpha(milton_state, 0.1f);
-                        } else if (keycode == SDLK_2) {
+                        } else if ( keycode == SDLK_2 ) {
                             milton_set_pen_alpha(milton_state, 0.2f);
-                        } else if (keycode == SDLK_3) {
+                        } else if ( keycode == SDLK_3 ) {
                             milton_set_pen_alpha(milton_state, 0.3f);
-                        } else if (keycode == SDLK_4) {
+                        } else if ( keycode == SDLK_4 ) {
                             milton_set_pen_alpha(milton_state, 0.4f);
-                        } else if (keycode == SDLK_5) {
+                        } else if ( keycode == SDLK_5 ) {
                             milton_set_pen_alpha(milton_state, 0.5f);
-                        } else if (keycode == SDLK_6) {
+                        } else if ( keycode == SDLK_6 ) {
                             milton_set_pen_alpha(milton_state, 0.6f);
-                        } else if (keycode == SDLK_7) {
+                        } else if ( keycode == SDLK_7 ) {
                             milton_set_pen_alpha(milton_state, 0.7f);
-                        } else if (keycode == SDLK_8) {
+                        } else if ( keycode == SDLK_8 ) {
                             milton_set_pen_alpha(milton_state, 0.8f);
-                        } else if (keycode == SDLK_9) {
+                        } else if ( keycode == SDLK_9 ) {
                             milton_set_pen_alpha(milton_state, 0.9f);
-                        } else if (keycode == SDLK_0) {
+                        } else if ( keycode == SDLK_0 ) {
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
                     }
@@ -358,7 +366,9 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 cursor_show();
                 break;
                 // --- A couple of events we might want to catch later...
-            case SDL_WINDOWEVENT_ENTER:
+            case SDL_WINDOWEVENT_ENTER: {
+
+                } break;
                 break;
             case SDL_WINDOWEVENT_FOCUS_GAINED:
                 break;
@@ -620,15 +630,15 @@ int milton_main(MiltonStartupFlags startup_flags)
                 cursor_set_and_show(platform_state.cursor_crosshair);
                 platform_state.is_pointer_down = false;
             }
+            else if ( milton_state->gui->visible &&
+                      is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
+                cursor_set_and_show(platform_state.cursor_default);
+            }
             else if ( ImGui::GetIO().WantCaptureMouse ) {
                 cursor_set_and_show(platform_state.cursor_default);
             }
             else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
                 cursor_hide();
-            }
-            if (is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x, y)) {
-                // Show cursor if hovering over custom gui
-                cursor_show();
             }
 
             // Show resize icon

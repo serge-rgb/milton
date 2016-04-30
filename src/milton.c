@@ -837,11 +837,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
         if ( input->scale > 0 && milton_state->view->scale >= min_scale ) {
             milton_state->view->scale = (i32)(ceilf(milton_state->view->scale / scale_factor));
-        } else if ( input->scale < 0 && milton_state->view->scale < view_scale_limit ) {
+        }
+        else if ( input->scale < 0 && milton_state->view->scale < view_scale_limit ) {
             milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_update_brushes(milton_state);
-    } else if ( check_flag(input->flags, MiltonInputFlags_PANNING )) {
+    }
+    else if ( check_flag(input->flags, MiltonInputFlags_PANNING )) {
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
         if ( !equ2i(input->pan_delta, (v2i){0}) ) {
@@ -850,11 +852,27 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( check_flag(input->flags, MiltonInputFlags_CHANGE_MODE) ) {
-        milton_switch_mode( milton_state, input->mode_to_set );
-        if ( input->mode_to_set == MiltonMode_PEN ||
-             input->mode_to_set == MiltonMode_ERASER ) {
-            milton_update_brushes(milton_state);
+        MiltonMode mode = milton_state->current_mode;
+        if ( mode == input->mode_to_set ) {
+            // Modes we can toggle
+            if ( mode == MiltonMode_EYEDROPPER ) {
+                if ( milton_state->last_mode != MiltonMode_EYEDROPPER ) {
+                    milton_use_previous_mode(milton_state);
+                } else {
+                    // Wtf. Hopefully this won't ever happen but in any case we won't crash and burn.
+                    milton_switch_mode(milton_state, MiltonMode_PEN);
+                }
+            }
+        } else {
+        // Change the current mode if it's different from the current mode.
+            milton_switch_mode( milton_state, input->mode_to_set );
+            if ( input->mode_to_set == MiltonMode_PEN ||
+                 input->mode_to_set == MiltonMode_ERASER ) {
+                milton_update_brushes(milton_state);
+            }
         }
+
+        render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
     { // Undo / Redo
@@ -997,7 +1015,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     // ---- End stroke
-    if (check_flag( input->flags, MiltonInputFlags_END_STROKE )) {
+    if ( check_flag( input->flags, MiltonInputFlags_END_STROKE ) ) {
         milton_state->flags &= ~MiltonStateFlags_STROKE_IS_FROM_TABLET;
 
         if ( milton_state->gui->active ) {
@@ -1042,7 +1060,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     // Disable hover if panning.
-    if (check_flag( input->flags, MiltonInputFlags_PANNING )) {
+    if ( check_flag( input->flags, MiltonInputFlags_PANNING ) ) {
         unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
@@ -1063,7 +1081,9 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     milton_render(milton_state, render_flags, input->pan_delta);
 
 cleanup:
-    cursor_show();
+    if ( !check_flag(milton_state->flags, MiltonStateFlags_RUNNING) ) {
+        cursor_show();
+    }
     if ( should_save ) {
         milton_save(milton_state);
         if ( (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
