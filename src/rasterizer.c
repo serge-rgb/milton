@@ -16,7 +16,6 @@
 // Special values for ClippedStroke.num_points
 enum ClippedStrokeFlags
 {
-    ClippedStroke_FILLS_BLOCK  = -1,
     ClippedStroke_IS_LAYERMARK = -2,
 };
 
@@ -42,10 +41,8 @@ struct ClippedStroke
     ClippedPoint*   clipped_points;
     Brush           brush;
 
-    // A clipped stroke is never empty. We define CLIPPED_STROKE_FILLS_BLOCK to
-    // 0 to denote a stroke that fills the block completely, allowing us to go
-    // through the "fast path" of just flood-filling the block, which is a
-    // common occurrence.
+    // A clipped stroke is never empty. We use the negative values as flags.
+    // See ClippedStrokeFlags
     i32             num_points;
 
     // Point data for segments AB BC CD DE etc..
@@ -60,16 +57,6 @@ static b32 clipped_stroke_is_layermark(ClippedStroke* clipped_stroke)
     b32 fills = false;
     if ( clipped_stroke ) {
         fills = (clipped_stroke->num_points == ClippedStroke_IS_LAYERMARK);
-    }
-    return fills;
-}
-
-static b32 clipped_stroke_fills_block(ClippedStroke* clipped_stroke)
-{
-
-    b32 fills = false;
-    if ( clipped_stroke ) {
-        fills = (clipped_stroke->num_points == ClippedStroke_FILLS_BLOCK);
     }
     return fills;
 }
@@ -384,16 +371,6 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                 }
             }
         }
-        // Set our `stroke_list` to end at the first opaque stroke that fills
-        // this block.
-        ClippedStroke* list_iter = stroke_list;
-        while (list_iter) {
-            if ( clipped_stroke_fills_block(list_iter) && list_iter->brush.color.a == 1.0f ) {
-                list_iter->next = NULL;
-                break;
-            }
-            list_iter = list_iter->next;
-        }
 
         layer = layer->next;
     }
@@ -505,145 +482,125 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
                 b32 is_eraser = (equ4f(clipped_stroke->brush.color, k_eraser_color));
 
-                // Fast path.
-                if ( clipped_stroke_fills_block(clipped_stroke) ) {
-                    // i.e. We can assume this pixel will have 16 samples of clipped_stroke.
-#if 0 // Visualize it with black
-                    if ( is_eraser )  {
-                        pixel_erased = true;
-                    } else {
-                        v4f dst = {0,0,0,1};
-                        acc_color = blend_v4f(dst, acc_color);
-                    }
-#else
-                    if ( is_eraser )  {
-                        pixel_erased = true;
-                    } else {
-                        v4f dst = clipped_stroke->brush.color;
-                        acc_color = blend_v4f(dst, acc_color);
-                    }
-#endif
-                } else if ( clipped_stroke->num_points > 0 ) {  // Slow path. There are pixels not inside.
-                    ClippedPoint* points = clipped_stroke->clipped_points;
+                ClippedPoint* points = clipped_stroke->clipped_points;
 
-                    f32 min_dist = FLT_MAX;
-                    f32 dx = 0;
-                    f32 dy = 0;
-                    f32 pressure = 0.0f;
+                f32 min_dist = FLT_MAX;
+                f32 dx = 0;
+                f32 dy = 0;
+                f32 pressure = 0.0f;
 
-                    if ( clipped_stroke->num_points == 1 ) {
-                        dx = (f32)(i - points[0].x);
-                        dy = (f32)(j - points[0].y);
-                        min_dist = dx * dx + dy * dy;
-                        pressure = points[0].pressure;
-                    } else {
-                        // Find closest point.
-                        for (int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += 2) {
-                            i32 ax = points[point_i].x;
-                            i32 ay = points[point_i].y;
-                            i32 bx = points[point_i + 1].x;
-                            i32 by = points[point_i + 1].y;
-                            f32 p_a = points[point_i    ].pressure;
-                            f32 p_b = points[point_i + 1].pressure;
+                if ( clipped_stroke->num_points == 1 ) {
+                    dx = (f32)(i - points[0].x);
+                    dy = (f32)(j - points[0].y);
+                    min_dist = dx * dx + dy * dy;
+                    pressure = points[0].pressure;
+                } else {
+                    // Find closest point.
+                    for (int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += 2) {
+                        i32 ax = points[point_i].x;
+                        i32 ay = points[point_i].y;
+                        i32 bx = points[point_i + 1].x;
+                        i32 by = points[point_i + 1].y;
+                        f32 p_a = points[point_i    ].pressure;
+                        f32 p_b = points[point_i + 1].pressure;
 
-                            v2f ab = {(f32)(bx - ax), (f32)(by - ay)};
-                            f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-                            if ( mag_ab2 > 0 ) {
-                                f32 t;
-                                v2f point = closest_point_in_segment_f(ax, ay, bx, by,
-                                                                       ab, mag_ab2,
-                                                                       (v2i){i,j}, &t);
-                                f32 test_dx = (f32) (i - point.x);
-                                f32 test_dy = (f32) (j - point.y);
-                                f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
-                                f32 test_pressure = (1 - t) * p_a + t * p_b;
-                                dist = dist - test_pressure * clipped_stroke->brush.radius * local_scale;
-                                if ( dist < min_dist ) {
-                                    min_dist = dist;
-                                    dx = test_dx;
-                                    dy = test_dy;
-                                    pressure = test_pressure;
-                                }
+                        v2f ab = {(f32)(bx - ax), (f32)(by - ay)};
+                        f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
+                        if ( mag_ab2 > 0 ) {
+                            f32 t;
+                            v2f point = closest_point_in_segment_f(ax, ay, bx, by,
+                                                                   ab, mag_ab2,
+                                                                   (v2i){i,j}, &t);
+                            f32 test_dx = (f32) (i - point.x);
+                            f32 test_dy = (f32) (j - point.y);
+                            f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
+                            f32 test_pressure = (1 - t) * p_a + t * p_b;
+                            dist = dist - test_pressure * clipped_stroke->brush.radius * local_scale;
+                            if ( dist < min_dist ) {
+                                min_dist = dist;
+                                dx = test_dx;
+                                dy = test_dy;
+                                pressure = test_pressure;
                             }
                         }
                     }
+                }
 
-                    if ( min_dist < FLT_MAX ) {
-                        // TODO: For implicit brush:
-                        //  This sampling is for a circular brush.
-                        //  Should dispatch on brush type. And do it for SSE impl too.
-                        int samples = 0;
-                        f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
-                        f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
-                        u32 radius = (u32)(clipped_stroke->brush.radius * pressure * local_scale);
-                        f32 fdists[16];
-                        {
-                            f32 a1 = (dx - f3) * (dx - f3);
-                            f32 a2 = (dx - f1) * (dx - f1);
-                            f32 a3 = (dx + f1) * (dx + f1);
-                            f32 a4 = (dx + f3) * (dx + f3);
+                if ( min_dist < FLT_MAX ) {
+                    // TODO: For implicit brush:
+                    //  This sampling is for a circular brush.
+                    //  Should dispatch on brush type. And do it for SSE impl too.
+                    int samples = 0;
+                    f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
+                    f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
+                    u32 radius = (u32)(clipped_stroke->brush.radius * pressure * local_scale);
+                    f32 fdists[16];
+                    {
+                        f32 a1 = (dx - f3) * (dx - f3);
+                        f32 a2 = (dx - f1) * (dx - f1);
+                        f32 a3 = (dx + f1) * (dx + f1);
+                        f32 a4 = (dx + f3) * (dx + f3);
 
-                            f32 b1 = (dy - f3) * (dy - f3);
-                            f32 b2 = (dy - f1) * (dy - f1);
-                            f32 b3 = (dy + f1) * (dy + f1);
-                            f32 b4 = (dy + f3) * (dy + f3);
+                        f32 b1 = (dy - f3) * (dy - f3);
+                        f32 b2 = (dy - f1) * (dy - f1);
+                        f32 b3 = (dy + f1) * (dy + f1);
+                        f32 b4 = (dy + f3) * (dy + f3);
 
-                            fdists[0]  = a1 + b1;
-                            fdists[1]  = a2 + b1;
-                            fdists[2]  = a3 + b1;
-                            fdists[3]  = a4 + b1;
+                        fdists[0]  = a1 + b1;
+                        fdists[1]  = a2 + b1;
+                        fdists[2]  = a3 + b1;
+                        fdists[3]  = a4 + b1;
 
-                            fdists[4]  = a1 + b2;
-                            fdists[5]  = a2 + b2;
-                            fdists[6]  = a3 + b2;
-                            fdists[7]  = a4 + b2;
+                        fdists[4]  = a1 + b2;
+                        fdists[5]  = a2 + b2;
+                        fdists[6]  = a3 + b2;
+                        fdists[7]  = a4 + b2;
 
-                            fdists[8]  = a1 + b3;
-                            fdists[9]  = a2 + b3;
-                            fdists[10] = a3 + b3;
-                            fdists[11] = a4 + b3;
+                        fdists[8]  = a1 + b3;
+                        fdists[9]  = a2 + b3;
+                        fdists[10] = a3 + b3;
+                        fdists[11] = a4 + b3;
 
-                            fdists[12] = a1 + b4;
-                            fdists[13] = a2 + b4;
-                            fdists[14] = a3 + b4;
-                            fdists[15] = a4 + b4;
+                        fdists[12] = a1 + b4;
+                        fdists[13] = a2 + b4;
+                        fdists[14] = a3 + b4;
+                        fdists[15] = a4 + b4;
+                    }
+
+                    // Perf note: We remove the sqrtf call when it's
+                    // safe to square the radius
+                    if (radius >= ( 1 << 16 )) {
+                        for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
+                            samples += (sqrtf(fdists[sample_i]) < radius);
                         }
+                    } else {
+                        u32 sq_radius = radius * radius;
 
-                        // Perf note: We remove the sqrtf call when it's
-                        // safe to square the radius
-                        if (radius >= ( 1 << 16 )) {
-                            for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
-                                samples += (sqrtf(fdists[sample_i]) < radius);
-                            }
+                        for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
+                            samples += (fdists[sample_i] < sq_radius);
+                        }
+                    }
+
+                    // If the stroke contributes to the pixel, do compositing.
+                    if ( samples > 0 ) {
+                        // Do blending
+                        // ---------------
+
+                        if ( is_eraser ) {
+                            pixel_erased = true;
                         } else {
-                            u32 sq_radius = radius * radius;
+                            f32 coverage = (f32)samples / 16.0f;
 
-                            for ( int sample_i = 0; sample_i < 16; ++sample_i ) {
-                                samples += (fdists[sample_i] < sq_radius);
+                            //v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
+                            v4f dst = clipped_stroke->brush.color;
+                            {
+                                dst.r *= coverage;
+                                dst.g *= coverage;
+                                dst.b *= coverage;
+                                dst.a *= coverage;
                             }
-                        }
 
-                        // If the stroke contributes to the pixel, do compositing.
-                        if ( samples > 0 ) {
-                            // Do blending
-                            // ---------------
-
-                            if ( is_eraser ) {
-                                pixel_erased = true;
-                            } else {
-                                f32 coverage = (f32)samples / 16.0f;
-
-                                //v4f dst = is_eraser? background_color : clipped_stroke->brush.color;
-                                v4f dst = clipped_stroke->brush.color;
-                                {
-                                    dst.r *= coverage;
-                                    dst.g *= coverage;
-                                    dst.b *= coverage;
-                                    dst.a *= coverage;
-                                }
-
-                                acc_color = blend_v4f(dst, acc_color);
-                            }
+                            acc_color = blend_v4f(dst, acc_color);
                         }
                     }
                 }
@@ -797,242 +754,231 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                 b32 is_eraser = equ4f(clipped_stroke->brush.color, k_eraser_color);
 
-#if 1
-                { // FIXME: workaround
-#else
-                // Fast path.
-                if ( clipped_stroke_fills_block(clipped_stroke) ) {
-                    if ( is_eraser )  {
-                        pixel_erased = true;
-                    } else {
-                        v4f dst = clipped_stroke->brush.color;
-                        acc_color = blend_v4f(dst, acc_color);
-                    }
-                } else if ( clipped_stroke->num_points > 0 ) {
-#endif
-                    // Slow path. There are pixels not inside.
-                    ClippedPoint* points = clipped_stroke->clipped_points;
+                // Slow path. There are pixels not inside.
+                ClippedPoint* points = clipped_stroke->clipped_points;
 
-                    f32 min_dist = FLT_MAX;
-                    f32 dx = 0;
-                    f32 dy = 0;
-                    f32 pressure = 0.0f;
+                f32 min_dist = FLT_MAX;
+                f32 dx = 0;
+                f32 dy = 0;
+                f32 pressure = 0.0f;
 
-                    if ( clipped_stroke->num_points == 1 ) {
-                        dx = (f32)(i - points[0].x);
-                        dy = (f32)(j - points[0].y);
-                        min_dist = dx * dx + dy * dy;
-                        pressure = points[0].pressure;
-                    } else {
-//#define SSE_M(wide, i) ((f32 *)&(wide) + i)
-                        for (int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += (2 * 4) ) {
-                            // The step is 4 (128 bit SIMD) times 2 (points are in format AB BC CD DE)
+                if ( clipped_stroke->num_points == 1 ) {
+                    dx = (f32)(i - points[0].x);
+                    dy = (f32)(j - points[0].y);
+                    min_dist = dx * dx + dy * dy;
+                    pressure = points[0].pressure;
+                } else {
+                    //#define SSE_M(wide, i) ((f32 *)&(wide) + i)
+                    for (int point_i = 0; point_i < clipped_stroke->num_points - 1; point_i += (2 * 4) ) {
+                        // The step is 4 (128 bit SIMD) times 2 (points are in format AB BC CD DE)
 
-                            PROFILE_BEGIN(load);
+                        PROFILE_BEGIN(load);
 
-                            ALIGN(16) f32 axs[4];
-                            ALIGN(16) f32 ays[4];
-                            ALIGN(16) f32 bxs[4];
-                            ALIGN(16) f32 bys[4];
-                            ALIGN(16) f32 aps[4];
-                            ALIGN(16) f32 bps[4];
+                        ALIGN(16) f32 axs[4];
+                        ALIGN(16) f32 ays[4];
+                        ALIGN(16) f32 bxs[4];
+                        ALIGN(16) f32 bys[4];
+                        ALIGN(16) f32 aps[4];
+                        ALIGN(16) f32 bps[4];
 
-                            // NOTE: This loop is not stupid:
-                            //  I transformed the data representation to SOA
-                            //  form. There was no measurable difference even
-                            //  though this loop turned into 4 _mm_load_ps
-                            //  intrinsics.
-                            //
-                            // We can comfortably get 4 elements because the
-                            // points are allocated with enough trailing zeros.
-                            i32 l_point_i = point_i;
-                            for ( i32 batch_i = 0; batch_i < 4; batch_i++ ) {
-                                i32 index = l_point_i + batch_i;
+                        // NOTE: This loop is not stupid:
+                        //  I transformed the data representation to SOA
+                        //  form. There was no measurable difference even
+                        //  though this loop turned into 4 _mm_load_ps
+                        //  intrinsics.
+                        //
+                        // We can comfortably get 4 elements because the
+                        // points are allocated with enough trailing zeros.
+                        i32 l_point_i = point_i;
+                        for ( i32 batch_i = 0; batch_i < 4; batch_i++ ) {
+                            i32 index = l_point_i + batch_i;
 
-                                // The point of reference point is to do the subtraction with
-                                // integer arithmetic
-                                axs[batch_i] = (f32)(points[index  ].x);
-                                bxs[batch_i] = (f32)(points[index+1].x);
-                                ays[batch_i] = (f32)(points[index  ].y);
-                                bys[batch_i] = (f32)(points[index+1].y);
-                                aps[batch_i] = points[index  ].pressure;
-                                bps[batch_i] = points[index+1].pressure;
+                            // The point of reference point is to do the subtraction with
+                            // integer arithmetic
+                            axs[batch_i] = (f32)(points[index  ].x);
+                            bxs[batch_i] = (f32)(points[index+1].x);
+                            ays[batch_i] = (f32)(points[index  ].y);
+                            bys[batch_i] = (f32)(points[index+1].y);
+                            aps[batch_i] = points[index  ].pressure;
+                            bps[batch_i] = points[index+1].pressure;
 
-                                l_point_i += 1;
-                            }
+                            l_point_i += 1;
+                        }
 
-                            __m128 a_x = _mm_load_ps(axs);
-                            __m128 a_y = _mm_load_ps(ays);
-                            __m128 b_x = _mm_load_ps(bxs);
-                            __m128 b_y = _mm_load_ps(bys);
-                            __m128 pressure_a = _mm_load_ps(aps);
-                            __m128 pressure_b = _mm_load_ps(bps);
+                        __m128 a_x        = _mm_load_ps(axs);
+                        __m128 a_y        = _mm_load_ps(ays);
+                        __m128 b_x        = _mm_load_ps(bxs);
+                        __m128 b_y        = _mm_load_ps(bys);
+                        __m128 pressure_a = _mm_load_ps(aps);
+                        __m128 pressure_b = _mm_load_ps(bps);
 
-                            PROFILE_PUSH(load);
-                            PROFILE_BEGIN(work);
+                        PROFILE_PUSH(load);
+                        PROFILE_BEGIN(work);
 
-                            __m128 ab_x = _mm_sub_ps(b_x, a_x);
-                            __m128 ab_y = _mm_sub_ps(b_y, a_y);
+                        __m128 ab_x = _mm_sub_ps(b_x, a_x);
+                        __m128 ab_y = _mm_sub_ps(b_y, a_y);
 
-                            __m128 mag_ab2 = _mm_add_ps(_mm_mul_ps(ab_x, ab_x),
-                                                        _mm_mul_ps(ab_y, ab_y));
+                        __m128 mag_ab2 = _mm_add_ps(_mm_mul_ps(ab_x, ab_x),
+                                                    _mm_mul_ps(ab_y, ab_y));
 
-                            // mask out the values for which we will divide-by-zero
-                            __m128 mask = _mm_cmpgt_ps(mag_ab2, zero4);
+                        // mask out the values for which we will divide-by-zero
+                        __m128 mask = _mm_cmpgt_ps(mag_ab2, zero4);
 
-                            // Inverse magnitude of ab
-                            __m128 inv_mag_ab = _mm_rsqrt_ps(mag_ab2);
+                        // Inverse magnitude of ab
+                        __m128 inv_mag_ab = _mm_rsqrt_ps(mag_ab2);
 
-                            __m128 d_x = _mm_mul_ps(ab_x, inv_mag_ab);
-                            __m128 d_y = _mm_mul_ps(ab_y, inv_mag_ab);
+                        __m128 d_x = _mm_mul_ps(ab_x, inv_mag_ab);
+                        __m128 d_y = _mm_mul_ps(ab_y, inv_mag_ab);
 
-                            __m128 canvas_point_x4 = _mm_set_ps1((f32)i);
-                            __m128 canvas_point_y4 = _mm_set_ps1((f32)j);
+                        __m128 canvas_point_x4 = _mm_set_ps1((f32)i);
+                        __m128 canvas_point_y4 = _mm_set_ps1((f32)j);
 
-                            __m128 ax_x = _mm_sub_ps(canvas_point_x4, a_x);
-                            __m128 ax_y = _mm_sub_ps(canvas_point_y4, a_y);
+                        __m128 ax_x = _mm_sub_ps(canvas_point_x4, a_x);
+                        __m128 ax_y = _mm_sub_ps(canvas_point_y4, a_y);
 
-                            __m128 disc = _mm_add_ps(_mm_mul_ps(d_x, ax_x),
-                                                     _mm_mul_ps(d_y, ax_y));
+                        __m128 disc = _mm_add_ps(_mm_mul_ps(d_x, ax_x),
+                                                 _mm_mul_ps(d_y, ax_y));
 
-                            // Clamp discriminant so that point lies in [a, b]
-                            {
-                                __m128 low  = _mm_set_ps1(0);
-                                __m128 high = _mm_div_ps(one4, inv_mag_ab);
+                        // Clamp discriminant so that point lies in [a, b]
+                        {
+                            __m128 low  = _mm_set_ps1(0);
+                            __m128 high = _mm_div_ps(one4, inv_mag_ab);
 
-                                disc = _mm_min_ps(_mm_max_ps(low, disc), high);
-                            }
+                            disc = _mm_min_ps(_mm_max_ps(low, disc), high);
+                        }
 
-                            // Between 0 and 1 in the AB segment
-                            __m128 t4 = _mm_mul_ps(disc, inv_mag_ab);
+                        // Between 0 and 1 in the AB segment
+                        __m128 t4 = _mm_mul_ps(disc, inv_mag_ab);
 
 
-                            // point_x is the closest point in the AB segment to the canvas point
-                            // corresponding to the i,j point.
-                            //
-                            // (axs[i] + disc_i * (d_x[i],
-                            __m128 point_x_4 = _mm_add_ps(a_x, _mm_mul_ps(disc, d_x));
-                            __m128 point_y_4 = _mm_add_ps(a_y, _mm_mul_ps(disc, d_y));
+                        // point_x is the closest point in the AB segment to the canvas point
+                        // corresponding to the i,j point.
+                        //
+                        // (axs[i] + disc_i * (d_x[i],
+                        __m128 point_x_4 = _mm_add_ps(a_x, _mm_mul_ps(disc, d_x));
+                        __m128 point_y_4 = _mm_add_ps(a_y, _mm_mul_ps(disc, d_y));
 
-                            __m128 test_dx = _mm_sub_ps(canvas_point_x4, point_x_4);
-                            __m128 test_dy = _mm_sub_ps(canvas_point_y4, point_y_4);
+                        __m128 test_dx = _mm_sub_ps(canvas_point_x4, point_x_4);
+                        __m128 test_dy = _mm_sub_ps(canvas_point_y4, point_y_4);
 
-                            __m128 dist4 = _mm_add_ps(_mm_mul_ps(test_dx, test_dx),
-                                                      _mm_mul_ps(test_dy, test_dy));
-                            dist4 = _mm_sqrt_ps(dist4);
+                        __m128 dist4 = _mm_add_ps(_mm_mul_ps(test_dx, test_dx),
+                                                  _mm_mul_ps(test_dy, test_dy));
+                        dist4 = _mm_sqrt_ps(dist4);
 
-                            // Lerp
-                            // (1 - t) * p_a + t * p_b;
-                            __m128 pressure4 = _mm_add_ps(_mm_mul_ps(_mm_sub_ps(one4, t4),
-                                                                     pressure_a),
-                                                          _mm_mul_ps(t4,
-                                                                     pressure_b));
+                        // Lerp
+                        // (1 - t) * p_a + t * p_b;
+                        __m128 pressure4 = _mm_add_ps(_mm_mul_ps(_mm_sub_ps(one4, t4),
+                                                                 pressure_a),
+                                                      _mm_mul_ps(t4,
+                                                                 pressure_b));
 
-                            __m128 radius4 = _mm_set_ps1((f32)clipped_stroke->brush.radius);
-                            dist4 = _mm_sub_ps(dist4, _mm_mul_ps(_mm_mul_ps(pressure4, radius4),
-                                                                 local_scale4));
+                        __m128 radius4 = _mm_set_ps1((f32)clipped_stroke->brush.radius);
+                        dist4 = _mm_sub_ps(dist4, _mm_mul_ps(_mm_mul_ps(pressure4, radius4),
+                                                             local_scale4));
 
-                            PROFILE_PUSH(work);
-                            PROFILE_BEGIN(gather);
+                        PROFILE_PUSH(work);
+                        PROFILE_BEGIN(gather);
 
-                            ALIGN(16) f32 dists[4];
-                            ALIGN(16) f32 tests_dx[4];
-                            ALIGN(16) f32 tests_dy[4];
-                            ALIGN(16) f32 pressures[4];
-                            ALIGN(16) f32 masks[4];
+                        ALIGN(16) f32 dists[4];
+                        ALIGN(16) f32 tests_dx[4];
+                        ALIGN(16) f32 tests_dy[4];
+                        ALIGN(16) f32 pressures[4];
+                        ALIGN(16) f32 masks[4];
 
-                            _mm_store_ps(dists, dist4);
-                            _mm_store_ps(tests_dx, test_dx);
-                            _mm_store_ps(tests_dy, test_dy);
-                            _mm_store_ps(pressures, pressure4);
-                            _mm_store_ps(masks, mask);
+                        _mm_store_ps(dists, dist4);
+                        _mm_store_ps(tests_dx, test_dx);
+                        _mm_store_ps(tests_dy, test_dy);
+                        _mm_store_ps(pressures, pressure4);
+                        _mm_store_ps(masks, mask);
 
-                            // Two versions of the "gather" step. A "smart" version (in quotes
-                            // because there is probably a better, smarter way of doing it) and a
-                            // "dumb" naive loop.  The dumb loop is just slightly faster. Here is
-                            // the output from a test run, with a very intricate drawing:
-                            /**
-                              (2016-02-14) Note that the gather step gets faster, and the inner loop
-                              measuerments don't change that much. This may have something to do
-                              with the dumb loop freeing the SIMD unit for other work? No idea.
+                        // Two versions of the "gather" step. A "smart" version (in quotes
+                        // because there is probably a better, smarter way of doing it) and a
+                        // "dumb" naive loop.  The dumb loop is just slightly faster. Here is
+                        // the output from a test run, with a very intricate drawing:
+                        //
 
-                              tl;dr : "dumb" loop is 1.08 times faster.
+                        /**
+                          (2016-02-14) Note that the gather step gets faster, and the inner loop
+                          measuerments don't change that much. This may have something to do
+                          with the dumb loop freeing the SIMD unit for other work? No idea.
 
-                              Note that the
-                                        SMART
+                          tl;dr : "dumb" loop is 1.08 times faster.
 
-                                        ===== Profiler output ==========
-                                          render_canvas:         ncalls:              10, clocks_per_call:      2101567716
-                                                   sse2:         ncalls:           10000, clocks_per_call:        17619835
-                                               preamble:         ncalls:           10000, clocks_per_call:          200762
-                                                   load:         ncalls:       453752510, clocks_per_call:              76
-                                                   work:         ncalls:       453752510, clocks_per_call:              87
-                                                 gather:         ncalls:       453752510, clocks_per_call:              45
-                                               sampling:         ncalls:       237962700, clocks_per_call:              99
-                                        total_work_loop:         ncalls:           10000, clocks_per_call:        17418932
-                                        ================================
+                          Note that the
+                          SMART
 
-                                        DUMB
+                          ===== Profiler output ==========
+                        render_canvas:         ncalls:              10, clocks_per_call:      2101567716
+                        sse2:         ncalls:           10000, clocks_per_call:        17619835
+                        preamble:         ncalls:           10000, clocks_per_call:          200762
+                        load:         ncalls:       453752510, clocks_per_call:              76
+                        work:         ncalls:       453752510, clocks_per_call:              87
+                        gather:         ncalls:       453752510, clocks_per_call:              45
+                        sampling:         ncalls:       237962700, clocks_per_call:              99
+                        total_work_loop:         ncalls:           10000, clocks_per_call:        17418932
+                        ================================
 
-                                        ===== Profiler output ==========
-                                          render_canvas:         ncalls:              10, clocks_per_call:      1938976982
-                                                   sse2:         ncalls:           10000, clocks_per_call:        17452576
-                                               preamble:         ncalls:           10000, clocks_per_call:          204913
-                                                   load:         ncalls:       453752510, clocks_per_call:              77
-                                                   work:         ncalls:       453752510, clocks_per_call:              69
-                                                 gather:         ncalls:       453752510, clocks_per_call:              54
-                                               sampling:         ncalls:       237962700, clocks_per_call:             103
-                                        total_work_loop:         ncalls:           10000, clocks_per_call:        17247544
-                                        ================================
-                              **/
+                        DUMB
+
+                        ===== Profiler output ==========
+                        render_canvas:         ncalls:              10, clocks_per_call:      1938976982
+                        sse2:         ncalls:           10000, clocks_per_call:        17452576
+                        preamble:         ncalls:           10000, clocks_per_call:          204913
+                        load:         ncalls:       453752510, clocks_per_call:              77
+                        work:         ncalls:       453752510, clocks_per_call:              69
+                        gather:         ncalls:       453752510, clocks_per_call:              54
+                        sampling:         ncalls:       237962700, clocks_per_call:             103
+                        total_work_loop:         ncalls:           10000, clocks_per_call:        17247544
+                        ================================
+                         **/
 #if 0
-                            __m128 max_pos4 = _mm_set_ps1(FLT_MAX);
-                            __m128 min_neg4 = _mm_set_ps1(-FLT_MAX);
-                            __m128 maxed    = _mm_andnot_ps(mask, max_pos4);
-                            __m128 minned   = _mm_and_ps(mask, min_neg4);
+                        __m128 max_pos4 = _mm_set_ps1(FLT_MAX);
+                        __m128 min_neg4 = _mm_set_ps1(-FLT_MAX);
+                        __m128 maxed    = _mm_andnot_ps(mask, max_pos4);
+                        __m128 minned   = _mm_and_ps(mask, min_neg4);
 
-                            dist4 = _mm_max_ps(dist4, _mm_xor_ps(maxed, minned));
-                            // dist = [a, b, c, d]
-                            __m128 m0 = _mm_shuffle_ps(dist4, dist4, 0x71); // m0   = [b, x, d, x]
-                            m0 = _mm_min_ps(dist4, m0);  // m0 = [min(a, b), x, min(c, d), x]
-                            __m128 m1 = _mm_shuffle_ps(m0, m0, 2);  // m1 = [min(c, d), x, x, x]
-                            // min4 [ (min(min(a, b), min(c, d))) x x x]
-                            __m128 min4 = _mm_min_ps(m0, m1);
-                            f32 dist = _mm_cvtss_f32(min4);
-                            if (dist < min_dist) {
-                                int bit  = _mm_movemask_ps(_mm_cmpeq_ps(_mm_set_ps1(dist), dist4));
-                                int batch_i = -1;
+                        dist4 = _mm_max_ps(dist4, _mm_xor_ps(maxed, minned));
+                        // dist = [a, b, c, d]
+                        __m128 m0 = _mm_shuffle_ps(dist4, dist4, 0x71); // m0   = [b, x, d, x]
+                        m0 = _mm_min_ps(dist4, m0);  // m0 = [min(a, b), x, min(c, d), x]
+                        __m128 m1 = _mm_shuffle_ps(m0, m0, 2);  // m1 = [min(c, d), x, x, x]
+                        // min4 [ (min(min(a, b), min(c, d))) x x x]
+                        __m128 min4 = _mm_min_ps(m0, m1);
+                        f32 dist = _mm_cvtss_f32(min4);
+                        if (dist < min_dist) {
+                            int bit  = _mm_movemask_ps(_mm_cmpeq_ps(_mm_set_ps1(dist), dist4));
+                            int batch_i = -1;
 #ifdef _WIN32
-                                _BitScanForward64((DWORD*)&batch_i, bit);
+                            _BitScanForward64((DWORD*)&batch_i, bit);
 #else  // TODO: in clang&gcc: __builtin_ctz
-                                for (int p = 0; p < 4; ++p) {
-                                    if ( bit & (1 << p) ) {
-                                        batch_i = p;
-                                        break;
-                                    }
+                            for (int p = 0; p < 4; ++p) {
+                                if ( bit & (1 << p) ) {
+                                    batch_i = p;
+                                    break;
                                 }
+                            }
 #endif // _WIN32
+                            min_dist = dist;
+                            dx = tests_dx[batch_i];
+                            dy = tests_dy[batch_i];
+                            pressure = pressures[batch_i];
+                        }
+
+#else
+                        for ( i32 batch_i = 0; batch_i < 4; ++batch_i ) {
+                            f32 dist = dists[batch_i];
+                            i32 imask = *(i32*)&masks[batch_i];
+                            if (dist < min_dist && imask == -1) {
                                 min_dist = dist;
                                 dx = tests_dx[batch_i];
                                 dy = tests_dy[batch_i];
                                 pressure = pressures[batch_i];
                             }
-
-#else
-                            for ( i32 batch_i = 0; batch_i < 4; ++batch_i ) {
-                                f32 dist = dists[batch_i];
-                                i32 imask = *(i32*)&masks[batch_i];
-                                if (dist < min_dist && imask == -1) {
-                                    min_dist = dist;
-                                    dx = tests_dx[batch_i];
-                                    dy = tests_dy[batch_i];
-                                    pressure = pressures[batch_i];
-                                }
-                            }
-#endif
-                            PROFILE_PUSH(gather);
                         }
+#endif
+                        PROFILE_PUSH(gather);
                     }
+                }
 
                     PROFILE_BEGIN(sampling);
 
@@ -1125,7 +1071,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         }
                     }
                     PROFILE_PUSH(sampling);
-                }
 
                 // This pixel is done if alpha == 1. This is is why stroke_list is reversed.
                 if ( acc_color.a >= 1.0f ) {
