@@ -8,6 +8,8 @@
 
 #include "milton.h"
 
+#include "platform_prefs.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -16,6 +18,9 @@ extern "C" {
 void milton_load(MiltonState* milton_state);
 
 void milton_save(MiltonState* milton_state);
+
+void milton_prefs_load(PlatformPrefs* prefs);
+void milton_prefs_save(PlatformPrefs* prefs);
 
 void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h);
 

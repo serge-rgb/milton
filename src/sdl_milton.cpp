@@ -12,6 +12,7 @@
 #include "milton.h"
 #include "platform.h"
 #include "platform_common.h"
+#include "platform_prefs.h"
 #include "profiler.h"
 #include "utils.h"
 
@@ -439,8 +440,17 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     PlatformState platform_state = {};
 
-    platform_state.width = 1280;
-    platform_state.height = 800;
+    PlatformPrefs prefs = {};
+
+    milton_prefs_load(&prefs);
+
+    if (prefs.width == 0 || prefs.height == 0) {
+        platform_state.width = 1280;
+        platform_state.height = 800;
+    } else {
+        platform_state.width = prefs.width;
+        platform_state.height = prefs.height;
+    }
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
@@ -522,8 +532,28 @@ int milton_main(MiltonStartupFlags startup_flags)
         switch(sysinfo.subsystem) {
 #if defined(_WIN32)
         case SDL_SYSWM_WINDOWS:
-            EasyTab_Load(sysinfo.info.win.window);
-            break;
+            {
+                // Load EasyTab
+                EasyTab_Load(sysinfo.info.win.window);
+                { // Handle the case where the window was too big for the screen.
+                    HWND hwnd = sysinfo.info.win.window;
+                    RECT res_rect;
+                    RECT win_rect;
+                    HWND dhwnd = GetDesktopWindow();
+                    GetWindowRect(dhwnd, &res_rect);
+                    GetClientRect(hwnd, &win_rect);
+
+                    if ( win_rect.right  != platform_state.width ||
+                         win_rect.bottom != platform_state.height ) {
+                        // By this point we can assume that our prefs weren't right. Let's maximize.
+                        SetWindowPos(hwnd, HWND_TOP, 100,100, win_rect.right-100, win_rect.bottom -100, SWP_SHOWWINDOW);
+                        platform_state.width = win_rect.right - 100;
+                        platform_state.height = win_rect.bottom - 200;
+                        ShowWindow(hwnd, SW_MAXIMIZE);
+                    }
+                }
+                break;
+            }
 #elif defined(__linux__)
         case SDL_SYSWM_X11:
             EasyTab_Load(sysinfo.info.x11.display, sysinfo.info.x11.window);
@@ -747,6 +777,12 @@ int milton_main(MiltonStartupFlags startup_flags)
     // Release pages. Not really necessary but we don't want to piss off leak
     // detectors, do we?
     platform_deallocate(big_chunk_of_memory);
+
+    { // Set platform prefs
+        prefs.width  = platform_state.width;
+        prefs.height = platform_state.height;
+    }
+    milton_prefs_save(&prefs);
 
     SDL_Quit();
 

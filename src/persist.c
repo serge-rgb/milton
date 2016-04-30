@@ -458,3 +458,39 @@ void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h)
         platform_dialog("File name missing extension!\n", "Error");
     }
 }
+
+void milton_prefs_load(PlatformPrefs* prefs)
+{
+    char fname [MAX_PATH] = "PREFS.milton_prefs";
+    platform_fname_at_config(fname, MAX_PATH);
+    FILE* fd = fopen(fname, "rb");
+    if ( fd ) {
+        if ( !ferror(fd) ) {
+            fread(&prefs->width, sizeof(i32), 1, fd);
+            fread(&prefs->height, sizeof(i32), 1, fd);
+        } else {
+            milton_log( "Error writing to profs file...\n" );
+        }
+        fclose(fd);
+    } else {
+        milton_log ("Could not open file for writing prefs\n");
+    }
+}
+
+void milton_prefs_save(PlatformPrefs* prefs)
+{
+    char fname [MAX_PATH] = "PREFS.milton_prefs";
+    platform_fname_at_config(fname, MAX_PATH);
+    FILE* fd = fopen(fname, "wb");
+    if ( fd ) {
+        if ( !ferror(fd) ) {
+            fwrite(&prefs->width, sizeof(i32), 1, fd);
+            fwrite(&prefs->height, sizeof(i32), 1, fd);
+        } else {
+            milton_log( "Error writing to profs file...\n" );
+        }
+        fclose(fd);
+    } else {
+        milton_log ("Could not open file for writing prefs :(\n");
+    }
+}
