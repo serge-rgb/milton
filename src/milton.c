@@ -1109,6 +1109,7 @@ cleanup:
              (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
 
             // TODO: Why the fuck does MoveFileExA fail?! Ask someone who knows this stuff.
+            //          Or it the save could have failed for some other reason...
             // Wait a second and try again. If this fails, prompt to save somewhere else.
             SDL_Delay(2000);
             milton_save(milton_state);
@@ -1127,7 +1128,7 @@ cleanup:
                         milton_set_canvas_file(milton_state, name);
                         milton_save(milton_state);
                         if ( (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) ) {
-                            platform_dialog("Could not save, but the mlt file still exists.", "Info");
+                            platform_dialog("Still can't save. Please contact us for help. miltonpaint.com", "Info");
                         } else {
                             platform_dialog("Success.", "Info");
                         }

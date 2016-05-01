@@ -44,9 +44,9 @@ supports any tablet device. General tablet support on Windows is WIP.
     Milton features a software rasterizer by design, for reliability and
 flexibility.
 
-- Multi-platform
+- Multi-platform?
 
-    Windows only at the moment. Linux and OSX coming in the near future.
+    Milton is Windows only at the moment. Linux and OSX support is intended for the future, but I don't know when that will come.
 
 - Open Source
 
@@ -76,8 +76,6 @@ Here is the  [latest video tutorial](https://www.youtube.com/watch?v=g27gHio2Ohk
 How to Compile
 ==============
 
-Milton targets Windows, Linux and OSX. All 64 bit.
-
 Windows
 -------
 
@@ -87,12 +85,12 @@ Windows
 1. `build.bat` (The first time will compile dependencies, the next times it should be quick)
 2. Milton is compiled to `build\Milton.exe`
 
-There is a Visual studio solution provided in VS2015\MiltonPaint.sln.
+There is a Visual Studio 2015 solution provided in VS2015\MiltonPaint.sln, which is currently broken. :) I use it to check that my header dependencies work with a one-translation-unit-per-file build.
 
 Linux
 -----
 
-_PORT IN PROGRESS_
+_WON'T WORK_
 
 Requirements:
 
@@ -104,7 +102,7 @@ Just run `make`
 OSX
 ---
 
-_PORT IN PROGRESS_
+_WON'T WORK_
 
 Requirements:
 

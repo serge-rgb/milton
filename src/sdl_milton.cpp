@@ -10,6 +10,7 @@
 #include "gui.h"
 #include "history_debugger.h"
 #include "milton.h"
+#include "persist.h"
 #include "platform.h"
 #include "platform_common.h"
 #include "platform_prefs.h"

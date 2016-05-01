@@ -211,7 +211,6 @@ void milton_load(MiltonState* milton_state)
                 }
             }
             milton_state->layer_guid = layer_guid;
-            milton_update_brushes(milton_state);
         }
     } else {
         milton_reset_canvas(milton_state);
