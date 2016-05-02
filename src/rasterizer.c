@@ -54,11 +54,11 @@ struct ClippedStroke
 
 static b32 clipped_stroke_is_layermark(ClippedStroke* clipped_stroke)
 {
-    b32 fills = false;
+    b32 is_mark = false;
     if ( clipped_stroke ) {
-        fills = (clipped_stroke->num_points == ClippedStroke_IS_LAYERMARK);
+        is_mark = (clipped_stroke->num_points == ClippedStroke_IS_LAYERMARK);
     }
-    return fills;
+    return is_mark;
 }
 
 // Clipped stroke points are stored relative to the reference point.
@@ -141,85 +141,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
     return clipped_stroke;
 }
 
-static b32 is_rect_filled_by_stroke(Rect rect, i32 local_scale, v2i reference_point,
-                                    ClippedPoint* points,
-                                    i32 num_points,
-                                    Brush brush, CanvasView* view)
-{
-    assert ((((rect.left + rect.right) / 2) * local_scale - reference_point.x) == 0);
-    assert ((((rect.top + rect.bottom) / 2) * local_scale - reference_point.y) == 0);
-#if 0
-    // Perf note: With the current use, this is actually going to be zero.
-    v2i rect_center =
-    {
-        ((rect.left + rect.right) / 2) * local_scale - reference_point.x,
-        ((rect.top + rect.bottom) / 2) * local_scale - reference_point.y,
-    };
-    assert (rect_center.x == 0 && rect_center.y == 0);
-#endif
-
-    // We need to move the rect to "local coordinates" specified by local scale and reference point.
-    f32 left   = (f32)rect.left   * local_scale - reference_point.x;
-    f32 right  = (f32)rect.right  * local_scale - reference_point.x;
-    f32 top    = (f32)rect.top    * local_scale - reference_point.y;
-    f32 bottom = (f32)rect.bottom * local_scale - reference_point.y;
-
-    if (num_points >= 2) {
-        assert (num_points % 2 == 0);
-        for ( i32 point_i = 0; point_i < num_points; point_i += 2 ) {
-            i32 ax  = points[point_i].x;
-            i32 ay  = points[point_i].y;
-            i32 bx  = points[point_i + 1].x;
-            i32 by  = points[point_i + 1].y;
-            f32 p_a = points[point_i].pressure;
-            f32 p_b = points[point_i + 1].pressure;
-
-            // Get closest point
-            v2f ab = {(f32)(bx - ax), (f32)(by - ay)};
-            f32 mag_ab2 = ab.x * ab.x + ab.y * ab.y;
-
-            // Note (v2i){0} is the center of the rect.
-            v2f p  = closest_point_in_segment_f(ax, ay, bx, by, ab, mag_ab2, (v2i){0}, NULL);
-
-            f32 pressure = min(p_a, p_b);
-
-            // Half width of a rectangle contained by brush at point p.
-            f32 rad = brush.radius * local_scale * 0.707106781f * pressure;  // cos(pi/4)
-
-            f32 b_left = p.x - rad;
-            f32 b_right = p.x + rad;
-            f32 b_top = p.y - rad;
-            f32 b_bottom = p.y + rad;
-
-            // Rect within rect
-            if ((left >= b_left) &&
-                (right <= b_right) &&
-                (top >= b_top) &&
-                (bottom <= b_bottom)) {
-                return true;
-            }
-        }
-    } else if ( num_points == 1 ) {
-        // Half width of a rectangle contained by brush at point p.
-        f32 rad = brush.radius * local_scale * 0.707106781f * points[0].pressure;  // cos(pi/4)
-        i32 p_x = points[0].x;
-        i32 p_y = points[0].y;
-        f32 b_left   = p_x - rad;
-        f32 b_right  = p_x + rad;
-        f32 b_top    = p_y - rad;
-        f32 b_bottom = p_y + rad;
-
-        // Rect within rect
-        if ((left >= b_left) &&
-            (right <= b_right) &&
-            (top >= b_top) &&
-            (bottom <= b_bottom)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 static b32 stroke_is_not_tiny(Stroke* stroke, CanvasView* view)
 {
     b32 not_tiny = false;
@@ -261,7 +182,7 @@ static b32 stroke_is_not_tiny(Stroke* stroke, CanvasView* view)
     return not_tiny;
 }
 
-// Fills a linked list of strokes that this block needs to render.
+// Returns a linked list of strokes that this block needs to render.
 static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                             i32 worker_id,
                                             CanvasView* view,
@@ -339,33 +260,17 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                     ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
                                                                         enlarged_block, local_scale, reference_point);
                     // ALlocation failed.
-                    // Handle this gracefully; this will cause more memory for render workers.
+                    // Handle this gracefully; this will result in asking for more memory for render workers.
                     if ( !clipped_stroke ) {
                         *allocation_ok = false;
                         return NULL;
                     }
 
-                    if ( clipped_stroke->num_points ) {
+                    if ( clipped_stroke->num_points > 0 ) {
                         // Empty strokes ignored.
                         ClippedStroke* list_head = clipped_stroke;
 
                         list_head->next = stroke_list;
-                        if ( is_rect_filled_by_stroke(canvas_block, local_scale, reference_point,
-                                                      clipped_stroke->clipped_points,
-                                                      clipped_stroke->num_points,
-                                                      clipped_stroke->brush,
-                                                      view) ) {
-                            // Set num_points = 0. Since we are ignoring empty strokes
-                            // (which should not get here in the first place), we can use 0
-                            // to denote a stroke that fills the block, saving ourselves a
-                            // boolean struct member.
-                            //
-                            // TODO(FIXME) To ship on time for
-                            // handmade.netowork, removing this optimization as
-                            // a workaround for a very tricky bug
-                            //
-                            //list_head->num_points = ClippedStroke_FILLS_BLOCK;
-                        }
                         stroke_list = list_head;
                     }
                 }
@@ -387,7 +292,6 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                                        u32* pixels,
                                        Rect raster_block)
 {
-    //u64 pre_ccount_begin = __rdtsc();
     Rect canvas_block;
     {
         canvas_block.top_left  = raster_to_canvas(view, raster_block.top_left);
@@ -904,31 +808,34 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
                           tl;dr : "dumb" loop is 1.08 times faster.
 
-                          Note that the
-                          SMART
+
+
+
+
+                        SMART
 
                           ===== Profiler output ==========
-                        render_canvas:         ncalls:              10, clocks_per_call:      2101567716
-                        sse2:         ncalls:           10000, clocks_per_call:        17619835
-                        preamble:         ncalls:           10000, clocks_per_call:          200762
-                        load:         ncalls:       453752510, clocks_per_call:              76
-                        work:         ncalls:       453752510, clocks_per_call:              87
-                        gather:         ncalls:       453752510, clocks_per_call:              45
-                        sampling:         ncalls:       237962700, clocks_per_call:              99
-                        total_work_loop:         ncalls:           10000, clocks_per_call:        17418932
+                        render_canvas:   ncalls:       10,          clocks_per_call:      2101567716
+                        sse2:            ncalls:       10000,       clocks_per_call:        17619835
+                        preamble:        ncalls:       10000,       clocks_per_call:          200762
+                        load:            ncalls:       453752510,   clocks_per_call:              76
+                        work:            ncalls:       453752510,   clocks_per_call:              87
+                        gather:          ncalls:       453752510,   clocks_per_call:              45
+                        sampling:        ncalls:       237962700,   clocks_per_call:              99
+                        total_work_loop: ncalls:       10000,       clocks_per_call:        17418932
                         ================================
 
                         DUMB
 
                         ===== Profiler output ==========
-                        render_canvas:         ncalls:              10, clocks_per_call:      1938976982
-                        sse2:         ncalls:           10000, clocks_per_call:        17452576
-                        preamble:         ncalls:           10000, clocks_per_call:          204913
-                        load:         ncalls:       453752510, clocks_per_call:              77
-                        work:         ncalls:       453752510, clocks_per_call:              69
-                        gather:         ncalls:       453752510, clocks_per_call:              54
-                        sampling:         ncalls:       237962700, clocks_per_call:             103
-                        total_work_loop:         ncalls:           10000, clocks_per_call:        17247544
+                        render_canvas:   ncalls:       10,          clocks_per_call:      1938976982
+                        sse2:            ncalls:       10000,       clocks_per_call:        17452576
+                        preamble:        ncalls:       10000,       clocks_per_call:          204913
+                        load:            ncalls:       453752510,   clocks_per_call:              77
+                        work:            ncalls:       453752510,   clocks_per_call:              69
+                        gather:          ncalls:       453752510,   clocks_per_call:              54
+                        sampling:        ncalls:       237962700,   clocks_per_call:             103
+                        total_work_loop: ncalls:       10000,       clocks_per_call:        17247544
                         ================================
                          **/
 #if 0
@@ -1107,10 +1014,10 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 }
 
 static void draw_ring(u32* pixels,
-                    i32 width, i32 height,
-                    i32 center_x, i32 center_y,
-                    i32 ring_radius, i32 ring_girth,
-                    v4f color)
+                      i32 width, i32 height,
+                      i32 center_x, i32 center_y,
+                      i32 ring_radius, i32 ring_girth,
+                      v4f color)
 {
 #define COMPARE(dist) \
     dist < SQUARE(ring_radius + ring_girth) && \
@@ -1400,8 +1307,8 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
 
         if ( check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE) ) {
             ring_radius = 10;
-            ring_girth  = 2;
-            color       = (v4f){0};
+            ring_girth = 2;
+            color = (v4f){0};
         }
 
         // Barycentric to cartesian
@@ -1736,7 +1643,6 @@ static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* v
         for ( int i = draw_rect.left; i < draw_rect.right; ++i ) {
             u32 picker_i = (u32) (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
 
-
             v4f dest = color_u32_to_v4f(picker->pixels[picker_i]);
 
             v4f result = blend_v4f(dest, background_color);
@@ -1760,12 +1666,13 @@ static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* v
     }
 }
 
+// Commented out because it's not useless, but I don't think Milton will blit bitmaps
+#if 0
 static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_buffer_height,
                         i32 x, i32 y, Bitmap* bitmap)
 {
 
     if ( !bitmap->data ) {
-        // Fail silently when bitmap is NULL. Will happen until the Git situation is resolved...
         return;
     }
     Rect limits = {0};
@@ -1775,7 +1682,7 @@ static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_
     limits.bottom = min(raster_buffer_height, y + bitmap->height);
 
     if (bitmap->num_components != 4) {
-        assert (bitmap->num_components && !"not implemented");
+        assert (!"not implemented");
     }
 
     u32* src_data = (u32*)bitmap->data;
@@ -1787,6 +1694,8 @@ static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_
     }
 
 }
+#endif
+
 static void copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
 {
     u32* raster_ptr = (u32*)milton_state->raster_buffer;
@@ -1797,11 +1706,6 @@ static void copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
             raster_ptr[bufi] = canvas_ptr[bufi];
         }
     }
-}
-
-static void render_gui_button(u32* raster_buffer, i32 w, i32 h, GuiButton* button)
-{
-    blit_bitmap(raster_buffer, w, h, 10, 300, &button->bitmap);
 }
 
 static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRenderFlags render_flags)
@@ -1858,10 +1762,6 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
 
 
     if ( gui_visible ) {  // Render button
-        render_gui_button(raster_buffer,
-                          milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                          &gui->brush_button);
-
         if (check_flag(render_flags, MiltonRenderFlags_BRUSH_PREVIEW)) {
             assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
             const i32 radius = milton_get_brush_size(milton_state);

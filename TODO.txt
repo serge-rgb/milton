@@ -4,7 +4,8 @@ To-Do
 - Bugs
     - :)
     - need to lose imgui focus when toggling visibility
-    - single point strokes sometimes self-destruct
+    - single point strokes sometimes don't get rendered.
+    - MoveFileExA randomly fails with return code 5 - access denied
 
 - Build system
     - Move to Tundra instead of having a unity build.bat & a Visual Studio solution.
@@ -15,28 +16,22 @@ To-Do
         - set resolution?
         - set aspect ratio?
     - Finish Linux and OSX versions of Dialogs and File I/O
-    - History slider
     - Tablet:
+        - Eraser
         - Gestures (OSX, Windows)
-    - UI
-        - async progress dialog (windows)
-        - async progress dialog (mac)
-        - async progress dialog (linux)
-        - Image Button
     - ImGUI details:
+        - Image Button
         - Reduce or remove widget rounding
-        - Disable window dragging
     - DPI-awareness
         - UI scale option
         - ?? gui scale set by default
-    - Etc...
-        - Show hello widget on first run?
+    - History slider
     - Future
         - Brush
             - Support for general, implicitly defined brushes
-        - Playback
-            - Store view changes in persist file
-            - Playback mode? Separate viewer?
+    - Feature Requests:
+        - Always draw brush overlay for eraser
+        - Perfect AA for exporting
 - Polish and/or Debug layer
     - Memory allocation profiler.
     - Input recorder for bug replication
@@ -45,20 +40,17 @@ To-Do
     - Easytab: Stylus buttons.
     - Easytab: Distinction between eraser and pen.
 - Performance:
-    - Async rendering
-    - Make iterative rendering split the screen into chunks
+    - Per-layer buffer memory, only redraw working_layer
+        - Chunked by visibility? Profile memory usage
     - Undo/Redo: Only redraw necessary area.
-    - Amdahl's curse... Parallelize GUI rendering
-    - Stress the renderer with a huge drawing. (i.e. Do we need smart spatial acceleration?)
-    - 4x4 Blockgroups (morton-order)
+    - Async rendering
     - AVX backend??
-    - Do not redraw when stroking over existing drawing? Only on top layer?
-- Robust save
-    *- Future-proof. Marker for extensions post v1.0
+    - Make iterative rendering split the screen into chunks
+    - Amdahl's curse... Parallelize GUI rendering
+    - 4x4 Blockgroups (morton-order)
 - Milton Library
     - Refactor. Write sample program.
 - Distribution
-    *- Get Travis working
     *- Linux
         - Checkinstall? Manual dpkg?
         - Ubuntu PPA

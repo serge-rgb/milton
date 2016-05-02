@@ -118,22 +118,6 @@ static void milton_set_default_view(CanvasView* view)
     };
 }
 
-
-static void milton_load_assets(MiltonState* milton_state)
-{
-    MiltonGui* gui = milton_state->gui;
-
-    Bitmap* bitmap = &gui->brush_button.bitmap;
-
-    static char* img_name_brush_button = "assets/brush.png";
-
-    bitmap->data = stbi_load(img_name_brush_button, &bitmap->width, &bitmap->height,
-                             &bitmap->num_components, 4);
-    i32 x = 400;
-    i32 y = 500;
-    gui->brush_button.rect = rect_from_xywh(x, y, bitmap->width, bitmap->height);
-}
-
 static void milton_update_brushes(MiltonState* milton_state)
 {
     for (int i = 0; i < BrushEnum_COUNT; ++i ) {
@@ -537,8 +521,6 @@ void milton_init(MiltonState* milton_state)
 
         SDL_CreateThread(renderer_worker_thread, "Milton Render Worker", (void*)params);
     }
-
-    milton_load_assets(milton_state);
 
     milton_state->flags |= MiltonStateFlags_RUNNING;
 }

@@ -3,14 +3,14 @@
 
 #pragma once
 
-#define MILTON_VERSION "1.2.1"
+#define MILTON_VERSION "1.2.2"
 
 // When MILTON_DEBUG is 1,
 //  - Asserts
 //  - Fixed address root_arena
 //  -  very large root_arena
 //  - Runtime renderer implementation switching with F4
-#define MILTON_DEBUG 0
+#define MILTON_DEBUG 1
 
 #define MILTON_MULTITHREADED 1
 
@@ -26,7 +26,6 @@
 
 
 // -- Esoteric and/or Stupid stuff.
-
 
 
 // Self-profiling counters. Currently only active on Windows. Should be used
