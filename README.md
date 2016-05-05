@@ -168,3 +168,10 @@ Credits and Thanks
 * Inspiration / Education
     * Casey Muratori for Handmade Hero
 
+Glorious Patrons of the Coding Craft
+------------------------------------
+
+Thank you so much for supporting Milton on [Patreon](https://www.patreon.com/serge_rgb?ty=h) to:
+
+* [Neil Blakey-Milner](https://www.patreon.com/nxsy)
+* [Maria Lopez-Lacroix](https://amacasera.com/)
