@@ -455,7 +455,6 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    SDL_GL_SetSwapInterval(0);
 
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -490,6 +489,8 @@ int milton_main(MiltonStartupFlags startup_flags)
     if (!gl_context) {
         milton_fatal("Could not create OpenGL context\n");
     }
+
+    SDL_GL_SetSwapInterval(1);
 
     platform_load_gl_func_pointers();
 
@@ -624,6 +625,9 @@ int milton_main(MiltonStartupFlags startup_flags)
     // ---- Main loop ----
 
     while( !platform_state.should_quit ) {
+
+        u32 frame_start_ms = SDL_GetTicks();
+
         ImGuiIO& imgui_io = ImGui::GetIO();
 
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
@@ -763,6 +767,7 @@ int milton_main(MiltonStartupFlags startup_flags)
 
         platform_state.pan_start = platform_state.pan_point;
         // ==== Update and render
+        //SDL_Delay(17);
         milton_update(milton_state, &milton_input);
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
             platform_state.should_quit = true;
@@ -771,6 +776,10 @@ int milton_main(MiltonStartupFlags startup_flags)
         ImGui::Render();
         SDL_GL_SwapWindow(window);
         SDL_WaitEvent(NULL);
+
+#if MILTON_DEBUG
+        milton_state->DEBUG_last_frame_time = SDL_GetTicks() - frame_start_ms;
+#endif
     }
 
     EasyTab_Unload();

@@ -231,17 +231,23 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             ImGui::EndMenu();
         }
 
-#if 1
         char msg[1024];
         WallTime lst = milton_state->last_save_time;
+#if MILTON_DEBUG
+        snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d (ms: %d)",
+                 (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
+                 str_trim_to_last_slash(milton_state->mlt_file_path),
+                 lst.hours, lst.minutes, lst.seconds,
+                 milton_state->DEBUG_last_frame_time);
+#else
         snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
                  str_trim_to_last_slash(milton_state->mlt_file_path),
                  lst.hours, lst.minutes, lst.seconds);
+#endif
         if ( ImGui::BeginMenu(msg, /*bool enabled = */false) )  {
             ImGui::EndMenu();
         }
-#endif
         ImGui::EndMainMenuBar();
     }
     ImGui::PopStyleColor(menu_style_stack);

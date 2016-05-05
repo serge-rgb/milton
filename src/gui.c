@@ -310,8 +310,8 @@ v3f gui_get_picker_rgb(MiltonGui* gui)
     return rgb;
 }
 
-// Returns true if the GUI consumed input. False if the GUI wasn't affected
-b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
+// Returns true if the Picker consumed input. False if the GUI wasn't affected
+b32 picker_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     b32 accepts = false;
     v2i point = input->points[0];

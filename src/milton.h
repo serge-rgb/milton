@@ -41,11 +41,11 @@ typedef struct MiltonGLState
 
 typedef enum MiltonMode
 {
-    MiltonMode_NONE                   = 0,
-    MiltonMode_ERASER                 = 1 << 0,
-    MiltonMode_PEN                    = 1 << 1,
-    MiltonMode_EXPORTING              = 1 << 2,
-    MiltonMode_EYEDROPPER              = 1 << 3,
+    MiltonMode_NONE       = 0,
+    MiltonMode_ERASER     = 1 << 0,
+    MiltonMode_PEN        = 1 << 1,
+    MiltonMode_EXPORTING  = 1 << 2,
+    MiltonMode_EYEDROPPER = 1 << 3,
 } MiltonMode;
 
 enum
@@ -143,6 +143,7 @@ typedef struct MiltonState
 #if MILTON_DEBUG
     b32 DEBUG_sse2_switch;
     b32 DEBUG_replaying;
+    u32 DEBUG_last_frame_time;
 #endif
 } MiltonState;
 

@@ -343,6 +343,7 @@ void milton_save(MiltonState* milton_state)
             }
 
         } else {
+            // TODO. We really should not die. This is at most benign
             milton_die_gracefully("Could not create file for saving! ");
             return;
         }
