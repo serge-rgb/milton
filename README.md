@@ -72,6 +72,7 @@ with the number keys.
 
 Here is the  [latest video tutorial](https://www.youtube.com/watch?v=g27gHio2Ohk)
 
+Check out the [patreon page](https://www.patreon.com/serge_rgb?ty=h) if you would like to help out. :)
 
 How to Compile
 ==============
