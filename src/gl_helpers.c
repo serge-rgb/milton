@@ -84,7 +84,8 @@ void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
     // ERROR CHECKING
     int res = 0;
     GLCHK ( glGetProgramiv(obj, GL_LINK_STATUS, &res) );
-    if (!res) {
+    if (!res)
+    {
         gl_log("ERROR: program did not link.\n");
         GLint len;
         glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &len);
@@ -111,9 +112,11 @@ void gl_query_error(const char* expr, const char* file, int line)
 {
     GLenum err = glGetError();
     const char* str = "";
-    if (err != GL_NO_ERROR) {
+    if (err != GL_NO_ERROR)
+    {
         char buffer[256];
-        switch(err) {
+        switch(err)
+        {
 #ifdef GL_INVALID_ENUM
         case GL_INVALID_ENUM:
             str = "GL_INVALID_ENUM";

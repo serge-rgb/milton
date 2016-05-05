@@ -29,7 +29,8 @@ void*   platform_allocate_bounded_memory(size_t size)
 {
 #if MILTON_DEBUG
     static b32 once_check = false;
-    if ( once_check ) {
+    if ( once_check )
+    {
         INVALID_CODE_PATH;
     }
     once_check = true;
@@ -60,7 +61,8 @@ void win32_log(char *format, ...)
 
     num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
 
-    if ( num_bytes_written > 0 ) {
+    if ( num_bytes_written > 0 )
+    {
         OutputDebugStringA( message );
     }
 
@@ -84,12 +86,14 @@ void platform_load_gl_func_pointers()
 {
     GLenum glew_err = glewInit();
 
-    if (glew_err != GLEW_OK) {
+    if (glew_err != GLEW_OK)
+    {
         milton_log("glewInit failed with error: %s\nExiting.\n", glewGetErrorString(glew_err));
         milton_die_gracefully("glewInit failed");
     }
 
-    if ( !GLEW_VERSION_2_1 ) {
+    if ( !GLEW_VERSION_2_1 )
+    {
         milton_die_gracefully("OpenGL 2.1 not supported.\n");
     }
 }
@@ -105,16 +109,20 @@ static char* win32_filter_strings_milton =
 
 void win32_set_OFN_filter(OPENFILENAMEA* ofn, FileKind kind)
 {
-    switch(kind) {
-    case FileKind_IMAGE: {
+    switch(kind)
+    {
+    case FileKind_IMAGE:
+        {
         ofn->lpstrFilter = (LPCSTR)win32_filter_strings_image;
         ofn->lpstrDefExt = "jpg";
-    } break;
-    case FileKind_MILTON_CANVAS: {
+        } break;
+    case FileKind_MILTON_CANVAS:
+        {
         ofn->lpstrFilter = (LPCSTR)win32_filter_strings_milton;
         ofn->lpstrDefExt = "mlt";
-    } break;
-    default: {
+        } break;
+    default:
+        {
         INVALID_CODE_PATH;
     }
     }
@@ -147,7 +155,8 @@ char* platform_save_dialog(FileKind kind)
 
     char* result = NULL;
 
-    if (!ok) {
+    if (!ok)
+    {
         mlt_free(save_filename);
         return NULL;
     }
@@ -168,7 +177,8 @@ char* platform_open_dialog(FileKind kind)
     ofn.Flags = OFN_FILEMUSTEXIST;
 
     b32 ok = GetOpenFileNameA(&ofn);
-    if (ok == false) {
+    if (ok == false)
+    {
         free(fname);
         milton_log("[ERROR] could not open file! Error is %d\n", CommDlgExtendedError());
         return NULL;
@@ -216,12 +226,14 @@ b32 platform_delete_file_at_config(char* fname, int error_tolerance)
     strncpy(full, fname, MAX_PATH);
     platform_fname_at_config(full, MAX_PATH);
     int r = DeleteFileA(full);
-    if (r == 0) {
+    if (r == 0)
+    {
         ok = false;
 
         int err = GetLastError();
         if ( (error_tolerance&DeleteErrorTolerance_OK_NOT_EXIST) &&
-             err == ERROR_FILE_NOT_FOUND) {
+             err == ERROR_FILE_NOT_FOUND)
+        {
             ok = true;
         }
     }
@@ -248,7 +260,8 @@ static void win32_print_error(int err)
                   0, // minimum size for output buffer
                   NULL);   // arguments - see note
 
-    if ( error_text ) {
+    if ( error_text )
+    {
         milton_log(error_text);
         LocalFree(error_text);
     }
@@ -258,7 +271,8 @@ static void win32_print_error(int err)
 b32 platform_move_file(char* src, char* dest)
 {
     b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
-    if (!ok) {
+    if (!ok)
+    {
         int err = GetLastError();
         win32_print_error(err);
     }
@@ -290,11 +304,14 @@ static MiltonStartupFlags win32_parse_cmdline()
 
     char** tokens = str_tokenize(cmdline);
 
-    for ( i32 token_i = 0; token_i < sb_count(tokens); ++token_i ) {
-        if ( !strcmp(tokens[token_i], "record") ) {
+    for ( i32 token_i = 0; token_i < sb_count(tokens); ++token_i )
+    {
+        if ( !strcmp(tokens[token_i], "record") )
+        {
             startup_flags.history_debug = HistoryDebug_RECORD;
         }
-        if ( !strcmp(tokens[token_i], "replay") ) {
+        if ( !strcmp(tokens[token_i], "replay") )
+        {
             startup_flags.history_debug = HistoryDebug_REPLAY;
         }
     }

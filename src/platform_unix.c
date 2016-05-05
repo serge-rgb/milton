@@ -67,7 +67,8 @@ void        platform_load_gl_func_pointers() {}
 void        platform_load_gl_func_pointers() {}
 #endif
 
-typedef struct UnixMemoryHeader_s {
+typedef struct UnixMemoryHeader_s
+{
     size_t size;
 } UnixMemoryHeader;
 
@@ -77,8 +78,10 @@ void* platform_allocate(size_t size)
                    PROT_WRITE | PROT_READ,
                    /*MAP_NORESERVE |*/ MAP_PRIVATE | MAP_ANONYMOUS,
                    -1, 0);
-    if (ptr) {
-        *((UnixMemoryHeader*)ptr) = (UnixMemoryHeader) {
+    if (ptr)
+    {
+        *((UnixMemoryHeader*)ptr) = (UnixMemoryHeader)
+        {
             .size = size,
         };
         ptr += sizeof(UnixMemoryHeader);

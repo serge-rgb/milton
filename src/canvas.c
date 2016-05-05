@@ -13,7 +13,8 @@
 
 v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
-    v2i raster_point = {
+    v2i raster_point =
+    {
         ((view->pan_vector.x + canvas_point.x) / view->scale) + view->screen_center.x,
         ((view->pan_vector.y + canvas_point.y) / view->scale) + view->screen_center.y,
     };
@@ -22,7 +23,8 @@ v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 
 v2i raster_to_canvas(CanvasView* view, v2i raster_point)
 {
-    v2i canvas_point = {
+    v2i canvas_point =
+    {
         ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x,
         ((raster_point.y - view->screen_center.y) * view->scale) - view->pan_vector.y,
     };
@@ -38,9 +40,12 @@ b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
     u32 m = (u32)abs(d.x) + abs(d.y) + r1;
     //i32 m = magnitude_i(d) + r1;
     b32 contained = false;
-    if ( r0 >= 0 ) {
+    if (r0 >= 0)
+    {
         contained = (m < (u32)r0);
-    } else {
+    }
+    else
+    {
         contained = true;
     }
     return contained;
@@ -73,7 +78,8 @@ Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
 Layer* layer_get_topmost(Layer* root)
 {
     Layer* layer = root;
-    while ( layer->next ) {
+    while (layer->next)
+    {
         layer = layer->next;
     }
     return layer;
@@ -81,8 +87,10 @@ Layer* layer_get_topmost(Layer* root)
 Layer* layer_get_by_id(Layer* root_layer, i32 id)
 {
     Layer* l = NULL;
-    for(Layer* layer = root_layer; layer; layer = layer->next) {
-        if ( layer->id == id ) {
+    for(Layer* layer = root_layer; layer; layer = layer->next)
+    {
+        if ( layer->id == id )
+        {
             l = layer;
         }
     }
@@ -99,9 +107,12 @@ Stroke* layer_push_stroke(Layer* layer, Stroke stroke)
 void layer_toggle_visibility(Layer* layer)
 {
     b32 visible = layer->flags & LayerFlags_VISIBLE;
-    if ( visible ) {
+    if (visible)
+    {
         layer->flags &= ~LayerFlags_VISIBLE;
-    } else {
+    }
+    else
+    {
         layer->flags |= LayerFlags_VISIBLE;
     }
 }
@@ -109,7 +120,8 @@ void layer_toggle_visibility(Layer* layer)
 i32 number_of_layers(Layer* layer)
 {
     int n = 0;
-    while ( layer ) {
+    while (layer)
+    {
         ++n;
         layer = layer->next;
     }

@@ -13,7 +13,8 @@ u64 g_profiler_last[MILTON_PROFILER_COUNT];
 void profiler_reset()
 {
 #if defined(PROFILER_IMPLEMENTATION)
-    for ( i32 i = 0; i < MILTON_PROFILER_COUNT; ++i ) {
+    for ( i32 i = 0; i < MILTON_PROFILER_COUNT; ++i )
+    {
         g_profiler_count[i] = 0;
     }
 #endif
@@ -23,8 +24,10 @@ void profiler_output()
 {
 #if defined(PROFILER_IMPLEMENTATION)
     milton_log("===== Profiler output ==========\n");
-    for (i32 i = 0; i < MILTON_PROFILER_COUNT; ++i) {
-        if (g_profiler_count[i]) {
+    for (i32 i = 0; i < MILTON_PROFILER_COUNT; ++i)
+    {
+        if (g_profiler_count[i])
+        {
             milton_log("%15s: %15s %15lu, %15s %15lu\n\t%15s %15lu\n",
                        g_profiler_names[i],
                        "ncalls:", g_profiler_count[i],

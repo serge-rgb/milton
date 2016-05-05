@@ -7,7 +7,8 @@
 u8* arena_alloc_bytes(Arena* arena, size_t num_bytes)
 {
     size_t total = arena->count + num_bytes;
-    if (total > arena->size) {
+    if (total > arena->size)
+    {
         return NULL;
     }
     u8* result = arena->ptr + arena->count;
@@ -19,7 +20,8 @@ Arena arena_init(void* base, size_t size)
 {
     Arena arena = { 0 };
     arena.ptr = (u8*)base;
-    if (arena.ptr) {
+    if (arena.ptr)
+    {
         arena.size = size;
     }
     return arena;

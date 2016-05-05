@@ -72,7 +72,8 @@ static Rect picker_color_buttons_bounds(const ColorPicker* picker)
     bounds.top = INT_MAX;
     bounds.bottom = INT_MIN;
     const ColorButton* button = &picker->color_buttons;
-    while (button) {
+    while (button)
+    {
         bounds = rect_union(bounds, color_button_as_rect(button));
         button = button->next;
     }
@@ -89,12 +90,17 @@ static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
 static b32 picker_is_accepting_input(ColorPicker* picker, v2i point)
 {
     // If wheel is active, yes! Gimme input.
-    if (check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE)) {
+    if (check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE))
+    {
         return true;
-    } else if (is_inside_picker_rect(picker, point)) {
+    }
+    else if (is_inside_picker_rect(picker, point))
+    {
         //return is_inside_picker_active_area(picker, point);
         return true;
-    } else {
+    }
+    else
+    {
         return is_inside_picker_button_area(picker, point);
     }
 }
@@ -112,9 +118,11 @@ static b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
     b32 hits = false;
     ColorButton* first = &picker->color_buttons;
     ColorButton* button = first;
-    while (button) {
+    while (button)
+    {
         if ( button->rgba.a != 0 &&
-             is_inside_rect(color_button_as_rect(button), point) ) {
+             is_inside_rect(color_button_as_rect(button), point) )
+        {
             hits = true;
             //picker->data = button->picker_data;
             picker_from_rgb(picker, button->rgba.rgb);
@@ -133,40 +141,51 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
 {
     ColorPickResult result = ColorPickResult_NOTHING;
     v2f fpoint = v2i_to_v2f(point);
-    if (picker->flags == ColorPickerFlags_NOTHING) {
-        if (picker_hits_wheel(picker, fpoint)) {
+    if (picker->flags == ColorPickerFlags_NOTHING)
+    {
+        if (picker_hits_wheel(picker, fpoint))
+        {
             set_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE);
         }
     }
-    if (check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE)) {
-        if (!(check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE))) {
+    if (check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE))
+    {
+        if (!(check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE)))
+        {
             picker_update_wheel(picker, fpoint);
             result = ColorPickResult_CHANGE_COLOR;
         }
     }
-    if (picker_hits_triangle(picker, fpoint)) {
-        if (!(check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE))) {
+    if (picker_hits_triangle(picker, fpoint))
+    {
+        if (!(check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE)))
+        {
             set_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE);
             picker->data.hsv = picker_hsv_from_point(picker, fpoint);
             result = ColorPickResult_CHANGE_COLOR;
         }
-    } else if (check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE)) {
+    }
+    else if (check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE))
+    {
         // We don't want the chooser to "stick" if go outside the triangle
         // (i.e. picking black should be easy)
-        v2f segments[] = {
+        v2f segments[] =
+        {
             picker->data.a, picker->data.b,
             picker->data.b, picker->data.c,
             picker->data.c, picker->data.a,
         };
 
-        for (i32 segment_i = 0; segment_i < 6; segment_i += 2) {
+        for (i32 segment_i = 0; segment_i < 6; segment_i += 2)
+        {
             v2i a = v2f_to_v2i(segments[segment_i    ]);
             v2i b = v2f_to_v2i(segments[segment_i + 1]);
             v2f intersection = { 0 };
             b32 hit = intersect_line_segments(point, picker->center,
                                               a, b,
                                               &intersection);
-            if (hit) {
+            if (hit)
+            {
                 picker->data.hsv = picker_hsv_from_point(picker, intersection);
                 result = ColorPickResult_CHANGE_COLOR;
                 break;
@@ -197,7 +216,8 @@ float picker_wheel_get_angle(ColorPicker* picker, v2f point)
     v2f baseline = { 1, 0 };
     float dotp = (DOT(arrow, baseline)) / (magnitude(arrow));
     float angle = acosf(dotp);
-    if (point.y > center.y) {
+    if (point.y > center.y)
+    {
         angle = (2 * kPi) - angle;
     }
     return angle;
@@ -205,7 +225,8 @@ float picker_wheel_get_angle(ColorPicker* picker, v2f point)
 
 void picker_init(ColorPicker* picker)
 {
-    v2f fpoint = {
+    v2f fpoint =
+    {
         (f32)picker->center.x + (int)(picker->wheel_radius),
         (f32)picker->center.y
     };
@@ -251,19 +272,24 @@ void exporter_init(Exporter* exporter)
 b32 exporter_input(Exporter* exporter, MiltonInput* input)
 {
     b32 changed = false;
-    if ( input->input_count > 0 ) {
+    if (input->input_count > 0)
+    {
         changed = true;
         v2i point = input->points[input->input_count - 1];
         if ( exporter->state == ExporterState_EMPTY ||
-             exporter->state == ExporterState_SELECTED ) {
+             exporter->state == ExporterState_SELECTED )
+        {
             exporter->pivot = point;
             exporter->needle = point;
             exporter->state = ExporterState_GROWING_RECT;
-        } else if ( exporter->state == ExporterState_GROWING_RECT) {
+        }
+        else if (exporter->state == ExporterState_GROWING_RECT)
+        {
             exporter->needle = point;
         }
     }
-    if ( check_flag(input->flags, MiltonInputFlags_END_STROKE) && exporter->state != ExporterState_EMPTY ) {
+    if (check_flag(input->flags, MiltonInputFlags_END_STROKE) && exporter->state != ExporterState_EMPTY)
+    {
         exporter->state = ExporterState_SELECTED;
         changed = true;
     }
@@ -286,7 +312,8 @@ v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
 {
     float area = orientation(picker->data.a, picker->data.b, picker->data.c);
     v3f hsv = {0};
-    if (area != 0) {
+    if (area != 0)
+    {
         float inv_area = 1.0f / area;
         float s = orientation(picker->data.b, point, picker->data.a) * inv_area;
         if (s > 1) { s = 1; }
@@ -315,11 +342,13 @@ b32 picker_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     b32 accepts = false;
     v2i point = input->points[0];
-    if ( gui->visible ) {
+    if ( gui->visible )
+    {
         accepts = picker_is_accepting_input(&gui->picker, point);
-        if ( !gui->did_hit_button &&
-             !picker_is_active(&gui->picker) &&
-             picker_hit_history_buttons(&gui->picker, point)) {
+        if (!gui->did_hit_button &&
+            !picker_is_active(&gui->picker) &&
+            picker_hit_history_buttons(&gui->picker, point))
+        {
             accepts = true;
             gui->did_hit_button = true;
         }
@@ -333,7 +362,8 @@ MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* inpu
     v2i point = input->points[0];
     ColorPickResult pick_result = picker_update(&milton_state->gui->picker, point);
     if ( pick_result == ColorPickResult_CHANGE_COLOR &&
-         milton_state->current_mode == MiltonMode_PEN ) {
+         milton_state->current_mode == MiltonMode_PEN )
+    {
         /* v3f rgb = hsv_to_rgb(milton_state->gui->picker.data.hsv); */
         /* milton_state->brushes[BrushEnum_PEN].color = to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha); */
     }
@@ -384,7 +414,8 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
     i32 current_x = 40 - button_size / 2;
 
     ColorButton* cur_button = &gui->picker.color_buttons;
-    for (i32 i = 0; i < num_buttons; ++i) {
+    for (i32 i = 0; i < num_buttons; ++i)
+    {
         assert (cur_button->next == NULL);
 
         cur_button->x = current_x;
@@ -395,7 +426,8 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 
         current_x += spacing + button_size;
 
-        if (i != (num_buttons - 1)) {
+        if (i != (num_buttons - 1))
+        {
             cur_button->next = arena_alloc_elem(root_arena, ColorButton);
         }
         cur_button = cur_button->next;
@@ -416,15 +448,19 @@ b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
     v3f picker_color  = hsv_to_rgb(gui->picker.data.hsv);
     // Search for a color that is already in the list
     ColorButton* button = start;
-    while(button) {
-        if ( button->rgba.a != 0) {
-            v3f diff = {
+    while(button)
+    {
+        if ( button->rgba.a != 0)
+        {
+            v3f diff =
+            {
                 fabsf(button->rgba.r - picker_color.r),
                 fabsf(button->rgba.g - picker_color.g),
                 fabsf(button->rgba.b - picker_color.b),
             };
             float epsilon = 0.000001f;
-            if (diff.r < epsilon && diff.g < epsilon && diff.b < epsilon) {
+            if (diff.r < epsilon && diff.g < epsilon && diff.b < epsilon)
+            {
                 // Move this button to the start and return.
                 changed = true;
                 v4f tmp_color = button->rgba;
@@ -437,11 +473,13 @@ b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
     button = start;
 
     // If not found, add to list.
-    if ( !changed ) {
+    if (!changed)
+    {
         changed = true;
         v4f button_color = color_rgb_to_rgba(picker_color,1);
         // Pass data to the next one.
-        while ( button ) {
+        while (button)
+        {
             v4f tmp_color = button->rgba;
             button->rgba = button_color;
             button_color = tmp_color;

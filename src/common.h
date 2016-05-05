@@ -49,7 +49,7 @@ typedef i32         b32;
 #if defined(assert)
 //#error assert already defined
 #else
-#define assert(expr)  do { if ( !(bool)(expr) ) {  (*(u32*)0) = 0xDeAdBeEf;  } } while(0)
+#define assert(expr)  do { if (!(bool)(expr)) {  (*(u32*)0) = 0xDeAdBeEf;  } } while(0)
 #endif
 
 #define INVALID_CODE_PATH assert(!"Invalid code path");

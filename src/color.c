@@ -18,7 +18,8 @@ u32 color_v4f_to_u32(v4f c)
 
 v4f color_u32_to_v4f(u32 color)
 {
-    v4f result = {
+    v4f result =
+    {
         (float)(0xff & (color >> 0)) / 255,
         (float)(0xff & (color >> 8)) / 255,
         (float)(0xff & (color >> 16)) / 255,
@@ -30,7 +31,8 @@ v4f color_u32_to_v4f(u32 color)
 
 v4f color_rgb_to_rgba(v3f rgb, float a)
 {
-    v4f rgba = {
+    v4f rgba =
+    {
         rgb.r,
         rgb.g,
         rgb.b,
@@ -44,7 +46,8 @@ v4f blend_v4f(v4f dst, v4f src)
     f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
 
     //f32 alpha = src.a + dst.a - (src.a * dst.a);
-    v4f result = {
+    v4f result =
+    {
         src.r + dst.r * (1 - src.a),
         src.g + dst.g * (1 - src.a),
         src.b + dst.b * (1 - src.a),
@@ -57,11 +60,14 @@ v4f blend_v4f(v4f dst, v4f src)
 v3f clamp_01(v3f color)
 {
     v3f result = color;
-    for ( int i = 0; i < 3; ++i ) {
-        if ( result.d[i] > 1.0f ) {
+    for (int i = 0; i < 3; ++i)
+    {
+        if (result.d[i] > 1.0f)
+        {
             result.d[i] = 1.0f;
         }
-        if ( result.d[i] < 0.0f ) {
+        if (result.d[i] < 0.0f)
+        {
             result.d[i] = 0.0f;
         }
     }
@@ -70,11 +76,14 @@ v3f clamp_01(v3f color)
 v3f clamp_255(v3f color)
 {
     v3f result = color;
-    for ( int i = 0; i < 3; ++i ) {
-        if ( result.d[i] > 255.0f ) {
+    for ( int i = 0; i < 3; ++i )
+    {
+        if (result.d[i] > 255.0f)
+        {
             result.d[i] = 255.0f;
         }
-        if ( result.d[i] < 0.0f ) {
+        if (result.d[i] < 0.0f)
+        {
             result.d[i] = 0.0f;
         }
     }
@@ -90,15 +99,25 @@ v3f rgb_to_hsv(v3f rgb)
     float chroma = fmax - fmin; // in [0,1]
 
     // Dividing every sector by 2 so that the hexagon length is 1.0
-    if (chroma != 0) {
-        if (rgb.r == fmax) { // R sector
+    if (chroma != 0)
+    {
+        if (rgb.r == fmax)
+        {
+            // R sector
             hsv.h = (rgb.g - rgb.b) / chroma;
-            if (hsv.h < 0.0f) {
+            if (hsv.h < 0.0f)
+            {
                 hsv.h += 6.0f;
             }
-        } else if(rgb.g == fmax) {  // G sector
+        }
+        else if (rgb.g == fmax)
+        {
+            // G sector
             hsv.h = ((rgb.b - rgb.r) / chroma) + 2.0f;
-        } else { // B sector
+        }
+        else
+        {
+            // B sector
             hsv.h = ((rgb.r - rgb.g) / chroma) + 4.0f;
         }
         hsv.h /= 6.0f;
@@ -107,7 +126,8 @@ v3f rgb_to_hsv(v3f rgb)
     }
     hsv.v = fmax;
 
-    for (int i=0;i<3;++i) {
+    for (int i=0;i<3;++i)
+    {
         if (hsv.d[i] < 0) hsv.d[i]=0;
         if (hsv.d[i] > 1) hsv.d[i]=1;
     }
@@ -128,7 +148,8 @@ v3f hsv_to_rgb(v3f hsv)
     float x = cr * (1.0f - fabsf(rem - 1.0f));
     float m = v - cr;
 
-    switch (hi) {
+    switch (hi)
+    {
     case 0:
         rgb.r = cr;
         rgb.g = x;
@@ -174,7 +195,8 @@ v3f hsv_to_rgb(v3f hsv)
 
 v4f to_premultiplied(v3f rgb, f32 a)
 {
-    v4f rgba = {
+    v4f rgba =
+    {
         rgb.r * a,
         rgb.g * a,
         rgb.b * a,
@@ -188,10 +210,14 @@ v4f to_premultiplied(v3f rgb, f32 a)
 v3f linear_to_sRGB(v3f rgb)
 {
     v3f srgb = rgb;
-    for (int i = 0; i < 3; ++i) {
-        if (srgb.d[i] <= 0.0031308f) {
+    for (int i = 0; i < 3; ++i)
+    {
+        if (srgb.d[i] <= 0.0031308f)
+        {
             srgb.d[i] *= 12.92f;
-        } else {
+        }
+        else
+        {
             srgb.d[i] = 1.055f*powf(rgb.d[i], 1.0f/2.4f) - 0.055f;
         }
     }
@@ -202,10 +228,14 @@ v3f sRGB_to_linear(v3f rgb)
 {
     v3f result = rgb;
     float* d = result.d;
-    for (int i = 0; i < 3; ++i) {
-        if (*d <= 0.04045f) {
+    for (int i = 0; i < 3; ++i)
+    {
+        if (*d <= 0.04045f)
+        {
             *d /= 12.92f;
-        } else {
+        }
+        else
+        {
             *d = powf((*d + 0.055f) / 1.055f, 2.4f);
         }
         ++d;
@@ -218,7 +248,8 @@ v3f sRGB_to_linear(v3f rgb)
 
 v3f linear_to_square(v3f rgb)
 {
-    v3f srgb = {
+    v3f srgb =
+    {
         sqrtf(rgb.r),
         sqrtf(rgb.g),
         sqrtf(rgb.b),
@@ -228,7 +259,8 @@ v3f linear_to_square(v3f rgb)
 
 v3f square_to_linear(v3f rgb)
 {
-    v3f result = {
+    v3f result =
+    {
         rgb.r * rgb.r,
         rgb.g * rgb.g,
         rgb.b * rgb.b,

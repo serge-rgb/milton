@@ -21,7 +21,8 @@ float* milton_osx_poll_pressures(int* out_num_pressures)
 {
     *out_num_pressures = 0;
     float* pressures = NULL;
-    if (g_milton_tablet_pressures.count != 0) {
+    if (g_milton_tablet_pressures.count != 0)
+    {
         *out_num_pressures = g_milton_tablet_pressures.count;
 
         pressures = g_milton_tablet_pressures.pressures;
