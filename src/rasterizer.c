@@ -887,97 +887,97 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     }
                 }
 
-                    PROFILE_BEGIN(sampling);
+                PROFILE_BEGIN(sampling);
 
-                    if ( min_dist < FLT_MAX ) {
-                        //u64 kk_ccount_begin = __rdtsc();
-                        u32 samples = 0;
+                if ( min_dist < FLT_MAX ) {
+                    //u64 kk_ccount_begin = __rdtsc();
+                    u32 samples = 0;
+                    {
+                        f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
+                        f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
+                        u32 radius = (u32)(clipped_stroke->brush.radius * pressure * local_scale);
+                        __m128 dists[4];
+
                         {
-                            f32 f3 = (0.75f * view->scale) * downsample_factor * local_scale;
-                            f32 f1 = (0.25f * view->scale) * downsample_factor * local_scale;
-                            u32 radius = (u32)(clipped_stroke->brush.radius * pressure * local_scale);
-                            __m128 dists[4];
+                            __m128 a = _mm_set_ps((dx + f3) * (dx + f3),
+                                                  (dx + f1) * (dx + f1),
+                                                  (dx - f1) * (dx - f1),
+                                                  (dx - f3) * (dx - f3));
 
-                            {
-                                __m128 a = _mm_set_ps((dx + f3) * (dx + f3),
-                                                      (dx + f1) * (dx + f1),
-                                                      (dx - f1) * (dx - f1),
-                                                      (dx - f3) * (dx - f3));
+                            __m128 b1 = _mm_set_ps1((dy - f3) * (dy - f3));
+                            __m128 b2 = _mm_set_ps1((dy - f1) * (dy - f1));
+                            __m128 b3 = _mm_set_ps1((dy + f1) * (dy + f1));
+                            __m128 b4 = _mm_set_ps1((dy + f3) * (dy + f3));
 
-                                __m128 b1 = _mm_set_ps1((dy - f3) * (dy - f3));
-                                __m128 b2 = _mm_set_ps1((dy - f1) * (dy - f1));
-                                __m128 b3 = _mm_set_ps1((dy + f1) * (dy + f1));
-                                __m128 b4 = _mm_set_ps1((dy + f3) * (dy + f3));
-
-                                dists[0] = _mm_add_ps(a, b1);
-                                dists[1] = _mm_add_ps(a, b2);
-                                dists[2] = _mm_add_ps(a, b3);
-                                dists[3] = _mm_add_ps(a, b4);
-                            }
-                            //u32 radius = clipped_stroke->brush.radius;
-                            //assert (radius > 0);
-                            assert (radius < sqrtf((FLT_MAX)));
-
-                            __m128 radius4 = _mm_set_ps1((f32)radius);
-
-                            // Perf note: We remove the sqrtf call when it's
-                            // safe to square the radius
-                            __m128 comparisons[4];
-                            __m128 ones = _mm_set_ps1(1.0f);
-                            if ( radius >= (1 << 16) ) {
-                                // sqrt slow. rsqrt fast
-                                dists[0] = _mm_mul_ps(dists[0], _mm_rsqrt_ps(dists[0]));
-                                dists[1] = _mm_mul_ps(dists[1], _mm_rsqrt_ps(dists[1]));
-                                dists[2] = _mm_mul_ps(dists[2], _mm_rsqrt_ps(dists[2]));
-                                dists[3] = _mm_mul_ps(dists[3], _mm_rsqrt_ps(dists[3]));
-                                comparisons[0] = _mm_cmplt_ps(dists[0], radius4);
-                                comparisons[1] = _mm_cmplt_ps(dists[1], radius4);
-                                comparisons[2] = _mm_cmplt_ps(dists[2], radius4);
-                                comparisons[3] = _mm_cmplt_ps(dists[3], radius4);
-                            } else {
-                                __m128 sq_radius = _mm_mul_ps(radius4, radius4);
-                                comparisons[0] = _mm_cmplt_ps(dists[0], sq_radius);
-                                comparisons[1] = _mm_cmplt_ps(dists[1], sq_radius);
-                                comparisons[2] = _mm_cmplt_ps(dists[2], sq_radius);
-                                comparisons[3] = _mm_cmplt_ps(dists[3], sq_radius);
-                            }
-                            __m128 sum = _mm_set_ps1(0);
-                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[0]));
-                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[1]));
-                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[2]));
-                            sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[3]));
-
-                            sum = _mm_add_ps(sum, _mm_movehl_ps(sum, sum));
-                            sum = _mm_add_ss(sum, _mm_shuffle_ps(sum, sum, 1));
-
-                            float fsamples;
-                            _mm_store_ss(&fsamples, sum);
-                            samples = (u32)fsamples;
+                            dists[0] = _mm_add_ps(a, b1);
+                            dists[1] = _mm_add_ps(a, b2);
+                            dists[2] = _mm_add_ps(a, b3);
+                            dists[3] = _mm_add_ps(a, b4);
                         }
+                        //u32 radius = clipped_stroke->brush.radius;
+                        //assert (radius > 0);
+                        assert (radius < sqrtf((FLT_MAX)));
 
-                        // If the stroke contributes to the pixel, do compositing.
-                        if ( samples > 0 ) {
-                            // Do blending
-                            // ---------------
+                        __m128 radius4 = _mm_set_ps1((f32)radius);
 
-                            if ( is_eraser ) {
-                                pixel_erased = true;
-                            } else {
-                                f32 coverage = (f32)samples / 16.0f;
+                        // Perf note: We remove the sqrtf call when it's
+                        // safe to square the radius
+                        __m128 comparisons[4];
+                        __m128 ones = _mm_set_ps1(1.0f);
+                        if ( radius >= (1 << 16) ) {
+                            // sqrt slow. rsqrt fast
+                            dists[0] = _mm_mul_ps(dists[0], _mm_rsqrt_ps(dists[0]));
+                            dists[1] = _mm_mul_ps(dists[1], _mm_rsqrt_ps(dists[1]));
+                            dists[2] = _mm_mul_ps(dists[2], _mm_rsqrt_ps(dists[2]));
+                            dists[3] = _mm_mul_ps(dists[3], _mm_rsqrt_ps(dists[3]));
+                            comparisons[0] = _mm_cmplt_ps(dists[0], radius4);
+                            comparisons[1] = _mm_cmplt_ps(dists[1], radius4);
+                            comparisons[2] = _mm_cmplt_ps(dists[2], radius4);
+                            comparisons[3] = _mm_cmplt_ps(dists[3], radius4);
+                        } else {
+                            __m128 sq_radius = _mm_mul_ps(radius4, radius4);
+                            comparisons[0] = _mm_cmplt_ps(dists[0], sq_radius);
+                            comparisons[1] = _mm_cmplt_ps(dists[1], sq_radius);
+                            comparisons[2] = _mm_cmplt_ps(dists[2], sq_radius);
+                            comparisons[3] = _mm_cmplt_ps(dists[3], sq_radius);
+                        }
+                        __m128 sum = _mm_set_ps1(0);
+                        sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[0]));
+                        sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[1]));
+                        sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[2]));
+                        sum = _mm_add_ps(sum, _mm_and_ps(ones, comparisons[3]));
 
-                                v4f dst = clipped_stroke->brush.color;
-                                {
-                                    dst.r *= coverage;
-                                    dst.g *= coverage;
-                                    dst.b *= coverage;
-                                    dst.a *= coverage;
-                                }
+                        sum = _mm_add_ps(sum, _mm_movehl_ps(sum, sum));
+                        sum = _mm_add_ss(sum, _mm_shuffle_ps(sum, sum, 1));
 
-                                acc_color = blend_v4f(dst, acc_color);
+                        float fsamples;
+                        _mm_store_ss(&fsamples, sum);
+                        samples = (u32)fsamples;
+                    }
+
+                    // If the stroke contributes to the pixel, do compositing.
+                    if ( samples > 0 ) {
+                        // Do blending
+                        // ---------------
+
+                        if ( is_eraser ) {
+                            pixel_erased = true;
+                        } else {
+                            f32 coverage = (f32)samples / 16.0f;
+
+                            v4f dst = clipped_stroke->brush.color;
+                            {
+                                dst.r *= coverage;
+                                dst.g *= coverage;
+                                dst.b *= coverage;
+                                dst.a *= coverage;
                             }
+
+                            acc_color = blend_v4f(dst, acc_color);
                         }
                     }
-                    PROFILE_PUSH(sampling);
+                }
+                PROFILE_PUSH(sampling);
 
                 // This pixel is done if alpha == 1. This is is why stroke_list is reversed.
                 if ( acc_color.a >= 1.0f ) {
