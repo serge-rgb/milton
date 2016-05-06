@@ -81,7 +81,7 @@ Windows
 -------
 
 Requirements: VS2015. If you have another version, edit scripts\vcvars.bat
-to point to your visual studio path. (2010 == 10.0, 2012 == 11.0, 2013 == 12.0, 2015 == 14.0)
+to point to your Visual Studio path. (2010 == 10.0, 2012 == 11.0, 2013 == 12.0, 2015 == 14.0)
 
 Run `cmd.exe` and type the following
 
@@ -181,3 +181,4 @@ Thank you so much for supporting Milton on [Patreon](https://www.patreon.com/ser
 
 * [Neil Blakey-Milner](https://www.patreon.com/nxsy)
 * [Maria Lopez-Lacroix](https://amacasera.com/)
+* [Jeroen van Rijn](https://twitter.com/J_vanRijn)
