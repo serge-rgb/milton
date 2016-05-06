@@ -1,3 +1,6 @@
+echo "Milton not ported to OSX yet. Thanks for your patience!"
+exit
+
 export MILTON_OSX_FLAGS="-I../src -I../third_party/SDL2-2.0.3/include -I../third_party/imgui -I../third_party -framework OpenGL -framework AudioUnit -framework CoreAudio -framework Carbon -framework ForceFeedback -framework IOKit -framework Cocoa -liconv -lm"
 export MILTON_SRC_DIR=`pwd`/src  # To get absolute paths in error msgs.
 
@@ -27,4 +30,5 @@ clang++ -O3 -g \
     -o milton
 
 cd ..
+
 

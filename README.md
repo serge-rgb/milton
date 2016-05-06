@@ -80,13 +80,19 @@ How to Compile
 Windows
 -------
 
-0. Open a developer console. You have at least two options:
-    - Open "Developer Command Prompt" and go to Milton's directory.
-    - Alternatively, use cmd.exe and run `scripts\vcvars.bat` to have the Visual Studio 2015 suite in your PATH. It will try to use the 64-bit version
-1. `build.bat` (The first time will compile dependencies, the next times it should be quick)
-2. Milton is compiled to `build\Milton.exe`
+Requirements: VS2015. If you have another version, edit scripts\vcvars.bat
+to point to your visual studio path. (2010 == 10.0, 2012 == 11.0, 2013 == 12.0, 2015 == 14.0)
 
-There is a Visual Studio 2015 solution provided in VS2015\MiltonPaint.sln, which is currently broken. :) I use it to check that my header dependencies work with a one-translation-unit-per-file build.
+Run `cmd.exe` and type the following
+
+```
+scripts\vcvars.bat
+build.bat
+```
+
+Milton will be compiled to `build\Milton.exe`
+
+There is a Visual Studio 2015 solution provided in VS2015\MiltonPaint.sln, which is currently broken. I use it to check that my header dependencies work with a one-translation-unit-per-file build.
 
 Linux
 -----

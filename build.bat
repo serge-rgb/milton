@@ -45,8 +45,11 @@ REM 4514 unreferenced inline function removed
 REM 4305 truncate T to bool
 REM 4430 Uninitialized local var
 REM 4700 Uninitialized local var
+REM 4242 u64 to size_t (VS2015 dev prompt)
+REM 4244 u64 to size_t (VS2015 dev prompt)
+REM 4738 32bit float result in memory (VS2015 dev prompt)
 set comment_for_cleanup=/wd4100 /wd4189 /wd4800 /wd4127 /wd4700
-set mlt_disabled_warnings=%comment_for_cleanup% /wd4305 /wd4820 /wd4255 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027 /wd4514
+set mlt_disabled_warnings=%comment_for_cleanup% /wd4305 /wd4820 /wd4255 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027 /wd4514 /wd4242 /wd4244 /wd4738
 set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab -I ..\third_party\nativefiledialog\src\include
 
 ::set sdl_dir=..\third_party\SDL2-2.0.3\VisualC\SDL\x64\Debug
