@@ -41,6 +41,12 @@ struct PlatformState
     SDL_Cursor* cursor_hand;
     SDL_Cursor* cursor_crosshair;
     SDL_Cursor* cursor_sizeall;
+
+    // Windows hardware cursor
+#if defined(_WIN32)
+    HWND    hwnd;
+    HCURSOR hcursor;
+#endif
 };
 
 #if defined(__cplusplus)

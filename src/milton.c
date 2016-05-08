@@ -232,7 +232,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
         if (input->pressures[input_i] != NO_PRESSURE_INFO)
         {
-            f32 pressure_min = 0.20f;
+            f32 pressure_min = 0.01f;
             pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
             milton_state->flags |= MiltonStateFlags_STROKE_IS_FROM_TABLET;
         }

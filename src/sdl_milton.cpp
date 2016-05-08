@@ -167,7 +167,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     break;  // Are we in Wayland yet?
 
                 }
-                if ( er == EASYTAB_OK ) {  // Event was handled.
+                if ( er == EASYTAB_OK )
+                {
                     if ( platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && EasyTab->Pressure > 0 )
                     {
                         platform_state->is_pointer_down = true;
@@ -564,26 +565,6 @@ int milton_main(MiltonStartupFlags startup_flags)
         exit(EXIT_FAILURE);
     }
 
-#if defined(_WIN32)
-    {
-        int si = sizeof(HICON);
-        HINSTANCE handle = GetModuleHandle(nullptr);
-        char icopath[MAX_PATH] = "milton_icon.ico";
-        platform_fname_at_exe(icopath, MAX_PATH);
-        HICON icon = (HICON)LoadImageA(0, icopath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
-        if(icon != NULL)
-        {
-            SDL_SysWMinfo wminfo;
-            SDL_VERSION(&wminfo.version);
-            if(SDL_GetWindowWMInfo(window, &wminfo))
-            {
-                HWND hwnd = wminfo.info.win.window;
-                SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
-            }
-        }
-    }
-#endif
-
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
     if (!gl_context)
@@ -609,7 +590,7 @@ int milton_main(MiltonStartupFlags startup_flags)
     // Using platform_allocate because stdlib calloc will be really slow.
     void* big_chunk_of_memory = platform_allocate_bounded_memory(sz_root_arena);
 
-    if ( !big_chunk_of_memory )
+    if (!big_chunk_of_memory)
     {
         milton_fatal("Could allocate bounded virtual memory for Milton.\n");
     }
@@ -632,7 +613,7 @@ int milton_main(MiltonStartupFlags startup_flags)
 #if defined(_MSC_VER)
 #pragma warning (push, 0)
 #endif
-    if ( SDL_GetWindowWMInfo( window, &sysinfo ) )
+    if (SDL_GetWindowWMInfo( window, &sysinfo ))
     {
         switch(sysinfo.subsystem)
         {
@@ -649,13 +630,19 @@ int milton_main(MiltonStartupFlags startup_flags)
                     GetWindowRect(dhwnd, &res_rect);
                     GetClientRect(hwnd, &win_rect);
 
+                    platform_state.hwnd = hwnd;
+
+                    i32 snap_threshold = 300;
                     if ( win_rect.right  != platform_state.width ||
-                         win_rect.bottom != platform_state.height )
+                         win_rect.bottom != platform_state.height
+                         // Also maximize if the size is large enough to "snap"
+                         || (win_rect.right + snap_threshold >= res_rect.right &&
+                             win_rect.left + snap_threshold >= res_rect.left))
                     {
                         // By this point we can assume that our prefs weren't right. Let's maximize.
                         SetWindowPos(hwnd, HWND_TOP, 100,100, win_rect.right-100, win_rect.bottom -100, SWP_SHOWWINDOW);
                         platform_state.width = win_rect.right - 100;
-                        platform_state.height = win_rect.bottom - 200;
+                        platform_state.height = win_rect.bottom - 100;
                         ShowWindow(hwnd, SW_MAXIMIZE);
                     }
                 }
@@ -706,6 +693,34 @@ int milton_main(MiltonStartupFlags startup_flags)
     //ImGui_ImplSdl_Init(window);
     ImGui_ImplSdlGL3_Init(window);
 
+    // Load icon (Win32)
+#if defined(_WIN32)
+    {
+        int si = sizeof(HICON);
+        HINSTANCE handle = GetModuleHandle(nullptr);
+        char icopath[MAX_PATH] = "milton_icon.ico";
+        platform_fname_at_exe(icopath, MAX_PATH);
+        HICON icon = (HICON)LoadImageA(0, icopath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+#if 1
+        if (icon != NULL)
+        {
+            SendMessage(platform_state.hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
+        }
+#else
+        if(icon != NULL)
+        {
+            SDL_SysWMinfo wminfo;
+            SDL_VERSION(&wminfo.version);
+            if(SDL_GetWindowWMInfo(window, &wminfo))
+            {
+                HWND hwnd = wminfo.info.win.window;
+                SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
+            }
+        }
+#endif
+    }
+#endif
+
 
     // ImGui setup
     {
@@ -733,7 +748,7 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     // ---- Main loop ----
 
-    while( !platform_state.should_quit )
+    while (!platform_state.should_quit)
     {
 
         u32 frame_start_ms = SDL_GetTicks();
@@ -762,26 +777,26 @@ int milton_main(MiltonStartupFlags startup_flags)
             SDL_GetMouseState(&x, &y);
 
             // Handle system cursor and platform state related to current_mode
-            if ( platform_state.is_panning )
+            if (platform_state.is_panning)
             {
                 cursor_set_and_show(platform_state.cursor_sizeall);
             }
-            else if ( platform_state.stopped_panning )
+            else if (platform_state.stopped_panning)
             {
                 milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
                 cursor_set_and_show(platform_state.cursor_default);
             }
-            else if ( milton_state->current_mode == MiltonMode_EXPORTING )
+            else if (milton_state->current_mode == MiltonMode_EXPORTING)
             {
                 cursor_set_and_show(platform_state.cursor_crosshair);
                 platform_state.was_exporting = true;
             }
-            else if ( platform_state.was_exporting )
+            else if (platform_state.was_exporting)
             {
                 cursor_set_and_show(platform_state.cursor_default);
                 platform_state.was_exporting = false;
             }
-            else if ( milton_state->current_mode == MiltonMode_EYEDROPPER )
+            else if (milton_state->current_mode == MiltonMode_EYEDROPPER)
             {
                 cursor_set_and_show(platform_state.cursor_crosshair);
                 platform_state.is_pointer_down = false;
@@ -795,6 +810,64 @@ int milton_main(MiltonStartupFlags startup_flags)
             {
                 cursor_set_and_show(platform_state.cursor_default);
             }
+#if defined(_WIN32)
+            else if (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER )
+            {  // Draw hardware cursor if the size is supported
+                // Would use SDL but the docs are not clear.
+                // TODO: check for size
+                if (platform_state.hcursor == NULL)
+                {
+                    int max_w = GetSystemMetrics(SM_CXCURSOR);
+                    int max_h = GetSystemMetrics(SM_CYCURSOR);
+                    size_t w = 34;
+                    size_t h = 34;
+                    if (w > (size_t)max_w)
+                    {
+                        w = (size_t)max_w;
+                        h = (size_t)max_w;
+                    }
+                    if (h > (size_t)max_h)
+                    {
+                        w = (size_t)max_h;
+                        h = (size_t)max_h;
+                    }
+
+                    size_t arr_sz = (w*h+7) / 8;
+                    char* andmask = (char*)mlt_calloc(arr_sz, 1);
+                    char* xormask = (char*)mlt_calloc(arr_sz, 1);
+                    for (size_t j = 0; j < h; ++j)
+                    {
+                        for (size_t i = 0; i < w; ++i)
+                        {
+                            size_t idx = j*w + i;
+
+                            size_t ai = idx / 8;
+                            size_t bi = idx % 8;
+
+                            b32 border = i == 0 || i == w-1;
+                            // Set bit
+                            if (border)
+                            {
+                                xormask[ai] |= (1 << bi);
+                            }
+                            else
+                            {
+                                andmask[ai] |= (1 << bi);
+                            }
+                        }
+                    }
+                    platform_state.hcursor = CreateCursor(/*HINSTANCE*/ 0,
+                                                          /*xHotSpot*/(int)(w/2),
+                                                          /*yHotSpot*/(int)(h/2),
+                                                          /* nWidth */(int)w,
+                                                          /* nHeight */(int)h,
+                                                          (VOID*)andmask,
+                                                          (VOID*)xormask);
+                    // TODO: should I delete andmask & xormask after CreateCursor?
+                }
+                SetCursor(platform_state.hcursor);
+            }
+#endif
             else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER )
             {
                 cursor_hide();
@@ -802,11 +875,10 @@ int milton_main(MiltonStartupFlags startup_flags)
 
             // Show resize icon
             int pad = 20;
-            if ( x > milton_state->view->screen_size.w - pad   ||
-                 x < pad                                       ||
-                 y > milton_state->view->screen_size.h - pad   ||
-                 y < pad
-               )
+            if (x > milton_state->view->screen_size.w - pad   ||
+                x < pad                                       ||
+                y > milton_state->view->screen_size.h - pad   ||
+                y < pad)
             {
                 cursor_show();
             }
