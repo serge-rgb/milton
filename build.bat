@@ -3,7 +3,7 @@
 ::
 :: - 1: Optimized build.
 :: - 0: Debug build.
-set mlt_opt_level=0
+set mlt_opt_level=1
 
 IF NOT EXIST build mkdir build
 
@@ -28,6 +28,8 @@ if %mlt_opt_level% == 1 set mlt_opt_flags=%mlt_opt%
 
 
 set mlt_compiler_flags=/Oi /Zi /GR- /Gm- /Wall /WX /nologo /FC /EHsc
+:: Build profiling:
+:: /Bt+
 
 REM 4100 Unreferenced func param (cleanup)
 REM 4820 struct padding

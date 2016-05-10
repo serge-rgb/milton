@@ -414,7 +414,7 @@ void milton_set_brush_size(MiltonState* milton_state, i32 size)
 {
     if ( current_mode_is_for_painting(milton_state) )
     {
-        if ( size < k_max_brush_size && size > 0 )
+        if ( size < MILTON_MAX_BRUSH_SIZE && size > 0 )
         {
             (*pointer_to_brush_size(milton_state)) = size;
             milton_update_brushes(milton_state);
@@ -429,7 +429,7 @@ void milton_increase_brush_size(MiltonState* milton_state)
     if ( current_mode_is_for_painting(milton_state) )
     {
         i32 brush_size = milton_get_brush_size(milton_state);
-        if (brush_size < k_max_brush_size && brush_size > 0)
+        if (brush_size < MILTON_MAX_BRUSH_SIZE && brush_size > 0)
         {
             milton_set_brush_size(milton_state, brush_size + 1);
         }
@@ -1068,6 +1068,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     if (is_user_drawing(milton_state) || milton_state->gui->active)
+    {
+        unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
+    }
+
+    if (milton_get_brush_size(milton_state) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE &&
+        !check_flag(milton_state->flags, MiltonStateFlags_BRUSH_SIZE_CHANGED))
     {
         unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }

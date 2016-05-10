@@ -1121,9 +1121,9 @@ static void draw_ring(u32* pixels,
     i32 top = max(center_y - ring_radius - ring_girth, 0);
     i32 bottom = min(center_y + ring_radius + ring_girth, height);
 
-    for ( i32 j = top; j < bottom; ++j )
+    for ( i32 j = top; j <= bottom; ++j )
     {
-        for ( i32 i = left; i < right; ++i )
+        for ( i32 i = left; i <= right; ++i )
         {
             // Rotated grid AA
             int samples = 0;
@@ -1150,7 +1150,7 @@ static void draw_ring(u32* pixels,
             if ( samples > 0 )
             {
                 f32 contrib = (f32)samples / 4.0f;
-                v4f aa_color = to_premultiplied(color.rgb, contrib);
+                v4f aa_color = to_premultiplied(color.rgb, contrib * color.a);
                 v4f dst = color_u32_to_v4f(pixels[j*width + i]);
                 v4f blended = blend_v4f(dst, aa_color);
                 pixels[j*width + i] = color_v4f_to_u32(blended);
@@ -1174,12 +1174,11 @@ static void draw_circle(u32* raster_buffer,
 
     if((right >= left) &&(bottom >= top))
     {
-        for ( i32 j = top; j < bottom; ++j )
+        for ( i32 j = top; j <= bottom; ++j )
         {
-            for ( i32 i = left; i < right; ++i )
+            for ( i32 i = left; i <= right; ++i )
             {
                 i32 index = j * raster_buffer_width + i;
-
 
                 //TODO: AA
                 f32 dist = distance((v2f){ (f32)i, (f32)j },
@@ -1421,7 +1420,7 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
         {
             ring_radius = 10;
             ring_girth = 2;
-            color = (v4f){0};
+            color = (v4f){0,0,0,1};
         }
 
         // Barycentric to cartesian
@@ -1921,18 +1920,18 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
                       milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                       x, y,
                       circle_radius, ring_girth,
-                      (v4f){0});
+                      (v4f){0,0,0,1});
         }
     }
 
 
-    if ( gui_visible ) {  // Render button
+    if ( gui_visible )
+    {  // Render button
         if (check_flag(render_flags, MiltonRenderFlags_BRUSH_PREVIEW))
         {
             assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
             const i32 radius = milton_get_brush_size(milton_state);
             {
-                i32 r = k_max_brush_size + 2;
                 i32 x = gui->preview_pos_prev.x != -1? gui->preview_pos_prev.x : gui->preview_pos.x;
                 i32 y = gui->preview_pos_prev.y != -1? gui->preview_pos_prev.y : gui->preview_pos.y;
             }
@@ -1953,7 +1952,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
                       milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                       gui->preview_pos.x, gui->preview_pos.y,
                       radius, 2,
-                      (v4f){0});
+                      (v4f){0,0,0,1});
             gui->preview_pos_prev = gui->preview_pos;
             gui->preview_pos = (v2i){ -1, -1 };
         }
@@ -1981,19 +1980,20 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
         }
     }
 
-    if ( check_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER) )
+    if (check_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER))
     {
+        float outline_alpha = 1.0f;
         const i32 radius = milton_get_brush_size(milton_state);
         draw_ring(raster_buffer,
                   milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                   milton_state->hover_point.x, milton_state->hover_point.y,
                   radius, 1,
-                  (v4f){0,0,0,1});
+                  (v4f){0,0,0, outline_alpha});
         draw_ring(raster_buffer,
                   milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                   milton_state->hover_point.x, milton_state->hover_point.y,
                   radius+1, 1,
-                  (v4f){1,1,1,1});
+                  (v4f){1,1,1, outline_alpha});
     }
 }
 
@@ -2221,7 +2221,8 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
         b32 should_copy = hovering || canvas_modified ||
                 (render_flags & MiltonRenderFlags_UI_UPDATED) || (render_flags & MiltonRenderFlags_FULL_REDRAW);
 
-        if (should_copy) { // only copy canvas to buffer if hovering
+        if (should_copy)
+        {  // only copy canvas to buffer if hovering
             Rect copy_rect = {0};
             copy_rect.left = 0;
             copy_rect.right = milton_state->view->screen_size.w;

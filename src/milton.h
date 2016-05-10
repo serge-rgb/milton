@@ -18,6 +18,8 @@ extern "C" {
 #define MILTON_MINIMUM_SCALE        (1 << 4)
 #define QUALITY_REDRAW_TIMEOUT_MS   200
 #define MAX_LAYER_NAME_LEN          1024
+#define MILTON_MAX_BRUSH_SIZE       80
+#define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
 
 #define SGL_GL_HELPERS_IMPLEMENTATION
 #include "gl_helpers.h"
@@ -220,8 +222,6 @@ void milton_reset_canvas(MiltonState* milton_state);
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size);
 
 void milton_gl_backend_draw(MiltonState* milton_state);
-
-static const i32 k_max_brush_size = 80;
 
 // Between 0 and k_max_brush_size
 i32 milton_get_brush_size(MiltonState* milton_state);

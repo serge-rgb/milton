@@ -241,7 +241,7 @@ b32 platform_delete_file_at_config(char* fname, int error_tolerance)
     return ok;
 }
 
-static void win32_print_error(int err)
+void win32_print_error(int err)
 {
     LPTSTR error_text = NULL;
 
@@ -265,7 +265,7 @@ static void win32_print_error(int err)
         milton_log(error_text);
         LocalFree(error_text);
     }
-    milton_log("last error is %d\n", err);
+    milton_log("- %d\n", err);
 }
 
 b32 platform_move_file(char* src, char* dest)

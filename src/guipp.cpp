@@ -344,7 +344,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 const auto size = milton_get_brush_size(milton_state);
                 auto mut_size = size;
 
-                ImGui::SliderInt(LOC(brush_size), &mut_size, 1, k_max_brush_size);
+                ImGui::SliderInt(LOC(brush_size), &mut_size, 1, MILTON_MAX_BRUSH_SIZE);
 
                 if ( mut_size != size )
                 {

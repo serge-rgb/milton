@@ -17,7 +17,6 @@
 #include "profiler.h"
 #include "utils.h"
 
-
 enum PanningFSM
 {
     PanningFSM_NOTHING,
@@ -272,19 +271,19 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
                 // Actions accepting key repeats.
                 {
-                    if ( keycode == SDLK_LEFTBRACKET )
+                    if (keycode == SDLK_LEFTBRACKET)
                     {
                         milton_decrease_brush_size(milton_state);
                     }
-                    else if ( keycode == SDLK_RIGHTBRACKET )
+                    else if (keycode == SDLK_RIGHTBRACKET)
                     {
                         milton_increase_brush_size(milton_state);
                     }
                     if ( platform_state->is_ctrl_down )
                     {
-                        if ( keycode == SDLK_z )
+                        if (keycode == SDLK_z)
                         {
-                            if ( platform_state->is_shift_down )
+                            if (platform_state->is_shift_down)
                             {
                                 set_flag(input_flags, MiltonInputFlags_REDO);
                             }
@@ -293,11 +292,11 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                                 set_flag(input_flags, MiltonInputFlags_UNDO);
                             }
                         }
-                        else if ( keycode == SDLK_EQUALS )
+                        else if (keycode == SDLK_EQUALS)
                         {
                             milton_input.scale++;
                         }
-                        else if ( keycode == SDLK_MINUS )
+                        else if (keycode == SDLK_MINUS)
                         {
                             milton_input.scale--;
                         }
@@ -313,58 +312,58 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 platform_state->is_pointer_down = false;
                 set_flag(input_flags, MiltonInputFlags_END_STROKE);
 
-                if ( keycode == SDLK_SPACE )
+                if (keycode == SDLK_SPACE)
                 {
                     turn_panning_on(platform_state);
                     // Stahp
                 }
-                if ( platform_state->is_ctrl_down ) {  // Ctrl-KEY with no key repeats.
-                    if ( keycode == SDLK_e )
+                if (platform_state->is_ctrl_down) {  // Ctrl-KEY with no key repeats.
+                    if (keycode == SDLK_e)
                     {
                         set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                         milton_input.mode_to_set = MiltonMode_EXPORTING;
                     }
-                    if ( keycode == SDLK_q )
+                    if (keycode == SDLK_q)
                     {
                         milton_try_quit(milton_state);
                     }
                 }
                 else
                 {
-                    if ( !ImGui::GetIO().WantCaptureMouse )
+                    if (!ImGui::GetIO().WantCaptureMouse )
                     {
-                        if ( keycode == SDLK_e )
+                        if (keycode == SDLK_e)
                         {
                             set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                             milton_input.mode_to_set = MiltonMode_ERASER;
                         }
-                        else if ( keycode == SDLK_b )
+                        else if (keycode == SDLK_b)
                         {
                             set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                             milton_input.mode_to_set = MiltonMode_PEN;
                         }
-                        else if ( keycode == SDLK_i )
+                        else if (keycode == SDLK_i)
                         {
                             set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);
                             milton_input.mode_to_set = MiltonMode_EYEDROPPER;
                         }
-                        else if ( keycode == SDLK_TAB )
+                        else if (keycode == SDLK_TAB)
                         {
                             gui_toggle_visibility(milton_state->gui);
                         }
-                        else if ( keycode == SDLK_F1 )
+                        else if (keycode == SDLK_F1)
                         {
                             gui_toggle_help(milton_state->gui);
                         }
-                        else if ( keycode == SDLK_1 )
+                        else if (keycode == SDLK_1)
                         {
                             milton_set_pen_alpha(milton_state, 0.1f);
                         }
-                        else if ( keycode == SDLK_2 )
+                        else if (keycode == SDLK_2)
                         {
                             milton_set_pen_alpha(milton_state, 0.2f);
                         }
-                        else if ( keycode == SDLK_3 )
+                        else if (keycode == SDLK_3)
                         {
                             milton_set_pen_alpha(milton_state, 0.3f);
                         }
@@ -372,33 +371,33 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         {
                             milton_set_pen_alpha(milton_state, 0.4f);
                         }
-                        else if ( keycode == SDLK_5 )
+                        else if (keycode == SDLK_5)
                         {
                             milton_set_pen_alpha(milton_state, 0.5f);
                         }
-                        else if ( keycode == SDLK_6 )
+                        else if (keycode == SDLK_6)
                         {
                             milton_set_pen_alpha(milton_state, 0.6f);
                         }
-                        else if ( keycode == SDLK_7 )
+                        else if (keycode == SDLK_7)
                         {
                             milton_set_pen_alpha(milton_state, 0.7f);
                         }
-                        else if ( keycode == SDLK_8 )
+                        else if (keycode == SDLK_8)
                         {
                             milton_set_pen_alpha(milton_state, 0.8f);
                         }
-                        else if ( keycode == SDLK_9 )
+                        else if (keycode == SDLK_9)
                         {
                             milton_set_pen_alpha(milton_state, 0.9f);
                         }
-                        else if ( keycode == SDLK_0 )
+                        else if (keycode == SDLK_0)
                         {
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
                     }
 #if MILTON_DEBUG
-                    if ( keycode == SDLK_F4 )
+                    if (keycode == SDLK_F4)
                     {
                         milton_log("[DEBUG]: Switching to %s renderer.\n",
                                    milton_state->DEBUG_sse2_switch ? "SSE" : "slow");
@@ -418,7 +417,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
                 SDL_Keycode keycode = event.key.keysym.sym;
 
-                if ( keycode == SDLK_SPACE )
+                if (keycode == SDLK_SPACE)
                 {
                     turn_panning_off(platform_state);
                     platform_state->is_space_down = false;
@@ -426,11 +425,11 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             } break;
         case SDL_WINDOWEVENT:
             {
-                if ( platform_state->window_id != event.window.windowID )
+                if (platform_state->window_id != event.window.windowID)
                 {
                     break;
                 }
-                switch ( event.window.event )
+                switch (event.window.event)
                 {
                     // Just handle every event that changes the window size.
                 case SDL_WINDOWEVENT_MOVED:
@@ -700,7 +699,7 @@ int milton_main(MiltonStartupFlags startup_flags)
         HINSTANCE handle = GetModuleHandle(nullptr);
         char icopath[MAX_PATH] = "milton_icon.ico";
         platform_fname_at_exe(icopath, MAX_PATH);
-        HICON icon = (HICON)LoadImageA(0, icopath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+        HICON icon = (HICON)LoadImageA(NULL, icopath, IMAGE_ICON, /*W*/0, /*H*/0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
 #if 1
         if (icon != NULL)
         {
@@ -813,49 +812,79 @@ int milton_main(MiltonStartupFlags startup_flags)
 #if defined(_WIN32)
             else if (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER )
             {  // Draw hardware cursor if the size is supported
-                // Would use SDL but the docs are not clear.
-                // TODO: check for size
+                // Create a hardware cursor as our main eye-drawing center of attention
                 if (platform_state.hcursor == NULL)
                 {
-                    int max_w = GetSystemMetrics(SM_CXCURSOR);
-                    int max_h = GetSystemMetrics(SM_CYCURSOR);
-                    size_t w = 34;
-                    size_t h = 34;
-                    if (w > (size_t)max_w)
-                    {
-                        w = (size_t)max_w;
-                        h = (size_t)max_w;
-                    }
-                    if (h > (size_t)max_h)
-                    {
-                        w = (size_t)max_h;
-                        h = (size_t)max_h;
-                    }
+                    size_t w = (size_t)GetSystemMetrics(SM_CXCURSOR);
+                    size_t h = (size_t)GetSystemMetrics(SM_CYCURSOR);
 
                     size_t arr_sz = (w*h+7) / 8;
-                    char* andmask = (char*)mlt_calloc(arr_sz, 1);
-                    char* xormask = (char*)mlt_calloc(arr_sz, 1);
-                    for (size_t j = 0; j < h; ++j)
+
+                    char* andmask = arena_alloc_array(&root_arena, arr_sz, char);
+                    char* xormask = arena_alloc_array(&root_arena, arr_sz, char);
+
+                    b32 toggle_black = true;
                     {
-                        for (size_t i = 0; i < w; ++i)
+                        size_t cx = w/2;
+                        size_t cy = h/2;
+                        for (size_t j = 0; j < h; ++j)
                         {
-                            size_t idx = j*w + i;
-
-                            size_t ai = idx / 8;
-                            size_t bi = idx % 8;
-
-                            b32 border = i == 0 || i == w-1;
-                            // Set bit
-                            if (border)
+                            for (size_t i = 0; i < w; ++i)
                             {
-                                xormask[ai] |= (1 << bi);
-                            }
-                            else
-                            {
-                                andmask[ai] |= (1 << bi);
+                                size_t dist = (i-cx)*(i-cx) + (j-cy)*(j-cy);
+
+                                // 32x32 default;
+                                i64 girth = 5; // girth of cursor in pixels
+                                size_t radius;
+                                if (w == 32 && h == 32)
+                                {
+                                    // 32x32
+                                    radius = 9;
+                                }
+                                else if (w == 64 && h == 64)
+                                {
+                                    girth = 8;
+                                    radius = 20;
+                                }
+                                else
+                                {
+                                    radius = 9;
+                                }
+                                size_t radiussq = radius*radius;
+                                i64 girthsq = girth*girth;
+                                i64 diff = (i64)(dist - radiussq);
+                                b32 incircle = diff < girthsq && diff > -girthsq;
+
+                                size_t idx = j*w + i;
+
+                                size_t ai = idx / 8;
+                                size_t bi = idx % 8;
+
+                                // Set bit
+                                if (incircle
+                                    &&
+                                    (i > cx-radius/2 && i < cx+radius/2 ||
+                                     j > cy-radius/2 && j < cy+radius/2))
+                                {
+                                    if (toggle_black)
+                                    {
+                                        xormask[ai] |= (1 << (7 - bi));
+                                    }
+                                    else
+                                    {
+                                        xormask[ai] &= ~(1 << (7 - bi));
+                                        xormask[ai] &= ~(1 << (7 - bi));
+                                    }
+                                    toggle_black = !toggle_black;
+                                }
+                                else
+                                {
+                                    andmask[ai] |= (1 << (7 - bi));
+                                }
                             }
                         }
                     }
+
                     platform_state.hcursor = CreateCursor(/*HINSTANCE*/ 0,
                                                           /*xHotSpot*/(int)(w/2),
                                                           /*yHotSpot*/(int)(h/2),
@@ -863,10 +892,15 @@ int milton_main(MiltonStartupFlags startup_flags)
                                                           /* nHeight */(int)h,
                                                           (VOID*)andmask,
                                                           (VOID*)xormask);
-                    // TODO: should I delete andmask & xormask after CreateCursor?
                 }
+                // What is the function to set the cursor image?
                 SetCursor(platform_state.hcursor);
             }
+#else
+            // TODO: Create cursor for other platforms when porting
+            //  Use the SDL call? It's not documented but we allready did the
+            //  work for CreateCursor and the function signatures are very
+            //  similar
 #endif
             else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER )
             {
