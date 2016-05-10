@@ -168,10 +168,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 }
                 if ( er == EASYTAB_OK )
                 {
-                    if ( platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && EasyTab->Pressure > 0 )
+                    if (platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && EasyTab->Pressure > 0)
                     {
                         platform_state->is_pointer_down = true;
-                        if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
+                        if (EasyTab->PosX >= 0 && EasyTab->PosY >= 0)  // Quick n' dirty is-inside-client-rect test
                         {
                             if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
                             {
