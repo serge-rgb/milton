@@ -293,6 +293,9 @@ void platform_fname_at_config(char* fname, i32 len)
 
 static MiltonStartupFlags win32_parse_cmdline()
 {
+    // NOTE:
+    //  Stop reading this code. This MiltonStartupFlags is 0.5% implemented
+    //  TODO: Implement the 99.5%
     MiltonStartupFlags startup_flags = { 0 };
 
     // Debug configuration always records...

@@ -10,7 +10,6 @@
 #include "gui.h"
 #include "localization.h"
 #include "platform.h"
-#include "platform_common.h"
 #include "rasterizer.h"
 #include "persist.h"
 
