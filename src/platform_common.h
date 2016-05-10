@@ -45,6 +45,7 @@ struct PlatformState
     // Windows hardware cursor
 #if defined(_WIN32)
     HWND    hwnd;
+    b32     setting_hcursor;  // False when resizing.
     HCURSOR hcursor;
 #endif
 };

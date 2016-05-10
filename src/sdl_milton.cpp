@@ -692,31 +692,103 @@ int milton_main(MiltonStartupFlags startup_flags)
     //ImGui_ImplSdl_Init(window);
     ImGui_ImplSdlGL3_Init(window);
 
-    // Load icon (Win32)
 #if defined(_WIN32)
-    {
+    {  // Load icon (Win32)
         int si = sizeof(HICON);
         HINSTANCE handle = GetModuleHandle(nullptr);
         char icopath[MAX_PATH] = "milton_icon.ico";
         platform_fname_at_exe(icopath, MAX_PATH);
         HICON icon = (HICON)LoadImageA(NULL, icopath, IMAGE_ICON, /*W*/0, /*H*/0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
-#if 1
         if (icon != NULL)
         {
             SendMessage(platform_state.hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
         }
-#else
-        if(icon != NULL)
+    }
+    {  // Set brush HW cursor
+        size_t w = (size_t)GetSystemMetrics(SM_CXCURSOR);
+        size_t h = (size_t)GetSystemMetrics(SM_CYCURSOR);
+
+        size_t arr_sz = (w*h+7) / 8;
+
+        char* andmask = arena_alloc_array(&root_arena, arr_sz, char);
+        char* xormask = arena_alloc_array(&root_arena, arr_sz, char);
+
+        b32 toggle_black = true;
         {
-            SDL_SysWMinfo wminfo;
-            SDL_VERSION(&wminfo.version);
-            if(SDL_GetWindowWMInfo(window, &wminfo))
+            size_t cx = w/2;
+            size_t cy = h/2;
+            for (size_t j = 0; j < h; ++j)
             {
-                HWND hwnd = wminfo.info.win.window;
-                SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
+                for (size_t i = 0; i < w; ++i)
+                {
+                    size_t dist = (i-cx)*(i-cx) + (j-cy)*(j-cy);
+
+                    // 32x32 default;
+                    i64 girth = 5; // girth of cursor in pixels
+                    size_t radius;
+                    if (w == 32 && h == 32)
+                    {
+                        // 32x32
+                        radius = 9;
+                    }
+                    else if (w == 64 && h == 64)
+                    {
+                        girth = 8;
+                        radius = 20;
+                    }
+                    else
+                    {
+                        radius = 9;
+                    }
+                    size_t radiussq = radius*radius;
+                    i64 girthsq = girth*girth;
+                    i64 diff = (i64)(dist - radiussq);
+                    b32 incircle = diff < girthsq && diff > -girthsq;
+
+                    size_t idx = j*w + i;
+
+                    size_t ai = idx / 8;
+                    size_t bi = idx % 8;
+
+                    if (incircle
+                        && (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2))
+                    {
+                        if (toggle_black)
+                        {
+                            xormask[ai] |= (1 << (7 - bi));
+                        }
+                        else
+                        {
+                            xormask[ai] &= ~(1 << (7 - bi));
+                            xormask[ai] &= ~(1 << (7 - bi));
+                        }
+                        toggle_black = !toggle_black;
+                    }
+                    else
+                    {
+                        andmask[ai] |= (1 << (7 - bi));
+                    }
+                }
             }
         }
-#endif
+
+        platform_state.hcursor = CreateCursor(/*HINSTANCE*/ 0,
+                                              /*xHotSpot*/(int)(w/2),
+                                              /*yHotSpot*/(int)(h/2),
+                                              /* nWidth */(int)w,
+                                              /* nHeight */(int)h,
+                                              (VOID*)andmask,
+                                              (VOID*)xormask);
+
+        if (platform_state.hcursor != NULL)
+        {
+            platform_state.setting_hcursor = true;
+        }
+
+        // TODO: Create cursor for other platforms when porting
+        //  Use the SDL call? It's not documented but we allready did the
+        //  work for CreateCursor and the function signatures are very
+        //  similar
     }
 #endif
 
@@ -809,99 +881,13 @@ int milton_main(MiltonStartupFlags startup_flags)
             {
                 cursor_set_and_show(platform_state.cursor_default);
             }
-#if defined(_WIN32)
             else if (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER )
-            {  // Draw hardware cursor if the size is supported
-                // Create a hardware cursor as our main eye-drawing center of attention
-                if (platform_state.hcursor == NULL)
+            {
+                if (platform_state.hcursor != NULL && platform_state.setting_hcursor)
                 {
-                    size_t w = (size_t)GetSystemMetrics(SM_CXCURSOR);
-                    size_t h = (size_t)GetSystemMetrics(SM_CYCURSOR);
-
-                    size_t arr_sz = (w*h+7) / 8;
-
-                    char* andmask = arena_alloc_array(&root_arena, arr_sz, char);
-                    char* xormask = arena_alloc_array(&root_arena, arr_sz, char);
-
-                    b32 toggle_black = true;
-                    {
-                        size_t cx = w/2;
-                        size_t cy = h/2;
-                        for (size_t j = 0; j < h; ++j)
-                        {
-                            for (size_t i = 0; i < w; ++i)
-                            {
-                                size_t dist = (i-cx)*(i-cx) + (j-cy)*(j-cy);
-
-                                // 32x32 default;
-                                i64 girth = 5; // girth of cursor in pixels
-                                size_t radius;
-                                if (w == 32 && h == 32)
-                                {
-                                    // 32x32
-                                    radius = 9;
-                                }
-                                else if (w == 64 && h == 64)
-                                {
-                                    girth = 8;
-                                    radius = 20;
-                                }
-                                else
-                                {
-                                    radius = 9;
-                                }
-                                size_t radiussq = radius*radius;
-                                i64 girthsq = girth*girth;
-                                i64 diff = (i64)(dist - radiussq);
-                                b32 incircle = diff < girthsq && diff > -girthsq;
-
-                                size_t idx = j*w + i;
-
-                                size_t ai = idx / 8;
-                                size_t bi = idx % 8;
-
-                                // Set bit
-                                if (incircle
-                                    &&
-                                    (i > cx-radius/2 && i < cx+radius/2 ||
-                                     j > cy-radius/2 && j < cy+radius/2))
-                                {
-                                    if (toggle_black)
-                                    {
-                                        xormask[ai] |= (1 << (7 - bi));
-                                    }
-                                    else
-                                    {
-                                        xormask[ai] &= ~(1 << (7 - bi));
-                                        xormask[ai] &= ~(1 << (7 - bi));
-                                    }
-                                    toggle_black = !toggle_black;
-                                }
-                                else
-                                {
-                                    andmask[ai] |= (1 << (7 - bi));
-                                }
-                            }
-                        }
-                    }
-
-                    platform_state.hcursor = CreateCursor(/*HINSTANCE*/ 0,
-                                                          /*xHotSpot*/(int)(w/2),
-                                                          /*yHotSpot*/(int)(h/2),
-                                                          /* nWidth */(int)w,
-                                                          /* nHeight */(int)h,
-                                                          (VOID*)andmask,
-                                                          (VOID*)xormask);
+                    SetCursor(platform_state.hcursor);
                 }
-                // What is the function to set the cursor image?
-                SetCursor(platform_state.hcursor);
             }
-#else
-            // TODO: Create cursor for other platforms when porting
-            //  Use the SDL call? It's not documented but we allready did the
-            //  work for CreateCursor and the function signatures are very
-            //  similar
-#endif
             else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER )
             {
                 cursor_hide();
@@ -914,7 +900,12 @@ int milton_main(MiltonStartupFlags startup_flags)
                 y > milton_state->view->screen_size.h - pad   ||
                 y < pad)
             {
-                cursor_show();
+                cursor_set_and_show(platform_state.cursor_default);
+                platform_state.setting_hcursor = false;
+            }
+            else
+            {
+                platform_state.setting_hcursor = true;
             }
         }
 
