@@ -280,6 +280,14 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     }
                     if ( platform_state->is_ctrl_down )
                     {
+                        if (keycode == SDLK_EQUALS)
+                        {
+                            milton_input.scale++;
+                        }
+                        if (keycode == SDLK_MINUS)
+                        {
+                            milton_input.scale--;
+                        }
                         if (keycode == SDLK_z)
                         {
                             if (platform_state->is_shift_down)
@@ -290,14 +298,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                             {
                                 set_flag(input_flags, MiltonInputFlags_UNDO);
                             }
-                        }
-                        else if (keycode == SDLK_EQUALS)
-                        {
-                            milton_input.scale++;
-                        }
-                        else if (keycode == SDLK_MINUS)
-                        {
-                            milton_input.scale--;
                         }
                     }
 
@@ -316,7 +316,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     turn_panning_on(platform_state);
                     // Stahp
                 }
-                if (platform_state->is_ctrl_down) {  // Ctrl-KEY with no key repeats.
+                if (platform_state->is_ctrl_down)
+                {  // Ctrl-KEY with no key repeats.
                     if (keycode == SDLK_e)
                     {
                         set_flag(input_flags, MiltonInputFlags_CHANGE_MODE);

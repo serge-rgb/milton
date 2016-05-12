@@ -978,51 +978,30 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     { // Undo / Redo
-        if (check_flag( input->flags, MiltonInputFlags_UNDO ))
+        if (check_flag(input->flags, MiltonInputFlags_UNDO))
         {
             // Grab undo elements. They might be from deleted layers, so discard dead results.
-            while ( sb_count(milton_state->history) )
+            while (sb_count(milton_state->history))
             {
                 HistoryElement h = sb_pop(milton_state->history);
                 Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
-                if ( l )
+                if (l)
                 { // found a thing to undo.
-                    if ( sb_count(l->strokes) )
+                    if (sb_count(l->strokes))
                     {
                         Stroke stroke = sb_pop(l->strokes);
                         sb_push(milton_state->stroke_graveyard, stroke);
                         sb_push(milton_state->redo_stack, h);
+                        // TODO: FULL_REDRAW is overkill
                         set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
                     }
                     break;
                 }
             }
-#if 0
-            if ( sb_count(milton_state->history) ) {
-                HistoryElement h = sb_pop(milton_state->history);
-                switch (h.type) {
-                case HistoryElement_STROKE_ADD: {
-                    Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
-                    if (l!=) {
-                        assert (sb_count(l->strokes) > 0);
-
-                        Stroke stroke = sb_pop(l->strokes);
-                        sb_push(milton_state->stroke_graveyard, stroke);
-                        set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
-                    }
-
-                } break;
-                /* case HistoryElement_LAYER_DELETE: { */
-
-                /* } break; */
-                }
-                sb_push(milton_state->redo_stack, h);
-            }
-#endif
         }
-        else if ( check_flag(input->flags, MiltonInputFlags_REDO ) )
+        else if (check_flag(input->flags, MiltonInputFlags_REDO))
         {
-            while ( sb_count(milton_state->redo_stack) > 0 )
+            if ( sb_count(milton_state->redo_stack) > 0 )
             {
                 HistoryElement h = sb_pop(milton_state->redo_stack);
                 switch (h.type)
@@ -1037,6 +1016,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                         {
                             sb_push(l->strokes, stroke);
                             sb_push(milton_state->history, h);
+                            // TODO: FULL_REDRAW is overkill
                             set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
                             break;
                         }
@@ -1047,7 +1027,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 /* case HistoryElement_LAYER_DELETE: { */
                 /* } break; */
                 }
-                set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
             }
         }
     }
