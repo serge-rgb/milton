@@ -1980,20 +1980,27 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
         }
     }
 
+    i32 hover_flash_threshold_ms = 500;  // How long does the hidden brush hover show when it has changed size.
+
     if (check_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER))
     {
         float outline_alpha = 1.0f;
+        float gray = 0.25f;
         const i32 radius = milton_get_brush_size(milton_state);
-        draw_ring(raster_buffer,
-                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                  milton_state->hover_point.x, milton_state->hover_point.y,
-                  radius, 1,
-                  (v4f){0,0,0, outline_alpha});
-        draw_ring(raster_buffer,
-                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                  milton_state->hover_point.x, milton_state->hover_point.y,
-                  radius+1, 1,
-                  (v4f){1,1,1, outline_alpha});
+        if ((radius > MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE) ||
+            ((i32)SDL_GetTicks() - milton_state->hover_flash_ms < hover_flash_threshold_ms))
+        {
+            draw_ring(raster_buffer,
+                      milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                      milton_state->hover_point.x, milton_state->hover_point.y,
+                      radius, 1,
+                      (v4f){gray,gray,gray, outline_alpha});
+            draw_ring(raster_buffer,
+                      milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                      milton_state->hover_point.x, milton_state->hover_point.y,
+                      radius+1, 1,
+                      (v4f){1-gray,1-gray,1-gray, outline_alpha});
+        }
     }
 }
 

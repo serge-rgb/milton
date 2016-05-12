@@ -1046,15 +1046,18 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         set_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
-    if (is_user_drawing(milton_state) || milton_state->gui->active)
+    if (milton_state->gui->active)
     {
         unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
-    if (milton_get_brush_size(milton_state) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE &&
-        !check_flag(milton_state->flags, MiltonStateFlags_BRUSH_SIZE_CHANGED))
-    {
-        unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
+    if (is_user_drawing(milton_state))
+    {  // Set the hover point as the last point of the working stroke.
+        i32 np = milton_state->working_stroke.num_points;
+        if (np > 0)
+        {
+            milton_state->hover_point = canvas_to_raster(milton_state->view, milton_state->working_stroke.points[np-1]);
+        }
     }
 
     if (input->input_count > 0)

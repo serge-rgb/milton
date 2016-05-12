@@ -119,6 +119,9 @@ typedef struct MiltonState
 
 
     v2i hover_point;  // Track the pointer when not stroking..
+    i32 hover_flash_ms;  // Set on keyboard shortcut to change brush size.
+                        // Brush hover "flashes" if it is currently hidden to show its current size.
+
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
