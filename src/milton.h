@@ -10,6 +10,7 @@ extern "C" {
 
 #include "milton_configuration.h"
 
+
 #define MILTON_USE_VAO              1
 #define STROKE_MAX_POINTS           2048
 #define MILTON_DEFAULT_SCALE        (1 << 10)
@@ -20,6 +21,8 @@ extern "C" {
 #define MAX_LAYER_NAME_LEN          1024
 #define MILTON_MAX_BRUSH_SIZE       80
 #define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
+#define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
+
 
 #define SGL_GL_HELPERS_IMPLEMENTATION
 #include "gl_helpers.h"
@@ -162,7 +165,8 @@ enum MiltonStateFlags
     MiltonStateFlags_DEFAULT_CANVAS         = 1<<5,
     MiltonStateFlags_IGNORE_NEXT_CLICKUP    = 1<<6,  // When selecting eyedropper from menu, avoid the click from selecting the color...
     MiltonStateFlags_BRUSH_SIZE_CHANGED     = 1<<7,
-    MiltonStateFlags_LAST_SAVE_FAILED       = 1<<8,
+    MiltonStateFlags_BRUSH_HOVER_FLASHING = 1<<8,  // Send a GUI redraw event on timeout if overlay is hidden.
+    MiltonStateFlags_LAST_SAVE_FAILED       = 1<<9,
 };
 
 typedef enum MiltonInputFlags

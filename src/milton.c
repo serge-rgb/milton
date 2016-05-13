@@ -1033,12 +1033,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
     if (milton_state->current_mode == MiltonMode_PEN ||
-         milton_state->current_mode == MiltonMode_ERASER)
+        milton_state->current_mode == MiltonMode_ERASER)
     {
         set_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
-    if (check_flag( input->flags, MiltonInputFlags_HOVERING ))
+    if (check_flag(input->flags, MiltonInputFlags_HOVERING))
     {
         milton_state->hover_point = input->hover_point;
         f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
@@ -1196,6 +1196,15 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         milton_state->flags &= ~MiltonStateFlags_BRUSH_SIZE_CHANGED;
         render_flags |= MiltonRenderFlags_BRUSH_CHANGE;
+    }
+
+    if (check_flag(milton_state->flags, MiltonStateFlags_BRUSH_HOVER_FLASHING))
+    {  // Send a UI_UPDATED event to clear the canvas of the hover when it stops flashing
+        if ((i32)SDL_GetTicks() - milton_state->hover_flash_ms > HOVER_FLASH_THRESHOLD_MS)
+        {
+            milton_state->flags &= ~MiltonStateFlags_BRUSH_HOVER_FLASHING;
+            render_flags |= MiltonRenderFlags_UI_UPDATED;
+        }
     }
 
     if (check_flag(milton_state->gui->flags, MiltonGuiFlags_NEEDS_REDRAW))

@@ -274,11 +274,13 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     {
                         milton_decrease_brush_size(milton_state);
                         milton_state->hover_flash_ms = (i32)SDL_GetTicks();
+                        milton_state->flags |= MiltonStateFlags_BRUSH_HOVER_FLASHING;
                     }
                     else if (keycode == SDLK_RIGHTBRACKET)
                     {
                         milton_increase_brush_size(milton_state);
                         milton_state->hover_flash_ms = (i32)SDL_GetTicks();
+                        milton_state->flags |= MiltonStateFlags_BRUSH_HOVER_FLASHING;
                     }
                     if ( platform_state->is_ctrl_down )
                     {

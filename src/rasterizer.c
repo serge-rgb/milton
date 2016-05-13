@@ -1934,15 +1934,16 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
         }
     }
 
-    i32 hover_flash_threshold_ms = 500;  // How long does the hidden brush hover show when it has changed size.
-
     if (check_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER))
     {
         float outline_alpha = 1.0f;
         float gray = 0.25f;
         const i32 radius = milton_get_brush_size(milton_state);
-        if ((radius > MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE) ||
-            ((i32)SDL_GetTicks() - milton_state->hover_flash_ms < hover_flash_threshold_ms))
+
+        // Draw brush outline if...
+        if (milton_state->current_mode == MiltonMode_ERASER ||
+            radius > MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ||
+            (i32)SDL_GetTicks() - milton_state->hover_flash_ms < HOVER_FLASH_THRESHOLD_MS)
         {
             draw_ring(raster_buffer,
                       milton_state->view->screen_size.w, milton_state->view->screen_size.h,
@@ -2169,21 +2170,20 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 
     MiltonGui* gui = milton_state->gui;
 
-    if ((render_flags & MiltonRenderFlags_UI_UPDATED)
-        || (render_flags & MiltonRenderFlags_BRUSH_HOVER)
-        || canvas_modified)
-    {
-
+    if ((render_flags & MiltonRenderFlags_UI_UPDATED) ||
+        (render_flags & MiltonRenderFlags_BRUSH_HOVER) ||
+        canvas_modified)
+    {  // Prepare rect, copy buffer, and call render_gui
         static v2i static_hp = {-1};
-        v2i hp  = milton_state->hover_point;
-        b32 hovering = (render_flags&MiltonRenderFlags_BRUSH_CHANGE) || (hp.x != static_hp.x || hp.y != static_hp.y);
+        v2i hp = milton_state->hover_point;
+        b32 hovering = (render_flags & MiltonRenderFlags_BRUSH_CHANGE) || (hp.x != static_hp.x || hp.y != static_hp.y);
         static_hp = hp;
 
         b32 should_copy = hovering || canvas_modified ||
                 (render_flags & MiltonRenderFlags_UI_UPDATED) || (render_flags & MiltonRenderFlags_FULL_REDRAW);
 
         if (should_copy)
-        {  // only copy canvas to buffer if hovering
+        {
             Rect copy_rect = {0};
             copy_rect.left = 0;
             copy_rect.right = milton_state->view->screen_size.w;
@@ -2200,7 +2200,6 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
         {
             raster_limits = rect_union(raster_limits, get_bounds_for_picker_and_colors(&gui->picker));
         }
-
 
         if ((render_flags & MiltonRenderFlags_BRUSH_HOVER) && hovering)
         {
