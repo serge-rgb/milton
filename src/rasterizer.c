@@ -214,7 +214,8 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                 Stroke* unclipped_stroke = NULL;
                 if ( stroke_i == num_strokes )
                 {
-                    if ( layer->id == working_stroke->layer_id && working_stroke->num_points ) {  // Topmost layer: Use working stroke
+                    if (layer->id == working_stroke->layer_id && working_stroke->num_points)
+                    {  // Topmost layer: Use working stroke
                         unclipped_stroke = working_stroke;
                     }
                     else
@@ -234,8 +235,6 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                     continue;
                 }
 
-                b32 single_point = unclipped_stroke->num_points == 1;
-
                 {
                     Rect enlarged_block = rect_enlarge(canvas_block, unclipped_stroke->brush.radius);
                     ClippedStroke* clipped_stroke = stroke_clip_to_rect(render_arena, unclipped_stroke,
@@ -249,8 +248,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                     }
 
                     if ( clipped_stroke->num_points > 0 )
-                    {
-                        // Empty strokes ignored.
+                    {  // Empty strokes ignored.
                         ClippedStroke* list_head = clipped_stroke;
 
                         list_head->next = stroke_list;
@@ -1879,7 +1877,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
     }
 
 
-    if ( gui_visible )
+    if (gui_visible)
     {  // Render button
         if (check_flag(render_flags, MiltonRenderFlags_BRUSH_PREVIEW))
         {

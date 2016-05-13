@@ -745,17 +745,18 @@ int milton_main(MiltonStartupFlags startup_flags)
                         radius = 9;
                     }
                     size_t radiussq = radius*radius;
-                    i64 girthsq = girth*girth;
-                    i64 diff = (i64)(dist - radiussq);
-                    b32 incircle = diff < girthsq && diff > -girthsq;
+                    i64 girthsq     = girth*girth;
+                    i64 diff        = (i64)(dist - radiussq);
+                    b32 incircle    = diff < girthsq && diff > -girthsq;
 
                     size_t idx = j*w + i;
 
                     size_t ai = idx / 8;
                     size_t bi = idx % 8;
 
-                    if (incircle
-                        && (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2))
+                    if (incircle &&
+                        // Cross-hair effect. Only pixels inside half-radius bands get drawn.
+                        (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2))
                     {
                         if (toggle_black)
                         {
@@ -1001,7 +1002,6 @@ int milton_main(MiltonStartupFlags startup_flags)
 
         platform_state.pan_start = platform_state.pan_point;
         // ==== Update and render
-        //SDL_Delay(17);
         milton_update(milton_state, &milton_input);
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) )
         {
