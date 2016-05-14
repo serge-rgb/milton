@@ -16,7 +16,7 @@
 
 #define MAX_NUM_WORKERS 64
 // Force things to be a bit slower
-#define RESTRICT_NUM_WORKERS_TO_2 0
+#define RESTRICT_NUM_WORKERS_TO_2 1
 
 
 // 0 - Use strict SRGB definition
@@ -28,8 +28,10 @@
 // -- Esoteric and/or Stupid stuff.
 
 
+// Rasterizer profiling -
 // Self-profiling counters. Currently only active on Windows. Should be used
-// for micro-tweaks. Use a sampling profiler for higher-level performance info
+// for micro-tweaks. Use a sampling profiler for higher-level performance info.
+// Dumps information out to Windows console.
 #define MILTON_ENABLE_PROFILING 0
 
 // Every render_canvas call will re-draw using all renderers.

@@ -561,8 +561,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                                        u32* pixels,
                                        Rect raster_block)
 {
-    PROFILE_BEGIN(sse2);
-    PROFILE_BEGIN(preamble);
+    PROFILE_RASTER_BEGIN(sse2);
+    PROFILE_RASTER_BEGIN(preamble);
 
     __m128 one4 = _mm_set_ps1(1);
     __m128 zero4 = _mm_set_ps1(0);
@@ -631,8 +631,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     i32 canvas_jump = downsample_factor * view->scale * local_scale;
 
 
-    PROFILE_PUSH(preamble);
-    PROFILE_BEGIN(total_work_loop);
+    PROFILE_RASTER_PUSH(preamble);
+    PROFILE_RASTER_BEGIN(total_work_loop);
 
     // Clear color
     v4f background_color;
@@ -700,7 +700,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     {
                         // The step is 4 (128 bit SIMD) times 2 (points are in format AB BC CD DE)
 
-                        PROFILE_BEGIN(load);
+                        PROFILE_RASTER_BEGIN(load);
 
                         ALIGN(16) f32 axs[4];
                         ALIGN(16) f32 ays[4];
@@ -741,8 +741,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         __m128 pressure_a = _mm_load_ps(aps);
                         __m128 pressure_b = _mm_load_ps(bps);
 
-                        PROFILE_PUSH(load);
-                        PROFILE_BEGIN(work);
+                        PROFILE_RASTER_PUSH(load);
+                        PROFILE_RASTER_BEGIN(work);
 
                         __m128 ab_x = _mm_sub_ps(b_x, a_x);
                         __m128 ab_y = _mm_sub_ps(b_y, a_y);
@@ -805,8 +805,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         dist4 = _mm_sub_ps(dist4, _mm_mul_ps(_mm_mul_ps(pressure4, radius4),
                                                              local_scale4));
 
-                        PROFILE_PUSH(work);
-                        PROFILE_BEGIN(gather);
+                        PROFILE_RASTER_PUSH(work);
+                        PROFILE_RASTER_BEGIN(gather);
 
                         ALIGN(16) f32 dists[4];
                         ALIGN(16) f32 tests_dx[4];
@@ -913,11 +913,11 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             }
                         }
 #endif
-                        PROFILE_PUSH(gather);
+                        PROFILE_RASTER_PUSH(gather);
                     }
                 }
 
-                PROFILE_BEGIN(sampling);
+                PROFILE_RASTER_BEGIN(sampling);
 
                 if ( min_dist < FLT_MAX )
                 {
@@ -1015,7 +1015,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         }
                     }
                 }
-                PROFILE_PUSH(sampling);
+                PROFILE_RASTER_PUSH(sampling);
 
                 // This pixel is done if alpha == 1. This is is why stroke_list is reversed.
                 if ( acc_color.a >= 1.0f )
@@ -1049,8 +1049,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
         }
         j += canvas_jump;
     }
-    PROFILE_PUSH(total_work_loop);
-    PROFILE_PUSH(sse2);
+    PROFILE_RASTER_PUSH(total_work_loop);
+    PROFILE_RASTER_PUSH(sse2);
     return true;
 }
 
@@ -1630,7 +1630,7 @@ static void produce_render_work(MiltonState* milton_state,
 
 static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 {
-    PROFILE_BEGIN(render_canvas);
+    PROFILE_RASTER_BEGIN(render_canvas);
 
     Rect* blocks = NULL;
     i32 num_blocks = rect_split(&blocks, raster_limits, milton_state->block_width, milton_state->block_width);
@@ -1690,7 +1690,7 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 
     sb_free(blocks);
 
-    PROFILE_PUSH(render_canvas);
+    PROFILE_RASTER_PUSH(render_canvas);
 }
 
 // Call render_canvas with increasing quality until it is too slow.

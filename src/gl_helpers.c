@@ -74,8 +74,7 @@ void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
     assert(glIsProgram (obj));
     for (int i = 0; i < num_shaders; ++i)
     {
-        // assert(glIsShader(shaders[i]));
-        // TODO: Is there an equivalent to glIsShader?
+        assert(glIsShader(shaders[i]));
 
         GLCHK ( glAttachShader(obj, shaders[i]) );
     }

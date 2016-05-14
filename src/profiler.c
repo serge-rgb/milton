@@ -1,19 +1,21 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+
+
 #include "profiler.h"
 #include "platform.h"
 
 #if defined(PROFILER_IMPLEMENTATION)
-u64 g_profiler_ticks[MILTON_PROFILER_COUNT];  // Total cpu clocks
-u64 g_profiler_count[MILTON_PROFILER_COUNT];  // How many calls
-u64 g_profiler_last[MILTON_PROFILER_COUNT];
+u64 g_profiler_ticks[PROF_COUNT];  // Total cpu clocks
+u64 g_profiler_count[PROF_COUNT];  // How many calls
+u64 g_profiler_last[PROF_COUNT];
 #endif
 
 void profiler_reset()
 {
 #if defined(PROFILER_IMPLEMENTATION)
-    for ( i32 i = 0; i < MILTON_PROFILER_COUNT; ++i )
+    for ( i32 i = 0; i < PROF_COUNT; ++i )
     {
         g_profiler_count[i] = 0;
     }
@@ -24,7 +26,7 @@ void profiler_output()
 {
 #if defined(PROFILER_IMPLEMENTATION)
     milton_log("===== Profiler output ==========\n");
-    for (i32 i = 0; i < MILTON_PROFILER_COUNT; ++i)
+    for (i32 i = 0; i < PROF_COUNT; ++i)
     {
         if (g_profiler_count[i])
         {
@@ -38,5 +40,4 @@ void profiler_output()
     milton_log("================================\n");
 #endif
 }
-
 

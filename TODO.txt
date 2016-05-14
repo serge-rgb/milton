@@ -4,6 +4,7 @@ To-Do
 - Bugs
     - :)
     - need to lose imgui focus when toggling visibility
+        ? can't repro anymore
     - MoveFileExA randomly fails with return code 5 - access denied
 
 - Build system
