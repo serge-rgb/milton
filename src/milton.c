@@ -463,6 +463,7 @@ float milton_get_pen_alpha(MiltonState* milton_state)
     return alpha;
 }
 
+
 void milton_init(MiltonState* milton_state)
 {
     // Initialize render queue
@@ -557,6 +558,7 @@ void milton_init(MiltonState* milton_state)
 
 #if MILTON_DEBUG
     milton_run_tests(milton_state);
+    milton_state->DEBUG_viz_window_visible = true;
 #endif
 
     for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
@@ -781,7 +783,8 @@ void milton_new_layer(MiltonState* milton_state)
     };
     snprintf(layer->name, 1024, "Layer %d", layer->id);
 
-    if (milton_state->root_layer != NULL) {
+    if (milton_state->root_layer != NULL)
+    {
         Layer* top = layer_get_topmost(milton_state->root_layer);
         top->next = layer;
         layer->prev = top;
@@ -822,6 +825,7 @@ void milton_delete_working_layer(MiltonState* milton_state)
 
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
+    PROFILE_GRAPH_BEGIN(update);
     b32 should_save =
             (check_flag(input->flags, MiltonInputFlags_OPEN_FILE)) ||
             (check_flag(input->flags, MiltonInputFlags_SAVE_FILE)) ||
@@ -1217,6 +1221,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
+    PROFILE_GRAPH_PUSH(update);
     milton_render(milton_state, render_flags, input->pan_delta);
 
 cleanup:

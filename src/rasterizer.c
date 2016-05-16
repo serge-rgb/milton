@@ -1959,6 +1959,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
 
 void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2i pan_delta)
 {
+    PROFILE_GRAPH_BEGIN(raster);
     b32 canvas_modified = false;    // Avoid needless work when program is idle by keeping track
                                     // of when everything needs to be redrawn. The gui needs to know
                                     // about the canvas.
@@ -1971,11 +1972,11 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
     //  - If we don't get a full redraw, then figure out what to draw based on the
     //      current working stroke.
 
-#if MILTON_ENABLE_PROFILING
+#if MILTON_ENABLE_RASTER_PROFILING
     set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
 #endif
 
-    if ( check_flag(render_flags, MiltonRenderFlags_PAN_COPY) )
+    if (check_flag(render_flags, MiltonRenderFlags_PAN_COPY))
     {
         canvas_modified = true;
         CanvasView* view = milton_state->view;
@@ -2215,7 +2216,7 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
 
         render_gui(milton_state, raster_limits, render_flags);
     }
-
+    PROFILE_GRAPH_PUSH(raster);  // Raster includes rasterizing the GUI color picker.
 }
 
 void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,

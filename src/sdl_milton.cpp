@@ -408,6 +408,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         profiler_reset();
                         milton_state->DEBUG_sse2_switch = !milton_state->DEBUG_sse2_switch;
                     }
+                    if (keycode == SDLK_BACKQUOTE)
+                    {
+                        milton_state->DEBUG_viz_window_visible = !milton_state->DEBUG_viz_window_visible;
+                    }
 #endif
                 }
 
@@ -826,6 +830,7 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     while (!platform_state.should_quit)
     {
+        PROFILE_GRAPH_BEGIN(polling);
 
         u32 frame_start_ms = SDL_GetTicks();
 
@@ -983,10 +988,10 @@ int milton_main(MiltonStartupFlags startup_flags)
         milton_input.input_count = platform_state.num_point_results;
 
         v2i pan_delta = sub2i(platform_state.pan_point, platform_state.pan_start);
-        if ( pan_delta.x != 0 ||
-             pan_delta.y != 0 ||
-             platform_state.width != milton_state->view->screen_size.x ||
-             platform_state.height != milton_state->view->screen_size.y )
+        if (pan_delta.x != 0 ||
+            pan_delta.y != 0 ||
+            platform_state.width != milton_state->view->screen_size.x ||
+            platform_state.height != milton_state->view->screen_size.y)
         {
             milton_resize(milton_state, pan_delta, {platform_state.width, platform_state.height});
         }
@@ -1002,15 +1007,18 @@ int milton_main(MiltonStartupFlags startup_flags)
 
         platform_state.pan_start = platform_state.pan_point;
         // ==== Update and render
+        PROFILE_GRAPH_PUSH(polling);
         milton_update(milton_state, &milton_input);
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) )
         {
             platform_state.should_quit = true;
         }
+        PROFILE_GRAPH_BEGIN(GL);
         milton_gl_backend_draw(milton_state);
         ImGui::Render();
         SDL_GL_SwapWindow(window);
-        SDL_WaitEvent(NULL);
+        PROFILE_GRAPH_PUSH(GL);
+        SDL_WaitEvent(NULL);  // Wait for our custom event to force an update if there is no user input
 
 #if MILTON_DEBUG
         milton_state->DEBUG_last_frame_time = SDL_GetTicks() - frame_start_ms;
@@ -1033,4 +1041,5 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     return 0;
 }
+
 

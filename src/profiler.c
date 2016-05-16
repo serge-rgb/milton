@@ -10,6 +10,7 @@
 u64 g_profiler_ticks[PROF_COUNT];  // Total cpu clocks
 u64 g_profiler_count[PROF_COUNT];  // How many calls
 u64 g_profiler_last[PROF_COUNT];
+u64 g_graph_last[PROF_COUNT - PROF_RASTER_COUNT];
 #endif
 
 void profiler_reset()
@@ -24,9 +25,9 @@ void profiler_reset()
 
 void profiler_output()
 {
-#if defined(PROFILER_IMPLEMENTATION)
-    milton_log("===== Profiler output ==========\n");
-    for (i32 i = 0; i < PROF_COUNT; ++i)
+#if defined(PROFILER_IMPLEMENTATION) && MILTON_ENABLE_RASTER_PROFILING
+    milton_log("===== Rasterizer profiler output ==========\n");
+    for (i32 i = 0; i < PROF_RASTER_COUNT; ++i)
     {
         if (g_profiler_count[i])
         {

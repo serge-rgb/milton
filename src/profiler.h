@@ -4,8 +4,6 @@
 #pragma once
 
 
-// Not the most fancy thing, but it's useful for quick and dirty sessions of optimization.
-
 #include "milton_configuration.h"
 #include "common.h"
 
@@ -15,12 +13,11 @@ extern"C"{
 
 // Profiler
 //
-// The PROFILE_BEGIN and PROFILE_PUSH macros report the rasterizer performance
+// The PROFILE_RASTER_BEGIN and PROFILE_RASTER_PUSH macros report the rasterizer performance
 // to the Windows console output.
 //
-// The GRAPH_BEGIN and GRAPH_PUSH macros use the same "guts"
-// TODO: docs
-//
+// The PROFILE_GRAPH_BEGIN and PROFILE_GRAPH_PUSH macros write to the
+// g_profiler_last array.
 //
 //
 enum
@@ -35,12 +32,22 @@ enum
     PROF_RASTER_total_work_loop,
     PROF_RASTER_sample,
 
-    PROF_GRAPH_test,
-    PROF_COUNT,
+
+    PROF_RASTER_COUNT, // Number of raster profiler counters for Win32 Console output
+
+
+    PROF_GRAPH_polling=0,     // Time spent gathering input.
+    PROF_GRAPH_update,      // Time spent processing input.
+    PROF_GRAPH_raster,      // Time spent rasterizing the canvas.
+    PROF_GRAPH_GL,          // Time spent sending data and draw commands to GL
+
+    PROF_COUNT = PROF_RASTER_COUNT+4,
+
 };
 
 
-static char* g_profiler_names[PROF_COUNT] =
+
+static char* g_profiler_names[PROF_RASTER_COUNT] =
 {
     "render_canvas",
     "sse2",
@@ -50,8 +57,9 @@ static char* g_profiler_names[PROF_COUNT] =
     "gather",
     "sampling",
     "total_work_loop",
-    "sample"
+    "sample",
 };
+
 
 void profiler_output();
 void profiler_reset();
@@ -62,12 +70,15 @@ void profiler_reset();
 
 extern u64 g_profiler_ticks[PROF_COUNT];     // Total cpu clocks
 extern u64 g_profiler_last[PROF_COUNT];
+extern u64 g_graph_last[PROF_COUNT - PROF_RASTER_COUNT];
 extern u64 g_profiler_count[PROF_COUNT];     // How many calls
 
 
 static u32 TSC_AUX;
 static int CPUID_AUX1[4];
 static int CPUID_AUX2;
+
+
 #define PROFILE_RASTER_BEGIN(name) __cpuid(CPUID_AUX1, CPUID_AUX2); u64 profile_##name##_start = __rdtsc();
 #define PROFILE_RASTER_PUSH_(name, start)\
     g_profiler_count[PROF_RASTER_##name] += 1;\
@@ -76,11 +87,20 @@ static int CPUID_AUX2;
     g_profiler_last[PROF_RASTER_##name] = profile_##name##_ncycles;
 
 #define PROFILE_RASTER_PUSH(name) PROFILE_RASTER_PUSH_(name, profile_##name##_start)
+/////////
+#define PROFILE_GRAPH_BEGIN(name) \
+    g_graph_last[PROF_GRAPH_##name] = __rdtsc();  // Save the start value
+#define PROFILE_GRAPH_PUSH(name)  \
+    g_graph_last[PROF_GRAPH_##name] = __rdtsc() - g_graph_last[PROF_GRAPH_##name]
+
 
 #else
 
 #define PROFILE_RASTER_BEGIN(name)
 #define PROFILE_RASTER_PUSH(name)
+/////////
+#define PROFILE_GRAPH_BEGIN(name)
+#define PROFILE_GRAPH_PUSH(name)
 
 #endif
 

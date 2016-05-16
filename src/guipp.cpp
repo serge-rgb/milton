@@ -12,6 +12,7 @@
 #include "platform.h"
 #include "rasterizer.h"
 #include "persist.h"
+#include "profiler.h"
 
 static void exporter_init(Exporter* exporter)
 {
@@ -320,7 +321,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         b32 show_brush_window = (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER);
 
         // Brush Window
-        if ( show_brush_window)
+        if (show_brush_window)
         {
             if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) )
             {
@@ -547,7 +548,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
         // Export window
-        if ( ImGui::Begin(LOC(export_DOTS), &opened, ImGuiWindowFlags_NoCollapse) )
+        if (ImGui::Begin(LOC(export_DOTS), &opened, ImGuiWindowFlags_NoCollapse))
         {
             ImGui::Text(LOC(MSG_click_and_drag_instruction));
 
@@ -571,7 +572,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 }
                 ImGui::Text("%s: %dx%d\n", LOC(final_image_size), raster_w*exporter->scale, raster_h*exporter->scale);
 
-                if ( ImGui::Button(LOC(export_selection_to_image_DOTS)) )
+                if (ImGui::Button(LOC(export_selection_to_image_DOTS)))
                 {
                     // Render to buffer
                     int bpp = 4;  // bytes per pixel
@@ -615,6 +616,59 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             exporter_init(&milton_state->gui->exporter);
         }
     }
+#if MILTON_DEBUG && MILTON_ENABLE_PROFILING
+    ImGui::SetNextWindowPos(ImVec2(300, 205), ImGuiSetCond_FirstUseEver);
+    ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+    if (milton_state->DEBUG_viz_window_visible)
+    {
+        bool opened = true;
+        if (ImGui::Begin("Debug Profiling ([BACKQUOTE] to toggle)", &opened, ImGuiWindowFlags_NoCollapse))
+        {
+            float graph_height = 20;
+            char msg[512] = {};
+            auto get_measure = [](int e){
+                //float r = (float)g_profiler_ticks[e]/(float)g_profiler_count[e];
+                float r = (float)g_graph_last[e]/(float)1000;
+                return r;
+            };
+
+            snprintf(msg, array_count(msg),
+                     "Polling %.3f kilo cycles\n",
+                     get_measure(PROF_GRAPH_polling));
+            ImGui::Text(msg);
+
+            snprintf(msg, array_count(msg),
+                     "Update %.3f kilo cycles\n",
+                     get_measure(PROF_GRAPH_update));
+            ImGui::Text(msg);
+
+            snprintf(msg, array_count(msg),
+                     "Raster %.3f kilo cycles\n",
+                     get_measure(PROF_GRAPH_raster));
+            ImGui::Text(msg);
+
+            snprintf(msg, array_count(msg),
+                     "GL %.3f kilo cycles\n",
+                     get_measure(PROF_GRAPH_GL));
+            ImGui::Text(msg);
+
+
+#if 0
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            ImVec2 pos =
+            {
+                ImGui::GetWindowPos().x + 20,
+                ImGui::GetWindowPos().y + 20,
+            };
+            float pad_x = 20;
+            float pad_y = 20;
+            draw_list->AddRectFilled({pad_x + pos.x, pad_y + pos.y },
+                                     {pad_x + pos.x + 100, pad_y + pos.y + graph_height},
+                                     0xFF00FFFF);
+#endif
+        } ImGui::End();
+    }
+#endif
 
     // Shortcut help. Also shown regardless of UI visibility.
     ImGui::PopStyleColor(color_stack);
