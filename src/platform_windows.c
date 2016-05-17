@@ -271,6 +271,7 @@ void win32_print_error(int err)
 b32 platform_move_file(char* src, char* dest)
 {
     b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
+    //b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH);
     if (!ok)
     {
         int err = GetLastError();

@@ -779,6 +779,23 @@ void milton_expand_render_memory(MiltonState* milton_state)
     }
 }
 
+static void milton_save_postlude(MiltonState* milton_state)
+{
+    milton_state->last_save_time = platform_get_walltime();
+    milton_state->last_save_stroke_count = count_strokes(milton_state->root_layer);
+
+    milton_state->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
+    {
+        char msg[1024];
+        WallTime lst = milton_state->last_save_time;
+        snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d\n",
+                 (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" :
+                 str_trim_to_last_slash(milton_state->mlt_file_path),
+                 lst.hours, lst.minutes, lst.seconds);
+        milton_log(msg);
+    }
+}
+
 int  // Thread
 milton_save_async(void* state_)
 {
@@ -793,6 +810,7 @@ milton_save_async(void* state_)
         SDL_UnlockMutex(milton_state->save_mutex);
 
         milton_save(milton_state);
+
         SDL_Delay(2000);  // Overkill to save more than every two seconds!.
 
         SDL_LockMutex(milton_state->save_mutex);
@@ -1272,20 +1290,26 @@ cleanup:
         SDL_CreateThread(milton_save_async, "Async Save Thread", (void*)milton_state);
 #else
         milton_save(milton_state);
+        if (!(milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED))
+        {
+            milton_state->last_save_stroke_count = count_strokes(milton_state->root_layer);
+        }
 #endif
         // We're about to close and the last save failed.
         // TODO: !! Stop using MoveFileEx
         if (!(milton_state->flags & MiltonStateFlags_RUNNING) &&
-             (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED))
+             (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) &&
+             (milton_state->flags & MiltonStateFlags_MOVE_FILE_FAILED) &&
+             milton_state->last_save_stroke_count != count_strokes(milton_state->root_layer))
         {
-
             // TODO: Why does MoveFileExA fail?! Ask someone who knows this stuff.
             //          Or the save could have failed for some other reason...
             // Wait a moment and try again. If this fails, prompt to save somewhere else.
-            SDL_Delay(2000);
+            SDL_Delay(3000);
             milton_save(milton_state);
 
-            if (check_flag(milton_state->flags, MiltonStateFlags_LAST_SAVE_FAILED))
+            if ((milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) &&
+                (milton_state->flags & MiltonStateFlags_MOVE_FILE_FAILED))
             {
                 char msg[1024];
                 WallTime lst = milton_state->last_save_time;
@@ -1321,4 +1345,28 @@ cleanup:
         }
     }
     profiler_output();
+
+    // Do a busy loop when quitting if a thread is saving.
+    if (!(milton_state->flags & MiltonStateFlags_RUNNING))
+    {
+        SDL_LockMutex(milton_state->save_mutex);
+        i64 save_flag = milton_state->save_flag;
+        SDL_UnlockMutex(milton_state->save_mutex);
+
+        i64 num_loops = 20;
+        i64 i = 0;
+        while (save_flag == SaveEnum_IN_USE)
+        {
+            SDL_LockMutex(milton_state->save_mutex);
+            save_flag = milton_state->save_flag;
+            SDL_UnlockMutex(milton_state->save_mutex);
+            SDL_Delay(200);
+
+            if (++i == num_loops ||
+                save_flag == SaveEnum_GOOD_TO_GO)
+            {
+                break;
+            }
+        }
+    }
 }

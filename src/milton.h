@@ -99,6 +99,11 @@ typedef struct MiltonState
     char*       mlt_file_path;
     u32         mlt_binary_version;
     WallTime    last_save_time;
+    i64         last_save_stroke_count;  // This is a workaround to MoveFileEx failing occasionally, particularaly when
+                                        // when the mlt file gets large. The plan going forward is to add a compress
+                                        // pass to MLT files right before saving, and a decompress step right before loading.
+                                        // Meanwhile, we will check that all the strokes are saved at quit time in case that
+                                        // the last MoveFileEx failed.
 #if MILTON_SAVE_ASYNC
     SDL_mutex*  save_mutex;
     i64         save_flag;   // See SaveEnum
@@ -146,9 +151,6 @@ typedef struct MiltonState
 
     size_t      worker_memory_size;
 
-
-    // This is set to false after it's safe to quit
-
     // ====
     // Debug helpers
     // ====
@@ -170,8 +172,9 @@ enum MiltonStateFlags
     MiltonStateFlags_DEFAULT_CANVAS         = 1<<5,
     MiltonStateFlags_IGNORE_NEXT_CLICKUP    = 1<<6,  // When selecting eyedropper from menu, avoid the click from selecting the color...
     MiltonStateFlags_BRUSH_SIZE_CHANGED     = 1<<7,
-    MiltonStateFlags_BRUSH_HOVER_FLASHING = 1<<8,  // Send a GUI redraw event on timeout if overlay is hidden.
+    MiltonStateFlags_BRUSH_HOVER_FLASHING   = 1<<8,  // Send a GUI redraw event on timeout if overlay is hidden.
     MiltonStateFlags_LAST_SAVE_FAILED       = 1<<9,
+    MiltonStateFlags_MOVE_FILE_FAILED       = 1<<10,
 };
 
 typedef enum MiltonInputFlags
