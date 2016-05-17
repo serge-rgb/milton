@@ -147,6 +147,10 @@ void    platform_open_link(char* link);
 WallTime platform_get_walltime();
 
 
+// Microsecond (us) resolution timer.
+u64 perf_counter();
+
+
 #if defined(_WIN32)
 #define platform_milton_log win32_log
 void win32_log(char *format, ...);

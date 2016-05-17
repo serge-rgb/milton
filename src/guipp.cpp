@@ -7,6 +7,7 @@
 
 #include <imgui.h>
 
+#include "canvas.h"
 #include "gui.h"
 #include "localization.h"
 #include "platform.h"
@@ -628,27 +629,32 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             char msg[512] = {};
             auto get_measure = [](int e){
                 //float r = (float)g_profiler_ticks[e]/(float)g_profiler_count[e];
-                float r = (float)g_graph_last[e]/(float)1000;
+                float r = (float)g_graph_last[e];
                 return r;
             };
+            snprintf(msg, array_count(msg),
+                     "# of strokes: %d (clipped to screen: %d)\n",
+                     count_strokes(milton_state->root_layer),
+                     count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
+            ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Polling %.3f kilo cycles\n",
+                     "Polling %.3f us\n",
                      get_measure(PROF_GRAPH_polling));
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Update %.3f kilo cycles\n",
+                     "Update %.3f us\n",
                      get_measure(PROF_GRAPH_update));
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Raster %.3f kilo cycles\n",
+                     "Raster %.3f us\n",
                      get_measure(PROF_GRAPH_raster));
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "GL %.3f kilo cycles\n",
+                     "GL %.3f us\n",
                      get_measure(PROF_GRAPH_GL));
             ImGui::Text(msg);
 

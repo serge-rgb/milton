@@ -474,6 +474,11 @@ void milton_init(MiltonState* milton_state)
         milton_state->render_stack->mutex               = SDL_CreateMutex();
     }
 
+#if MILTON_SAVE_ASYNC
+    milton_state->save_mutex = SDL_CreateMutex();
+    milton_state->save_flag = SaveEnum_GOOD_TO_GO;
+#endif
+
     milton_state->num_render_workers = min(SDL_GetCPUCount(), MAX_NUM_WORKERS);
 #if RESTRICT_NUM_WORKERS_TO_2
     milton_state->num_render_workers = 2;
@@ -583,6 +588,10 @@ void milton_init(MiltonState* milton_state)
     }
 
     milton_state->flags |= MiltonStateFlags_RUNNING;
+
+#if MILTON_ENABLE_PROFILING
+    profiler_init();
+#endif
 }
 
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
@@ -609,7 +618,7 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
 
     size_t buffer_size = (size_t) milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
 
-    if ( do_realloc )
+    if (do_realloc)
     {
         u8* raster_buffer = milton_state->raster_buffer;
         u8* canvas_buffer = milton_state->canvas_buffer;
@@ -768,6 +777,33 @@ void milton_expand_render_memory(MiltonState* milton_state)
 
         milton_state->flags &= ~MiltonStateFlags_WORKER_NEEDS_MEMORY;
     }
+}
+
+int  // Thread
+milton_save_async(void* state_)
+{
+    MiltonState* milton_state = state_;
+
+    SDL_LockMutex(milton_state->save_mutex);
+    i64 flag = milton_state->save_flag;
+
+    if(flag == SaveEnum_GOOD_TO_GO)
+    {
+        milton_state->save_flag = SaveEnum_IN_USE;
+        SDL_UnlockMutex(milton_state->save_mutex);
+
+        milton_save(milton_state);
+
+        SDL_LockMutex(milton_state->save_mutex);
+        milton_state->save_flag = SaveEnum_GOOD_TO_GO;
+        SDL_UnlockMutex(milton_state->save_mutex);
+    }
+    else if (flag == SaveEnum_IN_USE)
+    {
+        SDL_UnlockMutex(milton_state->save_mutex);
+    }
+
+    return flag;
 }
 
 void milton_new_layer(MiltonState* milton_state)
@@ -1231,7 +1267,11 @@ cleanup:
     }
     if (should_save)
     {
+#if MILTON_SAVE_ASYNC
+        SDL_CreateThread(milton_save_async, "Async Save Thread", (void*)milton_state);
+#else
         milton_save(milton_state);
+#endif
         // We're about to close and the last save failed.
         // TODO: !! Stop using MoveFileEx
         if (!(milton_state->flags & MiltonStateFlags_RUNNING) &&

@@ -42,6 +42,7 @@ enum
     PROF_GRAPH_GL,          // Time spent sending data and draw commands to GL
 
     PROF_COUNT = PROF_RASTER_COUNT+4,
+    //PROF_COUNT,
 
 };
 
@@ -60,7 +61,7 @@ static char* g_profiler_names[PROF_RASTER_COUNT] =
     "sample",
 };
 
-
+void profiler_init();
 void profiler_output();
 void profiler_reset();
 
@@ -68,10 +69,10 @@ void profiler_reset();
 
 #define PROFILER_IMPLEMENTATION
 
-extern u64 g_profiler_ticks[PROF_COUNT];     // Total cpu clocks
-extern u64 g_profiler_last[PROF_COUNT];
-extern u64 g_graph_last[PROF_COUNT - PROF_RASTER_COUNT];
-extern u64 g_profiler_count[PROF_COUNT];     // How many calls
+u64 g_profiler_ticks[PROF_COUNT];     // Total cpu clocks
+u64 g_profiler_last[PROF_COUNT];
+u64 g_graph_last[PROF_COUNT-PROF_RASTER_COUNT]; // Visualization
+u64 g_profiler_count[PROF_COUNT];     // How many calls
 
 
 static u32 TSC_AUX;
@@ -89,10 +90,13 @@ static int CPUID_AUX2;
 #define PROFILE_RASTER_PUSH(name) PROFILE_RASTER_PUSH_(name, profile_##name##_start)
 /////////
 #define PROFILE_GRAPH_BEGIN(name) \
-    g_graph_last[PROF_GRAPH_##name] = __rdtsc();  // Save the start value
+        __cpuid(CPUID_AUX1, CPUID_AUX2); \
+        u64 graph_##name##_start = perf_counter()
+        //u64 graph_##name##_start = __rdtsc();
 #define PROFILE_GRAPH_PUSH(name)  \
-    g_graph_last[PROF_GRAPH_##name] = __rdtsc() - g_graph_last[PROF_GRAPH_##name]
-
+        __cpuid(CPUID_AUX1, CPUID_AUX2); \
+        g_graph_last[PROF_GRAPH_##name] = perf_counter() - graph_##name##_start
+        //g_graph_last[PROF_GRAPH_##name] = __rdtsc() - graph_##name##_start
 
 #else
 

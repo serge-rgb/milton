@@ -343,6 +343,18 @@ WallTime platform_get_walltime()
     return wt;
 }
 
+u64 perf_counter()
+{
+    u64 time = 0;
+    LARGE_INTEGER li = {0};
+    // On XP and higher, this function always succeeds.
+    QueryPerformanceCounter(&li);
+
+    time = li.QuadPart;
+
+    return time;
+}
+
 int CALLBACK WinMain(
         HINSTANCE hInstance,
         HINSTANCE hPrevInstance,

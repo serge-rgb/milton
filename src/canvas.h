@@ -4,6 +4,9 @@
 
 #pragma once
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 #include "common.h"
 #include "memory.h"
@@ -91,5 +94,12 @@ Stroke* layer_push_stroke(Layer* layer, Stroke stroke);
 
 i32 number_of_layers(Layer* root);
 
+i64 count_strokes(Layer* root);
+i64 count_clipped_strokes(Layer* root, i32 num_workers);
+
 
 void stroke_free(Stroke* stroke);
+
+#if defined(__cplusplus)
+}
+#endif

@@ -2,6 +2,10 @@
 // License: https://github.com/serge-rgb/milton#license
 //
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "canvas.h"
 
 #include "common.h"
@@ -75,6 +79,42 @@ Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
     return raster_rect;
 }
 
+i64 count_strokes(Layer* root)
+{
+    i64 count = 0;
+    for(Layer *layer = root;
+        layer != NULL;
+        layer = layer->next)
+    {
+        count += sb_count(layer->strokes);
+    }
+    return count;
+}
+
+i64 count_clipped_strokes(Layer* root, i32 num_workers)
+{
+    i64 count = 0;
+    for(Layer *layer = root;
+        layer != NULL;
+        layer = layer->next)
+    {
+        i32 num_strokes = sb_count(layer->strokes);
+        for (i32 i = 0; i < num_strokes; ++i)
+        {
+            Stroke* s = layer->strokes + i;
+            for (i32 wi = 0; wi < num_workers; ++wi)
+            {
+                if (s->visibility[wi])
+                {
+                    ++count;
+                    break;
+                }
+            }
+        }
+    }
+    return count;
+}
+
 Layer* layer_get_topmost(Layer* root)
 {
     Layer* layer = root;
@@ -133,3 +173,7 @@ void stroke_free(Stroke* stroke)
     mlt_free(stroke->points);
     mlt_free(stroke->pressures);
 }
+
+#if defined(__cplusplus)
+}
+#endif

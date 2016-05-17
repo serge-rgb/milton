@@ -6,19 +6,26 @@
 #include "profiler.h"
 #include "platform.h"
 
-#if defined(PROFILER_IMPLEMENTATION)
-u64 g_profiler_ticks[PROF_COUNT];  // Total cpu clocks
-u64 g_profiler_count[PROF_COUNT];  // How many calls
-u64 g_profiler_last[PROF_COUNT];
-u64 g_graph_last[PROF_COUNT - PROF_RASTER_COUNT];
-#endif
-
 void profiler_reset()
 {
 #if defined(PROFILER_IMPLEMENTATION)
     for ( i32 i = 0; i < PROF_COUNT; ++i )
     {
         g_profiler_count[i] = 0;
+    }
+#endif
+}
+
+
+void profiler_init()
+{
+#if defined(PROFILER_IMPLEMENTATION)
+    for(i64 i=0; i<PROF_COUNT; ++i)
+    {
+        g_profiler_ticks[i] = 0;
+        g_profiler_last[i]  = 0;
+        g_profiler_count[i] = 0;
+        g_graph_last[i]     = 0;
     }
 #endif
 }

@@ -99,6 +99,10 @@ typedef struct MiltonState
     char*       mlt_file_path;
     u32         mlt_binary_version;
     WallTime    last_save_time;
+#if MILTON_SAVE_ASYNC
+    SDL_mutex*  save_mutex;
+    i64         save_flag;   // See SaveEnum
+#endif
 
     // ---- The Painting
     Brush       brushes[BrushEnum_COUNT];
@@ -206,6 +210,14 @@ typedef struct MiltonInput
     i32  scale;
     v2i  pan_delta;
 } MiltonInput;
+
+
+enum SaveEnum
+{
+    SaveEnum_IN_USE,
+    SaveEnum_GOOD_TO_GO,
+};
+
 
 // See gl_helpers.h for the reason for defining this
 #if defined(__MACH__)

@@ -12,7 +12,7 @@
 //  - Runtime renderer implementation switching with F4
 #define MILTON_DEBUG 1
 
-#define MILTON_MULTITHREADED 0
+#define MILTON_MULTITHREADED 1
 
 #define MILTON_ENABLE_PROFILING 1
 
@@ -25,7 +25,8 @@
 // 1 - Use a power curve of 2.
 #define FAST_GAMMA 0
 
-
+// Large files get impractical to save in a blocking function.
+#define MILTON_SAVE_ASYNC 1
 
 
 // -- Esoteric and/or Stupid stuff.
