@@ -3,7 +3,7 @@
 ::
 :: - 1: Optimized build.
 :: - 0: Debug build.
-set mlt_opt_level=1
+set mlt_opt_level=0
 
 IF NOT EXIST build mkdir build
 

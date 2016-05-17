@@ -22,6 +22,7 @@ void* sb__sbgrowf(void *arr, int increment, int itemsize)
    }
    else
    {
+      // TODO: Stretchy buffers are hitting this!
       #ifdef STRETCHY_BUFFER_OUT_OF_MEMORY
       STRETCHY_BUFFER_OUT_OF_MEMORY ;
       #endif

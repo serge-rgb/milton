@@ -793,6 +793,7 @@ milton_save_async(void* state_)
         SDL_UnlockMutex(milton_state->save_mutex);
 
         milton_save(milton_state);
+        SDL_Delay(2000);  // Overkill to save more than every two seconds!.
 
         SDL_LockMutex(milton_state->save_mutex);
         milton_state->save_flag = SaveEnum_GOOD_TO_GO;

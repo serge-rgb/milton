@@ -79,7 +79,6 @@ static u32 TSC_AUX;
 static int CPUID_AUX1[4];
 static int CPUID_AUX2;
 
-
 #define PROFILE_RASTER_BEGIN(name) __cpuid(CPUID_AUX1, CPUID_AUX2); u64 profile_##name##_start = __rdtsc();
 #define PROFILE_RASTER_PUSH_(name, start)\
     g_profiler_count[PROF_RASTER_##name] += 1;\
@@ -90,11 +89,9 @@ static int CPUID_AUX2;
 #define PROFILE_RASTER_PUSH(name) PROFILE_RASTER_PUSH_(name, profile_##name##_start)
 /////////
 #define PROFILE_GRAPH_BEGIN(name) \
-        __cpuid(CPUID_AUX1, CPUID_AUX2); \
         u64 graph_##name##_start = perf_counter()
         //u64 graph_##name##_start = __rdtsc();
 #define PROFILE_GRAPH_PUSH(name)  \
-        __cpuid(CPUID_AUX1, CPUID_AUX2); \
         g_graph_last[PROF_GRAPH_##name] = perf_counter() - graph_##name##_start
         //g_graph_last[PROF_GRAPH_##name] = __rdtsc() - graph_##name##_start
 
