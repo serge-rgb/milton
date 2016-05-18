@@ -90,6 +90,8 @@ static u32 TSC_AUX;
 static int CPUID_AUX1[4];
 static int CPUID_AUX2;
 
+#if MILTON_ENABLE_RASTER_PROFILING
+
 #define PROFILE_RASTER_BEGIN(name) __cpuid(CPUID_AUX1, CPUID_AUX2); u64 profile_##name##_start = __rdtsc();
 #define PROFILE_RASTER_PUSH_(name, start)\
     g_profiler_count[PROF_RASTER_##name] += 1;\
@@ -98,27 +100,29 @@ static int CPUID_AUX2;
     g_profiler_last[PROF_RASTER_##name] = profile_##name##_ncycles;
 
 #define PROFILE_RASTER_PUSH(name) PROFILE_RASTER_PUSH_(name, profile_##name##_start)
-/////////
-#define PROFILE_GRAPH_BEGIN(name) \
-        milton_state->graph_frame.start = perf_counter();
-    //SetThreadAffinityMask(GetCurrentThread(), om_##name);
-    //DWORD_PTR om_##name = SetThreadAffinityMask(GetCurrentThread(), 0); \
-    //u64 graph_##name##_start = __rdtsc();
-
-#define PROFILE_GRAPH_PUSH(name)  \
-        milton_state->graph_frame.##name = perf_counter() - milton_state->graph_frame.start;
-    //om_##name = SetThreadAffinityMask(GetCurrentThread(), 0); \
-    //SetThreadAffinityMask(GetCurrentThread(), om_##name)
-//g_graph_last[PROF_GRAPH_##name] = perf_counter() - graph_##name##_start; \
-        //g_graph_last[PROF_GRAPH_##name] = __rdtsc() - graph_##name##_start
 
 #else
 
 #define PROFILE_RASTER_BEGIN(name)
 #define PROFILE_RASTER_PUSH(name)
+#endif /////////////////
+
 /////////
+#define PROFILE_GRAPH_BEGIN(name) \
+        milton_state->graph_frame.start = perf_counter();
+
+#define PROFILE_GRAPH_PUSH(name)  \
+        milton_state->graph_frame.##name = perf_counter() - milton_state->graph_frame.start
+
+#else
+
 #define PROFILE_GRAPH_BEGIN(name)
 #define PROFILE_GRAPH_PUSH(name)
+
+   #if !defined(PROFILE_RASTER_BEGIN) && !defined(PROFILE_RASTER_PUSH)
+       #define PROFILE_RASTER_BEGIN(name)
+       #define PROFILE_RASTER_PUSH(name)
+   #endif
 
 #endif
 

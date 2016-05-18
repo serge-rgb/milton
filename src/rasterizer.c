@@ -1555,7 +1555,8 @@ static b32 render_blockgroup(MiltonState* milton_state,
     return allocation_ok;
 }
 
-int renderer_worker_thread(void* data)
+int  // Thread
+renderer_worker_thread(void* data)
 {
     WorkerParams* params = (WorkerParams*) data;
     MiltonState* milton_state = params->milton_state;

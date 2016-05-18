@@ -14,7 +14,7 @@
 
 #define MILTON_MULTITHREADED 1
 
-#define MILTON_ENABLE_PROFILING 0
+#define MILTON_ENABLE_PROFILING 1
 
 #define MAX_NUM_WORKERS 64
 // Force things to be a bit slower

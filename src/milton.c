@@ -481,7 +481,7 @@ void milton_init(MiltonState* milton_state)
 
     milton_state->num_render_workers = min(SDL_GetCPUCount(), MAX_NUM_WORKERS);
 #if RESTRICT_NUM_WORKERS_TO_2
-    milton_state->num_render_workers = 2;
+    milton_state->num_render_workers = min(2, SDL_GetCPUCount());
 #endif
 
     milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
