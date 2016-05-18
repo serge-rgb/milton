@@ -879,7 +879,7 @@ void milton_delete_working_layer(MiltonState* milton_state)
 
 static void milton_validate(MiltonState* milton_state)
 {
-    // Make sure that the history reflects what th
+    // Make sure that the history reflects the strokes that exist
     i64 num_layers=0;
     for(Layer* l = milton_state->root_layer; l != NULL; l = l->next)
     {
@@ -909,7 +909,7 @@ static void milton_validate(MiltonState* milton_state)
     i64 stroke_count = count_strokes(milton_state->root_layer);
     if (history_count != stroke_count)
     {
-        milton_log("Something is wrong. Deal with this situation! %d vs %d\n",
+        milton_log("Recreating history. File says History: %d Actual strokes: %d\n",
                    history_count,
                    stroke_count);
         //platform_dialog("Undo history got corrupted. Rebuilding. Please file bug report if this message persists.", "Warning.");

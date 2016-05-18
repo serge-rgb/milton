@@ -244,6 +244,7 @@ void milton_load(MiltonState* milton_state)
     {
         milton_reset_canvas(milton_state);
     }
+    milton_validate(milton_state);
 }
 
 // Leaving this commented-out for now.
