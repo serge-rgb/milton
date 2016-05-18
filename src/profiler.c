@@ -25,7 +25,6 @@ void profiler_init()
         g_profiler_ticks[i] = 0;
         g_profiler_last[i]  = 0;
         g_profiler_count[i] = 0;
-        g_graph_last[i]     = 0;
     }
 #endif
 }

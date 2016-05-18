@@ -877,6 +877,58 @@ void milton_delete_working_layer(MiltonState* milton_state)
     milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
 }
 
+static void milton_validate(MiltonState* milton_state)
+{
+    // Make sure that the history reflects what th
+    i64 num_layers=0;
+    for(Layer* l = milton_state->root_layer; l != NULL; l = l->next)
+    {
+        ++num_layers;
+    }
+    i32* layer_ids = (i32*)mlt_calloc(num_layers, sizeof(i32));
+    i64 i = 0;
+    for(Layer* l = milton_state->root_layer; l != NULL; l = l->next)
+    {
+        layer_ids[i] = l->id;
+        ++i;
+    }
+
+    i64 history_count = 0;
+    for (i64 hi = 0; hi < sb_count(milton_state->history); ++hi)
+    {
+        i32 id = milton_state->history[hi].layer_id;
+        for (i64 li = 0; li < num_layers; ++li)
+        {
+            if (id == layer_ids[li])
+            {
+                ++history_count;
+            }
+        }
+    }
+
+    i64 stroke_count = count_strokes(milton_state->root_layer);
+    if (history_count != stroke_count)
+    {
+        milton_log("Something is wrong. Deal with this situation! %d vs %d\n",
+                   history_count,
+                   stroke_count);
+        //platform_dialog("Undo history got corrupted. Rebuilding. Please file bug report if this message persists.", "Warning.");
+        sb_reset(milton_state->history);
+        for(Layer *l = milton_state->root_layer;
+            l != NULL;
+            l = l->next)
+        {
+            for (i32 si = 0; si < sb_count(l->strokes); ++si)
+            {
+                Stroke* s = l->strokes + si;
+                HistoryElement he = { HistoryElement_STROKE_ADD, s->layer_id };
+                sb_push(milton_state->history, he);
+            }
+        }
+    }
+
+    mlt_free(layer_ids);
+}
 
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
@@ -1286,15 +1338,19 @@ cleanup:
     }
     if (should_save)
     {
-#if MILTON_SAVE_ASYNC
-        SDL_CreateThread(milton_save_async, "Async Save Thread", (void*)milton_state);
-#else
-        milton_save(milton_state);
-        if (!(milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED))
+
+        // If quitting, always be serial. Otherwise, be async.
+        if (!(milton_state->flags & MiltonStateFlags_RUNNING))
         {
-            milton_state->last_save_stroke_count = count_strokes(milton_state->root_layer);
-        }
+            // We want to block so that the main thread doesn't die before the async function finishes.
+            milton_save(milton_state);
+        } else {
+#if MILTON_SAVE_ASYNC
+            SDL_CreateThread(milton_save_async, "Async Save Thread", (void*)milton_state);
+#else
+            milton_save(milton_state);
 #endif
+        }
         // We're about to close and the last save failed.
         // TODO: !! Stop using MoveFileEx
         if (!(milton_state->flags & MiltonStateFlags_RUNNING) &&
@@ -1346,27 +1402,6 @@ cleanup:
     }
     profiler_output();
 
-    // Do a busy loop when quitting if a thread is saving.
-    if (!(milton_state->flags & MiltonStateFlags_RUNNING))
-    {
-        SDL_LockMutex(milton_state->save_mutex);
-        i64 save_flag = milton_state->save_flag;
-        SDL_UnlockMutex(milton_state->save_mutex);
-
-        i64 num_loops = 20;
-        i64 i = 0;
-        while (save_flag == SaveEnum_IN_USE)
-        {
-            SDL_LockMutex(milton_state->save_mutex);
-            save_flag = milton_state->save_flag;
-            SDL_UnlockMutex(milton_state->save_mutex);
-            SDL_Delay(200);
-
-            if (++i == num_loops ||
-                save_flag == SaveEnum_GOOD_TO_GO)
-            {
-                break;
-            }
-        }
-    }
+    milton_validate(milton_state);
 }
+

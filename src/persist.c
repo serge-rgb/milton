@@ -229,7 +229,7 @@ void milton_load(MiltonState* milton_state)
                 Layer* layer = milton_state->root_layer;
                 while (layer)
                 {
-                    if ( layer->id == id )
+                    if (layer->id == id)
                     {
                         milton_state->working_layer = layer;
                         break;

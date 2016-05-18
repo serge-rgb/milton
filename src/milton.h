@@ -30,6 +30,7 @@ extern "C" {
 #include "canvas.h"
 #include "color.h"
 #include "memory.h"
+#include "profiler.h"
 #include "render_common.h"
 #include "utils.h"
 
@@ -159,6 +160,9 @@ typedef struct MiltonState
     b32 DEBUG_sse2_switch;
     b32 DEBUG_replaying;
     u32 DEBUG_last_frame_time;
+#endif
+#if MILTON_ENABLE_PROFILING
+    GraphData graph_frame;
 #endif
 } MiltonState;
 

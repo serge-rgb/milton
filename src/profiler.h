@@ -47,6 +47,18 @@ enum
 };
 
 
+typedef struct GraphData
+{
+    u64 start;
+
+
+    u64 polling;
+    u64 update;
+    u64 raster;
+    u64 GL;
+} GraphData;
+
+GraphData g_graphframe;
 
 static char* g_profiler_names[PROF_RASTER_COUNT] =
 {
@@ -71,7 +83,6 @@ void profiler_reset();
 
 u64 g_profiler_ticks[PROF_COUNT];     // Total cpu clocks
 u64 g_profiler_last[PROF_COUNT];
-u64 g_graph_last[PROF_COUNT-PROF_RASTER_COUNT]; // Visualization
 u64 g_profiler_count[PROF_COUNT];     // How many calls
 
 
@@ -89,10 +100,16 @@ static int CPUID_AUX2;
 #define PROFILE_RASTER_PUSH(name) PROFILE_RASTER_PUSH_(name, profile_##name##_start)
 /////////
 #define PROFILE_GRAPH_BEGIN(name) \
-        u64 graph_##name##_start = perf_counter()
-        //u64 graph_##name##_start = __rdtsc();
+        milton_state->graph_frame.start = perf_counter();
+    //SetThreadAffinityMask(GetCurrentThread(), om_##name);
+    //DWORD_PTR om_##name = SetThreadAffinityMask(GetCurrentThread(), 0); \
+    //u64 graph_##name##_start = __rdtsc();
+
 #define PROFILE_GRAPH_PUSH(name)  \
-        g_graph_last[PROF_GRAPH_##name] = perf_counter() - graph_##name##_start
+        milton_state->graph_frame.##name = perf_counter() - milton_state->graph_frame.start;
+    //om_##name = SetThreadAffinityMask(GetCurrentThread(), 0); \
+    //SetThreadAffinityMask(GetCurrentThread(), om_##name)
+//g_graph_last[PROF_GRAPH_##name] = perf_counter() - graph_##name##_start; \
         //g_graph_last[PROF_GRAPH_##name] = __rdtsc() - graph_##name##_start
 
 #else

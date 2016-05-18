@@ -627,11 +627,6 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         {
             float graph_height = 20;
             char msg[512] = {};
-            auto get_measure = [](int e){
-                //float r = (float)g_profiler_ticks[e]/(float)g_profiler_count[e];
-                float r = (float)g_graph_last[e];
-                return r;
-            };
             snprintf(msg, array_count(msg),
                      "# of strokes: %d (clipped to screen: %d)\n",
                      count_strokes(milton_state->root_layer),
@@ -639,23 +634,23 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Polling %.3f us\n",
-                     get_measure(PROF_GRAPH_polling));
+                     "Polling %.3d us\n",
+                     milton_state->graph_frame.polling);
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Update %.3f us\n",
-                     get_measure(PROF_GRAPH_update));
+                     "Update %.3d us\n",
+                     milton_state->graph_frame.update);
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Raster %.3f us\n",
-                     get_measure(PROF_GRAPH_raster));
+                     "Raster %.3d us\n",
+                     milton_state->graph_frame.raster);
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "GL %.3f us\n",
-                     get_measure(PROF_GRAPH_GL));
+                     "GL %.3d us\n",
+                     milton_state->graph_frame.GL);
             ImGui::Text(msg);
 
 
