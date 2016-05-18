@@ -796,6 +796,7 @@ static void milton_save_postlude(MiltonState* milton_state)
     }
 }
 
+#if MILTON_SAVE_ASYNC
 int  // Thread
 milton_save_async(void* state_)
 {
@@ -824,6 +825,7 @@ milton_save_async(void* state_)
 
     return flag;
 }
+#endif
 
 void milton_new_layer(MiltonState* milton_state)
 {
@@ -909,8 +911,8 @@ static void milton_validate(MiltonState* milton_state)
     i64 stroke_count = count_strokes(milton_state->root_layer);
     if (history_count != stroke_count)
     {
-        milton_log("Recreating history. File says History: %d Actual strokes: %d\n",
-                   history_count,
+        milton_log("Recreating history. File says History: %d(max %d) Actual strokes: %d\n",
+                   history_count, sb_count(milton_state->history),
                    stroke_count);
         //platform_dialog("Undo history got corrupted. Rebuilding. Please file bug report if this message persists.", "Warning.");
         sb_reset(milton_state->history);

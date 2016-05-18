@@ -26,7 +26,9 @@
 #define FAST_GAMMA 0
 
 // Large files get impractical to save in a blocking function.
-#define MILTON_SAVE_ASYNC 1
+// Disabled for now. This was implemented when a bug was causing files to be huge.
+// Hopefully milton will never need this. Leaving it just in case.
+#define MILTON_SAVE_ASYNC 0
 
 
 // -- Esoteric and/or Stupid stuff.

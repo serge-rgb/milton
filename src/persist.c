@@ -209,7 +209,11 @@ void milton_load(MiltonState* milton_state)
         {
             i32 history_count = 0;
             if (ok) { ok = fread_checked(&history_count, sizeof(history_count), 1, fd); }
-            if (ok) { sb_reserve(milton_state->history, (i32)history_count); }
+            if (ok)
+            {
+                sb_reset(milton_state->history);
+                sb_reserve(milton_state->history, (i32)history_count);
+            }
             if (ok) { ok = fread_checked_nocopy(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
         }
         int err = fclose(fd);
