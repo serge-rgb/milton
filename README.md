@@ -44,10 +44,6 @@ supports any tablet device. General tablet support on Windows is WIP.
     Milton features a software rasterizer by design, for reliability and
 flexibility.
 
-- Multi-platform?
-
-    Milton is Windows only at the moment. Linux and OSX support is intended for the future, but I don't know when that will come.
-
 - Open Source
 
     Milton is MIT-licensed
@@ -73,6 +69,8 @@ with the number keys.
 Here is the  [latest video tutorial](https://www.youtube.com/watch?v=g27gHio2Ohk)
 
 Check out the [patreon page](https://www.patreon.com/serge_rgb?ty=h) if you would like to help out. :)
+
+Milton is Windows only at the moment. Linux and OSX support is intended for the future, but I don't know when that will come.
 
 How to Compile
 ==============
