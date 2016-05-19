@@ -10,6 +10,7 @@ IF NOT EXIST build mkdir build
 IF NOT EXIST build\SDL2.lib copy third_party\bin\SDL2.lib build\SDL2.lib
 IF NOT EXIST build\SDL2.pdb copy third_party\bin\SDL2.pdb build\SDL2.pdb
 IF NOT EXIST build\milton_icon.ico copy milton_icon.ico build\milton_icon.ico
+
 ::IF NOT EXIST build\carlito.ttf
 
 pushd build
@@ -68,6 +69,7 @@ echo    [BUILD] -- Building dependencies...
 echo    [BUILD] -- ... Release
 cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.c
 
+cl /Ox ..\third_party\ctime.c winmm.lib
 cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl_cpp.cpp
 if %errorlevel% NEQ 0 goto error_lib_compilation
 lib headerlibs_impl.obj headerlibs_impl_cpp.obj /out:headerlibs_impl_opt.lib
@@ -105,6 +107,7 @@ echo    [BUILD] -- Building Milton...
 if %mlt_opt_level% == 0 set header_links=headerlibs_impl_nopt.lib
 if %mlt_opt_level% == 1 set header_links=headerlibs_impl_opt.lib
 
+ctime -begin milton.ctm
 :: ---- Unity build for Milton
 cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_c.c
@@ -119,11 +122,13 @@ if %errorlevel% neq 0 goto fail
 
 :ok
 echo    [BUILD]  -- Build success!
+ctime -end milton.ctm
 popd
 goto end
 
 :fail
 echo    [FATAL] -- ... error building Milton
+ctime -end milton.ctm 1
 popd && (call)
 
 :end
