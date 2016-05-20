@@ -832,6 +832,7 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     while (!platform_state.should_quit)
     {
+        PROFILE_GRAPH_PUSH(system);
         PROFILE_GRAPH_BEGIN(polling);
 
         ImGuiIO& imgui_io = ImGui::GetIO();
@@ -1016,8 +1017,9 @@ int milton_main(MiltonStartupFlags startup_flags)
         PROFILE_GRAPH_BEGIN(GL);
         milton_gl_backend_draw(milton_state);
         ImGui::Render();
-        SDL_GL_SwapWindow(window);
         PROFILE_GRAPH_PUSH(GL);
+        PROFILE_GRAPH_BEGIN(system);
+        SDL_GL_SwapWindow(window);
         SDL_WaitEvent(NULL);  // Wait for our custom event to force an update if there is no user input
     }
 

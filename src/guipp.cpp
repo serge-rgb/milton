@@ -625,11 +625,6 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         {
             float graph_height = 20;
             char msg[512] = {};
-            snprintf(msg, array_count(msg),
-                     "# of strokes: %d (clipped to screen: %d)\n",
-                     count_strokes(milton_state->root_layer),
-                     count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
-            ImGui::Text(msg);
 
             float poll     = perf_count_to_sec(milton_state->graph_frame.polling) * 1000.0f;
             float update   = perf_count_to_sec(milton_state->graph_frame.update) * 1000.0f;
@@ -639,8 +634,9 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             }
             float raster   = perf_count_to_sec(milton_state->graph_frame.raster) * 1000.0f;
             float GL       = perf_count_to_sec(milton_state->graph_frame.GL) * 1000.0f;
+            float system   = perf_count_to_sec(milton_state->graph_frame.system) * 1000.0f;
 
-            float sum = poll + update + raster + GL;
+            float sum = poll + update + raster + GL + system;
 
             snprintf(msg, array_count(msg),
                      "Input Polling %f ms\n",
@@ -668,13 +664,26 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                      GL);
             ImGui::Text(msg);
 
-            float hist[4] = { poll, update, raster, GL };
+            snprintf(msg, array_count(msg),
+                     "System %f ms\n",
+                     system);
+            ImGui::Text(msg);
+
+            float hist[] = { poll, update, raster, GL, system };
             ImGui::PlotHistogram("Graph",
                           (const float*)hist, array_count(hist));
 
             snprintf(msg, array_count(msg),
-                     "TOTAL %f ms\n",
+                     "Total %f ms\n",
                      sum);
+            ImGui::Text(msg);
+
+            ImGui::Dummy({0,30});
+
+            snprintf(msg, array_count(msg),
+                     "# of strokes: %d (clipped to screen: %d)\n",
+                     count_strokes(milton_state->root_layer),
+                     count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
             ImGui::Text(msg);
 
         } ImGui::End();

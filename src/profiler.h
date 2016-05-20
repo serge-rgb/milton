@@ -57,6 +57,7 @@ typedef struct GraphData
     u64 clipping;
     u64 raster;
     u64 GL;
+    u64 system;
 } GraphData;
 
 GraphData g_graphframe;
