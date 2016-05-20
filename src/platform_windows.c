@@ -153,8 +153,6 @@ char* platform_save_dialog(FileKind kind)
 
     b32 ok = GetSaveFileNameA(&ofn);
 
-    char* result = NULL;
-
     if (!ok)
     {
         mlt_free(save_filename);
@@ -354,6 +352,14 @@ u64 perf_counter()
     time = li.QuadPart;
 
     return time;
+}
+
+float perf_count_to_sec(u64 counter)
+{
+    LARGE_INTEGER freq;
+    QueryPerformanceFrequency(&freq);
+    float sec = (float)counter / (float)freq.QuadPart;
+    return sec;
 }
 
 int CALLBACK WinMain(

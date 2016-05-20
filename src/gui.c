@@ -441,7 +441,7 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 
 // When a selected color is used in a stroke, call this to update the color
 // button list.
-b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
+b32 gui_mark_color_used(MiltonGui* gui)
 {
     b32 changed = false;
     ColorButton* start = &gui->picker.color_buttons;
@@ -450,7 +450,7 @@ b32 gui_mark_color_used(MiltonGui* gui, v3f stroke_color)
     ColorButton* button = start;
     while(button)
     {
-        if ( button->rgba.a != 0)
+        if (button->rgba.a != 0)
         {
             v3f diff =
             {

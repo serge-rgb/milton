@@ -97,7 +97,7 @@ b32 equ3i(v3i a, v3i b)
 
 v3f scale3f(v3f a, float factor)
 {
-    v3f result;
+    v3f result = a;
     result.x *= factor;
     result.y *= factor;
     result.z *= factor;
@@ -106,7 +106,7 @@ v3f scale3f(v3f a, float factor)
 
 v3i scale3i(v3i a, i32 factor)
 {
-    v3i result;
+    v3i result = a;
     result.x *= factor;
     result.y *= factor;
     result.z *= factor;

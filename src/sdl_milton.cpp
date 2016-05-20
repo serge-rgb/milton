@@ -408,10 +408,12 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         profiler_reset();
                         milton_state->DEBUG_sse2_switch = !milton_state->DEBUG_sse2_switch;
                     }
+    #if MILTON_ENABLE_PROFILING
                     if (keycode == SDLK_BACKQUOTE)
                     {
                         milton_state->DEBUG_viz_window_visible = !milton_state->DEBUG_viz_window_visible;
                     }
+    #endif
 #endif
                 }
 
@@ -832,8 +834,6 @@ int milton_main(MiltonStartupFlags startup_flags)
     {
         PROFILE_GRAPH_BEGIN(polling);
 
-        u32 frame_start_ms = SDL_GetTicks();
-
         ImGuiIO& imgui_io = ImGui::GetIO();
 
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
@@ -1019,10 +1019,6 @@ int milton_main(MiltonStartupFlags startup_flags)
         PROFILE_GRAPH_PUSH(GL);
         SDL_GL_SwapWindow(window);
         SDL_WaitEvent(NULL);  // Wait for our custom event to force an update if there is no user input
-
-#if MILTON_DEBUG
-        milton_state->DEBUG_last_frame_time = SDL_GetTicks() - frame_start_ms;
-#endif
     }
 
     EasyTab_Unload();

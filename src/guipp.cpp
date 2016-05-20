@@ -258,6 +258,12 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             {
                 gui_toggle_visibility(milton_state->gui);
             }
+            #if MILTON_ENABLE_PROFILING
+            if (ImGui::MenuItem("Toggle Debug Profiler [BACKQUOTE]"))
+            {
+                milton_state->DEBUG_viz_window_visible = !milton_state->DEBUG_viz_window_visible;
+            }
+            #endif
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu(LOC(help)) )
@@ -282,18 +288,10 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
 
         char msg[1024];
         WallTime lst = milton_state->last_save_time;
-#if MILTON_DEBUG
-        snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d (ms: %d)",
-                 (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
-                 str_trim_to_last_slash(milton_state->mlt_file_path),
-                 lst.hours, lst.minutes, lst.seconds,
-                 milton_state->DEBUG_last_frame_time);
-#else
         snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
                  str_trim_to_last_slash(milton_state->mlt_file_path),
                  lst.hours, lst.minutes, lst.seconds);
-#endif
         if ( ImGui::BeginMenu(msg, /*bool enabled = */false) )
         {
             ImGui::EndMenu();
@@ -633,40 +631,42 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                      count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
             ImGui::Text(msg);
 
+            float poll   = perf_count_to_sec(milton_state->graph_frame.polling) * 1000.0f;
+            float update = perf_count_to_sec(milton_state->graph_frame.update) * 1000.0f;
+            float raster = perf_count_to_sec(milton_state->graph_frame.raster) * 1000.0f;
+            float GL     = perf_count_to_sec(milton_state->graph_frame.GL) * 1000.0f;
+
+            float sum = poll + update + raster + GL;
+
             snprintf(msg, array_count(msg),
-                     "Polling %.3d us\n",
-                     milton_state->graph_frame.polling);
+                     "Polling %f ms\n",
+                     poll);
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Update %.3d us\n",
-                     milton_state->graph_frame.update);
+                     "Update %f ms\n",
+                     update);
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Raster %.3d us\n",
-                     milton_state->graph_frame.raster);
+                     "Raster %f ms\n",
+                     raster);
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "GL %.3d us\n",
-                     milton_state->graph_frame.GL);
+                     "GL %f ms\n",
+                     GL);
             ImGui::Text(msg);
 
+            snprintf(msg, array_count(msg),
+                     "TOTAL %f ms\n",
+                     sum);
+            ImGui::Text(msg);
 
-#if 0
-            ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            ImVec2 pos =
-            {
-                ImGui::GetWindowPos().x + 20,
-                ImGui::GetWindowPos().y + 20,
-            };
-            float pad_x = 20;
-            float pad_y = 20;
-            draw_list->AddRectFilled({pad_x + pos.x, pad_y + pos.y },
-                                     {pad_x + pos.x + 100, pad_y + pos.y + graph_height},
-                                     0xFF00FFFF);
-#endif
+            float hist[4] = { poll, update, raster, GL };
+            ImGui::PlotHistogram("Graph",
+                          (const float*)hist, array_count(hist));
+
         } ImGui::End();
     }
 #endif

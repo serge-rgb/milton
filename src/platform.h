@@ -149,6 +149,7 @@ WallTime platform_get_walltime();
 
 // Microsecond (us) resolution timer.
 u64 perf_counter();
+float perf_count_to_sec(u64 counter);
 
 
 #if defined(_WIN32)

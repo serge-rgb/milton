@@ -158,7 +158,6 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
 // Returns a linked list of strokes that this block needs to render.
 static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                                             i32 worker_id,
-                                            CanvasView* view,
                                             Layer* root_layer,
                                             Stroke* working_stroke,
                                             Rect canvas_block,
@@ -314,7 +313,6 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
     }
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena,
                                                        worker_id,
-                                                       view,
                                                        root_layer,
                                                        working_stroke,
                                                        canvas_block, local_scale, reference_point,
@@ -612,7 +610,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     }
     ClippedStroke* stroke_list = clip_strokes_to_block(render_arena,
                                                        worker_id,
-                                                       view,
                                                        root_layer,
                                                        working_stroke,
                                                        canvas_block, local_scale, reference_point,
@@ -1858,7 +1855,6 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
 
             // Draw an outlined circle for selected color.
             i32 circle_radius = 20;
-            i32 circle_shift_left = 20;
             i32 picker_radius = gui->picker.bounds_radius_px;
             i32 ring_girth = 1;
             i32 center_shift = picker_radius - circle_radius - 2*ring_girth;
@@ -1884,10 +1880,6 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
         {
             assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
             const i32 radius = milton_get_brush_size(milton_state);
-            {
-                i32 x = gui->preview_pos_prev.x != -1? gui->preview_pos_prev.x : gui->preview_pos.x;
-                i32 y = gui->preview_pos_prev.y != -1? gui->preview_pos_prev.y : gui->preview_pos.y;
-            }
 
             v4f preview_color;
             preview_color.rgb = milton_state->view->background_color;
@@ -1922,9 +1914,6 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, MiltonRend
             i32 y = min(exporter->pivot.y, exporter->needle.y);
             i32 w = abs(exporter->pivot.x - exporter->needle.x);
             i32 h = abs(exporter->pivot.y - exporter->needle.y);
-
-            i32 center_x = x + w / 2;
-            i32 center_y = y + h / 2;
 
             rectangle_margin(raster_buffer,
                              milton_state->view->screen_size.w, milton_state->view->screen_size.h,
@@ -2086,7 +2075,6 @@ void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2
             src.y = -pan_delta.y;
         }
 
-        i32 bpp = milton_state->bytes_per_pixel;
         u32* pixels_src = ((u32*)milton_state->raster_buffer) + (src.y*view->screen_size.w + src.x);
         u32* pixels_dst = ((u32*)milton_state->canvas_buffer) + (dst.y*view->screen_size.w + dst.x);
 

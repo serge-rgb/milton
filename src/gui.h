@@ -153,7 +153,7 @@ Rect    picker_get_bounds(ColorPicker* picker);
 Rect    get_bounds_for_picker_and_colors(ColorPicker* picker);
 // When a selected color is used in a stroke, call this to update the color
 // button list.
-b32  gui_mark_color_used(MiltonGui* gui, v3f stroke_color);
+b32  gui_mark_color_used(MiltonGui* gui);
 void gui_deactivate(MiltonGui* gui);
 
 // Eye Dropper

@@ -19,7 +19,6 @@
 
 static void milton_gl_backend_init(MiltonState* milton_state)
 {
-    GLuint test = 1;
     // Init quad program
     {
         const char* shader_contents[2];
@@ -1058,9 +1057,10 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    if (check_flag(input->flags, MiltonInputFlags_CHANGE_MODE)) {
+    if (check_flag(input->flags, MiltonInputFlags_CHANGE_MODE))
+    {
         MiltonMode mode = milton_state->current_mode;
-        if ( mode == input->mode_to_set )
+        if (mode == input->mode_to_set)
         {
             // Modes we can toggle
             if (mode == MiltonMode_EYEDROPPER)
@@ -1071,14 +1071,15 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 }
                 else
                 {
-                    // Wtf. Hopefully this won't ever happen but in any case we won't crash and burn.
+                    // This is not supposed to happen but if we get here we won't crash and burn.
                     milton_switch_mode(milton_state, MiltonMode_PEN);
+                    milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
                 }
             }
         }
         else
         {
-        // Change the current mode if it's different from the current mode.
+            // Change the current mode if it's different from the current mode.
             milton_switch_mode( milton_state, input->mode_to_set );
             if (input->mode_to_set == MiltonMode_PEN ||
                  input->mode_to_set == MiltonMode_ERASER)
@@ -1154,8 +1155,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (check_flag(input->flags, MiltonInputFlags_HOVERING))
     {
         milton_state->hover_point = input->hover_point;
-        f32 x = input->hover_point.x / (f32)milton_state->view->screen_size.w;
-        f32 y = input->hover_point.y / (f32)milton_state->view->screen_size.w;
         set_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }
 
@@ -1263,7 +1262,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             if (milton_state->working_stroke.num_points > 0)
             {
                 // We used the selected color to draw something. Push.
-                if( gui_mark_color_used(milton_state->gui, milton_state->working_stroke.brush.color.rgb) )
+                if (gui_mark_color_used(milton_state->gui))
                 {
                     set_flag(render_flags, MiltonRenderFlags_UI_UPDATED);
                 }
@@ -1299,7 +1298,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     // Disable hover if panning.
-    if (check_flag( input->flags, MiltonInputFlags_PANNING ))
+    if (check_flag(input->flags, MiltonInputFlags_PANNING))
     {
         unset_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER);
     }

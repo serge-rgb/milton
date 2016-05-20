@@ -251,40 +251,6 @@ void milton_load(MiltonState* milton_state)
     milton_validate(milton_state);
 }
 
-// Leaving this commented-out for now.
-// Going to release Milton 1.2.2 without any compression.
-#if 0
-b32 compress_test(char* fname)
-{
-    u32 values[256][2];
-    u32 buffer[chunksz];
-    FILE* fd = fopen(fname, "rb")
-    if (fd)
-    {
-        size_t chunksz = 1024;
-
-        size_t read = fread(buffer, sizeof(u32), chunksz, fd);
-        if (read == chunksz)
-        {
-
-        }
-        else
-        {
-            // check if EOF
-        }
-    }
-    else
-    {
-        milton_log("could not read file");
-    }
-}
-#else
-b32 compress_test(char* fname)
-{
-    return true;
-}
-#endif
-
 void milton_save(MiltonState* milton_state)
 {
     milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
@@ -393,7 +359,6 @@ void milton_save(MiltonState* milton_state)
             int close_ret = fclose(fd);
             if ( close_ret == 0 )
             {
-                ok = compress_test(tmp_fname);
                 if (ok)
                 {
                     ok = platform_move_file(tmp_fname, milton_state->mlt_file_path);
@@ -502,8 +467,6 @@ static void write_func(void* context, void* data, int size)
 
 void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h)
 {
-    b32 success = false;
-
     int len = 0;
     {
         size_t sz = strlen(fname);
