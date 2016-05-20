@@ -254,7 +254,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         }
         if ( ImGui::BeginMenu(LOC(view)) )
         {
-            if ( ImGui::MenuItem(LOC(toggle_gui_visibility)) )
+            if (ImGui::MenuItem(LOC(toggle_gui_visibility)))
             {
                 gui_toggle_visibility(milton_state->gui);
             }
@@ -270,7 +270,8 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
         {
             if ( ImGui::MenuItem(LOC(help_me)) )
             {
-                platform_open_link("https://www.youtube.com/watch?v=g27gHio2Ohk");
+                //platform_open_link("https://www.youtube.com/watch?v=g27gHio2Ohk");
+                platform_open_link("http://www.miltonpaint.com/help/");
             }
             if ( ImGui::MenuItem(LOC(milton_version)) )
             {

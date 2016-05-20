@@ -11,8 +11,6 @@ IF NOT EXIST build\SDL2.lib copy third_party\bin\SDL2.lib build\SDL2.lib
 IF NOT EXIST build\SDL2.pdb copy third_party\bin\SDL2.pdb build\SDL2.pdb
 IF NOT EXIST build\milton_icon.ico copy milton_icon.ico build\milton_icon.ico
 
-::IF NOT EXIST build\carlito.ttf
-
 pushd build
 set sdl_link_deps=Winmm.lib Version.lib Shell32.lib Ole32.lib OleAut32.lib Imm32.lib
 
