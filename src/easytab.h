@@ -148,6 +148,8 @@
 
 // TODO: Null checks and warnings for EasyTab
 // TODO: Differentiate between stylus and eraser in the API
+// TODO: Linux support for relative mode
+// TODO: Documentation for relative mode
 
 // =============================================================================
 // EasyTab header section
@@ -164,11 +166,6 @@
 #include <X11/extensions/XInput.h>
 #endif // __linux__
 
-#if defined(_WIN32)
-#include <Windows.h>
-#endif
-
-
 typedef enum
 {
     EASYTAB_OK = 0,
@@ -182,6 +179,12 @@ typedef enum
 
     EASYTAB_EVENT_NOT_HANDLED = -16,
 } EasyTabResult;
+
+typedef enum
+{
+    EASYTAB_TRACKING_MODE_SYSTEM   = 0,
+    EASYTAB_TRACKING_MODE_RELATIVE = 1,
+} EasyTabTrackingMode;
 
 #ifdef WIN32
 // -----------------------------------------------------------------------------
@@ -602,12 +605,20 @@ extern EasyTabInfo* EasyTab;
 #elif defined(_WIN32)
 
     EasyTabResult EasyTab_Load(HWND Window);
-    EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPARAM WParam);
+    EasyTabResult EasyTab_Load_Ex(HWND Window,
+                                  EasyTabTrackingMode Mode,
+                                  uint32_t RelativeModeSensitivity,
+                                  int32_t MoveCursor);
+    EasyTabResult EasyTab_HandleEvent(HWND Window,
+                                      UINT Message,
+                                      LPARAM LParam,
+                                      WPARAM WParam);
     void EasyTab_Unload();
 
 #else
 
-    // TODO: port
+    // Save some trouble when porting.
+    #error "Unsupported platform."
 
 #endif // __linux__ _WIN32
 // -----------------------------------------------------------------------------
@@ -693,11 +704,8 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
 
             ClassPtr = (XAnyClassPtr) ((uint8_t*)ClassPtr + ClassPtr->length); // TODO: Access this as an array to avoid pointer arithmetic?
         }
-    }
 
-    if (XSelectExtensionEvent(Disp, Win, EasyTab->EventClasses, EasyTab->NumEventClasses))
-    {
-        return EASYTAB_X11_ERROR;
+        XSelectExtensionEvent(Disp, Win, EasyTab->EventClasses, EasyTab->NumEventClasses);
     }
 
     XFreeDeviceList(Devices);
@@ -739,7 +747,16 @@ void EasyTab_Unload()
         return EASYTAB_INVALID_FUNCTION_ERROR;                                                           \
     }
 
+
 EasyTabResult EasyTab_Load(HWND Window)
+{
+    return EasyTab_Load_Ex(Window, EASYTAB_TRACKING_MODE_SYSTEM, 0, 1);
+}
+
+EasyTabResult EasyTab_Load_Ex(HWND Window,
+                              EasyTabTrackingMode TrackingMode,
+                              uint32_t RelativeModeSensitivity,
+                              int32_t MoveCursor)
 {
     EasyTab = (EasyTabInfo*)calloc(1, sizeof(EasyTabInfo)); // We want init to zero, hence calloc.
     if (!EasyTab) { return EASYTAB_MEMORY_ERROR; }
@@ -775,10 +792,22 @@ EasyTabResult EasyTab_Load(HWND Window)
         GETPROCADDRESS(WTMGRDEFCONTEXTEX , WTMgrDefContextEx);
     }
 
+    // Set wacom packet rate
     if (!EasyTab->WTInfoA(0, 0, NULL))
     {
         OutputDebugStringA("Wintab services not available.\n");
         return EASYTAB_WACOM_WIN32_ERROR;
+    }
+
+    // Note(Sergio): I want about 3 packets per frame. This could be a parameter for Load_Ex
+    UINT DesiredPktRate = 200;
+    {
+        UINT MaxPktRate = 0;
+        // Get maxiumum rate (DVX_PKTRATE)
+        if (EasyTab->WTInfoA(WTI_DEVICES, DVC_PKTRATE, &MaxPktRate))
+        {
+            DesiredPktRate = min(200, MaxPktRate);
+        }
     }
 
     // Open context
@@ -794,8 +823,8 @@ EasyTabResult EasyTab_Load(HWND Window)
         EasyTab->WTInfoA(WTI_DEVICES, DVC_NPRESSURE, &Pressure);
 
         LogContext.lcPktData = PACKETDATA; // ??
-        LogContext.lcOptions |= CXO_SYSTEM;
         LogContext.lcOptions |= CXO_MESSAGES;
+        if (MoveCursor) { LogContext.lcOptions |= CXO_SYSTEM; }
         LogContext.lcPktMode = PACKETMODE;
         LogContext.lcMoveMask = PACKETDATA;
         LogContext.lcBtnUpMask = LogContext.lcBtnDnMask;
@@ -814,6 +843,23 @@ EasyTabResult EasyTab_Load(HWND Window)
         LogContext.lcSysOrgY = 0;
         LogContext.lcSysExtX = GetSystemMetrics(SM_CXSCREEN);
         LogContext.lcSysExtY = GetSystemMetrics(SM_CYSCREEN);
+
+        LogContext.lcPktRate = DesiredPktRate;
+
+        if (TrackingMode == EASYTAB_TRACKING_MODE_RELATIVE)
+        {
+            LogContext.lcPktMode |= PK_X | PK_Y; // TODO: Should this be included in the
+                                                 //       PACKETMODE macro define up top?
+            LogContext.lcSysMode = 1;
+            if (MoveCursor)
+            {
+                LogContext.lcSysSensX = LogContext.lcSysSensY = RelativeModeSensitivity;
+            }
+            else
+            {
+                LogContext.lcSensX = LogContext.lcSensY = RelativeModeSensitivity;
+            }
+        }
 
         EasyTab->Context = EasyTab->WTOpenA(Window, &LogContext, TRUE);
 
@@ -861,8 +907,9 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 void EasyTab_Unload()
 {
     if (EasyTab->Context) { EasyTab->WTClose(EasyTab->Context); }
+    SDL_Delay(300);
     // TODO(sergio): This has a memory leak, appverifier nags about it
-    /* if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); } */
+    //if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); }
     free(EasyTab);
     EasyTab = NULL;
 }

@@ -1115,7 +1115,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
         else if (check_flag(input->flags, MiltonInputFlags_REDO))
         {
-            if ( sb_count(milton_state->redo_stack) > 0 )
+            if (sb_count(milton_state->redo_stack) > 0)
             {
                 HistoryElement h = sb_pop(milton_state->redo_stack);
                 switch (h.type)

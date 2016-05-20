@@ -631,20 +631,24 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                      count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
             ImGui::Text(msg);
 
-            float poll   = perf_count_to_sec(milton_state->graph_frame.polling) * 1000.0f;
-            float update = perf_count_to_sec(milton_state->graph_frame.update) * 1000.0f;
-            float raster = perf_count_to_sec(milton_state->graph_frame.raster) * 1000.0f;
-            float GL     = perf_count_to_sec(milton_state->graph_frame.GL) * 1000.0f;
+            float poll     = perf_count_to_sec(milton_state->graph_frame.polling) * 1000.0f;
+            float update   = perf_count_to_sec(milton_state->graph_frame.update) * 1000.0f;
+            float clipping = perf_count_to_sec(milton_state->graph_frame.clipping) * 1000.0f;
+            {
+                clipping /= milton_state->num_render_workers;
+            }
+            float raster   = perf_count_to_sec(milton_state->graph_frame.raster) * 1000.0f;
+            float GL       = perf_count_to_sec(milton_state->graph_frame.GL) * 1000.0f;
 
             float sum = poll + update + raster + GL;
 
             snprintf(msg, array_count(msg),
-                     "Polling %f ms\n",
+                     "Input Polling %f ms\n",
                      poll);
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "Update %f ms\n",
+                     "Milton Update %f ms\n",
                      update);
             ImGui::Text(msg);
 
@@ -652,20 +656,26 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                      "Raster %f ms\n",
                      raster);
             ImGui::Text(msg);
-
+            ImGui::SameLine();
             snprintf(msg, array_count(msg),
-                     "GL %f ms\n",
-                     GL);
+                     "(Clipping %f ms)\n",
+                     clipping);
             ImGui::Text(msg);
 
+
             snprintf(msg, array_count(msg),
-                     "TOTAL %f ms\n",
-                     sum);
+                     "OpenGL commands %f ms\n",
+                     GL);
             ImGui::Text(msg);
 
             float hist[4] = { poll, update, raster, GL };
             ImGui::PlotHistogram("Graph",
                           (const float*)hist, array_count(hist));
+
+            snprintf(msg, array_count(msg),
+                     "TOTAL %f ms\n",
+                     sum);
+            ImGui::Text(msg);
 
         } ImGui::End();
     }

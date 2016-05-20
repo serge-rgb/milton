@@ -105,7 +105,7 @@ echo    [BUILD] -- Building Milton...
 if %mlt_opt_level% == 0 set header_links=headerlibs_impl_nopt.lib
 if %mlt_opt_level% == 1 set header_links=headerlibs_impl_opt.lib
 
-ctime -begin milton.ctm
+ctime -begin ..\milton.ctm
 :: ---- Unity build for Milton
 cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_c.c
@@ -120,13 +120,13 @@ if %errorlevel% neq 0 goto fail
 
 :ok
 echo    [BUILD]  -- Build success!
-ctime -end milton.ctm
+ctime -end ..\milton.ctm
 popd
 goto end
 
 :fail
 echo    [FATAL] -- ... error building Milton
-ctime -end milton.ctm 1
+ctime -end ..\milton.ctm 1
 popd && (call)
 
 :end

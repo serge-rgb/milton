@@ -75,6 +75,8 @@ Milton is Windows only at the moment. Linux and OSX support is intended for the 
 How to Compile
 ==============
 
+**Note**: if a build fails after doing `git pull`, please run `clean.bat`.
+
 Windows
 -------
 

@@ -9,12 +9,10 @@ To-Do
         The bigger the file, the likelier it is to fail.
 
 - Performance:
-    - Move strokes & history to "chains" to avoid out-of-mem stretchy-buffer errors
     - Per-layer buffer memory, only redraw working_layer
         - Chunked by visibility? Profile memory usage
     - Undo/Redo: Only redraw necessary area.
     - Async rendering
-    - Files are *huge*. Do a simple RLE on file?
     - AVX backend??
     - Make iterative rendering split the screen into chunks
     - Amdahl's curse... Parallelize GUI rendering

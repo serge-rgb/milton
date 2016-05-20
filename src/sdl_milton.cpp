@@ -1016,8 +1016,8 @@ int milton_main(MiltonStartupFlags startup_flags)
         PROFILE_GRAPH_BEGIN(GL);
         milton_gl_backend_draw(milton_state);
         ImGui::Render();
-        PROFILE_GRAPH_PUSH(GL);
         SDL_GL_SwapWindow(window);
+        PROFILE_GRAPH_PUSH(GL);
         SDL_WaitEvent(NULL);  // Wait for our custom event to force an update if there is no user input
     }
 

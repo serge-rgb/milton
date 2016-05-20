@@ -54,6 +54,7 @@ typedef struct GraphData
 
     u64 polling;
     u64 update;
+    u64 clipping;
     u64 raster;
     u64 GL;
 } GraphData;

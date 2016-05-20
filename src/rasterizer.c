@@ -1488,8 +1488,22 @@ static b32 render_blockgroup(MiltonState* milton_state,
                 raster_to_canvas(milton_state->view, raster_blockgroup_rect.bot_right);
     }
 
+    // Our version of SDL defines SDL_atomic_t as typdedef struct { int value } SDL_atomic_t;
+    // PROFILE_GRAPH_BEGIN
+    //milton_state->graph_frame.start = perf_counter();
+#if MILTON_ENABLE_PROFILING
+    SDL_AtomicCAS((SDL_atomic_t*)&milton_state->graph_frame.start,
+                  milton_state->graph_frame.start,
+                  perf_counter());
+#endif
     fill_stroke_masks_for_worker(milton_state->root_layer, canvas_blockgroup_rect, worker_id);
-
+    // PROFILE_RASTER_PUSH
+    //    milton_state->graph_frame.##name = perf_counter() - milton_state->graph_frame.start
+#if MILTON_ENABLE_PROFILING
+    SDL_AtomicCAS((SDL_atomic_t*)&milton_state->graph_frame.clipping,
+                  milton_state->graph_frame.clipping,
+                  perf_counter() - milton_state->graph_frame.start);
+#endif
     Arena render_arena = { 0 };
     if ( allocation_ok )
     {
