@@ -829,11 +829,6 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         LogContext.lcMoveMask = PACKETDATA;
         LogContext.lcBtnUpMask = LogContext.lcBtnDnMask;
 
-        LogContext.lcInOrgX = 0;
-        LogContext.lcInOrgY = 0;
-        LogContext.lcInExtX = RangeX.axMax;
-        LogContext.lcInExtY = RangeY.axMax;
-
         LogContext.lcOutOrgX = 0;
         LogContext.lcOutOrgY = 0;
         LogContext.lcOutExtX = GetSystemMetrics(SM_CXSCREEN);
@@ -842,9 +837,11 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         LogContext.lcSysOrgX = 0;
         LogContext.lcSysOrgY = 0;
         LogContext.lcSysExtX = GetSystemMetrics(SM_CXSCREEN);
-        LogContext.lcSysExtY = GetSystemMetrics(SM_CYSCREEN);
 
-        LogContext.lcPktRate = DesiredPktRate;
+        // Note(Sergio): Setting packet rate..
+        {
+            LogContext.lcPktRate = DesiredPktRate;
+        }
 
         if (TrackingMode == EASYTAB_TRACKING_MODE_RELATIVE)
         {
