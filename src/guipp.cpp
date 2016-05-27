@@ -258,12 +258,12 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             {
                 gui_toggle_visibility(milton_state->gui);
             }
-            #if MILTON_ENABLE_PROFILING
+#if MILTON_ENABLE_PROFILING
             if (ImGui::MenuItem("Toggle Debug Profiler [BACKQUOTE]"))
             {
-                milton_state->DEBUG_viz_window_visible = !milton_state->DEBUG_viz_window_visible;
+                milton_state->viz_window_visible = !milton_state->viz_window_visible;
             }
-            #endif
+#endif
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu(LOC(help)) )
@@ -616,10 +616,10 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
             exporter_init(&milton_state->gui->exporter);
         }
     }
-#if MILTON_DEBUG && MILTON_ENABLE_PROFILING
+#if MILTON_ENABLE_PROFILING
     ImGui::SetNextWindowPos(ImVec2(300, 205), ImGuiSetCond_FirstUseEver);
     ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
-    if (milton_state->DEBUG_viz_window_visible)
+    if (milton_state->viz_window_visible)
     {
         bool opened = true;
         if (ImGui::Begin("Debug Profiling ([BACKQUOTE] to toggle)", &opened, ImGuiWindowFlags_NoCollapse))

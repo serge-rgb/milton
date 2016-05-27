@@ -265,7 +265,7 @@ void milton_save(MiltonState* milton_state)
 
     b32 ok = true;
 
-    if ( fd )
+    if (fd)
     {
         u32 milton_magic = MILTON_MAGIC_NUMBER;
 
@@ -353,29 +353,21 @@ void milton_save(MiltonState* milton_state)
         if (ok) { ok = fwrite_checked(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
 
         int file_error = ferror(fd);
-        ok = false;
         if ( file_error == 0 )
         {
             int close_ret = fclose(fd);
             if ( close_ret == 0 )
             {
+                ok = platform_move_file(tmp_fname, milton_state->mlt_file_path);
                 if (ok)
                 {
-                    ok = platform_move_file(tmp_fname, milton_state->mlt_file_path);
-                    if (ok)
-                    {
-                        //  \o/
-                        milton_save_postlude(milton_state);
-                    }
-                    else
-                    {
-                        milton_log("Could not move file. Moving on. Avoiding this save.\n");
-                        milton_state->flags |= MiltonStateFlags_MOVE_FILE_FAILED;
-                    }
+                    //  \o/
+                    milton_save_postlude(milton_state);
                 }
                 else
                 {
-                    // TODO: compression failure log
+                    milton_log("Could not move file. Moving on. Avoiding this save.\n");
+                    milton_state->flags |= MiltonStateFlags_MOVE_FILE_FAILED;
                 }
             }
             else

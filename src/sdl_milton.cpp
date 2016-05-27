@@ -408,12 +408,12 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         profiler_reset();
                         milton_state->DEBUG_sse2_switch = !milton_state->DEBUG_sse2_switch;
                     }
-    #if MILTON_ENABLE_PROFILING
+#endif
+#if MILTON_ENABLE_PROFILING
                     if (keycode == SDLK_BACKQUOTE)
                     {
-                        milton_state->DEBUG_viz_window_visible = !milton_state->DEBUG_viz_window_visible;
+                        milton_state->viz_window_visible = !milton_state->viz_window_visible;
                     }
-    #endif
 #endif
                 }
 

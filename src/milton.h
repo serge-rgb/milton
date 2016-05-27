@@ -156,11 +156,11 @@ typedef struct MiltonState
     // Debug helpers
     // ====
 #if MILTON_DEBUG
-    b32 DEBUG_viz_window_visible;
     b32 DEBUG_sse2_switch;
     b32 DEBUG_replaying;
 #endif
 #if MILTON_ENABLE_PROFILING
+    b32 viz_window_visible;
     GraphData graph_frame;
 #endif
 } MiltonState;

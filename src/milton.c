@@ -562,7 +562,9 @@ void milton_init(MiltonState* milton_state)
 
 #if MILTON_DEBUG
     milton_run_tests(milton_state);
-    milton_state->DEBUG_viz_window_visible = true;
+#endif
+#if MILTON_ENABLE_PROFILING
+    milton_state->viz_window_visible = true;
 #endif
 
     for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
