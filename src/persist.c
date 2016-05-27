@@ -127,7 +127,14 @@ void milton_load(MiltonState* milton_state)
             i32 len = 0;
             if (ok) { ok = fread_checked(&len, sizeof(i32), 1, fd); }
 
-            milton_new_layer(milton_state);
+            if (len > MAX_LAYER_NAME_LEN)
+            {
+                milton_log("Corrupt file. Layer name is too long.\n");
+                ok = false;
+            }
+
+            if (ok) { milton_new_layer(milton_state); }
+
             Layer* layer = milton_state->working_layer;
 
             if (ok) { ok = fread_checked(layer->name, sizeof(char), len, fd); }
@@ -221,9 +228,14 @@ void milton_load(MiltonState* milton_state)
         {
             ok = false;
         }
-        if ( !ok )
+
+
+
+        // Finished loading
+        if (!ok)
         {
             platform_dialog("Tried to load a corrupted Milton file or there was an error reading from disk.", "Error");
+            milton_set_default_canvas_file(milton_state);  // Prevent the same file from getting loaded next time.
             milton_reset_canvas(milton_state);
         }
         else
