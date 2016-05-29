@@ -3,7 +3,7 @@
 
 #pragma once
 
-#define MILTON_VERSION "1.2.3"
+#define MILTON_VERSION "1.2.4"
 
 // When MILTON_DEBUG is 1,
 //  - Asserts

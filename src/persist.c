@@ -194,9 +194,9 @@ void milton_load(MiltonState* milton_state)
             if (ok) { ok = fread_checked(&button_count, sizeof(i32), 1, fd); }
             if (ok)
             {
-                for ( i32 i = 0;
-                      btn!=NULL && i < button_count;
-                      ++i, btn=btn->next )
+                for (i32 i = 0;
+                     btn!=NULL && i < button_count;
+                     ++i, btn=btn->next)
                 {
                     fread_checked(&btn->rgba, sizeof(v4f), 1, fd);
                 }

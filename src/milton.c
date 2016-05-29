@@ -54,10 +54,10 @@ static void milton_gl_backend_init(MiltonState* milton_state)
             GLuint shader_type = (GLuint)((i == 0) ? GL_VERTEX_SHADER_ARB : GL_FRAGMENT_SHADER_ARB);
             shader_objects[i] = gl_compile_shader(shader_contents[i], shader_type);
         }
-        milton_state->gl->quad_program = glCreateProgramObjectARB();
+        milton_state->gl->quad_program = glCreateProgram();
         gl_link_program(milton_state->gl->quad_program, shader_objects, 2);
 
-        GLCHK (glUseProgramObjectARB(milton_state->gl->quad_program));
+        GLCHK (glUseProgram(milton_state->gl->quad_program));
     }
 
     // Create texture
@@ -375,7 +375,7 @@ void milton_gl_backend_draw(MiltonState* milton_state)
                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)raster_buffer);
 
-    GLCHK (glUseProgramObjectARB(gl->quad_program));
+    GLCHK (glUseProgram(gl->quad_program));
 #if MILTON_USE_VAO
     glBindVertexArray(gl->quad_vao);
 #else

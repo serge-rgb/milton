@@ -39,9 +39,7 @@
 
 #if defined(_WIN32)
 
-#define GLEW_STATIC
-#include <GL/glew.h>
-#include <GL/wglew.h>
+#include "SDL_opengl.h"
 
 #elif defined(__linux__)
 

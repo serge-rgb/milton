@@ -1,9 +1,14 @@
 @echo off
+
 :: ---- Build type
 ::
 :: - 1: Optimized build.
 :: - 0: Debug build.
-set mlt_opt_level=1
+set mlt_opt_level=0
+
+IF EXIST  build\ctime.exe ( set has_ctime=1 ) ELSE ( set has_ctime=0 )
+
+IF %has_ctime%==1 build\ctime.exe -begin milton.ctm
 
 IF NOT EXIST build mkdir build
 
@@ -55,7 +60,7 @@ set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SD
 set sdl_dir=..\third_party\bin
 
 :: shell32.lib -- ShellExcecute to open help
-set mlt_link_flags=..\third_party\glew32s.lib OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib Shell32.lib /SAFESEH:NO /DEBUG
+set mlt_link_flags=OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib Shell32.lib /SAFESEH:NO /DEBUG
 
 :: ---- Compile third_party libs with less warnings
 :: Delete file build\SKIP_LIB_COMPILATION to recompile. Created by default to reduce build times.
@@ -103,7 +108,6 @@ echo    [BUILD] -- Building Milton...
 if %mlt_opt_level% == 0 set header_links=headerlibs_impl_nopt.lib
 if %mlt_opt_level% == 1 set header_links=headerlibs_impl_opt.lib
 
-ctime -begin ..\milton.ctm
 :: ---- Unity build for Milton
 cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
     ..\src\milton_unity_build_c.c
@@ -118,13 +122,12 @@ if %errorlevel% neq 0 goto fail
 
 :ok
 echo    [BUILD]  -- Build success!
-ctime -end ..\milton.ctm
 popd
 goto end
 
 :fail
 echo    [FATAL] -- ... error building Milton
-ctime -end ..\milton.ctm 1
 popd && (call)
 
 :end
+if %has_ctime%==1 build\ctime -end milton.ctm

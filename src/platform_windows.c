@@ -82,21 +82,7 @@ void milton_die_gracefully(char* message)
     exit(EXIT_FAILURE);
 }
 
-void platform_load_gl_func_pointers()
-{
-    GLenum glew_err = glewInit();
 
-    if (glew_err != GLEW_OK)
-    {
-        milton_log("glewInit failed with error: %s\nExiting.\n", glewGetErrorString(glew_err));
-        milton_die_gracefully("glewInit failed");
-    }
-
-    if ( !GLEW_VERSION_2_1 )
-    {
-        milton_die_gracefully("OpenGL 2.1 not supported.\n");
-    }
-}
 
 static char* win32_filter_strings_image =
     "PNG file\0" "*.png\0"

@@ -13,6 +13,7 @@
 #include "persist.h"
 #include "platform.h"
 #include "platform_prefs.h"
+#include "gl_func_loader.h"
 #include "profiler.h"
 #include "utils.h"
 
@@ -583,7 +584,10 @@ int milton_main(MiltonStartupFlags startup_flags)
 
     SDL_GL_SetSwapInterval(1);
 
-    platform_load_gl_func_pointers();
+    if (!load_gl_functions())
+    {
+        milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
+    }
 
     milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
