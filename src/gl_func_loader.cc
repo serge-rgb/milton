@@ -1,7 +1,6 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-// Functions to be loaded by platform_load_function_pointers
 
 #pragma once
 
