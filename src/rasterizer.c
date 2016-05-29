@@ -349,7 +349,10 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
         {
             // Clear color
             v4f background_color;
-            background_color.rgb = view->background_color;
+            // Background color is going to be in gamma space, since it is picked by
+            // the user after it comes out from the monitor.  All color operations are
+            // done in linear space. We need to convert the background color to linear space.
+            background_color.rgb = gamma_to_linear(view->background_color);
             background_color.a = 1.0f;
 
             // Cumulative blending
@@ -526,11 +529,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
             // Brushes are stored and operated in linear space, move to srgb
             // before blitting
-#if FAST_GAMMA
-            acc_color.rgb = linear_to_square(acc_color.rgb);
-#else
-            acc_color.rgb = linear_to_sRGB(acc_color.rgb);
-#endif
+            acc_color.rgb = linear_to_gamma(acc_color.rgb);
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 
@@ -633,8 +632,13 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
     // Clear color
     v4f background_color;
-    background_color.rgb = view->background_color;
+
+    // Background color is going to be in gamma space, since it is picked by
+    // the user after it comes out from the monitor.  All color operations are
+    // done in linear space. We need to convert the background color to linear space.
+    background_color.rgb = gamma_to_linear(view->background_color);
     background_color.a = 1.0f;
+
 
 
     // i and j are the canvas point
@@ -1026,11 +1030,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
 
             // Brushes are stored and operated in linear space, move to srgb
             // before blitting
-#if FAST_GAMMA
-            acc_color.rgb = linear_to_square(acc_color.rgb);
-#else
-            acc_color.rgb = linear_to_sRGB(acc_color.rgb);
-#endif
+            acc_color.rgb = linear_to_gamma(acc_color.rgb);
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 

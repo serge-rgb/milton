@@ -24,13 +24,16 @@ v3f rgb_to_hsv(v3f rgb);
 
 v4f to_premultiplied(v3f rgb, f32 a);
 
-v3f linear_to_sRGB(v3f rgb);
+v3f linear_to_gamma(v3f rgb);
+v3f gamma_to_linear(v3f rgb);
 
-v3f sRGB_to_linear(v3f rgb);
+    v3f linear_to_sRGB(v3f rgb);
 
-v3f linear_to_square(v3f rgb);
+    v3f sRGB_to_linear(v3f rgb);
 
-v3f square_to_linear(v3f rgb);
+    v3f linear_to_square(v3f rgb);
+
+    v3f square_to_linear(v3f rgb);
 
 v3f clamp_255(v3f color);
 

@@ -206,6 +206,23 @@ v4f to_premultiplied(v3f rgb, f32 a)
 }
 
 
+v3f linear_to_gamma(v3f rgb)
+{
+#if FAST_GAMMA
+    return linear_to_square(rgb);
+#else
+    return linear_to_sRGB(rgb);
+#endif
+}
+
+v3f gamma_to_linear(v3f rgb)
+{
+#if FAST_GAMMA
+    return square_to_linear(rgb);
+#else
+    return sRGB_to_linear(rgb);
+#endif
+}
 
 v3f linear_to_sRGB(v3f rgb)
 {

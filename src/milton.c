@@ -130,11 +130,7 @@ static void milton_update_brushes(MiltonState* milton_state)
         if (i == BrushEnum_PEN)
         {
             // Alpha is set by the UI
-#if FAST_GAMMA
-            brush->color = to_premultiplied(square_to_linear(gui_get_picker_rgb(milton_state->gui)), brush->alpha);
-#else
-            brush->color = to_premultiplied(sRGB_to_linear(gui_get_picker_rgb(milton_state->gui)), brush->alpha);
-#endif
+            brush->color = to_premultiplied(gamma_to_linear(gui_get_picker_rgb(milton_state->gui)), brush->alpha);
         }
         else if (i == BrushEnum_ERASER)
         {

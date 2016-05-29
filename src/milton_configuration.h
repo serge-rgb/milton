@@ -10,7 +10,7 @@
 //  - Fixed address root_arena
 //  -  very large root_arena
 //  - Runtime renderer implementation switching with F4
-#define MILTON_DEBUG 0
+#define MILTON_DEBUG 1
 
 #define MILTON_MULTITHREADED 1
 
