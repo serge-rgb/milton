@@ -8,7 +8,7 @@
 #include "platform.h"
 #include "persist.h"
 #include "profiler.h"
-#include "rasterizer.h"
+#include "software_renderer.h"
 
 #if MILTON_DEBUG
 #include "tests.h"

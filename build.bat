@@ -71,15 +71,15 @@ echo    [BUILD] -- ... Release
 cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.c
 
 cl /Ox ..\third_party\ctime.c winmm.lib
-cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl_cpp.cpp
+cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl_cc.cc
 if %errorlevel% NEQ 0 goto error_lib_compilation
-lib headerlibs_impl.obj headerlibs_impl_cpp.obj /out:headerlibs_impl_opt.lib
+lib headerlibs_impl.obj headerlibs_impl_cc.obj /out:headerlibs_impl_opt.lib
 
 echo    [BUILD] -- ... Debug
 cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.c
-cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl_cpp.cpp
+cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl_cc.cc
 if %errorlevel% NEQ 0 goto error_lib_compilation
-lib headerlibs_impl.obj headerlibs_impl_cpp.obj /out:headerlibs_impl_nopt.lib
+lib headerlibs_impl.obj headerlibs_impl_cc.obj /out:headerlibs_impl_nopt.lib
 goto end_lib_compilation
 
 :error_lib_compilation
@@ -115,9 +115,9 @@ if %errorlevel% neq 0 goto fail
 
 :: 4302 4311 truncation in SetClassLongW
 cl %mlt_opt_flags% %mlt_compiler_flags%  /wd4302 /wd4311 %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ^
-    ..\src\milton_unity_build_cpp.cpp
+    ..\src\milton_unity_build_cc.cc
 if %errorlevel% neq 0 goto fail
-link milton_unity_build_c.obj milton_unity_build_cpp.obj /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
+link milton_unity_build_c.obj milton_unity_build_cc.obj /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
 if %errorlevel% neq 0 goto fail
 
 :ok
