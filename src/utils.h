@@ -4,7 +4,12 @@
 
 #pragma once
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 #include "vector.h"
+#include "milton_configuration.h"
 
 #ifdef array_count
 #error "array_count is already defined"
@@ -205,3 +210,10 @@ typedef struct WallTime
 // Use platform_get_walltime to fill struct.
 
 
+#if MILTON_DEBUG
+char* debug_slurp_file(char* fname, size_t* out_size);
+#endif
+
+#if defined(__cplusplus)
+}
+#endif

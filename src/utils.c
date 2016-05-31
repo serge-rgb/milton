@@ -466,3 +466,44 @@ char* str_trim_to_last_slash(char* str)
     return cool_char;
 }
 
+static size_t bytes_in_fd(FILE* fd)
+{
+    fpos_t fd_pos;
+    fgetpos(fd, &fd_pos);
+    fseek(fd, 0, SEEK_END);
+    size_t len = (size_t)ftell(fd);
+    fsetpos(fd, &fd_pos);
+    return len;
+}
+
+char* debug_slurp_file(char* path, size_t* out_size)
+{
+    char* contents = NULL;
+    FILE* fd = fopen(path, "r");
+    if (fd)
+    {
+        size_t len = bytes_in_fd(fd);
+        contents = (char*)mlt_calloc(len + 1, 1);
+        if (contents)
+        {
+            size_t read = fread((void*)contents, 1, (size_t)len, fd);
+            assert (read <= len);
+            fclose(fd);
+            if (out_size)
+            {
+                *out_size = read + 1;
+            }
+            contents[read] = '\0';
+        }
+
+    }
+    else
+    {
+        if (out_size)
+        {
+            *out_size = 0;
+        }
+    }
+    return contents;
+}
+

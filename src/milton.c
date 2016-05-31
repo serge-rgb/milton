@@ -9,6 +9,7 @@
 #include "persist.h"
 #include "profiler.h"
 #include "software_renderer.h"
+#include "hardware_renderer.h"
 
 #if MILTON_DEBUG
 #include "tests.h"
@@ -589,6 +590,9 @@ void milton_init(MiltonState* milton_state)
 #if MILTON_ENABLE_PROFILING
     profiler_init();
 #endif
+
+
+    hw_renderer_init();
 }
 
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
