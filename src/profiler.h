@@ -5,10 +5,6 @@
 
 
 
-#if defined(__cplusplus)
-extern"C"{
-#endif
-
 // Profiler
 //
 // The PROFILE_RASTER_BEGIN and PROFILE_RASTER_PUSH macros report the rasterizer performance
@@ -45,7 +41,7 @@ enum
 };
 
 
-typedef struct GraphData
+struct GraphData
 {
     u64 start;
 
@@ -56,7 +52,7 @@ typedef struct GraphData
     u64 raster;
     u64 GL;
     u64 system;
-} GraphData;
+};
 
 GraphData g_graphframe;
 
@@ -126,6 +122,3 @@ static int CPUID_AUX2;
 
 #endif
 
-#if defined(__cplusplus)
-}
-#endif

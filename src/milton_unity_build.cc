@@ -38,6 +38,8 @@
 #include "render_common.h"
 #include "canvas.h"
 #include "canvas.cc"
+#include "profiler.h"
+#include "profiler.cc"
 #include "milton.h"
 #include "gui.h"
 #include "persist.h"
@@ -50,13 +52,10 @@
 #include "memory.h"
 #include "memory.cc"
 #include "software_renderer.h"
-#include "profiler.h"
 #include "milton.cc"
 
 
 #include "sdl_milton.cc"
-
-#include "profiler.cc"
 
 #if MILTON_DEBUG
 #include "tests.cc"

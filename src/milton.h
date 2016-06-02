@@ -18,7 +18,7 @@
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
 
 
-typedef struct MiltonGLState
+struct MiltonGLState
 {
     GLuint quad_program;
     GLuint texture;
@@ -26,7 +26,7 @@ typedef struct MiltonGLState
 #if MILTON_USE_VAO
     GLuint quad_vao;
 #endif
-} MiltonGLState;
+};
 
 typedef enum MiltonMode
 {
@@ -51,15 +51,15 @@ enum HistoryElementType
     //HistoryElement_LAYER_DELETE,
 };
 
-typedef struct HistoryElement
+struct HistoryElement
 {
     int type;
     i32 layer_id;  // HistoryElement_STROKE_ADD
-} HistoryElement;
+};
 
 struct MiltonGui;
 
-typedef struct MiltonState
+struct MiltonState
 {
     u8  bytes_per_pixel;
 
@@ -144,7 +144,7 @@ typedef struct MiltonState
     b32 viz_window_visible;
     GraphData graph_frame;
 #endif
-} MiltonState;
+};
 
 enum MiltonStateFlags
 {
@@ -161,7 +161,7 @@ enum MiltonStateFlags
     MiltonStateFlags_MOVE_FILE_FAILED       = 1<<10,
 };
 
-typedef enum MiltonInputFlags
+enum MiltonInputFlags
 {
     MiltonInputFlags_NONE = 0,
 
@@ -183,7 +183,7 @@ typedef enum MiltonInputFlags
 #define MiltonInputFlags int
 #endif
 
-typedef struct MiltonInput
+struct MiltonInput
 {
     int flags;  // MiltonInputFlags
     MiltonMode mode_to_set;
@@ -196,7 +196,7 @@ typedef struct MiltonInput
     v2i  hover_point;
     i32  scale;
     v2i  pan_delta;
-} MiltonInput;
+};
 
 
 enum SaveEnum

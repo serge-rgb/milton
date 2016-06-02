@@ -10,19 +10,18 @@ enum ColorPickerFlags
 
     ColorPickerFlags_WHEEL_ACTIVE    = (1 << 1),
     ColorPickerFlags_TRIANGLE_ACTIVE = (1 << 2)
-} ColorPickerFlags;
+};
 
-typedef struct PickerData
+struct PickerData
 {
     v2f a;  // Corresponds to value = 0      (black)
     v2f b;  // Corresponds to saturation = 0 (white)
     v2f c;  // Points to chosen hue.         (full color)
 
     v3f  hsv;
-} PickerData;
+};
 
-typedef struct ColorButton_s ColorButton;
-struct ColorButton_s
+struct ColorButton
 {
     i32 x;
     i32 y;
@@ -34,7 +33,7 @@ struct ColorButton_s
     ColorButton* next;
 };
 
-typedef struct ColorPicker
+struct ColorPicker
 {
     v2i     center;  // In screen pixel coordinates.
     i32     bounds_radius_px;
@@ -49,27 +48,27 @@ typedef struct ColorPicker
     ColorButton color_buttons;
 
     int flags;  // ColorPickerFlags
-} ColorPicker;
+};
 
-typedef enum
+enum ColorPickResult
 {
     ColorPickResult_NOTHING,
     ColorPickResult_CHANGE_COLOR,
-} ColorPickResult;
+};
 
 
-typedef struct
+struct GuiButton
 {
     Rect            rect;
     Bitmap          bitmap;
-} GuiButton;
+};
 
-typedef enum
+enum ExporterState
 {
     ExporterState_EMPTY,
     ExporterState_GROWING_RECT,
     ExporterState_SELECTED,
-} ExporterState;
+};
 
 struct Exporter
 {
@@ -81,7 +80,6 @@ struct Exporter
 
     int scale;
 };
-typedef struct Exporter Exporter;
 
 // State machine for gui
 enum MiltonGuiFlags
@@ -90,9 +88,9 @@ enum MiltonGuiFlags
 
     MiltonGuiFlags_SHOWING_PREVIEW   = 1 << 0,
     MiltonGuiFlags_NEEDS_REDRAW      = 1 << 1,
-} MiltonGuiFlags;
+};
 
-typedef struct MiltonGui
+struct MiltonGui
 {
     b32 visible;
     b32 show_help_widget;
@@ -108,13 +106,12 @@ typedef struct MiltonGui
 
     v2i preview_pos;  // If rendering brush preview, this is where to do it.
     v2i preview_pos_prev;  // Keep the previous position to clear the canvas.
-} MiltonGui;
+};
 
 //
 // GUI API
 //
 // Call from the main loop before milton_update
-typedef struct PlatformState PlatformState;
 static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state);
 
 

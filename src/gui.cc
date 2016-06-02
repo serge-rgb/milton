@@ -659,8 +659,8 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
 
             snprintf(msg, array_count(msg),
                      "# of strokes: %d (clipped to screen: %d)\n",
-                     count_strokes(milton_state->root_layer),
-                     count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
+                     (int)count_strokes(milton_state->root_layer),
+                     (int)count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
             ImGui::Text(msg);
 
         } ImGui::End();

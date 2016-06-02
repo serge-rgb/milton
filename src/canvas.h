@@ -4,14 +4,14 @@
 
 #pragma once
 
-typedef struct Brush
+struct Brush
 {
     i32 radius;  // This should be replaced by a BrushType and some union containing brush info.
     v4f color;
     f32 alpha;
-} Brush;
+};
 
-typedef struct Stroke
+struct Stroke
 {
     Brush   brush;
     v2i*    points;
@@ -19,7 +19,7 @@ typedef struct Stroke
     i32     num_points;
     i32     layer_id;
     b32     visibility[MAX_NUM_WORKERS];
-} Stroke;
+};
 
 struct Layer
 {
@@ -36,7 +36,7 @@ struct Layer
 
 
 // IMPORTANT: CanvasView needs to be a flat structure.
-typedef struct CanvasView
+struct CanvasView
 {
     v2i screen_size;            // Size in pixels
     i32 scale;                  // Zoom
@@ -47,7 +47,7 @@ typedef struct CanvasView
     v3f background_color;
     i32 working_layer_id;
     i32 num_layers;
-} CanvasView;
+};
 
 enum LayerFlags
 {

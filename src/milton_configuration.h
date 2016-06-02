@@ -3,7 +3,7 @@
 
 #pragma once
 
-#define MILTON_VERSION "1.2.4"
+#define MILTON_VERSION "1.3.4"
 
 // When MILTON_DEBUG is 1,
 //  - Asserts
@@ -14,7 +14,7 @@
 
 #define MILTON_MULTITHREADED 1
 
-#define MILTON_ENABLE_PROFILING 0
+#define MILTON_ENABLE_PROFILING 1
 
 #define MAX_NUM_WORKERS 64
 // Force things to be a bit slower

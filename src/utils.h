@@ -4,10 +4,6 @@
 
 #pragma once
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 #include "vector.h"
 #include "milton_configuration.h"
 
@@ -134,20 +130,20 @@ b32 is_rect_within_rect(Rect a, Rect b);
 
 Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h);
 
-typedef struct
+struct Bitmap
 {
     i32 width;
     i32 height;
     i32 num_components;
     u8* data;
-} Bitmap;
+};
 
 
 // -----------
 // TIME
 // -----------
 
-typedef struct WallTime
+struct WallTime
 {
     union
     {
@@ -166,7 +162,7 @@ typedef struct WallTime
             i32 ms;
         };
     };
-} WallTime;
+};
 // Use platform_get_walltime to fill struct.
 
 
@@ -174,6 +170,3 @@ typedef struct WallTime
 char* debug_slurp_file(char* fname, size_t* out_size);
 #endif
 
-#if defined(__cplusplus)
-}
-#endif

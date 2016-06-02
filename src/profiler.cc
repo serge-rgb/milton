@@ -2,7 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-
 void profiler_reset()
 {
 #if defined(PROFILER_IMPLEMENTATION)

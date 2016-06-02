@@ -1493,16 +1493,16 @@ static b32 render_blockgroup(MiltonState* milton_state,
     //milton_state->graph_frame.start = perf_counter();
 #if MILTON_ENABLE_PROFILING
     SDL_AtomicCAS((SDL_atomic_t*)&milton_state->graph_frame.start,
-                  milton_state->graph_frame.start,
-                  perf_counter());
+                  (int)milton_state->graph_frame.start,
+                  (int)perf_counter());
 #endif
     fill_stroke_masks_for_worker(milton_state->root_layer, canvas_blockgroup_rect, worker_id);
     // PROFILE_RASTER_PUSH
     //    milton_state->graph_frame.##name = perf_counter() - milton_state->graph_frame.start
 #if MILTON_ENABLE_PROFILING
     SDL_AtomicCAS((SDL_atomic_t*)&milton_state->graph_frame.clipping,
-                  milton_state->graph_frame.clipping,
-                  perf_counter() - milton_state->graph_frame.start);
+                  (int)milton_state->graph_frame.clipping,
+                  (int)(perf_counter() - milton_state->graph_frame.start));
 #endif
     Arena render_arena = { 0 };
     if ( allocation_ok )
