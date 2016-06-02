@@ -1,16 +1,15 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-#include "software_renderer.h"
+// Declared here so that the workers get launched from the init function.
+int renderer_worker_thread(/* WorkerParams* */void* data);
 
-#include "canvas.h"
-#include "color.h"
-#include "gui.h"
-#include "milton.h"
-#include "milton_configuration.h"
-#include "platform.h"
-#include "profiler.h"
-#include "render_common.h"
+
+struct WorkerParams
+{
+    MiltonState* milton_state;
+    i32 worker_id;
+};
 
 
 // Special values for ClippedStroke.num_points

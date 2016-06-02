@@ -51,7 +51,6 @@
 #include "gui.cc"
 #include "memory.h"
 #include "memory.cc"
-#include "software_renderer.h"
 #include "milton.cc"
 
 
