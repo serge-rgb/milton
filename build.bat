@@ -110,14 +110,12 @@ if %mlt_opt_level% == 1 set header_links=headerlibs_impl_opt.lib
 
 :: ---- Unity build for Milton
 
-cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c ..\src\milton_unity_build_c.c
-if %errorlevel% neq 0 goto fail
-
 cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c  ..\src\milton_unity_build.cc
 if %errorlevel% neq 0 goto fail
 
 ::link milton_unity_build_c.obj milton_unity_build_cc.obj /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
-link milton_unity_build.obj milton_unity_build_c /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
+::link milton_unity_build.obj milton_unity_build_c /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
+link milton_unity_build.obj /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
 if %errorlevel% neq 0 goto fail
 
 :ok

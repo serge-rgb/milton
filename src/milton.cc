@@ -454,6 +454,7 @@ float milton_get_pen_alpha(MiltonState* milton_state)
 
 void milton_init(MiltonState* milton_state)
 {
+    init_localization();
     // Initialize render queue
     milton_state->render_stack = arena_alloc_elem(milton_state->root_arena, RenderStack);
     {

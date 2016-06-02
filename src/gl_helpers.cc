@@ -2,10 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 void gl_log(char* str)
 {
 #ifdef _WIN32
@@ -164,6 +160,3 @@ void gl_query_error(const char* expr, const char* file, int line)
 
 #endif  // _WIN32
 
-#if defined(__cplusplus)
-}
-#endif

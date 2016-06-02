@@ -5,8 +5,6 @@
 #pragma warning(push, 0)
 #endif  // _WIN32 && _MSC_VER
 
-#include <imgui.h>
-
 
 void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
@@ -294,7 +292,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
     b32 should_show_windows = milton_state->current_mode != MiltonMode_EYEDROPPER &&
                                 milton_state->current_mode != MiltonMode_EXPORTING;
 
-    if ( milton_state->gui->visible && should_show_windows )
+    if (milton_state->gui->visible && should_show_windows)
     {
 
         /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */

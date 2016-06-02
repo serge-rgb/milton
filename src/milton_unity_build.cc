@@ -4,6 +4,8 @@
 
 #include <stb_image_write.h>
 
+#include <imgui.h>
+
 #include "tiny_jpeg.h"
 
 #include "system_includes.h"
@@ -24,39 +26,37 @@
 #include "DArray.h"
 
 
-#include "localization.h" // built as C
-
 #include "vector.cc"
 #include "utils.h"
 #include "utils.cc"
 
 //#include "darray_test.cc"
 
+#include "localization.cc"
+#include "gl_helpers.h"
+#include "gl_helpers.cc"
 #include "render_common.h"
 #include "canvas.h"
 #include "canvas.cc"
 #include "milton.h"
 #include "gui.h"
-#include "memory.h"
-#include "software_renderer.h"
+#include "persist.h"
+#include "persist.cc"
 #include "color.h"
 #include "color.cc"
-#include "gui.cc"
-#include "gl_helpers.h"
-#include "gl_helpers.cc"
-#include "hardware_renderer.h"
-#include "profiler.h"
-#include "persist.h"
-#include "milton.cc"
-#include "persist.cc"
-#include "memory.cc"
-
-
+#include "software_renderer.cc"
 #include "hardware_renderer.cc"
 #include "guipp.cc"
+#include "memory.h"
+#include "memory.cc"
+#include "software_renderer.h"
+#include "gui.cc"
+#include "profiler.h"
+#include "milton.cc"
+
+
 #include "sdl_milton.cc"
 
-#include "software_renderer.cc"
 #include "profiler.cc"
 
 #if MILTON_DEBUG

@@ -1700,7 +1700,10 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
     }
 #endif
 
-    mlt_free(blocks);
+    if (blocks)
+    {
+        mlt_free(blocks);
+    }
 
     PROFILE_RASTER_PUSH(render_canvas);
 }

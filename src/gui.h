@@ -4,10 +4,6 @@
 
 #pragma once
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 enum ColorPickerFlags
 {
     ColorPickerFlags_NOTHING = 0,
@@ -152,6 +148,3 @@ void gui_deactivate(MiltonGui* gui);
 // Eye Dropper
 void eyedropper_input(MiltonGui* gui, u32* canvas_buffer, i32 w, i32 h, v2i point);
 
-#if defined(__cplusplus)
-}
-#endif

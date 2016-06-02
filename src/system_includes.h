@@ -21,6 +21,7 @@
 #define GCL_HICON -14
 #endif
 
+
 // SDL
 #include <SDL.h>
 #include <SDL_syswm.h>

@@ -5,6 +5,12 @@
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
+// -- Circular dependencies --
+// milton.cc
+static void milton_validate(MiltonState* milton_state);
+static void milton_save_postlude(MiltonState* milton_state);
+
+
 // Forward decl.
 static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
 

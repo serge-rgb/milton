@@ -4,16 +4,6 @@
 
 #pragma once
 
-#include "common.h"
-
-#include "milton.h"
-
-#include "platform_prefs.h"
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 
 void milton_load(MiltonState* milton_state);
 
@@ -31,6 +21,3 @@ void milton_unset_last_canvas_fname();
 char* milton_get_last_canvas_fname();
 
 
-#if defined(__cplusplus)
-}
-#endif

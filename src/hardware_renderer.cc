@@ -3,10 +3,6 @@
 //
 
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 // Milton GPU renderer.
 //
 // Current Plan -- Draw a point (GL_POINTS) per point per stroke to develop the
@@ -95,6 +91,3 @@ bool hw_renderer_init()
     return result;
 }
 
-#if defined(__cplusplus)
-}
-#endif

@@ -834,9 +834,16 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         LogContext.lcOutExtX = GetSystemMetrics(SM_CXSCREEN);
         LogContext.lcOutExtY = -GetSystemMetrics(SM_CYSCREEN);
 
-        LogContext.lcSysOrgX = 0;
-        LogContext.lcSysOrgY = 0;
-        LogContext.lcSysExtX = GetSystemMetrics(SM_CXSCREEN);
+        // TODO:
+        //  It's wrong to map this! Get the rect from WtInfo and do an extra
+        //  calculation on event processing?
+        if (0)
+        {
+            LogContext.lcSysOrgX = 0;
+            LogContext.lcSysOrgY = 0;
+            LogContext.lcSysExtX = GetSystemMetrics(SM_CXSCREEN);
+            LogContext.lcSysExtY = GetSystemMetrics(SM_CYSCREEN);
+        }
 
         // Note(Sergio): Setting packet rate..
         {
@@ -891,6 +898,14 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         Point.x = Packet.pkX;
         Point.y = Packet.pkY;
         ScreenToClient(Window, &Point);
+        // TODO: Get virtual screen with GetSystemMetrics
+        /* RECT Rect; */
+        /* GetWindowRect(Window, &Rect); */
+
+        /* MapWindowPoints( */
+        /*                 NULL, */
+        /*                 Window, */
+        /*                 &Point, 1); */
         EasyTab->PosX = Point.x;
         EasyTab->PosY = Point.y;
 

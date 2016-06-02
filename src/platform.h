@@ -80,6 +80,12 @@ struct PlatformState
 #endif
 };
 
+typedef struct PlatformPrefs
+{
+    // Store the window size at the time of quitting.
+    i32 width;
+    i32 height;
+} PlatformPrefs;
 
 typedef enum HistoryDebug
 {

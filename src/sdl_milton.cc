@@ -2,20 +2,9 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#include "common.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl_gl3.h>
-
-#include "gui.h"
-#include "history_debugger.h"
-#include "milton.h"
-#include "persist.h"
-#include "platform.h"
-#include "platform_prefs.h"
-#include "gl_func_loader.h"
-#include "profiler.h"
-#include "utils.h"
 
 enum PanningFSM
 {
@@ -1025,11 +1014,13 @@ int milton_main()
     // detectors, do we?
     platform_deallocate(big_chunk_of_memory);
 
-    { // Set platform prefs
+    bool save_prefs = prefs.width != platform_state.width || prefs.height != platform_state.height;
+    if (save_prefs)
+    {
         prefs.width  = platform_state.width;
         prefs.height = platform_state.height;
+        milton_prefs_save(&prefs);
     }
-    milton_prefs_save(&prefs);
 
     SDL_Quit();
 
