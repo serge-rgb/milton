@@ -46,11 +46,10 @@
 #include "color.cc"
 #include "software_renderer.cc"
 #include "hardware_renderer.cc"
-#include "guipp.cc"
+#include "gui.cc"
 #include "memory.h"
 #include "memory.cc"
 #include "software_renderer.h"
-#include "gui.cc"
 #include "profiler.h"
 #include "milton.cc"
 

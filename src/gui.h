@@ -115,7 +115,8 @@ typedef struct MiltonGui
 //
 // Call from the main loop before milton_update
 typedef struct PlatformState PlatformState;
-void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state);
+static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state);
+
 
 
 //
