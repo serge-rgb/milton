@@ -3,9 +3,6 @@
 
 
 
-#include "profiler.h"
-#include "platform.h"
-
 void profiler_reset()
 {
 #if defined(PROFILER_IMPLEMENTATION)

@@ -7,19 +7,6 @@
 
 #include <imgui.h>
 
-#include "canvas.h"
-#include "gui.h"
-#include "localization.h"
-#include "platform.h"
-#include "software_renderer.h"
-#include "persist.h"
-#include "profiler.h"
-
-static void exporter_init(Exporter* exporter)
-{
-    *exporter = {};
-    exporter->scale = 1;
-}
 
 void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
@@ -335,9 +322,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                     if ( mut_alpha != pen_alpha )
                     {
                         milton_set_pen_alpha(milton_state, mut_alpha);
-                        i32 f = milton_state->gui->flags;
-                        set_flag(f, (i32)MiltonGuiFlags_SHOWING_PREVIEW);
-                        milton_state->gui->flags = (MiltonGuiFlags)f;
+                        set_flag(milton_state->gui->flags, (i32)MiltonGuiFlags_SHOWING_PREVIEW);
                     }
                 }
 
@@ -349,9 +334,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
                 if ( mut_size != size )
                 {
                     milton_set_brush_size(milton_state, mut_size);
-                    i32 f = milton_state->gui->flags;
-                    set_flag(f, (i32)MiltonGuiFlags_SHOWING_PREVIEW);
-                    milton_state->gui->flags = (MiltonGuiFlags)f;
+                    set_flag(milton_state->gui->flags, (i32)MiltonGuiFlags_SHOWING_PREVIEW);
                 }
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});

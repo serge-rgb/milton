@@ -8,14 +8,7 @@
 extern "C" {
 #endif
 
-#include "common.h"
-
-#include "milton.h"
-#include "memory.h"
-#include "render_common.h"
-#include "utils.h"
-
-typedef enum ColorPickerFlags
+enum ColorPickerFlags
 {
     ColorPickerFlags_NOTHING = 0,
 
@@ -59,7 +52,7 @@ typedef struct ColorPicker
 
     ColorButton color_buttons;
 
-    ColorPickerFlags flags;
+    int flags;  // ColorPickerFlags
 } ColorPicker;
 
 typedef enum
@@ -95,7 +88,7 @@ struct Exporter
 typedef struct Exporter Exporter;
 
 // State machine for gui
-typedef enum MiltonGuiFlags
+enum MiltonGuiFlags
 {
     MiltonGuiFlags_NONE,
 
@@ -111,7 +104,7 @@ typedef struct MiltonGui
     b32 active;  // `active == true` when gui currently owns all user input.
     b32 did_hit_button;  // Avoid multiple clicks.
 
-    MiltonGuiFlags flags;
+    int flags;  // MiltonGuiFlags
 
     ColorPicker picker;
 
@@ -137,7 +130,7 @@ v3f                 gui_get_picker_rgb(MiltonGui* gui);
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
 b32                 picker_consume_input(MiltonGui* gui, MiltonInput* input);
 // Use if picker_consume_input was true and nothing else wants to capture input.
-MiltonRenderFlags   gui_process_input(MiltonState* milton_state, MiltonInput* input);
+/*MiltonRenderFlags*/   int gui_process_input(MiltonState* milton_state, MiltonInput* input);
 void                gui_imgui_set_ungrabbed(MiltonGui* gui);
 
 void exporter_init(Exporter* exporter);

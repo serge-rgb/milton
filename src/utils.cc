@@ -17,12 +17,12 @@ size_t get_system_RAM()
 
 v2i v2f_to_v2i(v2f p)
 {
-    return (v2i){(i32)p.x, (i32)p.y};
+    return v2i{(i32)p.x, (i32)p.y};
 }
 
 v2f v2i_to_v2f(v2i p)
 {
-    return (v2f){(f32)p.x, (f32)p.y};
+    return v2f{(f32)p.x, (f32)p.y};
 }
 
 // ---------------
@@ -118,7 +118,7 @@ v2f closest_point_in_segment_f(i32 ax, i32 ay,
     {
         *out_t = disc / mag_ab;
     }
-    result = (v2f){(ax + disc * d_x), (ay + disc * d_y)};
+    result = v2f{(ax + disc * d_x), (ay + disc * d_y)};
     return result;
 }
 
@@ -139,7 +139,7 @@ v2i closest_point_in_segment(v2i a, v2i b,
     {
         *out_t = disc / mag_ab;
     }
-    result = (v2i){(i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y)};
+    result = v2i{(i32)(a.x + disc * d_x), (i32)(a.y + disc * d_y)};
     return result;
 }
 
@@ -166,10 +166,10 @@ b32 intersect_line_segments(v2i a, v2i b,
     return hit;
 }
 
-// Returns the number of rectangles into which src_rect was split.
 i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
 {
-    Rect* rects = NULL;
+    DArray<Rect> rects = {};
+    reserve(&rects, 32);
 
     int n_width = (src_rect.right - src_rect.left) / width;
     int n_height = (src_rect.bottom - src_rect.top) / height;
@@ -192,13 +192,13 @@ i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
                 rect.top = h;
                 rect.bottom = min(src_rect.bottom, h + height);
             }
-            sb_push(rects, rect);
+            push(&rects, rect);
         }
     }
 
-    assert((i32)sb_count(rects) <= max_num_rects);
-    *out_rects = rects;
-    i32 num_rects = (i32)sb_count(rects);
+    assert((i32)rects.count <= max_num_rects);
+    *out_rects = rects.data;
+    i32 num_rects = (i32)rects.count;
     return num_rects;
 }
 
@@ -371,84 +371,6 @@ Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h)
     rect.bottom = y + h;
 
     return rect;
-}
-
-typedef enum TokenizeFSM
-{
-    TOKENIZE_EATING,
-    TOKENIZE_WHITESPACE
-} TokenizeFSM;
-
-static b32 is_whitespace(char c)
-{
-    if ( c == ' ' ||
-         c == '\t' ||
-         c == '\n' ||
-         c == '\0' ||
-         c == '\r' ||
-         c == '\v' ||
-         c == '\f' )
-    {
-        return true;
-    }
-    return false;
-}
-
-char** str_tokenize(char* input)
-{
-    TokenizeFSM fsm = TOKENIZE_WHITESPACE;
-
-    char** tokens = NULL;
-    char* start = input;
-
-    for (char* it = input; it && *it != '\0'; ++it)
-    {
-        switch(fsm)
-        {
-        case TOKENIZE_EATING:
-           {
-              b32 is_last_char = (*(it+1) == '\0');
-              if ( is_whitespace(*it) || is_last_char )
-              {
-                 // Create a new token
-                 i32 len = (i32)(it - start);
-                 if ( is_last_char && !is_whitespace(*it) )
-                 {
-                    ++len;
-                    ++it;
-                 }
-                 char* tok = mlt_calloc(len+1, 1);
-                 strncpy(tok, start, len);
-                 tok[len] = '\0';
-                 sb_push(tokens, tok);
-                 fsm = TOKENIZE_WHITESPACE;
-              }
-              break;
-           }
-        case TOKENIZE_WHITESPACE:
-           {
-              if ( !is_whitespace(*it) )
-              {
-                 start = it;
-                 fsm = TOKENIZE_EATING;
-              }
-              break;
-           }
-        default: break;
-        }
-    }
-
-    return tokens;
-}
-
-void str_free(char** strings)
-{
-   i32 count_strings = sb_count(strings);
-   for ( i32 i = 0; i < count_strings; ++i )
-   {
-       mlt_free(strings[i]);
-   }
-   sb_free(strings);
 }
 
 char* str_trim_to_last_slash(char* str)

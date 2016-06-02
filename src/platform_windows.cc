@@ -95,6 +95,8 @@ static char* win32_filter_strings_milton =
 
 void win32_set_OFN_filter(OPENFILENAMEA* ofn, FileKind kind)
 {
+#pragma warning(push)
+#pragma warning(disable:4061)
     switch(kind)
     {
     case FileKind_IMAGE:
@@ -112,12 +114,14 @@ void win32_set_OFN_filter(OPENFILENAMEA* ofn, FileKind kind)
         INVALID_CODE_PATH;
     }
     }
+#pragma warning(pop)
 }
 
 char* platform_save_dialog(FileKind kind)
 {
-    cursor_show();
-    char* save_filename = mlt_calloc(MAX_PATH, sizeof(char));
+    // TODO uncomment
+    //cursor_show();
+    char* save_filename = (char*)mlt_calloc(MAX_PATH, sizeof(char));
 
     OPENFILENAMEA ofn = {0};
 
@@ -149,10 +153,11 @@ char* platform_save_dialog(FileKind kind)
 
 char* platform_open_dialog(FileKind kind)
 {
-    cursor_show();
+    // TODO uncomment
+    //cursor_show();
     OPENFILENAMEA ofn = {0};
 
-    char* fname = mlt_calloc(MAX_PATH, sizeof(*fname));
+    char* fname = (char*)mlt_calloc(MAX_PATH, sizeof(*fname));
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     win32_set_OFN_filter(&ofn, kind);
@@ -172,7 +177,8 @@ char* platform_open_dialog(FileKind kind)
 
 b32 platform_dialog_yesno(char* info, char* title)
 {
-    cursor_show();
+    // TODO uncomment
+    //cursor_show();
     i32 yes = MessageBoxA(NULL, //_In_opt_ HWND    hWnd,
                           (LPCSTR)info, // _In_opt_ LPCTSTR lpText,
                           (LPCSTR)title,// _In_opt_ LPCTSTR lpCaption,
@@ -183,7 +189,7 @@ b32 platform_dialog_yesno(char* info, char* title)
 
 void platform_dialog(char* info, char* title)
 {
-    cursor_show();
+    //cursor_show();
     MessageBoxA( NULL, //_In_opt_ HWND    hWnd,
                  (LPCSTR)info, // _In_opt_ LPCTSTR lpText,
                  (LPCSTR)title,// _In_opt_ LPCTSTR lpCaption,
@@ -191,10 +197,10 @@ void platform_dialog(char* info, char* title)
                );
 }
 
-void platform_fname_at_exe(char* fname, i32 len)
+void platform_fname_at_exe(char* fname, size_t len)
 {
     char* base = SDL_GetBasePath();  // SDL returns utf8 path!
-    char* tmp = mlt_calloc(1, len);
+    char* tmp = (char*)mlt_calloc(1, len);
     strncpy(tmp, fname, len);
     fname[0] = '\0';
     strncat(fname, base, len);
@@ -206,7 +212,7 @@ void platform_fname_at_exe(char* fname, i32 len)
 b32 platform_delete_file_at_config(char* fname, int error_tolerance)
 {
     b32 ok = true;
-    char* full = mlt_calloc(MAX_PATH, sizeof(*full));
+    char* full = (char*)mlt_calloc(MAX_PATH, sizeof(*full));
     strncpy(full, fname, MAX_PATH);
     platform_fname_at_config(full, MAX_PATH);
     int r = DeleteFileA(full);
@@ -214,7 +220,7 @@ b32 platform_delete_file_at_config(char* fname, int error_tolerance)
     {
         ok = false;
 
-        int err = GetLastError();
+        int err = (int)GetLastError();
         if ( (error_tolerance&DeleteErrorTolerance_OK_NOT_EXIST) &&
              err == ERROR_FILE_NOT_FOUND)
         {
@@ -227,6 +233,7 @@ b32 platform_delete_file_at_config(char* fname, int error_tolerance)
 
 void win32_print_error(int err)
 {
+#pragma warning (push,0)
     LPTSTR error_text = NULL;
 
     FormatMessage(
@@ -250,6 +257,7 @@ void win32_print_error(int err)
         LocalFree(error_text);
     }
     milton_log("- %d\n", err);
+#pragma warning (pop)
 }
 
 b32 platform_move_file(char* src, char* dest)
@@ -258,55 +266,22 @@ b32 platform_move_file(char* src, char* dest)
     //b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH);
     if (!ok)
     {
-        int err = GetLastError();
+        int err = (int)GetLastError();
         win32_print_error(err);
     }
     return ok;
 }
 
-void platform_fname_at_config(char* fname, i32 len)
+void platform_fname_at_config(char* fname, size_t len)
 {
     char* base = SDL_GetPrefPath("MiltonPaint", "data");
-    char* tmp = mlt_calloc(1, len);
+    char* tmp = (char*)mlt_calloc(1, len);
     strncpy(tmp, fname, len);
     fname[0] = '\0';
     strncat(fname, base, len);
     size_t pathlen = strlen(fname);
     strncat(fname + pathlen, tmp, len-pathlen);
     mlt_free(tmp) ;
-}
-
-static MiltonStartupFlags win32_parse_cmdline()
-{
-    // NOTE:
-    //  Stop reading this code. This MiltonStartupFlags is 0.5% implemented
-    //  TODO: Implement the 99.5%
-    MiltonStartupFlags startup_flags = { 0 };
-
-    // Debug configuration always records...
-#if MILTON_DEBUG
-    startup_flags.history_debug = HistoryDebug_RECORD;
-#endif
-
-    char* cmdline = GetCommandLineA();
-
-    char** tokens = str_tokenize(cmdline);
-
-    for ( i32 token_i = 0; token_i < sb_count(tokens); ++token_i )
-    {
-        if ( !strcmp(tokens[token_i], "record") )
-        {
-            startup_flags.history_debug = HistoryDebug_RECORD;
-        }
-        if ( !strcmp(tokens[token_i], "replay") )
-        {
-            startup_flags.history_debug = HistoryDebug_REPLAY;
-        }
-    }
-
-    str_free(tokens);
-
-    return startup_flags;
 }
 
 void platform_open_link(char* link)
@@ -335,7 +310,7 @@ u64 perf_counter()
     // On XP and higher, this function always succeeds.
     QueryPerformanceCounter(&li);
 
-    time = li.QuadPart;
+    time = (u64)li.QuadPart;
 
     return time;
 }
@@ -355,8 +330,7 @@ int CALLBACK WinMain(
         int nCmdShow
         )
 {
-    MiltonStartupFlags flags = win32_parse_cmdline();
-    milton_main(flags);
+    milton_main();
 }
 
 #if defined(__cplusplus)

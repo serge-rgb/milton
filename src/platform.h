@@ -96,7 +96,7 @@ typedef struct MiltonStartupFlags
 
 typedef struct TabletState_s TabletState;
 
-int milton_main(MiltonStartupFlags startup_flags);
+int milton_main();
 
 void*   platform_allocate_bounded_memory(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}
@@ -112,11 +112,8 @@ void cursor_hide();
 
 typedef enum FileKind
 {
-    FileKind_NOTHING,
-
     FileKind_IMAGE,
     FileKind_MILTON_CANVAS,
-    FileKind_MILTON_CANVAS_NEW,
 
     FileKind_COUNT,
 } FileKind;
@@ -130,7 +127,7 @@ b32     platform_dialog_yesno(char* info, char* title);
 
 void    platform_load_gl_func_pointers();
 
-void    platform_fname_at_exe(char* fname, i32 len);
+void    platform_fname_at_exe(char* fname, size_t len);
 b32     platform_move_file(char* src, char* dest);
 
 enum DeleteErrorTolerance
@@ -139,7 +136,7 @@ enum DeleteErrorTolerance
     DeleteErrorTolerance_OK_NOT_EXIST = 1<<1,
 };
 b32     platform_delete_file_at_config(char* fname, int error_tolerance);
-void    platform_fname_at_config(char* fname, i32 len);
+void    platform_fname_at_config(char* fname, size_t len);
 
 // Does *not* verify link. Do not expose to user facing inputs.
 void    platform_open_link(char* link);

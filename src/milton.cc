@@ -2,14 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#include "milton.h"
-
-#include "gui.h"
-#include "platform.h"
-#include "persist.h"
-#include "profiler.h"
-#include "software_renderer.h"
-#include "hardware_renderer.h"
 
 #if MILTON_DEBUG
 #include "tests.h"
@@ -110,14 +102,14 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 
 static void milton_set_default_view(CanvasView* view)
 {
-    *view = (CanvasView)
-    {
-        .scale               = MILTON_DEFAULT_SCALE,
-        .downsampling_factor = 1,
-        .num_layers          = 1,
-        .background_color    = (v3f){ 1, 1, 1 },
-        .canvas_radius_limit = 1u << 30,
-    };
+    *view = CanvasView{};
+
+    view->scale               = MILTON_DEFAULT_SCALE;
+    view->downsampling_factor = 1;
+    view->num_layers          = 1;
+    view->background_color    = v3f{ 1, 1, 1 };
+    view->canvas_radius_limit = 1u << 30;
+
 }
 
 static void milton_update_brushes(MiltonState* milton_state)
@@ -185,22 +177,22 @@ static b32 current_mode_is_for_painting(MiltonState* milton_state)
 
 static void clear_stroke_redo(MiltonState* milton_state)
 {
-    while ( sb_count(milton_state->stroke_graveyard) )
+    while (milton_state->stroke_graveyard.count > 0)
     {
-        Stroke s = sb_pop(milton_state->stroke_graveyard);
+        Stroke s = pop(&milton_state->stroke_graveyard);
         mlt_free(s.points);
         mlt_free(s.pressures);
     }
-    for ( int i = 0; i < sb_count(milton_state->redo_stack); ++i )
+    for (u64 i = 0; i < milton_state->redo_stack.count; ++i)
     {
-        HistoryElement h = milton_state->redo_stack[i];
+        HistoryElement h = milton_state->redo_stack.data[i];
         if (h.type == HistoryElement_STROKE_ADD)
         {
-            for ( int j = i; j < sb_count(milton_state->redo_stack)-1; ++j )
+            for (u64 j = i; j < milton_state->redo_stack.count-1; ++j)
             {
-                milton_state->redo_stack[j] = milton_state->redo_stack[j+1];
+                milton_state->redo_stack.data[j] = milton_state->redo_stack.data[j+1];
             }
-            sb_pop(milton_state->redo_stack);
+            pop(&milton_state->redo_stack);
         }
     }
 }
@@ -357,7 +349,7 @@ void milton_set_canvas_file(MiltonState* milton_state, char* fname)
 // Helper function
 void milton_set_default_canvas_file(MiltonState* milton_state)
 {
-    char* f = mlt_calloc(MAX_PATH, sizeof(*f));
+    char* f = (char*)mlt_calloc(MAX_PATH, sizeof(*f));
     strncpy(f, "MiltonPersist.mlt", MAX_PATH);
     platform_fname_at_config(f, MAX_PATH);
     milton_set_canvas_file_(milton_state, f, true);
@@ -553,7 +545,7 @@ void milton_init(MiltonState* milton_state)
     milton_set_pen_alpha(milton_state, 1.0f);
 
     milton_state->mlt_binary_version = 2;
-    milton_state->last_save_time = (WallTime){0};
+    milton_state->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
     milton_load(milton_state);
 
@@ -567,11 +559,8 @@ void milton_init(MiltonState* milton_state)
     for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
         {
-            *params = (WorkerParams)
-            {
-                milton_state,
-                .worker_id = i
-            };
+            params->milton_state = milton_state;
+            params->worker_id = i;
         }
         assert (milton_state->render_worker_arenas[i].ptr == NULL);
         u8* worker_memory = (u8*)mlt_calloc(1, milton_state->worker_memory_size);
@@ -668,11 +657,11 @@ void milton_reset_canvas(MiltonState* milton_state)
     Layer* l = milton_state->root_layer;
     while ( l != NULL )
     {
-        for ( i32 si = 0; si < sb_count(l->strokes); ++si )
+        for (u64 si = 0; si < l->strokes.count; ++si)
         {
-            stroke_free(&l->strokes[si]);
+            stroke_free(&l->strokes.data[si]);
         }
-        sb_free(l->strokes);
+        release(&l->strokes);
         mlt_free(l->name);
 
         Layer* next = l->next;
@@ -687,9 +676,9 @@ void milton_reset_canvas(MiltonState* milton_state)
     milton_new_layer(milton_state);
 
     // Clear history
-    sb_reset(milton_state->history);
-    sb_reset(milton_state->redo_stack);
-    sb_reset(milton_state->stroke_graveyard);
+    reset(&milton_state->history);
+    reset(&milton_state->redo_stack);
+    reset(&milton_state->stroke_graveyard);
 
     // New View
     milton_set_default_view(milton_state->view);
@@ -697,19 +686,19 @@ void milton_reset_canvas(MiltonState* milton_state)
     // Reset color buttons
     for (ColorButton* b = &milton_state->gui->picker.color_buttons; b!=NULL; b=b->next)
     {
-        b->rgba = (v4f){0};
+        b->rgba = {};
     }
 
     // gui init
     {
         MiltonGui* gui = milton_state->gui;
-        gui->picker.data.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
+        gui->picker.data.hsv = { 0.0f, 1.0f, 0.7f };
         gui->visible = true;
 
         picker_init(&gui->picker);
 
-        gui->preview_pos      = (v2i){-1, -1};
-        gui->preview_pos_prev = (v2i){-1, -1};
+        gui->preview_pos      = v2i{-1, -1};
+        gui->preview_pos_prev = v2i{-1, -1};
 
         exporter_init(&gui->exporter);
     }
@@ -833,12 +822,12 @@ void milton_new_layer(MiltonState* milton_state)
     i32 id = milton_state->layer_guid++;
     milton_log("Increased guid to %d\n", milton_state->layer_guid);
 
-    Layer* layer = mlt_calloc(1, sizeof(Layer));
-    *layer = (Layer) {
-        .id = id,
-        .name = mlt_calloc(MAX_LAYER_NAME_LEN, sizeof(char)),
-        .flags = LayerFlags_VISIBLE,
-    };
+    Layer* layer = (Layer*)mlt_calloc(1, sizeof(Layer));
+    {
+        layer->id = id;
+        layer->name = (char*)mlt_calloc(MAX_LAYER_NAME_LEN, sizeof(char));
+        layer->flags = LayerFlags_VISIBLE;
+    }
     snprintf(layer->name, 1024, "Layer %d", layer->id);
 
     if (milton_state->root_layer != NULL)
@@ -888,7 +877,7 @@ static void milton_validate(MiltonState* milton_state)
     {
         ++num_layers;
     }
-    i32* layer_ids = (i32*)mlt_calloc(num_layers, sizeof(i32));
+    i32* layer_ids = (i32*)mlt_calloc((size_t)num_layers, sizeof(i32));
     i64 i = 0;
     for(Layer* l = milton_state->root_layer; l != NULL; l = l->next)
     {
@@ -897,9 +886,9 @@ static void milton_validate(MiltonState* milton_state)
     }
 
     i64 history_count = 0;
-    for (i64 hi = 0; hi < sb_count(milton_state->history); ++hi)
+    for (u64 hi = 0; hi < milton_state->history.count; ++hi)
     {
-        i32 id = milton_state->history[hi].layer_id;
+        i32 id = milton_state->history.data[hi].layer_id;
         for (i64 li = 0; li < num_layers; ++li)
         {
             if (id == layer_ids[li])
@@ -913,19 +902,19 @@ static void milton_validate(MiltonState* milton_state)
     if (history_count != stroke_count)
     {
         milton_log("Recreating history. File says History: %d(max %d) Actual strokes: %d\n",
-                   history_count, sb_count(milton_state->history),
+                   history_count, milton_state->history.count,
                    stroke_count);
         //platform_dialog("Undo history got corrupted. Rebuilding. Please file bug report if this message persists.", "Warning.");
-        sb_reset(milton_state->history);
+        reset(&milton_state->history);
         for(Layer *l = milton_state->root_layer;
             l != NULL;
             l = l->next)
         {
-            for (i32 si = 0; si < sb_count(l->strokes); ++si)
+            for (u64 si = 0; si < l->strokes.count; ++si)
             {
-                Stroke* s = l->strokes + si;
+                Stroke* s = l->strokes.data + si;
                 HistoryElement he = { HistoryElement_STROKE_ADD, s->layer_id };
-                sb_push(milton_state->history, he);
+                push(&milton_state->history, he);
             }
         }
     }
@@ -943,7 +932,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             (check_flag(input->flags, MiltonInputFlags_UNDO)) ||
             (check_flag(input->flags, MiltonInputFlags_REDO));
 
-    MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
+    //MiltonRenderFlags
+    int render_flags = MiltonRenderFlags_NONE;
 
     if (!(milton_state->flags & MiltonStateFlags_RUNNING))
     {
@@ -973,7 +963,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
     }
 
-    i32 now = SDL_GetTicks();
+    i32 now = (i32)SDL_GetTicks();
 
     if (check_flag(input->flags, MiltonInputFlags_FAST_DRAW))
     {
@@ -1053,7 +1043,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
-        if (!equ2i(input->pan_delta, (v2i){0}))
+        if (!equ2i(input->pan_delta, v2i{}))
         {
             set_flag(render_flags, MiltonRenderFlags_PAN_COPY);
         }
@@ -1097,17 +1087,17 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         if (check_flag(input->flags, MiltonInputFlags_UNDO))
         {
             // Grab undo elements. They might be from deleted layers, so discard dead results.
-            while (sb_count(milton_state->history))
+            while (milton_state->history.count > 0)
             {
-                HistoryElement h = sb_pop(milton_state->history);
+                HistoryElement h = pop(&milton_state->history);
                 Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
                 if (l)
                 { // found a thing to undo.
-                    if (sb_count(l->strokes))
+                    if (l->strokes.count > 0)
                     {
-                        Stroke stroke = sb_pop(l->strokes);
-                        sb_push(milton_state->stroke_graveyard, stroke);
-                        sb_push(milton_state->redo_stack, h);
+                        Stroke stroke = pop(&l->strokes);
+                        push(&milton_state->stroke_graveyard, stroke);
+                        push(&milton_state->redo_stack, h);
                         // TODO: FULL_REDRAW is overkill
                         set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
                     }
@@ -1117,9 +1107,9 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
         else if (check_flag(input->flags, MiltonInputFlags_REDO))
         {
-            if (sb_count(milton_state->redo_stack) > 0)
+            if (milton_state->redo_stack.count > 0)
             {
-                HistoryElement h = sb_pop(milton_state->redo_stack);
+                HistoryElement h = pop(&milton_state->redo_stack);
                 switch (h.type)
                 {
                 case HistoryElement_STROKE_ADD:
@@ -1127,16 +1117,16 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                     Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
                     if (l)
                     {
-                        Stroke stroke = sb_pop(milton_state->stroke_graveyard);
+                        Stroke stroke = pop(&milton_state->stroke_graveyard);
                         if (stroke.layer_id == h.layer_id)
                         {
-                            sb_push(l->strokes, stroke);
-                            sb_push(milton_state->history, h);
+                            push(&l->strokes, stroke);
+                            push(&milton_state->history, h);
                             // TODO: FULL_REDRAW is overkill
                             set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
                             break;
                         }
-                        stroke = sb_pop(milton_state->stroke_graveyard);  // Keep popping in case the graveyard has info from deleted layers
+                        stroke = pop(&milton_state->stroke_graveyard);  // Keep popping in case the graveyard has info from deleted layers
                     }
 
                     } break;
@@ -1270,14 +1260,14 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 }
                 // Copy current stroke.
                 i32 num_points = milton_state->working_stroke.num_points;
-                Stroke new_stroke =
+                Stroke new_stroke = {};
                 {
-                    .brush = milton_state->working_stroke.brush,
-                    .points = (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i)),
-                    .pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32)),
-                    .num_points = num_points,
-                    .layer_id = milton_state->view->working_layer_id,
-                };
+                    new_stroke.brush = milton_state->working_stroke.brush;
+                    new_stroke.points = (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i));
+                    new_stroke.pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32));
+                    new_stroke.num_points = num_points;
+                    new_stroke.layer_id = milton_state->view->working_layer_id;
+                }
 
                 memcpy(new_stroke.points, milton_state->working_stroke.points,
                        milton_state->working_stroke.num_points * sizeof(v2i));
@@ -1286,7 +1276,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
                 layer_push_stroke(milton_state->working_layer, new_stroke);
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
-                sb_push(milton_state->history, h);
+                push(&milton_state->history, h);
                 // Clear working_stroke
                 {
                     milton_state->working_stroke.num_points = 0;

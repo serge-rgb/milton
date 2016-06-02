@@ -8,38 +8,35 @@
 
 #include "tests.h"
 
-#include "memory.h"
 #include "utils.h"
 
 static void milton_cord_tests(Arena* arena);
 static void milton_blend_tests();
 static void milton_startup_tests();
 static void milton_math_tests();
-static void milton_str_tests();
 
 void milton_run_tests(MiltonState* milton_state)
 {
-	milton_math_tests();
-	milton_blend_tests();
-	milton_startup_tests();
-	milton_str_tests();
+    milton_math_tests();
+    milton_blend_tests();
+    milton_startup_tests();
 }
 
 static void milton_startup_tests()
 {
-    v3f rgb = hsv_to_rgb((v3f){ 0,0,0 });
+    v3f rgb = hsv_to_rgb(v3f{ 0,0,0 });
     assert(rgb.r == 0 &&
            rgb.g == 0 &&
            rgb.b == 0);
-    rgb = hsv_to_rgb((v3f){ 0, 0, 1.0 });
+    rgb = hsv_to_rgb(v3f{ 0, 0, 1.0 });
     assert(rgb.r == 1 &&
            rgb.g == 1 &&
            rgb.b == 1);
-    rgb = hsv_to_rgb((v3f){ 120, 1.0f, 0.5f });
+    rgb = hsv_to_rgb(v3f{ 120, 1.0f, 0.5f });
     assert(rgb.r == 0 &&
            rgb.g == 0.5f &&
            rgb.b == 0);
-    rgb = hsv_to_rgb((v3f){ 0, 1.0f, 1.0f });
+    rgb = hsv_to_rgb(v3f{ 0, 1.0f, 1.0f });
     assert(rgb.r == 1.0f &&
            rgb.g == 0 &&
            rgb.b == 0);
@@ -67,21 +64,6 @@ static void milton_math_tests()
     assert(hit);
     assert(intersection.y == 0);
     assert(intersection.x >= 0.99999 && intersection.x <= 1.00001f);
-}
-
-static void milton_str_tests()
-{
-    char* a = "hello world";
-    char* b = "     hello  world ";
-    char* c = NULL;
-
-    char** ta = str_tokenize(a);
-    char** tb = str_tokenize(b);
-    char** tc = str_tokenize(c);
-
-    str_free(ta);
-    str_free(tb);
-    str_free(tc);
 }
 
 #else

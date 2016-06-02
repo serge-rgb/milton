@@ -2,17 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#include "persist.h"
-
-#include "common.h"
-
-#include <stb_image_write.h>
-
-#include "gui.h"
-#include "milton.h"
-#include "platform.h"
-#include "tiny_jpeg.h"
-#include "utils.h"
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
@@ -38,7 +27,7 @@ static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 
     char* raw_data = NULL;
     if (copy)
     {
-        raw_data = mlt_calloc(count, sz);
+        raw_data = (char*)mlt_calloc(count, sz);
         memcpy(raw_data, dst, count*sz);
     }
 
@@ -103,7 +92,7 @@ void milton_load(MiltonState* milton_state)
 
         // The screen size might hurt us.
         // TODO: Maybe shouldn't save the whole CanvasView?
-        milton_state->view->screen_size = (v2i){0};
+        milton_state->view->screen_size = v2i{};
         // The process of loading changes state. working_layer_id changes when creating layers.
         i32 saved_working_layer_id = milton_state->view->working_layer_id;
 
@@ -137,7 +126,7 @@ void milton_load(MiltonState* milton_state)
 
             Layer* layer = milton_state->working_layer;
 
-            if (ok) { ok = fread_checked(layer->name, sizeof(char), len, fd); }
+            if (ok) { ok = fread_checked(layer->name, sizeof(char), (size_t)len, fd); }
 
             if (ok) { ok = fread_checked(&layer->id, sizeof(i32), 1, fd); }
             if (ok) { ok = fread_checked(&layer->flags, sizeof(layer->flags), 1, fd); }
@@ -149,7 +138,7 @@ void milton_load(MiltonState* milton_state)
 
                 for (i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i)
                 {
-                    Stroke* stroke = layer_push_stroke(layer, (Stroke){0});
+                    Stroke* stroke = layer_push_stroke(layer, Stroke{});
 
                     if (ok) { ok = fread_checked(&stroke->brush, sizeof(Brush), 1, fd); }
                     if (ok) { ok = fread_checked(&stroke->num_points, sizeof(i32), 1, fd); }
@@ -157,20 +146,20 @@ void milton_load(MiltonState* milton_state)
                     {
                         milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
                         ok = false;
-                        sb_reset(milton_state->root_layer->strokes);
+                        reset(&milton_state->root_layer->strokes);
                         // Corrupt file. Avoid
                         break;
                     }
                     if (ok)
                     {
-                        stroke->points = (v2i*)mlt_calloc((i32)stroke->num_points, sizeof(v2i));
-                        ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (i32)stroke->num_points, fd);
+                        stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
+                        ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
                         if ( !ok ) mlt_free(stroke->pressures);
                     }
                     if (ok)
                     {
-                        stroke->pressures = (f32*)mlt_calloc((i32)stroke->num_points, sizeof(f32));
-                        ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (i32)stroke->num_points, fd);
+                        stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
+                        ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
                         if ( !ok ) mlt_free (stroke->points);
                     }
 
@@ -218,18 +207,17 @@ void milton_load(MiltonState* milton_state)
             if (ok) { ok = fread_checked(&history_count, sizeof(history_count), 1, fd); }
             if (ok)
             {
-                sb_reset(milton_state->history);
-                sb_reserve(milton_state->history, (i32)history_count);
+                reset(&milton_state->history);
+                reserve(&milton_state->history, (size_t)history_count);
             }
-            if (ok) { ok = fread_checked_nocopy(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
+            if (ok) { ok = fread_checked_nocopy(milton_state->history.data, sizeof(*milton_state->history.data),
+                                                (size_t)history_count, fd); }
         }
         int err = fclose(fd);
         if ( err != 0 )
         {
             ok = false;
         }
-
-
 
         // Finished loading
         if (!ok)
@@ -292,28 +280,32 @@ void milton_save(MiltonState* milton_state)
         if (ok) { ok = fwrite_checked(&num_layers, sizeof(i32), 1, fd); }
         if (ok) { ok = fwrite_checked(&milton_state->layer_guid, sizeof(i32), 1, fd); }
 
-        i32 TEST = 0;
-        for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next )
+        i32 test_count = 0;
+        for (Layer* layer = milton_state->root_layer; layer; layer=layer->next )
         {
-            Stroke* strokes = layer->strokes;
-            i32 num_strokes = sb_count(strokes);
+            Stroke* strokes = layer->strokes.data;
+            if (layer->strokes.count > INT_MAX)
+            {
+                milton_die_gracefully("FATAL. Number of strokes in layer greater than can be stored in file format. ");
+            }
+            i32 num_strokes = (i32)layer->strokes.count;
             char* name = layer->name;
             i32 len = (i32)(strlen(name) + 1);
             if (ok) { ok = fwrite_checked(&len, sizeof(i32), 1, fd); }
-            if (ok) { ok = fwrite_checked(name, sizeof(char), len, fd); }
+            if (ok) { ok = fwrite_checked(name, sizeof(char), (size_t)len, fd); }
             if (ok) { ok = fwrite_checked(&layer->id, sizeof(i32), 1, fd); }
             if (ok) { ok = fwrite_checked(&layer->flags, sizeof(layer->flags), 1, fd); }
             if (ok) { ok = fwrite_checked(&num_strokes, sizeof(i32), 1, fd); }
             if (ok)
             {
-                for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i )
+                for (i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i)
                 {
                     Stroke* stroke = &strokes[stroke_i];
                     assert(stroke->num_points > 0);
                     if (ok) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
                     if (ok) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
-                    if (ok) { ok = fwrite_checked(stroke->points, sizeof(v2i), (i32)stroke->num_points, fd); }
-                    if (ok) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (i32)stroke->num_points, fd); }
+                    if (ok) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
+                    if (ok) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
                     if (ok) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
                     if ( !ok )
                     {
@@ -325,10 +317,10 @@ void milton_save(MiltonState* milton_state)
             {
                 ok = false;
             }
-            milton_log("Saving layer %d with %d strokes\n", TEST+1, num_strokes);
-            ++TEST;
+            milton_log("Saving layer %d with %d strokes\n", test_count+1, num_strokes);
+            ++test_count;
         }
-        assert (TEST == num_layers);
+        assert (test_count == num_layers);
 
         if (ok) { ok = fwrite_checked(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd); }
 
@@ -360,9 +352,13 @@ void milton_save(MiltonState* milton_state)
         }
 
 
-        i32 history_count = sb_count(milton_state->history);
+        i32 history_count = (i32)milton_state->history.count;
+        if (milton_state->history.count > INT_MAX)
+        {
+            history_count = 0;
+        }
         if (ok) { ok = fwrite_checked(&history_count, sizeof(history_count), 1, fd); }
-        if (ok) { ok = fwrite_checked(milton_state->history, sizeof(*milton_state->history), history_count, fd); }
+        if (ok) { ok = fwrite_checked(milton_state->history.data, sizeof(*milton_state->history.data), (size_t)history_count, fd); }
 
         int file_error = ferror(fd);
         if ( file_error == 0 )
@@ -395,7 +391,7 @@ void milton_save(MiltonState* milton_state)
     }
     else
     {
-        // TODO. We really should not die. This is at most benign
+        // TODO. Fix this. Don't die?
         milton_die_gracefully("Could not create file for saving! ");
         return;
     }
@@ -403,7 +399,7 @@ void milton_save(MiltonState* milton_state)
 
 void milton_set_last_canvas_fname(char* last_fname)
 {
-    char* full = mlt_calloc(MAX_PATH, sizeof(char));
+    char* full = (char*)mlt_calloc(MAX_PATH, sizeof(char));
     strcpy(full, "last_canvas_fname");
     platform_fname_at_config(full, MAX_PATH);
     FILE* fd = fopen(full, "wb");
@@ -428,7 +424,7 @@ void milton_unset_last_canvas_fname()
 
 char* milton_get_last_canvas_fname()
 {
-    char* full = mlt_calloc(MAX_PATH, sizeof(char));
+    char* full = (char*)mlt_calloc(MAX_PATH, sizeof(char));
     strcpy(full, "last_canvas_fname");
     platform_fname_at_config(full, MAX_PATH);
     FILE* fd = fopen(full, "rb+");
@@ -460,7 +456,7 @@ static void write_func(void* context, void* data, int size)
 
     if (fd)
     {
-        size_t written = fwrite(data, size, 1, fd);
+        size_t written = fwrite(data, (size_t)size, 1, fd);
         if (written != 1)
         {
             fclose(fd);

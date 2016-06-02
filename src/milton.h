@@ -4,12 +4,6 @@
 
 #pragma once
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-#include "milton_configuration.h"
-
 
 #define MILTON_USE_VAO              1
 #define STROKE_MAX_POINTS           2048
@@ -22,17 +16,6 @@ extern "C" {
 #define MILTON_MAX_BRUSH_SIZE       80
 #define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
-
-
-#define SGL_GL_HELPERS_IMPLEMENTATION
-#include "gl_helpers.h"
-
-#include "canvas.h"
-#include "color.h"
-#include "memory.h"
-#include "profiler.h"
-#include "render_common.h"
-#include "utils.h"
 
 
 typedef struct MiltonGLState
@@ -123,12 +106,10 @@ typedef struct MiltonState
     CanvasView* view;
     // ----  // gui->picker.info also stored (TODO: store color history buttons)
 
-    // Stretchy buffer for redo/undo
-    // - History data  (stretchy buffers)
-    HistoryElement* history;
-    HistoryElement* redo_stack;
+    DArray<HistoryElement> history;
+    DArray<HistoryElement> redo_stack;
     //Layer**         layer_graveyard;
-    Stroke*         stroke_graveyard;
+    DArray<Stroke>         stroke_graveyard;
 
 
     v2i hover_point;  // Track the pointer when not stroking..
@@ -204,7 +185,7 @@ typedef enum MiltonInputFlags
 
 typedef struct MiltonInput
 {
-    MiltonInputFlags flags;
+    int flags;  // MiltonInputFlags
     MiltonMode mode_to_set;
 
     v2i  points[MAX_INPUT_BUFFER_ELEMS];
@@ -272,6 +253,3 @@ void milton_new_layer(MiltonState* milton_state);
 void milton_set_working_layer(MiltonState* milton_state, Layer* layer);
 void milton_delete_working_layer(MiltonState* milton_state);
 
-#if defined(__cplusplus)
-}
-#endif

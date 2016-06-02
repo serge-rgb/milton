@@ -22,7 +22,7 @@ typedef struct WorkerParams
 int renderer_worker_thread(/* WorkerParams* */void* data);
 
 // Renders canvas and GUI (except dear imgui, which is most of the GUI)
-void milton_render(MiltonState* milton_state, MiltonRenderFlags render_flags, v2i pan_delta);
+void milton_render(MiltonState* milton_state, /*MiltonRenderFlags*/int render_flags, v2i pan_delta);
 
 void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
                              i32 x, i32 y,

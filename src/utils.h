@@ -143,46 +143,6 @@ typedef struct
 } Bitmap;
 
 
-// STB stretchy buffer
-
-#define sb_free(a)          ((a) ? free(sb__sbraw(a)),0 : 0)
-#define sb_push(a,v)        (sb__sbmaybegrow(a,1), (a)[sb__sbn(a)++] = (v))
-#define sb_reset(a)         ((a) ? (sb__sbn(a) = 0) : 0)
-#define sb_pop(a)           ((a)[--sb__sbn(a)])
-#define sb_unpop(a)         (sb__sbn(a)++)
-#define sb_count(a)         ((a) ? sb__sbn(a) : 0)
-#define sb_reserve(a,n)     (sb__sbmaybegrow(a,n), sb__sbn(a)+=(n), &(a)[sb__sbn(a)-(n)])
-#define sb_peek(a)          ((a)[sb__sbn(a)-1])
-
-#define sb__sbraw(a) ((i32 *) (a) - 2)
-#define sb__sbm(a)   sb__sbraw(a)[0]
-#define sb__sbn(a)   sb__sbraw(a)[1]
-
-#define sb__sbneedgrow(a,n)  ((a)==0 || sb__sbn(a)+(n) >= sb__sbm(a))
-#define sb__sbmaybegrow(a,n) (sb__sbneedgrow(a,(n)) ? sb__sbgrow(a,n) : 0)
-#define sb__sbgrow(a,n)      ((a) = sb__sbgrowf((a), (n), sizeof(*(a))))
-
-#define sb_delete_at_idx(a, i) \
-        do {\
-            if (sb_count(a)) for (int _i=i;_i<sb_count((a))-1;++_i) {\
-                (a)[i]=(a)[i+1];\
-            }\
-            sb_pop(a);\
-        } while(0)
-
-void* sb__sbgrowf(void *arr, int increment, int itemsize);
-
-// ASCII String utils
-
-// Returns a stretchy buffer of malloc'ed strings.
-char** str_tokenize(char* in);
-
-// Takes a stretchy buffer returned from str_* util functions.
-void str_free(char** strings);
-
-// Returns a pointer in the same string to the first char that does not have any (back)slashes in front.
-char* str_trim_to_last_slash(char* str);
-
 // -----------
 // TIME
 // -----------

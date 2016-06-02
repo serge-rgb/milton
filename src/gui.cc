@@ -2,12 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#include "gui.h"
-
-#include "milton.h"
-#include "utils.h"
-
-
 static Rect color_button_as_rect(const ColorButton* button)
 {
     Rect rect = {0};
@@ -231,7 +225,7 @@ void picker_init(ColorPicker* picker)
         (f32)picker->center.y
     };
     picker_update_wheel(picker, fpoint);
-    picker->data.hsv = (v3f){ 0, 1, 1 };
+    picker->data.hsv = v3f{ 0, 1, 1 };
 }
 
 static b32 picker_is_active(ColorPicker* picker)
@@ -265,7 +259,7 @@ void eyedropper_input(MiltonGui* gui, u32* canvas_buffer, i32 w, i32 h, v2i poin
 
 void exporter_init(Exporter* exporter)
 {
-    *exporter = (Exporter){0};
+    *exporter = Exporter{};
     exporter->scale = 1;
 }
 
@@ -322,7 +316,8 @@ v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
         if (v > 1) { v = 1; }
         if (v < 0) { v = 0; }
 
-        hsv = (v3f){
+        hsv = v3f
+        {
             picker->data.hsv.h,
             s,
             v,
@@ -356,9 +351,9 @@ b32 picker_consume_input(MiltonGui* gui, MiltonInput* input)
     return accepts;
 }
 
-MiltonRenderFlags gui_process_input(MiltonState* milton_state, MiltonInput* input)
+int gui_process_input(MiltonState* milton_state, MiltonInput* input)
 {
-    MiltonRenderFlags render_flags = MiltonRenderFlags_NONE;
+    int render_flags = MiltonRenderFlags_NONE;
     v2i point = input->points[0];
     ColorPickResult pick_result = picker_update(&milton_state->gui->picker, point);
     if ( pick_result == ColorPickResult_CHANGE_COLOR &&
@@ -390,11 +385,11 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 {
     i32 bounds_radius_px = 100;
     f32 wheel_half_width = 12;
-    gui->picker.center = (v2i){ bounds_radius_px + 20, bounds_radius_px + 30 };
+    gui->picker.center = v2i{ bounds_radius_px + 20, bounds_radius_px + 30 };
     gui->picker.bounds_radius_px = bounds_radius_px;
     gui->picker.wheel_half_width = wheel_half_width;
     gui->picker.wheel_radius = (f32)bounds_radius_px - 5.0f - wheel_half_width;
-    gui->picker.data.hsv = (v3f){ 0.0f, 1.0f, 0.7f };
+    gui->picker.data.hsv = v3f{ 0.0f, 1.0f, 0.7f };
     Rect bounds;
     bounds.left = gui->picker.center.x - bounds_radius_px;
     bounds.right = gui->picker.center.x + bounds_radius_px;
@@ -422,7 +417,7 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
         cur_button->y = gui->picker.center.y + bounds_radius_px + spacing;
         cur_button->w = button_size;
         cur_button->h = button_size;
-        cur_button->rgba = (v4f){0};
+        cur_button->rgba = {};
 
         current_x += spacing + button_size;
 
@@ -433,8 +428,8 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
         cur_button = cur_button->next;
     }
 
-    gui->preview_pos      = (v2i){-1, -1};
-    gui->preview_pos_prev = (v2i){-1, -1};
+    gui->preview_pos      = v2i{-1, -1};
+    gui->preview_pos_prev = v2i{-1, -1};
 
     exporter_init(&gui->exporter);
 }

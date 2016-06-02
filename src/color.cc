@@ -2,7 +2,7 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#include "color.h"
+/* #include "color.h" */
 
 v4f k_eraser_color = {23,34,45,56};
 

@@ -5,8 +5,6 @@
 
 #include "common.h"
 
-#include "system_includes.h"
-
 
 #define GLCHK(stmt) stmt; gl_query_error(#stmt, __FILE__, __LINE__)
 

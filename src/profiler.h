@@ -4,8 +4,6 @@
 #pragma once
 
 
-#include "milton_configuration.h"
-#include "common.h"
 
 #if defined(__cplusplus)
 extern"C"{

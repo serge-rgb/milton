@@ -4,15 +4,6 @@
 
 #pragma once
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-#include "common.h"
-#include "memory.h"
-#include "milton_configuration.h"
-#include "utils.h"
-
 typedef struct Brush
 {
     i32 radius;  // This should be replaced by a BrushType and some union containing brush info.
@@ -29,6 +20,20 @@ typedef struct Stroke
     i32     layer_id;
     b32     visibility[MAX_NUM_WORKERS];
 } Stroke;
+
+struct Layer
+{
+    i32 id;
+
+    DArray<Stroke> strokes;
+    char*   name;
+
+    i32     flags;
+
+    struct Layer* prev;
+    struct Layer* next;
+};
+
 
 // IMPORTANT: CanvasView needs to be a flat structure.
 typedef struct CanvasView
@@ -48,19 +53,6 @@ enum LayerFlags
 {
     LayerFlags_VISIBLE = (1<<0),
 };
-
-typedef struct Layer
-{
-    i32 id;
-
-    Stroke* strokes;  // stretchy
-    char*   name;
-
-    i32     flags;
-
-    struct Layer* prev;
-    struct Layer* next;
-} Layer;
 
 v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
 
@@ -92,7 +84,12 @@ void layer_toggle_visibility(Layer* layer);
 
 Stroke* layer_push_stroke(Layer* layer, Stroke stroke);
 
+typedef struct MiltonState MiltonState;
+void layer_new(MiltonState* milton_state);
+
 i32 number_of_layers(Layer* root);
+
+void free_layers(Layer* root);
 
 i64 count_strokes(Layer* root);
 i64 count_clipped_strokes(Layer* root, i32 num_workers);
@@ -100,6 +97,3 @@ i64 count_clipped_strokes(Layer* root, i32 num_workers);
 
 void stroke_free(Stroke* stroke);
 
-#if defined(__cplusplus)
-}
-#endif

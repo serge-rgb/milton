@@ -3,12 +3,6 @@
 //
 
 
-#include "system_includes.h"
-
-#include "gl_helpers.h"
-#include "milton_configuration.h"
-#include "utils.h"
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -75,11 +69,16 @@ bool hw_renderer_init()
     // TODO: In release, include the code directly.
 #if MILTON_DEBUG
     size_t src_sz[2] = {0};
-    char* src[2] = {
+    char* src[2] =
+    {
         debug_slurp_file("src/milton_canvas.v.glsl", &src_sz[0]),
         debug_slurp_file("src/milton_canvas.f.glsl", &src_sz[1]),
     };
-    GLuint types[2] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER };
+    GLuint types[2] =
+    {
+        GL_VERTEX_SHADER,
+        GL_FRAGMENT_SHADER
+    };
 #endif
     result = src_sz[0] != 0 && src_sz[1] != 0;
 

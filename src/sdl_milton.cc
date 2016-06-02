@@ -531,7 +531,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
 // ---- milton_main
 
-int milton_main(MiltonStartupFlags startup_flags)
+int milton_main()
 {
     // TODO: windows scaling support
 #if 0
@@ -1001,14 +1001,6 @@ int milton_main(MiltonStartupFlags startup_flags)
             milton_resize(milton_state, pan_delta, {platform_state.width, platform_state.height});
         }
         milton_input.pan_delta = pan_delta;
-
-
-        // ---- Recording. No more messing with milton_input after this.
-
-        if ( startup_flags.history_debug == HistoryDebug_RECORD )
-        {
-            history_debugger_append(&milton_input);
-        }
 
         platform_state.pan_start = platform_state.pan_point;
         // ==== Update and render

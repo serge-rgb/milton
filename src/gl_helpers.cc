@@ -2,8 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#include "gl_helpers.h"
-
 #if defined(__cplusplus)
 extern "C" {
 #endif

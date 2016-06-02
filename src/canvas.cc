@@ -2,18 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 //
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-#include "canvas.h"
-
-#include "common.h"
-#include "canvas.h"
-#include "memory.h"
-#include "platform.h"
-#include "utils.h"
-
 
 v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
@@ -86,7 +74,7 @@ i64 count_strokes(Layer* root)
         layer != NULL;
         layer = layer->next)
     {
-        count += sb_count(layer->strokes);
+        count += layer->strokes.count;
     }
     return count;
 }
@@ -98,10 +86,10 @@ i64 count_clipped_strokes(Layer* root, i32 num_workers)
         layer != NULL;
         layer = layer->next)
     {
-        i32 num_strokes = sb_count(layer->strokes);
-        for (i32 i = 0; i < num_strokes; ++i)
+        u64 num_strokes = layer->strokes.count;
+        for (u64 i = 0; i < num_strokes; ++i)
         {
-            Stroke* s = layer->strokes + i;
+            Stroke* s = layer->strokes.data + i;
             for (i32 wi = 0; wi < num_workers; ++wi)
             {
                 if (s->visibility[wi])
@@ -140,8 +128,8 @@ Layer* layer_get_by_id(Layer* root_layer, i32 id)
 // Push stroke at the top of the current layer
 Stroke* layer_push_stroke(Layer* layer, Stroke stroke)
 {
-    sb_push(layer->strokes, stroke);
-    return &sb_peek(layer->strokes);
+    push(&layer->strokes, stroke);
+    return peek(&layer->strokes);
 }
 
 void layer_toggle_visibility(Layer* layer)
@@ -174,6 +162,3 @@ void stroke_free(Stroke* stroke)
     mlt_free(stroke->pressures);
 }
 
-#if defined(__cplusplus)
-}
-#endif
