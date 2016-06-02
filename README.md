@@ -41,8 +41,6 @@ Milton is Windows only at the moment. Linux and OSX support is intended for the 
 How to Compile
 ==============
 
-**Note**: if a build fails after doing `git pull`, please run `clean.bat`.
-
 Windows
 -------
 
@@ -58,7 +56,6 @@ build.bat
 
 Milton will be compiled to `build\Milton.exe`
 
-There is a Visual Studio 2015 solution provided in VS2015\MiltonPaint.sln, which is currently broken. I use it to check that my header dependencies work with a one-translation-unit-per-file build.
 
 Linux
 -----

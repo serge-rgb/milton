@@ -4,7 +4,7 @@
 ::
 :: - 1: Optimized build.
 :: - 0: Debug build.
-set mlt_opt_level=1
+set mlt_opt_level=0
 
 IF EXIST  build\ctime.exe ( set has_ctime=1 ) ELSE ( set has_ctime=0 )
 
@@ -23,7 +23,7 @@ set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 
 :: ---- Define opt & nopt flags
 :: Oy- disable frame pointer omission (equiv. to -f-no-omit-frame-pointer)
-set mlt_opt=/O1 /Oy- /MT
+set mlt_opt=/Ox /Oy- /MT
 set mlt_nopt=/Od /MT
 :: both are /MT to match static SDL. Live and learn
 
