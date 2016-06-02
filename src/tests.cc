@@ -2,13 +2,8 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#include "milton_configuration.h"
-
 #if MILTON_DEBUG
 
-#include "tests.h"
-
-#include "utils.h"
 
 static void milton_cord_tests(Arena* arena);
 static void milton_blend_tests();

@@ -4,10 +4,7 @@
 
 #pragma once
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
+#if defined(_WIN32)
 PFNGLACTIVETEXTUREPROC              glActiveTexture;
 PFNGLATTACHSHADERPROC               glAttachShader;
 PFNGLBINDBUFFERPROC                 glBindBuffer;
@@ -43,6 +40,7 @@ PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC                 glUseProgram;
 PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
 PFNGLVERTEXATTRIBPOINTERPROC        glVertexAttribPointer;
+#endif  //_WIN32
 
 
 bool load_gl_functions()
@@ -94,6 +92,3 @@ bool load_gl_functions()
     return ok;
 }
 
-#if defined(__cplusplus)
-}
-#endif

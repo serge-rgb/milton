@@ -4,9 +4,9 @@
 
 #include "gl_helpers.h"
 
-#include "../third_party/imgui/imgui.cpp"
-#include "../third_party/imgui/imgui_draw.cpp"
-#include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
+/* #include "../third_party/imgui/imgui.cpp" */
+/* #include "../third_party/imgui/imgui_draw.cpp" */
+/* #include "../third_party/imgui/imgui_impl_sdl_gl3.cpp" */
 
 #include "gl_func_loader.h"
 #include "gl_func_loader.cc"

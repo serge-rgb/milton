@@ -13,41 +13,7 @@ There is no save button, your work is persistent with unlimited undo.
 
 ![Milton Paint ss](http://i.imgur.com/4pdHeeI.png)
 
-
-Features
---------
-
-- Infinite canvas
-
-    ![zoooom](http://i.imgur.com/fqOhPlr.gif)
-
-    You don't pick a resolution, and you don't work with pixels.  Your work is
-stored as a sequence of commands, and rendered on the fly.  Whenever you want
-to, you can export your work to bitmaps of any size.
-
-- Simple
-
-    Milton solves a single problem: draw without pixels. It doesn't pretend to
-be something more than that.
-
-- Persistent
-
-    No save button. Ctrl-S is *so* 1980's
-
-- Wacom support
-
-    Milton currently supports Wacom on Windows Mac and Linux. The Mac version
-supports any tablet device. General tablet support on Windows is WIP.
-
-- Software rendered.
-
-    Milton features a software rasterizer by design, for reliability and
-flexibility.
-
-- Open Source
-
-    Milton is MIT-licensed
-
+![zoooom](http://i.imgur.com/fqOhPlr.gif)
 
 
 What Milton is not:

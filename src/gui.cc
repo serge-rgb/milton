@@ -1,6 +1,7 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+
 static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
     // ImGui Section

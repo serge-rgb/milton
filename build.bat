@@ -23,7 +23,7 @@ set mlt_defines=-D_CRT_SECURE_NO_WARNINGS
 
 :: ---- Define opt & nopt flags
 :: Oy- disable frame pointer omission (equiv. to -f-no-omit-frame-pointer)
-set mlt_opt=/Ox /Oy- /MT
+set mlt_opt=/O1 /Oy- /MT
 set mlt_nopt=/Od /MT
 :: both are /MT to match static SDL. Live and learn
 
@@ -62,60 +62,21 @@ set sdl_dir=..\third_party\bin
 :: shell32.lib -- ShellExcecute to open help
 set mlt_link_flags=OpenGL32.lib user32.lib gdi32.lib Comdlg32.lib Shell32.lib /SAFESEH:NO /DEBUG
 
-:: ---- Compile third_party libs with less warnings
-:: Delete file build\SKIP_LIB_COMPILATION to recompile. Created by default to reduce build times.
-IF EXIST SKIP_LIB_COMPILATION goto skip_lib_compilation
-echo    [BUILD] -- Building dependencies...
+if NOT %has_ctime%==1 cl /Ox ..\third_party\ctime.c winmm.lib
 
-echo    [BUILD] -- ... Release
-cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.c
+IF NOT EXIST Milton.rc copy ..\Milton.rc Milton.rc && rc /r Milton.rc
+IF NOT EXIST Carlito.LICENSE copy ..\third_party\Carlito.LICENSE
+IF NOT EXIST Carlito.ttf copy ..\third_party\Carlito.ttf
 
-cl /Ox ..\third_party\ctime.c winmm.lib
-cl %mlt_opt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl_cc.cc
-if %errorlevel% NEQ 0 goto error_lib_compilation
-lib headerlibs_impl.obj headerlibs_impl_cc.obj /out:headerlibs_impl_opt.lib
-
-echo    [BUILD] -- ... Debug
-cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl.c
-cl %mlt_nopt% %mlt_includes% /Zi /c /EHsc ..\src\headerlibs_impl_cc.cc
-if %errorlevel% NEQ 0 goto error_lib_compilation
-lib headerlibs_impl.obj headerlibs_impl_cc.obj /out:headerlibs_impl_nopt.lib
-goto end_lib_compilation
-
-:error_lib_compilation
-echo [FATAL] -- Error building dependencies!!
-goto fail
-
-:end_lib_compilation
-
-copy ..\Milton.rc Milton.rc
-copy ..\third_party\Carlito.LICENSE
-copy ..\third_party\Carlito.ttf
-
-rc /r Milton.rc
-
-echo    [BUILD] -- Dependencies built!
-
-echo    [BUILD] --   To rebuild them, call DEL build\SKIP_LIB_COMPILATION
-
-:: Create file to skip this the next time
-::copy /b SKIP_LIB_COMPILATION +,,
-type nul >>SKIP_LIB_COMPILATION
-:skip_lib_compilation
 
 echo    [BUILD] -- Building Milton...
-
-if %mlt_opt_level% == 0 set header_links=headerlibs_impl_nopt.lib
-if %mlt_opt_level% == 1 set header_links=headerlibs_impl_opt.lib
 
 :: ---- Unity build for Milton
 
 cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c  ..\src\milton_unity_build.cc
 if %errorlevel% neq 0 goto fail
 
-::link milton_unity_build_c.obj milton_unity_build_cc.obj /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
-::link milton_unity_build.obj milton_unity_build_c /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
-link milton_unity_build.obj /OUT:Milton.exe %mlt_link_flags% %header_links% %sdl_link_deps% SDL2.lib Milton.res
+link milton_unity_build.obj /OUT:Milton.exe %mlt_link_flags%  %sdl_link_deps% SDL2.lib Milton.res
 if %errorlevel% neq 0 goto fail
 
 :ok

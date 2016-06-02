@@ -6,6 +6,7 @@
 
 #include <imgui.h>
 
+
 #include "tiny_jpeg.h"
 
 #include "system_includes.h"
@@ -23,6 +24,32 @@
 #include "platform_unix.cc"
 #endif
 
+#undef GetWindowFont
+#pragma warning(push,0)
+#include "../third_party/imgui/imgui.cpp"
+#include "../third_party/imgui/imgui_draw.cpp"
+#include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
+#undef snprintf
+
+extern "C"
+{
+
+#define EASYTAB_IMPLEMENTATION
+#include "easytab.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
+#define TJE_IMPLEMENTATION
+#include "tiny_jpeg.h"
+
+}
+
+#pragma warning(pop)
+
 #include "DArray.h"
 
 
@@ -35,27 +62,29 @@
 #include "localization.cc"
 #include "gl_helpers.h"
 #include "gl_helpers.cc"
+#include "gl_func_loader.cc"
 #include "render_common.h"
 #include "canvas.h"
 #include "canvas.cc"
 #include "profiler.h"
 #include "profiler.cc"
 #include "milton.h"
+#include "color.h"
+#include "color.cc"
+#include "software_renderer.h"
 #include "gui.h"
 #include "persist.h"
 #include "persist.cc"
-#include "color.h"
-#include "color.cc"
+#include "gui.cc"
 #include "software_renderer.cc"
 #include "hardware_renderer.cc"
-#include "gui.cc"
 #include "memory.h"
 #include "memory.cc"
+#if MILTON_DEBUG
+#include "tests.cc"
+#endif
 #include "milton.cc"
 
 
 #include "sdl_milton.cc"
 
-#if MILTON_DEBUG
-#include "tests.cc"
-#endif

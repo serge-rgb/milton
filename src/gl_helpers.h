@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "common.h"
-
 
 #define GLCHK(stmt) stmt; gl_query_error(#stmt, __FILE__, __LINE__)
 

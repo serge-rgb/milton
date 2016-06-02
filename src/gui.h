@@ -4,6 +4,10 @@
 
 #pragma once
 
+
+// milton.cc
+struct MiltonInput;
+
 enum ColorPickerFlags
 {
     ColorPickerFlags_NOTHING = 0,
@@ -112,6 +116,7 @@ struct MiltonGui
 // GUI API
 //
 // Call from the main loop before milton_update
+
 static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state);
 
 

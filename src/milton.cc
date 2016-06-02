@@ -2,14 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-
-#if MILTON_DEBUG
-#include "tests.h"
-#endif
-
-// Using stb_image to load our GUI resources.
-#include <stb_image.h>
-
 static void milton_gl_backend_init(MiltonState* milton_state)
 {
     // Init quad program
