@@ -74,6 +74,16 @@ static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
     return ok;
 }
 
+static void milton_unset_last_canvas_fname()
+{
+    b32 del = platform_delete_file_at_config("last_canvas_fname", DeleteErrorTolerance_OK_NOT_EXIST);
+    if (del == false)
+    {
+        platform_dialog("The default canvas could not be set to open the next time you run Milton. Please contact the developers.", "Important");
+    }
+}
+
+
 void milton_load(MiltonState* milton_state)
 {
     assert(milton_state->mlt_file_path);
@@ -199,7 +209,7 @@ void milton_load(MiltonState* milton_state)
         }
 
         // Brush
-        if ( milton_binary_version >= 2 )
+        if (milton_binary_version >= 2)
         {
             // PEN, ERASER
             if (ok) { ok = fread_checked(&milton_state->brushes, sizeof(Brush), BrushEnum_COUNT, fd); }
@@ -218,6 +228,10 @@ void milton_load(MiltonState* milton_state)
             }
             if (ok) { ok = fread_checked_nocopy(milton_state->history.data, sizeof(*milton_state->history.data),
                                                 (size_t)history_count, fd); }
+            if (ok)
+            {
+                milton_state->history.count = (u64)history_count;
+            }
         }
         int err = fclose(fd);
         if ( err != 0 )
@@ -417,15 +431,6 @@ void milton_set_last_canvas_fname(char* last_fname)
         fclose(fd);
     }
     mlt_free(full);
-}
-
-void milton_unset_last_canvas_fname()
-{
-    b32 del = platform_delete_file_at_config("last_canvas_fname", DeleteErrorTolerance_OK_NOT_EXIST);
-    if (del == false)
-    {
-        platform_dialog("The default canvas could not be set to open the next time you run Milton. Please contact the developers.", "Important");
-    }
 }
 
 char* milton_get_last_canvas_fname()
