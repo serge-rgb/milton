@@ -219,7 +219,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             }
             // Panning
             char* move_str = platform_state->is_panning==false? LOC(move_canvas) : LOC(stop_moving_canvas);
-            if ( ImGui::MenuItem(move_str) )
+            if (ImGui::MenuItem(move_str))
             {
                 platform_state->is_panning = !platform_state->is_panning;
                 platform_state->panning_locked = true;
@@ -233,7 +233,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             }
             ImGui::EndMenu();
         }
-        if ( ImGui::BeginMenu(LOC(view)) )
+        if (ImGui::BeginMenu(LOC(view)))
         {
             if (ImGui::MenuItem(LOC(toggle_gui_visibility)))
             {
@@ -247,14 +247,14 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
 #endif
             ImGui::EndMenu();
         }
-        if ( ImGui::BeginMenu(LOC(help)) )
+        if (ImGui::BeginMenu(LOC(help)))
         {
-            if ( ImGui::MenuItem(LOC(help_me)) )
+            if (ImGui::MenuItem(LOC(help_me)))
             {
                 //platform_open_link("https://www.youtube.com/watch?v=g27gHio2Ohk");
                 platform_open_link("http://www.miltonpaint.com/help/");
             }
-            if ( ImGui::MenuItem(LOC(milton_version)) )
+            if (ImGui::MenuItem(LOC(milton_version)))
             {
                 char buffer[1024];
                 snprintf(buffer, array_count(buffer),
@@ -274,7 +274,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
                  str_trim_to_last_slash(milton_state->mlt_file_path),
                  lst.hours, lst.minutes, lst.seconds);
-        if ( ImGui::BeginMenu(msg, /*bool enabled = */false) )
+        if (ImGui::BeginMenu(msg, /*bool enabled = */false))
         {
             ImGui::EndMenu();
         }
@@ -304,16 +304,16 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
         // Brush Window
         if (show_brush_window)
         {
-            if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) )
+            if (ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags))
             {
-                if ( milton_state->current_mode == MiltonMode_PEN )
+                if (milton_state->current_mode == MiltonMode_PEN)
                 {
                     float mut_alpha = pen_alpha*100;
                     ImGui::SliderFloat(LOC(opacity), &mut_alpha, 1, 100, "%.0f%%");
 
                     mut_alpha /= 100.0f;
-                    if ( mut_alpha > 1.0f ) mut_alpha = 1.0f;
-                    if ( mut_alpha != pen_alpha )
+                    if (mut_alpha > 1.0f ) mut_alpha = 1.0f;
+                    if (mut_alpha != pen_alpha)
                     {
                         milton_set_pen_alpha(milton_state, mut_alpha);
                         set_flag(milton_state->gui->flags, (i32)MiltonGuiFlags_SHOWING_PREVIEW);
@@ -325,7 +325,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
 
                 ImGui::SliderInt(LOC(brush_size), &mut_size, 1, MILTON_MAX_BRUSH_SIZE);
 
-                if ( mut_size != size )
+                if (mut_size != size)
                 {
                     milton_set_brush_size(milton_state, mut_size);
                     set_flag(milton_state->gui->flags, (i32)MiltonGuiFlags_SHOWING_PREVIEW);
@@ -428,13 +428,13 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             }
             else if (is_renaming)
             {
-                if ( ImGui::InputText("##rename",
+                if (ImGui::InputText("##rename",
                                       milton_state->working_layer->name,
                                       13,
                                       //MAX_LAYER_NAME_LEN,
                                       ImGuiInputTextFlags_EnterReturnsTrue
                                       //,ImGuiInputTextFlags flags = 0, ImGuiTextEditCallback callback = NULL, void* user_data = NULL
-                                     ) )
+                                     ))
                 {
                     is_renaming = false;
                 }

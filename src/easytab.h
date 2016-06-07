@@ -588,6 +588,12 @@ typedef struct
     WTMGRCLOSE        WTMgrClose;
     WTMGRDEFCONTEXT   WTMgrDefContext;
     WTMGRDEFCONTEXTEX WTMgrDefContextEx;
+
+    // The output region can be configured by the user.
+    LONG    ScreenOriginX;
+    LONG    ScreenOriginY;
+    float   ScreenAreaRatioX;
+    float   ScreenAreaRatioY;
 #endif // WIN32
 } EasyTabInfo;
 
@@ -792,7 +798,6 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         GETPROCADDRESS(WTMGRDEFCONTEXTEX , WTMgrDefContextEx);
     }
 
-    // Set wacom packet rate
     if (!EasyTab->WTInfoA(0, 0, NULL))
     {
         OutputDebugStringA("Wintab services not available.\n");
@@ -829,20 +834,28 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         LogContext.lcMoveMask = PACKETDATA;
         LogContext.lcBtnUpMask = LogContext.lcBtnDnMask;
 
+        DWORD CoordRangeX = GetSystemMetrics(SM_CXSCREEN);
+        DWORD CoordRangeY = GetSystemMetrics(SM_CYSCREEN);
+
         LogContext.lcOutOrgX = 0;
         LogContext.lcOutOrgY = 0;
-        LogContext.lcOutExtX = GetSystemMetrics(SM_CXSCREEN);
-        LogContext.lcOutExtY = -GetSystemMetrics(SM_CYSCREEN);
+        LogContext.lcOutExtX = CoordRangeX;
+        LogContext.lcOutExtY = -CoordRangeY;
 
-        // TODO:
-        //  It's wrong to map this! Get the rect from WtInfo and do an extra
-        //  calculation on event processing?
-        if (0)
+        EasyTab->ScreenOriginX = LogContext.lcSysOrgX;
+        EasyTab->ScreenOriginY = LogContext.lcSysOrgY;
+        float SysExtX          = LogContext.lcSysExtX;
+        float SysExtY          = LogContext.lcSysExtY;
+
+        if (SysExtX != 0 && SysExtY != 0)
         {
-            LogContext.lcSysOrgX = 0;
-            LogContext.lcSysOrgY = 0;
-            LogContext.lcSysExtX = GetSystemMetrics(SM_CXSCREEN);
-            LogContext.lcSysExtY = GetSystemMetrics(SM_CYSCREEN);
+            EasyTab->ScreenAreaRatioX = (float)CoordRangeX/SysExtX;
+            EasyTab->ScreenAreaRatioY = (float)CoordRangeY/SysExtY;
+        }
+        else
+        {
+            EasyTab->ScreenAreaRatioX = 1;
+            EasyTab->ScreenAreaRatioY = 1;
         }
 
         // Note(Sergio): Setting packet rate..
@@ -895,17 +908,9 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         EasyTab->WTPacket(EasyTab->Context, (UINT)WParam, &Packet))
     {
         POINT Point = { 0 };
-        Point.x = Packet.pkX;
-        Point.y = Packet.pkY;
+        Point.x = EasyTab->ScreenOriginX + Packet.pkX / EasyTab->ScreenAreaRatioX;
+        Point.y = EasyTab->ScreenOriginY + Packet.pkY / EasyTab->ScreenAreaRatioY;
         ScreenToClient(Window, &Point);
-        // TODO: Get virtual screen with GetSystemMetrics
-        /* RECT Rect; */
-        /* GetWindowRect(Window, &Rect); */
-
-        /* MapWindowPoints( */
-        /*                 NULL, */
-        /*                 Window, */
-        /*                 &Point, 1); */
         EasyTab->PosX = Point.x;
         EasyTab->PosY = Point.y;
 
@@ -919,8 +924,7 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 void EasyTab_Unload()
 {
     if (EasyTab->Context) { EasyTab->WTClose(EasyTab->Context); }
-    SDL_Delay(300);
-    // TODO(sergio): This has a memory leak, appverifier nags about it
+    // Note(sergio): Wacom DLL has a memory leak, AppVerifier nags about it
     //if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); }
     free(EasyTab);
     EasyTab = NULL;

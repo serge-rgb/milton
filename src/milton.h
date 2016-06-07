@@ -12,7 +12,7 @@
 #define MAX_INPUT_BUFFER_ELEMS      32
 #define MILTON_MINIMUM_SCALE        (1 << 4)
 #define QUALITY_REDRAW_TIMEOUT_MS   200
-#define MAX_LAYER_NAME_LEN          1024
+#define MAX_LAYER_NAME_LEN          64
 #define MILTON_MAX_BRUSH_SIZE       80
 #define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
@@ -28,14 +28,14 @@ struct MiltonGLState
 #endif
 };
 
-typedef enum MiltonMode
+enum MiltonMode
 {
     MiltonMode_NONE       = 0,
     MiltonMode_ERASER     = 1 << 0,
     MiltonMode_PEN        = 1 << 1,
     MiltonMode_EXPORTING  = 1 << 2,
     MiltonMode_EYEDROPPER = 1 << 3,
-} MiltonMode;
+};
 
 enum
 {

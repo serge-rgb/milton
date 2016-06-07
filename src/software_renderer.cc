@@ -955,7 +955,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         // safe to square the radius
                         __m128 comparisons[4];
                         __m128 ones = _mm_set_ps1(1.0f);
-                        if ( radius >= (1 << 16) )
+                        if (radius >= (1 << 16))
                         {
                             // sqrt slow. rsqrt fast
                             dists[0] = _mm_mul_ps(dists[0], _mm_rsqrt_ps(dists[0]));
@@ -990,12 +990,12 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     }
 
                     // If the stroke contributes to the pixel, do compositing.
-                    if ( samples > 0 )
+                    if (samples > 0)
                     {
                         // Do blending
                         // ---------------
 
-                        if ( is_eraser )
+                        if (is_eraser)
                         {
                             pixel_erased = true;
                         }
