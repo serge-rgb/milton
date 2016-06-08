@@ -532,7 +532,7 @@ void milton_init(MiltonState* milton_state)
             milton_state->brush_sizes[i] = 40;
             break;
         default:
-            assert(!"New brush has not been given a default size");
+            INVALID_CODE_PATH;
             break;
         }
     }
@@ -643,7 +643,7 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     }
     else
     {
-        assert(!"DEBUG: new screen size is more than we can handle.");
+        milton_die_gracefully("Fatal error. Screen size is more than Milton can handle.");
     }
 }
 
@@ -727,7 +727,7 @@ void milton_use_previous_mode(MiltonState* milton_state)
     }
     else
     {
-        assert ( !"invalid code path" );
+        INVALID_CODE_PATH;
     }
 }
 

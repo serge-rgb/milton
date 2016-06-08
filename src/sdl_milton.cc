@@ -31,7 +31,7 @@ void cursor_hide()
         int res = SDL_ShowCursor(0);
         if (res < 0)
         {
-            assert(!"wtf");
+            INVALID_CODE_PATH;
         }
     }
 #endif

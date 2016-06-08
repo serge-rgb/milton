@@ -144,7 +144,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
     else
     {
         // We should have already handled the pathological case of the empty stroke.
-        assert (!"invalid code path");
+        INVALID_CODE_PATH;
     }
 
 
@@ -1628,10 +1628,6 @@ static void produce_render_work(MiltonState* milton_state,
                 render_stack->blockgroup_render_data[render_stack->index++] = blockgroup_render_data;
             }
             SDL_UnlockMutex(render_stack->mutex);
-        }
-        else
-        {
-            assert (!"Lock failure not handled");
         }
     }
 
