@@ -4,7 +4,7 @@
 ::
 :: - 1: Optimized build.
 :: - 0: Debug build.
-set mlt_opt_level=0
+set mlt_opt_level=1
 
 IF EXIST  build\ctime.exe ( set has_ctime=1 ) ELSE ( set has_ctime=0 )
 

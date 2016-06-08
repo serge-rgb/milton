@@ -160,10 +160,8 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 if (ImGui::ColorEdit3(LOC(color), bg.d))
                 {
                     milton_state->view->background_color = clamp_01(bg);
-                    i32 f = input->flags;
-                    set_flag(f, (i32)MiltonInputFlags_FULL_REFRESH);
-                    set_flag(f, (i32)MiltonInputFlags_FAST_DRAW);
-                    input->flags = (MiltonInputFlags)f;
+                    input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+                    input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
                 }
                 ImGui::EndMenu();
             }
@@ -182,7 +180,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             // Brush
             if (ImGui::MenuItem(LOC(brush)))
             {
-                set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
+                input->flags |= MiltonInputFlags_CHANGE_MODE;
                 input->mode_to_set = MiltonMode_PEN;
             }
             if (ImGui::BeginMenu(LOC(brush_options)))
@@ -214,7 +212,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             // Eraser
             if ( ImGui::MenuItem(LOC(eraser)) )
             {
-                set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
+                input->flags |= MiltonInputFlags_CHANGE_MODE;
                 input->mode_to_set = MiltonMode_ERASER;
             }
             // Panning
@@ -227,7 +225,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             // Eye Dropper
             if ( ImGui::MenuItem(LOC(eye_dropper)) )
             {
-                set_flag(input->flags, MiltonInputFlags_CHANGE_MODE);
+                input->flags |= MiltonInputFlags_CHANGE_MODE;
                 input->mode_to_set = MiltonMode_EYEDROPPER;
                 milton_state->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;
             }
@@ -316,7 +314,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     if (mut_alpha != pen_alpha)
                     {
                         milton_set_pen_alpha(milton_state, mut_alpha);
-                        set_flag(milton_state->gui->flags, (i32)MiltonGuiFlags_SHOWING_PREVIEW);
+                        milton_state->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                     }
                 }
 
@@ -328,7 +326,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 if (mut_size != size)
                 {
                     milton_set_brush_size(milton_state, mut_size);
-                    set_flag(milton_state->gui->flags, (i32)MiltonGuiFlags_SHOWING_PREVIEW);
+                    milton_state->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                 }
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
@@ -338,7 +336,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                         if ( ImGui::Button(LOC(switch_to_brush)) )
                         {
                             i32 f = input->flags;
-                            set_flag(f, MiltonInputFlags_CHANGE_MODE);
+                            f |= MiltonInputFlags_CHANGE_MODE;
                             input->flags = (MiltonInputFlags)f;
                             input->mode_to_set = MiltonMode_PEN;
                         }
@@ -348,9 +346,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     {
                         if ( ImGui::Button(LOC(switch_to_eraser)) )
                         {
-                            i32 f = input->flags;
-                            set_flag(f, (i32)MiltonInputFlags_CHANGE_MODE);
-                            input->flags = (MiltonInputFlags)f;
+                            input->flags |= MiltonInputFlags_CHANGE_MODE;
                             input->mode_to_set = MiltonMode_ERASER;
                         }
                     }
@@ -366,7 +362,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 (i32)(ImGui::GetWindowPos().y),
             };
             ImGui::End();  // Brushes
-            if ( check_flag(milton_state->gui->flags, MiltonGuiFlags_SHOWING_PREVIEW) )
+            if ((milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))
             {
                 milton_state->gui->preview_pos = pos;
             }
@@ -754,7 +750,7 @@ static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
 static b32 picker_is_accepting_input(ColorPicker* picker, v2i point)
 {
     // If wheel is active, yes! Gimme input.
-    if (check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE))
+    if ((picker->flags & ColorPickerFlags_WHEEL_ACTIVE))
     {
         return true;
     }
@@ -809,12 +805,12 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
     {
         if (picker_hits_wheel(picker, fpoint))
         {
-            set_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE);
+            picker->flags |= ColorPickerFlags_WHEEL_ACTIVE;
         }
     }
-    if (check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE))
+    if ((picker->flags & ColorPickerFlags_WHEEL_ACTIVE))
     {
-        if (!(check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE)))
+        if (!(picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
         {
             picker_update_wheel(picker, fpoint);
             result = ColorPickResult_CHANGE_COLOR;
@@ -822,14 +818,14 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
     }
     if (picker_hits_triangle(picker, fpoint))
     {
-        if (!(check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE)))
+        if (!(picker->flags & ColorPickerFlags_WHEEL_ACTIVE))
         {
-            set_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE);
+            picker->flags |= ColorPickerFlags_TRIANGLE_ACTIVE;
             picker->data.hsv = picker_hsv_from_point(picker, fpoint);
             result = ColorPickResult_CHANGE_COLOR;
         }
     }
-    else if (check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE))
+    else if ((picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
     {
         // We don't want the chooser to "stick" if go outside the triangle
         // (i.e. picking black should be easy)
@@ -900,7 +896,7 @@ void picker_init(ColorPicker* picker)
 
 static b32 picker_is_active(ColorPicker* picker)
 {
-    b32 is_active = check_flag(picker->flags, ColorPickerFlags_WHEEL_ACTIVE) || check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE);
+    b32 is_active = (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) || (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE);
 
     return is_active;
 }
@@ -952,7 +948,7 @@ b32 exporter_input(Exporter* exporter, MiltonInput* input)
             exporter->needle = point;
         }
     }
-    if (check_flag(input->flags, MiltonInputFlags_END_STROKE) && exporter->state != ExporterState_EMPTY)
+    if ((input->flags & MiltonInputFlags_END_STROKE) && exporter->state != ExporterState_EMPTY)
     {
         exporter->state = ExporterState_SELECTED;
         changed = true;
@@ -962,7 +958,7 @@ b32 exporter_input(Exporter* exporter, MiltonInput* input)
 
 void gui_imgui_set_ungrabbed(MiltonGui* gui)
 {
-    unset_flag(gui->flags, MiltonGuiFlags_SHOWING_PREVIEW);
+    gui->flags &= ~MiltonGuiFlags_SHOWING_PREVIEW;
 }
 
 Rect get_bounds_for_picker_and_colors(ColorPicker* picker)
@@ -1033,7 +1029,7 @@ int gui_process_input(MiltonState* milton_state, MiltonInput* input)
         /* milton_state->brushes[BrushEnum_PEN].color = to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha); */
     }
 
-    set_flag(render_flags, MiltonRenderFlags_UI_UPDATED);
+    render_flags |= MiltonRenderFlags_UI_UPDATED;
     milton_state->gui->active = true;
 
 

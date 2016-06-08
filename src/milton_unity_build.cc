@@ -76,7 +76,7 @@ extern "C"
 #include "persist.cc"
 #include "gui.cc"
 #include "software_renderer.cc"
-#include "hardware_renderer.cc"
+//#include "hardware_renderer.cc"
 #include "memory.h"
 #include "memory.cc"
 #if MILTON_DEBUG

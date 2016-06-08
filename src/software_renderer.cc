@@ -1364,7 +1364,7 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
             1,
         };
 
-        if ( check_flag(picker->flags, ColorPickerFlags_TRIANGLE_ACTIVE) )
+        if ((picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
         {
             ring_radius = 10;
             ring_girth = 2;
@@ -1843,7 +1843,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
     }
     u32* raster_buffer = (u32*)milton_state->raster_buffer;
     MiltonGui* gui = milton_state->gui;
-    if ( gui_visible && (redraw || (check_flag(render_flags, MiltonRenderFlags_UI_UPDATED))) )
+    if ( gui_visible && (redraw || (render_flags & MiltonRenderFlags_UI_UPDATED)))
     {
         //if (check_flag(render_flags, MiltonRenderFlags_PICKER))
         {
@@ -1892,7 +1892,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
 
     if (gui_visible)
     {  // Render button
-        if (check_flag(render_flags, MiltonRenderFlags_BRUSH_PREVIEW))
+        if ((render_flags & MiltonRenderFlags_BRUSH_PREVIEW))
         {
             assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
             const i32 radius = milton_get_brush_size(milton_state);
@@ -1938,7 +1938,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
         }
     }
 
-    if (check_flag(render_flags, MiltonRenderFlags_BRUSH_HOVER))
+    if ((render_flags & MiltonRenderFlags_BRUSH_HOVER))
     {
         float outline_alpha = 1.0f;
         float gray = 0.25f;
@@ -1982,7 +1982,7 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
     set_flag(render_flags, MiltonRenderFlags_FULL_REDRAW);
 #endif
 
-    if (check_flag(render_flags, MiltonRenderFlags_PAN_COPY))
+    if ((render_flags & MiltonRenderFlags_PAN_COPY))
     {
         canvas_modified = true;
         CanvasView* view = milton_state->view;
@@ -2106,7 +2106,7 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
 
     }
 
-    if ( check_flag(render_flags, MiltonRenderFlags_FULL_REDRAW) )
+    if ((render_flags & MiltonRenderFlags_FULL_REDRAW))
     {
         raster_limits.left = 0;
         raster_limits.right = milton_state->view->screen_size.w;
@@ -2114,7 +2114,7 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
         raster_limits.bottom = milton_state->view->screen_size.h;
         raster_limits = rect_stretch(raster_limits, milton_state->block_width);
     }
-    else if ( milton_state->working_stroke.num_points > 1 )
+    else if (milton_state->working_stroke.num_points > 1)
     {
         Stroke* stroke = &milton_state->working_stroke;
 
@@ -2125,7 +2125,7 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
         raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
 
     }
-    else if ( milton_state->working_stroke.num_points == 1 )
+    else if (milton_state->working_stroke.num_points == 1)
     {
         Stroke* stroke = &milton_state->working_stroke;
         v2i point = canvas_to_raster(milton_state->view, stroke->points[0]);
@@ -2138,7 +2138,7 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
         raster_limits = rect_stretch(raster_limits, milton_state->block_width);
         raster_limits = rect_clip_to_screen(raster_limits, milton_state->view->screen_size);
     }
-    else if ( check_flag( render_flags, MiltonRenderFlags_FINISHED_STROKE ))
+    else if ((render_flags & MiltonRenderFlags_FINISHED_STROKE))
     {
         Stroke* strokes = milton_state->working_layer->strokes.data;
         u64 index = milton_state->working_layer->strokes.count - 1;
@@ -2153,7 +2153,7 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
         if (rect_area(raster_limits) != 0)
         {
             canvas_modified = true;
-            if ( check_flag(render_flags, MiltonRenderFlags_DRAW_ITERATIVELY) )
+            if ((render_flags & MiltonRenderFlags_DRAW_ITERATIVELY))
             {
                 render_canvas_iteratively(milton_state, raster_limits);
             }

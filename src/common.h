@@ -54,6 +54,3 @@ typedef i32         b32;
 
 #define INVALID_CODE_PATH assert(!"Invalid code path");
 
-#define check_flag(flags, check)    ((flags) & (check))
-#define set_flag(f, s)              ((f) |= (s))
-#define unset_flag(f, s)            ((f) &= ~(s))
