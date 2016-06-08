@@ -56,7 +56,14 @@
 //
 //
 
-bool hw_renderer_init()
+
+struct RenderData
+{
+    GLuint program;
+    GLuint vao;
+};
+
+bool hw_renderer_init(RenderData* render_data)
 {
     bool result = true;
     // Load shader into opengl.
@@ -84,10 +91,50 @@ bool hw_renderer_init()
         objs[i] = gl_compile_shader(src[i], types[i]);
     }
 
-    GLuint program = glCreateProgram();
+    render_data->program = glCreateProgram();
 
-    gl_link_program(program, objs, array_count(objs));
+    gl_link_program(render_data->program, objs, array_count(objs));
+
+    GLCHK( glUseProgram(render_data->program) );
+
+    GLuint vbo = 0;
+
+    GLCHK( glGenVertexArrays(1, &render_data->vao) );
+    glBindVertexArray(render_data->vao);
+
+    GLCHK( glGenBuffers(1, &vbo) );
+    GLCHK( glBindBuffer(GL_ARRAY_BUFFER, vbo) );
+
+    GLint pos_loc = glGetAttribLocation(render_data->program, "position");
+    if (pos_loc >= 0)
+    {
+        GLfloat data[] =
+        {
+            -0.5, 0.5,
+            -0.5, -0.5,
+            0.5, -0.5,
+        };
+        GLCHK( glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW) );
+        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)pos_loc,
+                                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                     /*stride*/0, /*ptr*/0));
+        GLCHK( glEnableVertexAttribArray((GLuint)pos_loc) );
+    }
+    else
+    {
+        milton_log("HW Renderer problem: position location is not >=0\n");
+    }
+    glPointSize(10);
 
     return result;
+}
+
+void hw_render(RenderData* render_data)
+{
+    // Draw a triangle...
+    GLCHK( glUseProgram(render_data->program) );
+    glBindVertexArray(render_data->vao);
+    //glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_POINTS, 0, 3);
 }
 

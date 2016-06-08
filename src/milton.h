@@ -58,6 +58,7 @@ struct HistoryElement
 };
 
 struct MiltonGui;
+struct RenderData;
 
 struct MiltonState
 {
@@ -123,6 +124,8 @@ struct MiltonState
     MiltonMode last_mode;
 
     i32 quality_redraw_time;
+
+    RenderData* render_data;  // Hardware Renderer
 
     i32             num_render_workers;
     RenderStack*    render_stack;

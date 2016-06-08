@@ -83,7 +83,6 @@ static void milton_unset_last_canvas_fname()
     }
 }
 
-
 void milton_load(MiltonState* milton_state)
 {
     assert(milton_state->mlt_file_path);

@@ -62,7 +62,8 @@ static void milton_gl_backend_init(MiltonState* milton_state)
     {
 #define u -1.0f
         // full
-        GLfloat vert_data[] = {
+        GLfloat vert_data[] =
+        {
             -u, +u,
             -u, -u,
             +u, -u,
@@ -549,7 +550,8 @@ void milton_init(MiltonState* milton_state)
     milton_state->viz_window_visible = true;
 #endif
 
-    for (i32 i = 0; i < milton_state->num_render_workers; ++i) {
+    for (i32 i = 0; i < milton_state->num_render_workers; ++i)
+    {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
         {
             params->milton_state = milton_state;
@@ -574,7 +576,8 @@ void milton_init(MiltonState* milton_state)
 #endif
 
 
-    hw_renderer_init();
+    milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
+    hw_renderer_init(milton_state->render_data);
 }
 
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)

@@ -7,6 +7,7 @@
 #if defined(_WIN32)
 PFNGLACTIVETEXTUREPROC              glActiveTexture;
 PFNGLATTACHSHADERPROC               glAttachShader;
+PFNGLBINDATTRIBLOCATIONPROC         glBindAttribLocation;
 PFNGLBINDBUFFERPROC                 glBindBuffer;
 PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
 PFNGLBLENDEQUATIONPROC              glBlendEquation;
@@ -53,6 +54,7 @@ bool load_gl_functions()
 #pragma warning(push, 0)
     GETADDRESS(glActiveTexture);
     GETADDRESS(glAttachShader);
+    GETADDRESS(glBindAttribLocation);
     GETADDRESS(glBindBuffer);
     GETADDRESS(glBindVertexArray);
     GETADDRESS(glBlendEquation);

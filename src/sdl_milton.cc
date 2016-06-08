@@ -550,8 +550,15 @@ int milton_main()
         platform_state.height = prefs.height;
     }
 
+#if MILTON_DEBUG
+    // Use a higher GL context for debugging.
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#else
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+#endif
 
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -1002,6 +1009,7 @@ int milton_main()
         PROFILE_GRAPH_BEGIN(GL);
         milton_gl_backend_draw(milton_state);
         ImGui::Render();
+        hw_render(milton_state->render_data);
         PROFILE_GRAPH_PUSH(GL);
         PROFILE_GRAPH_BEGIN(system);
         SDL_GL_SwapWindow(window);

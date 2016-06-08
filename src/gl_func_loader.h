@@ -12,6 +12,7 @@ extern "C" {
 
 extern PFNGLACTIVETEXTUREPROC              glActiveTexture;
 extern PFNGLATTACHSHADERPROC               glAttachShader;
+extern PFNGLBINDATTRIBLOCATIONPROC         glBindAttribLocation;
 extern PFNGLBINDBUFFERPROC                 glBindBuffer;
 extern PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
 extern PFNGLBLENDEQUATIONPROC              glBlendEquation;
