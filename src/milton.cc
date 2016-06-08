@@ -645,7 +645,7 @@ void milton_init(MiltonState* milton_state)
 
 
     milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
-    hw_renderer_init(milton_state->render_data);
+    gpu_init(milton_state->render_data);
 }
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
@@ -712,6 +712,9 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
             pan_ok = false;
         }
         milton_state->view->pan_vector = pan_vector;
+
+        // Upload data to gpu
+        gpu_set_canvas(milton_state->render_data, milton_state->view);
     }
     else
     {
@@ -1478,6 +1481,6 @@ cleanup:
     }
     profiler_output();
 
-    milton_validate(milton_state);
+    //milton_validate(milton_state);
 }
 

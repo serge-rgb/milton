@@ -63,7 +63,7 @@ struct RenderData
     GLuint vao;
 };
 
-bool hw_renderer_init(RenderData* render_data)
+bool gpu_init(RenderData* render_data)
 {
     bool result = true;
     // Load shader into opengl.
@@ -105,22 +105,14 @@ bool hw_renderer_init(RenderData* render_data)
     GLCHK( glGenBuffers(1, &vbo) );
     GLCHK( glBindBuffer(GL_ARRAY_BUFFER, vbo) );
 
-    GLint pos_loc = glGetAttribLocation(render_data->program, "position");
-    if (pos_loc >= 0)
+    GLfloat data[] =
     {
-        GLfloat data[] =
-        {
-            -0.5, 0.5,
-            -0.5, -0.5,
-            0.5, -0.5,
-        };
-        GLCHK( glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW) );
-        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)pos_loc,
-                                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                     /*stride*/0, /*ptr*/0));
-        GLCHK( glEnableVertexAttribArray((GLuint)pos_loc) );
-    }
-    else
+        -0.5, 0.5,
+        -0.5, -0.5,
+        0.5, -0.5,
+    };
+
+    if (!gl_set_attribute_vec2(render_data->program, "position", data))
     {
         milton_log("HW Renderer problem: position location is not >=0\n");
     }
@@ -129,7 +121,16 @@ bool hw_renderer_init(RenderData* render_data)
     return result;
 }
 
-void hw_render(RenderData* render_data)
+void gpu_set_canvas(RenderData* render_data, CanvasView* view)
+{
+    // Shit we need:
+    //  pan_vector      (vec2),
+    //  scale           (int),
+    //  screen_center   (vec2)
+    gl_set_uniform_vec2i(render_data->program, "screen_center", (size_t)1, view->screen_center.d);
+}
+
+void gpu_render(RenderData* render_data)
 {
     // Draw a triangle...
     GLCHK( glUseProgram(render_data->program) );
