@@ -156,14 +156,14 @@ void gl_query_error(const char* expr, const char* file, int line)
     }
 }
 
-bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data)
+bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
 {
     bool ok = true;
     GLint loc = glGetAttribLocation(program, "position");
     ok = loc >= 0;
     if (ok)
     {
-        GLCHK( glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW) );
+        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)data_sz, data, GL_STATIC_DRAW) );
         GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                      /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
                                      /*stride*/0, /*ptr*/0));
@@ -205,6 +205,18 @@ bool gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
     if (ok)
     {
         GLCHK( glUniform2iv(loc, (GLsizei)count, vals) );
+    }
+    return ok;
+}
+
+bool gl_set_uniform_i(GLuint program, char* name, i32 val)
+{
+    bool ok = true;
+    GLint loc = glGetUniformLocation(program, name);
+    ok = loc >= 0;
+    if (ok)
+    {
+        GLCHK( glUniform1i(loc, val) );
     }
     return ok;
 }

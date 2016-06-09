@@ -61,6 +61,9 @@ struct RenderData
 {
     GLuint program;
     GLuint vao;
+
+    // Dumb and stupid and temporary array
+    DArray<GLuint> strokes;
 };
 
 bool gpu_init(RenderData* render_data)
@@ -107,12 +110,12 @@ bool gpu_init(RenderData* render_data)
 
     GLfloat data[] =
     {
-        -0.5, 0.5,
-        -0.5, -0.5,
-        0.5, -0.5,
+        -0.5f, 0.5f,
+        -0.5f, -0.5f,
+        0.5f, -0.5f,
     };
 
-    if (!gl_set_attribute_vec2(render_data->program, "position", data))
+    if (!gl_set_attribute_vec2(render_data->program, "position", data, sizeof(data)))
     {
         milton_log("HW Renderer problem: position location is not >=0\n");
     }
@@ -127,7 +130,15 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     //  pan_vector      (vec2),
     //  scale           (int),
     //  screen_center   (vec2)
-    gl_set_uniform_vec2i(render_data->program, "screen_center", (size_t)1, view->screen_center.d);
+    gl_set_uniform_vec2i(render_data->program, "screen_center", 1, view->screen_center.d);
+    gl_set_uniform_vec2i(render_data->program, "pan_vector", 1, view->pan_vector.d);
+    gl_set_uniform_vec2i(render_data->program, "screen_size", 1, view->screen_size.d);
+    gl_set_uniform_i(render_data->program, "pan_vector", view->scale);
+}
+
+void gpu_add_stroke(RenderData* render_data, Stroke* stroke)
+{
+
 }
 
 void gpu_render(RenderData* render_data)
@@ -137,5 +148,9 @@ void gpu_render(RenderData* render_data)
     glBindVertexArray(render_data->vao);
     //glDrawArrays(GL_TRIANGLES, 0, 3);
     glDrawArrays(GL_POINTS, 0, 3);
+    // Draw all strokes:
+    //  For each stroke:
+    //      For each point:
+    //          Draw point!
 }
 
