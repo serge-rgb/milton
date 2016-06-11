@@ -1,24 +1,24 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-#version 120
+//#version 120
 
-attribute vec2 position;
+attribute vec2 a_position;
 
 // TODO: Switch to floating point math once it is correct.. Will (probably?) be faster.
 
 // CanvasView elements:
-uniform ivec2 pan_vector;
-uniform ivec2 screen_center;
-uniform ivec2 screen_size;
-uniform int  scale;
+uniform vec2 u_pan_vector;
+uniform vec2 u_screen_center;
+uniform vec2 u_screen_size;
+uniform int  u_scale;
 
-ivec2 canvas_to_raster_gl(ivec2 cp)
+vec2 canvas_to_raster_gl(vec2 cp)
 {
-    ivec2 rp = ((pan_vector + cp) / ivec2(scale)) + screen_center;
+    vec2 rp = ((u_pan_vector + cp) / vec2(u_scale)) + u_screen_center;
     // rp in [0, W]x[0, H]
 
-    rp /= screen_size;
+    rp /= u_screen_size;
     // rp in [0, 1]x[0, 1]
 
     rp *= 2;
@@ -30,6 +30,6 @@ ivec2 canvas_to_raster_gl(ivec2 cp)
 
 void main()
 {
-    gl_Position.xy = position;
+    gl_Position.xy = a_position;
 }
 

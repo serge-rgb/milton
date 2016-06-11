@@ -4,6 +4,162 @@
 
 #pragma once
 
+template<typename T>
+struct Vector2
+{
+    union
+    {
+        struct
+        {
+            T x;
+            T y;
+        };
+        struct
+        {
+            T w;
+            T h;
+        };
+        T d[2];
+        T xy[2];
+    };
+
+    // Constructors...
+
+    Vector2 ()
+    {
+        x = 0;
+        y = 0;
+    }
+    Vector2 (T val)
+    {
+        x = val;
+        y = val;
+    }
+
+    // Specialized Assignment
+
+    Vector2<i32> operator =(const Vector2<float>& a)
+    {
+        ivec2 result;
+        result.x = (int)a.x;
+        result.y = (int)a.y;
+        return result;
+    }
+
+    Vector2<float> operator =(const Vector2<i32>& a)
+    {
+        ivec2 result;
+        result.x = (int)a.x;
+        result.y = (int)a.y;
+        return result;
+    }
+
+};
+
+// Types
+typedef Vector2<int>     ivec2;
+typedef Vector2<float>   vec2;
+
+template<typename T>
+b32 operator ==(const Vector2<T>& a, const Vector2<T>& b)
+{
+    b32 result = a.x == b.x && a.y == b.y;
+    return result;
+}
+template<typename T>
+Vector2<T> operator +(const Vector2<T>& a, const Vector2<T>& b)
+{
+    Vector2<T> result;
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    return result;
+}
+template<typename T>
+Vector2<T> operator -(const Vector2<T>& a, const Vector2<T>& b)
+{
+
+    Vector2<T> result;
+    result.x = a.x - b.x;
+    result.y = a.y - b.y;
+    return result;
+}
+template<typename T>
+Vector2<T> operator -=(Vector2<T>& a, const Vector2<T>& b)
+{
+    a.x -= b.x;
+    a.y -= b.y;
+    return a;
+}
+template<typename T>
+Vector2<T> operator -=(Vector2<T>& a, float f)
+{
+    a.x -= f;
+    a.y -= f;
+    return a;
+}
+template<typename T>
+Vector2<T> operator -=(Vector2<T>& a, i32 f)
+{
+    a.x -= f;
+    a.y -= f;
+    return a;
+}
+template<typename T>
+Vector2<T> operator *(const Vector2<T>& a, T factor)
+{
+    Vector2<T> result = a;
+    result.x *= factor;
+    result.y *= factor;
+    return result;
+}
+template<typename T>
+Vector2<T> operator *=(Vector2<T>& a, float f)
+{
+    a.x *= f;
+    a.y *= f;
+    return a;
+}
+template<typename T>
+Vector2<T> operator *=(Vector2<T>& a, i32 f)
+{
+    a.x *= f;
+    a.y *= f;
+    return a;
+}
+template<typename T>
+Vector2<T> operator /(const Vector2<T>& a, const Vector2<T>& b)
+{
+    Vector2<T> result = a;
+    result.x /= b.x;
+    result.y /= b.y;
+    return result;
+}
+template<typename T>
+Vector2<T> operator /=(Vector2<T>& a, const Vector2<T>& b)
+{
+    a.x /= b.x;
+    a.y /= b.y;
+    return a;
+}
+template<typename T>
+Vector2<T> operator /(const Vector2<T>& a, T factor)
+{
+    Vector2<T> result = a;
+    result.x /= factor;
+    result.y /= factor;
+    return result;
+}
+
+template<typename T>
+Vector2<T> _perpendicular (const Vector2<T>& a)
+{
+    Vector2<T> result =
+    {
+        -a.y,
+        a.x
+    };
+    return result;
+}
 
 typedef struct
 {

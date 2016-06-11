@@ -7,14 +7,7 @@ To-Do
         The bigger the file, the likelier it is to fail.
 
 - Performance:
-    - Per-layer buffer memory, only redraw working_layer
-        - Chunked by visibility? Profile memory usage
-    - Undo/Redo: Only redraw necessary area.
-    - Async rendering
-    - AVX backend??
-    - Make iterative rendering split the screen into chunks
-    - Amdahl's curse... Parallelize GUI rendering
-    - 4x4 Blockgroups (morton-order)
+    - GPU renderer!
 
 - Application
     - Port to Windows API (support non-Wacom devices)

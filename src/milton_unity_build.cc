@@ -33,6 +33,8 @@
 #endif
 
 #undef main // Defined by SDL
+#include "DArray.h"
+#include "Vector.h"
 
 //#include "darray_test.cc"
 

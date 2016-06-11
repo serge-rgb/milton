@@ -2,6 +2,19 @@
 // License: https://github.com/serge-rgb/milton#license
 //
 
+#if MILTON_DEBUG
+#define uniform
+#define attribute
+#define main vertexShaderMain
+struct Vec4
+{
+    vec2 xy;
+};
+Vec4 gl_Position;
+#include "milton_canvas.v.glsl"
+#undef main
+#undef uniform
+#endif MILTON_DEBUG
 
 // Milton GPU renderer.
 //
@@ -126,20 +139,28 @@ bool gpu_init(RenderData* render_data)
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 {
-    // Shit we need:
-    //  pan_vector      (vec2),
-    //  scale           (int),
-    //  screen_center   (vec2)
-    gl_set_uniform_vec2i(render_data->program, "screen_center", 1, view->screen_center.d);
-    gl_set_uniform_vec2i(render_data->program, "pan_vector", 1, view->pan_vector.d);
-    gl_set_uniform_vec2i(render_data->program, "screen_size", 1, view->screen_size.d);
-    gl_set_uniform_i(render_data->program, "pan_vector", view->scale);
+#if MILTON_DEBUG // set the shader values in C++
+#define COPY_VEC(a,b) a.x = b.x; a.y = b.y;
+    COPY_VEC( u_pan_vector, view->pan_vector );
+    COPY_VEC( u_screen_center, view->screen_center );
+    COPY_VEC( u_screen_size, view->screen_size );
+    u_scale = view->scale;
+#undef COPY_VEC
+#endif
+    gl_set_uniform_vec2i(render_data->program, "u_screen_center", 1, view->screen_center.d);
+    gl_set_uniform_vec2i(render_data->program, "u_pan_vector", 1, view->pan_vector.d);
+    gl_set_uniform_vec2i(render_data->program, "u_screen_size", 1, view->screen_size.d);
+    gl_set_uniform_i(render_data->program, "u_scale", view->scale);
 }
 
 void gpu_add_stroke(RenderData* render_data, Stroke* stroke)
 {
-
+    vec2 cp;
+    cp.x = stroke->points[stroke->num_points-1].x;
+    cp.y = stroke->points[stroke->num_points-1].y;
+    canvas_to_raster_gl(cp);
 }
+
 
 void gpu_render(RenderData* render_data)
 {
@@ -148,9 +169,5 @@ void gpu_render(RenderData* render_data)
     glBindVertexArray(render_data->vao);
     //glDrawArrays(GL_TRIANGLES, 0, 3);
     glDrawArrays(GL_POINTS, 0, 3);
-    // Draw all strokes:
-    //  For each stroke:
-    //      For each point:
-    //          Draw point!
 }
 

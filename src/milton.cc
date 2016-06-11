@@ -1372,6 +1372,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 clear_stroke_redo(milton_state);
 
                 render_flags |= MiltonRenderFlags_FINISHED_STROKE;
+
             }
         }
     }
