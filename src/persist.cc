@@ -157,30 +157,60 @@ void milton_load(MiltonState* milton_state)
 
                     if (ok) { ok = fread_checked(&stroke->brush, sizeof(Brush), 1, fd); }
                     if (ok) { ok = fread_checked(&stroke->num_points, sizeof(i32), 1, fd); }
-                    if ( stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0 )
+                    if (stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0)
                     {
-                        milton_log("WTF: File has a stroke with %d points\n", stroke->num_points);
-                        ok = false;
-                        reset(&milton_state->root_layer->strokes);
-                        // Corrupt file. Avoid
-                        break;
-                    }
-                    if (ok)
-                    {
-                        stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
-                        ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
-                        if ( !ok ) mlt_free(stroke->pressures);
-                    }
-                    if (ok)
-                    {
-                        stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
-                        ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
-                        if ( !ok ) mlt_free (stroke->points);
-                    }
+                        if (stroke->num_points == STROKE_MAX_POINTS)
+                        {
+                            // Fix the out of bounds bug.
 
-                    if (ok)
+                            if (ok)
+                            {
+                                stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
+                                ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
+                                if ( !ok ) mlt_free(stroke->pressures);
+                            }
+                            if (ok)
+                            {
+                                stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
+                                ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
+                                if ( !ok ) mlt_free (stroke->points);
+                            }
+
+                            if (ok)
+                            {
+                                ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
+                            }
+                            pop(&layer->strokes);
+                        }
+                        else
+                        {
+                            milton_log("ERROR: File has a stroke with %d points\n", stroke->num_points);
+                            ok = false;
+                            reset(&milton_state->root_layer->strokes);
+                            // Corrupt file. Avoid
+                            break;
+                        }
+                    }
+                    else
                     {
-                        ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
+                        if (ok)
+                        {
+                            stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
+                            ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
+                            if ( !ok ) mlt_free(stroke->pressures);
+                        }
+                        if (ok)
+                        {
+                            stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
+                            ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
+                            if ( !ok ) mlt_free (stroke->points);
+                        }
+
+                        if (ok)
+                        {
+                            ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
+                        }
+
                     }
                 }
             }

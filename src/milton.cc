@@ -278,7 +278,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         // Cleared to be appended.
-        if ( passed_inspection && ws->num_points < STROKE_MAX_POINTS )
+        if (passed_inspection && ws->num_points < STROKE_MAX_POINTS-1)
         {
             // Add to current stroke.
             int index = ws->num_points++;
