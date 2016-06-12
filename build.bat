@@ -52,7 +52,9 @@ REM 4305 truncate T to bool
 REM 4242 u64 to size_t (VS2015 dev prompt)
 REM 4244 u64 to size_t (VS2015 dev prompt)
 REM 4738 32bit float result in memory (VS2015 dev prompt)
-set comment_for_cleanup=/wd4100 /wd4189 /wd4800 /wd4127
+REM 4668 not defined, replacing as 0
+REM 4239 non-standard extension conversion from ivec3 to ivec2&
+set comment_for_cleanup=/wd4100 /wd4189 /wd4800 /wd4127 /wd4668 /wd4239
 set mlt_disabled_warnings=%comment_for_cleanup% /wd4305 /wd4820 /wd4255 /wd4710 /wd4711 /wd4201 /wd4204 /wd4191 /wd5027 /wd4514 /wd4242 /wd4244 /wd4738
 set mlt_includes=-I ..\third_party\ -I ..\third_party\imgui -I ..\third_party\SDL2-2.0.3\include -I ..\..\EasyTab -I ..\third_party\nativefiledialog\src\include
 

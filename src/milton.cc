@@ -419,18 +419,19 @@ void milton_gl_backend_draw(MiltonState* milton_state)
 #if MILTON_USE_VAO
     glBindVertexArray(gl->quad_vao);
 #else
-    GLint pos_loc     = glGetAttribLocationARB(gl->quad_program, "position");
-    GLint sampler_loc = glGetUniformLocationARB(gl->quad_program, "raster_buffer");
+    GLint pos_loc     = glGetAttribLocation(gl->quad_program, "position");
+    GLint sampler_loc = glGetUniformLocation(gl->quad_program, "raster_buffer");
     assert (pos_loc     >= 0);
     assert (sampler_loc >= 0);
-    GLCHK (glUniform1iARB(sampler_loc, 0 /*GL_TEXTURE0*/));
-    GLCHK (glVertexAttribPointerARB(/*attrib location*/(GLuint)pos_loc,
-                                    /*size*/2, GL_FLOAT,
-                                    /*normalize*/ GL_FALSE,
-                                    /*stride*/0,
-                                    /*ptr*/0));
+    GLCHK (glUniform1i(sampler_loc, 0 /*GL_TEXTURE0*/));
+    GLCHK (glBindBuffer(GL_ARRAY_BUFFER, milton_state->gl->vbo) );
+    GLCHK (glVertexAttribPointer(/*attrib location*/(GLuint)pos_loc,
+                                 /*size*/2, GL_FLOAT,
+                                 /*normalize*/ GL_FALSE,
+                                 /*stride*/0,
+                                 /*ptr*/0));
 
-    GLCHK (glEnableVertexAttribArrayARB((GLuint)pos_loc));
+    GLCHK (glEnableVertexAttribArray((GLuint)pos_loc));
 #endif
     GLCHK (glDrawArrays (GL_TRIANGLE_FAN, 0, 4) );
 }

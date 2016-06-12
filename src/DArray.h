@@ -116,3 +116,27 @@ void release(DArray<T>* arr)
         mlt_free(arr->data);
     }
 }
+
+// Iteration
+
+template <typename T>
+T* begin(const DArray<T>& arr)
+{
+    T* result = NULL;
+    if (arr.count > 0)
+    {
+        result = &arr.data[0];
+    }
+    return result;
+}
+
+template <typename T>
+T* end(const DArray<T>& arr)
+{
+    T* result = NULL;
+    if (arr.count > 0)
+    {
+        result = arr.data + arr.count;
+    }
+    return result;
+}

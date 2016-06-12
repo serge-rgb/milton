@@ -34,6 +34,7 @@ PFNGLISPROGRAMPROC                  glIsProgram;
 PFNGLISSHADERPROC                   glIsShader;
 PFNGLLINKPROGRAMPROC                glLinkProgram;
 PFNGLSHADERSOURCEPROC               glShaderSource;
+PFNGLUNIFORM1FPROC                  glUniform1f;
 PFNGLUNIFORM1IPROC                  glUniform1i;
 PFNGLUNIFORM2FPROC                  glUniform2f;
 PFNGLUNIFORM2IPROC                  glUniform2i;
@@ -45,6 +46,7 @@ PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC                 glUseProgram;
 PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
 PFNGLVERTEXATTRIBPOINTERPROC        glVertexAttribPointer;
+PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
 #endif  //_WIN32
 
 
@@ -96,6 +98,8 @@ bool load_gl_functions()
     GETADDRESS(glUseProgram);
     GETADDRESS(glValidateProgram);
     GETADDRESS(glVertexAttribPointer);
+    GETADDRESS(glDisableVertexAttribArray);
+    GETADDRESS(glUniform1f);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

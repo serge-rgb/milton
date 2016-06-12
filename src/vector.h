@@ -30,29 +30,47 @@ struct Vector2
         x = 0;
         y = 0;
     }
-    Vector2 (T val)
+    Vector2 (const T& val)
     {
         x = val;
         y = val;
     }
+    Vector2 (const Vector2<T>& other)
+    {
+        x = other.x;
+        y = other.y;
+    }
+
+    Vector2<T> operator =(const Vector2<T>& other)
+    {
+        this->x = other.x;
+        this->y = other.y;
+        return *this;
+    }
+
+    /* Vector2 (Vector2<float> other) */
+    /* { */
+    /*     x = (T)other.x; */
+    /*     y = (T)other.y; */
+    /* } */
 
     // Specialized Assignment
 
-    Vector2<i32> operator =(const Vector2<float>& a)
-    {
-        ivec2 result;
-        result.x = (int)a.x;
-        result.y = (int)a.y;
-        return result;
-    }
+    /* Vector2<i32> operator =(const Vector2<float>& a) */
+    /* { */
+    /*     ivec2 result; */
+    /*     result.x = (int)a.x; */
+    /*     result.y = (int)a.y; */
+    /*     return result; */
+    /* } */
 
-    Vector2<float> operator =(const Vector2<i32>& a)
-    {
-        ivec2 result;
-        result.x = (int)a.x;
-        result.y = (int)a.y;
-        return result;
-    }
+    /* Vector2<float> operator =(const Vector2<i32>&& a) */
+    /* { */
+    /*     ivec2 result; */
+    /*     result.x = (int)a.x; */
+    /*     result.y = (int)a.y; */
+    /*     return result; */
+    /* } */
 
 };
 
@@ -74,6 +92,13 @@ Vector2<T> operator +(const Vector2<T>& a, const Vector2<T>& b)
     result.y = a.y + b.y;
     return result;
 }
+Vector2<float> operator +(const Vector2<float>& a, const Vector2<i32>& b)
+{
+    Vector2<float> result;
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    return result;
+}
 template<typename T>
 Vector2<T> operator -(const Vector2<T>& a, const Vector2<T>& b)
 {
@@ -88,6 +113,13 @@ Vector2<T> operator -=(Vector2<T>& a, const Vector2<T>& b)
 {
     a.x -= b.x;
     a.y -= b.y;
+    return a;
+}
+template<typename T>
+Vector2<T> operator -=(Vector2<T>& a, double f)
+{
+    a.x -= f;
+    a.y -= f;
     return a;
 }
 template<typename T>
@@ -113,6 +145,13 @@ Vector2<T> operator *(const Vector2<T>& a, T factor)
     return result;
 }
 template<typename T>
+Vector2<T> operator *=(Vector2<T>& a, double f)
+{
+    a.x *= f;
+    a.y *= f;
+    return a;
+}
+template<typename T>
 Vector2<T> operator *=(Vector2<T>& a, float f)
 {
     a.x *= f;
@@ -127,7 +166,7 @@ Vector2<T> operator *=(Vector2<T>& a, i32 f)
     return a;
 }
 template<typename T>
-Vector2<T> operator /(const Vector2<T>& a, const Vector2<T>& b)
+Vector2<T> operator /(Vector2<T>& a, Vector2<T>& b)
 {
     Vector2<T> result = a;
     result.x /= b.x;

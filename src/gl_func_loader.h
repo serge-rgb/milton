@@ -39,6 +39,7 @@ extern PFNGLISPROGRAMPROC                  glIsProgram;
 extern PFNGLISSHADERPROC                   glIsShader;
 extern PFNGLLINKPROGRAMPROC                glLinkProgram;
 extern PFNGLSHADERSOURCEPROC               glShaderSource;
+extern PFNGLUNIFORM1FPROC                  glUniform1f;
 extern PFNGLUNIFORM1IPROC                  glUniform1i;
 extern PFNGLUNIFORM2FPROC                  glUniform2f;
 extern PFNGLUNIFORM2IPROC                  glUniform2i;
@@ -50,6 +51,7 @@ extern PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 extern PFNGLUSEPROGRAMPROC                 glUseProgram;
 extern PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
 extern PFNGLVERTEXATTRIBPOINTERPROC        glVertexAttribPointer;
+extern PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
 
 bool load_gl_functions();
 

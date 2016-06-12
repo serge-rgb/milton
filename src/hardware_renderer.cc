@@ -6,11 +6,25 @@
 #define uniform
 #define attribute
 #define main vertexShaderMain
-struct Vec4
+struct Vec4_
 {
     vec2 xy;
 };
-Vec4 gl_Position;
+Vec4_ gl_Position;
+vec2 as_vec2(ivec2 v)
+{
+    vec2 r;
+    r.x = v.x;
+    r.y = v.y;
+    return r;
+}
+ivec2 as_ivec2(vec2 v)
+{
+    ivec2 r;
+    r.x = v.x;
+    r.y = v.y;
+    return r;
+}
 #include "milton_canvas.v.glsl"
 #undef main
 #undef uniform
@@ -73,7 +87,6 @@ Vec4 gl_Position;
 struct RenderData
 {
     GLuint program;
-    GLuint vao;
 
     // Dumb and stupid and temporary array
     DArray<GLuint> strokes;
@@ -82,6 +95,15 @@ struct RenderData
 bool gpu_init(RenderData* render_data)
 {
     bool result = true;
+
+#if MILTON_DEBUG
+    // Assume our context is 3.0+
+    // Create a single VAO and bind it.
+    GLuint proxy_vao = 0;
+    GLCHK( glGenVertexArrays(1, &proxy_vao) );
+    GLCHK( glBindVertexArray(proxy_vao) );
+#endif
+
     // Load shader into opengl.
     GLuint objs[2];
 
@@ -113,25 +135,7 @@ bool gpu_init(RenderData* render_data)
 
     GLCHK( glUseProgram(render_data->program) );
 
-    GLuint vbo = 0;
 
-    GLCHK( glGenVertexArrays(1, &render_data->vao) );
-    glBindVertexArray(render_data->vao);
-
-    GLCHK( glGenBuffers(1, &vbo) );
-    GLCHK( glBindBuffer(GL_ARRAY_BUFFER, vbo) );
-
-    GLfloat data[] =
-    {
-        -0.5f, 0.5f,
-        -0.5f, -0.5f,
-        0.5f, -0.5f,
-    };
-
-    if (!gl_set_attribute_vec2(render_data->program, "position", data, sizeof(data)))
-    {
-        milton_log("HW Renderer problem: position location is not >=0\n");
-    }
     glPointSize(10);
 
     return result;
@@ -147,9 +151,10 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     u_scale = view->scale;
 #undef COPY_VEC
 #endif
-    gl_set_uniform_vec2i(render_data->program, "u_screen_center", 1, view->screen_center.d);
+    glUseProgram(render_data->program);
     gl_set_uniform_vec2i(render_data->program, "u_pan_vector", 1, view->pan_vector.d);
-    gl_set_uniform_vec2i(render_data->program, "u_screen_size", 1, view->screen_size.d);
+    gl_set_uniform_vec2i(render_data->program, "u_screen_center", 1, view->screen_center.d);
+    gl_set_uniform_vec2(render_data->program, "u_screen_size", 1, view->screen_size.d);
     gl_set_uniform_i(render_data->program, "u_scale", view->scale);
 }
 
@@ -158,7 +163,39 @@ void gpu_add_stroke(RenderData* render_data, Stroke* stroke)
     vec2 cp;
     cp.x = stroke->points[stroke->num_points-1].x;
     cp.y = stroke->points[stroke->num_points-1].y;
+#if MILTON_DEBUG
     canvas_to_raster_gl(cp);
+#endif
+    //
+    // Note.
+    //  Sandwich buffers:
+    //      The top and bottom layers should be two VBOs.
+    //      The working layer will be a possible empty VBO\
+    //      There will be a list of fresh VBOs of recently created strokes, the "ham"
+    //      [ TOP LAYER ]  - Big VBO single draw call. Layers above working stroke.
+    //          [  WL  ]    - Working layer. Single draw call for working stroke.
+    //          [  Ham ]    - Ham. 0 or more draw calls for strokes waiting to get into a "bread" layer
+    //      [ BOTTOM    ]  - Another big VBO, single draw call. Layers below working stroke.
+    //
+    // Create vbo for point.
+    GLuint vbo = 0;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    GLCHK( glUseProgram(render_data->program) );
+#if 0
+    size_t sz = 2*sizeof(i32)*stroke->num_points;
+    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sz),
+                        stroke->points,
+                        GL_STATIC_DRAW) );
+#else
+    GLfloat data[] =
+    {
+        (float)stroke->points[stroke->num_points-1].x,
+        (float)stroke->points[stroke->num_points-1].y,
+    };
+    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(data)), data, GL_STATIC_DRAW) );
+#endif
+    push(&render_data->strokes, vbo);
 }
 
 
@@ -166,8 +203,21 @@ void gpu_render(RenderData* render_data)
 {
     // Draw a triangle...
     GLCHK( glUseProgram(render_data->program) );
-    glBindVertexArray(render_data->vao);
-    //glDrawArrays(GL_TRIANGLES, 0, 3);
-    glDrawArrays(GL_POINTS, 0, 3);
+    GLint loc = glGetAttribLocation(render_data->program, "a_position");
+    if (loc >= 0)
+    {
+        for (size_t i = 0; i < render_data->strokes.count; ++i)
+        {
+            GLuint stroke = render_data->strokes.data[i];
+            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, stroke) );
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            GLCHK( glEnableVertexAttribArray((GLuint)loc) );
+
+            glDrawArrays(GL_POINTS, 0, 1);
+        }
+    }
+    GLCHK (glUseProgram(0));
 }
 

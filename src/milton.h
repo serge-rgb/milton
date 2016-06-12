@@ -5,7 +5,7 @@
 #pragma once
 
 
-#define MILTON_USE_VAO              1
+#define MILTON_USE_VAO              0
 #define STROKE_MAX_POINTS           2048
 #define MILTON_DEFAULT_SCALE        (1 << 10)
 #define NO_PRESSURE_INFO            -1.0f
