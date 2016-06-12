@@ -27,8 +27,9 @@ ivec2 as_ivec2(vec2 v)
 }
 #include "milton_canvas.v.glsl"
 #undef main
+#undef attribute
 #undef uniform
-#endif MILTON_DEBUG
+#endif //MILTON_DEBUG
 
 // Milton GPU renderer.
 //
