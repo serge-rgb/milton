@@ -171,6 +171,7 @@ bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t dat
 }
 bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
 {
+    glUseProgram(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
@@ -183,6 +184,7 @@ bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
 
 bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, int* vals)
 {
+    glUseProgram(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
@@ -197,6 +199,7 @@ bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, int* vals)
 
 bool gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
 {
+    glUseProgram(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
@@ -209,6 +212,7 @@ bool gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
 
 bool gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
 {
+    glUseProgram(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
@@ -221,6 +225,7 @@ bool gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
 
 bool gl_set_uniform_f(GLuint program, char* name, float val)
 {
+    glUseProgram(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
@@ -233,6 +238,7 @@ bool gl_set_uniform_f(GLuint program, char* name, float val)
 
 bool gl_set_uniform_i(GLuint program, char* name, i32 val)
 {
+    glUseProgram(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
@@ -245,6 +251,7 @@ bool gl_set_uniform_i(GLuint program, char* name, i32 val)
 
 bool gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
 {
+    glUseProgram(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;

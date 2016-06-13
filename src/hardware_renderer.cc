@@ -90,7 +90,12 @@ struct RenderData
     GLuint program;
 
     // Dumb and stupid and temporary array
-    DArray<GLuint> strokes;
+    struct RenderElem
+    {
+        GLuint vbo;
+        i64    count;
+    };
+    DArray<RenderElem> render_elems;
 };
 
 bool gpu_init(RenderData* render_data)
@@ -142,6 +147,14 @@ bool gpu_init(RenderData* render_data)
     return result;
 }
 
+void gpu_update_scale(RenderData* render_data, i32 scale)
+{
+#if MILTON_DEBUG // set the shader values in C++
+    u_scale = scale;
+#endif
+    gl_set_uniform_i(render_data->program, "u_scale", scale);
+}
+
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 {
 #if MILTON_DEBUG // set the shader values in C++
@@ -183,10 +196,10 @@ void gpu_add_stroke(RenderData* render_data, Stroke* stroke)
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     GLCHK( glUseProgram(render_data->program) );
-#if 0
+#if 1
     size_t sz = 2*sizeof(i32)*stroke->num_points;
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sz),
-                        stroke->points,
+                        (int*)stroke->points,
                         GL_STATIC_DRAW) );
 #else
     GLfloat data[] =
@@ -196,7 +209,10 @@ void gpu_add_stroke(RenderData* render_data, Stroke* stroke)
     };
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(data)), data, GL_STATIC_DRAW) );
 #endif
-    push(&render_data->strokes, vbo);
+    RenderData::RenderElem re;
+    re.vbo = vbo;
+    re.count = stroke->num_points;
+    push(&render_data->render_elems, re);
 }
 
 
@@ -207,16 +223,21 @@ void gpu_render(RenderData* render_data)
     GLint loc = glGetAttribLocation(render_data->program, "a_position");
     if (loc >= 0)
     {
-        for (size_t i = 0; i < render_data->strokes.count; ++i)
+        for (size_t i = 0; i < render_data->render_elems.count; ++i)
         {
-            GLuint stroke = render_data->strokes.data[i];
+            auto re = render_data->render_elems.data[i];
+            GLuint stroke = re.vbo;
+            i64 count = re.count;
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, stroke) );
+            //GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+            //                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+            //                             /*stride*/0, /*ptr*/0));
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*size*/2, GL_INT, /*normalize*/GL_FALSE,
                                          /*stride*/0, /*ptr*/0));
             GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
-            glDrawArrays(GL_POINTS, 0, 1);
+            glDrawArrays(GL_POINTS, 0, count);
         }
     }
     GLCHK (glUseProgram(0));

@@ -1125,6 +1125,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
         milton_update_brushes(milton_state);
+        gpu_update_scale(milton_state->render_data, milton_state->view->scale);
     }
     else if ((input->flags & MiltonInputFlags_PANNING))
     {

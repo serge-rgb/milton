@@ -8,12 +8,8 @@ attribute vec2 a_position;
 // CanvasView elements:
 uniform ivec2 u_pan_vector;
 uniform ivec2 u_screen_center;
-uniform vec2 u_screen_size;
+uniform vec2  u_screen_size;
 uniform int   u_scale;
-/* uniform vec2 u_pan_vector; */
-/* uniform vec2 u_screen_center; */
-/* uniform vec2 u_screen_size; */
-/* uniform int  u_scale; */
 
 // C++
 #if GL_core_profile
@@ -35,8 +31,6 @@ vec2 as_vec2(ivec2 v)
 vec2 canvas_to_raster_gl(vec2 cp)
 {
     vec2 rp = as_vec2( ((u_pan_vector + as_ivec2(cp)) / as_ivec2(u_scale)) + u_screen_center );
-    //vec2 rp = vec2( ((u_pan_vector + ivec2(cp)) / ivec2(u_scale)) + u_screen_center );
-    //vec2 rp = ((u_pan_vector + cp) / vec2(u_scale)) + u_screen_center;
     // rp in [0, W]x[0, H]
 
     rp /= u_screen_size;
