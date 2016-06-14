@@ -98,7 +98,7 @@ void milton_load(MiltonState* milton_state)
 
         if (ok) { milton_state->mlt_binary_version = milton_binary_version; }
 
-        if (milton_binary_version > 2)
+        if (milton_binary_version > MILTON_MINOR_VERION)
         {
             ok = false;
         }
@@ -126,7 +126,7 @@ void milton_load(MiltonState* milton_state)
         milton_state->root_layer = NULL;
         milton_state->working_layer = NULL;
 
-        for (int layer_i = 0; layer_i < num_layers; ++layer_i )
+        for (int layer_i = 0; ok && layer_i < num_layers; ++layer_i )
         {
             i32 len = 0;
             if (ok) { ok = fread_checked(&len, sizeof(i32), 1, fd); }
@@ -162,7 +162,6 @@ void milton_load(MiltonState* milton_state)
                         if (stroke->num_points == STROKE_MAX_POINTS)
                         {
                             // Fix the out of bounds bug.
-
                             if (ok)
                             {
                                 stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
@@ -205,12 +204,10 @@ void milton_load(MiltonState* milton_state)
                             ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
                             if ( !ok ) mlt_free (stroke->points);
                         }
-
                         if (ok)
                         {
                             ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
                         }
-
                     }
                 }
             }

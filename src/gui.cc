@@ -256,7 +256,8 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             {
                 char buffer[1024];
                 snprintf(buffer, array_count(buffer),
-                         "Milton version %s.", MILTON_VERSION);
+                         "Milton version %d.%d.%d",
+                         MILTON_MAJOR_VERSION, MILTON_MINOR_VERION, MILTON_MICRO_VERSION);
                 platform_dialog(buffer, "Milton Version");
             }
             if ( ImGui::MenuItem(LOC(website)) )

@@ -2,6 +2,8 @@
 // License: https://github.com/serge-rgb/milton#license
 //
 
+v4f k_eraser_color = {23,34,45,56};
+
 
 v2i canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
@@ -41,6 +43,12 @@ b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
         contained = true;
     }
     return contained;
+}
+
+b32 is_eraser(Brush* brush)
+{
+    b32 result = (equ4f(brush->color, k_eraser_color));
+    return result;
 }
 
 Rect bounding_box_for_stroke(Stroke* stroke)

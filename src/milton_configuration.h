@@ -3,7 +3,9 @@
 
 #pragma once
 
-#define MILTON_VERSION "1.3.4"
+#define MILTON_MAJOR_VERSION 1
+#define MILTON_MINOR_VERION  3
+#define MILTON_MICRO_VERSION 4
 
 // When MILTON_DEBUG is 1,
 //  - Asserts

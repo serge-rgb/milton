@@ -4,8 +4,6 @@
 
 /* #include "color.h" */
 
-v4f k_eraser_color = {23,34,45,56};
-
 u32 color_v4f_to_u32(v4f c)
 {
     u32 result = (u32)
@@ -206,6 +204,7 @@ v4f to_premultiplied(v3f rgb, f32 a)
 }
 
 
+#if 0
 v3f linear_to_gamma(v3f rgb)
 {
 #if FAST_GAMMA
@@ -284,3 +283,4 @@ v3f square_to_linear(v3f rgb)
     };
     return result;
 }
+#endif

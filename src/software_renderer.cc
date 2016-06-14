@@ -348,10 +348,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
         {
             // Clear color
             v4f background_color;
-            // Background color is going to be in gamma space, since it is picked by
-            // the user after it comes out from the monitor.  All color operations are
-            // done in linear space. We need to convert the background color to linear space.
-            background_color.rgb = gamma_to_linear(view->background_color);
+            background_color.rgb = view->background_color;
             background_color.a = 1.0f;
 
             // Cumulative blending
@@ -375,7 +372,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     continue;
                 }
 
-                b32 is_eraser = (equ4f(clipped_stroke->brush.color, k_eraser_color));
+                b32 iseraser = is_eraser(&clipped_stroke->brush);
 
                 ClippedPoint* points = clipped_stroke->clipped_points;
 
@@ -494,7 +491,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                         // Do blending
                         // ---------------
 
-                        if ( is_eraser )
+                        if ( iseraser )
                         {
                             pixel_erased = true;
                         }
@@ -526,9 +523,6 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
             // Blend onto the background whatever is accumulated.
             acc_color = blend_v4f(background_color, acc_color);
 
-            // Brushes are stored and operated in linear space, move to srgb
-            // before blitting
-            acc_color.rgb = linear_to_gamma(acc_color.rgb);
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 
@@ -632,10 +626,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     // Clear color
     v4f background_color;
 
-    // Background color is going to be in gamma space, since it is picked by
-    // the user after it comes out from the monitor.  All color operations are
-    // done in linear space. We need to convert the background color to linear space.
-    background_color.rgb = gamma_to_linear(view->background_color);
+    background_color.rgb = view->background_color;
     background_color.a = 1.0f;
 
 
@@ -676,7 +667,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                     continue;
                 }
 
-                b32 is_eraser = equ4f(clipped_stroke->brush.color, k_eraser_color);
+                b32 iseraser = is_eraser(&clipped_stroke->brush);
 
                 // Slow path. There are pixels not inside.
                 ClippedPoint* points = clipped_stroke->clipped_points;
@@ -995,7 +986,7 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                         // Do blending
                         // ---------------
 
-                        if (is_eraser)
+                        if (iseraser)
                         {
                             pixel_erased = true;
                         }
@@ -1027,9 +1018,6 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
             // Blend onto the background whatever is accumulated.
             acc_color = blend_v4f(background_color, acc_color);
 
-            // Brushes are stored and operated in linear space, move to srgb
-            // before blitting
-            acc_color.rgb = linear_to_gamma(acc_color.rgb);
             // From [0, 1] to [0, 255]
             u32 pixel = color_v4f_to_u32(acc_color);
 

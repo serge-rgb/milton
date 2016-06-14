@@ -116,7 +116,7 @@ static void milton_update_brushes(MiltonState* milton_state)
         if (i == BrushEnum_PEN)
         {
             // Alpha is set by the UI
-            brush->color = to_premultiplied(gamma_to_linear(gui_get_picker_rgb(milton_state->gui)), brush->alpha);
+            brush->color = to_premultiplied(gui_get_picker_rgb(milton_state->gui), brush->alpha);
         }
         else if (i == BrushEnum_ERASER)
         {
@@ -241,14 +241,29 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
             passed_inspection = false;
         }
 
-        if ( passed_inspection && not_the_first ) {
+        if (passed_inspection && not_the_first)
+        {
+            // Check that the last point is far away enough.
+#if 1
+            if (input_i > 1)
+            {
+                auto prev_point = input->points[input_i-1];
+                auto distance = abs(in_point.x - prev_point.x) + abs(in_point.y - prev_point.y);
+                if (distance > 1600)  // TODO: this is pixel-density-dependent.
+                {
+                    passed_inspection = false;
+                }
+            }
+#endif
+
             i32 in_radius = (i32)(pressure * ws->brush.radius);
 
             // Limit the number of points we check so that we don't mess with the stroke too much.
             int point_window = 4;
             int count = 0;
             // Pop every point that is contained by the new one, but don't leave it empty
-            for ( i32 i = ws->num_points - 1; i >= 0; --i )
+
+            for ( i32 i = ws->num_points - 1; passed_inspection && i >= 0; --i )
             {
                 if ( ++count >= point_window )
                 {
@@ -267,7 +282,8 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                     {
                         break;
                     }
-                } else if ( stroke_point_contains_point(this_point, this_radius, canvas_point, in_radius) )
+                }
+                else if (stroke_point_contains_point(this_point, this_radius, canvas_point, in_radius))
                 {
                     // If some other point in the past contains this point,
                     // then this point is invalid.
@@ -649,7 +665,7 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
 
 void milton_reset_canvas(MiltonState* milton_state)
 {
-    milton_state->mlt_binary_version = 2;
+    milton_state->mlt_binary_version = 3;
     Layer* l = milton_state->root_layer;
     while ( l != NULL )
     {
