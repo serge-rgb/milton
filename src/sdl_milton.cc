@@ -221,7 +221,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 {
                     if ( !platform_state->is_panning )
                     {
-                        milton_input.points[platform_state->num_point_results++] = input_point;
+                        if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
+                        {
+                            milton_input.points[platform_state->num_point_results++] = input_point;
+                        }
                     }
                     else if ( platform_state->is_panning )
                     {

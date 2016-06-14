@@ -192,6 +192,7 @@ static void clear_stroke_redo(MiltonState* milton_state)
 
 static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 {
+    i64 num_discarded = 0;
     if ( input->input_count == 0 )
     {
         return;
@@ -239,22 +240,23 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         if ( pressure == NO_PRESSURE_INFO )
         {
             passed_inspection = false;
+            num_discarded++;
+        }
+
+        // Check that the last point is far away enough.
+        if (input_i > 1)
+        {
+            auto prev_point = input->points[input_i-1];
+            auto distance = abs(in_point.x - prev_point.x) + abs(in_point.y - prev_point.y);
+            if (distance < 8)  // TODO: this is pixel-density-dependent.
+            {
+                passed_inspection = false;
+                num_discarded++;
+            }
         }
 
         if (passed_inspection && not_the_first)
         {
-            // Check that the last point is far away enough.
-#if 1
-            if (input_i > 1)
-            {
-                auto prev_point = input->points[input_i-1];
-                auto distance = abs(in_point.x - prev_point.x) + abs(in_point.y - prev_point.y);
-                if (distance > 1600)  // TODO: this is pixel-density-dependent.
-                {
-                    passed_inspection = false;
-                }
-            }
-#endif
 
             i32 in_radius = (i32)(pressure * ws->brush.radius);
 
@@ -288,6 +290,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                     // If some other point in the past contains this point,
                     // then this point is invalid.
                     passed_inspection = false;
+                    num_discarded += ws->num_points - i;
                     break;
                 }
             }
@@ -302,6 +305,13 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
             ws->pressures[index] = pressure;
         }
     }
+
+#if 1
+    if (num_discarded > 0)
+    {
+        milton_log("INFO: Discarded %d points.\n", num_discarded);
+    }
+#endif
 
     // Validate. remove points that are standing in the same place, even if they have different pressures.
     for ( i32 np = 0; np < ws->num_points-1; ++np )
