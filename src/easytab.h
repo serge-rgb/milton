@@ -176,6 +176,7 @@ typedef enum
     EASYTAB_DLL_LOAD_ERROR         = -3,
     EASYTAB_WACOM_WIN32_ERROR      = -4,
     EASYTAB_INVALID_FUNCTION_ERROR = -5,
+    EASYTAB_QUEUE_SIZE_ERROR       = -6,
 
     EASYTAB_EVENT_NOT_HANDLED = -16,
 } EasyTabResult;
@@ -185,6 +186,8 @@ typedef enum
     EASYTAB_TRACKING_MODE_SYSTEM   = 0,
     EASYTAB_TRACKING_MODE_RELATIVE = 1,
 } EasyTabTrackingMode;
+
+#define EASYTAB_PACKETQUEUE_SIZE 128
 
 #ifdef WIN32
 // -----------------------------------------------------------------------------
@@ -537,6 +540,7 @@ typedef HCTX (WINAPI * WTRESTORE) (HWND, LPVOID, BOOL);
 typedef BOOL (WINAPI * WTEXTSET) (HCTX, UINT, LPVOID);
 typedef BOOL (WINAPI * WTEXTGET) (HCTX, UINT, LPVOID);
 typedef BOOL (WINAPI * WTQUEUESIZESET) (HCTX, int);
+typedef int  (WINAPI * WTQUEUESIZEGET) (HCTX);
 typedef int  (WINAPI * WTDATAPEEK) (HCTX, UINT, UINT, int, LPVOID, LPINT);
 typedef int  (WINAPI * WTPACKETSGET) (HCTX, int, LPVOID);
 typedef HMGR (WINAPI * WTMGROPEN) (HWND, UINT);
@@ -582,6 +586,7 @@ typedef struct
     WTEXTSET          WTExtSet;
     WTEXTGET          WTExtGet;
     WTQUEUESIZESET    WTQueueSizeSet;
+    WTQUEUESIZEGET    WTQueueSizeGet;
     WTDATAPEEK        WTDataPeek;
     WTPACKETSGET      WTPacketsGet;
     WTMGROPEN         WTMgrOpen;
@@ -790,6 +795,7 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         GETPROCADDRESS(WTEXTSET          , WTExtSet);
         GETPROCADDRESS(WTEXTGET          , WTExtGet);
         GETPROCADDRESS(WTQUEUESIZESET    , WTQueueSizeSet);
+        GETPROCADDRESS(WTQUEUESIZEGET    , WTQueueSizeGet);  // Note: In wintab samples this is done via #defines
         GETPROCADDRESS(WTDATAPEEK        , WTDataPeek);
         GETPROCADDRESS(WTPACKETSGET      , WTPacketsGet);
         GETPROCADDRESS(WTMGROPEN         , WTMgrOpen);
@@ -892,6 +898,11 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
             EasyTab->RangeX      = RangeX.axMax;
             EasyTab->RangeY      = RangeY.axMax;
         }
+        int QueueSize = EasyTab->WTQueueSizeGet(EasyTab->Context);
+        if (!EasyTab->WTQueueSizeSet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE))
+        {
+            return EASYTAB_QUEUE_SIZE_ERROR;
+        }
     }
 
     return EASYTAB_OK;
@@ -916,6 +927,19 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 
         EasyTab->Pressure = (float)Packet.pkNormalPressure / (float)EasyTab->MaxPressure;
         return EASYTAB_OK;
+    }
+    else if (Message == WT_PACKET &&
+             (HCTX)LParam != EasyTab->Context)
+    {
+        int foo = 1;
+    }
+    else if (Message == WT_PACKET)
+    {
+        int bar = 1;
+    }
+    else if (Message == WT_PROXIMITY)
+    {
+        EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE+1, NULL);
     }
 
     return EASYTAB_EVENT_NOT_HANDLED;
