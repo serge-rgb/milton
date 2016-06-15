@@ -129,7 +129,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
         case SDL_SYSWMEVENT:
             {
                 f32 pressure = NO_PRESSURE_INFO;
-                v2i point = { 0 };
                 SDL_SysWMEvent sysevent = event.syswm;
                 EasyTabResult er = EASYTAB_EVENT_NOT_HANDLED;
                 switch(sysevent.msg->subsystem)
@@ -157,59 +156,86 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 }
                 if ( er == EASYTAB_OK )
                 {
-                    if (platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && EasyTab->Pressure > 0)
+                    b32 got_pen = false;
+                    // Pen in use but not drawing
+                    b32 was_pen_down = EasyTab->PenInProximity && !platform_state->is_pointer_down;
+                    //if (platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && platform_state->is_pointer_down)
                     {
-                        platform_state->is_pointer_down = true;
-                        if (EasyTab->PosX >= 0 && EasyTab->PosY >= 0)  // Quick n' dirty is-inside-client-rect test
+                        for (int pi = 0; pi < EasyTab->NumPackets; ++pi)
                         {
-                            if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
+                            if (EasyTab->PosX >= 0 && EasyTab->PosY >= 0)  // Quick n' dirty is-inside-client-rect test
                             {
-                                milton_input.points[platform_state->num_point_results++] = { EasyTab->PosX, EasyTab->PosY };
-                            }
-                            if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS )
-                            {
-                                milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure;
+                                bool is_down = EasyTab->Pressure[pi] > 0 && EasyTab->PenInProximity;
+                                if (is_down)
+                                {
+                                    got_pen = true;
+                                    if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
+                                    {
+                                        v2i point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
+                                        milton_input.points[platform_state->num_point_results++] = point;
+                                    }
+                                    if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
+                                    {
+                                        milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure[pi];
+                                    }
+                                }
                             }
                         }
+
+                        if (got_pen)
+                        {
+                            platform_state->is_pointer_down = true;
+                        }
                     }
+                    if (EasyTab->NumPackets>0)
+                    {
+                        v2i point = { EasyTab->PosX[EasyTab->NumPackets-1], EasyTab->PosY[EasyTab->NumPackets-1] };
+                        milton_input.hover_point = point;
+                        input_flags |= MiltonInputFlags_HOVERING;
+
+                        if (platform_state->is_panning && platform_state->is_pointer_down)
+                        {
+                            platform_state->pan_point = point;
+                        }
+                    }
+                    // Wasn't drawing, and now we got a result with pressure>0
+                    b32 pen_touched_tab = !was_pen_down && EasyTab->PenInProximity && (platform_state->num_pressure_results>0);
                 }
             } break;
         case SDL_MOUSEBUTTONDOWN:
-            if ( event.button.windowID != platform_state->window_id )
             {
-                break;
-            }
-            if ( event.button.button == SDL_BUTTON_LEFT )
-            {
-                if ( !ImGui::GetIO().WantCaptureMouse )
+                if ( event.button.windowID != platform_state->window_id )
                 {
-                    input_flags |= MiltonInputFlags_CLICK;
-                    milton_input.click = { event.button.x, event.button.y };
+                    break;
                 }
+                if ( event.button.button == SDL_BUTTON_LEFT )
+                {
+                    if ( !ImGui::GetIO().WantCaptureMouse )
+                    {
+                        input_flags |= MiltonInputFlags_CLICK;
+                        milton_input.click = { event.button.x, event.button.y };
+                    }
 
-                if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS )
-                {
-                    milton_input.points[platform_state->num_point_results++] = { event.button.x, event.button.y };
+                    platform_state->is_pointer_down = true;
+                    if (platform_state->is_panning)
+                    {
+                        platform_state->pan_start = { event.button.x, event.button.y };
+                        platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
+                    }
                 }
-                platform_state->is_pointer_down = true;
-                if ( platform_state->is_panning )
-                {
-                    platform_state->pan_start = { event.button.x, event.button.y };
-                    platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
-                }
-            }
-            break;
+            } break;
         case SDL_MOUSEBUTTONUP:
-            if ( event.button.windowID != platform_state->window_id )
             {
-                break;
-            }
-            if ( event.button.button == SDL_BUTTON_LEFT )
-            {
-                pointer_up = true;
-                input_flags |= MiltonInputFlags_CLICKUP;
-            }
-            break;
+                if ( event.button.windowID != platform_state->window_id )
+                {
+                    break;
+                }
+                if ( event.button.button == SDL_BUTTON_LEFT )
+                {
+                    pointer_up = true;
+                    input_flags |= MiltonInputFlags_CLICKUP;
+                }
+            } break;
         case SDL_MOUSEMOTION:
             {
                 if ( event.motion.windowID != platform_state->window_id )
@@ -217,25 +243,28 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     break;
                 }
                 input_point = { event.motion.x, event.motion.y };
-                if ( platform_state->is_pointer_down )
+                if (!EasyTab->PenInProximity) // Only get mouse info when wacom is not in use..
                 {
-                    if ( !platform_state->is_panning )
+                    if ( platform_state->is_pointer_down )
                     {
-                        if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
+                        if ( !platform_state->is_panning )
                         {
-                            milton_input.points[platform_state->num_point_results++] = input_point;
+                            if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
+                            {
+                                milton_input.points[platform_state->num_point_results++] = input_point;
+                            }
                         }
+                        else if ( platform_state->is_panning )
+                        {
+                            platform_state->pan_point = input_point;
+                        }
+                        input_flags &= ~MiltonInputFlags_HOVERING;
                     }
-                    else if ( platform_state->is_panning )
+                    else
                     {
-                        platform_state->pan_point = input_point;
+                        input_flags |= MiltonInputFlags_HOVERING;
+                        milton_input.hover_point = input_point;
                     }
-                    input_flags &= ~MiltonInputFlags_HOVERING;
-                }
-                else
-                {
-                    input_flags |= MiltonInputFlags_HOVERING;
-                    milton_input.hover_point = input_point;
                 }
                 break;
             }
@@ -415,7 +444,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
         case SDL_KEYUP:
             {
                 if (event.key.windowID != platform_state->window_id) {
-                break;
+                    break;
                 }
 
                 SDL_Keycode keycode = event.key.keysym.sym;

@@ -187,7 +187,10 @@ typedef enum
     EASYTAB_TRACKING_MODE_RELATIVE = 1,
 } EasyTabTrackingMode;
 
-#define EASYTAB_PACKETQUEUE_SIZE 128
+#define EASYTAB_PACKETQUEUE_SIZE    128
+#define EASYTAB_TRUE                1
+#define EASYTAB_FALSE               0
+#define EASYTAB_BOOL                int
 
 #ifdef WIN32
 // -----------------------------------------------------------------------------
@@ -555,8 +558,11 @@ typedef HCTX (WINAPI * WTMGRDEFCONTEXTEX) (HMGR, UINT, BOOL);
 // -----------------------------------------------------------------------------
 typedef struct
 {
-    int32_t PosX, PosY;
-    float   Pressure; // Range: 0.0f to 1.0f
+    int32_t PosX[EASYTAB_PACKETQUEUE_SIZE];
+    int32_t PosY[EASYTAB_PACKETQUEUE_SIZE];
+    float   Pressure[EASYTAB_PACKETQUEUE_SIZE]; // Range: 0.0f to 1.0f
+    int32_t NumPackets;  // Number of PosX, PosY, Pressure elements available in arrays.
+    EASYTAB_BOOL PenInProximity;  // EASYTAB_TRUE if pen is in proximity to table. EASYTAB_FALSE otherwise.
 
     int32_t RangeX, RangeY;
     int32_t MaxPressure;
@@ -912,22 +918,31 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
 
 EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPARAM WParam)
 {
-    PACKET Packet = { 0 };
+    EasyTabResult result = EASYTAB_EVENT_NOT_HANDLED;
 
+    PACKET PacketBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };
+
+    EasyTab->NumPackets = 0;
     if (Message == WT_PACKET &&
-        (HCTX)LParam == EasyTab->Context &&
-        EasyTab->WTPacket(EasyTab->Context, (UINT)WParam, &Packet))
+        (HCTX)LParam == EasyTab->Context)
     {
-        POINT Point = { 0 };
-        Point.x = EasyTab->ScreenOriginX + Packet.pkX / EasyTab->ScreenAreaRatioX;
-        Point.y = EasyTab->ScreenOriginY + Packet.pkY / EasyTab->ScreenAreaRatioY;
-        ScreenToClient(Window, &Point);
-        EasyTab->PosX = Point.x;
-        EasyTab->PosY = Point.y;
+        int NumPackets = EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE, PacketBuffer);
+        POINT PointBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };
 
-        EasyTab->Pressure = (float)Packet.pkNormalPressure / (float)EasyTab->MaxPressure;
-        return EASYTAB_OK;
+        for (int i = 0; i < NumPackets; ++i)
+        {
+            PointBuffer[i].x = EasyTab->ScreenOriginX + PacketBuffer[i].pkX / EasyTab->ScreenAreaRatioX;
+            PointBuffer[i].y = EasyTab->ScreenOriginY + PacketBuffer[i].pkY / EasyTab->ScreenAreaRatioY;
+            ScreenToClient(Window, &PointBuffer[i]);
+            EasyTab->PosX[i] = PointBuffer[i].x;
+            EasyTab->PosY[i] = PointBuffer[i].y;
+
+            EasyTab->Pressure[i] = (float)PacketBuffer[i].pkNormalPressure / (float)EasyTab->MaxPressure;
+        }
+        EasyTab->NumPackets = NumPackets;
+        result = EASYTAB_OK;
     }
+
     else if (Message == WT_PACKET &&
              (HCTX)LParam != EasyTab->Context)
     {
@@ -937,14 +952,23 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
     {
         int bar = 1;
     }
-    else if (Message == WT_PROXIMITY)
+    else if (Message == WT_PROXIMITY &&
+             (HCTX)WParam == EasyTab->Context)
     {
+        if (LOWORD(LParam) != 0)
+        {
+            // Entering context
+            EasyTab->PenInProximity = EASYTAB_TRUE;
+        }
+        else
+        {
+            EasyTab->PenInProximity = EASYTAB_FALSE;
+        }
         EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE+1, NULL);
-
-        return EASYTAB_OK;
+        result = EASYTAB_OK;
     }
 
-    return EASYTAB_EVENT_NOT_HANDLED;
+    return result;
 }
 
 void EasyTab_Unload()
