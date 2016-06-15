@@ -55,9 +55,9 @@ void reserve(DArray<T>* arr, u64 size)
 {
     if (arr)
     {
-        arr->capacity = size;
         if (arr->capacity < size || arr->data == NULL)
         {
+            arr->capacity = size;
             grow(arr);
         }
     }
