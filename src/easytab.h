@@ -940,6 +940,8 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
     else if (Message == WT_PROXIMITY)
     {
         EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE+1, NULL);
+
+        return EASYTAB_OK;
     }
 
     return EASYTAB_EVENT_NOT_HANDLED;
