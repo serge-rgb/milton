@@ -238,7 +238,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 gui_toggle_visibility(milton_state->gui);
             }
 #if MILTON_ENABLE_PROFILING
-            if (ImGui::MenuItem("Toggle Debug Profiler [BACKQUOTE]"))
+            if (ImGui::MenuItem("Toggle Debug Data [BACKQUOTE]"))
             {
                 milton_state->viz_window_visible = !milton_state->viz_window_visible;
             }
@@ -596,7 +596,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
     if (milton_state->viz_window_visible)
     {
         bool opened = true;
-        if (ImGui::Begin("Debug Profiling ([BACKQUOTE] to toggle)", &opened, ImGuiWindowFlags_NoCollapse))
+        if (ImGui::Begin("Debug Data ([BACKQUOTE] to toggle)", &opened, ImGuiWindowFlags_NoCollapse))
         {
             float graph_height = 20;
             char msg[512] = {};
@@ -703,6 +703,9 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     }
                 }
             }
+            snprintf(msg, array_count(msg),
+                     "Scale: %d", view->scale);
+            ImGui::Text(msg);
 
         } ImGui::End();
     }

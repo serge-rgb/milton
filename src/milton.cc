@@ -1013,7 +1013,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 // Sensible
 #if 1
         f32 scale_factor = 1.3f;
-        i32 view_scale_limit = (1 << 15);
+        i32 view_scale_limit = (1 << 13);
 // Debug
 #else
         f32 scale_factor = 1.5f;
