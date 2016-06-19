@@ -101,7 +101,7 @@ static void milton_set_default_view(CanvasView* view)
     view->downsampling_factor = 1;
     view->num_layers          = 1;
     view->background_color    = v3f{ 1, 1, 1 };
-    view->canvas_radius_limit = 1u << 30;
+    view->canvas_radius_limit = 1 << 30;  // A higher limit and certain assumptions start to break
 
 }
 
@@ -329,7 +329,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
 void milton_set_canvas_file_(MiltonState* milton_state, char* fname, b32 is_default)
 {
-    if ( is_default )
+    if (is_default)
     {
         milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
     }
@@ -548,7 +548,8 @@ void milton_init(MiltonState* milton_state)
     }
 
     // Set default brush sizes.
-    for (int i = 0; i < BrushEnum_COUNT; ++i) {
+    for (int i = 0; i < BrushEnum_COUNT; ++i)
+	{
         switch (i)
         {
         case BrushEnum_PEN:
@@ -1010,7 +1011,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
 
 // Sensible
-#if 0
+#if 1
         f32 scale_factor = 1.3f;
         i32 view_scale_limit = (1 << 15);
 // Debug

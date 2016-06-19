@@ -1415,7 +1415,7 @@ static b32 stroke_intersects_rect(Stroke* stroke, Rect rect)
     }
     else
     {
-        milton_log("Stroke intersection invalid!");
+        milton_log("Stroke intersection invalid!\n");
     }
     return result;
 }

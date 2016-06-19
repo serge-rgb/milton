@@ -592,7 +592,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
     }
 #if MILTON_ENABLE_PROFILING
     ImGui::SetNextWindowPos(ImVec2(300, 205), ImGuiSetCond_FirstUseEver);
-    ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+    ImGui::SetNextWindowSize({350, 285}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
     if (milton_state->viz_window_visible)
     {
         bool opened = true;
@@ -660,6 +660,49 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                      (int)count_strokes(milton_state->root_layer),
                      (int)count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
             ImGui::Text(msg);
+
+            auto* view = milton_state->view;
+            int screen_height = view->screen_size.h * view->scale;
+            int screen_width = view->screen_size.w * view->scale;
+
+            if (screen_height>0 && screen_height>0)
+            {
+                v2i pan = view->pan_vector;
+
+
+                {
+                    if (pan.y < 0)
+                    {
+                        long n_screens_below = ((long)(INT_MAX) + (long)pan.y)/(long)screen_height;
+                        snprintf(msg, array_count(msg),
+                                 "Screens below: %ld\n", n_screens_below);
+                        ImGui::Text(msg);
+                    }
+                    else
+                    {
+                        long n_screens_above = ((long)(INT_MAX) - (long)pan.y)/(long)screen_height;
+                        snprintf(msg, array_count(msg),
+                                 "Screens above: %ld\n", n_screens_above);
+                        ImGui::Text(msg);
+                    }
+                }
+                {
+                    if (pan.x < 0)
+                    {
+                        long n_screens_below = ((long)(INT_MAX) + (long)pan.x)/(long)screen_width;
+                        snprintf(msg, array_count(msg),
+                                 "Screens to the right: %ld\n", n_screens_below);
+                        ImGui::Text(msg);
+                    }
+                    else
+                    {
+                        long n_screens_above = ((long)(INT_MAX) - (long)pan.x)/(long)screen_width;
+                        snprintf(msg, array_count(msg),
+                                 "Screens to the left: %ld\n", n_screens_above);
+                        ImGui::Text(msg);
+                    }
+                }
+            }
 
         } ImGui::End();
     }

@@ -39,6 +39,7 @@ v4f color_rgb_to_rgba(v3f rgb, float a)
     return rgba;
 }
 
+// src over dst
 v4f blend_v4f(v4f dst, v4f src)
 {
     //f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
