@@ -60,27 +60,13 @@ Milton will be compiled to `build\Milton.exe`
 Linux
 -----
 
-_WON'T WORK_
+_No linux support at the moment._
 
-Requirements:
-
-- SDL2 development libraries. On Ubuntu, this is `apt-get install libsdl2-dev`
-- The clang compiler.
-
-Just run `make`
 
 OSX
 ---
 
-_WON'T WORK_
-
-Requirements:
-
-- CMake (for building SDL)
-
-1. `./setup_osx.sh` to download dependencies and build SDL
-2. `./build_osx.sh`
-3. Milton is compiled to `./build/milton`
+_No OSX support at the moment._
 
 
 License
