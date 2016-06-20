@@ -7,7 +7,6 @@ To-Do
         Can't repro anymore (Try on Win7?)
     - MoveFileEx randomly fails with return code 5 - access denied
         The bigger the file, the likelier it is to fail.
-    - if last_canvas_fname is invalid, Milton will be unusable
 
 - Performance:
     - Per-layer buffer memory, only redraw working_layer

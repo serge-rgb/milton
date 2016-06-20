@@ -265,6 +265,13 @@ b32 platform_move_file(char* src, char* dest)
     {
         int err = (int)GetLastError();
         win32_print_error(err);
+
+        BOOL could_delete = DeleteFileA(src);
+        if (could_delete == FALSE)
+        {
+            win32_print_error((int)GetLastError());
+
+        }
     }
     return ok;
 }
@@ -280,6 +287,42 @@ void platform_fname_at_config(char* fname, size_t len)
     strncat(fname + pathlen, tmp, len-pathlen);
     mlt_free(tmp) ;
 }
+
+// Delete old milton_tmp files from previous milton versions.
+void win32_cleanup_appdata()
+{
+    char fname[MAX_PATH] = {};
+    platform_fname_at_config((char*)fname, MAX_PATH);
+
+    char* base_end = fname + strlen(fname);
+
+    strcat((char*)fname, "milton_tmp.*.mlt");
+    WIN32_FIND_DATA find_data = {};
+
+    HANDLE hfind = FindFirstFile(fname, &find_data);
+    if (hfind != INVALID_HANDLE_VALUE)
+    {
+        b32 can_delete = true;
+        while (can_delete)
+        {
+            char* fn = find_data.cFileName;
+            milton_log("AppData Cleanup: Deleting %s\n", fn);
+
+            *base_end = '\0';
+
+            strcat(fname, fn);
+
+            BOOL could_delete = DeleteFile(fname);
+            if (could_delete == FALSE)
+            {
+                win32_print_error((int)GetLastError());
+            }
+            can_delete = FindNextFile(hfind, &find_data);
+        }
+        FindClose(hfind);
+    }
+}
+
 
 void platform_open_link(char* link)
 {
@@ -327,6 +370,7 @@ int CALLBACK WinMain(
         int nCmdShow
         )
 {
+    win32_cleanup_appdata();
     milton_main();
 }
 
