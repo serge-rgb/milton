@@ -227,7 +227,7 @@ void milton_init(MiltonState* milton_state);
 void milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname);
 void milton_set_default_canvas_file(MiltonState* milton_state);
 
-void milton_reset_canvas(MiltonState* milton_state);
+void milton_reset_canvas_and_set_default(MiltonState* milton_state);
 
 void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size);
 

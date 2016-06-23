@@ -67,8 +67,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 }
 
                 // New Canvas
-                milton_set_default_canvas_file(milton_state);
-                milton_reset_canvas(milton_state);
+                milton_reset_canvas_and_set_default(milton_state);
                 input->flags |= MiltonInputFlags_FULL_REFRESH;
                 milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
             }
@@ -270,18 +269,17 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
         }
         PATH_CHAR* utf_name = str_trim_to_last_slash(milton_state->mlt_file_path);
 
-#if defined(_WIN32)
-        char file_name[MAX_PATH];
+        char file_name[MAX_PATH] = {};
         utf16_to_utf8_simple(utf_name, file_name);
-#endif
 
         char msg[1024];
         WallTime lst = milton_state->last_save_time;
-        // TODO: hard-coding %S here. Change when porting.
+
         snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
                  file_name,
                  lst.hours, lst.minutes, lst.seconds);
+
         if (ImGui::BeginMenu(msg, /*bool enabled = */false))
         {
             ImGui::EndMenu();

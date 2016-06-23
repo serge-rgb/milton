@@ -269,8 +269,7 @@ void milton_load(MiltonState* milton_state)
         if (!ok)
         {
             platform_dialog("Tried to load a corrupted Milton file or there was an error reading from disk.", "Error");
-            milton_set_default_canvas_file(milton_state);  // Prevent the same file from getting loaded next time.
-            milton_reset_canvas(milton_state);
+            milton_reset_canvas_and_set_default(milton_state);
         }
         else
         {
@@ -292,7 +291,7 @@ void milton_load(MiltonState* milton_state)
     }
     else
     {
-        milton_reset_canvas(milton_state);
+        milton_reset_canvas_and_set_default(milton_state);
     }
     milton_validate(milton_state);
 }
@@ -303,7 +302,7 @@ void milton_save(MiltonState* milton_state)
 
     int pid = (int)getpid();
     PATH_CHAR tmp_fname[MAX_PATH] = {0};
-    path_snprintf(tmp_fname, MAX_PATH, TO_PATH_STR("milton_tmp.%d.mlt"), pid);
+    PATH_SNPRINTF(tmp_fname, MAX_PATH, TO_PATH_STR("milton_tmp.%d.mlt"), pid);
 
     platform_fname_at_config(tmp_fname, MAX_PATH);
 

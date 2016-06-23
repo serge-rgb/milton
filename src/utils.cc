@@ -373,15 +373,23 @@ Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h)
     return rect;
 }
 
-void utf16_to_utf8_simple(char* utf_name, char* file_name)
+void utf16_to_utf8_simple(char* , char* )
 {
    // Nothing needs to be done
 }
 
-void utf16_to_utf8_simple(wchar_t* utf_name, char* file_name)
+void utf16_to_utf8_simple(wchar_t* utf16_name, char* utf8_name)
 {
-
-   // TODO: implement
+   for(wchar_t* iter = utf16_name;
+       *iter!='\0';
+       ++iter)
+   {
+      if (*iter <= 128)
+      {
+         *utf8_name++ = (char)*iter;
+      }
+   }
+   *utf8_name='\0';
 }
 
 wchar_t* str_trim_to_last_slash(wchar_t* str)

@@ -82,8 +82,10 @@ HRESULT SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE h
 #define PATH_STRCMP wcscmp
 #define PATH_STRNCPY wcsncpy
 #define PATH_STRCPY wcscpy
+#define PATH_STRCAT wcscat
+#define PATH_SNPRINTF _snwprintf
 
-int path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
+int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
 {
     va_list args;
     assert (format);
@@ -277,26 +279,41 @@ void platform_dialog(char* info, char* title)
 
 void platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 {
-#if 0
-    char* base = SDL_GetBasePath();  // SDL returns utf8 path!
-    char* tmp = (char*)mlt_calloc(1, len);
-    strncpy(tmp, fname, len);
-    fname[0] = '\0';
-    strncat(fname, base, len);
-    size_t pathlen = strlen(fname);
-    strncat(fname + pathlen, tmp, len-pathlen);
-    mlt_free(tmp) ;
-#endif
+    PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len);  // store the fname here
+    PATH_STRCPY(tmp, fname);
+
+    DWORD path_len = GetModuleFileNameW(NULL, fname, (DWORD)len);
+    if (path_len > len)
+    {
+        milton_die_gracefully("Milton's install directory has a path that is too long.");
+    }
+
+    {  // Remove the exe name
+        PATH_CHAR* last_slash = fname;
+        for(PATH_CHAR* iter = fname;
+            *iter != '\0';
+            ++iter)
+        {
+            if (*iter == '\\')
+            {
+                last_slash = iter;
+            }
+        }
+        *(last_slash+1) = '\0';
+    }
+
+    PATH_STRCAT(fname, tmp);
+    mlt_free(tmp);
+
 }
 
 b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
 {
     b32 ok = true;
-#if 0
-    char* full = (char*)mlt_calloc(MAX_PATH, sizeof(*full));
-    strncpy(full, fname, MAX_PATH);
+    PATH_CHAR* full = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*full));
+    PATH_STRNCPY(full, fname, MAX_PATH);
     platform_fname_at_config(full, MAX_PATH);
-    int r = DeleteFileA(full);
+    int r = DeleteFileW(full);
     if (r == 0)
     {
         ok = false;
@@ -309,7 +326,6 @@ b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
         }
     }
     mlt_free(full);
-#endif
     return ok;
 }
 

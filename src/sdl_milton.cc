@@ -841,12 +841,42 @@ int milton_main()
         io.IniFilename = NULL;  // Don't save any imgui.ini file
         PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("carlito.ttf");
         platform_fname_at_exe(fname, MAX_PATH); // TODO: check that this works again
-        FILE* fd_sentinel = platform_fopen(fname, TO_PATH_STR("rb"));
+        FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
 
-        if (fd_sentinel)
+        if (fd)
         {
-            fclose(fd_sentinel);
-            ImFont* im_font =  io.Fonts->ImFontAtlas::AddFontFromFileTTF("carlito.ttf", 14);
+            size_t  ttf_sz = 0;
+            void*   ttf_data = NULL;
+            //ImFont* im_font =  io.Fonts->ImFontAtlas::AddFontFromFileTTF("carlito.ttf", 14);
+            // Load file to memory
+            if (fseek(fd, 0, SEEK_END) == 0)
+            {
+                long ttf_sz_long = ftell(fd);
+                if (ttf_sz_long != -1)
+                {
+                    ttf_sz = (size_t)ttf_sz_long;
+                    if (fseek(fd, 0, SEEK_SET) == 0)
+                    {
+                        ttf_data = ImGui::MemAlloc(ttf_sz);
+                        if (ttf_data)
+                        {
+                            if (fread(ttf_data, 1, ttf_sz, fd) == ttf_sz)
+                            {
+                                ImFont* im_font = io.Fonts->ImFontAtlas::AddFontFromMemoryTTF(ttf_data, (int)ttf_sz, 14);
+                            }
+                            else
+                            {
+                                milton_log("WARNING: Error reading TTF file");
+                            }
+                        }
+                        else
+                        {
+                            milton_log("WARNING: could not allocate data for font!");
+                        }
+                    }
+                }
+            }
+            fclose(fd);
         }
     }
     // Initalize system cursors
@@ -870,9 +900,8 @@ int milton_main()
 
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
 
-        // TODO: Is a static the best choice?
         static b32 first_run = true;
-        if ( first_run )
+        if (first_run)
         {
             first_run = false;
             milton_input.flags = MiltonInputFlags_FULL_REFRESH;
@@ -923,14 +952,14 @@ int milton_main()
             {
                 cursor_set_and_show(platform_state.cursor_default);
             }
-            else if (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER )
+            else if (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER)
             {
                 if (platform_state.hcursor != NULL && platform_state.setting_hcursor)
                 {
                     SetCursor(platform_state.hcursor);
                 }
             }
-            else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER )
+            else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER)
             {
                 cursor_hide();
             }
@@ -1012,7 +1041,6 @@ int milton_main()
             platform_state.num_point_results = platform_state.num_pressure_results;
         }
 
-        // Re-cast... This is dumb
         milton_input.flags = (MiltonInputFlags)( input_flags | (int)milton_input.flags );
 
         assert (platform_state.num_point_results <= platform_state.num_pressure_results);

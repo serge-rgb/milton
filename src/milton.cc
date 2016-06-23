@@ -553,7 +553,7 @@ void milton_init(MiltonState* milton_state)
 
     // Set default brush sizes.
     for (int i = 0; i < BrushEnum_COUNT; ++i)
-	{
+    {
         switch (i)
         {
         case BrushEnum_PEN:
@@ -678,7 +678,7 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     }
 }
 
-void milton_reset_canvas(MiltonState* milton_state)
+void milton_reset_canvas_and_set_default(MiltonState* milton_state)
 {
     milton_state->mlt_binary_version = 3;
     Layer* l = milton_state->root_layer;
@@ -730,6 +730,7 @@ void milton_reset_canvas(MiltonState* milton_state)
         exporter_init(&gui->exporter);
     }
     milton_update_brushes(milton_state);
+    milton_set_default_canvas_file(milton_state);
 }
 
 void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
