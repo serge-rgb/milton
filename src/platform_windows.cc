@@ -13,6 +13,58 @@ extern "C" {
 #include "milton_configuration.h"
 #include "utils.h"
 
+    // -------------------------------  SHlObj.h
+#define CSIDL_DESKTOP                   0x0000        // <desktop>
+#define CSIDL_INTERNET                  0x0001        // Internet Explorer (icon on desktop)
+#define CSIDL_PROGRAMS                  0x0002        // Start Menu\Programs
+#define CSIDL_CONTROLS                  0x0003        // My Computer\Control Panel
+#define CSIDL_PRINTERS                  0x0004        // My Computer\Printers
+#define CSIDL_PERSONAL                  0x0005        // My Documents
+#define CSIDL_FAVORITES                 0x0006        // <user name>\Favorites
+#define CSIDL_STARTUP                   0x0007        // Start Menu\Programs\Startup
+#define CSIDL_RECENT                    0x0008        // <user name>\Recent
+#define CSIDL_SENDTO                    0x0009        // <user name>\SendTo
+#define CSIDL_BITBUCKET                 0x000a        // <desktop>\Recycle Bin
+#define CSIDL_STARTMENU                 0x000b        // <user name>\Start Menu
+#define CSIDL_MYDOCUMENTS               CSIDL_PERSONAL //  Personal was just a silly name for My Documents
+#define CSIDL_MYMUSIC                   0x000d        // "My Music" folder
+#define CSIDL_MYVIDEO                   0x000e        // "My Videos" folder
+#define CSIDL_DESKTOPDIRECTORY          0x0010        // <user name>\Desktop
+#define CSIDL_DRIVES                    0x0011        // My Computer
+#define CSIDL_NETWORK                   0x0012        // Network Neighborhood (My Network Places)
+#define CSIDL_NETHOOD                   0x0013        // <user name>\nethood
+#define CSIDL_FONTS                     0x0014        // windows\fonts
+#define CSIDL_TEMPLATES                 0x0015
+#define CSIDL_COMMON_STARTMENU          0x0016        // All Users\Start Menu
+#define CSIDL_COMMON_PROGRAMS           0X0017        // All Users\Start Menu\Programs
+#define CSIDL_COMMON_STARTUP            0x0018        // All Users\Startup
+#define CSIDL_COMMON_DESKTOPDIRECTORY   0x0019        // All Users\Desktop
+#define CSIDL_APPDATA                   0x001a        // <user name>\Application Data
+#define CSIDL_PRINTHOOD                 0x001b        // <user name>\PrintHood
+    // ....
+    //
+
+#ifndef _SHFOLDER_H_
+#define CSIDL_FLAG_CREATE               0x8000        // combine with CSIDL_ value to force folder creation in SHGetFolderPath()
+#endif // _SHFOLDER_H_
+
+#define CSIDL_FLAG_DONT_VERIFY          0x4000        // combine with CSIDL_ value to return an unverified folder path
+#define CSIDL_FLAG_DONT_UNEXPAND        0x2000        // combine with CSIDL_ value to avoid unexpanding environment variables
+#if (NTDDI_VERSION >= NTDDI_WINXP)
+#define CSIDL_FLAG_NO_ALIAS             0x1000        // combine with CSIDL_ value to insure non-alias versions of the pidl
+#define CSIDL_FLAG_PER_USER_INIT        0x0800        // combine with CSIDL_ value to indicate per-user init (eg. upgrade)
+#endif  // NTDDI_WINXP
+#define CSIDL_FLAG_MASK                 0xFF00        // mask for all possible flag values
+
+HRESULT SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE hToken, __in DWORD dwFlags, __out_ecount(MAX_PATH) LPWSTR pszPath);
+
+
+    //*
+    // -------------------------------
+    //
+
+
+
 
 // The returns value mean different things, but other than that, we're ok
 #ifdef _MSC_VER
@@ -24,6 +76,35 @@ extern "C" {
 #else
 #define HEAP_BEGIN_ADDRESS NULL
 #endif
+
+#define PATH_STRLEN wcslen
+#define PATH_TOLOWER towlower
+#define PATH_STRCMP wcscmp
+#define PATH_STRNCPY wcsncpy
+#define PATH_STRCPY wcscpy
+
+int path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
+{
+    va_list args;
+    assert (format);
+    va_start(args, format);
+
+#pragma warning(push)
+#pragma warning(disable:4774)
+    int result = _snwprintf(buffer,
+                            count,
+                            format,
+                            args);
+#pragma warning(pop)
+    return result;
+
+}
+
+FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
+{
+    FILE* fd = _wfopen(fname, mode);
+    return fd;
+}
 
 void*   platform_allocate_bounded_memory(size_t size)
 {
@@ -84,16 +165,16 @@ void milton_die_gracefully(char* message)
 
 
 
-static char* win32_filter_strings_image =
-    "PNG file\0" "*.png\0"
-    "JPEG file\0" "*.jpg\0"
-    "\0";
+static PATH_CHAR* win32_filter_strings_image =
+    L"PNG file\0" L"*.png\0"
+    L"JPEG file\0" L"*.jpg\0"
+    L"\0";
 
-static char* win32_filter_strings_milton =
-    "MLT file\0" "*.mlt\0"
-    "\0";
+static PATH_CHAR* win32_filter_strings_milton =
+    L"MLT file\0" "*.mlt\0"
+    L"\0";
 
-void win32_set_OFN_filter(OPENFILENAMEA* ofn, FileKind kind)
+void win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)
 {
 #pragma warning(push)
 #pragma warning(disable:4061)
@@ -101,13 +182,13 @@ void win32_set_OFN_filter(OPENFILENAMEA* ofn, FileKind kind)
     {
     case FileKind_IMAGE:
         {
-        ofn->lpstrFilter = (LPCSTR)win32_filter_strings_image;
-        ofn->lpstrDefExt = "jpg";
+        ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_image;
+        ofn->lpstrDefExt = L"jpg";
         } break;
     case FileKind_MILTON_CANVAS:
         {
-        ofn->lpstrFilter = (LPCSTR)win32_filter_strings_milton;
-        ofn->lpstrDefExt = "mlt";
+        ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_milton;
+        ofn->lpstrDefExt = L"mlt";
         } break;
     default:
         {
@@ -117,12 +198,12 @@ void win32_set_OFN_filter(OPENFILENAMEA* ofn, FileKind kind)
 #pragma warning(pop)
 }
 
-char* platform_save_dialog(FileKind kind)
+PATH_CHAR* platform_save_dialog(FileKind kind)
 {
     cursor_show();
-    char* save_filename = (char*)mlt_calloc(MAX_PATH, sizeof(char));
+    PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR));
 
-    OPENFILENAMEA ofn = {0};
+    OPENFILENAMEW ofn = {0};
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     //ofn.hInstance;
@@ -140,7 +221,7 @@ char* platform_save_dialog(FileKind kind)
     /* ofn.lpfnHook; */
     /* ofn.lpTemplateName; */
 
-    b32 ok = GetSaveFileNameA(&ofn);
+    b32 ok = GetSaveFileNameW(&ofn);
 
     if (!ok)
     {
@@ -150,12 +231,12 @@ char* platform_save_dialog(FileKind kind)
     return save_filename;
 }
 
-char* platform_open_dialog(FileKind kind)
+PATH_CHAR* platform_open_dialog(FileKind kind)
 {
     cursor_show();
-    OPENFILENAMEA ofn = {0};
+    OPENFILENAMEW ofn = {0};
 
-    char* fname = (char*)mlt_calloc(MAX_PATH, sizeof(*fname));
+    PATH_CHAR* fname = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*fname));
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     win32_set_OFN_filter(&ofn, kind);
@@ -163,7 +244,7 @@ char* platform_open_dialog(FileKind kind)
     ofn.nMaxFile = MAX_PATH;
     ofn.Flags = OFN_FILEMUSTEXIST;
 
-    b32 ok = GetOpenFileNameA(&ofn);
+    b32 ok = GetOpenFileNameW(&ofn);
     if (ok == false)
     {
         free(fname);
@@ -194,8 +275,9 @@ void platform_dialog(char* info, char* title)
                );
 }
 
-void platform_fname_at_exe(char* fname, size_t len)
+void platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 {
+#if 0
     char* base = SDL_GetBasePath();  // SDL returns utf8 path!
     char* tmp = (char*)mlt_calloc(1, len);
     strncpy(tmp, fname, len);
@@ -204,11 +286,13 @@ void platform_fname_at_exe(char* fname, size_t len)
     size_t pathlen = strlen(fname);
     strncat(fname + pathlen, tmp, len-pathlen);
     mlt_free(tmp) ;
+#endif
 }
 
-b32 platform_delete_file_at_config(char* fname, int error_tolerance)
+b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
 {
     b32 ok = true;
+#if 0
     char* full = (char*)mlt_calloc(MAX_PATH, sizeof(*full));
     strncpy(full, fname, MAX_PATH);
     platform_fname_at_config(full, MAX_PATH);
@@ -225,6 +309,7 @@ b32 platform_delete_file_at_config(char* fname, int error_tolerance)
         }
     }
     mlt_free(full);
+#endif
     return ok;
 }
 
@@ -257,16 +342,16 @@ void win32_print_error(int err)
 #pragma warning (pop)
 }
 
-b32 platform_move_file(char* src, char* dest)
+b32 platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 {
-    b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
+    b32 ok = MoveFileExW(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
     //b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH);
     if (!ok)
     {
         int err = (int)GetLastError();
         win32_print_error(err);
 
-        BOOL could_delete = DeleteFileA(src);
+        BOOL could_delete = DeleteFileW(src);
         if (could_delete == FALSE)
         {
             win32_print_error((int)GetLastError());
@@ -276,48 +361,93 @@ b32 platform_move_file(char* src, char* dest)
     return ok;
 }
 
-void platform_fname_at_config(char* fname, size_t len)
+void platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
-    char* base = SDL_GetPrefPath("MiltonPaint", "data");
-    char* tmp = (char*)mlt_calloc(1, len);
-    strncpy(tmp, fname, len);
+    //PATH_CHAR* base = SDL_GetPrefPath("MiltonPaint", "data");
+    WCHAR path[MAX_PATH];
+    char *retval = NULL;
+    WCHAR* worg = L"MiltonPaint";
+    WCHAR* wapp = L"data";
+    size_t new_wpath_len = 0;
+    BOOL api_result = FALSE;
+
+    if (!SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, 0, path)))
+    {
+        milton_die_gracefully("Couldn't locate our prefpath");
+    }
+
+    new_wpath_len = lstrlenW(worg) + lstrlenW(wapp) + lstrlenW(path) + (size_t)3;
+
+    if ((new_wpath_len + 1) > MAX_PATH)
+    {
+        INVALID_CODE_PATH;
+    }
+
+    lstrcatW(path, L"\\");
+    lstrcatW(path, worg);
+
+    api_result = CreateDirectoryW(path, NULL);
+    if (api_result == FALSE)
+    {
+        if (GetLastError() != ERROR_ALREADY_EXISTS)
+        {
+            INVALID_CODE_PATH;
+        }
+    }
+
+    lstrcatW(path, L"\\");
+    lstrcatW(path, wapp);
+
+    api_result = CreateDirectoryW(path, NULL);
+    if (api_result == FALSE)
+    {
+        if (GetLastError() != ERROR_ALREADY_EXISTS)
+        {
+            INVALID_CODE_PATH;
+        }
+    }
+
+    lstrcatW(path, L"\\");
+
+    PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len);  // store the fname here
+    PATH_STRCPY(tmp, fname);
     fname[0] = '\0';
-    strncat(fname, base, len);
-    size_t pathlen = strlen(fname);
-    strncat(fname + pathlen, tmp, len-pathlen);
+    wcsncat(fname, path, len);
+    wcsncat(fname, tmp, len);
+    //wcsncat(fname + pathlen, tmp, len-pathlen);
     mlt_free(tmp) ;
 }
 
 // Delete old milton_tmp files from previous milton versions.
 void win32_cleanup_appdata()
 {
-    char fname[MAX_PATH] = {};
-    platform_fname_at_config((char*)fname, MAX_PATH);
+    PATH_CHAR fname[MAX_PATH] = {};
+    platform_fname_at_config(fname, MAX_PATH);
 
-    char* base_end = fname + strlen(fname);
+    PATH_CHAR* base_end = fname + wcslen(fname);
 
-    strcat((char*)fname, "milton_tmp.*.mlt");
-    WIN32_FIND_DATA find_data = {};
+    wcscat((PATH_CHAR*)fname, L"milton_tmp.*.mlt");
+    WIN32_FIND_DATAW find_data = {};
 
-    HANDLE hfind = FindFirstFile(fname, &find_data);
+    HANDLE hfind = FindFirstFileW(fname, &find_data);
     if (hfind != INVALID_HANDLE_VALUE)
     {
         b32 can_delete = true;
         while (can_delete)
         {
-            char* fn = find_data.cFileName;
-            milton_log("AppData Cleanup: Deleting %s\n", fn);
+            PATH_CHAR* fn = find_data.cFileName;
+            //milton_log("AppData Cleanup: Deleting %s\n", fn);
 
             *base_end = '\0';
 
-            strcat(fname, fn);
+            wcscat(fname, fn);
 
-            BOOL could_delete = DeleteFile(fname);
+            BOOL could_delete = DeleteFileW(fname);
             if (could_delete == FALSE)
             {
                 win32_print_error((int)GetLastError());
             }
-            can_delete = FindNextFile(hfind, &find_data);
+            can_delete = FindNextFileW(hfind, &find_data);
         }
         FindClose(hfind);
     }

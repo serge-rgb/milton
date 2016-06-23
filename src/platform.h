@@ -80,13 +80,6 @@ struct PlatformState
 #endif
 };
 
-typedef struct PlatformPrefs
-{
-    // Store the window size at the time of quitting.
-    i32 width;
-    i32 height;
-} PlatformPrefs;
-
 typedef enum HistoryDebug
 {
     HistoryDebug_NOTHING,
@@ -124,25 +117,54 @@ typedef enum FileKind
     FileKind_COUNT,
 } FileKind;
 
+#define fopen fopen_error
+FILE*   fopen_error(const char* fname, const char* mode)
+{
+    INVALID_CODE_PATH;  // Use platform_fopen
+    return NULL;
+}
+
+#if defined(_WIN32)
+#define PATH_CHAR wchar_t
+#define TO_PATH_STR(STR) L##STR
+#else
+// TODO: probably right? Probably UTF8
+#define PATH_CHAR char
+#define TO_PATH_STR(STR) STR
+#endif
+
+typedef struct PlatformPrefs
+{
+    // Store the window size at the time of quitting.
+    i32 width;
+    i32 height;
+    // Last opened file.
+    PATH_CHAR last_mlt_file[MAX_PATH];
+} PlatformPrefs;
+
+
+// Defined in platform_windows.cc
+// FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode);
+
 // Returns a 0-terminated string with the full path of the target file. NULL if error.
-char*   platform_open_dialog(FileKind kind);
-char*   platform_save_dialog(FileKind kind);
+PATH_CHAR*   platform_open_dialog(FileKind kind);
+PATH_CHAR*   platform_save_dialog(FileKind kind);
 
 void    platform_dialog(char* info, char* title);
 b32     platform_dialog_yesno(char* info, char* title);
 
 void    platform_load_gl_func_pointers();
 
-void    platform_fname_at_exe(char* fname, size_t len);
-b32     platform_move_file(char* src, char* dest);
+void    platform_fname_at_exe(PATH_CHAR* fname, size_t len);
+b32     platform_move_file(PATH_CHAR* src, PATH_CHAR* dest);
 
 enum DeleteErrorTolerance
 {
     DeleteErrorTolerance_NONE         = 1<<0,
     DeleteErrorTolerance_OK_NOT_EXIST = 1<<1,
 };
-b32     platform_delete_file_at_config(char* fname, int error_tolerance);
-void    platform_fname_at_config(char* fname, size_t len);
+b32     platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance);
+void    platform_fname_at_config(PATH_CHAR* fname, size_t len);
 
 // Does *not* verify link. Do not expose to user facing inputs.
 void    platform_open_link(char* link);

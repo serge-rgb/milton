@@ -327,7 +327,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     }
 }
 
-void milton_set_canvas_file_(MiltonState* milton_state, char* fname, b32 is_default)
+void milton_set_canvas_file_(MiltonState* milton_state, PATH_CHAR* fname, b32 is_default)
 {
     if (is_default)
     {
@@ -343,13 +343,14 @@ void milton_set_canvas_file_(MiltonState* milton_state, char* fname, b32 is_defa
         mlt_free(milton_state->mlt_file_path);
     }
 
-    u64 len = strlen(fname);
+    u64 len = PATH_STRLEN(fname);
     if (len > MAX_PATH)
     {
         milton_log("milton_set_canvas_file: fname was too long %lu\n", len);
-        fname = "MiltonPersist.mlt";
+        fname = TO_PATH_STR("MiltonPersist.mlt");
     }
     milton_state->mlt_file_path = fname;
+
     if (!is_default)
     {
         milton_set_last_canvas_fname(fname);
@@ -360,7 +361,7 @@ void milton_set_canvas_file_(MiltonState* milton_state, char* fname, b32 is_defa
     }
 }
 
-void milton_set_canvas_file(MiltonState* milton_state, char* fname)
+void milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname)
 {
     milton_set_canvas_file_(milton_state, fname, false);
 }
@@ -368,8 +369,8 @@ void milton_set_canvas_file(MiltonState* milton_state, char* fname)
 // Helper function
 void milton_set_default_canvas_file(MiltonState* milton_state)
 {
-    char* f = (char*)mlt_calloc(MAX_PATH, sizeof(*f));
-    strncpy(f, "MiltonPersist.mlt", MAX_PATH);
+    PATH_CHAR* f = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*f));
+    PATH_STRNCPY(f, TO_PATH_STR("MiltonPersist.mlt"), MAX_PATH);
     platform_fname_at_config(f, MAX_PATH);
     milton_set_canvas_file_(milton_state, f, true);
     milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
@@ -536,8 +537,45 @@ void milton_init(MiltonState* milton_state)
     milton_gl_backend_init(milton_state);
 
     { // Get/Set Milton Canvas (.mlt) file
-        char* last_fname = milton_get_last_canvas_fname();
-        if (last_fname)
+
+        PATH_CHAR* last_fname = (PATH_CHAR*)mlt_calloc(1, MAX_PATH);
+        PATH_CHAR full[MAX_PATH] = {};
+
+
+
+
+        //milton_get_last_canvas_fname((PATH_CHAR*)last_fname);
+
+
+
+        b32 has_last_file = false;
+
+        PATH_STRCPY(full, TO_PATH_STR("saved_path"));
+        platform_fname_at_config(full, MAX_PATH);
+        FILE* fd = platform_fopen(full, TO_PATH_STR("rb+"));
+
+        if (fd)
+        {
+            u64 len = 0;
+            fread(&len, sizeof(len), 1, fd);
+            if (len < MAX_PATH)
+            {
+                {
+                    fread(last_fname, sizeof(PATH_CHAR), len, fd);
+                    has_last_file = true;
+                    // TODO: check that it exists!
+                }
+                fclose(fd);
+            }
+            else
+            {
+                mlt_free(last_fname);
+            }
+        }
+
+
+
+        if (has_last_file)
         {
             milton_set_canvas_file(milton_state, last_fname);
         }
@@ -799,15 +837,6 @@ static void milton_save_postlude(MiltonState* milton_state)
     milton_state->last_save_stroke_count = count_strokes(milton_state->root_layer);
 
     milton_state->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
-    {
-        char msg[1024];
-        WallTime lst = milton_state->last_save_time;
-        snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d\n",
-                 (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "(Default canvas)" :
-                 str_trim_to_last_slash(milton_state->mlt_file_path),
-                 lst.hours, lst.minutes, lst.seconds);
-        milton_log(msg);
-    }
 }
 
 #if MILTON_SAVE_ASYNC
@@ -928,7 +957,6 @@ static void milton_validate(MiltonState* milton_state)
         milton_log("Recreating history. File says History: %d(max %d) Actual strokes: %d\n",
                    history_count, milton_state->history.count,
                    stroke_count);
-        //platform_dialog("Undo history got corrupted. Rebuilding. Please file bug report if this message persists.", "Warning.");
         reset(&milton_state->history);
         for(Layer *l = milton_state->root_layer;
             l != NULL;
@@ -1392,7 +1420,7 @@ cleanup:
                 if (another)
                 {
                     // NOTE(possible refactor): There is similar code. Guipp.cpp save_milton_canvas
-                    char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                    PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                     if (name)
                     {
                         milton_log("Saving to %s\n", name);
@@ -1406,7 +1434,7 @@ cleanup:
                         {
                             platform_dialog("Success.", "Info");
                         }
-                        b32 del = platform_delete_file_at_config("MiltonPersist.mlt", DeleteErrorTolerance_OK_NOT_EXIST);
+                        b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
                         if (del == false)
                         {
                             platform_dialog("Could not delete default canvas."

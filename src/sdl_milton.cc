@@ -736,9 +736,10 @@ int milton_main()
     {  // Load icon (Win32)
         int si = sizeof(HICON);
         HINSTANCE handle = GetModuleHandle(nullptr);
-        char icopath[MAX_PATH] = "milton_icon.ico";
+        PATH_CHAR icopath[MAX_PATH] = L"milton_icon.ico";
         platform_fname_at_exe(icopath, MAX_PATH);
-        HICON icon = (HICON)LoadImageA(NULL, icopath, IMAGE_ICON, /*W*/0, /*H*/0, LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+        HICON icon = (HICON)LoadImageW(NULL, icopath, IMAGE_ICON, /*W*/0, /*H*/0,
+                                       LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
         if (icon != NULL)
         {
             SendMessage(platform_state.hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
@@ -838,14 +839,14 @@ int milton_main()
     {
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = NULL;  // Don't save any imgui.ini file
-        char fname[MAX_PATH] = "carlito.ttf";
-        platform_fname_at_exe(fname, MAX_PATH);
-        FILE* fd_sentinel = fopen(fname, "rb");
+        PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("carlito.ttf");
+        platform_fname_at_exe(fname, MAX_PATH); // TODO: check that this works again
+        FILE* fd_sentinel = platform_fopen(fname, TO_PATH_STR("rb"));
 
         if (fd_sentinel)
         {
             fclose(fd_sentinel);
-            ImFont* im_font =  io.Fonts->ImFontAtlas::AddFontFromFileTTF(fname, 14);
+            ImFont* im_font =  io.Fonts->ImFontAtlas::AddFontFromFileTTF("carlito.ttf", 14);
         }
     }
     // Initalize system cursors

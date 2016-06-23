@@ -81,7 +81,7 @@ struct MiltonState
     struct MiltonGui* gui;
 
     // Persistence
-    char*       mlt_file_path;
+    PATH_CHAR*  mlt_file_path;
     u32         mlt_binary_version;
     WallTime    last_save_time;
     i64         last_save_stroke_count;  // This is a workaround to MoveFileEx failing occasionally, particularaly when
@@ -224,7 +224,7 @@ enum SaveEnum
 void milton_init(MiltonState* milton_state);
 
 // Expects absolute path
-void milton_set_canvas_file(MiltonState* milton_state, char* fname);
+void milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname);
 void milton_set_default_canvas_file(MiltonState* milton_state);
 
 void milton_reset_canvas(MiltonState* milton_state);

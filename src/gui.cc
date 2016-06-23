@@ -51,13 +51,13 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 }
                 if (yes)
                 {
-                    char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                    PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                     if (name)
                     {
                         milton_log("Saving to %s\n", name);
                         milton_set_canvas_file(milton_state, name);
                         milton_save(milton_state);
-                        b32 del = platform_delete_file_at_config("MiltonPersist.mlt", DeleteErrorTolerance_OK_NOT_EXIST);
+                        b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
                         if (del == false)
                         {
                             platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
@@ -82,14 +82,15 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     can_open = false;
                     if (platform_dialog_yesno(default_will_be_lost, "Save?"))
                     {
-                        char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                        PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                         if (name)
                         {
                             can_open = true;
                             milton_log("Saving to %s\n", name);
                             milton_set_canvas_file(milton_state, name);
                             milton_save(milton_state);
-                            b32 del = platform_delete_file_at_config("MiltonPersist.mlt",DeleteErrorTolerance_OK_NOT_EXIST);
+                            b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                                                                     DeleteErrorTolerance_OK_NOT_EXIST);
                             if (del == false)
                             {
                                 platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
@@ -104,7 +105,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 }
                 if (can_open)
                 {
-                    char* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+                    PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
                     if (fname)
                     {
                         milton_set_canvas_file(milton_state, fname);
@@ -115,13 +116,14 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             if (ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested)
             {
                 // NOTE(possible refactor): There is a copy of this at milton.c end of file
-                char* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                 if (name)
                 {
                     milton_log("Saving to %s\n", name);
                     milton_set_canvas_file(milton_state, name);
                     input->flags |= MiltonInputFlags_SAVE_FILE;
-                    b32 del = platform_delete_file_at_config("MiltonPersist.mlt", DeleteErrorTolerance_OK_NOT_EXIST);
+                    b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                                                             DeleteErrorTolerance_OK_NOT_EXIST);
                     if (del == false)
                     {
                         platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
@@ -266,12 +268,19 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             }
             ImGui::EndMenu();
         }
+        PATH_CHAR* utf_name = str_trim_to_last_slash(milton_state->mlt_file_path);
+
+#if defined(_WIN32)
+        char file_name[MAX_PATH];
+        utf16_to_utf8_simple(utf_name, file_name);
+#endif
 
         char msg[1024];
         WallTime lst = milton_state->last_save_time;
+        // TODO: hard-coding %S here. Change when porting.
         snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
-                 str_trim_to_last_slash(milton_state->mlt_file_path),
+                 file_name,
                  lst.hours, lst.minutes, lst.seconds);
         if (ImGui::BeginMenu(msg, /*bool enabled = */false))
         {
@@ -558,7 +567,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     {
                         opened = false;
                         milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
-                        char* fname = platform_save_dialog(FileKind_IMAGE);
+                        PATH_CHAR* fname = platform_save_dialog(FileKind_IMAGE);
                         if ( fname )
                         {
                             milton_save_buffer_to_file(fname, buffer, w, h);

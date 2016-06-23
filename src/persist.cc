@@ -76,7 +76,7 @@ static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
 
 static void milton_unset_last_canvas_fname()
 {
-    b32 del = platform_delete_file_at_config("last_canvas_fname", DeleteErrorTolerance_OK_NOT_EXIST);
+    b32 del = platform_delete_file_at_config(TO_PATH_STR("saved_path"), DeleteErrorTolerance_OK_NOT_EXIST);
     if (del == false)
     {
         platform_dialog("The default canvas could not be set to open the next time you run Milton. Please contact the developers.", "Important");
@@ -86,7 +86,7 @@ static void milton_unset_last_canvas_fname()
 void milton_load(MiltonState* milton_state)
 {
     assert(milton_state->mlt_file_path);
-    FILE* fd = fopen(milton_state->mlt_file_path, "rb");
+    FILE* fd = platform_fopen(milton_state->mlt_file_path, TO_PATH_STR("rb"));
     b32 ok = true;  // fread check
 
     if (fd)
@@ -302,12 +302,12 @@ void milton_save(MiltonState* milton_state)
     milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
     int pid = (int)getpid();
-    char tmp_fname[MAX_PATH] = {0};
-    snprintf(tmp_fname, MAX_PATH, "milton_tmp.%d.mlt", pid);
+    PATH_CHAR tmp_fname[MAX_PATH] = {0};
+    path_snprintf(tmp_fname, MAX_PATH, TO_PATH_STR("milton_tmp.%d.mlt"), pid);
 
     platform_fname_at_config(tmp_fname, MAX_PATH);
 
-    FILE* fd = fopen(tmp_fname, "wb");
+    FILE* fd = platform_fopen(tmp_fname, TO_PATH_STR("wb"));
 
     b32 ok = true;
 
@@ -443,47 +443,22 @@ void milton_save(MiltonState* milton_state)
     }
 }
 
-void milton_set_last_canvas_fname(char* last_fname)
+void milton_set_last_canvas_fname(PATH_CHAR* last_fname)
 {
-    char* full = (char*)mlt_calloc(MAX_PATH, sizeof(char));
-    strcpy(full, "last_canvas_fname");
+    //PATH_CHAR* full = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(char));
+    // TODO:
+    //wcscpy(full, "last_canvas_fname");
+    PATH_CHAR full[MAX_PATH] = { TO_PATH_STR("saved_path") };
     platform_fname_at_config(full, MAX_PATH);
-    FILE* fd = fopen(full, "wb");
+    FILE* fd = platform_fopen(full, TO_PATH_STR("wb"));
     if (fd)
     {
-        u64 len = strlen(last_fname)+1;
+        // TODO: write unicode
+        u64 len = PATH_STRLEN(last_fname)+1;
         fwrite(&len, sizeof(len), 1, fd);
-        fwrite(last_fname, sizeof(char), MAX_PATH, fd);
+        fwrite(last_fname, sizeof(*last_fname), len, fd);
         fclose(fd);
     }
-    mlt_free(full);
-}
-
-char* milton_get_last_canvas_fname()
-{
-    char* full = (char*)mlt_calloc(MAX_PATH, sizeof(char));
-    strcpy(full, "last_canvas_fname");
-    platform_fname_at_config(full, MAX_PATH);
-    FILE* fd = fopen(full, "rb+");
-    if (fd)
-    {
-        u64 len = 0;
-        fread(&len, sizeof(len), 1, fd);
-        if (len > MAX_PATH)
-        {
-            mlt_free(full);
-        }
-        else
-        {
-            fread(full, sizeof(char), len, fd);
-        }
-        fclose(fd);
-    }
-    else
-    {
-        mlt_free(full);
-    }
-    return full;
 }
 
 // Called by stb_image
@@ -502,18 +477,18 @@ static void write_func(void* context, void* data, int size)
     }
 }
 
-void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h)
+void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
 {
     int len = 0;
     {
-        size_t sz = strlen(fname);
+        size_t sz = PATH_STRLEN(fname);
         if (sz > ((1u << 31) -1))
         {
             milton_die_gracefully("A really, really long file name. This shouldn't happen.");
         }
         len = (int)sz;
     }
-    char* ext = fname + len;
+    PATH_CHAR* ext = fname + len;
 
     // NOTE: This should work with unicode.
     int ext_len = 0;
@@ -539,21 +514,21 @@ void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h)
     {
         for (int i = 0; i < ext_len; ++i)
         {
-            char c = ext[i];
-            ext[i] = (char)tolower(c);
+            PATH_CHAR c = ext[i];
+            ext[i] = (PATH_CHAR)PATH_TOLOWER(c);
         }
 
         FILE* fd = NULL;
 
-        fd = fopen(fname, "wb");
+        fd = platform_fopen(fname, TO_PATH_STR("wb"));
 
         if (fd)
         {
-            if (!strcmp( ext, "png" ))
+            if (!PATH_STRCMP( ext, TO_PATH_STR("png") ))
             {
                 stbi_write_png_to_func(write_func, &fd, w, h, 4, buffer, 0);
             }
-            else if (!strcmp(ext, "jpg") || !strcmp(ext, "jpeg"))
+            else if (!PATH_STRCMP(ext, TO_PATH_STR("jpg")) || !PATH_STRCMP(ext, TO_PATH_STR("jpeg")))
             {
                 tje_encode_with_func(write_func, &fd, 3, w, h, 4, buffer);
             }
@@ -593,9 +568,9 @@ void milton_save_buffer_to_file(char* fname, u8* buffer, i32 w, i32 h)
 
 void milton_prefs_load(PlatformPrefs* prefs)
 {
-    char fname [MAX_PATH] = "PREFS.milton_prefs";
+    PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
     platform_fname_at_config(fname, MAX_PATH);
-    FILE* fd = fopen(fname, "rb");
+    FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
     if (fd)
     {
         if (!ferror(fd))
@@ -605,21 +580,21 @@ void milton_prefs_load(PlatformPrefs* prefs)
         }
         else
         {
-            milton_log("Error writing to profs file...\n");
+            milton_log("Error writing to prefs file...\n");
         }
         fclose(fd);
     }
     else
     {
-        milton_log ("Could not open file for writing prefs\n");
+        milton_log("Could not open file for writing prefs\n");
     }
 }
 
 void milton_prefs_save(PlatformPrefs* prefs)
 {
-    char fname [MAX_PATH] = "PREFS.milton_prefs";
+    PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
     platform_fname_at_config(fname, MAX_PATH);
-    FILE* fd = fopen(fname, "wb");
+    FILE* fd = platform_fopen(fname, TO_PATH_STR("wb"));
     if (fd)
     {
         if (!ferror(fd))
