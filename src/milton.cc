@@ -538,44 +538,10 @@ void milton_init(MiltonState* milton_state)
 
     { // Get/Set Milton Canvas (.mlt) file
 
-        PATH_CHAR* last_fname = (PATH_CHAR*)mlt_calloc(1, MAX_PATH);
-        PATH_CHAR full[MAX_PATH] = {};
 
+        PATH_CHAR* last_fname = milton_get_last_canvas_fname();
 
-
-
-        //milton_get_last_canvas_fname((PATH_CHAR*)last_fname);
-
-
-
-        b32 has_last_file = false;
-
-        PATH_STRCPY(full, TO_PATH_STR("saved_path"));
-        platform_fname_at_config(full, MAX_PATH);
-        FILE* fd = platform_fopen(full, TO_PATH_STR("rb+"));
-
-        if (fd)
-        {
-            u64 len = 0;
-            fread(&len, sizeof(len), 1, fd);
-            if (len < MAX_PATH)
-            {
-                {
-                    fread(last_fname, sizeof(PATH_CHAR), len, fd);
-                    has_last_file = true;
-                    // TODO: check that it exists!
-                }
-                fclose(fd);
-            }
-            else
-            {
-                mlt_free(last_fname);
-            }
-        }
-
-
-
-        if (has_last_file)
+        if (last_fname != NULL)
         {
             milton_set_canvas_file(milton_state, last_fname);
         }

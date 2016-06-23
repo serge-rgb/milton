@@ -443,6 +443,38 @@ void milton_save(MiltonState* milton_state)
     }
 }
 
+PATH_CHAR* milton_get_last_canvas_fname()
+{
+    PATH_CHAR* last_fname = (PATH_CHAR*)mlt_calloc(1, MAX_PATH);
+    PATH_CHAR full[MAX_PATH] = {};
+
+
+    PATH_STRCPY(full, TO_PATH_STR("saved_path"));
+    platform_fname_at_config(full, MAX_PATH);
+    FILE* fd = platform_fopen(full, TO_PATH_STR("rb+"));
+
+    if (fd)
+    {
+        u64 len = 0;
+        fread(&len, sizeof(len), 1, fd);
+        if (len < MAX_PATH)
+        {
+            {
+                fread(last_fname, sizeof(PATH_CHAR), len, fd);
+                // TODO: check that it exists!
+            }
+            fclose(fd);
+        }
+        else
+        {
+            mlt_free(last_fname);
+        }
+    }
+
+    return last_fname;
+
+}
+
 void milton_set_last_canvas_fname(PATH_CHAR* last_fname)
 {
     //PATH_CHAR* full = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(char));
