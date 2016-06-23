@@ -267,10 +267,10 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             }
             ImGui::EndMenu();
         }
-        PATH_CHAR* utf_name = str_trim_to_last_slash(milton_state->mlt_file_path);
+        PATH_CHAR* utf16_name = str_trim_to_last_slash(milton_state->mlt_file_path);
 
         char file_name[MAX_PATH] = {};
-        utf16_to_utf8_simple(utf_name, file_name);
+        utf16_to_utf8_simple(utf16_name, file_name);
 
         char msg[1024];
         WallTime lst = milton_state->last_save_time;
@@ -676,18 +676,19 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             {
                 v2i pan = view->pan_vector;
 
+                auto radius = view->canvas_radius_limit;
 
                 {
                     if (pan.y < 0)
                     {
-                        long n_screens_below = ((long)(INT_MAX) + (long)pan.y)/(long)screen_height;
+                        long n_screens_below = ((long)(radius) + (long)pan.y)/(long)screen_height;
                         snprintf(msg, array_count(msg),
                                  "Screens below: %ld\n", n_screens_below);
                         ImGui::Text(msg);
                     }
                     else
                     {
-                        long n_screens_above = ((long)(INT_MAX) - (long)pan.y)/(long)screen_height;
+                        long n_screens_above = ((long)(radius) - (long)pan.y)/(long)screen_height;
                         snprintf(msg, array_count(msg),
                                  "Screens above: %ld\n", n_screens_above);
                         ImGui::Text(msg);
@@ -696,14 +697,14 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 {
                     if (pan.x < 0)
                     {
-                        long n_screens_below = ((long)(INT_MAX) + (long)pan.x)/(long)screen_width;
+                        long n_screens_below = ((long)(radius) + (long)pan.x)/(long)screen_width;
                         snprintf(msg, array_count(msg),
                                  "Screens to the right: %ld\n", n_screens_below);
                         ImGui::Text(msg);
                     }
                     else
                     {
-                        long n_screens_above = ((long)(INT_MAX) - (long)pan.x)/(long)screen_width;
+                        long n_screens_above = ((long)(radius) - (long)pan.x)/(long)screen_width;
                         snprintf(msg, array_count(msg),
                                  "Screens to the left: %ld\n", n_screens_above);
                         ImGui::Text(msg);
