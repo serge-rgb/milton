@@ -229,8 +229,6 @@ void milton_set_default_canvas_file(MiltonState* milton_state);
 
 void milton_reset_canvas_and_set_default(MiltonState* milton_state);
 
-void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size);
-
 void milton_gl_backend_draw(MiltonState* milton_state);
 
 // Between 0 and k_max_brush_size

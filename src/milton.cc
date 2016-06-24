@@ -611,14 +611,16 @@ void milton_init(MiltonState* milton_state)
     //hw_renderer_init(milton_state->render_data);
 }
 
-void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
+// Returns false if the pan_delta moves the pan vector outside of the canvas.
+b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
+    b32 pan_ok = true;
     if ((new_screen_size.w > 8000 ||
          new_screen_size.h > 8000 ||
          new_screen_size.w <= 0 ||
          new_screen_size.h <= 0) )
     {
-        return;
+        return pan_ok;
     }
 
     b32 do_realloc = false;
@@ -654,21 +656,23 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
         }
     }
 
-    if ( new_screen_size.w < milton_state->max_width &&
-         new_screen_size.h < milton_state->max_height ) {
+    if (new_screen_size.w < milton_state->max_width && new_screen_size.h < milton_state->max_height)
+    {
         milton_state->view->screen_size = new_screen_size;
         milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
 
         // Add delta to pan vector
         v2i pan_vector = add2i(milton_state->view->pan_vector, (scale2i(pan_delta, milton_state->view->scale)));
 
-        if ( pan_vector.x > milton_state->view->canvas_radius_limit || pan_vector.x <= -milton_state->view->canvas_radius_limit )
+        if (pan_vector.x > milton_state->view->canvas_radius_limit || pan_vector.x <= -milton_state->view->canvas_radius_limit)
         {
             pan_vector.x = milton_state->view->pan_vector.x;
+            pan_ok = false;
         }
-        if ( pan_vector.y > milton_state->view->canvas_radius_limit || pan_vector.y <= -milton_state->view->canvas_radius_limit )
+        if (pan_vector.y > milton_state->view->canvas_radius_limit || pan_vector.y <= -milton_state->view->canvas_radius_limit)
         {
             pan_vector.y = milton_state->view->pan_vector.y;
+            pan_ok = false;
         }
         milton_state->view->pan_vector = pan_vector;
     }
@@ -676,6 +680,7 @@ void milton_resize(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size
     {
         milton_die_gracefully("Fatal error. Screen size is more than Milton can handle.");
     }
+    return pan_ok;
 }
 
 void milton_reset_canvas_and_set_default(MiltonState* milton_state)
@@ -1006,7 +1011,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
 
 // Sensible
-#if 1
+#if 0
         f32 scale_factor = 1.3f;
         i32 view_scale_limit = (1 << 13);
 // Debug

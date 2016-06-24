@@ -704,7 +704,7 @@ int milton_main()
 #pragma warning (pop)
 #endif
 
-    milton_resize(milton_state, {}, {platform_state.width, platform_state.height});
+    milton_resize_and_pan(milton_state, {}, {platform_state.width, platform_state.height});
 
     platform_state.window_id = SDL_GetWindowID(window);
 
@@ -1053,7 +1053,20 @@ int milton_main()
             platform_state.width != milton_state->view->screen_size.x ||
             platform_state.height != milton_state->view->screen_size.y)
         {
-            milton_resize(milton_state, pan_delta, {platform_state.width, platform_state.height});
+            b32 pan_ok = milton_resize_and_pan(milton_state, pan_delta, {platform_state.width, platform_state.height});
+            if (platform_state.is_panning && !pan_ok)
+            {
+                turn_panning_off(&platform_state);
+                // Force a full re-render.
+                // The hover point gets updated and the renderer does a memcpy on most of the screen.
+                // TODO: Remove use of MiltonInputFlags_FULL_REFRESH after switching to HW rendering...
+                input_flags |= MiltonInputFlags_FULL_REFRESH;
+                milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+            }
+            else if (!platform_state.is_panning && !pan_ok)
+            {
+                INVALID_CODE_PATH;
+            }
         }
         milton_input.pan_delta = pan_delta;
 
