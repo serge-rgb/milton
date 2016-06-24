@@ -154,38 +154,35 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     break;  // Are we in Wayland yet?
 
                 }
-                if ( er == EASYTAB_OK )
+                if (er == EASYTAB_OK)
                 {
                     b32 got_pen = false;
                     // Pen in use but not drawing
                     b32 was_pen_down = EasyTab->PenInProximity && !platform_state->is_pointer_down;
-                    //if (platform_state->panning_fsm != PanningFSM_MOUSE_PANNING && platform_state->is_pointer_down)
+                    for (int pi = 0; pi < EasyTab->NumPackets; ++pi)
                     {
-                        for (int pi = 0; pi < EasyTab->NumPackets; ++pi)
+                        if (EasyTab->PosX >= 0 && EasyTab->PosY >= 0)  // Quick n' dirty is-inside-client-rect test
                         {
-                            if (EasyTab->PosX >= 0 && EasyTab->PosY >= 0)  // Quick n' dirty is-inside-client-rect test
+                            bool is_down = EasyTab->Pressure[pi] > 0 && EasyTab->PenInProximity;
+                            if (is_down)
                             {
-                                bool is_down = EasyTab->Pressure[pi] > 0 && EasyTab->PenInProximity;
-                                if (is_down)
+                                got_pen = true;
+                                if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
                                 {
-                                    got_pen = true;
-                                    if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
-                                    {
-                                        v2i point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
-                                        milton_input.points[platform_state->num_point_results++] = point;
-                                    }
-                                    if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
-                                    {
-                                        milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure[pi];
-                                    }
+                                    v2i point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
+                                    milton_input.points[platform_state->num_point_results++] = point;
+                                }
+                                if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
+                                {
+                                    milton_input.pressures[platform_state->num_pressure_results++] = EasyTab->Pressure[pi];
                                 }
                             }
                         }
+                    }
 
-                        if (got_pen)
-                        {
-                            platform_state->is_pointer_down = true;
-                        }
+                    if (got_pen)
+                    {
+                        platform_state->is_pointer_down = true;
                     }
                     if (EasyTab->NumPackets>0)
                     {
@@ -243,18 +240,30 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     break;
                 }
                 input_point = { event.motion.x, event.motion.y };
-                if (!EasyTab->PenInProximity) // Only get mouse info when wacom is not in use..
+
+
+                // Check if it is empty. In case the wacom driver craps out, or
+                // anything goes wrong (like the event queue overflowing ;))
+                // then we default to receiving WM_MOUSEMOVE.
+                // If we catch a single point, then it's fine. It will get filtered out in milton_stroke_input
+                b32 is_empty = platform_state->num_point_results == 0;
+
+                if (!EasyTab->PenInProximity || is_empty)  // Only get mouse info when wacom is not in use..
                 {
-                    if ( platform_state->is_pointer_down )
+                    if (platform_state->is_pointer_down)
                     {
-                        if ( !platform_state->is_panning )
+                        if (!platform_state->is_panning)
                         {
-                            if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS )
+                            if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
                             {
                                 milton_input.points[platform_state->num_point_results++] = input_point;
                             }
+                            if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
+                            {
+                                milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
+                            }
                         }
-                        else if ( platform_state->is_panning )
+                        else if (platform_state->is_panning)
                         {
                             platform_state->pan_point = input_point;
                         }
@@ -486,7 +495,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         // Not enough info..
                         pointer_up = true;
                     }
-                    cursor_show();
+                    //cursor_show();
                     break;
                     // --- A couple of events we might want to catch later...
                 case SDL_WINDOWEVENT_ENTER:
@@ -1026,15 +1035,6 @@ int milton_main()
         milton_log ("#Pressure results: %d\n", num_pressure_results);
         milton_log ("#   Point results: %d\n", num_point_results);
 #endif
-
-        // Mouse input, fill with NO_PRESSURE_INFO
-        if ( platform_state.num_pressure_results == 0 )
-        {
-            for (int i = platform_state.num_pressure_results; i < platform_state.num_point_results; ++i)
-            {
-                milton_input.pressures[platform_state.num_pressure_results++] = NO_PRESSURE_INFO;
-            }
-        }
 
         if ( platform_state.num_pressure_results < platform_state.num_point_results )
         {

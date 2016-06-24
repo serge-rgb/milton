@@ -1384,7 +1384,7 @@ static b32 stroke_intersects_rect(Stroke* stroke, Rect rect)
 {
     b32 result = false;
     Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
-    if ( rect_is_valid(stroke_rect) )
+    if (rect_is_valid(stroke_rect))
     {
         if (stroke->num_points == 1)
         {
@@ -1492,24 +1492,24 @@ static b32 render_blockgroup(MiltonState* milton_state,
                   (int)(perf_counter() - milton_state->graph_frame.start));
 #endif
     Arena render_arena = { 0 };
-    if ( allocation_ok )
+    if (allocation_ok)
     {
         render_arena = arena_spawn(blockgroup_arena, arena_available_space(blockgroup_arena));
     }
 
-    for ( int block_i = 0; block_i < blocks_per_blockgroup && allocation_ok; ++block_i )
+    for (int block_i = 0; block_i < blocks_per_blockgroup && allocation_ok; ++block_i)
     {
-        if ( block_start + block_i >= num_blocks )
+        if (block_start + block_i >= num_blocks)
         {
             break;
         }
 
 #if MILTON_USE_ALL_RENDERERS == 0
 #if MILTON_DEBUG
-        if ( SDL_HasSSE2() && !milton_state->DEBUG_sse2_switch )
+        if (SDL_HasSSE2() && !milton_state->DEBUG_sse2_switch)
         {
 #else
-        if ( SDL_HasSSE2() )
+        if (SDL_HasSSE2())
         {
 #endif
             allocation_ok = rasterize_canvas_block_sse2(&render_arena,

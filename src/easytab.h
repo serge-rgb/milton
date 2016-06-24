@@ -940,17 +940,8 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
             EasyTab->Pressure[i] = (float)PacketBuffer[i].pkNormalPressure / (float)EasyTab->MaxPressure;
         }
         EasyTab->NumPackets = NumPackets;
-        result = EASYTAB_OK;
-    }
 
-    else if (Message == WT_PACKET &&
-             (HCTX)LParam != EasyTab->Context)
-    {
-        int foo = 1;
-    }
-    else if (Message == WT_PACKET)
-    {
-        int bar = 1;
+        result = EASYTAB_OK;
     }
     else if (Message == WT_PROXIMITY &&
              (HCTX)WParam == EasyTab->Context)

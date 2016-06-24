@@ -37,19 +37,15 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
         {
             if (ImGui::MenuItem(LOC(new_milton_canvas)))
             {
-                b32 yes = false;
-                if (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS)
+                b32 save_file = false;
+                if (count_strokes(milton_state->root_layer) > 0)
                 {
-                    if (platform_dialog_yesno(default_will_be_lost, "Save?"))
+                    if (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS)
                     {
-                        yes = true;
-                    }
-                    else
-                    {
-                        yes = false;
+                        save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                     }
                 }
-                if (yes)
+                if (save_file)
                 {
                     PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                     if (name)
@@ -75,16 +71,18 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             if ( ImGui::MenuItem(LOC(open_milton_canvas)) )
             {
                 // If current canvas is MiltonPersist, then prompt to save
-                b32 can_open = true;
                 if ( (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) )
                 {
-                    can_open = false;
-                    if (platform_dialog_yesno(default_will_be_lost, "Save?"))
+                    b32 save_file = false;
+                    if (count_strokes(milton_state->root_layer) > 0)
+                    {
+                        save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                    }
+                    if (save_file)
                     {
                         PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                         if (name)
                         {
-                            can_open = true;
                             milton_log("Saving to %s\n", name);
                             milton_set_canvas_file(milton_state, name);
                             milton_save(milton_state);
@@ -97,19 +95,12 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                             }
                         }
                     }
-                    else
-                    {
-                        can_open = true;
-                    }
                 }
-                if (can_open)
+                PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+                if (fname)
                 {
-                    PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
-                    if (fname)
-                    {
-                        milton_set_canvas_file(milton_state, fname);
-                        input->flags |= MiltonInputFlags_OPEN_FILE;
-                    }
+                    milton_set_canvas_file(milton_state, fname);
+                    input->flags |= MiltonInputFlags_OPEN_FILE;
                 }
             }
             if (ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested)

@@ -306,7 +306,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-#if 1
+#if 0
     if (num_discarded > 0)
     {
         milton_log("INFO: Discarded %d points.\n", num_discarded);
@@ -685,7 +685,7 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
 
 void milton_reset_canvas_and_set_default(MiltonState* milton_state)
 {
-    milton_state->mlt_binary_version = 3;
+    milton_state->mlt_binary_version = MILTON_MAJOR_VERSION;
     Layer* l = milton_state->root_layer;
     while ( l != NULL )
     {
@@ -1011,7 +1011,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
 
 // Sensible
-#if 0
+#if 1
         f32 scale_factor = 1.3f;
         i32 view_scale_limit = (1 << 13);
 // Debug

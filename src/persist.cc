@@ -88,6 +88,7 @@ void milton_load(MiltonState* milton_state)
     assert(milton_state->mlt_file_path);
     FILE* fd = platform_fopen(milton_state->mlt_file_path, TO_PATH_STR("rb"));
     b32 ok = true;  // fread check
+    b32 handled = false;  // when ok==false but we don't need to prompt a scary message.
 
     if (fd)
     {
@@ -100,7 +101,11 @@ void milton_load(MiltonState* milton_state)
 
         if (milton_binary_version > MILTON_MINOR_VERION)
         {
+            platform_dialog("This file was created with a newer version of Milton.", "Could not open.");
+
+            // Stop loading, but exit without prompting.
             ok = false;
+            handled = true;
         }
 
         if (ok) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
@@ -260,7 +265,7 @@ void milton_load(MiltonState* milton_state)
             }
         }
         int err = fclose(fd);
-        if ( err != 0 )
+        if (err != 0)
         {
             ok = false;
         }
@@ -268,7 +273,10 @@ void milton_load(MiltonState* milton_state)
         // Finished loading
         if (!ok)
         {
-            platform_dialog("Tried to load a corrupted Milton file or there was an error reading from disk.", "Error");
+            if (!handled)
+            {
+                platform_dialog("Tried to load a corrupt Milton file or there was an error reading from disk.", "Error");
+            }
             milton_reset_canvas_and_set_default(milton_state);
         }
         else
@@ -458,10 +466,9 @@ PATH_CHAR* milton_get_last_canvas_fname()
         fread(&len, sizeof(len), 1, fd);
         if (len < MAX_PATH)
         {
-            {
-                fread(last_fname, sizeof(PATH_CHAR), len, fd);
-                // TODO: check that it exists!
-            }
+            fread(last_fname, sizeof(PATH_CHAR), len, fd);
+            // If the read fails, or if the file doesn't exist, milton_load
+            // will fail gracefully and load a default canvas.
             fclose(fd);
         }
         else
