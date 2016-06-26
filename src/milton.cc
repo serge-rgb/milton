@@ -296,9 +296,35 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
             }
         }
 
+
         // Cleared to be appended.
         if (passed_inspection && ws->num_points < STROKE_MAX_POINTS-1)
         {
+            // Stroke smoothing.
+            // Change canvas_point depending on the average of the last `N` points.
+            // The new point is a weighted sum of factor*average (1-factor)*canvas_point
+            i64 N = 3;
+            if (ws->num_points > N)
+            {
+                v2i average = {};
+                float factor = 0.45f;
+
+                for (i64 i = 0; i < N; ++i)
+                {
+                    average.x += ws->points[ws->num_points-1 - i].x;
+                    average.y += ws->points[ws->num_points-1 - i].y;
+                }
+                average.x /= N;
+                average.y /= N;
+
+                canvas_point.x = (i32)roundf
+                        ((float)average.x*factor +
+                         (float)canvas_point.x*(1-factor));
+                canvas_point.y = (i32)roundf
+                        ((float)average.y*factor +
+                         (float)canvas_point.y*(1-factor));
+            }
+
             // Add to current stroke.
             int index = ws->num_points++;
             ws->points[index] = canvas_point;
@@ -685,7 +711,7 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
 
 void milton_reset_canvas_and_set_default(MiltonState* milton_state)
 {
-    milton_state->mlt_binary_version = MILTON_MAJOR_VERSION;
+    milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
     Layer* l = milton_state->root_layer;
     while ( l != NULL )
     {

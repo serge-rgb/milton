@@ -99,7 +99,7 @@ void milton_load(MiltonState* milton_state)
 
         if (ok) { milton_state->mlt_binary_version = milton_binary_version; }
 
-        if (milton_binary_version > MILTON_MINOR_VERION)
+        if (milton_binary_version > MILTON_MINOR_VERSION)
         {
             platform_dialog("This file was created with a newer version of Milton.", "Could not open.");
 
@@ -491,6 +491,10 @@ PATH_CHAR* milton_get_last_canvas_fname()
         {
             mlt_free(last_fname);
         }
+    }
+    else
+    {
+        mlt_free(last_fname);
     }
 
     return last_fname;

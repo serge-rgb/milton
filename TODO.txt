@@ -3,8 +3,6 @@ To-Do
 
 - Bugs
     - :)
-    - need to lose imgui focus when toggling visibility
-        Can't repro anymore (Try on Win7?)
     - MoveFileEx randomly fails with return code 5 - access denied
         The bigger the file, the likelier it is to fail.
 
