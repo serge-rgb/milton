@@ -295,6 +295,22 @@ void milton_load(MiltonState* milton_state)
                 }
             }
             milton_state->layer_guid = layer_guid;
+
+            // Build bounding rects for every stroke.
+            for (Layer* l = milton_state->root_layer;
+                 l != NULL;
+                 l = l->next)
+            {
+                Stroke* strokes = l->strokes.data;
+
+                for (u64 stroke_i = 0;
+                     stroke_i < l->strokes.count;
+                     ++stroke_i)
+                {
+                    Stroke* stroke = strokes + stroke_i;
+                    stroke->bounding_rect = bounding_box_for_stroke(stroke);
+                }
+            }
         }
     }
     else
@@ -370,7 +386,7 @@ void milton_save(MiltonState* milton_state)
             {
                 ok = false;
             }
-            milton_log("Saving layer %d with %d strokes\n", test_count+1, num_strokes);
+            //milton_log("Saving layer %d with %d strokes\n", test_count+1, num_strokes);
             ++test_count;
         }
         assert (test_count == num_layers);

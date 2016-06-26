@@ -1380,46 +1380,6 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
     }
 }
 
-static b32 stroke_intersects_rect(Stroke* stroke, Rect rect)
-{
-    b32 result = false;
-    Rect stroke_rect = rect_enlarge(rect, stroke->brush.radius);
-    if (rect_is_valid(stroke_rect))
-    {
-        if (stroke->num_points == 1)
-        {
-            if ( is_inside_rect(stroke_rect, stroke->points[0]) )
-            {
-                result = true;
-            }
-        }
-        else
-        {
-            for (size_t point_i = 0; point_i < (size_t)stroke->num_points - 1; ++point_i)
-            {
-                v2i a = stroke->points[point_i    ];
-                v2i b = stroke->points[point_i + 1];
-
-                b32 inside = !((a.x > stroke_rect.right && b.x >  stroke_rect.right) ||
-                               (a.x < stroke_rect.left && b.x <   stroke_rect.left) ||
-                               (a.y < stroke_rect.top && b.y <    stroke_rect.top) ||
-                               (a.y > stroke_rect.bottom && b.y > stroke_rect.bottom));
-
-                if (inside)
-                {
-                    result = true;
-                    break;
-                }
-            }
-        }
-    }
-    else
-    {
-        milton_log("Stroke intersection invalid!\n");
-    }
-    return result;
-}
-
 static void fill_stroke_masks_for_worker(Layer* layer, Rect rect, i32 worker_id)
 {
     while (layer)
@@ -1436,7 +1396,7 @@ static void fill_stroke_masks_for_worker(Layer* layer, Rect rect, i32 worker_id)
              ++stroke_i)
         {
             Stroke* stroke = strokes + stroke_i;
-            stroke->visibility[worker_id] = stroke_intersects_rect(stroke, rect);
+            stroke->visibility[worker_id] = rect_intersects_rect(stroke->bounding_rect, rect);
         }
         layer = layer->next;
     }

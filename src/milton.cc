@@ -1291,12 +1291,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                     new_stroke.pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32));
                     new_stroke.num_points = num_points;
                     new_stroke.layer_id = milton_state->view->working_layer_id;
+                    memcpy(new_stroke.points, milton_state->working_stroke.points,
+                           milton_state->working_stroke.num_points * sizeof(v2i));
+                    memcpy(new_stroke.pressures, milton_state->working_stroke.pressures,
+                           milton_state->working_stroke.num_points * sizeof(f32));
+                    new_stroke.bounding_rect = bounding_box_for_stroke(&new_stroke);
                 }
-
-                memcpy(new_stroke.points, milton_state->working_stroke.points,
-                       milton_state->working_stroke.num_points * sizeof(v2i));
-                memcpy(new_stroke.pressures, milton_state->working_stroke.pressures,
-                       milton_state->working_stroke.num_points * sizeof(f32));
 
                 layer_push_stroke(milton_state->working_layer, new_stroke);
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };

@@ -19,6 +19,7 @@ struct Stroke
     i32     num_points;
     i32     layer_id;
     b32     visibility[MAX_NUM_WORKERS];
+    Rect    bounding_rect;
 };
 
 struct Layer

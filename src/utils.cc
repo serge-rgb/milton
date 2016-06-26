@@ -221,6 +221,17 @@ Rect rect_union(Rect a, Rect b)
     return result;
 }
 
+b32 rect_intersects_rect(Rect a, Rect b)
+{
+   b32 intersects = true;
+   if (a.left > b.right || b.left > a.right ||
+       a.top > b.bottom || b.top > a.bottom)
+   {
+      intersects = false;
+   }
+   return intersects;
+}
+
 Rect rect_intersect(Rect a, Rect b)
 {
     Rect result;
