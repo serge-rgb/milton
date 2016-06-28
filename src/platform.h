@@ -71,12 +71,11 @@ struct PlatformState
     SDL_Cursor* cursor_hand;
     SDL_Cursor* cursor_crosshair;
     SDL_Cursor* cursor_sizeall;
+    SDL_Cursor* cursor_brush;  // Custom cursor.
 
     // Windows hardware cursor
 #if defined(_WIN32)
     HWND    hwnd;
-    b32     setting_hcursor;  // False when resizing.
-    HCURSOR hcursor;
 #endif
 };
 

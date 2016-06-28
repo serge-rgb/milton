@@ -77,10 +77,15 @@ static void turn_panning_off(PlatformState* p)
     }
 }
 
+SDL_Cursor* g_curr_cursor = NULL;
 static void cursor_set_and_show(SDL_Cursor* cursor)
 {
-    SDL_SetCursor(cursor);
-    cursor_show();
+    if (g_curr_cursor != cursor)
+    {
+        g_curr_cursor = cursor;
+        SDL_SetCursor(cursor);
+        cursor_show();
+    }
 }
 
 MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
@@ -201,6 +206,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             } break;
         case SDL_MOUSEBUTTONDOWN:
             {
+#if 1
+
                 if ( event.button.windowID != platform_state->window_id )
                 {
                     break;
@@ -209,17 +216,73 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 {
                     if ( !ImGui::GetIO().WantCaptureMouse )
                     {
+                        v2i point = { event.button.x, event.button.y };
                         input_flags |= MiltonInputFlags_CLICK;
-                        milton_input.click = { event.button.x, event.button.y };
-                    }
+                        milton_input.click = point;
 
-                    platform_state->is_pointer_down = true;
-                    if (platform_state->is_panning)
+                        platform_state->is_pointer_down = true;
+                        if (platform_state->is_panning)
+                        {
+                            platform_state->pan_start = { event.button.x, event.button.y };
+                            platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
+                        }
+                        else
+                        {
+                            if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
+                            {
+                                milton_input.points[platform_state->num_point_results++] = point;
+                            }
+                            if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
+                            {
+                                milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
+                            }
+                        }
+                    }
+                }
+
+
+
+#else
+
+
+
+
+                if ( event.button.windowID != platform_state->window_id )
+                {
+                    break;
+                }
+                if ( event.button.button == SDL_BUTTON_LEFT )
+                {
+                    if ( !ImGui::GetIO().WantCaptureMouse )
+                    {
+                        v2i point = { event.button.x, event.button.y };
+                        input_flags |= MiltonInputFlags_CLICK;
+                        milton_input.click = point;
+
+                        if (platform_state->is_panning)
+                        {
+                            platform_state->pan_start = point;
+                            platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
+                        }
+                        else
+                        {
+                            if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
+                            {
+                                milton_input.points[platform_state->num_point_results++] = point;
+                            }
+                            if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
+                            {
+                                milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
+                            }
+                        }
+                    }
+                    else
                     {
                         platform_state->pan_start = { event.button.x, event.button.y };
                         platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
                     }
                 }
+#endif
             } break;
         case SDL_MOUSEBUTTONUP:
             {
@@ -495,7 +558,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         // Not enough info..
                         pointer_up = true;
                     }
-                    //cursor_show();
+                    cursor_show();
                     break;
                     // --- A couple of events we might want to catch later...
                 case SDL_WINDOWEVENT_ENTER:
@@ -668,8 +731,6 @@ int milton_main()
 #if defined(_WIN32)
         case SDL_SYSWM_WINDOWS:
             {
-                // Load EasyTab
-                EasyTab_Load(sysinfo.info.win.window);
                 { // Handle the case where the window was too big for the screen.
                     HWND hwnd = sysinfo.info.win.window;
                     RECT res_rect;
@@ -687,13 +748,15 @@ int milton_main()
                          || (win_rect.right + snap_threshold >= res_rect.right &&
                              win_rect.left + snap_threshold >= res_rect.left))
                     {
-                        // By this point we can assume that our prefs weren't right. Let's maximize.
+                        // Our prefs weren't right. Let's maximize.
                         SetWindowPos(hwnd, HWND_TOP, 100,100, win_rect.right-100, win_rect.bottom -100, SWP_SHOWWINDOW);
                         platform_state.width = win_rect.right - 100;
                         platform_state.height = win_rect.bottom - 100;
                         ShowWindow(hwnd, SW_MAXIMIZE);
                     }
                 }
+                // Load EasyTab
+                EasyTab_Load(platform_state.hwnd);
                 break;
             }
 #elif defined(__linux__)
@@ -800,6 +863,8 @@ int milton_main()
                     size_t ai = idx / 8;
                     size_t bi = idx % 8;
 
+                    // This code block for windows CreateCursor
+#if 0
                     if (incircle &&
                         // Cross-hair effect. Only pixels inside half-radius bands get drawn.
                         (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2))
@@ -819,27 +884,46 @@ int milton_main()
                     {
                         andmask[ai] |= (1 << (7 - bi));
                     }
+#endif
+                    // SDL code block
+                    if (incircle &&
+                        // Cross-hair effect. Only pixels inside half-radius bands get drawn.
+                        (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2))
+                    {
+                        if (toggle_black)
+                        {
+                            xormask[ai] |= (1 << (7 - bi));  // White
+                        }
+                        else
+                        {
+                            xormask[ai] |= (1 << (7 - bi));  // Black
+                            andmask[ai] |= (1 << (7 - bi));
+                        }
+                        toggle_black = !toggle_black;
+                    }
+                    else
+                    {
+                        andmask[ai] &= ~(1 << (7 - bi));     // Transparent
+                        xormask[ai] &= ~(1 << (7 - bi));
+                    }
                 }
             }
         }
+        //platform_state.hcursor = CreateCursor(/*HINSTANCE*/ 0,
+        //                                      /*xHotSpot*/(int)(w/2),
+        //                                      /*yHotSpot*/(int)(h/2),
+        //                                      /* nWidth */(int)w,
+        //                                      /* nHeight */(int)h,
+        //                                      (VOID*)andmask,
+        //                                      (VOID*)xormask);
 
-        platform_state.hcursor = CreateCursor(/*HINSTANCE*/ 0,
-                                              /*xHotSpot*/(int)(w/2),
-                                              /*yHotSpot*/(int)(h/2),
-                                              /* nWidth */(int)w,
-                                              /* nHeight */(int)h,
-                                              (VOID*)andmask,
-                                              (VOID*)xormask);
+        platform_state.cursor_brush = SDL_CreateCursor((Uint8*)andmask,
+                                                       (Uint8*)xormask,
+                                                       (int)w,
+                                                       (int)h,
+                                                       /*xHotSpot*/(int)(w/2),
+                                                       /*yHotSpot*/(int)(h/2));
 
-        if (platform_state.hcursor != NULL)
-        {
-            platform_state.setting_hcursor = true;
-        }
-
-        // TODO: Create cursor for other platforms when porting
-        //  Use the SDL call? It's not documented but we allready did the
-        //  work for CreateCursor and the function signatures are very
-        //  similar
     }
 #endif
 
@@ -963,10 +1047,7 @@ int milton_main()
             }
             else if (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER)
             {
-                if (platform_state.hcursor != NULL && platform_state.setting_hcursor)
-                {
-                    SetCursor(platform_state.hcursor);
-                }
+                cursor_set_and_show(platform_state.cursor_brush);
             }
             else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER)
             {
@@ -981,11 +1062,6 @@ int milton_main()
                 y < pad)
             {
                 cursor_set_and_show(platform_state.cursor_default);
-                platform_state.setting_hcursor = false;
-            }
-            else
-            {
-                platform_state.setting_hcursor = true;
             }
         }
 

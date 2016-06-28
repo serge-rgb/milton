@@ -303,11 +303,11 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
             // Stroke smoothing.
             // Change canvas_point depending on the average of the last `N` points.
             // The new point is a weighted sum of factor*average (1-factor)*canvas_point
-            i64 N = 3;
-            if (ws->num_points > N)
+            i64 N = 2;
+            if (ws->num_points > N && (milton_state->flags & MiltonStateFlags_STROKE_IS_FROM_TABLET))
             {
                 v2i average = {};
-                float factor = 0.45f;
+                float factor = 0.55f;
 
                 for (i64 i = 0; i < N; ++i)
                 {
