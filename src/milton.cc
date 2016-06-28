@@ -726,6 +726,7 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state)
         mlt_free(l);
         l = next;
     }
+    milton_state->last_save_time = {};
 
     milton_state->layer_guid = 0;
     milton_state->root_layer = NULL;
