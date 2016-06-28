@@ -4,7 +4,7 @@
 #pragma once
 
 #define MILTON_MAJOR_VERSION 1
-#define MILTON_MINOR_VERSION  2
+#define MILTON_MINOR_VERSION 2
 #define MILTON_MICRO_VERSION 4
 
 // When MILTON_DEBUG is 1,
@@ -16,7 +16,7 @@
 
 #define MILTON_MULTITHREADED 1
 
-#define MILTON_ENABLE_PROFILING 1
+#define MILTON_ENABLE_PROFILING 0
 
 #define MAX_NUM_WORKERS 64
 // Force things to be a bit slower

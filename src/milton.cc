@@ -1394,15 +1394,14 @@ cleanup:
             milton_save(milton_state);
 #endif
         }
-        // We're about to close and the last save failed.
-        // TODO: !! Stop using MoveFileEx
+        // We're about to close and the last save failed and the drawing changed.
         if (!(milton_state->flags & MiltonStateFlags_RUNNING) &&
              (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED) &&
              (milton_state->flags & MiltonStateFlags_MOVE_FILE_FAILED) &&
              milton_state->last_save_stroke_count != count_strokes(milton_state->root_layer))
         {
-            // TODO: Why does MoveFileExA fail?! Ask someone who knows this stuff.
-            //          Or the save could have failed for some other reason...
+            // TODO: Stop using MoveFileEx?
+            //  Why does MoveFileEx fail? Ask someone who knows this stuff.
             // Wait a moment and try again. If this fails, prompt to save somewhere else.
             SDL_Delay(3000);
             milton_save(milton_state);

@@ -127,7 +127,6 @@ FILE*   fopen_error(const char* fname, const char* mode)
 #define PATH_CHAR wchar_t
 #define TO_PATH_STR(STR) L##STR
 #else
-// TODO: probably right? Probably UTF8
 #define PATH_CHAR char
 #define TO_PATH_STR(STR) STR
 #endif

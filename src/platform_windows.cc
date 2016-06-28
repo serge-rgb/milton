@@ -430,7 +430,6 @@ void platform_fname_at_config(PATH_CHAR* fname, size_t len)
     fname[0] = '\0';
     wcsncat(fname, path, len);
     wcsncat(fname, tmp, len);
-    //wcsncat(fname + pathlen, tmp, len-pathlen);
     mlt_free(tmp) ;
 }
 

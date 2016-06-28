@@ -460,7 +460,6 @@ void milton_save(MiltonState* milton_state)
     }
     else
     {
-        // TODO. Fix this. Don't die?
         milton_die_gracefully("Could not create file for saving! ");
         return;
     }
@@ -504,14 +503,12 @@ PATH_CHAR* milton_get_last_canvas_fname()
 void milton_set_last_canvas_fname(PATH_CHAR* last_fname)
 {
     //PATH_CHAR* full = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(char));
-    // TODO:
     //wcscpy(full, "last_canvas_fname");
     PATH_CHAR full[MAX_PATH] = { TO_PATH_STR("saved_path") };
     platform_fname_at_config(full, MAX_PATH);
     FILE* fd = platform_fopen(full, TO_PATH_STR("wb"));
     if (fd)
     {
-        // TODO: write unicode
         u64 len = PATH_STRLEN(last_fname)+1;
         fwrite(&len, sizeof(len), 1, fd);
         fwrite(last_fname, sizeof(*last_fname), len, fd);
