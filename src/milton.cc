@@ -227,7 +227,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         b32 not_the_first = false;
-        if ( ws->num_points >= 1 )
+        if (ws->num_points >= 1)
         {
             not_the_first = true;
         }
@@ -237,23 +237,13 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         //  b) it is being appended to the stroke and it didn't merge with the previous point.
         b32 passed_inspection = true;
 
-        if ( pressure == NO_PRESSURE_INFO )
+        if (pressure == NO_PRESSURE_INFO)
         {
             passed_inspection = false;
             num_discarded++;
         }
 
         // Check that the last point is far away enough.
-        if (input_i > 1)
-        {
-            auto prev_point = input->points[input_i-1];
-            auto distance = abs(in_point.x - prev_point.x) + abs(in_point.y - prev_point.y);
-            if (distance < 8)  // TODO: this is pixel-density-dependent.
-            {
-                passed_inspection = false;
-                num_discarded++;
-            }
-        }
 
         if (passed_inspection && not_the_first)
         {
@@ -300,6 +290,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         // Cleared to be appended.
         if (passed_inspection && ws->num_points < STROKE_MAX_POINTS-1)
         {
+#if 1
             // Stroke smoothing.
             // Change canvas_point depending on the average of the last `N` points.
             // The new point is a weighted sum of factor*average (1-factor)*canvas_point
@@ -324,6 +315,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                         ((float)average.y*factor +
                          (float)canvas_point.y*(1-factor));
             }
+#endif
 
             // Add to current stroke.
             int index = ws->num_points++;
@@ -1038,7 +1030,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
 
 // Sensible
-#if 1
+#if 0
         f32 scale_factor = 1.3f;
         i32 view_scale_limit = (1 << 13);
 // Debug
