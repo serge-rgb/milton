@@ -4,9 +4,6 @@
 
 #pragma once
 
-#include "vector.h"
-#include "milton_configuration.h"
-
 #ifdef array_count
 #error "array_count is already defined"
 #else
@@ -167,6 +164,6 @@ struct WallTime
 
 
 #if MILTON_DEBUG
-char* debug_slurp_file(char* fname, size_t* out_size);
+char* debug_slurp_file(PATH_CHAR* path, size_t* out_size);
 #endif
 

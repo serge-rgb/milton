@@ -14,6 +14,14 @@
 #include "milton_configuration.h"
 
 #include "common.h"
+#include "memory.h"
+
+#include "DArray.h"
+#include "Vector.h"
+
+#include "vector.h"
+#include "vector.cc"
+
 #include "utils.h"
 
 
@@ -24,12 +32,46 @@
 #include "platform_unix.cc"
 #endif
 
+#undef main // Defined by SDL
+
+//#include "darray_test.cc"
+
+#include "utils.cc"
+#include "localization.cc"
+#include "gl_helpers.h"
+#include "gl_helpers.cc"
+#include "gl_func_loader.cc"
+#include "render_common.h"
+#include "canvas.h"
+#include "canvas.cc"
+#include "profiler.h"
+#include "profiler.cc"
+#include "milton.h"
+#include "color.h"
+#include "color.cc"
+#include "software_renderer.h"
+#include "gui.h"
+#include "persist.cc"
+#include "gui.cc"
+#include "software_renderer.cc"
+#include "hardware_renderer.cc"
+#include "memory.cc"
+#if MILTON_DEBUG
+#include "tests.cc"
+#endif
+#include "milton.cc"
+
+
+#include "sdl_milton.cc"
+
+
 #undef GetWindowFont
 #pragma warning(push,0)
 #include "../third_party/imgui/imgui.cpp"
 #include "../third_party/imgui/imgui_draw.cpp"
 #include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
 #undef snprintf
+
 
 extern "C"
 {
@@ -49,41 +91,3 @@ extern "C"
 }
 
 #pragma warning(pop)
-
-#include "DArray.h"
-
-
-#include "vector.cc"
-#include "utils.h"
-#include "utils.cc"
-
-//#include "darray_test.cc"
-
-#include "localization.cc"
-#include "gl_helpers.h"
-#include "gl_helpers.cc"
-#include "gl_func_loader.cc"
-#include "render_common.h"
-#include "canvas.h"
-#include "canvas.cc"
-#include "profiler.h"
-#include "profiler.cc"
-#include "milton.h"
-#include "color.h"
-#include "color.cc"
-#include "software_renderer.h"
-#include "gui.h"
-#include "persist.cc"
-#include "gui.cc"
-#include "software_renderer.cc"
-//#include "hardware_renderer.cc"
-#include "memory.h"
-#include "memory.cc"
-#if MILTON_DEBUG
-#include "tests.cc"
-#endif
-#include "milton.cc"
-
-
-#include "sdl_milton.cc"
-

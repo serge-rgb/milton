@@ -74,8 +74,8 @@ bool hw_renderer_init(RenderData* render_data)
     size_t src_sz[2] = {0};
     char* src[2] =
     {
-        debug_slurp_file("src/milton_canvas.v.glsl", &src_sz[0]),
-        debug_slurp_file("src/milton_canvas.f.glsl", &src_sz[1]),
+        debug_slurp_file(TO_PATH_STR("src/milton_canvas.v.glsl"), &src_sz[0]),
+        debug_slurp_file(TO_PATH_STR("src/milton_canvas.f.glsl"), &src_sz[1]),
     };
     GLuint types[2] =
     {

@@ -8,8 +8,6 @@
 extern "C" {
 #endif
 
-#include "common.h"
-#include "utils.h"
 // EasyTab for drawing tablet support
 
 #if defined(_MSC_VER)
@@ -122,14 +120,6 @@ FILE*   fopen_error(const char* fname, const char* mode)
     INVALID_CODE_PATH;  // Use platform_fopen
     return NULL;
 }
-
-#if defined(_WIN32)
-#define PATH_CHAR wchar_t
-#define TO_PATH_STR(STR) L##STR
-#else
-#define PATH_CHAR char
-#define TO_PATH_STR(STR) STR
-#endif
 
 typedef struct PlatformPrefs
 {

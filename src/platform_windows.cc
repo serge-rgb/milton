@@ -1,17 +1,8 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-#include "platform.h"
-
-#include "common.h"
-#include "memory.h"
-#include "milton_configuration.h"
-#include "utils.h"
+extern "C"
+{
 
     // -------------------------------  SHlObj.h
 #define CSIDL_DESKTOP                   0x0000        // <desktop>
@@ -519,6 +510,4 @@ int CALLBACK WinMain(
     milton_main();
 }
 
-#if defined(__cplusplus)
-}
-#endif
+} // extern "C"

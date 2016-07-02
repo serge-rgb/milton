@@ -2,8 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#include "vector.h"
-
 b32 equ2f(v2f a, v2f b)
 {
     b32 result = a.x == b.x && a.y == b.y;

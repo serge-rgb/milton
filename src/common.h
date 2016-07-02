@@ -20,6 +20,15 @@ typedef float       f32;
 
 typedef i32         b32;
 
+#if defined(_WIN32)
+#define PATH_CHAR wchar_t
+#define TO_PATH_STR(STR) L##STR
+#else
+#define PATH_CHAR char
+#define TO_PATH_STR(STR) STR
+#endif
+
+
 #define type(name) \
         typedef struct name name; \
         struct name

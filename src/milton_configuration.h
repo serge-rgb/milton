@@ -5,18 +5,18 @@
 
 #define MILTON_MAJOR_VERSION 1
 #define MILTON_MINOR_VERSION 2
-#define MILTON_MICRO_VERSION 4
+#define MILTON_MICRO_VERSION 5
 
 // When MILTON_DEBUG is 1,
 //  - Asserts
 //  - Fixed address root_arena
 //  -  very large root_arena
 //  - Runtime renderer implementation switching with F4
-#define MILTON_DEBUG 0
+#define MILTON_DEBUG 1
 
 #define MILTON_MULTITHREADED 1
 
-#define MILTON_ENABLE_PROFILING 0
+#define MILTON_ENABLE_PROFILING 1
 
 #define MAX_NUM_WORKERS 64
 // Force things to be a bit slower

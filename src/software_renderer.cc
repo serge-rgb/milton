@@ -294,7 +294,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
 // Leaving this toggle-able for a quick way to show the cool precision error.
     v2i reference_point =
-#if 1
+#if 0
     {
         (canvas_block.left + canvas_block.right) / 2,
         (canvas_block.top + canvas_block.bottom) / 2,
@@ -357,17 +357,17 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
             ClippedStroke* list_iter = stroke_list;
             b32 pixel_erased = false;
 
-            while ( list_iter )
+            while (list_iter)
             {
                 ClippedStroke* clipped_stroke = list_iter;
                 list_iter = list_iter->next;
 
-                if ( clipped_stroke_is_layermark(clipped_stroke) )
+                if (clipped_stroke_is_layermark(clipped_stroke))
                 {
                     pixel_erased = false;
                     continue;
                 }
-                else if ( pixel_erased )
+                else if (pixel_erased)
                 {
                     continue;
                 }
@@ -381,7 +381,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                 f32 dy = 0;
                 f32 pressure = 0.0f;
 
-                if ( clipped_stroke->num_points == 1 )
+                if (clipped_stroke->num_points == 1)
                 {
                     dx = (f32)(i - points[0].x);
                     dy = (f32)(j - points[0].y);
@@ -413,7 +413,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                             f32 dist = sqrtf(test_dx * test_dx + test_dy * test_dy);
                             f32 test_pressure = (1 - t) * p_a + t * p_b;
                             dist = dist - test_pressure * clipped_stroke->brush.radius * local_scale;
-                            if ( dist < min_dist )
+                            if (dist < min_dist)
                             {
                                 min_dist = dist;
                                 dx = test_dx;
@@ -424,7 +424,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     }
                 }
 
-                if ( min_dist < FLT_MAX )
+                if (min_dist < FLT_MAX)
                 {
                     // TODO: For implicit brush:
                     //  This sampling is for a circular brush.
@@ -470,7 +470,7 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     // safe to square the radius
                     if (radius >= ( 1 << 16 ))
                     {
-                        for ( int sample_i = 0; sample_i < 16; ++sample_i )
+                        for (int sample_i = 0; sample_i < 16; ++sample_i)
                         {
                             samples += (sqrtf(fdists[sample_i]) < radius);
                         }
@@ -479,19 +479,19 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                     {
                         u32 sq_radius = radius * radius;
 
-                        for ( int sample_i = 0; sample_i < 16; ++sample_i )
+                        for (int sample_i = 0; sample_i < 16; ++sample_i)
                         {
                             samples += (fdists[sample_i] < sq_radius);
                         }
                     }
 
                     // If the stroke contributes to the pixel, do compositing.
-                    if ( samples > 0 )
+                    if (samples > 0)
                     {
                         // Do blending
                         // ---------------
 
-                        if ( iseraser )
+                        if (iseraser)
                         {
                             pixel_erased = true;
                         }
@@ -514,11 +514,11 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
                 }
 
                 // This pixel is done if alpha == 1. This is is why stroke_list is reversed.
-                if ( acc_color.a >= 1.0f )
+                if (acc_color.a >= 1.0f)
                 {
                     break;
                 }
-            } // --- while ( list_iter )
+            }
 
             // Blend onto the background whatever is accumulated.
             acc_color = blend_v4f(background_color, acc_color);
@@ -564,15 +564,14 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
         canvas_block.bot_right = raster_to_canvas(view, raster_block.bot_right);
     }
 
-    if ( canvas_block.left   < -view->canvas_radius_limit ||
-         canvas_block.right  > view->canvas_radius_limit  ||
-         canvas_block.top    < -view->canvas_radius_limit ||
-         canvas_block.bottom > view->canvas_radius_limit
-        )
+    if (canvas_block.left   < -view->canvas_radius_limit ||
+        canvas_block.right  > view->canvas_radius_limit  ||
+        canvas_block.top    < -view->canvas_radius_limit ||
+        canvas_block.bottom > view->canvas_radius_limit)
     {
-        for ( int j = raster_block.top; j < raster_block.bottom; j++ )
+        for (int j = raster_block.top; j < raster_block.bottom; j++)
         {
-            for ( int i = raster_block.left; i < raster_block.right; i++ )
+            for (int i = raster_block.left; i < raster_block.right; i++)
             {
                 pixels[j * view->screen_size.w + i] = 0xffff00ff;
             }

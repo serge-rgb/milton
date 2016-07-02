@@ -443,10 +443,10 @@ static size_t bytes_in_fd(FILE* fd)
     return len;
 }
 
-char* debug_slurp_file(char* path, size_t* out_size)
+char* debug_slurp_file(PATH_CHAR* path, size_t* out_size)
 {
     char* contents = NULL;
-    FILE* fd = fopen(path, "r");
+    FILE* fd = platform_fopen(path, TO_PATH_STR("r"));
     if (fd)
     {
         size_t len = bytes_in_fd(fd);
