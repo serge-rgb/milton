@@ -1363,7 +1363,9 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                     new_stroke.bounding_rect = bounding_box_for_stroke(&new_stroke);
                 }
 
-                layer_push_stroke(milton_state->working_layer, new_stroke);
+                auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
+                gpu_add_stroke(milton_state->render_data, stroke);
+
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
                 push(&milton_state->history, h);
                 // Clear working_stroke
