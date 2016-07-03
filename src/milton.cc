@@ -243,11 +243,8 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
             num_discarded++;
         }
 
-        // Check that the last point is far away enough.
-
         if (passed_inspection && not_the_first)
         {
-
             i32 in_radius = (i32)(pressure * ws->brush.radius);
 
             // Limit the number of points we check so that we don't mess with the stroke too much.
@@ -1029,14 +1026,14 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
 
-// Sensible
-#if 0
-        f32 scale_factor = 1.3f;
-        i32 view_scale_limit = (1 << 13);
 // Debug
-#else
+#if MILTON_ZOOM_DEBUG
         f32 scale_factor = 1.5f;
         i32 view_scale_limit = 1 << 20;
+// Sensible
+#else
+        f32 scale_factor = 1.3f;
+        i32 view_scale_limit = (1 << 13);
 #endif
 
         // Some info on the reasoning behind choosing the values for different

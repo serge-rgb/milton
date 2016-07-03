@@ -206,8 +206,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             } break;
         case SDL_MOUSEBUTTONDOWN:
             {
-#if 1
-
                 if ( event.button.windowID != platform_state->window_id )
                 {
                     break;
@@ -239,50 +237,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         }
                     }
                 }
-
-
-
-#else
-
-
-
-
-                if ( event.button.windowID != platform_state->window_id )
-                {
-                    break;
-                }
-                if ( event.button.button == SDL_BUTTON_LEFT )
-                {
-                    if ( !ImGui::GetIO().WantCaptureMouse )
-                    {
-                        v2i point = { event.button.x, event.button.y };
-                        input_flags |= MiltonInputFlags_CLICK;
-                        milton_input.click = point;
-
-                        if (platform_state->is_panning)
-                        {
-                            platform_state->pan_start = point;
-                            platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
-                        }
-                        else
-                        {
-                            if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
-                            {
-                                milton_input.points[platform_state->num_point_results++] = point;
-                            }
-                            if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
-                            {
-                                milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        platform_state->pan_start = { event.button.x, event.button.y };
-                        platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
-                    }
-                }
-#endif
             } break;
         case SDL_MOUSEBUTTONUP:
             {

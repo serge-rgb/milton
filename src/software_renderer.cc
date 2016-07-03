@@ -1831,48 +1831,45 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
     MiltonGui* gui = milton_state->gui;
     if ( gui_visible && (redraw || (render_flags & MiltonRenderFlags_UI_UPDATED)))
     {
-        //if (check_flag(render_flags, MiltonRenderFlags_PICKER))
+        render_picker(&milton_state->gui->picker,
+                      raster_buffer,
+                      milton_state->view);
+
+        // Render history buttons for picker
+        ColorButton* button = &milton_state->gui->picker.color_buttons;
+        while(button)
         {
-            render_picker(&milton_state->gui->picker,
-                          raster_buffer,
-                          milton_state->view);
-
-            // Render history buttons for picker
-            ColorButton* button = &milton_state->gui->picker.color_buttons;
-            while(button)
+            if (button->rgba.a == 0)
             {
-                if (button->rgba.a == 0)
-                {
-                    break;
-                }
-                fill_rectangle_with_margin(raster_buffer,
-                                           milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                                           button->x, button->y,
-                                           button->w, button->h,
-                                           button->rgba,
-                                           // Black margin
-                                           v4f{ 0, 0, 0, 1 });
-                button = button->next;
+                break;
             }
-
-            // Draw an outlined circle for selected color.
-            i32 circle_radius = 20;
-            i32 picker_radius = gui->picker.bounds_radius_px;
-            i32 ring_girth = 1;
-            i32 center_shift = picker_radius - circle_radius - 2*ring_girth;
-            i32 x = gui->picker.center.x + center_shift;
-            i32 y = gui->picker.center.y - center_shift;
-            draw_circle(raster_buffer,
-                        milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                        x, y,
-                        circle_radius,
-                        color_rgb_to_rgba(hsv_to_rgb(gui->picker.data.hsv), 1.0f));
-            draw_ring(raster_buffer,
-                      milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                      x, y,
-                      circle_radius, ring_girth,
-                      v4f{0,0,0,1});
+            fill_rectangle_with_margin(raster_buffer,
+                                       milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                                       button->x, button->y,
+                                       button->w, button->h,
+                                       button->rgba,
+                                       // Black margin
+                                       v4f{ 0, 0, 0, 1 });
+            button = button->next;
         }
+
+        // Draw an outlined circle for selected color.
+        i32 circle_radius = 20;
+        i32 picker_radius = gui->picker.bounds_radius_px;
+        i32 ring_girth = 1;
+        i32 center_shift = picker_radius - circle_radius - 2*ring_girth;
+        i32 x = gui->picker.center.x + center_shift;
+        i32 y = gui->picker.center.y - center_shift;
+        draw_circle(raster_buffer,
+                    milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                    x, y,
+                    circle_radius,
+                    color_rgb_to_rgba(hsv_to_rgb(gui->picker.data.hsv), 1.0f));
+        draw_ring(raster_buffer,
+                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,
+                  x, y,
+                  circle_radius, ring_girth,
+                  v4f{0,0,0,1});
     }
 
 
@@ -2183,7 +2180,6 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
         }
 
         raster_limits = {};
-
 
         // Add picker to render rect
         if ((should_copy || (render_flags & MiltonRenderFlags_PAN_COPY)))
