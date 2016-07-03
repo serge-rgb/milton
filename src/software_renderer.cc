@@ -1288,6 +1288,26 @@ static b32 stroke_intersects_rect(Stroke* stroke, Rect rect)
 
 static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
 {
+    v4f background_color =
+    {
+        0.5f,
+        0.5f,
+        0.55f,
+        0.4f,
+    };
+    background_color = to_premultiplied(background_color.rgb, background_color.a);
+
+    // Render background color.
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
+    {
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
+        {
+            u32 picker_i = (u32) (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
+
+            picker->pixels[picker_i] = color_v4f_to_u32(background_color);
+        }
+    }
+
     // Wheel
     for ( int j = draw_rect.top; j < draw_rect.bottom; ++j )
     {
@@ -1713,58 +1733,24 @@ static void render_canvas_iteratively(MiltonState* milton_state, Rect raster_lim
     view->downsampling_factor = original_df;
 }
 
-static void render_picker(ColorPicker* picker, u32* buffer_pixels, CanvasView* view)
+static void render_picker(int render_flags, ColorPicker* picker, u32* buffer_pixels, CanvasView* view)
 {
-    v4f background_color =
-    {
-        0.5f,
-        0.5f,
-        0.55f,
-        0.4f,
-    };
-    background_color = to_premultiplied(background_color.rgb, background_color.a);
-
     Rect draw_rect = picker_get_bounds(picker);
 
-    // Copy canvas buffer into picker buffer
-    for ( int j = draw_rect.top; j < draw_rect.bottom; ++j )
+    if ((render_flags & MiltonRenderFlags_UI_UPDATED))
     {
-        for ( int i = draw_rect.left; i < draw_rect.right; ++i )
-        {
-            u32 picker_i = (u32) (j - draw_rect.top) * (2*picker->bounds_radius_px ) + (i - draw_rect.left);
-            u32 src = buffer_pixels[j * view->screen_size.w + i];
-            picker->pixels[picker_i] = src;
-        }
+        rasterize_color_picker(picker, draw_rect);
     }
 
-    // Render background color.
-    for ( int j = draw_rect.top; j < draw_rect.bottom; ++j )
+    // Blend picker pixels
+    u32* to_blend = picker->pixels;
+    for (int j = draw_rect.top; j < draw_rect.bottom; ++j)
     {
-        for ( int i = draw_rect.left; i < draw_rect.right; ++i )
+        for (int i = draw_rect.left; i < draw_rect.right; ++i)
         {
-            u32 picker_i = (u32) (j - draw_rect.top) *( 2*picker->bounds_radius_px ) + (i - draw_rect.left);
-
-            v4f dest = color_u32_to_v4f(picker->pixels[picker_i]);
-
-            v4f result = blend_v4f(dest, background_color);
-
-            picker->pixels[picker_i] = color_v4f_to_u32(result);
-        }
-    }
-
-    rasterize_color_picker(picker, draw_rect);
-
-    // Blit picker pixels
-    u32* to_blit = picker->pixels;
-    for ( int j = draw_rect.top; j < draw_rect.bottom; ++j )
-    {
-        for ( int i = draw_rect.left; i < draw_rect.right; ++i )
-        {
-            u32 linear_color = *to_blit++;
-            v4f rgba = color_u32_to_v4f(linear_color);
-            u32 color = color_v4f_to_u32(rgba);
-
-            buffer_pixels[j * view->screen_size.w + i] = color;
+            v4f picker_color = color_u32_to_v4f(*to_blend++);
+            auto buf_color = color_u32_to_v4f(buffer_pixels[j * view->screen_size.w + i]);
+            buffer_pixels[j * view->screen_size.w + i] = color_v4f_to_u32(blend_v4f(buf_color, picker_color));
         }
     }
 }
@@ -1831,7 +1817,8 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
     MiltonGui* gui = milton_state->gui;
     if ( gui_visible && (redraw || (render_flags & MiltonRenderFlags_UI_UPDATED)))
     {
-        render_picker(&milton_state->gui->picker,
+        render_picker(render_flags,
+                      &milton_state->gui->picker,
                       raster_buffer,
                       milton_state->view);
 

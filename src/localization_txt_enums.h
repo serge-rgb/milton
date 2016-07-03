@@ -65,6 +65,8 @@ enum Texts
     TXT_eye_dropper                ,
     TXT_milton_version             ,
     TXT_website                    ,
+    TXT_disable_stroke_smoothing   ,
+    TXT_enable_stroke_smoothing    ,
 
     TXT_Count,
 };

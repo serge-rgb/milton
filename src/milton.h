@@ -161,6 +161,7 @@ enum MiltonStateFlags
     MiltonStateFlags_BRUSH_HOVER_FLASHING   = 1 << 8,  // Send a GUI redraw event on timeout if overlay is hidden.
     MiltonStateFlags_LAST_SAVE_FAILED       = 1 << 9,
     MiltonStateFlags_MOVE_FILE_FAILED       = 1 << 10,
+    MiltonStateFlags_BRUSH_SMOOTHING        = 1 << 11,
 };
 
 enum MiltonInputFlags
@@ -252,4 +253,8 @@ void milton_try_quit(MiltonState* milton_state);
 void milton_new_layer(MiltonState* milton_state);
 void milton_set_working_layer(MiltonState* milton_state, Layer* layer);
 void milton_delete_working_layer(MiltonState* milton_state);
+
+
+static b32 milton_brush_smoothing_enabled(MiltonState* milton_state);
+static void milton_toggle_brush_smoothing(MiltonState* milton_state);
 

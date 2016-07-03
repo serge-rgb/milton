@@ -287,32 +287,46 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         // Cleared to be appended.
         if (passed_inspection && ws->num_points < STROKE_MAX_POINTS-1)
         {
-#if 1
-            // Stroke smoothing.
-            // Change canvas_point depending on the average of the last `N` points.
-            // The new point is a weighted sum of factor*average (1-factor)*canvas_point
-            i64 N = 2;
-            if (ws->num_points > N && (milton_state->flags & MiltonStateFlags_STROKE_IS_FROM_TABLET))
+
+            if (milton_brush_smoothing_enabled(milton_state))
             {
-                v2i average = {};
-                float factor = 0.55f;
-
-                for (i64 i = 0; i < N; ++i)
+                // Stroke smoothing.
+                // Change canvas_point depending on the average of the last `N` points.
+                // The new point is a weighted sum of factor*average (1-factor)*canvas_point
+                i64 N = 2;
+                if (ws->num_points > N && (milton_state->flags & MiltonStateFlags_STROKE_IS_FROM_TABLET))
                 {
-                    average.x += ws->points[ws->num_points-1 - i].x;
-                    average.y += ws->points[ws->num_points-1 - i].y;
-                }
-                average.x /= N;
-                average.y /= N;
+                    v2i average = {};
+                    float factor = 0.55f;
 
-                canvas_point.x = (i32)roundf
-                        ((float)average.x*factor +
-                         (float)canvas_point.x*(1-factor));
-                canvas_point.y = (i32)roundf
-                        ((float)average.y*factor +
-                         (float)canvas_point.y*(1-factor));
+                    for (i64 i = 0; i < N; ++i)
+                    {
+                        average.x += ws->points[ws->num_points-1 - i].x;
+                        average.y += ws->points[ws->num_points-1 - i].y;
+                    }
+                    average.x /= N;
+                    average.y /= N;
+
+                    auto* view = milton_state->view;
+
+                    auto canvas_center = raster_to_canvas(view, view->screen_center);
+                    float f_average_x = average.x - canvas_center.x;
+                    float f_average_y = average.y - canvas_center.y;
+
+                    float f_canvas_point_x = canvas_point.x - canvas_center.x;
+                    float f_canvas_point_y = canvas_point.y - canvas_center.y;
+
+                    canvas_point.x = (i32)roundf
+                            (f_average_x*factor +
+                             f_canvas_point_x*(1-factor));
+                    canvas_point.y = (i32)roundf
+                            (f_average_y*factor +
+                             f_canvas_point_y*(1-factor));
+
+                    canvas_point.x += canvas_center.x;
+                    canvas_point.y += canvas_center.y;
+                }
             }
-#endif
 
             // Add to current stroke.
             int index = ws->num_points++;
@@ -589,6 +603,12 @@ void milton_init(MiltonState* milton_state)
     // Note: This will fill out uninitialized data like default layers.
     milton_load(milton_state);
 
+    // Enable brush smoothing by default
+    if (!milton_brush_smoothing_enabled(milton_state))
+    {
+        milton_toggle_brush_smoothing(milton_state);
+    }
+
 #if MILTON_DEBUG
     milton_run_tests(milton_state);
 #endif
@@ -749,6 +769,9 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state)
         gui->preview_pos_prev = v2i{-1, -1};
 
         exporter_init(&gui->exporter);
+
+        // TODO: Check if this line can be removed after the switch to HW rendering.
+        milton_state->gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
     }
     milton_update_brushes(milton_state);
     milton_set_default_canvas_file(milton_state);
@@ -908,6 +931,24 @@ void milton_delete_working_layer(MiltonState* milton_state)
         milton_state->root_layer = milton_state->working_layer;
     mlt_free(layer);
     milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+}
+
+static b32 milton_brush_smoothing_enabled(MiltonState* milton_state)
+{
+    b32 enabled = (milton_state->flags & MiltonStateFlags_BRUSH_SMOOTHING);
+    return enabled;
+}
+
+static void milton_toggle_brush_smoothing(MiltonState* milton_state)
+{
+    if (milton_brush_smoothing_enabled(milton_state))
+    {
+        milton_state->flags &= ~MiltonStateFlags_BRUSH_SMOOTHING;
+    }
+    else
+    {
+        milton_state->flags |= MiltonStateFlags_BRUSH_SMOOTHING;
+    }
 }
 
 static void milton_validate(MiltonState* milton_state)
@@ -1227,7 +1268,6 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         {
             render_flags |= MiltonRenderFlags_UI_UPDATED;
         }
-
     }
 
     if ((input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT))

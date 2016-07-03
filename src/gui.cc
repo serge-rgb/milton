@@ -101,6 +101,8 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 {
                     milton_set_canvas_file(milton_state, fname);
                     input->flags |= MiltonInputFlags_OPEN_FILE;
+                    // TODO: Check if this line can be removed after switching to HW rendering.
+                    milton_state->gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
                 }
             }
             if (ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested)
@@ -177,6 +179,13 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             }
             if (ImGui::BeginMenu(LOC(brush_options)))
             {
+                b32 smoothing_enabled = milton_brush_smoothing_enabled(milton_state);
+                char* entry_str = smoothing_enabled? LOC(disable_stroke_smoothing) : LOC(enable_stroke_smoothing);
+
+                if (ImGui::MenuItem(entry_str))
+                {
+                    milton_toggle_brush_smoothing(milton_state);
+                }
                 // Decrease / increase brush size
                 if (ImGui::MenuItem(LOC(decrease_brush_size)))
                 {

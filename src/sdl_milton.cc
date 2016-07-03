@@ -952,6 +952,7 @@ int milton_main()
         {
             first_run = false;
             milton_input.flags = MiltonInputFlags_FULL_REFRESH;
+            milton_state->gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
         }
 
         if ( platform_state.stopped_panning )

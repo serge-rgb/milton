@@ -45,7 +45,7 @@ struct ColorPicker
     float   wheel_radius;
     float   wheel_half_width;
 
-    u32*    pixels;  // Blit this to render picker
+    u32*    pixels;  // Blit this to render picker. Dimensions: picker_get_bounds(..)
 
     PickerData data;
 

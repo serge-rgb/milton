@@ -82,6 +82,8 @@ static void init_localization()
         EN(TXT_eye_dropper, "Eye Dropper");
         EN(TXT_milton_version, "Milton Version");
         EN(TXT_website, "Website");
+        EN(TXT_disable_stroke_smoothing, "Disable Stroke Smoothing");
+        EN(TXT_enable_stroke_smoothing, "Enable Stroke Smoothing");
     }
 
     {  // Spanish
