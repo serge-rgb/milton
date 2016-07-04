@@ -5,14 +5,14 @@
 
 #define MILTON_MAJOR_VERSION 1
 #define MILTON_MINOR_VERSION 2
-#define MILTON_MICRO_VERSION 5
+#define MILTON_MICRO_VERSION 6
 
 // When MILTON_DEBUG is 1,
 //  - Asserts
 //  - Fixed address root_arena
 //  -  very large root_arena
 //  - Runtime renderer implementation switching with F4
-#define MILTON_DEBUG 0
+#define MILTON_DEBUG 1
 
 #define MILTON_ZOOM_DEBUG 0
     // If MILTON_DEBUG is 0, MILTON_ZOOM_DEBUG will be 0 too!
