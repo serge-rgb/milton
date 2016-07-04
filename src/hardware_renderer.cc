@@ -172,13 +172,21 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     gl_set_uniform_i(render_data->program, "u_scale", view->scale);
 }
 
-void gpu_add_stroke(RenderData* render_data, Stroke* stroke)
+void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 {
+    // Size we need:
+    //  N-1 segments.
+    //      Quad: 4 points
+    Arena scratch_arena = arena_push(arena, STROKE_MAX_POINTS*(sizeof(v2i)*4));
+
     vec2 cp;
     cp.x = stroke->points[stroke->num_points-1].x;
     cp.y = stroke->points[stroke->num_points-1].y;
 #if MILTON_DEBUG
-    canvas_to_raster_gl(cp);
+    if (u_scale != 0)
+    {
+        canvas_to_raster_gl(cp);
+    }
 #endif
     //
     // Note.
@@ -191,28 +199,71 @@ void gpu_add_stroke(RenderData* render_data, Stroke* stroke)
     //          [  Ham ]    - Ham. 0 or more draw calls for strokes waiting to get into a "bread" layer
     //      [ BOTTOM    ]  - Another big VBO, single draw call. Layers below working stroke.
     //
-    // Create vbo for point.
-    GLuint vbo = 0;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    GLCHK( glUseProgram(render_data->program) );
-#if 1
-    size_t sz = 2*sizeof(i32)*stroke->num_points;
-    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sz),
-                        (int*)stroke->points,
-                        GL_STATIC_DRAW) );
-#else
-    GLfloat data[] =
+
+    auto npoints = stroke->num_points;
+    if (npoints == 1)
     {
-        (float)stroke->points[stroke->num_points-1].x,
-        (float)stroke->points[stroke->num_points-1].y,
-    };
-    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(data)), data, GL_STATIC_DRAW) );
-#endif
-    RenderData::RenderElem re;
-    re.vbo = vbo;
-    re.count = stroke->num_points;
-    push(&render_data->render_elems, re);
+        // TODO: handle special case...
+        // So uncommon that adding an extra degenerate point might make sense,
+        // if the algorithm can handle it
+    }
+    else
+    {
+        GLuint vbo = 0;
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        GLCHK( glUseProgram(render_data->program) );
+
+        // 3 (triangle) *
+        // 2 (two per edge) *
+        // N-1 (edges per stroke)
+        const size_t total_points = 3*2*((size_t)npoints-1);
+
+        //v2i* upload_points = arena_alloc_array(&scratch_arena, total_points, v2i);
+        v2i* upload_points = (v2i*)malloc(total_points*sizeof(v2i));
+        size_t upload_i = 0;
+        for (i64 i=0; i < npoints-1; ++i)
+        {
+            v2i point_i = stroke->points[i];
+            v2i point_j = stroke->points[i+1];
+
+            Brush brush = stroke->brush;
+            float radius_i = stroke->pressures[i]*brush.radius;
+            float radius_j = stroke->pressures[i+1]*brush.radius;
+
+            i32 min_x = min(point_i.x-radius_i, point_j.x-radius_j);
+            i32 min_y = min(point_i.y-radius_i, point_j.y-radius_j);
+
+            i32 max_x = max(point_i.x+radius_i, point_j.x+radius_j);
+            i32 max_y = max(point_i.y+radius_i, point_j.y+radius_j);
+
+            // Counter-clockwise
+            upload_points[upload_i++] = { min_x, min_y };
+            upload_points[upload_i++] = { min_x, max_y };
+            upload_points[upload_i++] = { max_x, max_y };
+
+            upload_points[upload_i++] = { max_x, max_y };
+            upload_points[upload_i++] = { min_x, min_y };
+            upload_points[upload_i++] = { max_x, min_y };
+
+        }
+        //assert(upload_i == total_points);
+        assert(upload_i <= total_points);
+        // Upload to GL
+        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(upload_i*sizeof(v2i)),
+                            (int*)upload_points,
+                            GL_STATIC_DRAW) );
+        size_t sz = 2*sizeof(i32)*stroke->num_points;
+        /* GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sz), */
+        /*                     (int*)stroke->points, */
+        /*                     GL_STATIC_DRAW) ); */
+        RenderData::RenderElem re;
+        re.vbo = vbo;
+        re.count = (i64)upload_i;
+        push(&render_data->render_elems, re);
+    }
+
+    arena_pop(&scratch_arena);
 }
 
 
@@ -229,15 +280,12 @@ void gpu_render(RenderData* render_data)
             GLuint stroke = re.vbo;
             i64 count = re.count;
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, stroke) );
-            //GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-            //                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-            //                             /*stride*/0, /*ptr*/0));
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_INT, /*normalize*/GL_FALSE,
                                          /*stride*/0, /*ptr*/0));
             GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
-            glDrawArrays(GL_POINTS, 0, count);
+            glDrawArrays(GL_TRIANGLES, 0, count);
         }
     }
     GLCHK (glUseProgram(0));

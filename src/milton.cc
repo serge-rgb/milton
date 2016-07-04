@@ -564,10 +564,13 @@ void milton_init(MiltonState* milton_state)
     milton_set_default_view(milton_state->view);
 
     milton_state->gui = arena_alloc_elem(milton_state->root_arena, MiltonGui);
+    milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
     gui_init(milton_state->root_arena, milton_state->gui);
 
     milton_gl_backend_init(milton_state);
+    gpu_init(milton_state->render_data);
 
+#if 0
     { // Get/Set Milton Canvas (.mlt) file
 
 
@@ -582,6 +585,9 @@ void milton_init(MiltonState* milton_state)
             milton_set_default_canvas_file(milton_state);
         }
     }
+#else
+    milton_set_default_canvas_file(milton_state);
+#endif
 
     // Set default brush sizes.
     for (int i = 0; i < BrushEnum_COUNT; ++i)
@@ -645,8 +651,6 @@ void milton_init(MiltonState* milton_state)
 #endif
 
 
-    milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
-    gpu_init(milton_state->render_data);
 }
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
@@ -1364,7 +1368,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 }
 
                 auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
-                gpu_add_stroke(milton_state->render_data, stroke);
+                gpu_add_stroke(milton_state->root_arena, milton_state->render_data, stroke);
 
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
                 push(&milton_state->history, h);
@@ -1487,5 +1491,6 @@ cleanup:
     profiler_output();
 
     //milton_validate(milton_state);
+    ARENA_VALIDATE(milton_state->root_arena);
 }
 
