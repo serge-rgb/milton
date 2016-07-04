@@ -162,8 +162,3 @@ struct WallTime
 };
 // Use platform_get_walltime to fill struct.
 
-
-#if MILTON_DEBUG
-char* debug_slurp_file(PATH_CHAR* path, size_t* out_size);
-#endif
-

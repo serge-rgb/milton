@@ -25,7 +25,29 @@ ivec2 as_ivec2(vec2 v)
     r.y = v.y;
     return r;
 }
+vec4 as_vec4(vec3 v)
+{
+    vec4 r;
+    r.x = v.x;
+    r.y = v.y;
+    r.z = v.z;
+    r.w = 1;
+    return r;
+}
+vec4 VEC4(float x,float y,float z,float w)
+{
+    vec4 r;
+    r.x = x;
+    r.y = y;
+    r.z = z;
+    r.w = w;
+    return r;
+}
+static vec4 gl_FragColor;
 #include "milton_canvas.v.glsl"
+#undef main
+#define main fragmentShaderMain
+#include "milton_canvas.f.glsl"
 #undef main
 #undef attribute
 #undef uniform
@@ -98,6 +120,45 @@ struct RenderData
     DArray<RenderElem> render_elems;
 };
 
+// Load a shader and append version
+#if MILTON_DEBUG
+char* debug_slurp_shader(PATH_CHAR* path, size_t* out_size)
+{
+    char* contents = NULL;
+    FILE* fd = platform_fopen(path, TO_PATH_STR("r"));
+    if (fd)
+    {
+        char prelude[] = "#version 120\n";
+        size_t prelude_len = strlen(prelude);
+        size_t len = bytes_in_fd(fd) + prelude_len;
+        contents = (char*)mlt_calloc(len + 1, 1);
+        strcpy(contents, prelude);
+
+        if (contents)
+        {
+            size_t read = fread((void*)(contents+prelude_len), 1, (size_t)len, fd);
+            assert (read <= len);
+            fclose(fd);
+            if (out_size)
+            {
+                *out_size = read + 1 + prelude_len;
+            }
+            contents[*out_size] = '\0';
+        }
+
+    }
+    else
+    {
+        if (out_size)
+        {
+            *out_size = 0;
+        }
+    }
+    return contents;
+}
+#endif
+
+
 bool gpu_init(RenderData* render_data)
 {
     bool result = true;
@@ -118,8 +179,8 @@ bool gpu_init(RenderData* render_data)
     size_t src_sz[2] = {0};
     char* src[2] =
     {
-        debug_slurp_file(TO_PATH_STR("src/milton_canvas.v.glsl"), &src_sz[0]),
-        debug_slurp_file(TO_PATH_STR("src/milton_canvas.f.glsl"), &src_sz[1]),
+        debug_slurp_shader(TO_PATH_STR("src/milton_canvas.v.glsl"), &src_sz[0]),
+        debug_slurp_shader(TO_PATH_STR("src/milton_canvas.f.glsl"), &src_sz[1]),
     };
     GLuint types[2] =
     {
@@ -254,7 +315,6 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             upload_points[upload_i++] = { max_x, max_y };
             upload_points[upload_i++] = { min_x, min_y };
             upload_points[upload_i++] = { max_x, min_y };
-
         }
         //assert(upload_i == total_points);
         assert(upload_i <= total_points);
@@ -274,7 +334,6 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
     arena_pop(&scratch_arena);
 }
-
 
 void gpu_render(RenderData* render_data)
 {

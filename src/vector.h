@@ -109,6 +109,97 @@ typedef Vector3<int>     ivec3;
 typedef Vector3<float>   vec3;
 
 template<typename T>
+struct Vector4
+{
+    union
+    {
+        struct
+        {
+            T x;
+            T y;
+            T z;
+            T w;
+        };
+        struct
+        {
+            T r;
+            T g;
+            T b;
+            T a;
+        };
+        T d[4];
+        T xyzw[4];
+        T rgba[4];
+    };
+
+    // Constructors...
+
+    Vector4 ()
+    {
+        x = 0;
+        y = 0;
+        z = 0;
+        w = 0;
+    }
+    Vector4 (const T& val)
+    {
+        x = val;
+        y = val;
+        z = val;
+        w = val;
+    }
+    Vector4 (const Vector4<T>& other)
+    {
+        x = other.x;
+        y = other.y;
+        z = other.z;
+        w = other.w;
+    }
+
+    Vector4<T> operator =(const Vector4<T>& other)
+    {
+        this->x = other.x;
+        this->y = other.y;
+        this->z = other.z;
+        this->w = other.w;
+        return *this;
+    }
+};
+#define op4_T(OP) \
+        template<typename T> \
+        Vector4<T> operator OP (const Vector4<T>& v, T f) \
+{\
+    \
+    Vector4<T> r = v; \
+    r.x  OP= f; \
+    r.y  OP= f; \
+    r.z  OP= f; \
+    r.w  OP= f; \
+    return v; \
+}
+#define op4(OP) \
+        template<typename T> \
+        Vector4<T> operator OP (const Vector4<T>& v, const Vector4<T>& o) \
+{\
+    \
+    Vector4<T> r = v; \
+    r.x  OP= o.x; \
+    r.y  OP= o.y; \
+    r.z  OP= o.z; \
+    r.w  OP= o.w; \
+    return v; \
+}
+
+op4_T(*)
+op4_T(+)
+
+op4(+)
+
+
+// Types
+typedef Vector4<float>   vec4;
+
+template<typename T>
 b32 operator ==(const Vector2<T>& a, const Vector2<T>& b)
 {
     b32 result = a.x == b.x && a.y == b.y;

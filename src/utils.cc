@@ -443,34 +443,3 @@ static size_t bytes_in_fd(FILE* fd)
     return len;
 }
 
-char* debug_slurp_file(PATH_CHAR* path, size_t* out_size)
-{
-    char* contents = NULL;
-    FILE* fd = platform_fopen(path, TO_PATH_STR("r"));
-    if (fd)
-    {
-        size_t len = bytes_in_fd(fd);
-        contents = (char*)mlt_calloc(len + 1, 1);
-        if (contents)
-        {
-            size_t read = fread((void*)contents, 1, (size_t)len, fd);
-            assert (read <= len);
-            fclose(fd);
-            if (out_size)
-            {
-                *out_size = read + 1;
-            }
-            contents[read] = '\0';
-        }
-
-    }
-    else
-    {
-        if (out_size)
-        {
-            *out_size = 0;
-        }
-    }
-    return contents;
-}
-
