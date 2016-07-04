@@ -155,6 +155,14 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
     gl_set_uniform_i(render_data->program, "u_scale", scale);
 }
 
+static void gpu_set_background(RenderData* render_data, v3f background_color)
+{
+#if MILTON_DEBUG
+    for(int i=0;i<3;++i) u_background_color.d[i] = background_color.d[i];
+#endif
+    gl_set_uniform_vec3(render_data->program, "u_background_color", 1, background_color.d);
+}
+
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 {
 #if MILTON_DEBUG // set the shader values in C++
@@ -168,7 +176,8 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     glUseProgram(render_data->program);
     gl_set_uniform_vec2i(render_data->program, "u_pan_vector", 1, view->pan_vector.d);
     gl_set_uniform_vec2i(render_data->program, "u_screen_center", 1, view->screen_center.d);
-    gl_set_uniform_vec2(render_data->program, "u_screen_size", 1, view->screen_size.d);
+    float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
+    gl_set_uniform_vec2(render_data->program, "u_screen_size", 1, fscreen);
     gl_set_uniform_i(render_data->program, "u_scale", view->scale);
 }
 

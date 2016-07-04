@@ -47,36 +47,66 @@ struct Vector2
         this->y = other.y;
         return *this;
     }
-
-    /* Vector2 (Vector2<float> other) */
-    /* { */
-    /*     x = (T)other.x; */
-    /*     y = (T)other.y; */
-    /* } */
-
-    // Specialized Assignment
-
-    /* Vector2<i32> operator =(const Vector2<float>& a) */
-    /* { */
-    /*     ivec2 result; */
-    /*     result.x = (int)a.x; */
-    /*     result.y = (int)a.y; */
-    /*     return result; */
-    /* } */
-
-    /* Vector2<float> operator =(const Vector2<i32>&& a) */
-    /* { */
-    /*     ivec2 result; */
-    /*     result.x = (int)a.x; */
-    /*     result.y = (int)a.y; */
-    /*     return result; */
-    /* } */
-
 };
 
 // Types
 typedef Vector2<int>     ivec2;
 typedef Vector2<float>   vec2;
+
+template<typename T>
+struct Vector3
+{
+    union
+    {
+        struct
+        {
+            T x;
+            T y;
+            T z;
+        };
+        struct
+        {
+            T r;
+            T g;
+            T b;
+        };
+        T d[3];
+        T xyz[3];
+    };
+
+    // Constructors...
+
+    Vector3 ()
+    {
+        x = 0;
+        y = 0;
+        z = 0;
+    }
+    Vector3 (const T& val)
+    {
+        x = val;
+        y = val;
+        z = val;
+    }
+    Vector3 (const Vector3<T>& other)
+    {
+        x = other.x;
+        y = other.y;
+        z = other.z;
+    }
+
+    Vector3<T> operator =(const Vector3<T>& other)
+    {
+        this->x = other.x;
+        this->y = other.y;
+        this->z = other.z;
+        return *this;
+    }
+};
+
+// Types
+typedef Vector3<int>     ivec3;
+typedef Vector3<float>   vec3;
 
 template<typename T>
 b32 operator ==(const Vector2<T>& a, const Vector2<T>& b)

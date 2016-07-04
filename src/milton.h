@@ -253,6 +253,7 @@ void milton_try_quit(MiltonState* milton_state);
 void milton_new_layer(MiltonState* milton_state);
 void milton_set_working_layer(MiltonState* milton_state, Layer* layer);
 void milton_delete_working_layer(MiltonState* milton_state);
+void milton_set_background_color(MiltonState* milton_state, v3f background_color);
 
 
 static b32 milton_brush_smoothing_enabled(MiltonState* milton_state);

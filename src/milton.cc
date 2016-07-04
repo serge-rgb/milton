@@ -93,6 +93,12 @@ static void milton_gl_backend_init(MiltonState* milton_state)
     }
 }
 
+void milton_set_background_color(MiltonState* milton_state, v3f background_color)
+{
+    milton_state->view->background_color = background_color;
+    gpu_set_background(milton_state->render_data, background_color);
+}
+
 static void milton_set_default_view(CanvasView* view)
 {
     *view = CanvasView{};
@@ -100,7 +106,6 @@ static void milton_set_default_view(CanvasView* view)
     view->scale               = MILTON_DEFAULT_SCALE;
     view->downsampling_factor = 1;
     view->num_layers          = 1;
-    view->background_color    = v3f{ 1, 1, 1 };
     view->canvas_radius_limit = 1 << 30;  // A higher limit and certain assumptions start to break
 
 }
@@ -560,15 +565,17 @@ void milton_init(MiltonState* milton_state)
     milton_state->block_width = 32;
 #endif
 
-    milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
-    milton_set_default_view(milton_state->view);
-
     milton_state->gui = arena_alloc_elem(milton_state->root_arena, MiltonGui);
     milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
     gui_init(milton_state->root_arena, milton_state->gui);
 
     milton_gl_backend_init(milton_state);
     gpu_init(milton_state->render_data);
+
+    milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
+    milton_set_default_view(milton_state->view);
+    milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
+
 
 #if 0
     { // Get/Set Milton Canvas (.mlt) file

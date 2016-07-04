@@ -169,6 +169,21 @@ bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t dat
 
     return ok;
 }
+
+bool gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
+{
+    glUseProgram(program);
+    bool ok = true;
+    GLint loc = glGetUniformLocation(program, name);
+    ok = loc >= 0;
+
+    if (ok)
+    {
+        GLCHK( glUniform3fv(loc, (GLsizei)count, vals) );
+    }
+    return ok;
+}
+
 bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
 {
     glUseProgram(program);
@@ -178,21 +193,6 @@ bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
     if (ok)
     {
         GLCHK( glUniform2fv(loc, (GLsizei)count, vals) );
-    }
-    return ok;
-}
-
-bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, int* vals)
-{
-    glUseProgram(program);
-    bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
-    ok = loc >= 0;
-
-    float fvals[] = {(float)vals[0], (float)vals[1]};
-    if (ok)
-    {
-        GLCHK( glUniform2fv(loc, (GLsizei)count, fvals) );
     }
     return ok;
 }

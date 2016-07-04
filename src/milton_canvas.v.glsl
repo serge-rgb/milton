@@ -11,6 +11,9 @@ uniform ivec2 u_screen_center;
 uniform vec2  u_screen_size;
 uniform int   u_scale;
 
+// MiltonState elements
+uniform vec3 u_background_color;
+
 // C++
 #if GL_core_profile
 ivec2 as_ivec2(int v)

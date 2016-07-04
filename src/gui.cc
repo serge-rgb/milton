@@ -153,7 +153,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 v3f bg = milton_state->view->background_color;
                 if (ImGui::ColorEdit3(LOC(color), bg.d))
                 {
-                    milton_state->view->background_color = clamp_01(bg);
+                    milton_set_background_color(milton_state, clamp_01(bg));
                     input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                     input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
                 }
