@@ -166,15 +166,15 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     b32 was_pen_down = EasyTab->PenInProximity && !platform_state->is_pointer_down;
                     for (int pi = 0; pi < EasyTab->NumPackets; ++pi)
                     {
-                        if (EasyTab->PosX >= 0 && EasyTab->PosY >= 0)  // Quick n' dirty is-inside-client-rect test
+                        bool is_down = EasyTab->Pressure[pi] > 0 && EasyTab->PenInProximity;
+                        if (is_down)
                         {
-                            bool is_down = EasyTab->Pressure[pi] > 0 && EasyTab->PenInProximity;
-                            if (is_down)
+                            got_pen = true;
+                            v2i point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
+                            if (point.x >= 0 && point.y >= 0)
                             {
-                                got_pen = true;
                                 if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
                                 {
-                                    v2i point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
                                     milton_input.points[platform_state->num_point_results++] = point;
                                 }
                                 if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
@@ -224,7 +224,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                             platform_state->pan_start = { event.button.x, event.button.y };
                             platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
                         }
-                        else
+                        else if (point.x >= 0 && point.y >= 0)
                         {
                             if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
                             {
@@ -271,13 +271,16 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     {
                         if (!platform_state->is_panning)
                         {
-                            if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
+                            if (input_point.x >= 0 && input_point.y >= 0)
                             {
-                                milton_input.points[platform_state->num_point_results++] = input_point;
-                            }
-                            if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
-                            {
-                                milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
+                                if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
+                                {
+                                    milton_input.points[platform_state->num_point_results++] = input_point;
+                                }
+                                if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
+                                {
+                                    milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
+                                }
                             }
                         }
                         else if (platform_state->is_panning)
@@ -562,6 +565,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             }
         }
         platform_state->is_pointer_down = false;
+
+        platform_state->num_point_results = 0;
     }
 
     if (platform_state->panning_fsm == PanningFSM_MOUSE_PANNING)
@@ -703,9 +708,9 @@ int milton_main()
                              win_rect.left + snap_threshold >= res_rect.left))
                     {
                         // Our prefs weren't right. Let's maximize.
-                        SetWindowPos(hwnd, HWND_TOP, 100,100, win_rect.right-100, win_rect.bottom -100, SWP_SHOWWINDOW);
-                        platform_state.width = win_rect.right - 100;
-                        platform_state.height = win_rect.bottom - 100;
+                        SetWindowPos(hwnd, HWND_TOP, 20,20, win_rect.right-20, win_rect.bottom -20, SWP_SHOWWINDOW);
+                        platform_state.width = win_rect.right - 20;
+                        platform_state.height = win_rect.bottom - 20;
                         ShowWindow(hwnd, SW_MAXIMIZE);
                     }
                 }
@@ -736,7 +741,7 @@ int milton_main()
 
     // Every X ms, call this callback to send us an event so we don't wait for user input.
     // Called periodically to force updates that don't depend on user input.
-    SDL_AddTimer(100,
+    SDL_AddTimer(200,
                  [](u32 interval, void *param)
                  {
                      SDL_Event event;

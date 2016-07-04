@@ -287,6 +287,8 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         // Cleared to be appended.
         if (passed_inspection && ws->num_points < STROKE_MAX_POINTS-1)
         {
+            // TODO: Add interpolation points here based on angle between consecutive points.
+            // Once that's added, enable mouse input smoothing.
 
             if (milton_brush_smoothing_enabled(milton_state))
             {
@@ -1306,8 +1308,10 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                              point);
             render_flags |= MiltonRenderFlags_UI_UPDATED;
         }
-        if(input->flags & MiltonInputFlags_CLICKUP) {
-            if (!(milton_state->flags & MiltonStateFlags_IGNORE_NEXT_CLICKUP)) {
+        if(input->flags & MiltonInputFlags_CLICKUP)
+        {
+            if (!(milton_state->flags & MiltonStateFlags_IGNORE_NEXT_CLICKUP))
+            {
                 milton_switch_mode(milton_state, MiltonMode_PEN);
                 milton_update_brushes(milton_state);
             }
