@@ -120,7 +120,7 @@ struct RenderData
     DArray<RenderElem> render_elems;
 };
 
-// Load a shader and append version
+// Load a shader and append line `#version 120`, which is invalid C++
 #if MILTON_DEBUG
 char* debug_slurp_shader(PATH_CHAR* path, size_t* out_size)
 {
@@ -353,7 +353,7 @@ void gpu_render(RenderData* render_data)
                                          /*stride*/0, /*ptr*/0));
             GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
-            glDrawArrays(GL_TRIANGLES, 0, count);
+            //glDrawArrays(GL_TRIANGLES, 0, count);
         }
     }
     GLCHK (glUseProgram(0));

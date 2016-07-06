@@ -275,7 +275,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
         char msg[1024];
         WallTime lst = milton_state->last_save_time;
 
-        snprintf(msg, 1024, "\t%s -- Last Saved %.2d:%.2d:%.2d",
+        snprintf(msg, 1024, "\t%s -- Last saved: %.2d:%.2d:%.2d",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
                  file_name,
                  lst.hours, lst.minutes, lst.seconds);
@@ -662,9 +662,11 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
 
             ImGui::Dummy({0,30});
 
+            i64 stroke_count = count_strokes(milton_state->root_layer);
+
             snprintf(msg, array_count(msg),
                      "# of strokes: %d (clipped to screen: %d)\n",
-                     (int)count_strokes(milton_state->root_layer),
+                     (int)stroke_count,
                      (int)count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
             ImGui::Text(msg);
 
@@ -713,6 +715,28 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             }
             snprintf(msg, array_count(msg),
                      "Scale: %d", view->scale);
+            ImGui::Text(msg);
+
+            // Average stroke size.
+            i64 avg = 0;
+            {
+                for(Layer* l = milton_state->root_layer;
+                    l != NULL;
+                    l = l->next)
+                {
+                    for (size_t i = 0; i < l->strokes.count; ++i)
+                    {
+                        Stroke* s = l->strokes.data + i;
+                        avg += s->num_points;
+                    }
+                }
+                if (stroke_count > 0)
+                {
+                    avg /= stroke_count;
+                }
+            }
+            snprintf(msg, array_count(msg),
+                     "Average stroke size: %" PRIi64, avg);
             ImGui::Text(msg);
 
         } ImGui::End();
