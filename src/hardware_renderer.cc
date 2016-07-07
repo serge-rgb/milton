@@ -114,8 +114,9 @@ struct RenderData
     // Dumb and stupid and temporary array
     struct RenderElem
     {
-        GLuint vbo;
-        i64    count;
+        GLuint  vbo;
+        i64     count;
+        v4f     color;
     };
     DArray<RenderElem> render_elems;
 };
@@ -244,11 +245,6 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 
 void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 {
-    // Size we need:
-    //  N-1 segments.
-    //      Quad: 4 points
-    Arena scratch_arena = arena_push(arena, STROKE_MAX_POINTS*(sizeof(v2i)*4));
-
     vec2 cp;
     cp.x = stroke->points[stroke->num_points-1].x;
     cp.y = stroke->points[stroke->num_points-1].y;
@@ -279,19 +275,25 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
     }
     else
     {
-        GLuint vbo = 0;
-        glGenBuffers(1, &vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
         GLCHK( glUseProgram(render_data->program) );
 
         // 3 (triangle) *
-        // 2 (two per edge) *
-        // N-1 (edges per stroke)
-        const size_t total_points = 3*2*((size_t)npoints-1);
+        // 2 (two per segment) *
+        // N-1 (segments per stroke)
+        const size_t count_bounds = 3*2*((size_t)npoints-1);
 
-        //v2i* upload_points = arena_alloc_array(&scratch_arena, total_points, v2i);
-        v2i* upload_points = (v2i*)malloc(total_points*sizeof(v2i));
-        size_t upload_i = 0;
+        // 2 (a, b) *
+        // 3 (x,y,pressure) *
+        // N-1 (num segments)
+        const size_t count_points = 2*3*((size_t)npoints-1);
+
+        v2i* bounds;
+        Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds)));
+        bounds = arena_alloc_array(&scratch_arena, count_bounds, v2i);
+
+        size_t bounds_i = 0;
+        size_t point_ai = 0;
+        size_t point_bi = 0;
         for (i64 i=0; i < npoints-1; ++i)
         {
             v2i point_i = stroke->points[i];
@@ -307,32 +309,37 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             i32 max_x = max(point_i.x+radius_i, point_j.x+radius_j);
             i32 max_y = max(point_i.y+radius_i, point_j.y+radius_j);
 
-            // Counter-clockwise
-            upload_points[upload_i++] = { min_x, min_y };
-            upload_points[upload_i++] = { min_x, max_y };
-            upload_points[upload_i++] = { max_x, max_y };
+            // Bounding rect
+            //  Counter-clockwise
+            bounds[bounds_i++] = { min_x, min_y };
+            bounds[bounds_i++] = { min_x, max_y };
+            bounds[bounds_i++] = { max_x, max_y };
 
-            upload_points[upload_i++] = { max_x, max_y };
-            upload_points[upload_i++] = { min_x, min_y };
-            upload_points[upload_i++] = { max_x, min_y };
+            bounds[bounds_i++] = { max_x, max_y };
+            bounds[bounds_i++] = { min_x, min_y };
+            bounds[bounds_i++] = { max_x, min_y };
+
         }
-        //assert(upload_i == total_points);
-        assert(upload_i <= total_points);
+        //assert(bounds_i == total_points);
+        assert(bounds_i <= count_bounds);
+        GLuint vbo = 0;
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
         // Upload to GL
-        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(upload_i*sizeof(v2i)),
-                            (int*)upload_points,
+        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(v2i)),
+                            (int*)bounds,
                             GL_STATIC_DRAW) );
-        size_t sz = 2*sizeof(i32)*stroke->num_points;
-        /* GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sz), */
-        /*                     (int*)stroke->points, */
-        /*                     GL_STATIC_DRAW) ); */
+
         RenderData::RenderElem re;
         re.vbo = vbo;
-        re.count = (i64)upload_i;
+        re.count = (i64)bounds_i;
+        re.color.r = stroke->brush.color.r;
+        re.color.g = stroke->brush.color.g;
+        re.color.b = stroke->brush.color.b;
+        re.color.a = stroke->brush.color.a;
         push(&render_data->render_elems, re);
+        arena_pop(&scratch_arena);
     }
-
-    arena_pop(&scratch_arena);
 }
 
 void gpu_render(RenderData* render_data)
@@ -347,13 +354,15 @@ void gpu_render(RenderData* render_data)
             auto re = render_data->render_elems.data[i];
             GLuint stroke = re.vbo;
             i64 count = re.count;
+            // TODO. Only set color uniform if different from the one in use.
+            gl_set_uniform_vec4(render_data->program, "u_brush_color", 1, re.color.d);
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, stroke) );
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_INT, /*normalize*/GL_FALSE,
                                          /*stride*/0, /*ptr*/0));
             GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
-            //glDrawArrays(GL_TRIANGLES, 0, count);
+            glDrawArrays(GL_TRIANGLES, 0, count);
         }
     }
     GLCHK (glUseProgram(0));

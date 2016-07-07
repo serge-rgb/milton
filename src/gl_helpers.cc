@@ -171,6 +171,20 @@ bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t dat
     return ok;
 }
 
+bool gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
+{
+    glUseProgram(program);
+    bool ok = true;
+    GLint loc = glGetUniformLocation(program, name);
+    ok = loc >= 0;
+
+    if (ok)
+    {
+        GLCHK( glUniform4fv(loc, (GLsizei)count, vals) );
+    }
+    return ok;
+}
+
 bool gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
 {
     glUseProgram(program);

@@ -46,6 +46,7 @@ extern PFNGLUNIFORM2IPROC                  glUniform2i;
 extern PFNGLUNIFORM2FVPROC                 glUniform2fv;
 extern PFNGLUNIFORM2IVPROC                 glUniform2iv;
 extern PFNGLUNIFORM3FVPROC                 glUniform3fv;
+extern PFNGLUNIFORM4FVPROC                 glUniform4fv;
 extern PFNGLUNIFORMMATRIX3FVPROC           glUniformMatrix3fv;
 extern PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 extern PFNGLUSEPROGRAMPROC                 glUseProgram;

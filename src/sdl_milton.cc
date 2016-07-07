@@ -1112,8 +1112,8 @@ int milton_main()
         }
         PROFILE_GRAPH_BEGIN(GL);
         milton_gl_backend_draw(milton_state);
-        ImGui::Render();
         gpu_render(milton_state->render_data);
+        ImGui::Render();
         PROFILE_GRAPH_PUSH(GL);
         PROFILE_GRAPH_BEGIN(system);
         SDL_GL_SwapWindow(window);

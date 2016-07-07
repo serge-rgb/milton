@@ -5,6 +5,10 @@
 // MiltonState elements
 uniform vec3 u_background_color;
 
+// Per-stroke uniforms
+uniform vec4 u_brush_color;
+
+
 #if GL_core_profile
 vec4 as_vec4(vec3 v)
 {
@@ -23,7 +27,7 @@ vec4 blend(vec4 dst, vec4 src)
 
 void main()
 {
-    vec4 pink = VEC4(0.4,0,0.4,0.4);
-    gl_FragColor = blend(as_vec4(u_background_color), pink);
+    vec4 test = VEC4(0.4,0,0.4,0.4);
+    gl_FragColor = blend(as_vec4(u_background_color), u_brush_color);
 }
 
