@@ -55,11 +55,15 @@ typedef i32         b32;
 
 // Assert implementation
 
-#if defined(assert)
-//#error assert already defined
+#if defined(mlt_assert)
+#error mlt_assert already defined
 #else
-#define assert(expr)  do { if (!(bool)(expr)) {  (*(u32*)0) = 0xDeAdBeEf;  } } while(0)
+    #if defined(_WIN32)
+    #define mlt_assert(expr)  do { if (!(bool)(expr)) {  __debugbreak(); } } while(0)
+    #else
+    #define mlt_assert(expr)  do { if (!(bool)(expr)) {  (*(u32*)0) = 0xDeAdBeEf;  } } while(0)
+    #endif
 #endif
 
-#define INVALID_CODE_PATH assert(!"Invalid code path")
+#define INVALID_CODE_PATH mlt_assert(!"Invalid code path")
 

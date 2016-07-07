@@ -44,10 +44,13 @@ vec4 VEC4(float x,float y,float z,float w)
     return r;
 }
 static vec4 gl_FragColor;
+#pragma warning (push)
+#pragma warning (disable : 4668)
 #include "milton_canvas.v.glsl"
 #undef main
 #define main fragmentShaderMain
 #include "milton_canvas.f.glsl"
+#pragma warning (pop)
 #undef main
 #undef attribute
 #undef uniform
@@ -138,7 +141,7 @@ char* debug_slurp_shader(PATH_CHAR* path, size_t* out_size)
         if (contents)
         {
             size_t read = fread((void*)(contents+prelude_len), 1, (size_t)len, fd);
-            assert (read <= len);
+            mlt_assert (read <= len);
             fclose(fd);
             if (out_size)
             {
@@ -191,7 +194,7 @@ bool gpu_init(RenderData* render_data)
 #endif
     result = src_sz[0] != 0 && src_sz[1] != 0;
 
-    assert(array_count(src) == array_count(objs));
+    mlt_assert(array_count(src) == array_count(objs));
     for (i64 i=0; i < array_count(src); ++i)
     {
         objs[i] = gl_compile_shader(src[i], types[i]);
@@ -292,8 +295,6 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         bounds = arena_alloc_array(&scratch_arena, count_bounds, v2i);
 
         size_t bounds_i = 0;
-        size_t point_ai = 0;
-        size_t point_bi = 0;
         for (i64 i=0; i < npoints-1; ++i)
         {
             v2i point_i = stroke->points[i];
@@ -318,10 +319,9 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             bounds[bounds_i++] = { max_x, max_y };
             bounds[bounds_i++] = { min_x, min_y };
             bounds[bounds_i++] = { max_x, min_y };
-
         }
-        //assert(bounds_i == total_points);
-        assert(bounds_i <= count_bounds);
+        //mlt_assert(bounds_i == total_points);
+        mlt_assert(bounds_i <= count_bounds);
         GLuint vbo = 0;
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);

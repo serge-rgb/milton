@@ -225,7 +225,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
                 {
                     unclipped_stroke = &strokes[stroke_i];
                 }
-                assert(unclipped_stroke);
+                mlt_assert(unclipped_stroke);
 
                 if (unclipped_stroke->visibility[worker_id] == false)
                 {
@@ -936,8 +936,8 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
                             dists[3] = _mm_add_ps(a, b4);
                         }
                         //u32 radius = clipped_stroke->brush.radius;
-                        //assert (radius > 0);
-                        assert (radius < sqrtf((FLT_MAX)));
+                        //mlt_assert (radius > 0);
+                        mlt_assert (radius < sqrtf((FLT_MAX)));
 
                         __m128 radius4 = _mm_set_ps1((f32)radius);
 
@@ -1049,7 +1049,7 @@ static void draw_ring(u32* pixels,
 #define DISTANCE(i, j) \
     ((i) - center_x) * ((i) - center_x) + ((j) - center_y) * ((j) - center_y)
 
-    assert(ring_radius < (1 << 16));
+    mlt_assert(ring_radius < (1 << 16));
 
     i32 left = max(center_x - ring_radius - ring_girth, 0);
     i32 right = min(center_x + ring_radius + ring_girth, width);
@@ -1144,8 +1144,8 @@ static void draw_rectangle(u32* raster_buffer,
     i32 top = max(center_y - rect_h, 0);
     i32 bottom = min(center_y + rect_h, raster_buffer_height);
 
-    assert (right >= left);
-    assert (bottom >= top);
+    mlt_assert (right >= left);
+    mlt_assert (bottom >= top);
 
     for ( i32 j = top; j < bottom; ++j )
     {
@@ -1599,12 +1599,12 @@ renderer_worker_thread(void* data)
             milton_fatal("Failure locking render queue mutex");
         }
         index = --render_stack->index;
-        assert (index >= 0);
-        assert (index <  RENDER_STACK_SIZE);
+        mlt_assert (index >= 0);
+        mlt_assert (index <  RENDER_STACK_SIZE);
         blockgroup_data = render_stack->blockgroup_render_data[index];
         SDL_UnlockMutex(render_stack->mutex);
 
-        assert (index >= 0);
+        mlt_assert (index >= 0);
 
         b32 allocation_ok = render_blockgroup(milton_state,
                                               worker_id,
@@ -1652,7 +1652,7 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
     Rect* blocks = NULL;
     i32 num_blocks = rect_split(&blocks, raster_limits, milton_state->block_width, milton_state->block_width);
 
-    if ( num_blocks > 0 ) assert(blocks != NULL);
+    if ( num_blocks > 0 ) mlt_assert(blocks != NULL);
 
     RenderStack* render_stack = milton_state->render_stack;
     {
@@ -1773,7 +1773,7 @@ static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_
 
     if (bitmap->num_components != 4)
     {
-        assert (!"not implemented");
+        mlt_assert (!"not implemented");
     }
 
     u32* src_data = (u32*)bitmap->data;
@@ -1864,7 +1864,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
     {  // Render button
         if ((render_flags & MiltonRenderFlags_BRUSH_PREVIEW))
         {
-            assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
+            mlt_assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
             const i32 radius = milton_get_brush_size(milton_state);
 
             v4f preview_color;

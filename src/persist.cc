@@ -85,7 +85,7 @@ static void milton_unset_last_canvas_fname()
 
 void milton_load(MiltonState* milton_state)
 {
-    assert(milton_state->mlt_file_path);
+    mlt_assert(milton_state->mlt_file_path);
     FILE* fd = platform_fopen(milton_state->mlt_file_path, TO_PATH_STR("rb"));
     b32 ok = true;  // fread check
     b32 handled = false;  // when ok==false but we don't need to prompt a scary message.
@@ -371,7 +371,7 @@ void milton_save(MiltonState* milton_state)
                 for (i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i)
                 {
                     Stroke* stroke = &strokes[stroke_i];
-                    assert(stroke->num_points > 0);
+                    mlt_assert(stroke->num_points > 0);
                     if (ok) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
                     if (ok) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
                     if (ok) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
@@ -390,7 +390,7 @@ void milton_save(MiltonState* milton_state)
             //milton_log("Saving layer %d with %d strokes\n", test_count+1, num_strokes);
             ++test_count;
         }
-        assert (test_count == num_layers);
+        mlt_assert (test_count == num_layers);
 
         if (ok) { ok = fwrite_checked(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd); }
 

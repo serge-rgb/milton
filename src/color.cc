@@ -186,9 +186,9 @@ v3f hsv_to_rgb(v3f hsv)
     rgb.g += m;
     rgb.b += m;
 
-    assert (rgb.r >= 0.0f && rgb.r <= 1.0f);
-    assert (rgb.g >= 0.0f && rgb.g <= 1.0f);
-    assert (rgb.b >= 0.0f && rgb.b <= 1.0f);
+    mlt_assert (rgb.r >= 0.0f && rgb.r <= 1.0f);
+    mlt_assert (rgb.g >= 0.0f && rgb.g <= 1.0f);
+    mlt_assert (rgb.b >= 0.0f && rgb.b <= 1.0f);
     return rgb;
 }
 

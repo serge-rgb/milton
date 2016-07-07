@@ -79,7 +79,7 @@ HRESULT SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE h
 int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
 {
     va_list args;
-    assert (format);
+    mlt_assert (format);
     va_start(args, format);
 
 #pragma warning(push)
@@ -129,7 +129,7 @@ void win32_log(char *format, ...)
 
     va_list args;
 
-    assert ( format );
+    mlt_assert ( format );
 
     va_start( args, format );
 

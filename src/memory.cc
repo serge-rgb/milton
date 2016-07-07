@@ -8,6 +8,7 @@ u8* arena_alloc_bytes(Arena* arena, size_t num_bytes)
     size_t total = arena->count + num_bytes;
     if (total > arena->size)
     {
+        mlt_assert(!"Out of memory!");
         return NULL;
     }
     u8* result = arena->ptr + arena->count;
@@ -29,7 +30,7 @@ Arena arena_init(void* base, size_t size)
 Arena arena_spawn(Arena* parent, size_t size)
 {
     u8* ptr = arena_alloc_bytes(parent, size);
-    assert(ptr);
+    mlt_assert(ptr);
 
     Arena child = { 0 };
     {
@@ -42,7 +43,7 @@ Arena arena_spawn(Arena* parent, size_t size)
 
 Arena arena_push(Arena* parent, size_t size)
 {
-    assert ( size <= arena_available_space(parent));
+    mlt_assert ( size <= arena_available_space(parent));
     Arena child = { 0 };
     {
         child.parent = parent;
@@ -58,10 +59,10 @@ Arena arena_push(Arena* parent, size_t size)
 void arena_pop(Arena* child)
 {
     Arena* parent = child->parent;
-    assert(parent);
+    mlt_assert(parent);
 
     // Assert that this child was the latest push.
-    assert ((parent->num_children - 1) == child->id);
+    mlt_assert ((parent->num_children - 1) == child->id);
 
     parent->count -= child->size;
     char* ptr = (char*)(parent->ptr) + parent->count;
@@ -72,10 +73,10 @@ void arena_pop(Arena* child)
 void   arena_pop_noclear(Arena* child)
 {
     Arena* parent = child->parent;
-    assert(parent);
+    mlt_assert(parent);
 
     // Assert that this child was the latest push.
-    assert ((parent->num_children - 1) == child->id);
+    mlt_assert ((parent->num_children - 1) == child->id);
 
     parent->count -= child->size;
     parent->num_children -= 1;

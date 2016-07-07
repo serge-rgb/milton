@@ -27,7 +27,7 @@ void cursor_hide()
     int lvl = SDL_ShowCursor(-1);
     if ( lvl >= 0 )
     {
-        assert ( lvl == 1 );
+        mlt_assert ( lvl == 1 );
         int res = SDL_ShowCursor(0);
         if (res < 0)
         {
@@ -49,7 +49,7 @@ void cursor_show()
     int lvl = SDL_ShowCursor(-1);
     if ( lvl < 0 )
     {
-        assert ( lvl == -1 );
+        mlt_assert ( lvl == -1 );
         SDL_ShowCursor(1);
     }
 #endif
@@ -1023,7 +1023,7 @@ int milton_main()
 
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
 #if defined(__MACH__)
-        assert( num_pressure_results == 0 );
+        mlt_assert( num_pressure_results == 0 );
         int num_polled_pressures = 0;
         float* polled_pressures = milton_osx_poll_pressures(&num_polled_pressures);
         if ( num_polled_pressures )
@@ -1075,7 +1075,7 @@ int milton_main()
 
         milton_input.flags = (MiltonInputFlags)( input_flags | (int)milton_input.flags );
 
-        assert (platform_state.num_point_results <= platform_state.num_pressure_results);
+        mlt_assert (platform_state.num_point_results <= platform_state.num_pressure_results);
 
         milton_input.input_count = platform_state.num_point_results;
 

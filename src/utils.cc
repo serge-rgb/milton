@@ -51,7 +51,7 @@ i32 manhattan_distance(v2i a, v2i b)
 
 f32 deegrees_to_radians(int d)
 {
-    assert (0 <= d && d < 360);
+    mlt_assert (0 <= d && d < 360);
     return kPi * ((f32)(d) / 180.0f);
 }
 
@@ -196,7 +196,7 @@ i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
         }
     }
 
-    assert((i32)rects.count <= max_num_rects);
+    mlt_assert((i32)rects.count <= max_num_rects);
     *out_rects = rects.data;
     i32 num_rects = (i32)rects.count;
     return num_rects;
@@ -288,7 +288,7 @@ const Rect rect_enlarge(Rect src, i32 offset)
 
 Rect bounding_rect_for_points(v2i points[], i32 num_points)
 {
-    assert (num_points > 0);
+    mlt_assert (num_points > 0);
 
     v2i top_left =  points[0];
     v2i bot_right = points[0];
@@ -323,7 +323,7 @@ b32 rect_is_valid(Rect rect)
 
 Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_points)
 {
-    assert (num_points > 0);
+    mlt_assert (num_points > 0);
 
     i32 top_left_x =  points_x[0];
     i32 bot_right_x = points_x[0];

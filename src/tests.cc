@@ -20,21 +20,21 @@ void milton_run_tests(MiltonState* milton_state)
 static void milton_startup_tests()
 {
     v3f rgb = hsv_to_rgb(v3f{ 0,0,0 });
-    assert(rgb.r == 0 &&
-           rgb.g == 0 &&
-           rgb.b == 0);
+    mlt_assert(rgb.r == 0 &&
+               rgb.g == 0 &&
+               rgb.b == 0);
     rgb = hsv_to_rgb(v3f{ 0, 0, 1.0 });
-    assert(rgb.r == 1 &&
-           rgb.g == 1 &&
-           rgb.b == 1);
+    mlt_assert(rgb.r == 1 &&
+               rgb.g == 1 &&
+               rgb.b == 1);
     rgb = hsv_to_rgb(v3f{ 120, 1.0f, 0.5f });
-    assert(rgb.r == 0 &&
-           rgb.g == 0.5f &&
-           rgb.b == 0);
+    mlt_assert(rgb.r == 0 &&
+               rgb.g == 0.5f &&
+               rgb.b == 0);
     rgb = hsv_to_rgb(v3f{ 0, 1.0f, 1.0f });
-    assert(rgb.r == 1.0f &&
-           rgb.g == 0 &&
-           rgb.b == 0);
+    mlt_assert(rgb.r == 1.0f &&
+               rgb.g == 0 &&
+               rgb.b == 0);
 }
 
 static void milton_blend_tests()
@@ -42,7 +42,7 @@ static void milton_blend_tests()
     v4f a = { 1,0,0, 0.5f };
     v4f b = { 0,1,0, 0.5f };
     v4f blend = blend_v4f(a, b);
-    assert (blend.r > 0);
+    mlt_assert (blend.r > 0);
 }
 
 static void milton_math_tests()
@@ -56,9 +56,9 @@ static void milton_math_tests()
     b32 hit = intersect_line_segments(a, b,
                                       u, v,
                                       &intersection);
-    assert(hit);
-    assert(intersection.y == 0);
-    assert(intersection.x >= 0.99999 && intersection.x <= 1.00001f);
+    mlt_assert(hit);
+    mlt_assert(intersection.y == 0);
+    mlt_assert(intersection.x >= 0.99999 && intersection.x <= 1.00001f);
 }
 
 #else

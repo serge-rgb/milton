@@ -36,5 +36,5 @@ void milton_osx_tablet_hook(void* event_)
     NSEvent* event = (NSEvent*)event_;
     float pressure = [event pressure];
     g_milton_tablet_pressures.pressures[g_milton_tablet_pressures.count++] = pressure;
-    assert ( g_milton_tablet_pressures.count < MILTON_TABLET_EVT_QUEUE_SIZE );
+    mlt_assert ( g_milton_tablet_pressures.count < MILTON_TABLET_EVT_QUEUE_SIZE );
 }

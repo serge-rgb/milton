@@ -76,13 +76,13 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 #endif
 
         GLCHK (glGenBuffers (1, &milton_state->gl->vbo));
-        assert (milton_state->gl->vbo > 0);
+        mlt_assert (milton_state->gl->vbo > 0);
         GLCHK (glBindBuffer (GL_ARRAY_BUFFER, milton_state->gl->vbo));
 
         GLint pos_loc     = glGetAttribLocation(milton_state->gl->quad_program, "position");
         GLint sampler_loc = glGetUniformLocation(milton_state->gl->quad_program, "raster_buffer");
-        assert (pos_loc     >= 0);
-        assert (sampler_loc >= 0);
+        mlt_assert (pos_loc     >= 0);
+        mlt_assert (sampler_loc >= 0);
         GLCHK (glBufferData (GL_ARRAY_BUFFER, sizeof(vert_data), vert_data, GL_STATIC_DRAW));
 #if MILTON_USE_VAO
         GLCHK (glVertexAttribPointer (/*attrib location*/(GLuint)pos_loc,
@@ -117,7 +117,7 @@ static void milton_update_brushes(MiltonState* milton_state)
         Brush* brush = &milton_state->brushes[i];
         i32 size = milton_state->brush_sizes[i];
         brush->radius = size * milton_state->view->scale;
-        assert(brush->radius < FLT_MAX);
+        mlt_assert(brush->radius < FLT_MAX);
         if (i == BrushEnum_PEN)
         {
             // Alpha is set by the UI
@@ -426,8 +426,8 @@ void milton_gl_backend_draw(MiltonState* milton_state)
 #else
     GLint pos_loc     = glGetAttribLocation(gl->quad_program, "position");
     GLint sampler_loc = glGetUniformLocation(gl->quad_program, "raster_buffer");
-    assert (pos_loc     >= 0);
-    assert (sampler_loc >= 0);
+    mlt_assert (pos_loc     >= 0);
+    mlt_assert (sampler_loc >= 0);
     GLCHK (glUniform1i(sampler_loc, 0 /*GL_TEXTURE0*/));
     GLCHK (glBindBuffer(GL_ARRAY_BUFFER, milton_state->gl->vbo) );
     GLCHK (glVertexAttribPointer(/*attrib location*/(GLuint)pos_loc,
@@ -538,7 +538,7 @@ void milton_init(MiltonState* milton_state)
     milton_state->worker_memory_size = 65536;
 
 
-    assert (milton_state->num_render_workers);
+    mlt_assert (milton_state->num_render_workers);
 
     milton_state->bytes_per_pixel = 4;
 
@@ -639,7 +639,7 @@ void milton_init(MiltonState* milton_state)
             params->milton_state = milton_state;
             params->worker_id = i;
         }
-        assert (milton_state->render_worker_arenas[i].ptr == NULL);
+        mlt_assert (milton_state->render_worker_arenas[i].ptr == NULL);
         u8* worker_memory = (u8*)mlt_calloc(1, milton_state->worker_memory_size);
         if ( !worker_memory )
         {

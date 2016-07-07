@@ -91,7 +91,7 @@ void* platform_allocate(size_t size)
 
 void platform_deallocate_internal(void* ptr)
 {
-    assert(ptr);
+    mlt_assert(ptr);
     u8* begin = (u8*)ptr - sizeof(UnixMemoryHeader);
     size_t size = *((size_t*)begin);
     munmap(ptr, size);

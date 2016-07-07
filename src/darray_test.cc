@@ -12,7 +12,7 @@ int milton_main()
     for (u64 i = 0; i < 10; ++i)
     {
         int d = x.data[i];
-        assert (d == (int)i);
+        mlt_assert (d == (int)i);
     }
 
     auto y = dynamic_array<int>(2);

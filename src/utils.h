@@ -98,7 +98,7 @@ typedef struct {
     };
 } Rect;
 
-#define VALIDATE_RECT(rect) assert(rect_is_valid((rect)))
+#define VALIDATE_RECT(rect) mlt_assert(rect_is_valid((rect)))
 
 // Splits src_rect into a number of rectangles stored in dest_rects
 // Returns the number of rectangles into which src_rect was split.

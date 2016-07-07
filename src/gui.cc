@@ -8,7 +8,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
     const float pen_alpha = milton_get_pen_alpha(milton_state);
-    assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
+    mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
     // Spawn below the picker
     Rect pbounds = get_bounds_for_picker_and_colors(&milton_state->gui->picker);
 
@@ -989,8 +989,8 @@ Rect picker_get_bounds(ColorPicker* picker)
         picker_rect.bottom = picker->center.y + picker->bounds_radius_px;
         picker_rect.top    = picker->center.y - picker->bounds_radius_px;
     }
-    assert (picker_rect.left >= 0);
-    assert (picker_rect.top >= 0);
+    mlt_assert (picker_rect.left >= 0);
+    mlt_assert (picker_rect.top >= 0);
 
     return picker_rect;
 }
@@ -1156,7 +1156,7 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
     ColorButton* cur_button = &gui->picker.color_buttons;
     for (i32 i = 0; i < num_buttons; ++i)
     {
-        assert (cur_button->next == NULL);
+        mlt_assert (cur_button->next == NULL);
 
         cur_button->x = current_x;
         cur_button->y = gui->picker.center.y + bounds_radius_px + spacing;

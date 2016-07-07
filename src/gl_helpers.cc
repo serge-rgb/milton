@@ -46,7 +46,7 @@ GLuint gl_compile_shader(const char* src, GLuint type)
         gl_log(log);
         free(log);
         milton_log("%s\n", src);
-        assert(!"Shader compilation error");
+        mlt_assert(!"Shader compilation error");
     }
     return obj;
 }
@@ -66,10 +66,10 @@ GLuint gl_compile_shader(const char* src, GLuint type)
 
 void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
 {
-    assert(glIsProgram (obj));
+    mlt_assert(glIsProgram (obj));
     for (int i = 0; i < num_shaders; ++i)
     {
-        assert(glIsShader(shaders[i]));
+        mlt_assert(glIsShader(shaders[i]));
 
         GLCHK ( glAttachShader(obj, shaders[i]) );
     }
@@ -89,7 +89,7 @@ void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
         //glGetInfoLog(obj, (GLsizei)len, &written_len, log);
         gl_log(log);
         free(log);
-        assert(!"program linking error");
+        mlt_assert(!"program linking error");
     }
     GLCHK ( glValidateProgram(obj) );
 }
