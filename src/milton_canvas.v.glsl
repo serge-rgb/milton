@@ -1,15 +1,18 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-//#version 120
-
 attribute vec2 a_position;
+attribute ivec3 a_pointa;
+attribute ivec3 a_pointb;
 
 // CanvasView elements:
 uniform ivec2 u_pan_vector;
 uniform ivec2 u_screen_center;
 uniform vec2  u_screen_size;
 uniform int   u_scale;
+
+varying float v_pressure;
+
 
 // C++
 #if GL_core_profile
@@ -26,7 +29,6 @@ vec2 as_vec2(ivec2 v)
     return vec2(v);
 }
 #endif
-
 
 vec2 canvas_to_raster_gl(vec2 cp)
 {
@@ -47,6 +49,8 @@ vec2 canvas_to_raster_gl(vec2 cp)
 
 void main()
 {
+    v_pressure = float(a_pointa.z) / float(1<<10);
+    v_pressure = abs(a_pointa.x);
     gl_Position.xy = canvas_to_raster_gl(a_position);
 }
 

@@ -8,6 +8,8 @@ uniform vec3 u_background_color;
 // Per-stroke uniforms
 uniform vec4 u_brush_color;
 
+varying float v_pressure;
+
 
 #if GL_core_profile
 vec4 as_vec4(vec3 v)
@@ -28,6 +30,9 @@ vec4 blend(vec4 dst, vec4 src)
 void main()
 {
     vec4 test = VEC4(0.4,0,0.4,0.4);
-    gl_FragColor = blend(as_vec4(u_background_color), u_brush_color);
+    vec4 color = u_brush_color;
+    color.xyz *= v_pressure;
+
+    gl_FragColor = blend(as_vec4(u_background_color), color);
 }
 

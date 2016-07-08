@@ -52,6 +52,7 @@ extern PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 extern PFNGLUSEPROGRAMPROC                 glUseProgram;
 extern PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
 extern PFNGLVERTEXATTRIBPOINTERPROC        glVertexAttribPointer;
+extern PFNGLVERTEXATTRIBIPOINTERPROC       glVertexAttribIPointer;
 extern PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
 
 bool load_gl_functions();

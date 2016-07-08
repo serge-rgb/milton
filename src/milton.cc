@@ -259,16 +259,16 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
             for ( i32 i = ws->num_points - 1; passed_inspection && i >= 0; --i )
             {
-                if ( ++count >= point_window )
+                if (++count >= point_window)
                 {
                     break;
                 }
                 v2i this_point = ws->points[i];
                 i32 this_radius = (i32)(ws->brush.radius * ws->pressures[i]);
 
-                if ( stroke_point_contains_point(canvas_point, in_radius, this_point, this_radius) )
+                if (stroke_point_contains_point(canvas_point, in_radius, this_point, this_radius))
                 {
-                    if ( ws->num_points > 1 )
+                    if (ws->num_points > 1)
                     {
                         --ws->num_points;
                     }
@@ -306,6 +306,8 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                     v2i average = {};
                     float factor = 0.55f;
 
+                    // TODO: possible overflow.
+                    //  Not for N=2? Canvas is [-2^30, 2^30]
                     for (i64 i = 0; i < N; ++i)
                     {
                         average.x += ws->points[ws->num_points-1 - i].x;
@@ -317,6 +319,7 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                     auto* view = milton_state->view;
 
                     auto canvas_center = raster_to_canvas(view, view->screen_center);
+
                     float f_average_x = average.x - canvas_center.x;
                     float f_average_y = average.y - canvas_center.y;
 

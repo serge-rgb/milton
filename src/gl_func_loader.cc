@@ -47,6 +47,7 @@ PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC                 glUseProgram;
 PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
 PFNGLVERTEXATTRIBPOINTERPROC        glVertexAttribPointer;
+PFNGLVERTEXATTRIBIPOINTERPROC       glVertexAttribIPointer;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
 #endif  //_WIN32
 
@@ -100,6 +101,7 @@ bool load_gl_functions()
     GETADDRESS(glUseProgram);
     GETADDRESS(glValidateProgram);
     GETADDRESS(glVertexAttribPointer);
+    GETADDRESS(glVertexAttribIPointer);
     GETADDRESS(glDisableVertexAttribArray);
     GETADDRESS(glUniform1f);
 #pragma warning(pop)

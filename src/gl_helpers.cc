@@ -45,7 +45,7 @@ GLuint gl_compile_shader(const char* src, GLuint type)
         gl_log("Shader compilation failed. \n    ---- Info log:\n");
         gl_log(log);
         free(log);
-        milton_log("%s\n", src);
+        //milton_log("%s\n", src);
         mlt_assert(!"Shader compilation error");
     }
     return obj;

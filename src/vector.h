@@ -108,6 +108,46 @@ struct Vector3
 typedef Vector3<int>     ivec3;
 typedef Vector3<float>   vec3;
 
+#define op3_T(OP) \
+        template<typename T> \
+        Vector3<T> operator OP (const Vector3<T>& v, T f) \
+{\
+    \
+    Vector3<T> r = v; \
+    r.x  OP= f; \
+    r.y  OP= f; \
+    r.z  OP= f; \
+    return v; \
+}
+#define op3(OP) \
+        template<typename T> \
+        Vector3<T> operator OP (const Vector3<T>& v, const Vector3<T>& o) \
+{\
+    \
+    Vector3<T> r = v; \
+    r.x  OP= o.x; \
+    r.y  OP= o.y; \
+    r.z  OP= o.z; \
+    return v; \
+}
+#define op3_M(OP, TYPE) \
+        template<typename T> \
+        Vector3<T> operator OP (Vector3<T>&v, TYPE f) \
+{ \
+    v.x  OP f; \
+    v.y  OP f; \
+    v.z  OP f; \
+    return v;\
+}
+
+op3_T(*)
+/* op3_T(+) */
+op3_M(*=, i32)
+
+/* op3(+) */
+
+#pragma warning(push)
+#pragma warning(disable:4587) // Constructor for xyz not implicitly called
 template<typename T>
 struct Vector4
 {
@@ -128,6 +168,19 @@ struct Vector4
             T a;
         };
         T d[4];
+        struct
+        {
+
+            Vector3<T> xyz;
+            float w_;
+        };
+        struct
+        {
+
+            Vector3<T> rgb;
+            float a_;
+        };
+
         T xyzw[4];
         T rgba[4];
     };
@@ -165,6 +218,7 @@ struct Vector4
         return *this;
     }
 };
+#pragma warning(pop)
 #define op4_T(OP) \
         template<typename T> \
         Vector4<T> operator OP (const Vector4<T>& v, T f) \
@@ -189,9 +243,20 @@ struct Vector4
     r.w  OP= o.w; \
     return v; \
 }
+#define op4_M(OP, TYPE) \
+        template<typename T> \
+        Vector4<T> operator OP (Vector4<T>&v, TYPE f) \
+{ \
+    v.x  OP f; \
+    v.y  OP f; \
+    v.z  OP f; \
+    v.w  OP f; \
+    return v;\
+}
 
 op4_T(*)
 op4_T(+)
+//op4_M(*=, i32)
 
 op4(+)
 
