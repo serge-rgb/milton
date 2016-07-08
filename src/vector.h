@@ -130,7 +130,7 @@ typedef Vector3<float>   vec3;
     r.z  OP= o.z; \
     return v; \
 }
-#define op3_M(OP, TYPE) \
+#define op3_F(OP, TYPE) \
         template<typename T> \
         Vector3<T> operator OP (Vector3<T>&v, TYPE f) \
 { \
@@ -139,10 +139,21 @@ typedef Vector3<float>   vec3;
     v.z  OP f; \
     return v;\
 }
+#define op3_M(OP) \
+        template<typename T> \
+        Vector3<T> operator OP (Vector3<T>&v, Vector3<T>& o) \
+{ \
+    v.x  OP o.x; \
+    v.y  OP o.y; \
+    v.z  OP o.z; \
+    return v;\
+}
+
 
 op3_T(*)
 /* op3_T(+) */
-op3_M(*=, i32)
+op3_F(*=, i32)
+op3_M(+=)
 
 /* op3(+) */
 

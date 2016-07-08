@@ -2,8 +2,8 @@
 // License: https://github.com/serge-rgb/milton#license
 
 attribute vec2 a_position;
-attribute ivec3 a_pointa;
-attribute ivec3 a_pointb;
+attribute vec3 a_pointa;
+attribute vec3 a_pointb;
 
 // CanvasView elements:
 uniform ivec2 u_pan_vector;
@@ -12,7 +12,7 @@ uniform vec2  u_screen_size;
 uniform int   u_scale;
 
 varying float v_pressure;
-
+flat out ivec3 v_pointa;
 
 // C++
 #if GL_core_profile
@@ -23,6 +23,10 @@ ivec2 as_ivec2(int v)
 ivec2 as_ivec2(vec2 v)
 {
     return ivec2(v);
+}
+ivec3 as_ivec3(vec3 v)
+{
+    return ivec3(v);
 }
 vec2 as_vec2(ivec2 v)
 {
@@ -49,8 +53,7 @@ vec2 canvas_to_raster_gl(vec2 cp)
 
 void main()
 {
-    v_pressure = float(a_pointa.z) / float(1<<10);
-    v_pressure = abs(a_pointa.x);
+    v_pointa = as_ivec3(a_pointa);
     gl_Position.xy = canvas_to_raster_gl(a_position);
 }
 

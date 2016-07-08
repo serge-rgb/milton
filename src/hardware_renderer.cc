@@ -6,6 +6,9 @@
 #define uniform
 #define attribute
 #define varying
+#define in
+#define out
+#define flat
 #define main vertexShaderMain
 struct Vec4_
 {
@@ -24,6 +27,31 @@ ivec2 as_ivec2(vec2 v)
     ivec2 r;
     r.x = v.x;
     r.y = v.y;
+    return r;
+}
+ivec3 as_ivec3(vec3 v)
+{
+    ivec3 r;
+    r.x = v.x;
+    r.y = v.y;
+    r.z = v.z;
+    return r;
+}
+vec3 as_vec3(ivec3 v)
+{
+    vec3 r;
+    r.x = v.x;
+    r.y = v.y;
+    r.z = v.z;
+    return r;
+}
+vec4 as_vec4(ivec3 v)
+{
+    vec4 r;
+    r.x = v.x;
+    r.y = v.y;
+    r.z = v.z;
+    r.w = 1;
     return r;
 }
 vec4 as_vec4(vec3 v)
@@ -51,12 +79,16 @@ static vec4 gl_FragColor;
 #undef main
 #define main fragmentShaderMain
 #define v_pressure v_fragPressure
+#define v_pointa v_fragpointa
 #include "milton_canvas.f.glsl"
 #pragma warning (pop)
 #undef main
 #undef attribute
 #undef uniform
 #undef varying
+#undef in
+#undef out
+#undef flat
 #endif //MILTON_DEBUG
 
 // Milton GPU renderer.
@@ -112,6 +144,7 @@ static vec4 gl_FragColor;
 //
 //
 
+#define PRESSURE_RESOLUTION (1<<20)
 
 struct RenderData
 {
@@ -170,6 +203,8 @@ char* debug_slurp_shader(PATH_CHAR* path, size_t* out_size)
 
 bool gpu_init(RenderData* render_data)
 {
+    mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
+
     bool result = true;
 
 #if MILTON_DEBUG
@@ -334,8 +369,8 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             bounds[bounds_i++] = { min_x, min_y };
             bounds[bounds_i++] = { max_x, min_y };
 
-            i32 pressure_a = (i32)(stroke->pressures[i] * (float)(1<<10));
-            i32 pressure_b = (i32)(stroke->pressures[i+1] * (float)(1<<10));
+            i32 pressure_a = (i32)(stroke->pressures[i] * (float)(PRESSURE_RESOLUTION));
+            i32 pressure_b = (i32)(stroke->pressures[i+1] * (float)(PRESSURE_RESOLUTION));
 
             // one for every point in the triangle.
             for (int repeat = 0; repeat < 6; ++repeat)
@@ -361,7 +396,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             return vbo;
         };
 
-        GLuint vbo_quad = upload_buffer((int*)bounds, bounds_i*(sizeof(decltype(*bounds))));
+        GLuint vbo_quad = upload_buffer((int*)bounds, bounds_i*sizeof(decltype(*bounds)));
         GLuint vbo_pointa = upload_buffer((int*)apoints, apoints_i*sizeof(decltype(*apoints)));
         GLuint vbo_pointb = upload_buffer((int*)bpoints, bpoints_i*sizeof(decltype(*bpoints)));
 
@@ -395,11 +430,10 @@ void gpu_render(RenderData* render_data)
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_INT, /*normalize*/GL_FALSE,
                                          /*stride*/0, /*ptr*/0));
-#if 1
             if (loc_a >=0)
             {
                 GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_pointa) );
-#if 1
+#if 0
                 GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_a,
                                               /*size*/3, GL_INT,
                                               /*stride*/0, /*ptr*/0));
@@ -408,6 +442,7 @@ void gpu_render(RenderData* render_data)
                                              /*size*/3, GL_INT, /*normalize*/GL_FALSE,
                                              /*stride*/0, /*ptr*/0));
 #endif
+                GLCHK( glEnableVertexAttribArray((GLuint)loc_a) );
             }
             if (loc_b >=0)
             {
@@ -415,8 +450,8 @@ void gpu_render(RenderData* render_data)
                 GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
                                               /*size*/3, GL_INT,
                                               /*stride*/0, /*ptr*/0));
+                GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
             }
-#endif
             GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
             glDrawArrays(GL_TRIANGLES, 0, count);
