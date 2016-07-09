@@ -63,6 +63,28 @@ vec4 as_vec4(vec3 v)
     r.w = 1;
     return r;
 }
+vec2 VEC2(ivec2 v)
+{
+    vec2 r;
+    r.x = v.x;
+    r.y = v.y;
+    return r;
+}
+vec2 VEC2(float x,float y)
+{
+    vec2 r;
+    r.x = x;
+    r.y = y;
+    return r;
+}
+vec3 VEC3(float x,float y,float z)
+{
+    vec3 r;
+    r.x = x;
+    r.y = y;
+    r.z = z;
+    return r;
+}
 vec4 VEC4(float x,float y,float z,float w)
 {
     vec4 r;
@@ -75,11 +97,14 @@ vec4 VEC4(float x,float y,float z,float w)
 static vec4 gl_FragColor;
 #pragma warning (push)
 #pragma warning (disable : 4668)
+#include "common.glsl"
 #include "milton_canvas.v.glsl"
 #undef main
 #define main fragmentShaderMain
 #define v_pressure v_fragPressure
 #define v_pointa v_fragpointa
+#define v_pointb v_fragpointb
+static vec4 gl_FragCoord;
 #include "milton_canvas.f.glsl"
 #pragma warning (pop)
 #undef main
@@ -165,26 +190,40 @@ struct RenderData
 
 // Load a shader and append line `#version 120`, which is invalid C++
 #if MILTON_DEBUG
-char* debug_slurp_shader(PATH_CHAR* path, size_t* out_size)
+char* debug_load_shader_from_file(PATH_CHAR* path, size_t* out_size)
 {
     char* contents = NULL;
+    FILE* common_fd = platform_fopen(TO_PATH_STR("src/common.glsl"), TO_PATH_STR("r"));
+    mlt_assert(common_fd);
+
+    size_t bytes_in_common = bytes_in_fd(common_fd);
+
+    char* common_contents = (char*)mlt_calloc(1, bytes_in_common);
+
+    fread(common_contents, 1, bytes_in_common, common_fd);
+
+
     FILE* fd = platform_fopen(path, TO_PATH_STR("r"));
+
     if (fd)
     {
         char prelude[] = "#version 130\n";
         size_t prelude_len = strlen(prelude);
-        size_t len = bytes_in_fd(fd) + prelude_len;
-        contents = (char*)mlt_calloc(len + 1, 1);
+        size_t common_len = strlen(common_contents);
+        size_t len = bytes_in_fd(fd);
+        contents = (char*)mlt_calloc(len + 1 + common_len + prelude_len, 1);
         strcpy(contents, prelude);
+        strcpy(contents+strlen(contents), common_contents);
+        mlt_free(common_contents);
 
         if (contents)
         {
-            size_t read = fread((void*)(contents+prelude_len), 1, (size_t)len, fd);
+            size_t read = fread((void*)(contents+strlen(contents)), 1, (size_t)len, fd);
             mlt_assert (read <= len);
             fclose(fd);
             if (out_size)
             {
-                *out_size = read + 1 + prelude_len;
+                *out_size = strlen(contents)+1;
             }
             contents[*out_size] = '\0';
         }
@@ -223,8 +262,8 @@ bool gpu_init(RenderData* render_data)
     size_t src_sz[2] = {0};
     char* src[2] =
     {
-        debug_slurp_shader(TO_PATH_STR("src/milton_canvas.v.glsl"), &src_sz[0]),
-        debug_slurp_shader(TO_PATH_STR("src/milton_canvas.f.glsl"), &src_sz[1]),
+        debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.v.glsl"), &src_sz[0]),
+        debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.f.glsl"), &src_sz[1]),
     };
     GLuint types[2] =
     {
@@ -336,7 +375,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         v3i* bpoints;
         Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
                                          + 2*count_points*sizeof(decltype(*apoints)));
-        bounds = arena_alloc_array(&scratch_arena, count_bounds, v2i);
+        bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
         apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
         bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
 
@@ -369,6 +408,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             bounds[bounds_i++] = { min_x, min_y };
             bounds[bounds_i++] = { max_x, min_y };
 
+            // Pressures are in (0,1] but we need to encode them as integers.
             i32 pressure_a = (i32)(stroke->pressures[i] * (float)(PRESSURE_RESOLUTION));
             i32 pressure_b = (i32)(stroke->pressures[i+1] * (float)(PRESSURE_RESOLUTION));
 
@@ -396,7 +436,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             return vbo;
         };
 
-        GLuint vbo_quad = upload_buffer((int*)bounds, bounds_i*sizeof(decltype(*bounds)));
+        GLuint vbo_quad   = upload_buffer((int*)bounds, bounds_i*sizeof(decltype(*bounds)));
         GLuint vbo_pointa = upload_buffer((int*)apoints, apoints_i*sizeof(decltype(*apoints)));
         GLuint vbo_pointb = upload_buffer((int*)bpoints, bpoints_i*sizeof(decltype(*bpoints)));
 

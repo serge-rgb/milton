@@ -36,6 +36,7 @@ GLuint gl_compile_shader(const char* src, GLuint type)
     GLCHK ( glGetShaderiv(obj, GL_COMPILE_STATUS, &res) );
     if (!res)
     {
+		milton_log("SHADER SOURCE:\n%s\n", src);
         GLint length;
         GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
         char* log = (char*)malloc((size_t)length);
@@ -45,7 +46,7 @@ GLuint gl_compile_shader(const char* src, GLuint type)
         gl_log("Shader compilation failed. \n    ---- Info log:\n");
         gl_log(log);
         free(log);
-        //milton_log("%s\n", src);
+        
         mlt_assert(!"Shader compilation error");
     }
     return obj;

@@ -123,7 +123,7 @@ void platform_deallocate_internal(void* pointer)
 
 void win32_log(char *format, ...)
 {
-    char message[ 1024 ];
+    char message[ 4096 ];
 
     int num_bytes_written = 0;
 

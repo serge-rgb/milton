@@ -53,6 +53,8 @@ struct Vector2
 typedef Vector2<int>     ivec2;
 typedef Vector2<float>   vec2;
 
+#pragma warning(push)
+#pragma warning(disable:4587) // Constructor for xyz not implicitly called
 template<typename T>
 struct Vector3
 {
@@ -69,6 +71,11 @@ struct Vector3
             T r;
             T g;
             T b;
+        };
+        struct
+        {
+            Vector2<T> xy;
+            T z_;
         };
         T d[3];
         T xyz[3];
@@ -103,6 +110,7 @@ struct Vector3
         return *this;
     }
 };
+#pragma warning(pop)
 
 // Types
 typedef Vector3<int>     ivec3;
@@ -153,6 +161,7 @@ typedef Vector3<float>   vec3;
 op3_T(*)
 /* op3_T(+) */
 op3_F(*=, i32)
+op3_F(/=, i32)
 op3_M(+=)
 
 /* op3(+) */
@@ -184,6 +193,11 @@ struct Vector4
 
             Vector3<T> xyz;
             float w_;
+        };
+        struct
+        {
+            Vector2<T> xy;
+            Vector2<T> zw;
         };
         struct
         {

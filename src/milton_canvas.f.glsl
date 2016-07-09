@@ -2,31 +2,10 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-// MiltonState elements
-uniform vec3 u_background_color;
-
-// Per-stroke uniforms
-uniform vec4 u_brush_color;
-
 in float v_pressure;
 flat in ivec3 v_pointa;
+flat in ivec3 v_pointb;
 
-
-#if GL_core_profile
-vec3 as_vec3(ivec3 v)
-{
-    return vec3(v);
-}
-vec4 as_vec4(ivec3 v)
-{
-    return vec4(vec3(v), 1);
-}
-vec4 as_vec4(vec3 v)
-{
-    return vec4(v, 1);
-}
-#define VEC4 vec4
-#endif
 
 vec4 blend(vec4 dst, vec4 src)
 {
@@ -43,10 +22,17 @@ void main()
 {
     vec4 test = VEC4(0.4,0,0.4,0.4);
     vec4 color = u_brush_color;
-    color.xyz = as_vec3(v_pointa);
-    color.z /= float(PRESSURE_RESOLUTION_GL);
-    /* color = VEC4(1,1,1,1) * (0.5f*float(float(color.z) / float(1 << 10))); */
-    /* color.a = 1; */
+    color.xyz *= v_pointa.z;
+    color.xyz /= float(PRESSURE_RESOLUTION_GL);
+
+    vec2 ab = VEC2(v_pointb.xy - v_pointa.xy);
+    float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
+
+    vec2 fragment_point = canvas_to_raster_gl(gl_FragCoord.xy);
+    if (ab_magnitude_squared > 0)
+    {
+        vec3 point = closest_point_in_segment_gl(VEC2(v_pointa.xy), VEC2(v_pointb.xy), ab, ab_magnitude_squared, fragment_point);
+    }
 
     gl_FragColor = blend(as_vec4(u_background_color), color);
 // TODO: check shader compiler warnings
