@@ -810,11 +810,11 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         GETPROCADDRESS(WTMGRDEFCONTEXTEX , WTMgrDefContextEx);
     }
 
-    if (!EasyTab->WTInfoA(0, 0, NULL))
-    {
-        OutputDebugStringA("Wintab services not available.\n");
-        return EASYTAB_WACOM_WIN32_ERROR;
-    }
+    /* if (!EasyTab->WTInfoA(0, 0, NULL)) */
+    /* { */
+    /*     OutputDebugStringA("Wintab services not available.\n"); */
+    /*     return EASYTAB_WACOM_WIN32_ERROR; */
+    /* } */
 
     // Note(Sergio): I want about 3 packets per frame. This could be a parameter for Load_Ex
     UINT DesiredPktRate = 200;

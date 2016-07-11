@@ -52,6 +52,53 @@ struct Vector2
 // Types
 typedef Vector2<int>     ivec2;
 typedef Vector2<float>   vec2;
+#define op2_T(OP) \
+        template<typename T> \
+        Vector2<T> operator OP (const Vector2<T>& v, T f) \
+{\
+    \
+    Vector2<T> r = v; \
+    r.x  OP= f; \
+    r.y  OP= f; \
+    return v; \
+}
+#define op2(OP) \
+        template<typename T> \
+        Vector2<T> operator OP (const Vector2<T>& v, const Vector2<T>& o) \
+{\
+    \
+    Vector2<T> r = v; \
+    r.x  OP= o.x; \
+    r.y  OP= o.y; \
+    return r; \
+}
+
+#define op2_F(OP, TYPE) \
+        template<typename T> \
+        Vector2<T> operator OP (Vector2<T>&v, TYPE f) \
+{ \
+    v.x  OP f; \
+    v.y  OP f; \
+    v.z  OP f; \
+    return v;\
+}
+#define op2_M(OP) \
+        template<typename T> \
+        Vector2<T> operator OP (Vector2<T>&v, Vector2<T>& o) \
+{ \
+    v.x  OP o.x; \
+    v.y  OP o.y; \
+    v.z  OP o.z; \
+    return v;\
+}
+
+
+op2(+)
+op2(-)
+op2(/)
+op2_T(*)
+op2_M(*=)
+op2_F(/=, i32)
 
 #pragma warning(push)
 #pragma warning(disable:4587) // Constructor for xyz not implicitly called
@@ -136,7 +183,7 @@ typedef Vector3<float>   vec3;
     r.x  OP= o.x; \
     r.y  OP= o.y; \
     r.z  OP= o.z; \
-    return v; \
+    return r; \
 }
 #define op3_F(OP, TYPE) \
         template<typename T> \
@@ -254,7 +301,7 @@ struct Vector4
     r.y  OP= f; \
     r.z  OP= f; \
     r.w  OP= f; \
-    return v; \
+    return r; \
 }
 #define op4(OP) \
         template<typename T> \
@@ -266,7 +313,7 @@ struct Vector4
     r.y  OP= o.y; \
     r.z  OP= o.z; \
     r.w  OP= o.w; \
-    return v; \
+    return r; \
 }
 #define op4_M(OP, TYPE) \
         template<typename T> \
@@ -295,35 +342,10 @@ b32 operator ==(const Vector2<T>& a, const Vector2<T>& b)
     b32 result = a.x == b.x && a.y == b.y;
     return result;
 }
-template<typename T>
-Vector2<T> operator +(const Vector2<T>& a, const Vector2<T>& b)
+Vector2<float> operator -(Vector2<float>& a, const Vector2<int>& o)
 {
-    Vector2<T> result;
-    result.x = a.x + b.x;
-    result.y = a.y + b.y;
-    return result;
-}
-Vector2<float> operator +(const Vector2<float>& a, const Vector2<i32>& b)
-{
-    Vector2<float> result;
-    result.x = a.x + b.x;
-    result.y = a.y + b.y;
-    return result;
-}
-template<typename T>
-Vector2<T> operator -(const Vector2<T>& a, const Vector2<T>& b)
-{
-
-    Vector2<T> result;
-    result.x = a.x - b.x;
-    result.y = a.y - b.y;
-    return result;
-}
-template<typename T>
-Vector2<T> operator -=(Vector2<T>& a, const Vector2<T>& b)
-{
-    a.x -= b.x;
-    a.y -= b.y;
+    a.x -= o.x;
+    a.y -= o.y;
     return a;
 }
 template<typename T>
@@ -347,13 +369,12 @@ Vector2<T> operator -=(Vector2<T>& a, i32 f)
     a.y -= f;
     return a;
 }
-template<typename T>
-Vector2<T> operator *(const Vector2<T>& a, T factor)
+Vector2<float> operator *(Vector2<float>& a, float f)
 {
-    Vector2<T> result = a;
-    result.x *= factor;
-    result.y *= factor;
-    return result;
+    Vector2<float> r = a;
+    r.x *= f;
+    r.y *= f;
+    return r;
 }
 template<typename T>
 Vector2<T> operator *=(Vector2<T>& a, double f)

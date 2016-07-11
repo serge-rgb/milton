@@ -962,6 +962,17 @@ int milton_main()
             platform_state.panning_fsm = PanningFSM_NOTHING;
         }
 
+#if 0
+#if defined(_WIN32)
+        // If the Wacom DLL was loaded but there is no context, try to reload.
+        if (EasyTab->Dll && !EasyTab->Context)
+        {
+            milton_log("Trying to re-load Wacom \n");
+            EasyTab_Load(platform_state.hwnd);
+        }
+#endif
+#endif
+
         {
             int x = 0;
             int y = 0;

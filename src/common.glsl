@@ -53,15 +53,27 @@ vec2 canvas_to_raster_gl(vec2 cp)
     // rp in [0, W]x[0, H]
 
     rp /= u_screen_size;
-    // rp in [0, 1]x[0, 1]
+    /* // rp in [0, 1]x[0, 1] */
 
     rp *= 2.0;
     rp -= 1.0;
-    // rp in [-1, 1]x[-1, 1]
+    /* // rp in [-1, 1]x[-1, 1] */
 
     rp.y *= -1.0;
 
     return vec2(rp);
+}
+
+vec2 raster_to_canvas_gl(vec2 raster_point)
+{
+    vec2 canvas_point = ((raster_point - u_screen_center) * u_scale) - VEC2(u_pan_vector);
+    //vec2 canvas_point = ((raster_point - u_screen_center) * u_scale) - u_pan_vector;
+    /* { */
+    /*     ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x, */
+    /*     ((raster_point.y - view->screen_center.y) * view->scale) - view->pan_vector.y, */
+    /* }; */
+
+    return canvas_point;
 }
 
 // x,y  - closest point

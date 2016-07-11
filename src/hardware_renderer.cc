@@ -9,12 +9,9 @@
 #define in
 #define out
 #define flat
+#define layout(param)
 #define main vertexShaderMain
-struct Vec4_
-{
-    vec2 xy;
-};
-Vec4_ gl_Position;
+vec4 gl_Position;
 vec2 as_vec2(ivec2 v)
 {
     vec2 r;
@@ -94,6 +91,14 @@ vec4 VEC4(float x,float y,float z,float w)
     r.w = w;
     return r;
 }
+float distance(vec2 a, vec2 b)
+{
+    float dx = fabs(a.x-b.x);
+    float dy = fabs(a.y-b.y);
+    float d = dx*dx + dy*dy;
+    if (d > 0) d = sqrtf(d);
+    return d;
+}
 static vec4 gl_FragColor;
 #pragma warning (push)
 #pragma warning (disable : 4668)
@@ -104,7 +109,6 @@ static vec4 gl_FragColor;
 #define v_pressure v_fragPressure
 #define v_pointa v_fragpointa
 #define v_pointb v_fragpointb
-static vec4 gl_FragCoord;
 #include "milton_canvas.f.glsl"
 #pragma warning (pop)
 #undef main
@@ -207,7 +211,7 @@ char* debug_load_shader_from_file(PATH_CHAR* path, size_t* out_size)
 
     if (fd)
     {
-        char prelude[] = "#version 130\n";
+        char prelude[] = "#version 150\n";
         size_t prelude_len = strlen(prelude);
         size_t common_len = strlen(common_contents);
         size_t len = bytes_in_fd(fd);
@@ -370,18 +374,24 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         // N-1 (num segments)
         const size_t count_points = 6*2*3*((size_t)npoints-1);
 
+        //const size_t count_radii = 6*2*((size_t)npoints-1);
+
         v2i* bounds;
         v3i* apoints;
         v3i* bpoints;
+        //v2i* radii;
         Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
                                          + 2*count_points*sizeof(decltype(*apoints)));
+                                         //+ count_radii*sizeof(decltype(*radii)));
         bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
         apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
         bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
+        //radii   = arena_alloc_array(&scratch_arena, count_radii, v2i);
 
         size_t bounds_i = 0;
         size_t apoints_i = 0;
         size_t bpoints_i = 0;
+        size_t radii_i = 0;
         for (i64 i=0; i < npoints-1; ++i)
         {
             v2i point_i = stroke->points[i];
@@ -417,6 +427,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             {
                 apoints[apoints_i++] = { point_i.x, point_i.y, pressure_a };
                 bpoints[bpoints_i++] = { point_j.x, point_j.y, pressure_b };
+                //radii[radii_i++] = {0, 0};
             }
         }
         //mlt_assert(bounds_i == total_points);
@@ -439,6 +450,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         GLuint vbo_quad   = upload_buffer((int*)bounds, bounds_i*sizeof(decltype(*bounds)));
         GLuint vbo_pointa = upload_buffer((int*)apoints, apoints_i*sizeof(decltype(*apoints)));
         GLuint vbo_pointb = upload_buffer((int*)bpoints, bpoints_i*sizeof(decltype(*bpoints)));
+        //GLuint vbo_radii  = upload_buffer((int*)radii, bpoints_i*sizeof(decltype(*bpoints)));
 
         RenderData::RenderElem re;
         re.vbo_quad = vbo_quad;
@@ -487,9 +499,15 @@ void gpu_render(RenderData* render_data)
             if (loc_b >=0)
             {
                 GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_pointb) );
+#if 0
                 GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
                                               /*size*/3, GL_INT,
                                               /*stride*/0, /*ptr*/0));
+#else
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_b,
+                                             /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+#endif
                 GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
             }
             GLCHK( glEnableVertexAttribArray((GLuint)loc) );
