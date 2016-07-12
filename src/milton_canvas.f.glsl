@@ -9,7 +9,6 @@ flat in ivec3 v_pointb;
 vec4 blend(vec4 dst, vec4 src)
 {
     vec4 result = src + dst*(1.0f-src.a);
-    //vec4 result = src + dst*(1.0-src.a);
 
     return result;
 }
@@ -32,19 +31,18 @@ vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
     float ax_x = float(point.x - a.x);
     float ax_y = float(point.y - a.y);
     float disc = d_x * ax_x + d_y * ax_y;
-    if (disc < 0.0)
-    {
-        disc = 0.0;
-    }
-    else if (disc > mag_ab)
-    {
-        disc = mag_ab;
-    }
+    /* if (disc < 0.0) */
+    /* { */
+    /*     disc = 0.0; */
+    /* } */
+    /* else if (disc > mag_ab) */
+    /* { */
+    /*     disc = mag_ab; */
+    /* } */
     result.z = disc / mag_ab;
     result.xy = VEC2(int(a.x + disc * d_x), int(a.y + disc * d_y));
     return result;
 }
-
 
 void main()
 {
@@ -67,14 +65,13 @@ void main()
         bool inside = d < radius;;
         if (inside)
         {
-            color.xyz *= v_pointa.z;
-            color.xyz /= float(PRESSURE_RESOLUTION_GL);
-            color.xyz *= d/1000;
-            gl_FragColor = blend(as_vec4(u_background_color), color);
+            //gl_FragColor = blend(as_vec4(u_background_color), u_brush_color);
+            //gl_FragColor = blend(as_vec4(u_background_color), u_brush_color);
+            gl_FragColor = u_brush_color;
         }
         else
         {
-            gl_FragColor = blend(as_vec4(u_background_color), VEC4(1,0,1,1));
+
         }
     }
 

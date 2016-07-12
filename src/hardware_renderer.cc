@@ -471,9 +471,11 @@ void gpu_render(RenderData* render_data)
         {
             auto re = render_data->render_elems.data[i];
             i64 count = re.count;
-            // TODO. Only set color uniform if different from the one in use.
+
+            // TODO. Only set these uniforms when both are different from the ones in use.
             gl_set_uniform_vec4(render_data->program, "u_brush_color", 1, re.color.d);
             gl_set_uniform_i(render_data->program, "u_radius", re.radius);
+
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_quad) );
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_INT, /*normalize*/GL_FALSE,
