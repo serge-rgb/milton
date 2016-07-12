@@ -5,6 +5,10 @@
 flat in ivec3 v_pointa;
 flat in ivec3 v_pointb;
 
+// Uniform stroke points
+
+in vec3 u_stroke_points[];
+in int  u_num_points;
 
 vec4 blend(vec4 dst, vec4 src)
 {

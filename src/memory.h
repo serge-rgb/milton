@@ -40,11 +40,19 @@ Arena  arena_push(Arena* parent, size_t size);
 void   arena_pop(Arena* child);
 void   arena_pop_noclear(Arena* child);
 
-#define     arena_alloc_elem(arena, T)          (T *)arena_alloc_bytes((arena), sizeof(T))
-#define     arena_alloc_array(arena, count, T)  (T *)arena_alloc_bytes((arena), (count) * sizeof(T))
-#define     arena_available_space(arena)        ((arena)->size - (arena)->count)
+#define     arena_alloc_elem_(arena, T, flags)          (T *)arena_alloc_bytes((arena), sizeof(T), flags)
+#define     arena_alloc_array_(arena, count, T, flags)  (T *)arena_alloc_bytes((arena), (count) * sizeof(T), flags)
+#define     arena_alloc_elem(arena, T)                  arena_alloc_elem_(arena, T, Arena_NONE)
+#define     arena_alloc_array(arena, count, T)          arena_alloc_array_(arena, count, T, Arena_NONE)
+#define     arena_available_space(arena)                ((arena)->size - (arena)->count)
 #define     ARENA_VALIDATE(arena)               mlt_assert ((arena)->num_children == 0)
 
+enum ArenaAllocOpts
+{
+    Arena_NONE = 0,
 
-u8* arena_alloc_bytes(Arena* arena, size_t num_bytes);
+    Arena_NOFAIL = 1<<0,
+};
+
+u8* arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags=Arena_NONE);
 

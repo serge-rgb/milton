@@ -41,6 +41,7 @@ PFNGLUNIFORM2IPROC                  glUniform2i;
 PFNGLUNIFORM2FVPROC                 glUniform2fv;
 PFNGLUNIFORM2IVPROC                 glUniform2iv;
 PFNGLUNIFORM3FVPROC                 glUniform3fv;
+PFNGLUNIFORM3IVPROC                 glUniform3iv;
 PFNGLUNIFORM4FVPROC                 glUniform4fv;
 PFNGLUNIFORMMATRIX3FVPROC           glUniformMatrix3fv;
 PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
@@ -95,6 +96,7 @@ bool load_gl_functions()
     GETADDRESS(glUniform2fv);
     GETADDRESS(glUniform2iv);
     GETADDRESS(glUniform3fv);
+    GETADDRESS(glUniform3iv);
     GETADDRESS(glUniform4fv);
     GETADDRESS(glUniformMatrix3fv);
     GETADDRESS(glUniformMatrix4fv);

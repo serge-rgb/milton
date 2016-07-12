@@ -3,11 +3,15 @@
 
 
 
-u8* arena_alloc_bytes(Arena* arena, size_t num_bytes)
+u8* arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags)
 {
     size_t total = arena->count + num_bytes;
     if (total > arena->size)
     {
+        if ( !(alloc_flags & Arena_NOFAIL))
+        {
+            mlt_assert(!"Out of memory!");
+        }
         return NULL;
     }
     u8* result = arena->ptr + arena->count;

@@ -65,7 +65,7 @@ static b32 clipped_stroke_is_layermark(ClippedStroke* clipped_stroke)
 static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke,
                                           Rect canvas_rect, i32 local_scale, v2i reference_point)
 {
-    ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
+    ClippedStroke* clipped_stroke = arena_alloc_elem_(render_arena, ClippedStroke, Arena_NOFAIL);
 
     if (!clipped_stroke)
     {
@@ -85,7 +85,7 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
         // points so that the renderer can comfortably load from the arrays
         // without bounds checking.
 
-        clipped_stroke->clipped_points = arena_alloc_array(render_arena, points_allocated, ClippedPoint);
+        clipped_stroke->clipped_points = arena_alloc_array_(render_arena, points_allocated, ClippedPoint, Arena_NOFAIL);
         //memset(clipped_stroke->clipped_points, 0, points_allocated * sizeof(ClippedPoint));
     }
     else
@@ -177,7 +177,7 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 
         if ( layer != root_layer && clipped_stroke_is_layermark(stroke_list) == false )
         {
-            ClippedStroke* layer_mark = arena_alloc_elem(render_arena, ClippedStroke);
+            ClippedStroke* layer_mark = arena_alloc_elem_(render_arena, ClippedStroke, Arena_NOFAIL);
             if ( !layer_mark )
             {
                 *allocation_ok = false;

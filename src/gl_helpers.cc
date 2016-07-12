@@ -46,7 +46,7 @@ GLuint gl_compile_shader(const char* src, GLuint type)
         gl_log("Shader compilation failed. \n    ---- Info log:\n");
         gl_log(log);
         free(log);
-        
+
         mlt_assert(!"Shader compilation error");
     }
     return obj;
@@ -182,6 +182,20 @@ bool gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
     if (ok)
     {
         GLCHK( glUniform4fv(loc, (GLsizei)count, vals) );
+    }
+    return ok;
+}
+
+bool gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
+{
+    glUseProgram(program);
+    bool ok = true;
+    GLint loc = glGetUniformLocation(program, name);
+    ok = loc >= 0;
+
+    if (ok)
+    {
+        GLCHK( glUniform3iv(loc, (GLsizei)count, vals) );
     }
     return ok;
 }
