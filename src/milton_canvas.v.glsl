@@ -2,11 +2,13 @@
 // License: https://github.com/serge-rgb/milton#license
 
 // Note:
-//  The correct thing to do here would be to use ivec2/ivec3, but what would be the performance consequences?
+// TODO: The correct thing to do here would be to use ivec2/ivec3, but what
+// would be the compat and performance consequences?
 attribute vec2 a_position;
+
+// (x,y, pressure)
 attribute vec3 a_pointa;
 attribute vec3 a_pointb;
-attribute vec2 a_radii; // radius for a,b
 
 varying float v_pressure;
 flat out ivec3 v_pointa;

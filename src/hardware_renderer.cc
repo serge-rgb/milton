@@ -109,6 +109,7 @@ static vec4 gl_FragColor;
 #define v_pressure v_fragPressure
 #define v_pointa v_fragpointa
 #define v_pointb v_fragpointb
+#define v_radii v_fragradii
 #include "milton_canvas.f.glsl"
 #pragma warning (pop)
 #undef main
@@ -185,9 +186,12 @@ struct RenderData
         GLuint  vbo_quad;
         GLuint  vbo_pointa;
         GLuint  vbo_pointb;
+        GLuint  vbo_radii;
 
         i64     count;
+        // TODO: Store these two differently when collating multiple strokes...
         v4f     color;
+        i32     radius;
     };
     DArray<RenderElem> render_elems;
 };
@@ -369,29 +373,21 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         const size_t count_bounds = 3*2*((size_t)npoints-1);
 
         // 6 (3 * 2 from count_bounds)
-        // 2 (a, b) *
-        // 3 (x,y,pressure) *
         // N-1 (num segments)
-        const size_t count_points = 6*2*3*((size_t)npoints-1);
-
-        //const size_t count_radii = 6*2*((size_t)npoints-1);
+        const size_t count_points = 6*((size_t)npoints-1);
 
         v2i* bounds;
         v3i* apoints;
         v3i* bpoints;
-        //v2i* radii;
         Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
                                          + 2*count_points*sizeof(decltype(*apoints)));
-                                         //+ count_radii*sizeof(decltype(*radii)));
         bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
         apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
         bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
-        //radii   = arena_alloc_array(&scratch_arena, count_radii, v2i);
 
         size_t bounds_i = 0;
         size_t apoints_i = 0;
         size_t bpoints_i = 0;
-        size_t radii_i = 0;
         for (i64 i=0; i < npoints-1; ++i)
         {
             v2i point_i = stroke->points[i];
@@ -427,10 +423,9 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             {
                 apoints[apoints_i++] = { point_i.x, point_i.y, pressure_a };
                 bpoints[bpoints_i++] = { point_j.x, point_j.y, pressure_b };
-                //radii[radii_i++] = {0, 0};
             }
         }
-        //mlt_assert(bounds_i == total_points);
+        mlt_assert(bounds_i == count_bounds);
         mlt_assert(bounds_i <= count_bounds);
         mlt_assert(apoints_i == bpoints_i);
         mlt_assert(bounds_i == apoints_i);
@@ -450,7 +445,6 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         GLuint vbo_quad   = upload_buffer((int*)bounds, bounds_i*sizeof(decltype(*bounds)));
         GLuint vbo_pointa = upload_buffer((int*)apoints, apoints_i*sizeof(decltype(*apoints)));
         GLuint vbo_pointb = upload_buffer((int*)bpoints, bpoints_i*sizeof(decltype(*bpoints)));
-        //GLuint vbo_radii  = upload_buffer((int*)radii, bpoints_i*sizeof(decltype(*bpoints)));
 
         RenderData::RenderElem re;
         re.vbo_quad = vbo_quad;
@@ -458,6 +452,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         re.vbo_pointb = vbo_pointb;
         re.count = (i64)bounds_i;
         re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
+        re.radius = stroke->brush.radius;
         push(&render_data->render_elems, re);
         arena_pop(&scratch_arena);
     }
@@ -478,6 +473,7 @@ void gpu_render(RenderData* render_data)
             i64 count = re.count;
             // TODO. Only set color uniform if different from the one in use.
             gl_set_uniform_vec4(render_data->program, "u_brush_color", 1, re.color.d);
+            gl_set_uniform_i(render_data->program, "u_radius", re.radius);
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_quad) );
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_INT, /*normalize*/GL_FALSE,

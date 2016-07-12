@@ -10,6 +10,7 @@ uniform ivec2 u_pan_vector;
 uniform ivec2 u_screen_center;
 uniform vec2  u_screen_size;
 uniform int   u_scale;
+uniform int   u_radius;
 
 
 #if GL_core_profile
@@ -74,25 +75,5 @@ vec2 raster_to_canvas_gl(vec2 raster_point)
     /* }; */
 
     return canvas_point;
-}
-
-// x,y  - closest point
-// z    - t in [0,1] interpolation value
-vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
-                                 vec2 ab, float ab_magnitude_squared,
-                                 vec2 point)
-{
-    vec3 result;
-    float mag_ab = sqrt(ab_magnitude_squared);
-    float d_x = ab.x / mag_ab;
-    float d_y = ab.y / mag_ab;
-    float ax_x = float(point.x - a.x);
-    float ax_y = float(point.y - a.y);
-    float disc = d_x * ax_x + d_y * ax_y;
-    if (disc < 0.0) disc = 0.0;
-    if (disc > mag_ab) disc = mag_ab;
-    result.z = disc / mag_ab;
-    result.xy = VEC2(int(a.x + disc * d_x), int(a.y + disc * d_y));
-    return result;
 }
 
