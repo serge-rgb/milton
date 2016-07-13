@@ -334,7 +334,8 @@ op4(+)
 
 
 // Types
-typedef Vector4<float>   vec4;
+typedef Vector4<float>  vec4;
+typedef Vector4<int>    ivec4;
 
 template<typename T>
 b32 operator ==(const Vector2<T>& a, const Vector2<T>& b)

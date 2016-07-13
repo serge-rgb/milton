@@ -98,6 +98,15 @@ vec3 VEC3(float x,float y,float z)
     r.z = z;
     return r;
 }
+ivec4 IVEC4(i32 x, i32 y, i32 z, i32 w)
+{
+    ivec4 r;
+    r.x = x;
+    r.y = y;
+    r.z = z;
+    r.w = w;
+    return r;
+}
 vec4 VEC4(float v)
 {
     vec4 r;
@@ -126,10 +135,12 @@ float distance(vec2 a, vec2 b)
 }
 static vec4 gl_FragColor;
 
+// Conforming to std140 layout.
 struct StrokeUniformData
 {
     int count;
-    ivec3 points[512]; // TODO: deal with STROKE_MAX_POINTS_GL
+    vec3 pad_;
+    ivec4 points[512]; // TODO: deal with STROKE_MAX_POINTS_GL
 };
 StrokeUniformData u_stroke;
 
@@ -479,11 +490,11 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
                 bpoints[bpoints_i++] = { point_j.x, point_j.y, pressure_b };
             }
             upoints[upoints_i++] = { point_i.x, point_i.y, pressure_a };
-            uniform_data->points[uniform_data->count++] = IVEC3( point_i.x, point_i.y, pressure_a );
+            uniform_data->points[uniform_data->count++] = IVEC4( point_i.x, point_i.y, pressure_a, 0 );
             if (i == npoints-2)
             {
                 upoints[upoints_i++] = { point_j.x, point_j.y, pressure_b };
-                uniform_data->points[uniform_data->count++] = IVEC3( point_j.x, point_j.y, pressure_b );
+                uniform_data->points[uniform_data->count++] = IVEC4( point_j.x, point_j.y, pressure_b, 0 );
             }
         }
 

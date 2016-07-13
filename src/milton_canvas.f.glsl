@@ -18,7 +18,9 @@ flat in ivec3 v_pointb;
 //  panning and not zooming, just drawing over the existing painting.
 #define STROKE_MAX_POINTS_GL 512
 #if GL_core_profile
-uniform StrokeUniformBlock
+
+// TODO: instead of std140, get offsets with glGetUniformIndices and glGetActiveUNiformsiv GL_UNIFORM_OFFSET
+layout(std140) uniform StrokeUniformBlock
 {
     int count;
     ivec3 points[STROKE_MAX_POINTS_GL];  // 16KB
@@ -76,7 +78,7 @@ void main()
         if (ab_magnitude_squared > 0)
         {
             // t = point.z
-            vec3 u_stroke_point = closest_point_in_segment_gl(VEC2(v_pointa.xy), VEC2(v_pointb.xy), ab, ab_magnitude_squared, fragment_point);
+            vec3 stroke_point = closest_point_in_segment_gl(VEC2(v_pointa.xy), VEC2(v_pointb.xy), ab, ab_magnitude_squared, fragment_point);
             float d = distance(u_stroke_point.xy, fragment_point);
             float t = u_stroke_point.z;
             float pressure = (1-t)*v_pointa.z + t*v_pointb.z;
@@ -135,10 +137,4 @@ void main()
         gl_FragColor = u_brush_color;
     }
 }
-
-
-
-
-
-
 //End
