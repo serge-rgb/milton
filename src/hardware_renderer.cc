@@ -217,6 +217,8 @@ struct RenderData
 
     GLuint vbo_quad; // VBO for the screen-covering quad.
 
+    GLuint canvas_texture;
+
     // Draw data for single stroke
     struct RenderElem
     {
@@ -337,7 +339,6 @@ bool gpu_init(RenderData* render_data)
         GLCHK( glUseProgram(render_data->stroke_program) );
     }
 
-
     // Quad for screen!
     {
         // a------d
@@ -382,6 +383,61 @@ bool gpu_init(RenderData* render_data)
     }
 
     return result;
+}
+
+void gpu_resize(RenderData* render_data, CanvasView* view)
+{
+    // Create canvas texture
+    // TODO: Do this on a resize() function
+    if (render_data->canvas_texture == 0)
+    {
+        GLuint tex = 0;
+        GLCHK (glGenTextures(1, &tex));
+        GLCHK (glBindTexture(GL_TEXTURE_2D, tex));
+
+
+        // TODO: Use 32-bit per channel data if we move toward multiple textures.
+
+
+        // Find the next size that is a power of two.
+        i32 pow_w = 0;
+        i32 pow_h = 0;
+        BIT_SCAN_REVERSE(view->screen_size.w, pow_w);
+        BIT_SCAN_REVERSE(view->screen_size.h, pow_h);
+        if (1<<pow_w < view->screen_size.w) pow_w++;
+        if (1<<pow_h < view->screen_size.h) pow_h++;
+        i32 tex_w = 1<<pow_w;
+        i32 tex_h = 1<<pow_h;
+
+        size_t sz = (size_t)(tex_w*tex_h*4);
+
+        u32* color_buffer = (u32*)mlt_calloc(1, sz);
+
+        b32 parity = 1;
+        for (i32 y=0; y < view->screen_size.h; ++y)
+        {
+            for (i32 x = 0; x < view->screen_size.w; ++x)
+            {
+                u32 color = parity? 0xffffffff : 0x000000ff;
+                color_buffer[y*view->screen_size.w + x] = color;
+                parity = (parity+1)%2;
+            }
+        }
+
+        GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                            tex_w, tex_h,
+                            0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)color_buffer));
+
+        // Note for the future: These are needed.
+        // TODO: are these still needed? :)
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+        render_data->canvas_texture = tex;
+        mlt_free(color_buffer);
+    }
 }
 
 void gpu_update_scale(RenderData* render_data, i32 scale)
@@ -544,8 +600,6 @@ void gpu_render(RenderData* render_data)
     {
         GLCHK( glUseProgram(render_data->stroke_program) );
         GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
-        GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
-        GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
         if (loc >= 0)
         {
             for (size_t i = 0; i < render_data->render_elems.count; ++i)
@@ -577,9 +631,10 @@ void gpu_render(RenderData* render_data)
             }
         }
     }
+
+    // Render quad for whole screen.
     {
         // Bind canvas texture.
-        // Render quad for whole screen.
         glUseProgram(render_data->quad_program);
         GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
         if (loc >= 0)

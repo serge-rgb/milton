@@ -37,6 +37,16 @@ HRESULT WINAPI SetProcessDpiAwareness(
 // ----
 #endif
 
+// BIT_SCAN_REVERSE
+//
+//  - Find the index for the first 1 bit. Form MSB to LSB.
+//
+#if defined(_WIN32)
+#define BIT_SCAN_REVERSE(v, i) _BitScanReverse((DWORD*)&(i), (DWORD)(v))
+#else
+#error "Please define BIT_SCAN_REVERSE"
+#endif
+
 struct SDL_Cursor;
 struct PlatformState
 {

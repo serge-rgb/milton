@@ -735,6 +735,9 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
     {
         milton_die_gracefully("Fatal error. Screen size is more than Milton can handle.");
     }
+
+    gpu_resize(milton_state->render_data, milton_state->view);
+
     return pan_ok;
 }
 
