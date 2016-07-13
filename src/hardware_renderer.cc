@@ -178,7 +178,7 @@ StrokeUniformData u_stroke;
 //  |/__|
 //
 //
-// The vertex shader: Just interpolate.
+// The vertex shader: Translate from raster to canvas (i.e. do zoom&panning).
 //
 // The pixel shader.
 //
@@ -191,30 +191,36 @@ StrokeUniformData u_stroke;
 //
 // == Future?
 //
-// Sandwich buffers.
+// 1. Sandwich buffers.
 //
-//      Most of the time, we only need to update the working stroke.
-//      Use cases.
-//          - Painting. Update the working stroke. Layers above and below are the same.
-//          - Panning: most of the screen can be copied!
-//          - Zooming: Everything must be updated.
-//          - Toggle layer visibility: ???
+//      We can render to two textures. One for strokes below the working stroke
+//      and one for strokes above. As a final canvas rendering pass, we render
+//      the working stroke and blend it between the two textures.
+//      This would make the common case for rendering much faster.
 //
-//      To start, always redraw everything.
-//      Then, start keeping track of sandwich layers... do it incrementally.
 //
+// 2. Chunks
+//
+//      Each stroke uses 8KB of GPU memory just for the point data. For 10,000
+//      strokes at 128 points per stroke, this translates into 19MB. To set an
+//      upper bound on the GPU memory requirement for Milton, we could render
+//      in chunks of N strokes, where N is some big number. At the end of each
+//      chunk, we can clear all VBOs and UBOs and be ready for the next one.
 //
 
 #define PRESSURE_RESOLUTION (1<<20)
 
 struct RenderData
 {
-    GLuint program;
+    GLuint stroke_program;
+    GLuint quad_program;
+
+    GLuint vbo_quad; // VBO for the screen-covering quad.
 
     // Draw data for single stroke
     struct RenderElem
     {
-        GLuint  vbo_quad;
+        GLuint  vbo_stroke;
 
         GLuint ubo_stroke;
 
@@ -299,38 +305,81 @@ bool gpu_init(RenderData* render_data)
 #endif
 
     // Load shader into opengl.
-    GLuint objs[2];
+    {
+        GLuint objs[2];
 
-    // TODO: In release, include the code directly.
+        // TODO: In release, include the code directly.
 #if MILTON_DEBUG
-    size_t src_sz[2] = {0};
-    char* src[2] =
-    {
-        debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.v.glsl"), &src_sz[0]),
-        debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.f.glsl"), &src_sz[1]),
-    };
-    GLuint types[2] =
-    {
-        GL_VERTEX_SHADER,
-        GL_FRAGMENT_SHADER
-    };
+        size_t src_sz[2] = {0};
+        char* src[2] =
+        {
+            debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.v.glsl"), &src_sz[0]),
+            debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.f.glsl"), &src_sz[1]),
+        };
+        GLuint types[2] =
+        {
+            GL_VERTEX_SHADER,
+            GL_FRAGMENT_SHADER
+        };
 #endif
-    result = src_sz[0] != 0 && src_sz[1] != 0;
+        result = src_sz[0] != 0 && src_sz[1] != 0;
 
-    mlt_assert(array_count(src) == array_count(objs));
-    for (i64 i=0; i < array_count(src); ++i)
-    {
-        objs[i] = gl_compile_shader(src[i], types[i]);
+        mlt_assert(array_count(src) == array_count(objs));
+        for (i64 i=0; i < array_count(src); ++i)
+        {
+            objs[i] = gl_compile_shader(src[i], types[i]);
+        }
+
+        render_data->stroke_program = glCreateProgram();
+
+        gl_link_program(render_data->stroke_program, objs, array_count(objs));
+
+        GLCHK( glUseProgram(render_data->stroke_program) );
     }
 
-    render_data->program = glCreateProgram();
 
-    gl_link_program(render_data->program, objs, array_count(objs));
+    // Quad for screen!
+    {
+        // a------d
+        // |  \   |
+        // |    \ |
+        // b______c
+        //  Triangle fan:
+        GLfloat quad_data[] =
+        {
+            -1 , -1 , // a
+            -1 , 1  , // b
+            1  , 1  , // c
+            1  , -1 , // d
+        };
 
-    GLCHK( glUseProgram(render_data->program) );
+        // Create buffer and upload
+        GLuint vbo = 0;
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, array_count(quad_data)*sizeof(*quad_data), quad_data, GL_STATIC_DRAW);
 
+        render_data->vbo_quad = vbo;
 
-    glPointSize(10);
+        char vsrc[] =
+                "#version 120 \n"
+                "attribute vec2 a_point; \n"
+                "void main() { \n"
+                "    gl_Position = vec4(a_point, 0,1); \n"
+                "} \n";
+        char fsrc[] =
+                "#version 120 \n"
+                "void main() \n"
+                "{ \n"
+                "gl_FragColor = vec4(1,0,1,1); \n"
+                "} \n";
+
+        GLuint objs[2] = {};
+        objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
+        render_data->quad_program = glCreateProgram();
+        gl_link_program(render_data->quad_program, objs, array_count(objs));
+    }
 
     return result;
 }
@@ -340,7 +389,7 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
 #if MILTON_DEBUG // set the shader values in C++
     u_scale = scale;
 #endif
-    gl_set_uniform_i(render_data->program, "u_scale", scale);
+    gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
 }
 
 static void gpu_set_background(RenderData* render_data, v3f background_color)
@@ -348,7 +397,7 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
 #if MILTON_DEBUG
     for(int i=0;i<3;++i) u_background_color.d[i] = background_color.d[i];
 #endif
-    gl_set_uniform_vec3(render_data->program, "u_background_color", 1, background_color.d);
+    gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
 }
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
@@ -361,12 +410,12 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     u_scale = view->scale;
 #undef COPY_VEC
 #endif
-    glUseProgram(render_data->program);
-    gl_set_uniform_vec2i(render_data->program, "u_pan_vector", 1, view->pan_vector.d);
-    gl_set_uniform_vec2i(render_data->program, "u_screen_center", 1, view->screen_center.d);
+    glUseProgram(render_data->stroke_program);
+    gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, view->pan_vector.d);
+    gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, view->screen_center.d);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
-    gl_set_uniform_vec2(render_data->program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_i(render_data->program, "u_scale", view->scale);
+    gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
+    gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
 }
 
 void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
@@ -401,7 +450,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
     }
     else
     {
-        GLCHK( glUseProgram(render_data->program) );
+        GLCHK( glUseProgram(render_data->stroke_program) );
 
         // 3 (triangle) *
         // 2 (two per segment) *
@@ -461,9 +510,9 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
         mlt_assert(bounds_i == count_bounds);
 
-        GLuint vbo_quad = 0;
-        glGenBuffers(1, &vbo_quad);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_quad);
+        GLuint vbo_stroke = 0;
+        glGenBuffers(1, &vbo_stroke);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
         // Upload to GL
         GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))),
                             bounds,
@@ -479,7 +528,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
                      uniform_data, GL_STATIC_DRAW);
 
         RenderData::RenderElem re;
-        re.vbo_quad = vbo_quad;
+        re.vbo_stroke = vbo_stroke;
         re.ubo_stroke = ubo;
         re.count = (i64)bounds_i;
         re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
@@ -491,40 +540,58 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
 void gpu_render(RenderData* render_data)
 {
-    // Draw a triangle...
-    GLCHK( glUseProgram(render_data->program) );
-    GLint loc = glGetAttribLocation(render_data->program, "a_position");
-    GLint loc_a = glGetAttribLocation(render_data->program, "a_pointa");
-    GLint loc_b = glGetAttribLocation(render_data->program, "a_pointb");
-    if (loc >= 0)
+    // Draw the canvas
     {
-        for (size_t i = 0; i < render_data->render_elems.count; ++i)
+        GLCHK( glUseProgram(render_data->stroke_program) );
+        GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
+        GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
+        GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
+        if (loc >= 0)
         {
-            auto re = render_data->render_elems.data[i];
-            i64 count = re.count;
-
-            // TODO. Only set these uniforms when both are different from the ones in use.
-            gl_set_uniform_vec4(render_data->program, "u_brush_color", 1, re.color.d);
-            gl_set_uniform_i(render_data->program, "u_radius", re.radius);
-
-            // Bind stroke uniform block
-            GLuint uboi = glGetUniformBlockIndex(render_data->program, "StrokeUniformBlock");
-            if (uboi != GL_INVALID_INDEX)
+            for (size_t i = 0; i < render_data->render_elems.count; ++i)
             {
-                GLuint binding_point = 0;
-                glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, re.ubo_stroke);
-                glUniformBlockBinding(render_data->program, uboi, binding_point);
+                auto re = render_data->render_elems.data[i];
+                i64 count = re.count;
+
+                // TODO. Only set these uniforms when both are different from the ones in use.
+                gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re.color.d);
+                gl_set_uniform_i(render_data->stroke_program, "u_radius", re.radius);
+
+                // Bind stroke uniform block
+                GLuint uboi = glGetUniformBlockIndex(render_data->stroke_program, "StrokeUniformBlock");
+                if (uboi != GL_INVALID_INDEX)
+                {
+                    GLuint binding_point = 0;
+                    glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, re.ubo_stroke);
+                    glUniformBlockBinding(render_data->stroke_program, uboi, binding_point);
+                }
+
+
+                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_stroke) );
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                             /*size*/2, GL_INT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                GLCHK( glEnableVertexAttribArray((GLuint)loc) );
+
+                glDrawArrays(GL_TRIANGLES, 0, count);
             }
-
-
-            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_quad) );
-            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_INT, /*normalize*/GL_FALSE,
-                                         /*stride*/0, /*ptr*/0));
-            GLCHK( glEnableVertexAttribArray((GLuint)loc) );
-
-            glDrawArrays(GL_TRIANGLES, 0, count);
         }
+    }
+    {
+        // Bind canvas texture.
+        // Render quad for whole screen.
+        glUseProgram(render_data->quad_program);
+        GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
+        if (loc >= 0)
+        {
+            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            glEnableVertexAttribArray((GLuint)loc);
+            glDrawArrays(GL_TRIANGLE_FAN,0,4);
+        }
+
     }
     GLCHK (glUseProgram(0));
 }
