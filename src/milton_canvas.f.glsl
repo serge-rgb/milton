@@ -9,20 +9,20 @@ layout(origin_upper_left) in vec4 gl_FragCoord;
 flat in ivec3 v_pointa;
 flat in ivec3 v_pointb;
 
+//  TODO: Uniform buffer objets are our only relatively non-hairy choice.  Any
+//  GPU will run out of memory with a big enough drawing when allocating a
+//  fixed-size UBO per-stroke, so there is going to be a change. One
+//  possibility is to render drawings in multiple passes, storing a buffer for
+//  the painting for a certain number of strokes.  This makes sense since we
+//  avoid duplicating rendering work for the most common case which is not
+//  panning and not zooming, just drawing over the existing painting.
 #define STROKE_MAX_POINTS_GL 512
 #if GL_core_profile
 uniform StrokeUniformBlock
 {
-    //int count;
-    vec3 points[STROKE_MAX_POINTS_GL];  // 16KB
+    int count;
+    ivec3 points[STROKE_MAX_POINTS_GL];  // 16KB
 } u_stroke;
-#else
-struct MyBlock
-{
-    //int count;
-    vec3 points[STROKE_MAX_POINTS_GL];
-};
-MyBlock u_stroke;
 #endif
 
 
@@ -60,9 +60,11 @@ vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
     return result;
 }
 
+#define MAX_DIST (1<<24)
+
 void main()
 {
-    vec4 color = u_brush_color + u_stroke.points[0].x;
+    vec4 color = u_brush_color;
 
 #if 0
     {
@@ -96,17 +98,17 @@ void main()
     }
 #endif
     vec2 fragment_point = raster_to_canvas_gl(gl_FragCoord.xy);
-    int min_dist = 1<<31;
-    for (int point_i = 0; point_i < 2; ++point_i)
+    float min_dist = MAX_DIST;
+    for (int point_i = 0; point_i < u_stroke.count-1; ++point_i)
     {
 #if 1
-        vec2 a = u_stroke.points[point_i].xy;
-        vec2 b = u_stroke.points[point_i+1].xy;
+        vec2 a = VEC2(u_stroke.points[point_i].xy);
+        vec2 b = VEC2(u_stroke.points[point_i+1].xy);
 #else
         vec2 a = VEC2(v_pointa.xy);
         vec2 b = VEC2(v_pointb.xy);
 #endif
-        vec2 ab = a - b;
+        vec2 ab = b - a;
         float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
         if (ab_magnitude_squared > 0)
         {
@@ -118,14 +120,19 @@ void main()
             float pressure = (1-t)*pressure_a + t*pressure_b;
             pressure /= float(PRESSURE_RESOLUTION_GL);
             float radius = pressure *  u_radius;
-            bool inside = d < radius;;
-            if (inside)
+            bool inside = d < radius;
+            if (inside && d < min_dist)
             {
+                min_dist = d;
                 //gl_FragColor = blend(as_vec4(u_background_color), u_brush_color);
                 //gl_FragColor = blend(as_vec4(u_background_color), u_brush_color);
-                gl_FragColor = u_brush_color;
+                // TODO: break here? Faster or slower?
             }
         }
+    }
+    if (min_dist < MAX_DIST)
+    {
+        gl_FragColor = u_brush_color;
     }
 }
 

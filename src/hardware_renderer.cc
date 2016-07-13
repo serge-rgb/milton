@@ -74,6 +74,22 @@ vec2 VEC2(float x,float y)
     r.y = y;
     return r;
 }
+ivec3 IVEC3(i32 x,i32 y,i32 z)
+{
+    ivec3 r;
+    r.x = x;
+    r.y = y;
+    r.z = z;
+    return r;
+}
+vec3 VEC3(float v)
+{
+    vec3 r;
+    r.x = v;
+    r.y = v;
+    r.z = v;
+    return r;
+}
 vec3 VEC3(float x,float y,float z)
 {
     vec3 r;
@@ -109,6 +125,14 @@ float distance(vec2 a, vec2 b)
     return d;
 }
 static vec4 gl_FragColor;
+
+struct StrokeUniformData
+{
+    int count;
+    ivec3 points[512]; // TODO: deal with STROKE_MAX_POINTS_GL
+};
+StrokeUniformData u_stroke;
+
 #pragma warning (push)
 #pragma warning (disable : 4668)
 #pragma warning (disable : 4200)
@@ -121,11 +145,6 @@ static vec4 gl_FragColor;
 #define v_pointa v_fragpointa
 #define v_pointb v_fragpointb
 #define v_radii v_fragradii
-struct StrokeBuffer
-{
-    vec3 points[STROKE_MAX_POINTS];
-};
-static StrokeBuffer StrokeBuffer;
 #include "milton_canvas.f.glsl"
 #pragma warning (pop)
 #undef main
@@ -406,15 +425,18 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         v2i* bounds;
         v3i* apoints;
         v3i* bpoints;
-        v3f* upoints;
+        v3i* upoints;
+        StrokeUniformData* uniform_data;
         Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
                                          + 2*count_points*sizeof(decltype(*apoints))
-                                         + count_upoints*sizeof(decltype(*upoints)));
+                                         + count_upoints*sizeof(decltype(*upoints))
+                                         + sizeof(StrokeUniformData));
 
         bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
         apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
         bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
-        upoints = arena_alloc_array(&scratch_arena, count_upoints, v3f);
+        upoints = arena_alloc_array(&scratch_arena, count_upoints, v3i);
+        uniform_data = arena_alloc_elem(&scratch_arena, StrokeUniformData);
 
         size_t bounds_i = 0;
         size_t apoints_i = 0;
@@ -456,12 +478,15 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
                 apoints[apoints_i++] = { point_i.x, point_i.y, pressure_a };
                 bpoints[bpoints_i++] = { point_j.x, point_j.y, pressure_b };
             }
-            upoints[upoints_i++] = { (float)point_i.x, (float)point_i.y, (float)pressure_a };
+            upoints[upoints_i++] = { point_i.x, point_i.y, pressure_a };
+            uniform_data->points[uniform_data->count++] = IVEC3( point_i.x, point_i.y, pressure_a );
             if (i == npoints-2)
             {
-                upoints[upoints_i++] = { (float)point_j.x, (float)point_j.y, (float)pressure_b };
+                upoints[upoints_i++] = { point_j.x, point_j.y, pressure_b };
+                uniform_data->points[uniform_data->count++] = IVEC3( point_j.x, point_j.y, pressure_b );
             }
         }
+
         mlt_assert(bounds_i == count_bounds);
         mlt_assert(bounds_i <= count_bounds);
         mlt_assert(apoints_i == bpoints_i);
@@ -482,10 +507,6 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         GLuint vbo_quad   = upload_buffer((int*)bounds, bounds_i*sizeof(decltype(*bounds)));
         GLuint vbo_pointa = upload_buffer((int*)apoints, apoints_i*sizeof(decltype(*apoints)));
         GLuint vbo_pointb = upload_buffer((int*)bpoints, bpoints_i*sizeof(decltype(*bpoints)));
-        gl_set_uniform_vec3i(render_data->program,
-                             "u_stroke_points",
-                             upoints_i,
-                             (i32*)upoints);
 
 
         // Uniform buffer block for point array.
@@ -493,8 +514,8 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
         glGenBuffers(1, &ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, (GLsizeiptr)(upoints_i*sizeof(decltype(*upoints))),
-                     (float*)upoints, GL_STATIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, (GLsizeiptr)(sizeof(decltype(*uniform_data))),
+                     uniform_data, GL_STATIC_DRAW);
 
         RenderData::RenderElem re;
         re.vbo_quad = vbo_quad;
