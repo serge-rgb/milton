@@ -6,9 +6,6 @@ layout(origin_upper_left) in vec4 gl_FragCoord;
 
 #define PRESSURE_RESOLUTION_GL (1<<20)
 
-flat in ivec3 v_pointa;
-flat in ivec3 v_pointb;
-
 //  TODO: Uniform buffer objets are our only relatively non-hairy choice.  Any
 //  GPU will run out of memory with a big enough drawing when allocating a
 //  fixed-size UBO per-stroke, so there is going to be a change. One
@@ -18,12 +15,11 @@ flat in ivec3 v_pointb;
 //  panning and not zooming, just drawing over the existing painting.
 #define STROKE_MAX_POINTS_GL 512
 #if GL_core_profile
-
 // TODO: instead of std140, get offsets with glGetUniformIndices and glGetActiveUNiformsiv GL_UNIFORM_OFFSET
 layout(std140) uniform StrokeUniformBlock
 {
     int count;
-    ivec3 points[STROKE_MAX_POINTS_GL];  // 16KB
+    ivec3 points[STROKE_MAX_POINTS_GL];  // 8KB
 } u_stroke;
 #endif
 
@@ -68,48 +64,12 @@ void main()
 {
     vec4 color = u_brush_color;
 
-#if 0
-    {
-        vec2 ab = VEC2(v_pointb.xy - v_pointa.xy);
-        float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
-
-        vec2 fragment_point = raster_to_canvas_gl(gl_FragCoord.xy);
-
-        if (ab_magnitude_squared > 0)
-        {
-            // t = point.z
-            vec3 stroke_point = closest_point_in_segment_gl(VEC2(v_pointa.xy), VEC2(v_pointb.xy), ab, ab_magnitude_squared, fragment_point);
-            float d = distance(u_stroke_point.xy, fragment_point);
-            float t = u_stroke_point.z;
-            float pressure = (1-t)*v_pointa.z + t*v_pointb.z;
-            pressure /= float(PRESSURE_RESOLUTION_GL);
-            float radius = pressure *  u_radius;
-            bool inside = d < radius;;
-            if (inside)
-            {
-                //gl_FragColor = blend(as_vec4(u_background_color), u_brush_color);
-                //gl_FragColor = blend(as_vec4(u_background_color), u_brush_color);
-                color = u_brush_color + VEC4(u_stroke.points[0].x);
-                gl_FragColor = color;
-            }
-            else
-            {
-
-            }
-        }
-    }
-#endif
     vec2 fragment_point = raster_to_canvas_gl(gl_FragCoord.xy);
     float min_dist = MAX_DIST;
     for (int point_i = 0; point_i < u_stroke.count-1; ++point_i)
     {
-#if 1
         vec2 a = VEC2(u_stroke.points[point_i].xy);
         vec2 b = VEC2(u_stroke.points[point_i+1].xy);
-#else
-        vec2 a = VEC2(v_pointa.xy);
-        vec2 b = VEC2(v_pointb.xy);
-#endif
         vec2 ab = b - a;
         float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
         if (ab_magnitude_squared > 0)
