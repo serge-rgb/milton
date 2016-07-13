@@ -11,7 +11,4 @@ void    gl_query_error(const char* expr, const char* file, int line);
 GLuint  gl_compile_shader(const char* src, GLuint type);
 void    gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders);
 
-#if defined(_WIN32)
-#include "gl_func_loader.h" // GL function declarations.
-#endif
 

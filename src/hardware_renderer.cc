@@ -82,6 +82,15 @@ vec3 VEC3(float x,float y,float z)
     r.z = z;
     return r;
 }
+vec4 VEC4(float v)
+{
+    vec4 r;
+    r.x = v;
+    r.y = v;
+    r.z = v;
+    r.w = v;
+    return r;
+}
 vec4 VEC4(float x,float y,float z,float w)
 {
     vec4 r;
@@ -102,6 +111,8 @@ float distance(vec2 a, vec2 b)
 static vec4 gl_FragColor;
 #pragma warning (push)
 #pragma warning (disable : 4668)
+#pragma warning (disable : 4200)
+#define buffer struct
 #include "common.glsl"
 #include "milton_canvas.v.glsl"
 #undef main
@@ -110,11 +121,17 @@ static vec4 gl_FragColor;
 #define v_pointa v_fragpointa
 #define v_pointb v_fragpointb
 #define v_radii v_fragradii
+struct StrokeBuffer
+{
+    vec3 points[STROKE_MAX_POINTS];
+};
+static StrokeBuffer StrokeBuffer;
 #include "milton_canvas.f.glsl"
 #pragma warning (pop)
 #undef main
 #undef attribute
 #undef uniform
+#undef buffer
 #undef varying
 #undef in
 #undef out
@@ -188,6 +205,8 @@ struct RenderData
         GLuint  vbo_pointb;
         GLuint  vbo_radii;
 
+        GLuint ubo_points;
+
         i64     count;
         // TODO: Store these two differently when collating multiple strokes...
         v4f     color;
@@ -220,13 +239,17 @@ char* debug_load_shader_from_file(PATH_CHAR* path, size_t* out_size)
         size_t common_len = strlen(common_contents);
         size_t len = bytes_in_fd(fd);
         contents = (char*)mlt_calloc(len + 1 + common_len + prelude_len, 1);
-        strcpy(contents, prelude);
-        strcpy(contents+strlen(contents), common_contents);
-        mlt_free(common_contents);
-
         if (contents)
         {
-            size_t read = fread((void*)(contents+strlen(contents)), 1, (size_t)len, fd);
+            strcpy(contents, prelude);
+            strcpy(contents+strlen(contents), common_contents);
+            mlt_free(common_contents);
+
+            char* file_data = (char*)mlt_calloc(len,1);
+            size_t read = fread((void*)(file_data), 1, (size_t)len, fd);
+            file_data[read] = '\0';
+            strcpy(contents+strlen(contents), file_data);
+            mlt_free(file_data);
             mlt_assert (read <= len);
             fclose(fd);
             if (out_size)
@@ -251,6 +274,8 @@ char* debug_load_shader_from_file(PATH_CHAR* path, size_t* out_size)
 bool gpu_init(RenderData* render_data)
 {
     mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
+    // TODO: Handle this. New MLT version?
+    // mlt_assert(STROKE_MAX_POINTS == STROKE_MAX_POINTS_GL);
 
     bool result = true;
 
@@ -381,7 +406,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         v2i* bounds;
         v3i* apoints;
         v3i* bpoints;
-        v3i* upoints;
+        v3f* upoints;
         Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
                                          + 2*count_points*sizeof(decltype(*apoints))
                                          + count_upoints*sizeof(decltype(*upoints)));
@@ -389,7 +414,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
         apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
         bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
-        upoints = arena_alloc_array(&scratch_arena, count_upoints, v3i);
+        upoints = arena_alloc_array(&scratch_arena, count_upoints, v3f);
 
         size_t bounds_i = 0;
         size_t apoints_i = 0;
@@ -431,10 +456,10 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
                 apoints[apoints_i++] = { point_i.x, point_i.y, pressure_a };
                 bpoints[bpoints_i++] = { point_j.x, point_j.y, pressure_b };
             }
-            upoints[upoints_i++] = { point_i.x, point_i.y, pressure_a };
+            upoints[upoints_i++] = { (float)point_i.x, (float)point_i.y, (float)pressure_a };
             if (i == npoints-2)
             {
-                upoints[upoints_i++] = { point_j.x, point_j.y, pressure_b };
+                upoints[upoints_i++] = { (float)point_j.x, (float)point_j.y, (float)pressure_b };
             }
         }
         mlt_assert(bounds_i == count_bounds);
@@ -462,10 +487,20 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
                              upoints_i,
                              (i32*)upoints);
 
+
+        // Uniform buffer block for point array.
+        GLuint ubo = 0;
+
+        glGenBuffers(1, &ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferData(GL_UNIFORM_BUFFER, (GLsizeiptr)(upoints_i*sizeof(decltype(*upoints))),
+                     (float*)upoints, GL_STATIC_DRAW);
+
         RenderData::RenderElem re;
         re.vbo_quad = vbo_quad;
         re.vbo_pointa = vbo_pointa;
         re.vbo_pointb = vbo_pointb;
+        re.ubo_points = ubo;
         re.count = (i64)bounds_i;
         re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
         re.radius = stroke->brush.radius;
@@ -491,6 +526,15 @@ void gpu_render(RenderData* render_data)
             // TODO. Only set these uniforms when both are different from the ones in use.
             gl_set_uniform_vec4(render_data->program, "u_brush_color", 1, re.color.d);
             gl_set_uniform_i(render_data->program, "u_radius", re.radius);
+            GLuint uboi = glGetUniformBlockIndex(render_data->program, "StrokeUniformBlock");
+
+            if (uboi != GL_INVALID_INDEX)
+            {
+                GLuint binding_point = 0;
+                glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, re.ubo_points);
+                glUniformBlockBinding(render_data->program, uboi, binding_point);
+            }
+
 
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_quad) );
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,

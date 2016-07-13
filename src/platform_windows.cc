@@ -153,6 +153,7 @@ void milton_fatal(char* message)
 void milton_die_gracefully(char* message)
 {
     platform_dialog(message, "Fatal Error");
+    mlt_assert(!"break here");
     exit(EXIT_FAILURE);
 }
 

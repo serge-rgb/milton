@@ -68,11 +68,6 @@ vec2 canvas_to_raster_gl(vec2 cp)
 vec2 raster_to_canvas_gl(vec2 raster_point)
 {
     vec2 canvas_point = ((raster_point - u_screen_center) * u_scale) - VEC2(u_pan_vector);
-    //vec2 canvas_point = ((raster_point - u_screen_center) * u_scale) - u_pan_vector;
-    /* { */
-    /*     ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x, */
-    /*     ((raster_point.y - view->screen_center.y) * view->scale) - view->pan_vector.y, */
-    /* }; */
 
     return canvas_point;
 }

@@ -21,7 +21,6 @@ PFNGLDELETEPROGRAMPROC              glDeleteProgram;
 PFNGLDELETESHADERPROC               glDeleteShader;
 PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
 PFNGLDETACHSHADERPROC               glDetachShader;
-PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
 PFNGLGENBUFFERSPROC                 glGenBuffers;
 PFNGLGENVERTEXARRAYSPROC            glGenVertexArrays;
 PFNGLGETATTRIBLOCATIONPROC          glGetAttribLocation;
@@ -47,9 +46,17 @@ PFNGLUNIFORMMATRIX3FVPROC           glUniformMatrix3fv;
 PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC                 glUseProgram;
 PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
-PFNGLVERTEXATTRIBPOINTERPROC        glVertexAttribPointer;
+
+PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
+PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
+
 PFNGLVERTEXATTRIBIPOINTERPROC       glVertexAttribIPointer;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
+
+PFNGLGETUNIFORMBLOCKINDEXPROC       glGetUniformBlockIndex;
+PFNGLBINDBUFFERBASEPROC             glBindBufferBase;
+PFNGLUNIFORMBLOCKBINDINGPROC        glUniformBlockBinding;
+
 #endif  //_WIN32
 
 
@@ -77,7 +84,6 @@ bool load_gl_functions()
     GETADDRESS(glDeleteShader);
     GETADDRESS(glDeleteVertexArrays);
     GETADDRESS(glDetachShader);
-    GETADDRESS(glEnableVertexAttribArray);
     GETADDRESS(glGenBuffers);
     GETADDRESS(glGenVertexArrays);
     GETADDRESS(glGetAttribLocation);
@@ -102,10 +108,15 @@ bool load_gl_functions()
     GETADDRESS(glUniformMatrix4fv);
     GETADDRESS(glUseProgram);
     GETADDRESS(glValidateProgram);
+    GETADDRESS(glUniform1f);
+
     GETADDRESS(glVertexAttribPointer);
     GETADDRESS(glVertexAttribIPointer);
+    GETADDRESS(glEnableVertexAttribArray);
     GETADDRESS(glDisableVertexAttribArray);
-    GETADDRESS(glUniform1f);
+    GETADDRESS(glGetUniformBlockIndex);
+    GETADDRESS(glBindBufferBase);
+    GETADDRESS(glUniformBlockBinding);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

@@ -45,7 +45,7 @@ void   arena_pop_noclear(Arena* child);
 #define     arena_alloc_elem(arena, T)                  arena_alloc_elem_(arena, T, Arena_NONE)
 #define     arena_alloc_array(arena, count, T)          arena_alloc_array_(arena, count, T, Arena_NONE)
 #define     arena_available_space(arena)                ((arena)->size - (arena)->count)
-#define     ARENA_VALIDATE(arena)               mlt_assert ((arena)->num_children == 0)
+#define     ARENA_VALIDATE(arena)                       mlt_assert ((arena)->num_children == 0)
 
 enum ArenaAllocOpts
 {

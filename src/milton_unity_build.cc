@@ -36,11 +36,11 @@
 
 //#include "darray_test.cc"
 
+#include "gl_func_loader.cc"
 #include "utils.cc"
 #include "localization.cc"
 #include "gl_helpers.h"
 #include "gl_helpers.cc"
-#include "gl_func_loader.cc"
 #include "render_common.h"
 #include "canvas.h"
 #include "canvas.cc"
