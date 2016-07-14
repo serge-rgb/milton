@@ -47,7 +47,7 @@ static void milton_gl_backend_init(MiltonState* milton_state)
 
     // Create texture
     {
-         GLCHK (glActiveTexture (GL_TEXTURE0) );
+        GLCHK (glActiveTexture (GL_TEXTURE0) );
         // Create texture
         GLCHK (glGenTextures   (1, &milton_state->gl->texture));
         GLCHK (glBindTexture   (GL_TEXTURE_2D, milton_state->gl->texture));
@@ -418,6 +418,8 @@ void milton_set_default_canvas_file(MiltonState* milton_state)
 void milton_gl_backend_draw(MiltonState* milton_state)
 {
     MiltonGLState* gl = milton_state->gl;
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, gl->texture);
     u8* raster_buffer = milton_state->raster_buffer;
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                  milton_state->view->screen_size.w, milton_state->view->screen_size.h,

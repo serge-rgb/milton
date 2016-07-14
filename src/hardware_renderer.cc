@@ -215,7 +215,9 @@ struct RenderData
     GLuint stroke_program;
     GLuint quad_program;
 
-    GLuint vbo_quad; // VBO for the screen-covering quad.
+    // VBO for the screen-covering quad.
+    GLuint vbo_quad;
+    GLuint vbo_quad_uv;
 
     GLuint canvas_texture;
 
@@ -354,25 +356,46 @@ bool gpu_init(RenderData* render_data)
             1  , -1 , // d
         };
 
-        // Create buffer and upload
+        // Create buffers and upload
         GLuint vbo = 0;
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, array_count(quad_data)*sizeof(*quad_data), quad_data, GL_STATIC_DRAW);
 
+        GLfloat uv_data[] =
+        {
+            0,1,
+            0,0,
+            1,0,
+            1,1,
+        };
+        GLuint vbo_uv = 0;
+        glGenBuffers(1, &vbo_uv);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_uv);
+        glBufferData(GL_ARRAY_BUFFER, array_count(uv_data)*sizeof(*uv_data), uv_data, GL_STATIC_DRAW);
+
+
         render_data->vbo_quad = vbo;
+        render_data->vbo_quad_uv = vbo_uv;
 
         char vsrc[] =
                 "#version 120 \n"
                 "attribute vec2 a_point; \n"
+                "attribute vec2 a_uv; \n"
+                "varying vec2 v_uv; \n"
                 "void main() { \n"
+                    "v_uv = a_uv; \n"
                 "    gl_Position = vec4(a_point, 0,1); \n"
                 "} \n";
         char fsrc[] =
                 "#version 120 \n"
+                "uniform sampler2D u_canvas; \n"
+                "varying vec2 v_uv; \n"
                 "void main() \n"
                 "{ \n"
-                "gl_FragColor = vec4(1,0,1,1); \n"
+                    "vec4 color = texture2D(u_canvas, v_uv); \n"
+                    //"color = texture2D(u_canvas, vec2(0.5, 0.5)); \n"
+                    "gl_FragColor = vec4(color.rgb, 1); \n"
                 "} \n";
 
         GLuint objs[2] = {};
@@ -388,17 +411,18 @@ bool gpu_init(RenderData* render_data)
 void gpu_resize(RenderData* render_data, CanvasView* view)
 {
     // Create canvas texture
-    // TODO: Do this on a resize() function
+    // TODO: Recreate texture on resize
     if (render_data->canvas_texture == 0)
     {
-        GLuint tex = 0;
-        GLCHK (glGenTextures(1, &tex));
-        GLCHK (glBindTexture(GL_TEXTURE_2D, tex));
+        glActiveTexture(GL_TEXTURE2);
+        GLCHK (glGenTextures(1, &render_data->canvas_texture));
+        GLCHK (glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture));
 
 
         // TODO: Use 32-bit per channel data if we move toward multiple textures.
 
 
+#if 0
         // Find the next size that is a power of two.
         i32 pow_w = 0;
         i32 pow_h = 0;
@@ -408,35 +432,47 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
         if (1<<pow_h < view->screen_size.h) pow_h++;
         i32 tex_w = 1<<pow_w;
         i32 tex_h = 1<<pow_h;
+#else
+        // OpenGL 2.1+ lets us have non-power-of-two textures
+        i32 tex_w = view->screen_size.w;
+        i32 tex_h = view->screen_size.h;
+#endif
 
         size_t sz = (size_t)(tex_w*tex_h*4);
 
         u32* color_buffer = (u32*)mlt_calloc(1, sz);
 
-        b32 parity = 1;
-        for (i32 y=0; y < view->screen_size.h; ++y)
+
+        if (color_buffer)
         {
-            for (i32 x = 0; x < view->screen_size.w; ++x)
+            b32 parity = 1;
+            for (i32 y=0; y < tex_h; ++y)
             {
-                u32 color = parity? 0xffffffff : 0x000000ff;
-                color_buffer[y*view->screen_size.w + x] = color;
-                parity = (parity+1)%2;
+                for (i32 x = 0; x < tex_w; ++x)
+                {
+                    u32 color = parity? 0xffff00ff : 0xff00ff00;
+                    color_buffer[y*tex_w + x] = color;
+                    parity = (parity+1)%2;
+                }
             }
+
+            GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA,
+                                tex_w, tex_h,
+                                /*border*/0, /*pixel_data_format*/GL_RGBA,
+                                /*component type*/GL_UNSIGNED_BYTE, (GLvoid*)color_buffer));
+
+            GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+            GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+            GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+            GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+            mlt_free(color_buffer);
         }
-
-        GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                            tex_w, tex_h,
-                            0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)color_buffer));
-
-        // Note for the future: These are needed.
-        // TODO: are these still needed? :)
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-
-        render_data->canvas_texture = tex;
-        mlt_free(color_buffer);
+        else
+        {
+            // TODO: handle out of memory error
+            mlt_assert(color_buffer);
+        }
     }
 }
 
@@ -636,9 +672,23 @@ void gpu_render(RenderData* render_data)
     {
         // Bind canvas texture.
         glUseProgram(render_data->quad_program);
+        gl_set_uniform_i(render_data->quad_program, "u_canvas", /*GL_TEXTURE1*/2);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
         GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
         if (loc >= 0)
         {
+            GLint loc_uv = glGetAttribLocation(render_data->quad_program, "a_uv");
+            if (loc_uv >=0)
+            {
+                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv) );
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_uv,
+                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                glEnableVertexAttribArray((GLuint)loc_uv);
+            }
+
+
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,

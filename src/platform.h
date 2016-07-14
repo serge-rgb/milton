@@ -44,7 +44,7 @@ HRESULT WINAPI SetProcessDpiAwareness(
 #if defined(_WIN32)
 #define BIT_SCAN_REVERSE(v, i) _BitScanReverse((DWORD*)&(i), (DWORD)(v))
 #else
-#error "Please define BIT_SCAN_REVERSE"
+// TODO: Are we using this?
 #endif
 
 struct SDL_Cursor;
