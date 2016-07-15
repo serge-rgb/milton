@@ -152,6 +152,7 @@ StrokeUniformData u_stroke;
 #include "milton_canvas.v.glsl"
 #undef main
 #define main fragmentShaderMain
+#define sampler2D int
 #include "milton_canvas.f.glsl"
 #pragma warning (pop)
 #undef main
@@ -162,6 +163,7 @@ StrokeUniformData u_stroke;
 #undef in
 #undef out
 #undef flat
+#undef sampler2D
 #endif //MILTON_DEBUG
 
 // Milton GPU renderer.
@@ -220,6 +222,8 @@ struct RenderData
     GLuint vbo_quad_uv;
 
     GLuint canvas_texture;
+
+    GLuint fbo;
 
     // Draw data for single stroke
     struct RenderElem
@@ -292,7 +296,7 @@ char* debug_load_shader_from_file(PATH_CHAR* path, size_t* out_size)
 #endif
 
 
-bool gpu_init(RenderData* render_data)
+bool gpu_init(RenderData* render_data, CanvasView* view)
 {
     mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
     // TODO: Handle this. New MLT version?
@@ -394,8 +398,7 @@ bool gpu_init(RenderData* render_data)
                 "void main() \n"
                 "{ \n"
                     "vec4 color = texture2D(u_canvas, v_uv); \n"
-                    //"color = texture2D(u_canvas, vec2(0.5, 0.5)); \n"
-                    "gl_FragColor = vec4(color.rgb, 1); \n"
+                    "gl_FragColor = color; \n"
                 "} \n";
 
         GLuint objs[2] = {};
@@ -405,74 +408,149 @@ bool gpu_init(RenderData* render_data)
         gl_link_program(render_data->quad_program, objs, array_count(objs));
     }
 
+    // Framebuffer object for canvas
+    {
+        GLCHK (glGenTextures(1, &render_data->canvas_texture));
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+
+        GLCHK( glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
+                            view->screen_size.w, view->screen_size.h,
+                            /*border*/0, /*pixel_data_format*/GL_BGRA,
+                            /*component type*/GL_UNSIGNED_BYTE, NULL) );
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+        GLuint fbo = 0;
+        glGenFramebuffersEXT(1, &fbo);
+        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+        GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D,
+                                         render_data->canvas_texture, 0) );
+        GLuint depth_rb = 0;
+        glGenRenderbuffersEXT(1, &depth_rb);
+        GLCHK( glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, depth_rb) );
+        GLCHK( glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, 256, 256) );
+        GLCHK( glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
+                                            GL_RENDERBUFFER_EXT, depth_rb) );
+
+        GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+        char* msg = NULL;
+        switch (status)
+        {
+        case GL_FRAMEBUFFER_COMPLETE_EXT:
+            {
+                // OK!
+                break;
+            }
+        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
+            {
+                msg = "Incomplete Attachment";
+                break;
+            }
+        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+            {
+                msg = "Missing Attachment";
+                break;
+            }
+        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+            {
+                msg = "Incomplete Draw Buffer";
+                break;
+            }
+        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+            {
+                msg = "Incompelte Read Buffer";
+                break;
+            }
+        case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+            {
+                msg = "Unsupported Framebuffer";
+                break;
+            }
+        default:
+            {
+                msg = "Unknown";
+                break;
+            }
+        }
+
+        if (status != GL_FRAMEBUFFER_COMPLETE_EXT)
+        {
+            char error[1024];
+            snprintf(error, "Framebuffer Error: %s", msg);
+            milton_die_gracefully(error);
+        }
+
+        render_data->fbo = fbo;
+    }
+
     return result;
 }
 
 void gpu_resize(RenderData* render_data, CanvasView* view)
 {
     // Create canvas texture
-    // TODO: Recreate texture on resize
-    if (render_data->canvas_texture == 0)
-    {
-        glActiveTexture(GL_TEXTURE2);
-        GLCHK (glGenTextures(1, &render_data->canvas_texture));
-        GLCHK (glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture));
+    glActiveTexture(GL_TEXTURE2);
+    GLCHK (glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture));
 
 
-        // TODO: Use 32-bit per channel data if we move toward multiple textures.
+    // TODO: Use 32-bit per channel data if we move toward multiple textures.
 
 
 #if 0
-        // Find the next size that is a power of two.
-        i32 pow_w = 0;
-        i32 pow_h = 0;
-        BIT_SCAN_REVERSE(view->screen_size.w, pow_w);
-        BIT_SCAN_REVERSE(view->screen_size.h, pow_h);
-        if (1<<pow_w < view->screen_size.w) pow_w++;
-        if (1<<pow_h < view->screen_size.h) pow_h++;
-        i32 tex_w = 1<<pow_w;
-        i32 tex_h = 1<<pow_h;
+    // Find the next size that is a power of two.
+    i32 pow_w = 0;
+    i32 pow_h = 0;
+    BIT_SCAN_REVERSE(view->screen_size.w, pow_w);
+    BIT_SCAN_REVERSE(view->screen_size.h, pow_h);
+    if (1<<pow_w < view->screen_size.w) pow_w++;
+    if (1<<pow_h < view->screen_size.h) pow_h++;
+    i32 tex_w = 1<<pow_w;
+    i32 tex_h = 1<<pow_h;
 #else
-        // OpenGL 2.1+ lets us have non-power-of-two textures
-        i32 tex_w = view->screen_size.w;
-        i32 tex_h = view->screen_size.h;
+    // OpenGL 2.1+ lets us have non-power-of-two textures
+    i32 tex_w = view->screen_size.w;
+    i32 tex_h = view->screen_size.h;
 #endif
 
-        size_t sz = (size_t)(tex_w*tex_h*4);
+    size_t sz = (size_t)(tex_w*tex_h*4);
 
-        u32* color_buffer = (u32*)mlt_calloc(1, sz);
+    u32* color_buffer = (u32*)mlt_calloc(1, sz);
 
 
-        if (color_buffer)
+    if (color_buffer)
+    {
+        b32 parity = 1;
+        for (i32 y=0; y < tex_h; ++y)
         {
-            b32 parity = 1;
-            for (i32 y=0; y < tex_h; ++y)
+            for (i32 x = 0; x < tex_w; ++x)
             {
-                for (i32 x = 0; x < tex_w; ++x)
-                {
-                    u32 color = parity? 0xffff00ff : 0xff00ff00;
-                    color_buffer[y*tex_w + x] = color;
-                    parity = (parity+1)%2;
-                }
+                u32 color = parity? 0xffff00ff : 0xff00ff00;
+                color_buffer[y*tex_w + x] = color;
+                parity = (parity+1)%2;
             }
-
-            GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA,
-                                tex_w, tex_h,
-                                /*border*/0, /*pixel_data_format*/GL_RGBA,
-                                /*component type*/GL_UNSIGNED_BYTE, (GLvoid*)color_buffer));
-
-            GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-            GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-            GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-            GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-
-            mlt_free(color_buffer);
         }
-        else
-        {
-            // TODO: handle out of memory error
-            mlt_assert(color_buffer);
-        }
+
+        GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
+                            tex_w, tex_h,
+                            /*border*/0, /*pixel_data_format*/GL_BGRA,
+                            /*component type*/GL_UNSIGNED_BYTE, (GLvoid*)color_buffer));
+
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+        mlt_free(color_buffer);
+
+        gl_set_uniform_i(render_data->quad_program, "u_canvas", /*GL_TEXTURE1*/2);
+    }
+    else
+    {
+        // TODO: handle out of memory error
+        mlt_assert(color_buffer);
     }
 }
 
@@ -632,6 +710,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
 void gpu_render(RenderData* render_data)
 {
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, render_data->fbo);
     // Draw the canvas
     {
         GLCHK( glUseProgram(render_data->stroke_program) );
@@ -668,13 +747,15 @@ void gpu_render(RenderData* render_data)
         }
     }
 
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
     // Render quad for whole screen.
     {
         // Bind canvas texture.
         glUseProgram(render_data->quad_program);
-        gl_set_uniform_i(render_data->quad_program, "u_canvas", /*GL_TEXTURE1*/2);
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+
         GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
         if (loc >= 0)
         {

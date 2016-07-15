@@ -57,6 +57,15 @@ PFNGLGETUNIFORMBLOCKINDEXPROC       glGetUniformBlockIndex;
 PFNGLBINDBUFFERBASEPROC             glBindBufferBase;
 PFNGLUNIFORMBLOCKBINDINGPROC        glUniformBlockBinding;
 
+PFNGLGENFRAMEBUFFERSEXTPROC      glGenFramebuffersEXT;
+PFNGLBINDFRAMEBUFFEREXTPROC      glBindFramebufferEXT;
+PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT;
+
+PFNGLGENRENDERBUFFERSEXTPROC glGenRenderbuffersEXT;
+PFNGLBINDRENDERBUFFEREXTPROC glBindRenderbufferEXT;
+PFNGLRENDERBUFFERSTORAGEEXTPROC glRenderbufferStorageEXT;
+PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbufferEXT;
+PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT;
 #endif  //_WIN32
 
 
@@ -117,6 +126,15 @@ bool load_gl_functions()
     GETADDRESS(glGetUniformBlockIndex);
     GETADDRESS(glBindBufferBase);
     GETADDRESS(glUniformBlockBinding);
+
+    GETADDRESS(glGenFramebuffersEXT);
+    GETADDRESS(glBindFramebufferEXT);
+    GETADDRESS(glFramebufferTexture2DEXT);
+    GETADDRESS(glGenRenderbuffersEXT);
+    GETADDRESS(glBindRenderbufferEXT);
+    GETADDRESS(glRenderbufferStorageEXT);
+    GETADDRESS(glFramebufferRenderbufferEXT);
+    GETADDRESS(glCheckFramebufferStatusEXT);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

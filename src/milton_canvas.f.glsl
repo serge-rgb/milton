@@ -4,6 +4,9 @@
 // TODO: this layout qualifier introduces GLSL 150 dependency.
 layout(origin_upper_left) in vec4 gl_FragCoord;
 
+uniform sampler2D u_canvas;
+
+
 #define PRESSURE_RESOLUTION_GL (1<<20)
 
 //  TODO: Uniform buffer objets are our only relatively non-hairy choice.  Any
@@ -81,7 +84,7 @@ void main()
             float pressure_b = u_stroke.points[point_i+1].z;
             float pressure = (1-t)*pressure_a + t*pressure_b;
             pressure /= float(PRESSURE_RESOLUTION_GL);
-            float radius = pressure *  u_radius;
+            float radius = pressure * u_radius;
             bool inside = d < radius;
             if (inside && d < min_dist)
             {

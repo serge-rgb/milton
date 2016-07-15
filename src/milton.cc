@@ -575,10 +575,13 @@ void milton_init(MiltonState* milton_state)
     gui_init(milton_state->root_arena, milton_state->gui);
 
     milton_gl_backend_init(milton_state);
-    gpu_init(milton_state->render_data);
 
     milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
     milton_set_default_view(milton_state->view);
+
+    // TODO: Resolve this circular dependency between gpu_init and CanvasView.background_color
+    gpu_init(milton_state->render_data, milton_state->view);
+
     milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
 
 
