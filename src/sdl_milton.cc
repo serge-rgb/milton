@@ -611,14 +611,12 @@ int milton_main()
         platform_state.height = prefs.height;
     }
 
-#if MILTON_DEBUG
-    // Use a higher GL context for debugging.
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#if MILTON_DEBUG
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-#else
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #endif
 
     SDL_Window* window = SDL_CreateWindow("Milton",
@@ -641,6 +639,7 @@ int milton_main()
 
     SDL_GL_SetSwapInterval(1);
 
+
     if (!load_gl_functions())
     {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
@@ -648,6 +647,8 @@ int milton_main()
 
     milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+
 
     // ==== Initialize milton
     //  Total (static) memory requirement for Milton

@@ -57,15 +57,15 @@ PFNGLGETUNIFORMBLOCKINDEXPROC       glGetUniformBlockIndex;
 PFNGLBINDBUFFERBASEPROC             glBindBufferBase;
 PFNGLUNIFORMBLOCKBINDINGPROC        glUniformBlockBinding;
 
-PFNGLGENFRAMEBUFFERSEXTPROC      glGenFramebuffersEXT;
-PFNGLBINDFRAMEBUFFEREXTPROC      glBindFramebufferEXT;
-PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT;
+PFNGLGENFRAMEBUFFERSPROC      glGenFramebuffers;
+PFNGLBINDFRAMEBUFFERPROC      glBindFramebuffer;
+PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
 
-PFNGLGENRENDERBUFFERSEXTPROC glGenRenderbuffersEXT;
-PFNGLBINDRENDERBUFFEREXTPROC glBindRenderbufferEXT;
-PFNGLRENDERBUFFERSTORAGEEXTPROC glRenderbufferStorageEXT;
-PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbufferEXT;
-PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT;
+PFNGLGENRENDERBUFFERSPROC glGenRenderbuffers;
+PFNGLBINDRENDERBUFFERPROC glBindRenderbuffer;
+PFNGLRENDERBUFFERSTORAGEPROC glRenderbufferStorage;
+PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
+PFNGLCHECKFRAMEBUFFERSTATUSPROC glCheckFramebufferStatus;
 
 typedef void (*PFNGLGLMEMORYBARRIEREXTPROC) (GLbitfield barriers);
 PFNGLGLMEMORYBARRIEREXTPROC glMemoryBarrierEXT;
@@ -134,18 +134,18 @@ bool load_gl_functions()
     GETADDRESS(glBindBufferBase);
     GETADDRESS(glUniformBlockBinding);
 
-    GETADDRESS(glGenFramebuffersEXT);
-    GETADDRESS(glBindFramebufferEXT);
-    GETADDRESS(glFramebufferTexture2DEXT);
-    GETADDRESS(glGenRenderbuffersEXT);
-    GETADDRESS(glBindRenderbufferEXT);
-    GETADDRESS(glRenderbufferStorageEXT);
-    GETADDRESS(glFramebufferRenderbufferEXT);
-    GETADDRESS(glCheckFramebufferStatusEXT);
+    GETADDRESS(glGenFramebuffers);
+    GETADDRESS(glBindFramebuffer);
+    GETADDRESS(glFramebufferTexture2D);
+    GETADDRESS(glGenRenderbuffers);
+    GETADDRESS(glBindRenderbuffer);
+    GETADDRESS(glRenderbufferStorage);
+    GETADDRESS(glFramebufferRenderbuffer);
+    GETADDRESS(glCheckFramebufferStatus);
 
     GETADDRESS(glMemoryBarrierEXT);
 
-    GETADDRESS(glTextureBarrier);
+    //GETADDRESS(glTextureBarrier);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

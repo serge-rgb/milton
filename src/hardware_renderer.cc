@@ -301,6 +301,56 @@ char* debug_load_shader_from_file(PATH_CHAR* path, size_t* out_size)
 }
 #endif
 
+static void print_framebuffer_status()
+{
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    char* msg = NULL;
+    switch (status)
+    {
+    case GL_FRAMEBUFFER_COMPLETE:
+        {
+            // OK!
+            break;
+        }
+    case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+        {
+            msg = "Incomplete Attachment";
+            break;
+        }
+    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+        {
+            msg = "Missing Attachment";
+            break;
+        }
+    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+        {
+            msg = "Incomplete Draw Buffer";
+            break;
+        }
+    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+        {
+            msg = "Incomplete Read Buffer";
+            break;
+        }
+    case GL_FRAMEBUFFER_UNSUPPORTED:
+        {
+            msg = "Unsupported Framebuffer";
+            break;
+        }
+    default:
+        {
+            msg = "Unknown";
+            break;
+        }
+    }
+
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        char warning[1024];
+        snprintf(warning, "Framebuffer Error: %s", msg);
+        milton_log("Warning %s\n", warning);
+    }
+}
 
 bool gpu_init(RenderData* render_data, CanvasView* view)
 {
@@ -426,76 +476,76 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-        u8* foo = (u8*)mlt_calloc(1, (size_t)(view->screen_size.w*view->screen_size.h*8));
         glTexImage2D(GL_TEXTURE_2D,
                      0, GL_RGBA,
                      view->screen_size.w, view->screen_size.h,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         glBindTexture(GL_TEXTURE_2D, 0);
-        //GLCHK( glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
-        //                    view->screen_size.w, view->screen_size.h,
-        //                    /*border*/0, /*pixel_data_format*/GL_BGRA,
-        //                    /*component type*/GL_UNSIGNED_BYTE,
-        //                    foo) );
-        //                    //NULL) );
-        mlt_free(foo);
+
+
+#if 1
+        GLuint stencil_texture = 0;
+
+        glActiveTexture(GL_TEXTURE3);
+        glGenTextures(1, &stencil_texture);
+        glBindTexture(GL_TEXTURE_2D, stencil_texture);
+
+
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+        glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        GLCHK( glTexImage2D(GL_TEXTURE_2D, 0,
+                            /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
+                            view->screen_size.w, view->screen_size.h,
+                            /*border*/0, /*pixel_data_format*/GL_DEPTH_STENCIL,
+                            /*component type*/GL_UNSIGNED_INT_24_8,
+                            NULL) );
+        glBindTexture(GL_TEXTURE_2D, 0);
+#endif
+
+    int depth_size;
+    GLCHK( glGetIntegerv(GL_DEPTH_BITS, &depth_size) );
+    int stencil_size;
+    GLCHK( glGetIntegerv(GL_STENCIL_BITS, &stencil_size) );
+#if 0
+        GLuint rbo = 0;
+        glGenRenderbuffers(1, &rbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, view->screen_size.w, view->screen_size.h);
+        glBindRenderbufferARB(GL_RENDERBUFFER_ARB, 0);
+#endif
 
         GLuint fbo = 0;
-        glGenFramebuffersEXT(1, &fbo);
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
-        GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D,
-                                         render_data->canvas_texture, 0) );
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
 
-        GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-        char* msg = NULL;
-        switch (status)
-        {
-        case GL_FRAMEBUFFER_COMPLETE_EXT:
-            {
-                // OK!
-                break;
-            }
-        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
-            {
-                msg = "Incomplete Attachment";
-                break;
-            }
-        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
-            {
-                msg = "Missing Attachment";
-                break;
-            }
-        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
-            {
-                msg = "Incomplete Draw Buffer";
-                break;
-            }
-        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
-            {
-                msg = "Incomplete Read Buffer";
-                break;
-            }
-        case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
-            {
-                msg = "Unsupported Framebuffer";
-                break;
-            }
-        default:
-            {
-                msg = "Unknown";
-                break;
-            }
-        }
+#if 1
+        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
+        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
+#else
+        GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT , GL_RENDERBUFFER, rbo) );
+        GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo) );
+#endif
+        //GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
+        //GLCHK( glFramebufferRenderbufferARB(GL_FRAMEBUFFER_ARB, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_ARB, rbo) );
+        //GLCHK( glFramebufferRenderbufferARB(GL_FRAMEBUFFER_ARB, GL_STENCIL_ATTACHMENT_ARB, GL_RENDERBUFFER_ARB, rbo) );
 
-        if (status != GL_FRAMEBUFFER_COMPLETE_EXT)
-        {
-            char warning[1024];
-            snprintf(warning, "Framebuffer Error: %s", msg);
 
-        }
-
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDrawBuffer(GL_NONE);
+        /* glReadBuffer(GL_NONE); */
+        print_framebuffer_status();
+        glDrawBuffer(GL_BACK);
         render_data->fbo = fbo;
     }
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
 
     return result;
 }
@@ -764,12 +814,13 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
 void gpu_render(RenderData* render_data)
 {
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, render_data->fbo);
-    //glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    print_framebuffer_status();
+    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
+    //glBindFramebufferARB(GL_FRAMEBUFFER_ARB, 0);
     // Draw the canvas
     {
         GLCHK( glUseProgram(render_data->stroke_program) );
-        glClear(GL_COLOR_BUFFER_BIT);
+        GLCHK( glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT) );
         GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
         GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
         GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
@@ -832,7 +883,7 @@ void gpu_render(RenderData* render_data)
                 GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
                 glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
-                /* glMemoryBarrierEXT(GL_PIXEL_BUFFER_BARRIER_BIT_EXT); */
+                /* glMemoryBarrierARB(GL_PIXEL_BUFFER_BARRIER_BIT_ARB); */
                 /* glTextureBarrier(); */
                 glDrawArrays(GL_TRIANGLES, 0, count);
 
@@ -840,7 +891,7 @@ void gpu_render(RenderData* render_data)
         }
     }
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // Render quad for whole screen.
     {
@@ -868,7 +919,7 @@ void gpu_render(RenderData* render_data)
                                          /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
                                          /*stride*/0, /*ptr*/0));
             glEnableVertexAttribArray((GLuint)loc);
-            glDrawArrays(GL_TRIANGLE_FAN,0,4);
+            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
 
     }
