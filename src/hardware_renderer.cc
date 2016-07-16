@@ -233,6 +233,8 @@ struct RenderData
     struct RenderElem
     {
         GLuint  vbo_stroke;
+        GLuint  vbo_pointa;
+        GLuint  vbo_pointb;
 
         GLuint ubo_stroke;
 
@@ -648,15 +650,32 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         const size_t count_upoints = (size_t)npoints;
 
         v2i* bounds;
+        v3i* apoints;
+        v3i* bpoints;
         StrokeUniformData* uniform_data;
-        Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds)) + sizeof(StrokeUniformData));
+        Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
+                                         + sizeof(StrokeUniformData)
+                                         + 2*count_points*sizeof(decltype(*apoints)));
 
         bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
+        apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
+        bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
         uniform_data = arena_alloc_elem(&scratch_arena, StrokeUniformData);
 
         size_t bounds_i = 0;
+        size_t apoints_i = 0;
+        size_t bpoints_i = 0;
         for (i64 i=0; i < npoints-1; ++i)
         {
+
+
+            // ================== TODO: REMOVE HARDCODED LIMIT TO STROKES
+
+
+            if (i >= 256)
+            {
+                break;
+            }
             v2i point_i = stroke->points[i];
             v2i point_j = stroke->points[i+1];
 
@@ -685,6 +704,13 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             i32 pressure_a = (i32)(stroke->pressures[i] * (float)(PRESSURE_RESOLUTION));
             i32 pressure_b = (i32)(stroke->pressures[i+1] * (float)(PRESSURE_RESOLUTION));
 
+            // one for every point in the triangle.
+            for (int repeat = 0; repeat < 6; ++repeat)
+            {
+                apoints[apoints_i++] = { point_i.x, point_i.y, pressure_a };
+                bpoints[bpoints_i++] = { point_j.x, point_j.y, pressure_b };
+            }
+
             uniform_data->points[uniform_data->count++] = IVEC4( point_i.x, point_i.y, pressure_a, 0 );
             if (i == npoints-2)
             {
@@ -692,17 +718,29 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
             }
         }
 
-        mlt_assert(bounds_i == count_bounds);
+        //mlt_assert(bounds_i == count_bounds);
 
         GLuint vbo_stroke = 0;
         glGenBuffers(1, &vbo_stroke);
         glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
         // Upload to GL
-        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))),
-                            bounds,
-                            GL_STATIC_DRAW) );
+        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), bounds, GL_STATIC_DRAW) );
+
+        GLuint vbo_pointa = 0;
+        glGenBuffers(1, &vbo_pointa);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_pointa);
+        // Upload to GL
+        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), apoints, GL_STATIC_DRAW) );
+
+        GLuint vbo_pointb = 0;
+        glGenBuffers(1, &vbo_pointb);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_pointb);
+        // Upload to GL
+        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), bpoints, GL_STATIC_DRAW) );
 
 
+//        GLuint vbo_pointa = upload_buffer((int*)apoints, apoints_i*sizeof(decltype(*apoints)));
+ //       GLuint vbo_pointb = upload_buffer((int*)bpoints, bpoints_i*sizeof(decltype(*bpoints)));
         // Uniform buffer block for point array.
         GLuint ubo = 0;
 
@@ -713,6 +751,8 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
         RenderData::RenderElem re;
         re.vbo_stroke = vbo_stroke;
+        re.vbo_pointa = vbo_pointa;
+        re.vbo_pointb = vbo_pointb;
         re.ubo_stroke = ubo;
         re.count = (i64)bounds_i;
         re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
@@ -728,10 +768,14 @@ void gpu_render(RenderData* render_data)
     // Draw the canvas
     {
         GLCHK( glUseProgram(render_data->stroke_program) );
+        glClear(GL_COLOR_BUFFER_BIT);
         GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
+        GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
+        GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
         if (loc >= 0)
         {
-            for (size_t i = 0; i < render_data->render_elems.count; ++i)
+            //for (size_t i = 0; i < render_data->render_elems.count; ++i)
+            for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
             {
                 auto re = render_data->render_elems.data[i];
                 i64 count = re.count;
@@ -750,17 +794,46 @@ void gpu_render(RenderData* render_data)
                 }
 
 
+                if (loc_a >=0)
+                {
+                    GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_pointa) );
+#if 0
+                    GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_a,
+                                                  /*size*/3, GL_INT,
+                                                  /*stride*/0, /*ptr*/0));
+#else
+                    GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_a,
+                                                 /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                                 /*stride*/0, /*ptr*/0));
+#endif
+                    GLCHK( glEnableVertexAttribArray((GLuint)loc_a) );
+                }
+                if (loc_b >=0)
+                {
+                    GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_pointb) );
+#if 0
+                    GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
+                                                  /*size*/3, GL_INT,
+                                                  /*stride*/0, /*ptr*/0));
+#else
+                    GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_b,
+                                                 /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                                 /*stride*/0, /*ptr*/0));
+#endif
+                    GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
+                }
+
+
                 GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_stroke) );
                 GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                              /*size*/2, GL_INT, /*normalize*/GL_FALSE,
                                              /*stride*/0, /*ptr*/0));
                 GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
+                glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
+                //glMemoryBarrierEXT(GL_PIXEL_BUFFER_BARRIER_BIT_EXT);
                 glDrawArrays(GL_TRIANGLES, 0, count);
 
-                // TODO: is there any way to avoid the memory barrier in order to lower the GL requirements?
-                glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
-                /* glTextureBarrier(); */
             }
         }
     }

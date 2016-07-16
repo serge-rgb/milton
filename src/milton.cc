@@ -1436,7 +1436,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     PROFILE_GRAPH_PUSH(update);
-    milton_render(milton_state, render_flags, input->pan_delta);
+    // milton_render(milton_state, render_flags, input->pan_delta);
 
 cleanup:
     if (!(milton_state->flags & MiltonStateFlags_RUNNING))
