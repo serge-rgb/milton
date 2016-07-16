@@ -165,7 +165,7 @@ static PATH_CHAR* win32_filter_strings_image =
     L"\0";
 
 static PATH_CHAR* win32_filter_strings_milton =
-    L"MLT file\0" "*.mlt\0"
+    L"MLT file\0" L"*.mlt\0"
     L"\0";
 
 void win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)

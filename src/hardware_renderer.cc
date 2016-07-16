@@ -368,10 +368,10 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
 
         GLfloat uv_data[] =
         {
-            0,1,
             0,0,
-            1,0,
+            0,1,
             1,1,
+            1,0,
         };
         GLuint vbo_uv = 0;
         glGenBuffers(1, &vbo_uv);
@@ -410,30 +410,34 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
 
     // Framebuffer object for canvas
     {
-        GLCHK (glGenTextures(1, &render_data->canvas_texture));
         glActiveTexture(GL_TEXTURE2);
+        GLCHK (glGenTextures(1, &render_data->canvas_texture));
         glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
 
-        GLCHK( glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
-                            view->screen_size.w, view->screen_size.h,
-                            /*border*/0, /*pixel_data_format*/GL_BGRA,
-                            /*component type*/GL_UNSIGNED_BYTE, NULL) );
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+
+        u8* foo = (u8*)mlt_calloc(1, (size_t)(view->screen_size.w*view->screen_size.h*8));
+        glTexImage2D(GL_TEXTURE_2D,
+                     0, GL_RGBA,
+                     view->screen_size.w, view->screen_size.h,
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        //GLCHK( glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
+        //                    view->screen_size.w, view->screen_size.h,
+        //                    /*border*/0, /*pixel_data_format*/GL_BGRA,
+        //                    /*component type*/GL_UNSIGNED_BYTE,
+        //                    foo) );
+        //                    //NULL) );
+        mlt_free(foo);
 
         GLuint fbo = 0;
         glGenFramebuffersEXT(1, &fbo);
         glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
         GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D,
                                          render_data->canvas_texture, 0) );
-        GLuint depth_rb = 0;
-        glGenRenderbuffersEXT(1, &depth_rb);
-        GLCHK( glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, depth_rb) );
-        GLCHK( glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, 256, 256) );
-        GLCHK( glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
-                                            GL_RENDERBUFFER_EXT, depth_rb) );
 
         GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
         char* msg = NULL;
@@ -461,7 +465,7 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
             }
         case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
             {
-                msg = "Incompelte Read Buffer";
+                msg = "Incomplete Read Buffer";
                 break;
             }
         case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
@@ -478,9 +482,9 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
 
         if (status != GL_FRAMEBUFFER_COMPLETE_EXT)
         {
-            char error[1024];
-            snprintf(error, "Framebuffer Error: %s", msg);
-            milton_die_gracefully(error);
+            char warning[1024];
+            snprintf(warning, "Framebuffer Error: %s", msg);
+
         }
 
         render_data->fbo = fbo;
