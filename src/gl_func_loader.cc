@@ -145,7 +145,7 @@ bool load_gl_functions()
 
     GETADDRESS(glMemoryBarrierEXT);
 
-    /* GETADDRESS(glTextureBarrier); */
+    GETADDRESS(glTextureBarrier);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

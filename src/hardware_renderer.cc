@@ -765,6 +765,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 void gpu_render(RenderData* render_data)
 {
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, render_data->fbo);
+    //glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
     // Draw the canvas
     {
         GLCHK( glUseProgram(render_data->stroke_program) );
@@ -831,7 +832,8 @@ void gpu_render(RenderData* render_data)
                 GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
                 glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
-                //glMemoryBarrierEXT(GL_PIXEL_BUFFER_BARRIER_BIT_EXT);
+                /* glMemoryBarrierEXT(GL_PIXEL_BUFFER_BARRIER_BIT_EXT); */
+                /* glTextureBarrier(); */
                 glDrawArrays(GL_TRIANGLES, 0, count);
 
             }
