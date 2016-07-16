@@ -133,6 +133,8 @@ float distance(vec2 a, vec2 b)
     if (d > 0) d = sqrtf(d);
     return d;
 }
+
+static vec2 gl_PointCoord;
 static vec4 gl_FragColor;
 
 // Conforming to std140 layout.
@@ -148,13 +150,15 @@ StrokeUniformData u_stroke;
 #pragma warning (disable : 4668)
 #pragma warning (disable : 4200)
 #define buffer struct
-#include "common.glsl"
-#include "milton_canvas.v.glsl"
+//#include "common.glsl"
+//#include "milton_canvas.v.glsl"
 #undef main
 #define main fragmentShaderMain
+#define texture2D(a,b) VEC4(0)
 #define sampler2D int
-#include "milton_canvas.f.glsl"
+//#include "milton_canvas.f.glsl"
 #pragma warning (pop)
+#undef texture2D
 #undef main
 #undef attribute
 #undef uniform
@@ -298,7 +302,7 @@ char* debug_load_shader_from_file(PATH_CHAR* path, size_t* out_size)
 
 bool gpu_init(RenderData* render_data, CanvasView* view)
 {
-    mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
+    //mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
     // TODO: Handle this. New MLT version?
     // mlt_assert(STROKE_MAX_POINTS == STROKE_MAX_POINTS_GL);
 
@@ -343,6 +347,7 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         gl_link_program(render_data->stroke_program, objs, array_count(objs));
 
         GLCHK( glUseProgram(render_data->stroke_program) );
+        gl_set_uniform_i(render_data->stroke_program, "u_canvas", /*GL_TEXTURE1*/2);
     }
 
     // Quad for screen!
@@ -531,7 +536,8 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
         {
             for (i32 x = 0; x < tex_w; ++x)
             {
-                u32 color = parity? 0xffff00ff : 0xff00ff00;
+                //u32 color = parity? 0xffff00ff : 0xff00ff00;
+                u32 color = 0xff000000;
                 color_buffer[y*tex_w + x] = color;
                 parity = (parity+1)%2;
             }
@@ -561,7 +567,8 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
 void gpu_update_scale(RenderData* render_data, i32 scale)
 {
 #if MILTON_DEBUG // set the shader values in C++
-    u_scale = scale;
+    // Shader
+    // u_scale = scale;
 #endif
     gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
 }
@@ -569,7 +576,8 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
 static void gpu_set_background(RenderData* render_data, v3f background_color)
 {
 #if MILTON_DEBUG
-    for(int i=0;i<3;++i) u_background_color.d[i] = background_color.d[i];
+    // SHADER
+    // for(int i=0;i<3;++i) u_background_color.d[i] = background_color.d[i];
 #endif
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
 }
@@ -578,10 +586,11 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 {
 #if MILTON_DEBUG // set the shader values in C++
 #define COPY_VEC(a,b) a.x = b.x; a.y = b.y;
-    COPY_VEC( u_pan_vector, view->pan_vector );
-    COPY_VEC( u_screen_center, view->screen_center );
-    COPY_VEC( u_screen_size, view->screen_size );
-    u_scale = view->scale;
+    // SHADER
+    //COPY_VEC( u_pan_vector, view->pan_vector );
+    //COPY_VEC( u_screen_center, view->screen_center );
+    //COPY_VEC( u_screen_size, view->screen_size );
+    //u_scale = view->scale;
 #undef COPY_VEC
 #endif
     glUseProgram(render_data->stroke_program);
@@ -598,10 +607,11 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
     cp.x = stroke->points[stroke->num_points-1].x;
     cp.y = stroke->points[stroke->num_points-1].y;
 #if MILTON_DEBUG
-    if (u_scale != 0)
-    {
-        canvas_to_raster_gl(cp);
-    }
+    // SHADER
+    //if (u_scale != 0)
+    //{
+    //    canvas_to_raster_gl(cp);
+    //}
 #endif
     //
     // Note.
@@ -747,6 +757,10 @@ void gpu_render(RenderData* render_data)
                 GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
                 glDrawArrays(GL_TRIANGLES, 0, count);
+
+                // TODO: is there any way to avoid the memory barrier in order to lower the GL requirements?
+                glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
+                /* glTextureBarrier(); */
             }
         }
     }

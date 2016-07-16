@@ -66,6 +66,13 @@ PFNGLBINDRENDERBUFFEREXTPROC glBindRenderbufferEXT;
 PFNGLRENDERBUFFERSTORAGEEXTPROC glRenderbufferStorageEXT;
 PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glFramebufferRenderbufferEXT;
 PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT;
+
+typedef void (*PFNGLGLMEMORYBARRIEREXTPROC) (GLbitfield barriers);
+PFNGLGLMEMORYBARRIEREXTPROC glMemoryBarrierEXT;
+
+/* typedef void (*PFNGLTEXTUREBARRIERPROC)(); */
+/* PFNGLTEXTUREBARRIERPROC glTextureBarrier; */
+
 #endif  //_WIN32
 
 
@@ -135,6 +142,10 @@ bool load_gl_functions()
     GETADDRESS(glRenderbufferStorageEXT);
     GETADDRESS(glFramebufferRenderbufferEXT);
     GETADDRESS(glCheckFramebufferStatusEXT);
+
+    GETADDRESS(glMemoryBarrierEXT);
+
+    /* GETADDRESS(glTextureBarrier); */
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

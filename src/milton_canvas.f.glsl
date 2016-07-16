@@ -16,7 +16,7 @@ uniform sampler2D u_canvas;
 //  the painting for a certain number of strokes.  This makes sense since we
 //  avoid duplicating rendering work for the most common case which is not
 //  panning and not zooming, just drawing over the existing painting.
-#define STROKE_MAX_POINTS_GL 512
+#define STROKE_MAX_POINTS_GL 256
 #if GL_core_profile
 // TODO: instead of std140, get offsets with glGetUniformIndices and glGetActiveUNiformsiv GL_UNIFORM_OFFSET
 layout(std140) uniform StrokeUniformBlock
@@ -65,7 +65,9 @@ vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
 
 void main()
 {
-    vec4 color = u_brush_color;
+    vec2 coord = gl_FragCoord.xy / u_screen_size;
+	coord.y = 1-coord.y;
+    vec4 color = texture2D(u_canvas, coord);
 
     vec2 fragment_point = raster_to_canvas_gl(gl_FragCoord.xy);
     float min_dist = MAX_DIST;
@@ -97,7 +99,8 @@ void main()
     }
     if (min_dist < MAX_DIST)
     {
-        gl_FragColor = u_brush_color;
+        color = u_brush_color;
     }
+    gl_FragColor = color;
 }
 //End
