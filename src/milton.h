@@ -221,7 +221,7 @@ enum SaveEnum
 #define glBindVertexArray glBindVertexArrayAPPLE
 #endif
 
-void milton_init(MiltonState* milton_state);
+void milton_init(MiltonState* milton_state, i32 width, i32 height);
 
 // Expects absolute path
 void milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname);

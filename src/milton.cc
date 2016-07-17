@@ -514,7 +514,7 @@ float milton_get_pen_alpha(MiltonState* milton_state)
 }
 
 
-void milton_init(MiltonState* milton_state)
+void milton_init(MiltonState* milton_state, i32 width, i32 height)
 {
     init_localization();
     // Initialize render queue
@@ -578,6 +578,8 @@ void milton_init(MiltonState* milton_state)
 
     milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
     milton_set_default_view(milton_state->view);
+
+    milton_state->view->screen_size = { width, height };
 
     // TODO: Resolve this circular dependency between gpu_init and CanvasView.background_color
     gpu_init(milton_state->render_data, milton_state->view);

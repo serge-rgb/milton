@@ -668,7 +668,7 @@ int milton_main()
     {
         milton_state->root_arena = &root_arena;
 
-        milton_init(milton_state);
+        milton_init(milton_state, platform_state.width, platform_state.height);
     }
 
     // Ask for native events to poll tablet events.

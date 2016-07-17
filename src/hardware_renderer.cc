@@ -478,8 +478,12 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
 
         glTexImage2D(GL_TEXTURE_2D,
                      0, GL_RGBA,
+                     //tex_w, tex_h,
                      view->screen_size.w, view->screen_size.h,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+        glGenerateMipmap(GL_TEXTURE_2D);
+
         glBindTexture(GL_TEXTURE_2D, 0);
 
 
@@ -500,6 +504,7 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
         GLCHK( glTexImage2D(GL_TEXTURE_2D, 0,
                             /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
+                            //tex_w, tex_h,
                             view->screen_size.w, view->screen_size.h,
                             /*border*/0, /*pixel_data_format*/GL_DEPTH_STENCIL,
                             /*component type*/GL_UNSIGNED_INT_24_8,
@@ -507,45 +512,44 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         glBindTexture(GL_TEXTURE_2D, 0);
 #endif
 
-    int depth_size;
-    GLCHK( glGetIntegerv(GL_DEPTH_BITS, &depth_size) );
-    int stencil_size;
-    GLCHK( glGetIntegerv(GL_STENCIL_BITS, &stencil_size) );
+        int depth_size;
+        GLCHK( glGetIntegerv(GL_DEPTH_BITS, &depth_size) );
+        int stencil_size;
+        GLCHK( glGetIntegerv(GL_STENCIL_BITS, &stencil_size) );
 #if 0
         GLuint rbo = 0;
         glGenRenderbuffers(1, &rbo);
         glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, view->screen_size.w, view->screen_size.h);
-        glBindRenderbufferARB(GL_RENDERBUFFER_ARB, 0);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+                              //tex_w, tex_h);
+                              view->screen_size.w, view->screen_size.h);
 #endif
 
         GLuint fbo = 0;
         glGenFramebuffers(1, &fbo);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
         GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
 
 #if 1
-        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
-        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
+        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
+        /* GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) ); */
+        /* GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) ); */
 #else
-        GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT , GL_RENDERBUFFER, rbo) );
-        GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo) );
+        //GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT , GL_RENDERBUFFER, rbo) );
+        /* GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT , GL_RENDERBUFFER, rbo) ); */
+        /* GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo) ); */
 #endif
-        //GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
-        //GLCHK( glFramebufferRenderbufferARB(GL_FRAMEBUFFER_ARB, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER_ARB, rbo) );
-        //GLCHK( glFramebufferRenderbufferARB(GL_FRAMEBUFFER_ARB, GL_STENCIL_ATTACHMENT_ARB, GL_RENDERBUFFER_ARB, rbo) );
 
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDrawBuffer(GL_NONE);
-        /* glReadBuffer(GL_NONE); */
+        //glDrawBuffer(GL_NONE);
         print_framebuffer_status();
-        glDrawBuffer(GL_BACK);
+        //glDrawBuffer(GL_BACK);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         render_data->fbo = fbo;
     }
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_STENCIL_TEST);
+    /* glEnable(GL_DEPTH_TEST); */
+    /* glEnable(GL_STENCIL_TEST); */
 
     return result;
 }
@@ -882,9 +886,16 @@ void gpu_render(RenderData* render_data)
                                              /*stride*/0, /*ptr*/0));
                 GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
-                glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
+
+                // TODO: We probably want to switch to a texture ping-pong scheme
+                glTextureBarrierNV();
+
+                // This is wrong in theory but it's working on my machien
+
+                //glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
+                //
                 /* glMemoryBarrierARB(GL_PIXEL_BUFFER_BARRIER_BIT_ARB); */
-                /* glTextureBarrier(); */
+
                 glDrawArrays(GL_TRIANGLES, 0, count);
 
             }
