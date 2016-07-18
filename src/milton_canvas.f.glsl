@@ -6,27 +6,9 @@ layout(origin_upper_left) in vec4 gl_FragCoord;
 
 flat in vec3 v_pointa;
 flat in vec3 v_pointb;
-//uniform sampler2D u_canvas;
 
 
 #define PRESSURE_RESOLUTION_GL (1<<20)
-
-//  TODO: Uniform buffer objets are our only relatively non-hairy choice.  Any
-//  GPU will run out of memory with a big enough drawing when allocating a
-//  fixed-size UBO per-stroke, so there is going to be a change. One
-//  possibility is to render drawings in multiple passes, storing a buffer for
-//  the painting for a certain number of strokes.  This makes sense since we
-//  avoid duplicating rendering work for the most common case which is not
-//  panning and not zooming, just drawing over the existing painting.
-#define STROKE_MAX_POINTS_GL 256
-#if GL_core_profile
-// TODO: instead of std140, get offsets with glGetUniformIndices and glGetActiveUNiformsiv GL_UNIFORM_OFFSET
-layout(std140) uniform StrokeUniformBlock
-{
-    int count;
-    ivec3 points[STROKE_MAX_POINTS_GL];  // 8KB
-} u_stroke;
-#endif
 
 
 vec4 blend(vec4 dst, vec4 src)
@@ -86,10 +68,6 @@ void main()
     vec3 a = v_pointa;
     vec3 b = v_pointb;
 
-    // TODO: Instead of BLEND, just output a 1 into where the stencil value should go.
-    // http://stackoverflow.com/questions/7571075/how-to-create-stencil-buffer-with-texture-image-in-opengl-es-2-0
-
-#if 1
     vec2 ab = b.xy - a.xy;
     float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
     if (ab_magnitude_squared > 0)
@@ -109,46 +87,6 @@ void main()
             found = true;
         }
     }
-#endif
-#if 0
-    if (!found) for (int point_i = 0; point_i < u_stroke.count-1; ++point_i)
-    {
-        vec3 a = u_stroke.points[point_i];
-        vec3 b = u_stroke.points[point_i+1];
-
-        // Most points are going to be within one of the two circles.
-        if (distance(a.xy, fragment_point) < u_radius*a.z/float(PRESSURE_RESOLUTION_GL) ||
-            distance(b.xy, fragment_point) < u_radius*b.z/float(PRESSURE_RESOLUTION_GL))
-        {
-            // BLEND
-            color = blend(color, u_brush_color);
-            found = true;
-            break;
-        }
-
-        vec2 ab = b.xy - a.xy;
-        float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
-        if (ab_magnitude_squared > 0)
-        {
-            vec3 stroke_point = closest_point_in_segment_gl(a.xy, b.xy, ab, ab_magnitude_squared, fragment_point);
-            float d = distance(stroke_point.xy, fragment_point);
-            float t = stroke_point.z;
-            float pressure_a = a.z;
-            float pressure_b = b.z;
-            float pressure = (1-t)*pressure_a + t*pressure_b;
-            pressure /= float(PRESSURE_RESOLUTION_GL);
-            float radius = pressure * u_radius;
-            bool inside = d < radius;
-            if (inside)
-            {
-                // BLEND
-                color = blend(color, u_brush_color);
-                found = true;
-                break;
-            }
-        }
-    }
-#endif
     if (found)
     {
         gl_FragColor = vec4(1,1,1,1);

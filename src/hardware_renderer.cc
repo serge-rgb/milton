@@ -137,15 +137,6 @@ float distance(vec2 a, vec2 b)
 static vec2 gl_PointCoord;
 static vec4 gl_FragColor;
 
-// Conforming to std140 layout.
-struct StrokeUniformData
-{
-    int count;
-    vec3 pad_;
-    ivec4 points[512]; // TODO: deal with STROKE_MAX_POINTS_GL
-};
-StrokeUniformData u_stroke;
-
 #pragma warning (push)
 #pragma warning (disable : 4668)
 #pragma warning (disable : 4200)
@@ -238,15 +229,11 @@ struct RenderData
         GLuint  vbo_pointa;
         GLuint  vbo_pointb;
 
-        GLuint ubo_stroke;
-
         i64     count;
         // TODO: Store these two differently when collating multiple strokes...
         v4f     color;
         i32     radius;
     };
-
-    v3f background_color;  // stored here because background_program changes its uniform.
 
     DArray<RenderElem> render_elems;
 };
@@ -531,7 +518,7 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         glBindTexture(GL_TEXTURE_2D, 0);
 
 
-#if 1
+#if 0
         GLuint stencil_texture = 0;
 
         glActiveTexture(GL_TEXTURE3);
@@ -554,20 +541,18 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
                             /*component type*/GL_UNSIGNED_INT_24_8,
                             NULL) );
         glBindTexture(GL_TEXTURE_2D, 0);
+#else
+        GLuint rbo = 0;
+        glGenRenderbuffers(1, &rbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+                              view->screen_size.w, view->screen_size.h);
 #endif
 
         int depth_size;
         GLCHK( glGetIntegerv(GL_DEPTH_BITS, &depth_size) );
         int stencil_size;
         GLCHK( glGetIntegerv(GL_STENCIL_BITS, &stencil_size) );
-#if 0
-        GLuint rbo = 0;
-        glGenRenderbuffers(1, &rbo);
-        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-                              //tex_w, tex_h);
-                              view->screen_size.w, view->screen_size.h);
-#endif
 
         GLuint fbo = 0;
         glGenFramebuffers(1, &fbo);
@@ -575,25 +560,18 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
 
         GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
 
-#if 1
+#if 0
         GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
-        /* GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) ); */
-        /* GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) ); */
 #else
-        //GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT , GL_RENDERBUFFER, rbo) );
-        /* GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT , GL_RENDERBUFFER, rbo) ); */
-        /* GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo) ); */
+        GLCHK( glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT , GL_RENDERBUFFER, rbo) );
 #endif
 
         //glDrawBuffer(GL_NONE);
         print_framebuffer_status();
         //glDrawBuffer(GL_BACK);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
         render_data->fbo = fbo;
     }
-
-    /* glEnable(GL_DEPTH_TEST); */
-    /* glEnable(GL_STENCIL_TEST); */
 
     return result;
 }
@@ -683,7 +661,6 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
     gl_set_uniform_vec3(render_data->blend_program, "u_background_color", 1, background_color.d);
     gl_set_uniform_vec3(render_data->background_program, "u_background_color", 1, background_color.d);
-    render_data->background_color = background_color;
 }
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
@@ -758,15 +735,12 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         v2i* bounds;
         v3i* apoints;
         v3i* bpoints;
-        StrokeUniformData* uniform_data;
         Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
-                                         + sizeof(StrokeUniformData)
                                          + 2*count_points*sizeof(decltype(*apoints)));
 
         bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
         apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
         bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
-        uniform_data = arena_alloc_elem(&scratch_arena, StrokeUniformData);
 
         size_t bounds_i = 0;
         size_t apoints_i = 0;
@@ -807,12 +781,6 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
                 apoints[apoints_i++] = { point_i.x, point_i.y, pressure_a };
                 bpoints[bpoints_i++] = { point_j.x, point_j.y, pressure_b };
             }
-
-            uniform_data->points[uniform_data->count++] = IVEC4( point_i.x, point_i.y, pressure_a, 0 );
-            if (i == npoints-2)
-            {
-                uniform_data->points[uniform_data->count++] = IVEC4( point_j.x, point_j.y, pressure_b, 0 );
-            }
         }
 
         //mlt_assert(bounds_i == count_bounds);
@@ -841,16 +809,10 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         // Uniform buffer block for point array.
         GLuint ubo = 0;
 
-        glGenBuffers(1, &ubo);
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, (GLsizeiptr)(sizeof(decltype(*uniform_data))),
-                     uniform_data, GL_STATIC_DRAW);
-
         RenderData::RenderElem re;
         re.vbo_stroke = vbo_stroke;
         re.vbo_pointa = vbo_pointa;
         re.vbo_pointb = vbo_pointb;
-        re.ubo_stroke = ubo;
         re.count = (i64)bounds_i;
         re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
         re.radius = stroke->brush.radius;
@@ -903,16 +865,6 @@ void gpu_render(RenderData* render_data)
                 gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re.color.d);
                 gl_set_uniform_vec4(render_data->blend_program, "u_brush_color", 1, re.color.d);
                 gl_set_uniform_i(render_data->stroke_program, "u_radius", re.radius);
-
-                // Bind stroke uniform block
-                GLuint uboi = glGetUniformBlockIndex(render_data->stroke_program, "StrokeUniformBlock");
-                if (uboi != GL_INVALID_INDEX)
-                {
-                    GLuint binding_point = 0;
-                    glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, re.ubo_stroke);
-                    glUniformBlockBinding(render_data->stroke_program, uboi, binding_point);
-                }
-
 
                 if (loc_a >=0)
                 {
