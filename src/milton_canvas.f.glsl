@@ -85,13 +85,15 @@ void main()
     vec3 a = v_pointa;
     vec3 b = v_pointb;
 
+    // TODO: Instead of BLEND, just output a 1 into where the stencil value should go.
+    // http://stackoverflow.com/questions/7571075/how-to-create-stencil-buffer-with-texture-image-in-opengl-es-2-0
+
 #if 1
     // Most points are going to be within one of the two circles.
     if (distance(a.xy, fragment_point) < u_radius*a.z/float(PRESSURE_RESOLUTION_GL) ||
         distance(b.xy, fragment_point) < u_radius*b.z/float(PRESSURE_RESOLUTION_GL))
     {
-        // BLEND
-        color = blend(color, u_brush_color);
+        //color = blend(color, u_brush_color);
         found = true;
     }
     else
@@ -111,8 +113,7 @@ void main()
             bool inside = d < radius;
             if (inside)
             {
-                // BLEND
-                color = blend(color, u_brush_color);
+                //color = blend(color, u_brush_color);
                 found = true;
             }
         }
@@ -159,7 +160,11 @@ void main()
 #endif
     if (found)
     {
-        gl_FragColor = color;
-    } else { discard; }
+        gl_FragColor = vec4(1,1,1,1);
+    }
+    else
+    {
+        discard;
+    }
 }
 //End

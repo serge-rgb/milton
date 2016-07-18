@@ -219,6 +219,7 @@ StrokeUniformData u_stroke;
 struct RenderData
 {
     GLuint stroke_program;
+    GLuint blend_program;
     GLuint quad_program;
 
     // VBO for the screen-covering quad.
@@ -399,8 +400,25 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         gl_link_program(render_data->stroke_program, objs, array_count(objs));
 
         GLCHK( glUseProgram(render_data->stroke_program) );
-        gl_set_uniform_i(render_data->stroke_program, "u_canvas", /*GL_TEXTURE1*/2);
     }
+    { // blend program
+#if MILTON_DEBUG
+        GLuint objs[2] = {};
+        size_t vsz, fsz;
+        char* vsrc = debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.v.glsl"), &vsz);
+        char* fsrc = debug_load_shader_from_file(TO_PATH_STR("src/blend.f.glsl"), &fsz);
+#endif
+
+        objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
+
+        render_data->blend_program = glCreateProgram();
+        gl_link_program(render_data->blend_program, objs, array_count(objs));
+        GLCHK( glUseProgram(render_data->blend_program) );
+    }
+
+    gl_set_uniform_i(render_data->stroke_program, "u_canvas", /*GL_TEXTURE2*/2);
+    gl_set_uniform_i(render_data->blend_program, "u_canvas", /*GL_TEXTURE2*/2);
 
     // Quad for screen!
     {
@@ -627,6 +645,7 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
     // u_scale = scale;
 #endif
     gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
+    gl_set_uniform_i(render_data->blend_program, "u_scale", scale);
 }
 
 static void gpu_set_background(RenderData* render_data, v3f background_color)
@@ -636,6 +655,7 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
     // for(int i=0;i<3;++i) u_background_color.d[i] = background_color.d[i];
 #endif
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
+    gl_set_uniform_vec3(render_data->blend_program, "u_background_color", 1, background_color.d);
 }
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
@@ -651,10 +671,14 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 #endif
     glUseProgram(render_data->stroke_program);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, view->pan_vector.d);
+    gl_set_uniform_vec2i(render_data->blend_program, "u_pan_vector", 1, view->pan_vector.d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, view->screen_center.d);
+    gl_set_uniform_vec2i(render_data->blend_program, "u_screen_center", 1, view->screen_center.d);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
+    gl_set_uniform_vec2(render_data->blend_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
+    gl_set_uniform_i(render_data->blend_program, "u_scale", view->scale);
 }
 
 void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
@@ -818,6 +842,8 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
 void gpu_render(RenderData* render_data)
 {
+    glEnable(GL_STENCIL_TEST);
+
     print_framebuffer_status();
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
     //glBindFramebufferARB(GL_FRAMEBUFFER_ARB, 0);
@@ -830,14 +856,16 @@ void gpu_render(RenderData* render_data)
         GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
         if (loc >= 0)
         {
-            //for (size_t i = 0; i < render_data->render_elems.count; ++i)
-            for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
+            for (size_t i = 0; i < render_data->render_elems.count; ++i)
+            //for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
             {
+                GLCHK( glUseProgram(render_data->stroke_program) );
                 auto re = render_data->render_elems.data[i];
                 i64 count = re.count;
 
                 // TODO. Only set these uniforms when both are different from the ones in use.
                 gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re.color.d);
+                gl_set_uniform_vec4(render_data->blend_program, "u_brush_color", 1, re.color.d);
                 gl_set_uniform_i(render_data->stroke_program, "u_radius", re.radius);
 
                 // Bind stroke uniform block
@@ -896,11 +924,62 @@ void gpu_render(RenderData* render_data)
                 //
                 /* glMemoryBarrierARB(GL_PIXEL_BUFFER_BARRIER_BIT_ARB); */
 
+                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+                glStencilFunc(GL_ALWAYS,1,0xFF);
+                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                 glDrawArrays(GL_TRIANGLES, 0, count);
+
+                GLCHK( glUseProgram(render_data->blend_program) );
+
+                GLint blend_pos_loc = glGetAttribLocation(render_data->blend_program, "a_position");
+                if (blend_pos_loc >= 0)
+                {
+                    GLint blend_loc_a = glGetAttribLocation(render_data->blend_program, "a_pointa");
+                    GLint blend_loc_b = glGetAttribLocation(render_data->blend_program, "a_pointb");
+
+                    if (blend_loc_a >=0)
+                    {
+                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_pointa) );
+#if 0
+                        GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_a,
+                                                      /*size*/3, GL_INT,
+                                                      /*stride*/0, /*ptr*/0));
+#else
+                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_a,
+                                                     /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                                     /*stride*/0, /*ptr*/0));
+#endif
+                        GLCHK( glEnableVertexAttribArray((GLuint)loc_a) );
+                    }
+                    if (blend_loc_b >=0)
+                    {
+                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_pointb) );
+#if 0
+                        GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
+                                                      /*size*/3, GL_INT,
+                                                      /*stride*/0, /*ptr*/0));
+#else
+                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_b,
+                                                     /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                                     /*stride*/0, /*ptr*/0));
+#endif
+                        GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
+                    }
+
+                    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+                    glStencilFunc(GL_EQUAL,1,0xFF);
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+                    glDrawArrays(GL_TRIANGLES, 0, count);
+                    glClear(GL_STENCIL_BUFFER_BIT);
+
+                }
 
             }
         }
     }
+    glDisable(GL_STENCIL_TEST);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
