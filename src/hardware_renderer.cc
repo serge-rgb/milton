@@ -496,6 +496,10 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
         gl_link_program(render_data->background_program, objs, array_count(objs));
     }
+    // Color picker shader
+    {
+
+    }
 
     // Framebuffer object for canvas
     {
@@ -603,43 +607,18 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
     i32 tex_h = view->screen_size.h;
 #endif
 
-    size_t sz = (size_t)(tex_w*tex_h*4);
+    GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
+                        tex_w, tex_h,
+                        /*border*/0, /*pixel_data_format*/GL_BGRA,
+                        /*component type*/GL_UNSIGNED_BYTE, NULL));
 
-    u32* color_buffer = (u32*)mlt_calloc(1, sz);
+    GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+    GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+    GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
 
-    if (color_buffer)
-    {
-        b32 parity = 1;
-        for (i32 y=0; y < tex_h; ++y)
-        {
-            for (i32 x = 0; x < tex_w; ++x)
-            {
-                u32 color = 0xff000000;
-                color_buffer[y*tex_w + x] = color;
-                parity = (parity+1)%2;
-            }
-        }
-
-        GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
-                            tex_w, tex_h,
-                            /*border*/0, /*pixel_data_format*/GL_BGRA,
-                            /*component type*/GL_UNSIGNED_BYTE, NULL));
-
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-
-        mlt_free(color_buffer);
-
-        gl_set_uniform_i(render_data->quad_program, "u_canvas", /*GL_TEXTURE1*/2);
-    }
-    else
-    {
-        // TODO: handle out of memory error
-        mlt_assert(color_buffer);
-    }
+    gl_set_uniform_i(render_data->quad_program, "u_canvas", /*GL_TEXTURE1*/2);
 }
 
 void gpu_update_scale(RenderData* render_data, i32 scale)

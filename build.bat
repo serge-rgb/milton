@@ -72,6 +72,11 @@ IF NOT EXIST Carlito.ttf copy ..\third_party\Carlito.ttf
 
 echo    [BUILD] -- Building Milton...
 
+
+:: ---- Shader gen program
+cl /FC /Zi ..\src\shadergen.cc
+shadergen.exe
+if %errorlevel% neq 0 goto fail
 :: ---- Unity build for Milton
 
 cl %mlt_opt_flags% %mlt_compiler_flags% %mlt_disabled_warnings% %mlt_defines% %mlt_includes% /c  ..\src\milton_unity_build.cc

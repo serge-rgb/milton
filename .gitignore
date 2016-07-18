@@ -41,3 +41,5 @@ third_party/glew-1.13.0/build/vc12/tmp/*
 
 # build dir
 build/
+
+src/shaders.gen.h
