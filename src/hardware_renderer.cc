@@ -221,6 +221,7 @@ struct RenderData
     GLuint stroke_program;
     GLuint blend_program;
     GLuint quad_program;
+    GLuint background_program;
 
     // VBO for the screen-covering quad.
     GLuint vbo_quad;
@@ -244,6 +245,9 @@ struct RenderData
         v4f     color;
         i32     radius;
     };
+
+    v3f background_color;  // stored here because background_program changes its uniform.
+
     DArray<RenderElem> render_elems;
 };
 
@@ -417,7 +421,6 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         GLCHK( glUseProgram(render_data->blend_program) );
     }
 
-    gl_set_uniform_i(render_data->stroke_program, "u_canvas", /*GL_TEXTURE2*/2);
     gl_set_uniform_i(render_data->blend_program, "u_canvas", /*GL_TEXTURE2*/2);
 
     // Quad for screen!
@@ -481,6 +484,29 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
         render_data->quad_program = glCreateProgram();
         gl_link_program(render_data->quad_program, objs, array_count(objs));
+    }
+    // Background fill program
+    {
+        render_data->background_program = glCreateProgram();
+
+        char vsrc[] =
+                "#version 120 \n"
+                "attribute vec2 a_point; \n"
+                "void main() \n"
+                "{ \n"
+                "    gl_Position = vec4(a_point, 0,1); \n"
+                "} \n";
+        char fsrc[] =
+                "#version 120 \n"
+                "uniform vec3 u_background_color;"
+                "void main() \n"
+                "{ \n"
+                    "gl_FragColor = vec4(u_background_color, 0); \n"
+                "} \n";
+        GLuint objs[2] = {};
+        objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
+        gl_link_program(render_data->background_program, objs, array_count(objs));
     }
 
     // Framebuffer object for canvas
@@ -656,6 +682,8 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
 #endif
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
     gl_set_uniform_vec3(render_data->blend_program, "u_background_color", 1, background_color.d);
+    gl_set_uniform_vec3(render_data->background_program, "u_background_color", 1, background_color.d);
+    render_data->background_color = background_color;
 }
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
@@ -745,15 +773,6 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         size_t bpoints_i = 0;
         for (i64 i=0; i < npoints-1; ++i)
         {
-
-
-            // ================== TODO: REMOVE HARDCODED LIMIT TO STROKES
-
-
-            if (i >= 256)
-            {
-                break;
-            }
             v2i point_i = stroke->points[i];
             v2i point_j = stroke->points[i+1];
 
@@ -842,22 +861,39 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
 
 void gpu_render(RenderData* render_data)
 {
-    glEnable(GL_STENCIL_TEST);
-
-    print_framebuffer_status();
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
-    //glBindFramebufferARB(GL_FRAMEBUFFER_ARB, 0);
-    // Draw the canvas
+    print_framebuffer_status();
+
+
+    // Render background color
+    // Note: If rendering front-to-back, this has to be done *after* rendering strokes and the screen needs to be cleared.
+    {
+        glUseProgram(render_data->background_program);
+
+        GLint loc = glGetAttribLocation(render_data->background_program, "a_point");
+        if (loc >= 0)
+        {
+            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            glEnableVertexAttribArray((GLuint)loc);
+            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
+        }
+    }
+    // Render strokes
+    glEnable(GL_STENCIL_TEST);
     {
         GLCHK( glUseProgram(render_data->stroke_program) );
-        GLCHK( glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT) );
+        //GLCHK( glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT) );
         GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
         GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
         GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
         if (loc >= 0)
         {
-            for (size_t i = 0; i < render_data->render_elems.count; ++i)
+            // Note. Front to back is possible but there's no measurable performance difference
             //for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
+            for (size_t i = 0; i < render_data->render_elems.count; ++i)
             {
                 GLCHK( glUseProgram(render_data->stroke_program) );
                 auto re = render_data->render_elems.data[i];
@@ -935,38 +971,6 @@ void gpu_render(RenderData* render_data)
                 GLint blend_pos_loc = glGetAttribLocation(render_data->blend_program, "a_position");
                 if (blend_pos_loc >= 0)
                 {
-                    GLint blend_loc_a = glGetAttribLocation(render_data->blend_program, "a_pointa");
-                    GLint blend_loc_b = glGetAttribLocation(render_data->blend_program, "a_pointb");
-
-                    if (blend_loc_a >=0)
-                    {
-                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_pointa) );
-#if 0
-                        GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_a,
-                                                      /*size*/3, GL_INT,
-                                                      /*stride*/0, /*ptr*/0));
-#else
-                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_a,
-                                                     /*size*/3, GL_INT, /*normalize*/GL_FALSE,
-                                                     /*stride*/0, /*ptr*/0));
-#endif
-                        GLCHK( glEnableVertexAttribArray((GLuint)loc_a) );
-                    }
-                    if (blend_loc_b >=0)
-                    {
-                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re.vbo_pointb) );
-#if 0
-                        GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
-                                                      /*size*/3, GL_INT,
-                                                      /*stride*/0, /*ptr*/0));
-#else
-                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_b,
-                                                     /*size*/3, GL_INT, /*normalize*/GL_FALSE,
-                                                     /*stride*/0, /*ptr*/0));
-#endif
-                        GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
-                    }
-
                     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
                     glStencilFunc(GL_EQUAL,1,0xFF);
@@ -983,7 +987,7 @@ void gpu_render(RenderData* render_data)
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // Render quad for whole screen.
+    // Render canvas buffer
     {
         // Bind canvas texture.
         glUseProgram(render_data->quad_program);

@@ -6,7 +6,7 @@ layout(origin_upper_left) in vec4 gl_FragCoord;
 
 flat in vec3 v_pointa;
 flat in vec3 v_pointb;
-uniform sampler2D u_canvas;
+//uniform sampler2D u_canvas;
 
 
 #define PRESSURE_RESOLUTION_GL (1<<20)
@@ -35,7 +35,6 @@ vec4 blend(vec4 dst, vec4 src)
 
     return result;
 }
-
 
 // x,y  - closest point
 // z    - t in [0,1] interpolation value
@@ -74,11 +73,13 @@ vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
 
 void main()
 {
+// Note: this doesn't seem to help at all on the GPU!
+#if 0
     vec2 coord = gl_FragCoord.xy / u_screen_size;
     coord.y = 1-coord.y;
     vec4 color = texture2D(u_canvas, coord);
-
-    //if (color.a == 0) { discard; }
+    if (color.a > 0.999999) { discard; }
+#endif
 
     vec2 fragment_point = raster_to_canvas_gl(gl_FragCoord.xy);
     bool found = false;
@@ -89,33 +90,23 @@ void main()
     // http://stackoverflow.com/questions/7571075/how-to-create-stencil-buffer-with-texture-image-in-opengl-es-2-0
 
 #if 1
-    // Most points are going to be within one of the two circles.
-    if (distance(a.xy, fragment_point) < u_radius*a.z/float(PRESSURE_RESOLUTION_GL) ||
-        distance(b.xy, fragment_point) < u_radius*b.z/float(PRESSURE_RESOLUTION_GL))
+    vec2 ab = b.xy - a.xy;
+    float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
+    if (ab_magnitude_squared > 0)
     {
-        //color = blend(color, u_brush_color);
-        found = true;
-    }
-    else
-    {
-        vec2 ab = b.xy - a.xy;
-        float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
-        if (ab_magnitude_squared > 0)
+        vec3 stroke_point = closest_point_in_segment_gl(a.xy, b.xy, ab, ab_magnitude_squared, fragment_point);
+        float d = distance(stroke_point.xy, fragment_point);
+        float t = stroke_point.z;
+        float pressure_a = a.z;
+        float pressure_b = b.z;
+        float pressure = (1-t)*pressure_a + t*pressure_b;
+        pressure /= float(PRESSURE_RESOLUTION_GL);
+        float radius = pressure * u_radius;
+        bool inside = d < radius;
+        if (inside)
         {
-            vec3 stroke_point = closest_point_in_segment_gl(a.xy, b.xy, ab, ab_magnitude_squared, fragment_point);
-            float d = distance(stroke_point.xy, fragment_point);
-            float t = stroke_point.z;
-            float pressure_a = a.z;
-            float pressure_b = b.z;
-            float pressure = (1-t)*pressure_a + t*pressure_b;
-            pressure /= float(PRESSURE_RESOLUTION_GL);
-            float radius = pressure * u_radius;
-            bool inside = d < radius;
-            if (inside)
-            {
-                //color = blend(color, u_brush_color);
-                found = true;
-            }
+            //color = blend(color, u_brush_color);
+            found = true;
         }
     }
 #endif
