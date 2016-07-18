@@ -581,7 +581,6 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 
     milton_state->view->screen_size = { width, height };
 
-    // TODO: Resolve this circular dependency between gpu_init and CanvasView.background_color
     gpu_init(milton_state->render_data, milton_state->view);
 
     milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
@@ -780,6 +779,8 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state)
 
     // New View
     milton_set_default_view(milton_state->view);
+    milton_state->view->background_color = {1,1,1};
+    gpu_set_background(milton_state->render_data, milton_state->view->background_color);
 
     // Reset color buttons
     for (ColorButton* b = &milton_state->gui->picker.color_buttons; b!=NULL; b=b->next)
@@ -1403,6 +1404,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
             }
         }
+    }
+    else if (is_user_drawing(milton_state))
+    {
+        // Update working stroke
+        gpu_add_stroke(milton_state->root_arena, milton_state->render_data,
+                       &milton_state->working_stroke, AddStroke_UPDATE_WORKING_STROKE);
     }
 
     // Disable hover if panning.

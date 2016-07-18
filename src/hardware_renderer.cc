@@ -236,6 +236,7 @@ struct RenderData
     };
 
     DArray<RenderElem> render_elems;
+    RenderElem working_stroke;
 };
 
 // Load a shader and append line `#version 120`, which is invalid C++
@@ -614,7 +615,6 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
         {
             for (i32 x = 0; x < tex_w; ++x)
             {
-                //u32 color = parity? 0xffff00ff : 0xff00ff00;
                 u32 color = 0xff000000;
                 color_buffer[y*tex_w + x] = color;
                 parity = (parity+1)%2;
@@ -624,7 +624,7 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
         GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
                             tex_w, tex_h,
                             /*border*/0, /*pixel_data_format*/GL_BGRA,
-                            /*component type*/GL_UNSIGNED_BYTE, (GLvoid*)color_buffer));
+                            /*component type*/GL_UNSIGNED_BYTE, NULL));
 
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
@@ -686,7 +686,13 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     gl_set_uniform_i(render_data->blend_program, "u_scale", view->scale);
 }
 
-void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
+enum AddStrokeOpt
+{
+    AddStroke_DEFAULT = 1<<0,
+    AddStroke_UPDATE_WORKING_STROKE = 1<<1,
+};
+
+void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, AddStrokeOpt opt = AddStroke_DEFAULT)
 {
     vec2 cp;
     cp.x = stroke->points[stroke->num_points-1].x;
@@ -816,7 +822,16 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke)
         re.count = (i64)bounds_i;
         re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
         re.radius = stroke->brush.radius;
-        push(&render_data->render_elems, re);
+
+        if (opt == AddStroke_DEFAULT)
+        {
+            push(&render_data->render_elems, re);
+        }
+        else if (opt == AddStroke_UPDATE_WORKING_STROKE)
+        {
+            render_data->working_stroke = re;
+        }
+
         arena_pop(&scratch_arena);
     }
 }
@@ -855,10 +870,23 @@ void gpu_render(RenderData* render_data)
         {
             // Note. Front to back is possible but there's no measurable performance difference
             //for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
-            for (size_t i = 0; i < render_data->render_elems.count; ++i)
+            for (size_t i = 0; i <= render_data->render_elems.count; ++i)
             {
                 GLCHK( glUseProgram(render_data->stroke_program) );
-                auto re = render_data->render_elems.data[i];
+                RenderData::RenderElem re = {};
+                if (i < render_data->render_elems.count)
+                {
+                    re = render_data->render_elems.data[i];
+                }
+                else
+                {
+                    re =  render_data->working_stroke;
+                    if (re.count == 0)
+                    {
+                        break;
+                    }
+                }
+
                 i64 count = re.count;
 
                 // TODO. Only set these uniforms when both are different from the ones in use.
@@ -929,9 +957,7 @@ void gpu_render(RenderData* render_data)
                     glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
                     glDrawArrays(GL_TRIANGLES, 0, count);
                     glClear(GL_STENCIL_BUFFER_BIT);
-
                 }
-
             }
         }
     }
@@ -958,7 +984,6 @@ void gpu_render(RenderData* render_data)
                                              /*stride*/0, /*ptr*/0));
                 glEnableVertexAttribArray((GLuint)loc_uv);
             }
-
 
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,

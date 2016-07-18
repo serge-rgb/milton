@@ -298,6 +298,7 @@ void milton_load(MiltonState* milton_state)
             milton_state->layer_guid = layer_guid;
 
             // Build bounding rects for every stroke.
+            // TODO: this is no longer needed if we're ditching the software renderer
             for (Layer* l = milton_state->root_layer;
                  l != NULL;
                  l = l->next)
@@ -312,6 +313,7 @@ void milton_load(MiltonState* milton_state)
                     stroke->bounding_rect = bounding_box_for_stroke(stroke);
                 }
             }
+            milton_set_background_color(milton_state, milton_state->view->background_color);
         }
     }
     else
