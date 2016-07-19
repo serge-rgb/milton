@@ -229,6 +229,8 @@ struct RenderData
 
     GLuint fbo;
 
+    b32 gui_visible;
+
     // Draw data for single stroke
     struct RenderElem
     {
@@ -374,14 +376,14 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     gl_set_uniform_vec2(render_data->picker_program, "u_pointc", 1, c.d);
     gl_set_uniform_f(render_data->picker_program, "u_angle", picker->data.hsv.h);
     gl_set_uniform_i(render_data->picker_program, "u_canvas", /*GL_TEXTURE2*/2);
-    v3f colors[5] = {};
+    v4f colors[5] = {};
     ColorButton* button = &picker->color_buttons;
-    colors[0] = button->rgba.rgb; button = button->next;
-    colors[1] = button->rgba.rgb; button = button->next;
-    colors[2] = button->rgba.rgb; button = button->next;
-    colors[3] = button->rgba.rgb; button = button->next;
-    colors[4] = button->rgba.rgb; button = button->next;
-    gl_set_uniform_vec3(render_data->picker_program, "u_colors", 5, (float*)colors);
+    colors[0] = button->rgba; button = button->next;
+    colors[1] = button->rgba; button = button->next;
+    colors[2] = button->rgba; button = button->next;
+    colors[3] = button->rgba; button = button->next;
+    colors[4] = button->rgba; button = button->next;
+    gl_set_uniform_vec4(render_data->picker_program, "u_colors", 5, (float*)colors);
 }
 
 
@@ -392,6 +394,8 @@ bool gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
     // mlt_assert(STROKE_MAX_POINTS == STROKE_MAX_POINTS_GL);
 
     bool result = true;
+
+    render_data->gui_visible = true;
 
 #if MILTON_DEBUG
     // Assume our context is 3.0+
@@ -1075,6 +1079,7 @@ void gpu_render(RenderData* render_data)
 
     }
     // Render picker
+    if (render_data->gui_visible)
     {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

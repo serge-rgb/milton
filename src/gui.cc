@@ -236,7 +236,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
         {
             if (ImGui::MenuItem(LOC(toggle_gui_visibility)))
             {
-                gui_toggle_visibility(milton_state->gui);
+                gui_toggle_visibility(milton_state);
             }
 #if MILTON_ENABLE_PROFILING
             if (ImGui::MenuItem("Toggle Debug Data [BACKQUOTE]"))
@@ -1115,10 +1115,12 @@ int gui_process_input(MiltonState* milton_state, MiltonInput* input)
     return render_flags;
 }
 
-void gui_toggle_visibility(MiltonGui* gui)
+void gui_toggle_visibility(MiltonState* milton_state)
 {
+    MiltonGui* gui = milton_state->gui;
     gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
     gui->visible = !gui->visible;
+    milton_state->render_data->gui_visible = !milton_state->render_data->gui_visible;
 }
 
 void gui_toggle_help(MiltonGui* gui)

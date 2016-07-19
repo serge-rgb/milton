@@ -404,7 +404,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         }
                         else if (keycode == SDLK_TAB)
                         {
-                            gui_toggle_visibility(milton_state->gui);
+                            gui_toggle_visibility(milton_state);
                         }
                         else if (keycode == SDLK_F1)
                         {

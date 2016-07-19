@@ -123,7 +123,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
 
 //
 void                gui_init(Arena* root_arena, MiltonGui* gui);
-void                gui_toggle_visibility(MiltonGui* gui);
+void                gui_toggle_visibility(MiltonState* milton_state);
 void                gui_toggle_help(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
 // Returns true if the GUI consumed input. False if the GUI wasn't affected

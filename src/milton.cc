@@ -817,11 +817,11 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
 
         if ( mode == MiltonMode_EXPORTING && milton_state->gui->visible)
         {
-            gui_toggle_visibility(milton_state->gui);
+            gui_toggle_visibility(milton_state);
         }
         if ( milton_state->last_mode == MiltonMode_EXPORTING && !milton_state->gui->visible)
         {
-            gui_toggle_visibility(milton_state->gui);
+            gui_toggle_visibility(milton_state);
         }
     }
 }
