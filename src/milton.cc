@@ -1285,6 +1285,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             {
                 render_flags |= gui_process_input(milton_state, input);
                 milton_update_brushes(milton_state);
+                gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
             }
             else if (!milton_state->gui->active && (milton_state->working_layer->flags & LayerFlags_VISIBLE))
             {

@@ -12,7 +12,7 @@ To-Do
     [] Anti-aliasing (Multisample FBOs)
     [] Brush outline
     [] Resizing (manage FBO memory)
-    [] Export to image
+    [] Export to image (draw rect outline, split render func)
     [] Undo/Redo
     [] Unload image
     [] Layer visibility
@@ -22,11 +22,15 @@ To-Do
     []
 
 - Application
-    - Port to Windows API (support non-Wacom devices)
+    - Porting (dialogs and File I/O)
+        - Linux
+        - OSX
+        - Ctrl -> Cmd in OSX. Other cross platform binding issues?
     - Tablet:
-        - Eraser
+        - Easytab: Distinction between eraser and pen.
+        - Easytab: Stylus buttons.
+        - Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
-    - Finish Linux and OSX versions of dialogs and File I/O
     - ImGUI details:
         - Image Button
         - Reduce or remove widget rounding
@@ -45,12 +49,6 @@ To-Do
 - Polish and/or Debug layer
     - Memory allocation profiler.
     - Input recorder for bug replication
-
-- Porting:
-    - Ctrl -> Cmd in OSX. Other cross platform binding issues?
-    - Easytab: Stylus buttons.
-    - Easytab: Distinction between eraser and pen.
-
 
 - Milton Library
     - Refactor. Write sample program.

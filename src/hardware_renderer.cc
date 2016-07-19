@@ -352,6 +352,30 @@ static void print_framebuffer_status()
     }
 }
 
+void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
+{
+    glUseProgram(render_data->picker_program);
+    // Transform to [-1,1]
+    v2f a = picker->data.a;
+    v2f b = picker->data.b;
+    v2f c = picker->data.c;
+    // TODO include my own lambda impl.
+    Rect bounds = picker_get_bounds(picker);
+    int w = bounds.right-bounds.left;
+    int h = bounds.bottom-bounds.top;
+    // The center of the picker has an offset of (20,30)
+    // and the bounds radius is 100 px
+    auto transform = [&](v2f p) { return v2f{2*p.x/w-1 - 0.20f, 2*p.y/h-1 -0.30f}; };
+    a = transform(a);
+    b = transform(b);
+    c = transform(c);
+    gl_set_uniform_vec2(render_data->picker_program, "u_pointa", 1, a.d);
+    gl_set_uniform_vec2(render_data->picker_program, "u_pointb", 1, b.d);
+    gl_set_uniform_vec2(render_data->picker_program, "u_pointc", 1, c.d);
+    gl_set_uniform_f(render_data->picker_program, "u_angle", picker->data.hsv.h);
+}
+
+
 bool gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
     //mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
@@ -644,6 +668,8 @@ bool gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 #endif
     }
 
+    // Call gpu_update_picker() to initialize the color picker
+    gpu_update_picker(render_data, picker);
     return result;
 }
 

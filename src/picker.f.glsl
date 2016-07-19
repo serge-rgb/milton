@@ -1,8 +1,14 @@
 #version 150
 
+// The triangle, in [-1,1].
+uniform vec2 u_pointa;
+uniform vec2 u_pointb;
+uniform vec2 u_pointc;
+
 uniform vec2 u_center;
 uniform float u_half_width;
 uniform float u_radius;
+uniform float u_angle;
 
 in vec2 v_norm;
 
@@ -76,6 +82,25 @@ vec3 hsv_to_rgb(vec3 hsv)
 
     return rgb;
 }
+
+// Could be called a signed area. `orientation(a, b, c) / 2` is the area of the
+// triangle.
+// If positive, c is to the left of ab. Negative: right of ab. 0 if
+// colinear.
+float orientation(vec2 a, vec2 b, vec2 c)
+{
+    return (b.x - a.x)*(c.y - a.y) - (c.x - a.x)*(b.y - a.y);
+}
+
+bool is_inside_triangle(vec2 p)
+{
+    bool is_inside =
+           (orientation(u_pointa, u_pointb, p) <= 0) &&
+           (orientation(u_pointb, u_pointc, p) <= 0) &&
+           (orientation(u_pointc, u_pointa, p) <= 0);
+    return is_inside;
+}
+
 void main()
 {
     // NOTE:
@@ -90,20 +115,40 @@ void main()
         color = vec4(0,0,1,1);
     }
     float dist = distance(vec2(0), v_norm);
-    if (dist < radius+half_width &&
-        dist > radius-half_width)
+    if (dist < radius+half_width)
     {
-        vec2 n = v_norm;
-        vec2 v = vec2(1, 0);
-        float angle = acos(dot(n, v)/ (length(n) * length(v)));
-        if (v_norm.y > 0)
+        // Wheel
+        if (dist > radius-half_width)
         {
-            angle = (2*PI) - angle;
+            vec2 n = v_norm;
+            vec2 v = vec2(1, 0);
+            float angle = acos(dot(n, v)/ (length(n) * length(v)));
+            if (v_norm.y > 0)
+            {
+                angle = (2*PI) - angle;
+            }
+            vec3 hsv = vec3(radians_to_degrees(angle),1.0,1.0);
+            //vec3 hsv = vec3(angle,1.0,1.0);
+            vec3 rgb = hsv_to_rgb(hsv);
+            color = vec4(rgb,1);
         }
-        vec3 hsv = vec3(radians_to_degrees(angle),1.0,1.0);
-        //vec3 hsv = vec3(angle,1.0,1.0);
-        vec3 rgb = hsv_to_rgb(hsv);
-        color = vec4(rgb,1);
+        else if (is_inside_triangle(v_norm))
+        {
+            float area = orientation(u_pointa, u_pointb, u_pointc);
+            float inv_area = 1.0f / area;
+            float s = orientation(u_pointb, v_norm, u_pointa) * inv_area;
+            if (s > 1) { s = 1; }
+            if (s < 0) { s = 0; }
+            float v = 1 - (orientation(v_norm, u_pointc, u_pointa) * inv_area);
+            if (v > 1) { v = 1; }
+            if (v < 0) { v = 0; }
+
+            vec3 hsv = vec3(u_angle,
+                            s,
+                            v);
+            color = vec4(hsv_to_rgb(hsv),1);
+        }
+
     }
     gl_FragColor = color;
 }
