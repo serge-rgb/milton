@@ -32,6 +32,7 @@ char* read_entire_file(char* fname)
         if (contents)
         {
             auto read = fread(contents, 1, sz, fd);
+            contents[read]='\0';
         }
         else
         {

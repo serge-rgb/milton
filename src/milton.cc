@@ -1372,6 +1372,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 if (gui_mark_color_used(milton_state->gui))
                 {
                     render_flags |= MiltonRenderFlags_UI_UPDATED;
+                    // Tell the renderer to update the picker
+                    gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
                 }
                 // Copy current stroke.
                 i32 num_points = milton_state->working_stroke.num_points;

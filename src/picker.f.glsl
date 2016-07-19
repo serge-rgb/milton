@@ -10,6 +10,10 @@ uniform float u_half_width;
 uniform float u_radius;
 uniform float u_angle;
 
+uniform vec3 u_colors[5]; // Colors for picker buttons.
+
+uniform sampler2D u_canvas;  // The canvas FBO, to blend the picker in
+
 in vec2 v_norm;
 
 #define PI 3.14159
@@ -109,11 +113,9 @@ void main()
     float radius = 1.0 - (12.0 + 5) / 100.0;
 
 
-    vec4 color = vec4(1,0,0,1);
-    if (v_norm.y <= 1)
-    {
-        color = vec4(0,0,1,1);
-    }
+    vec4 color = vec4(0.5,0.5,0.55,0.4);
+    // Wheel and triangle
+
     float dist = distance(vec2(0), v_norm);
     if (dist < radius+half_width)
     {
@@ -150,5 +152,28 @@ void main()
         }
 
     }
+    if (v_norm.y >= 1)
+    {
+        int rect_i = int(((v_norm.x+1)/4) * 10) % 5;
+
+        vec3 rect_color = u_colors[rect_i];
+        color = vec4(rect_color,1);
+        float h = ((v_norm.x+1)/4)*10;
+        float epsilon = 0.02;
+        float epsilon2 = 0.015;
+        if (v_norm.y > 1.4-epsilon ||
+            v_norm.y < 1+epsilon ||
+            (h <     epsilon && h >   - epsilon) ||
+            (h < 1 + epsilon2 && h > 1 - epsilon2) ||
+            (h < 2 + epsilon2 && h > 2 - epsilon2) ||
+            (h < 3 + epsilon2 && h > 3 - epsilon2) ||
+            (h < 4 + epsilon2 && h > 4 - epsilon2) ||
+            (h < 5 + epsilon2 && h > 5 - epsilon2) ||
+            (h < 6 + epsilon && h > 6 - epsilon))
+        {
+            color = vec4(0,0,0,1);
+        }
+    }
+
     gl_FragColor = color;
 }

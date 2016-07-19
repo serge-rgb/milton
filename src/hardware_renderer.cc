@@ -373,6 +373,15 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     gl_set_uniform_vec2(render_data->picker_program, "u_pointb", 1, b.d);
     gl_set_uniform_vec2(render_data->picker_program, "u_pointc", 1, c.d);
     gl_set_uniform_f(render_data->picker_program, "u_angle", picker->data.hsv.h);
+    gl_set_uniform_i(render_data->picker_program, "u_canvas", /*GL_TEXTURE2*/2);
+    v3f colors[5] = {};
+    ColorButton* button = &picker->color_buttons;
+    colors[0] = button->rgba.rgb; button = button->next;
+    colors[1] = button->rgba.rgb; button = button->next;
+    colors[2] = button->rgba.rgb; button = button->next;
+    colors[3] = button->rgba.rgb; button = button->next;
+    colors[4] = button->rgba.rgb; button = button->next;
+    gl_set_uniform_vec3(render_data->picker_program, "u_colors", 5, (float*)colors);
 }
 
 
@@ -1067,6 +1076,8 @@ void gpu_render(RenderData* render_data)
     }
     // Render picker
     {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glUseProgram(render_data->picker_program);
         GLint loc = glGetAttribLocation(render_data->picker_program, "a_position");
 
@@ -1089,6 +1100,7 @@ void gpu_render(RenderData* render_data)
             }
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
+        glDisable(GL_BLEND);
     }
     GLCHK (glUseProgram(0));
 }

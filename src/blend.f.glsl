@@ -33,6 +33,6 @@ void main()
     vec4 color = texture2D(u_canvas, coord);
 
     gl_FragColor = brush_is_eraser() ? blend(color, vec4(u_background_color, 1)) : blend(color, u_brush_color);
-    // If rendereing front-to-back, with screen cleared:
+    // If rendering front-to-back, with screen cleared:
     //gl_FragColor = brush_is_eraser() ? blend(vec4(u_background_color, 1), color) : blend(u_brush_color, color);
 }
