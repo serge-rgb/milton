@@ -6,8 +6,17 @@ To-Do
     - MoveFileEx randomly fails with return code 5 - access denied
         The bigger the file, the likelier it is to fail.
 
-- Performance:
-    - GPU renderer!
+- GPU Renderer checklist
+    [] Color picker
+    [] Eraser (sort VBOs)
+    [] Anti-aliasing (Multisample FBOs)
+    [] Brush outline
+    [] Export to image
+    [] Undo/Redo
+    [] Unload image
+    [] Layer visibility
+    []
+    []
 
 - Application
     - Port to Windows API (support non-Wacom devices)

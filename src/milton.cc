@@ -581,7 +581,7 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 
     milton_state->view->screen_size = { width, height };
 
-    gpu_init(milton_state->render_data, milton_state->view);
+    gpu_init(milton_state->render_data, milton_state->view, &milton_state->gui->picker);
 
     milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
 

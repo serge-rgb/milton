@@ -83,17 +83,19 @@ char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
     return lines;
 }
 
-void output_shader(FILE* of, char* fname)
+void output_shader(FILE* of, char* fname, char* varname)
 {
     char* contents = read_entire_file(fname);
     char** lines;
     i64 count;
     lines = split_lines(contents, &count);
+    fprintf(of, "char %s[] = \n", varname);
     for (i64 i = 0; i < count; ++i)
     {
         lines[i][strlen(lines[i])-1]='\0';  // Strip newline
         fprintf(of, "\"%s\\n\"\n", lines[i]);
     }
+    fprintf(of, ";\n");
     fprintf(stderr, "\n");
 }
 
@@ -103,7 +105,8 @@ int main()
     FILE* outfd = fopen("./../src/shaders.gen.h", "w");
     if (outfd)
     {
-        output_shader(outfd, "../src/picker.v.glsl");
+        output_shader(outfd, "../src/picker.v.glsl", "g_picker_v");
+        output_shader(outfd, "../src/picker.f.glsl", "g_picker_f");
     }
     else
     {

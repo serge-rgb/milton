@@ -1,6 +1,9 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 //
+//
+
+#include "shaders.gen.h"
 
 #if MILTON_DEBUG
 #define uniform
@@ -213,10 +216,13 @@ struct RenderData
     GLuint blend_program;
     GLuint quad_program;
     GLuint background_program;
+    GLuint picker_program;
 
     // VBO for the screen-covering quad.
     GLuint vbo_quad;
     GLuint vbo_quad_uv;
+
+    GLuint vbo_picker;
 
     GLuint canvas_texture;
 
@@ -345,7 +351,7 @@ static void print_framebuffer_status()
     }
 }
 
-bool gpu_init(RenderData* render_data, CanvasView* view)
+bool gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
     //mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
     // TODO: Handle this. New MLT version?
@@ -498,7 +504,13 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
     }
     // Color picker shader
     {
+        render_data->picker_program = glCreateProgram();
+        GLuint objs[2] = {};
 
+        // g_picker_* gnerated by shadergen.cc
+        objs[0] = gl_compile_shader(g_picker_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_picker_f, GL_FRAGMENT_SHADER);
+        gl_link_program(render_data->picker_program, objs, array_count(objs));
     }
 
     // Framebuffer object for canvas
@@ -576,6 +588,37 @@ bool gpu_init(RenderData* render_data, CanvasView* view)
         //glDrawBuffer(GL_BACK);
         GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
         render_data->fbo = fbo;
+    }
+    // VBO for picker
+    {
+        Rect rect = get_bounds_for_picker_and_colors(picker);
+        // convert to clip space
+        auto screen_size = view->screen_size;
+        float top = (float)rect.top / screen_size.h;
+        float bottom = (float)rect.bottom / screen_size.h;
+        float left = (float)rect.left / screen_size.w;
+        float right = (float)rect.right / screen_size.w;
+        top = (top*2.0f - 1.0f) * -1;
+        bottom = (bottom*2.0f - 1.0f) *-1;
+        left = left*2.0f - 1.0f;
+        right = right*2.0f - 1.0f;
+        // a------d
+        // |  \   |
+        // |    \ |
+        // b______c
+        GLfloat data[] =
+        {
+            left, top,
+            left, bottom,
+            right, bottom,
+            right, top,
+        };
+        // Create buffers and upload
+        GLuint vbo = 0;
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_STATIC_DRAW);
+        render_data->vbo_picker = vbo;
     }
 
     return result;
@@ -972,6 +1015,21 @@ void gpu_render(RenderData* render_data)
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
 
+    }
+    // Render picker
+    {
+        glUseProgram(render_data->picker_program);
+        GLint loc = glGetAttribLocation(render_data->picker_program, "a_position");
+
+        if (loc >= 0)
+        {
+            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker) );
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            glEnableVertexAttribArray((GLuint)loc);
+            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
+        }
     }
     GLCHK (glUseProgram(0));
 }
