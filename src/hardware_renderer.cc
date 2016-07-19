@@ -223,6 +223,7 @@ struct RenderData
     GLuint vbo_quad_uv;
 
     GLuint vbo_picker;
+    GLuint vbo_picker_norm;
 
     GLuint canvas_texture;
 
@@ -613,12 +614,34 @@ bool gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
             right, bottom,
             right, top,
         };
+        float ratio = (float)(rect.bottom-rect.top) / (float)(rect.right-rect.left);
+        ratio = (ratio*2)-1;
+        // normalized positions.
+        GLfloat norm[] =
+        {
+            -1, -1,
+            -1, ratio,
+            1, ratio,
+            1, -1,
+        };
         // Create buffers and upload
         GLuint vbo = 0;
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_STATIC_DRAW);
+        GLuint vbo_norm = 0;
+        glGenBuffers(1, &vbo_norm);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_norm);
+        glBufferData(GL_ARRAY_BUFFER, array_count(norm)*sizeof(*norm), norm, GL_STATIC_DRAW);
         render_data->vbo_picker = vbo;
+        render_data->vbo_picker_norm = vbo_norm;
+        // TODO: cleanup?
+#if 0
+        float float_data[2] = { (float)picker->center.d[0], (float)picker->center.d[1] };
+        gl_set_uniform_vec2(render_data->picker_program, "u_center", 1, (float*)float_data);
+        gl_set_uniform_i(render_data->picker_program, "u_half_width", picker->wheel_half_width);
+        gl_set_uniform_i(render_data->picker_program, "u_radius", picker->wheel_radius);
+#endif
     }
 
     return result;
@@ -1028,6 +1051,16 @@ void gpu_render(RenderData* render_data)
                                          /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
                                          /*stride*/0, /*ptr*/0));
             glEnableVertexAttribArray((GLuint)loc);
+            GLint loc_norm = glGetAttribLocation(render_data->picker_program, "a_norm");
+            if (loc_norm >= 0)
+            {
+                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker_norm) );
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_norm,
+                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                glEnableVertexAttribArray((GLuint)loc_norm);
+
+            }
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
     }

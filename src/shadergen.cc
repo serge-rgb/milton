@@ -72,7 +72,7 @@ char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
                 }
             }
             // Copy a string from beginning
-            char* line = (char*)calloc(1, this_len);
+            char* line = (char*)calloc(1, this_len+1);
             memcpy(line, begin, this_len);
             lines[lines_i++] = line;
             begin = iter+1;

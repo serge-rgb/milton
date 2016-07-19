@@ -11,10 +11,13 @@ To-Do
     [] Eraser (sort VBOs)
     [] Anti-aliasing (Multisample FBOs)
     [] Brush outline
+    [] Resizing (manage FBO memory)
     [] Export to image
     [] Undo/Redo
     [] Unload image
     [] Layer visibility
+    [] Clip to screen
+    [] Coalesce strokes.
     []
     []
 
