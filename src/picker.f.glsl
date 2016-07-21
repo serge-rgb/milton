@@ -5,9 +5,7 @@ uniform vec2 u_pointa;
 uniform vec2 u_pointb;
 uniform vec2 u_pointc;
 
-uniform vec2 u_center;
-uniform float u_half_width;
-uniform float u_radius;
+uniform vec3 u_color;
 uniform float u_angle;
 
 uniform vec4 u_colors[5]; // Colors for picker buttons.
@@ -115,9 +113,23 @@ void main()
 
     vec4 color = vec4(0.5,0.5,0.55,0.4);
 
-    // Wheel and triangle
     float dist = distance(vec2(0), v_norm);
-    if (dist < radius+half_width)
+    // Wheel and triangle
+    // Show chosen color in preview circle
+    vec2 preview_center = vec2(0.75,-0.75);
+    const float preview_radius = 0.23;
+
+    float dist_to_preview = distance(preview_center, v_norm);
+    if (dist_to_preview < preview_radius)
+    {
+        color = vec4(0,0,0,1);
+        const float epsilon = 0.02;
+        if (dist_to_preview < preview_radius - epsilon)
+        {
+            color = vec4(u_color, 1);
+        }
+    }
+    else if (dist < radius+half_width)
     {
         // Wheel
         if (dist > radius-half_width)
@@ -152,7 +164,7 @@ void main()
         }
 
     }
-    if (v_norm.y >= 1)  // Render buttons
+    else if (v_norm.y >= 1)  // Render buttons
     {
         // Get the color for the rects
         int rect_i = int(((v_norm.x+1)/4) * 10) % 5;

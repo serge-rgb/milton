@@ -376,6 +376,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     gl_set_uniform_vec2(render_data->picker_program, "u_pointc", 1, c.d);
     gl_set_uniform_f(render_data->picker_program, "u_angle", picker->data.hsv.h);
     gl_set_uniform_i(render_data->picker_program, "u_canvas", /*GL_TEXTURE2*/2);
+    gl_set_uniform_vec3(render_data->picker_program, "u_color", 1, hsv_to_rgb(picker->data.hsv).d);
     v4f colors[5] = {};
     ColorButton* button = &picker->color_buttons;
     colors[0] = button->rgba; button = button->next;
@@ -672,13 +673,6 @@ bool gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         glBufferData(GL_ARRAY_BUFFER, array_count(norm)*sizeof(*norm), norm, GL_STATIC_DRAW);
         render_data->vbo_picker = vbo;
         render_data->vbo_picker_norm = vbo_norm;
-        // TODO: cleanup?
-#if 0
-        float float_data[2] = { (float)picker->center.d[0], (float)picker->center.d[1] };
-        gl_set_uniform_vec2(render_data->picker_program, "u_center", 1, (float*)float_data);
-        gl_set_uniform_i(render_data->picker_program, "u_half_width", picker->wheel_half_width);
-        gl_set_uniform_i(render_data->picker_program, "u_radius", picker->wheel_radius);
-#endif
     }
 
     // Call gpu_update_picker() to initialize the color picker
