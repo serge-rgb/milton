@@ -376,7 +376,22 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     gl_set_uniform_vec2(render_data->picker_program, "u_pointc", 1, c.d);
     gl_set_uniform_f(render_data->picker_program, "u_angle", picker->data.hsv.h);
     gl_set_uniform_i(render_data->picker_program, "u_canvas", /*GL_TEXTURE2*/2);
-    gl_set_uniform_vec3(render_data->picker_program, "u_color", 1, hsv_to_rgb(picker->data.hsv).d);
+
+    v3f hsv = picker->data.hsv;
+    gl_set_uniform_vec3(render_data->picker_program, "u_color", 1, hsv_to_rgb(hsv).d);
+
+    // Point within triangle
+    {
+        // Barycentric to cartesian
+        f32 fa = hsv.s;
+        f32 fb = 1 - hsv.v;
+        f32 fc = 1 - fa - fb;
+
+        v2f point = add2f(add2f((scale2f(picker->data.c,fa)), scale2f(picker->data.b,fb)), scale2f(picker->data.a,fc));
+        // Move to [-1,1]^2
+        point = transform(point);
+        gl_set_uniform_vec2(render_data->picker_program, "u_triangle_point", 1, point.d);
+    }
     v4f colors[5] = {};
     ColorButton* button = &picker->color_buttons;
     colors[0] = button->rgba; button = button->next;

@@ -7,7 +7,7 @@ To-Do
         The bigger the file, the likelier it is to fail.
 
 - GPU Renderer checklist
-    [] Color picker
+    [x] Color picker
     [] Eraser (sort VBOs)
     [] Anti-aliasing (Multisample FBOs)
     [] Brush outline

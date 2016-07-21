@@ -8,6 +8,8 @@ uniform vec2 u_pointc;
 uniform vec3 u_color;
 uniform float u_angle;
 
+uniform vec2 u_triangle_point;
+
 uniform vec4 u_colors[5]; // Colors for picker buttons.
 
 uniform sampler2D u_canvas;  // The canvas FBO, to blend the picker in
@@ -187,6 +189,14 @@ void main()
         {
             color = vec4(0,0,0,1);
         }
+    }
+
+    float dist_to_choice = distance(v_norm, u_triangle_point);
+    const float point_radius = 0.05;
+    const float girth = 0.01;
+    if (dist_to_choice < point_radius+girth && dist_to_choice > point_radius-girth)
+    {
+        color.rgb = vec3(1- color.r, 1 - color.g, 1 - color.b);
     }
 
     gl_FragColor = color;
