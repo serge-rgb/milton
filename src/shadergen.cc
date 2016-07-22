@@ -108,6 +108,8 @@ int main()
     {
         output_shader(outfd, "../src/picker.v.glsl", "g_picker_v");
         output_shader(outfd, "../src/picker.f.glsl", "g_picker_f");
+        output_shader(outfd, "../src/layer_blend.v.glsl", "g_layer_blend_v");
+        output_shader(outfd, "../src/layer_blend.f.glsl", "g_layer_blend_f");
     }
     else
     {

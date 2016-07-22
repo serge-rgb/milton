@@ -20,6 +20,7 @@ To-Do
     [] Coalesce strokes.
     [] Single point strokes
     [] use triangle strips
+    [] LOTS of redundancy in vertex attributes regardless of triangle strips
 
 - Application
     - Porting (dialogs and File I/O)

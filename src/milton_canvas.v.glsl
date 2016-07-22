@@ -3,6 +3,7 @@
 
 // Note:
 //  TODO: write documentation here about float<->int regarding strokes and milton
+// TODO: use int?
 attribute vec2 a_position;
 attribute vec3 a_pointa;
 attribute vec3 a_pointb;
