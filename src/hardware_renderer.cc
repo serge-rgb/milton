@@ -1,7 +1,5 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
-//
-//
 
 #include "shaders.gen.h"
 
@@ -231,21 +229,7 @@ struct RenderData
 
     b32 gui_visible;
 
-    // Draw data for single stroke
-    struct RenderElem
-    {
-        GLuint  vbo_stroke;
-        GLuint  vbo_pointa;
-        GLuint  vbo_pointb;
-
-        i64     count;
-        // TODO: Store these two differently when collating multiple strokes...
-        v4f     color;
-        i32     radius;
-    };
-
-    DArray<RenderElem> render_elems;
-    RenderElem working_stroke;
+    DArray<RenderElement> render_elems;
 };
 
 // Load a shader and append line `#version 120`, which is invalid C++
@@ -401,7 +385,6 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     colors[4] = button->rgba; button = button->next;
     gl_set_uniform_vec4(render_data->picker_program, "u_colors", 5, (float*)colors);
 }
-
 
 bool gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
@@ -779,13 +762,37 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     gl_set_uniform_i(render_data->blend_program, "u_scale", view->scale);
 }
 
-enum AddStrokeOpt
+enum CookStrokeOpt
 {
-    AddStroke_DEFAULT = 1<<0,
-    AddStroke_UPDATE_WORKING_STROKE = 1<<1,
+    CookStroke_NEW = 1<<0,
+    CookStroke_UPDATE_WORKING_STROKE = 1<<1,
 };
 
-void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, AddStrokeOpt opt = AddStroke_DEFAULT)
+void gpu_clip_strokes(RenderData* render_data, Layer* root_layer, Stroke* working_stroke)
+{
+    reset(&render_data->render_elems);
+    for(Layer* l = root_layer;
+        l != NULL;
+        l = l->next)
+    {
+        for (u64 i = 0; i <= l->strokes.count; ++i )
+        {
+            Stroke* s = &l->strokes.data[i];
+            auto *render_elements = &render_data->render_elems;
+            if (i == l->strokes.count)
+            {
+                push(render_elements, working_stroke->render_element);
+            }
+            else
+            {
+                push(render_elements, s->render_element);
+            }
+        }
+
+    }
+}
+
+void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrokeOpt cook_option = CookStroke_NEW)
 {
     vec2 cp;
     cp.x = stroke->points[stroke->num_points-1].x;
@@ -816,7 +823,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, AddSt
         // So uncommon that adding an extra degenerate point might make sense,
         // if the algorithm can handle it
     }
-    else
+    else if (npoints > 1)
     {
         GLCHK( glUseProgram(render_data->stroke_program) );
 
@@ -882,22 +889,43 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, AddSt
             }
         }
 
-        //mlt_assert(bounds_i == count_bounds);
+        mlt_assert(bounds_i == count_bounds);
 
         GLuint vbo_stroke = 0;
-        glGenBuffers(1, &vbo_stroke);
+        if (cook_option == CookStroke_NEW || (cook_option == CookStroke_UPDATE_WORKING_STROKE && stroke->render_element.vbo_stroke == 0))
+        {
+            glGenBuffers(1, &vbo_stroke);
+        }
+        else if (cook_option == CookStroke_UPDATE_WORKING_STROKE)
+        {
+            vbo_stroke = stroke->render_element.vbo_stroke;
+        }
         glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
         // Upload to GL
         GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), bounds, GL_STATIC_DRAW) );
 
         GLuint vbo_pointa = 0;
-        glGenBuffers(1, &vbo_pointa);
+        if (cook_option == CookStroke_NEW || (cook_option == CookStroke_UPDATE_WORKING_STROKE && stroke->render_element.vbo_pointa == 0))
+        {
+            glGenBuffers(1, &vbo_pointa);
+        }
+        else if (cook_option == CookStroke_UPDATE_WORKING_STROKE)
+        {
+            vbo_pointa = stroke->render_element.vbo_pointa;
+        }
         glBindBuffer(GL_ARRAY_BUFFER, vbo_pointa);
         // Upload to GL
         GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), apoints, GL_STATIC_DRAW) );
 
         GLuint vbo_pointb = 0;
-        glGenBuffers(1, &vbo_pointb);
+        if (cook_option == CookStroke_NEW || (cook_option == CookStroke_UPDATE_WORKING_STROKE && stroke->render_element.vbo_pointb == 0))
+        {
+            glGenBuffers(1, &vbo_pointb);
+        }
+        else if (cook_option == CookStroke_UPDATE_WORKING_STROKE)
+        {
+            vbo_pointb = stroke->render_element.vbo_pointb;
+        }
         glBindBuffer(GL_ARRAY_BUFFER, vbo_pointb);
         // Upload to GL
         GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), bpoints, GL_STATIC_DRAW) );
@@ -908,7 +936,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, AddSt
         // Uniform buffer block for point array.
         GLuint ubo = 0;
 
-        RenderData::RenderElem re;
+        RenderElement re = {};
         re.vbo_stroke = vbo_stroke;
         re.vbo_pointa = vbo_pointa;
         re.vbo_pointb = vbo_pointb;
@@ -916,14 +944,7 @@ void gpu_add_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, AddSt
         re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
         re.radius = stroke->brush.radius;
 
-        if (opt == AddStroke_DEFAULT)
-        {
-            push(&render_data->render_elems, re);
-        }
-        else if (opt == AddStroke_UPDATE_WORKING_STROKE)
-        {
-            render_data->working_stroke = re;
-        }
+        stroke->render_element = re;
 
         arena_pop(&scratch_arena);
     }
@@ -963,22 +984,10 @@ void gpu_render(RenderData* render_data)
         {
             // Note. Front to back is possible but there's no measurable performance difference
             //for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
-            for (size_t i = 0; i <= render_data->render_elems.count; ++i)
+            for (size_t i = 0; i < render_data->render_elems.count; ++i)
             {
                 GLCHK( glUseProgram(render_data->stroke_program) );
-                RenderData::RenderElem re = {};
-                if (i < render_data->render_elems.count)
-                {
-                    re = render_data->render_elems.data[i];
-                }
-                else
-                {
-                    re =  render_data->working_stroke;
-                    if (re.count == 0)
-                    {
-                        break;
-                    }
-                }
+                RenderElement re = render_data->render_elems.data[i];
 
                 i64 count = re.count;
 

@@ -213,7 +213,7 @@ void milton_load(MiltonState* milton_state)
                         {
                             ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
                         }
-                        gpu_add_stroke(milton_state->root_arena, milton_state->render_data, stroke);
+                        gpu_cook_stroke(milton_state->root_arena, milton_state->render_data, stroke);
                     }
                 }
             }

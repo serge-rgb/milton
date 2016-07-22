@@ -19,7 +19,7 @@ To-Do
     [] Clip to screen
     [] Coalesce strokes.
     [] Single point strokes
-    []
+    [] use triangle strips
 
 - Application
     - Porting (dialogs and File I/O)

@@ -530,10 +530,13 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
     milton_state->save_flag = SaveEnum_GOOD_TO_GO;
 #endif
 
+//#if SOFTWARE_RENDERER_ENABLED
     milton_state->num_render_workers = min(SDL_GetCPUCount(), MAX_NUM_WORKERS);
 #if RESTRICT_NUM_WORKERS_TO_2
     milton_state->num_render_workers = min(2, SDL_GetCPUCount());
 #endif
+//#endif
+
 
     milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
 
@@ -1353,6 +1356,9 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
+    // Clipping
+    gpu_clip_strokes(milton_state->render_data, milton_state->root_layer, &milton_state->working_stroke);
+
     // ---- End stroke
     if ((input->flags & MiltonInputFlags_END_STROKE))
     {
@@ -1392,7 +1398,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                 }
 
                 auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
-                gpu_add_stroke(milton_state->root_arena, milton_state->render_data, stroke);
+                gpu_cook_stroke(milton_state->root_arena, milton_state->render_data, stroke);
 
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
                 push(&milton_state->history, h);
@@ -1411,8 +1417,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     else if (is_user_drawing(milton_state))
     {
         // Update working stroke
-        gpu_add_stroke(milton_state->root_arena, milton_state->render_data,
-                       &milton_state->working_stroke, AddStroke_UPDATE_WORKING_STROKE);
+        gpu_cook_stroke(milton_state->root_arena, milton_state->render_data,
+                        &milton_state->working_stroke, CookStroke_UPDATE_WORKING_STROKE);
     }
 
     // Disable hover if panning.

@@ -13,13 +13,14 @@ struct Brush
 
 struct Stroke
 {
-    Brush   brush;
-    v2i*    points;
-    f32*    pressures;
-    i32     num_points;
-    i32     layer_id;
-    b32     visibility[MAX_NUM_WORKERS];
-    Rect    bounding_rect;
+    Brush           brush;
+    v2i*            points;
+    f32*            pressures;
+    i32             num_points;
+    i32             layer_id;
+    b32             visibility[MAX_NUM_WORKERS];
+    Rect            bounding_rect;
+    RenderElement   render_element;
 };
 
 struct Layer
