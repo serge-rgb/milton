@@ -13,6 +13,7 @@ PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
 PFNGLBLENDEQUATIONPROC              glBlendEquation;
 PFNGLBLENDEQUATIONSEPARATEPROC      glBlendEquationSeparate;
 PFNGLBUFFERDATAPROC                 glBufferData;
+//PFNGLBUFFERSUBDATAPROC              glBufferSubData;
 PFNGLCOMPILESHADERPROC              glCompileShader;
 PFNGLCREATEPROGRAMPROC              glCreateProgram;
 PFNGLCREATESHADERPROC               glCreateShader;
@@ -94,6 +95,7 @@ bool load_gl_functions()
     GETADDRESS(glBlendEquation);
     GETADDRESS(glBlendEquationSeparate);
     GETADDRESS(glBufferData);
+    //GETADDRESS(glBufferSubData);
     GETADDRESS(glCompileShader);
     GETADDRESS(glCreateProgram);
     GETADDRESS(glCreateShader);

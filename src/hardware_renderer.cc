@@ -877,6 +877,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             // TODO: handle special case...
             // So uncommon that adding an extra degenerate point might make sense,
             // if the algorithm can handle it
+
         }
         else if (npoints > 1)
         {
@@ -947,42 +948,45 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             mlt_assert(bounds_i == count_bounds);
 
             // TODO: check for GL_OUT_OF_MEMORY
-            auto upload_buffers = [=](GLuint* target, void* array, size_t size)
-            {
-                GLuint vbo = 0;
-#if 1
-                // TODO: This fixes a bug on my machine where the working
-                // stroke won't render to the stencil buffer.  The contents are
-                // updated fine without deleting the buffer, but it only works
-                // correctly when deleting and re-creating.
-                if (cook_option == CookStroke_UPDATE_WORKING_STROKE && *target != 0)
-                {
-                    glDeleteBuffers(1, target);
-                    *target = 0;
-                }
-#endif
-                if (cook_option == CookStroke_NEW || (CookStroke_UPDATE_WORKING_STROKE && *target==0))
-                {
-                    glGenBuffers(1, &vbo);
-                }
-                else if (cook_option == CookStroke_UPDATE_WORKING_STROKE)
-                {
-                    vbo = *target;
-                }
-                glBindBuffer(GL_ARRAY_BUFFER, vbo);
-                // Upload to GL
-                GLenum hint = GL_STATIC_DRAW;
-                if (cook_option == CookStroke_UPDATE_WORKING_STROKE)
-                {
-                    hint = GL_DYNAMIC_DRAW;
-                }
-                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(size), array, hint) );
-                return vbo;
-            };
 
-            GLuint vbo_stroke = upload_buffers(&stroke->render_element.vbo_stroke, bounds, bounds_i*sizeof(decltype(*bounds)));
-            GLuint vbo_pointa = upload_buffers(&stroke->render_element.vbo_pointa, apoints, bounds_i*sizeof(decltype(*apoints)));
-            GLuint vbo_pointb = upload_buffers(&stroke->render_element.vbo_pointa, bpoints, bounds_i*sizeof(decltype(*bpoints)));
+            GLuint vbo_stroke = 0;
+            GLuint vbo_pointa = 0;
+            GLuint vbo_pointb = 0;
+
+
+            GLenum hint = GL_STATIC_DRAW;
+            if (cook_option == CookStroke_UPDATE_WORKING_STROKE)
+            {
+                hint = GL_DYNAMIC_DRAW;
+            }
+            if (stroke->render_element.vbo_stroke == 0)  // Cooking the stroke for the first time.
+            {
+                glGenBuffers(1, &vbo_stroke);
+                glGenBuffers(1, &vbo_pointa);
+                glGenBuffers(1, &vbo_pointb);
+                glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), bounds, hint) );
+                glBindBuffer(GL_ARRAY_BUFFER, vbo_pointa);
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), apoints, hint) );
+                glBindBuffer(GL_ARRAY_BUFFER, vbo_pointb);
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), bpoints, hint) );
+            }
+            else  // Updating the working stroke
+            {
+                vbo_stroke = stroke->render_element.vbo_stroke;
+                vbo_pointa = stroke->render_element.vbo_pointa;
+                vbo_pointb = stroke->render_element.vbo_pointb;
+
+                glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), NULL, hint) );
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), bounds, hint) );
+                glBindBuffer(GL_ARRAY_BUFFER, vbo_pointa);
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), NULL, hint) );
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), apoints, hint) );
+                glBindBuffer(GL_ARRAY_BUFFER, vbo_pointb);
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), NULL, hint) );
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), bpoints, hint) );
+            }
 
             GLuint ubo = 0;
 
@@ -993,6 +997,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             re.count = (i64)bounds_i;
             re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
             re.radius = stroke->brush.radius;
+            mlt_assert(re.count > 1);
 
             stroke->render_element = re;
 
@@ -1009,6 +1014,10 @@ void gpu_render(RenderData* render_data)
     // Render background color
     // Note: If rendering front-to-back, this has to be done *after* rendering strokes and the screen needs to be cleared.
     {
+        // TODO:
+        //  - Bind canvas texture.
+        //  - Draw background.
+        //  - Bind layer texture.
         glUseProgram(render_data->background_program);
 
         GLint loc = glGetAttribLocation(render_data->background_program, "a_point");
@@ -1040,7 +1049,24 @@ void gpu_render(RenderData* render_data)
 
                 if (is_layer(re))
                 {
-                    // Got to the end of a layer!
+                    // TODO: disabling/enabling the stencil won't be necessary when this is complete
+                    //
+                    glDisable(GL_STENCIL_TEST);
+                    // Got to the end of a layer.
+                    // Blend onto the canvas buffer.
+                    glUseProgram(render_data->layer_program);
+
+                    GLint p_loc = glGetAttribLocation(render_data->layer_program, "a_position");
+                    if (p_loc >= 0)
+                    {
+                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
+                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)p_loc,
+                                                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                                     /*stride*/0, /*ptr*/0));
+                        glEnableVertexAttribArray((GLuint)p_loc);
+                        //GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
+                    }
+                    glEnable(GL_STENCIL_TEST);
                 }
                 else
                 {
@@ -1090,11 +1116,10 @@ void gpu_render(RenderData* render_data)
 
                     // TODO: We probably want to switch to a texture ping-pong scheme
                     glTextureBarrierNV();
-
                     // This is wrong in theory but it Works on My Machine®:
                     //glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
 
-                    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
                     glStencilFunc(GL_ALWAYS,1,0xFF);
                     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);

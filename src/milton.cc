@@ -1399,6 +1399,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
                 auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
                 gpu_cook_stroke(milton_state->root_arena, milton_state->render_data, stroke);
+                // Invalidate working stroke render element
+                milton_state->working_stroke.render_element.count = 0;
 
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
                 push(&milton_state->history, h);
