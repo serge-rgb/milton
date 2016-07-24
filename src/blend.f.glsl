@@ -32,6 +32,8 @@ void main()
     coord.y = 1-coord.y;
     vec4 color = texture2D(u_canvas, coord);
 
+    //if (color.a == 1) { discard; }
+
     gl_FragColor = brush_is_eraser() ? blend(color, vec4(u_background_color, 1)) : blend(color, u_brush_color);
     // If rendering front-to-back, with screen cleared:
     //gl_FragColor = brush_is_eraser() ? blend(vec4(u_background_color, 1), color) : blend(u_brush_color, color);

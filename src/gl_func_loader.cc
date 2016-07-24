@@ -47,6 +47,7 @@ PFNGLUNIFORMMATRIX3FVPROC           glUniformMatrix3fv;
 PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC                 glUseProgram;
 PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
+//PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
 
 PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
 PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
@@ -129,6 +130,7 @@ bool load_gl_functions()
     GETADDRESS(glUseProgram);
     GETADDRESS(glValidateProgram);
     GETADDRESS(glUniform1f);
+    //GETADDRESS(glBlitFramebuffer);
 
     GETADDRESS(glVertexAttribPointer);
     GETADDRESS(glVertexAttribIPointer);
