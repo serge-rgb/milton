@@ -8,10 +8,10 @@ To-Do
 
 - GPU Renderer checklist
     [x] Color picker
-    [] Eraser (sort VBOs)
+    [x] Eraser (sort VBOs)
     [] Anti-aliasing (Multisample FBOs)
     [] Brush outline
-    [] Resizing (manage FBO memory)
+    [] Resizing (manage FBO memory, screen_size dependent updates)
     [] Export to image (draw rect outline, split render func)
     [] Undo/Redo
     [] Unload image

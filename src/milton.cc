@@ -122,6 +122,15 @@ static void milton_update_brushes(MiltonState* milton_state)
         {
             // Alpha is set by the UI
             brush->color = to_premultiplied(gui_get_picker_rgb(milton_state->gui), brush->alpha);
+
+            // Check for eraser magic value (see blend.f.glsl and layer_blend.f.glsl)
+            if (brush->color.r == 0.0f &&
+                brush->color.g == 1.0f &&
+                brush->color.b == 0.0f &&
+                brush->color.a == 1.0f)
+            {
+                brush->color.g = 0xFE/255.0f;
+            }
         }
         else if (i == BrushEnum_ERASER)
         {
