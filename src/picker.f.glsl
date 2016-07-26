@@ -12,8 +12,6 @@ uniform vec2 u_triangle_point;
 
 uniform vec4 u_colors[5]; // Colors for picker buttons.
 
-uniform sampler2D u_canvas;  // The canvas FBO, to blend the picker in
-
 in vec2 v_norm;
 
 #define PI 3.14159

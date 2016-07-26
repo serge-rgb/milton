@@ -373,7 +373,6 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     gl_set_uniform_vec2(render_data->picker_program, "u_pointb", 1, b.d);
     gl_set_uniform_vec2(render_data->picker_program, "u_pointc", 1, c.d);
     gl_set_uniform_f(render_data->picker_program, "u_angle", picker->data.hsv.h);
-    gl_set_uniform_i(render_data->picker_program, "u_canvas", g_texture_unit_output.id);
 
     v3f hsv = picker->data.hsv;
     gl_set_uniform_vec3(render_data->picker_program, "u_color", 1, hsv_to_rgb(hsv).d);
@@ -594,7 +593,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
         glTexImage2D(GL_TEXTURE_2D,
                      0, GL_RGBA,
-                     MSAA_SAMPLES*view->screen_size.w, MSAA_SAMPLES*view->screen_size.h,
+                     view->screen_size.w, view->screen_size.h,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
         glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
@@ -613,7 +612,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
         glTexImage2D(GL_TEXTURE_2D,
                      0, GL_RGBA,
-                     MSAA_SAMPLES*view->screen_size.w, MSAA_SAMPLES*view->screen_size.h,
+                     view->screen_size.w, view->screen_size.h,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 
@@ -634,7 +633,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL); */
         GLCHK( glTexImage2D(GL_TEXTURE_2D, 0,
                             /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
-                            MSAA_SAMPLES*view->screen_size.w, MSAA_SAMPLES*view->screen_size.h,
+                            view->screen_size.w, view->screen_size.h,
                             /*border*/0, /*pixel_data_format*/GL_DEPTH_STENCIL,
                             /*component type*/GL_UNSIGNED_INT_24_8,
                             NULL) );
@@ -727,32 +726,17 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
 {
     render_data->width = view->screen_size.w;
     render_data->height = view->screen_size.h;
-    i32 tex_w = view->screen_size.w * MSAA_SAMPLES;
-    i32 tex_h = view->screen_size.h * MSAA_SAMPLES;
+    i32 tex_w = view->screen_size.w;
+    i32 tex_h = view->screen_size.h;
     // Create canvas texture
 
-<<<<<<< HEAD
     glActiveTexture(g_texture_unit_output.opengl_id);
-    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer));
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, GL_RGBA8,
-                            tex_w, tex_h,
-                            GL_FALSE);
-    glActiveTexture(g_texture_unit_canvas.opengl_id);
-    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture));
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, GL_RGBA8,
-                            tex_w, tex_h,
-                            GL_FALSE);
-    /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)); */
-    /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)); */
-    /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)); */
-    /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)); */
-
-=======
     GLCHK (glBindTexture(GL_TEXTURE_2D, render_data->output_buffer));
     GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
                         tex_w, tex_h,
                         /*border*/0, /*pixel_data_format*/GL_BGRA,
                         /*component type*/GL_UNSIGNED_BYTE, NULL));
+    glActiveTexture(g_texture_unit_canvas.opengl_id);
     GLCHK (glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture));
     GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
                         tex_w, tex_h,
@@ -762,7 +746,6 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
     GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
     GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
     GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
->>>>>>> tex2d
 
     gl_set_uniform_i(render_data->quad_program, "u_canvas", /*GL_TEXTURE1*/g_texture_unit_canvas.id);
 }
@@ -803,8 +786,8 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 #endif
     glUseProgram(render_data->stroke_program);
 
-    auto center = scale2i(view->screen_center, 1);
-    auto pan = scale2i(view->pan_vector, 1);
+    auto center = view->screen_center;
+    auto pan = view->pan_vector;
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, pan.d);
     gl_set_uniform_vec2i(render_data->blend_program, "u_pan_vector", 1, pan.d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, center.d);
@@ -812,8 +795,8 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->blend_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale*MSAA_SAMPLES);
-    gl_set_uniform_i(render_data->blend_program, "u_scale", view->scale*MSAA_SAMPLES);
+    gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
+    gl_set_uniform_i(render_data->blend_program, "u_scale", view->scale);
 }
 
 
@@ -1070,12 +1053,8 @@ void gpu_render(RenderData* render_data)
                     // Blend onto the canvas buffer.
                     glUseProgram(render_data->layer_program);
 
-<<<<<<< HEAD
-                    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture);
-                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer, 0);
-=======
+                    //glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
                     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->output_buffer, 0);
->>>>>>> tex2d
 
                     GLint p_loc = glGetAttribLocation(render_data->layer_program, "a_position");
                     if (p_loc >= 0)
@@ -1099,10 +1078,7 @@ void gpu_render(RenderData* render_data)
                         GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
                     }
                     glEnable(GL_STENCIL_TEST);
-<<<<<<< HEAD
-=======
                     //glDisable(GL_BLEND);
->>>>>>> tex2d
 
                     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
                     // TODO: uncomment this
@@ -1184,6 +1160,37 @@ void gpu_render(RenderData* render_data)
     }
     glDisable(GL_STENCIL_TEST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer, 0);
+    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
+
+    //if (0)
+    // Render output buffer
+    {
+        glUseProgram(render_data->quad_program);
+        glActiveTexture(g_texture_unit_canvas.opengl_id);
+        glBindTexture(GL_TEXTURE_2D, render_data->output_buffer);
+
+        GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
+        if (loc >= 0)
+        {
+            GLint loc_uv = glGetAttribLocation(render_data->quad_program, "a_uv");
+            if (loc_uv >=0)
+            {
+                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv) );
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_uv,
+                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                glEnableVertexAttribArray((GLuint)loc_uv);
+            }
+
+            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            glEnableVertexAttribArray((GLuint)loc);
+            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
+        }
+    }
+    // Render picker
     if (render_data->gui_visible)
     {
         glEnable(GL_BLEND);
@@ -1212,50 +1219,6 @@ void gpu_render(RenderData* render_data)
         }
         glDisable(GL_BLEND);
     }
-
-    //if (0)
-    // copy canvas onto output buffer
-    {
-        // Bind canvas texture.
-        glUseProgram(render_data->quad_program);
-        glActiveTexture(g_texture_unit_canvas.opengl_id);
-        glBindTexture(GL_TEXTURE_2D, render_data->output_buffer);
-
-        GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
-        if (loc >= 0)
-        {
-            GLint loc_uv = glGetAttribLocation(render_data->quad_program, "a_uv");
-            if (loc_uv >=0)
-            {
-                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv) );
-                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_uv,
-                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                             /*stride*/0, /*ptr*/0));
-                glEnableVertexAttribArray((GLuint)loc_uv);
-            }
-
-            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
-            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                         /*stride*/0, /*ptr*/0));
-            glEnableVertexAttribArray((GLuint)loc);
-            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
-        }
-    }
-    // Render picker
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
-
-
-    // Resolve MSAA
-    //glDisable(GL_MULTISAMPLE);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
-    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer, 0);
-    GLCHK( glDrawBuffer(GL_BACK) );
-    GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
-                             0, 0, render_data->width, render_data->height,
-                             GL_COLOR_BUFFER_BIT, GL_NEAREST) );
-
     GLCHK (glUseProgram(0));
 }
 
