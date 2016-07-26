@@ -1010,7 +1010,7 @@ void gpu_render(RenderData* render_data)
     }
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture, 0) );
     glClear(GL_COLOR_BUFFER_BIT);
-    //glEnable(GL_STENCIL_TEST);
+    glEnable(GL_STENCIL_TEST);
     // Render strokes
     {
         GLCHK( glUseProgram(render_data->stroke_program) );
@@ -1028,6 +1028,9 @@ void gpu_render(RenderData* render_data)
 
                 if (is_layer(re))
                 {
+#if 0
+                    continue;
+#else
                     // Layer render element.
                     //  Render to render_data->output_buffer texture, blending the contents of canvas_texture.
                     //  Then clearing canvas_texture.
@@ -1038,6 +1041,7 @@ void gpu_render(RenderData* render_data)
                     // Blend onto the canvas buffer.
                     glUseProgram(render_data->layer_program);
 
+                    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture);
                     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer, 0);
 
                     GLint p_loc = glGetAttribLocation(render_data->layer_program, "a_position");
@@ -1061,12 +1065,12 @@ void gpu_render(RenderData* render_data)
 
                         GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
                     }
-                    //glEnable(GL_STENCIL_TEST);
-                    //glDisable(GL_BLEND);
+                    glEnable(GL_STENCIL_TEST);
 
                     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture, 0) );
                     // TODO: uncomment this
                     //glClear(GL_COLOR_BUFFER_BIT);
+#endif
                 }
                 else
                 {
@@ -1118,7 +1122,7 @@ void gpu_render(RenderData* render_data)
                     glTextureBarrierNV();
                     //glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
 
-                    //glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
                     glStencilFunc(GL_ALWAYS,1,0xFF);
                     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                     GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
@@ -1143,14 +1147,13 @@ void gpu_render(RenderData* render_data)
     }
     glDisable(GL_STENCIL_TEST);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // Blend layers
+    // Render buffer
+    if (0)
     {
         // Bind canvas texture.
         glUseProgram(render_data->quad_program);
         glActiveTexture(g_texture_unit_canvas.opengl_id);
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture);
 
         GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
         if (loc >= 0)
@@ -1173,17 +1176,6 @@ void gpu_render(RenderData* render_data)
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
     }
-
-    // Resolve MSAA
-    glDisable(GL_MULTISAMPLE);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
-    //glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_, render_data->canvas_textures[old_i], 0);
-    //GLCHK( glDrawBuffer(GL_BACK) );
-    GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
-                             0, 0, render_data->width, render_data->height,
-                             GL_COLOR_BUFFER_BIT, GL_LINEAR) );
-
     // Render picker
     if (render_data->gui_visible)
     {
@@ -1213,6 +1205,19 @@ void gpu_render(RenderData* render_data)
         }
         glDisable(GL_BLEND);
     }
+    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
+
+
+    // Resolve MSAA
+    //glDisable(GL_MULTISAMPLE);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer, 0);
+    GLCHK( glDrawBuffer(GL_BACK) );
+    GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
+                             0, 0, render_data->width, render_data->height,
+                             GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+
     GLCHK (glUseProgram(0));
 }
 

@@ -740,7 +740,7 @@ int milton_main()
 
     // Every X ms, call this callback to send us an event so we don't wait for user input.
     // Called periodically to force updates that don't depend on user input.
-    SDL_AddTimer(200,
+    SDL_AddTimer(100,
                  [](u32 interval, void *param)
                  {
                      SDL_Event event;

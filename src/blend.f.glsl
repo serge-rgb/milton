@@ -6,7 +6,7 @@ layout(origin_upper_left) in vec4 gl_FragCoord;
 
 flat in vec3 v_pointa;
 flat in vec3 v_pointb;
-uniform sampler2D u_canvas;
+uniform sampler2DMS u_canvas;
 
 bool brush_is_eraser()
 {
@@ -32,7 +32,8 @@ void main()
 
     vec2 coord = gl_FragCoord.xy / u_screen_size;
     coord.y = 1-coord.y;
-    vec4 color = texture2D(u_canvas, coord);
+    //vec4 color = texture2D(u_canvas, coord);
+    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
 
     //if (color.a == 1) { discard; }
 
