@@ -21,6 +21,8 @@
         #define MILTON_ZOOM_DEBUG 0
     #endif
 
+#define MSAA_SAMPLES 4
+
 #define MILTON_MULTITHREADED 1
 
 #define MILTON_ENABLE_PROFILING 1

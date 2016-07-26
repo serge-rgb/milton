@@ -47,7 +47,10 @@ PFNGLUNIFORMMATRIX3FVPROC           glUniformMatrix3fv;
 PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC                 glUseProgram;
 PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
-//PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
+
+PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
+
+PFNGLTEXIMAGE2DMULTISAMPLEPROC      glTexImage2DMultisample;
 
 PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
 PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
@@ -76,6 +79,7 @@ PFNGLGLMEMORYBARRIEREXTPROC glMemoryBarrierEXT;
 
 typedef void (*PFNGLTEXTUREBARRIERPROC)();
 PFNGLTEXTUREBARRIERPROC glTextureBarrierNV;
+
 
 #endif  //_WIN32
 
@@ -130,7 +134,9 @@ bool load_gl_functions()
     GETADDRESS(glUseProgram);
     GETADDRESS(glValidateProgram);
     GETADDRESS(glUniform1f);
-    //GETADDRESS(glBlitFramebuffer);
+
+    GETADDRESS(glBlitFramebuffer);
+    GETADDRESS(glTexImage2DMultisample);
 
     GETADDRESS(glVertexAttribPointer);
     GETADDRESS(glVertexAttribIPointer);
