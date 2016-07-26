@@ -80,6 +80,9 @@ PFNGLGLMEMORYBARRIEREXTPROC glMemoryBarrierEXT;
 typedef void (*PFNGLTEXTUREBARRIERPROC)();
 PFNGLTEXTUREBARRIERPROC glTextureBarrierNV;
 
+typedef void (*PFNGLMINSAMPLESHADINGARBPROC) (GLclampf value);
+PFNGLMINSAMPLESHADINGARBPROC glMinSampleShadingARB;
+
 
 #endif  //_WIN32
 
@@ -160,6 +163,8 @@ bool load_gl_functions()
     GETADDRESS(glGenerateMipmap);
 
     GETADDRESS(glTextureBarrierNV);
+
+    GETADDRESS(glMinSampleShadingARB);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

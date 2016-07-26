@@ -206,6 +206,7 @@ struct TextureUnitID
 };
 
 static TextureUnitID g_texture_unit_canvas = { GL_TEXTURE2, 2 };
+static TextureUnitID g_texture_unit_output = { GL_TEXTURE1, 1 };
 
 struct RenderData
 {
@@ -372,7 +373,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     gl_set_uniform_vec2(render_data->picker_program, "u_pointb", 1, b.d);
     gl_set_uniform_vec2(render_data->picker_program, "u_pointc", 1, c.d);
     gl_set_uniform_f(render_data->picker_program, "u_angle", picker->data.hsv.h);
-    gl_set_uniform_i(render_data->picker_program, "u_canvas", g_texture_unit_canvas.id);
+    gl_set_uniform_i(render_data->picker_program, "u_canvas", g_texture_unit_output.id);
 
     v3f hsv = picker->data.hsv;
     gl_set_uniform_vec3(render_data->picker_program, "u_color", 1, hsv_to_rgb(hsv).d);
@@ -407,6 +408,8 @@ b32 is_layer(RenderElement* render_element)
 
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
+    glEnable(GL_SAMPLE_SHADING_ARB);
+    glMinSampleShadingARB(1.0);
     //mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
     // TODO: Handle this. New MLT version?
     // mlt_assert(STROKE_MAX_POINTS == STROKE_MAX_POINTS_GL);
@@ -598,6 +601,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
+        glActiveTexture(g_texture_unit_output.opengl_id);
         GLCHK (glGenTextures(1, &render_data->output_buffer));
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer);
 
@@ -721,12 +725,13 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
     i32 tex_w = view->screen_size.w;
     i32 tex_h = view->screen_size.h;
     // Create canvas texture
-    glActiveTexture(g_texture_unit_canvas.opengl_id);
 
+    glActiveTexture(g_texture_unit_output.opengl_id);
     GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer));
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, GL_RGBA8,
                             tex_w, tex_h,
                             GL_FALSE);
+    glActiveTexture(g_texture_unit_canvas.opengl_id);
     GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture));
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_SAMPLES, GL_RGBA8,
                             tex_w, tex_h,
@@ -1146,6 +1151,35 @@ void gpu_render(RenderData* render_data)
         }
     }
     glDisable(GL_STENCIL_TEST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer, 0);
+    if (render_data->gui_visible)
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glUseProgram(render_data->picker_program);
+        GLint loc = glGetAttribLocation(render_data->picker_program, "a_position");
+
+        if (loc >= 0)
+        {
+            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker) );
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            glEnableVertexAttribArray((GLuint)loc);
+            GLint loc_norm = glGetAttribLocation(render_data->picker_program, "a_norm");
+            if (loc_norm >= 0)
+            {
+                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker_norm) );
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_norm,
+                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                glEnableVertexAttribArray((GLuint)loc_norm);
+
+            }
+            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
+        }
+        glDisable(GL_BLEND);
+    }
 
     // Render buffer
     if (0)
@@ -1177,34 +1211,6 @@ void gpu_render(RenderData* render_data)
         }
     }
     // Render picker
-    if (render_data->gui_visible)
-    {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glUseProgram(render_data->picker_program);
-        GLint loc = glGetAttribLocation(render_data->picker_program, "a_position");
-
-        if (loc >= 0)
-        {
-            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker) );
-            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                         /*stride*/0, /*ptr*/0));
-            glEnableVertexAttribArray((GLuint)loc);
-            GLint loc_norm = glGetAttribLocation(render_data->picker_program, "a_norm");
-            if (loc_norm >= 0)
-            {
-                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker_norm) );
-                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_norm,
-                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                             /*stride*/0, /*ptr*/0));
-                glEnableVertexAttribArray((GLuint)loc_norm);
-
-            }
-            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
-        }
-        glDisable(GL_BLEND);
-    }
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
 
 
