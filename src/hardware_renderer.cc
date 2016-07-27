@@ -226,10 +226,9 @@ struct RenderData
 
     GLuint canvas_texture;
     GLuint output_buffer;
+    GLuint stencil_texture;
 
     GLuint fbo;
-
-    GLuint source_fbo;  // Used to copy rect between strokes with glBlitFramebuffer
 
     b32 gui_visible;
 
@@ -302,42 +301,42 @@ static void print_framebuffer_status()
     char* msg = NULL;
     switch (status)
     {
-    case GL_FRAMEBUFFER_COMPLETE:
+        case GL_FRAMEBUFFER_COMPLETE:
         {
             // OK!
             break;
         }
-    case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
         {
             msg = "Incomplete Attachment";
             break;
         }
-    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
         {
             msg = "Missing Attachment";
             break;
         }
-    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
         {
             msg = "Incomplete Draw Buffer";
             break;
         }
-    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
         {
             msg = "Incomplete Read Buffer";
             break;
         }
-    case GL_FRAMEBUFFER_UNSUPPORTED:
+        case GL_FRAMEBUFFER_UNSUPPORTED:
         {
             msg = "Unsupported Framebuffer";
             break;
         }
-    case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
         {
             msg = "Incomplete Multisample";
             break;
         }
-    default:
+        default:
         {
             msg = "Unknown";
             break;
@@ -397,6 +396,49 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     colors[3] = button->rgba; button = button->next;
     colors[4] = button->rgba; button = button->next;
     gl_set_uniform_vec4(render_data->picker_program, "u_colors", 5, (float*)colors);
+
+    // Update VBO for picker
+    {
+        Rect rect = get_bounds_for_picker_and_colors(picker);
+        // convert to clip space
+        v2i screen_size = {render_data->width, render_data->height};
+        float top = (float)rect.top / screen_size.h;
+        float bottom = (float)rect.bottom / screen_size.h;
+        float left = (float)rect.left / screen_size.w;
+        float right = (float)rect.right / screen_size.w;
+        top = (top*2.0f - 1.0f) * -1;
+        bottom = (bottom*2.0f - 1.0f) *-1;
+        left = left*2.0f - 1.0f;
+        right = right*2.0f - 1.0f;
+        // a------d
+        // |  \   |
+        // |    \ |
+        // b______c
+        GLfloat data[] =
+        {
+            left, top,
+            left, bottom,
+            right, bottom,
+            right, top,
+        };
+        float ratio = (float)(rect.bottom-rect.top) / (float)(rect.right-rect.left);
+        ratio = (ratio*2)-1;
+        // normalized positions.
+        GLfloat norm[] =
+        {
+            -1, -1,
+            -1, ratio,
+            1, ratio,
+            1, -1,
+        };
+
+        // Create buffers and upload
+        glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker);
+        glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker_norm);
+        glBufferData(GL_ARRAY_BUFFER, array_count(norm)*sizeof(*norm), norm, GL_STATIC_DRAW);
+    }
 }
 
 b32 is_layer(RenderElement* render_element)
@@ -461,7 +503,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 #if MILTON_DEBUG
         GLuint objs[2] = {};
         size_t vsz, fsz;
-        char* vsrc = debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.v.glsl"), &vsz);
+        char* vsrc = debug_load_shader_from_file(TO_PATH_STR("src/blend.v.glsl"), &vsz);
         char* fsrc = debug_load_shader_from_file(TO_PATH_STR("src/blend.f.glsl"), &fsz);
 #endif
 
@@ -497,12 +539,13 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, array_count(quad_data)*sizeof(*quad_data), quad_data, GL_STATIC_DRAW);
 
+        float u = 1.0f;
         GLfloat uv_data[] =
         {
             0,0,
-            0,1,
-            1,1,
-            1,0,
+            0,u,
+            u,u,
+            u,0,
         };
         GLuint vbo_uv = 0;
         glGenBuffers(1, &vbo_uv);
@@ -514,23 +557,23 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         render_data->vbo_quad_uv = vbo_uv;
 
         char vsrc[] =
-                "#version 120 \n"
-                "attribute vec2 a_point; \n"
-                "attribute vec2 a_uv; \n"
-                "varying vec2 v_uv; \n"
-                "void main() { \n"
-                    "v_uv = a_uv; \n"
-                "    gl_Position = vec4(a_point, 0,1); \n"
-                "} \n";
+        "#version 120 \n"
+        "attribute vec2 a_point; \n"
+        "attribute vec2 a_uv; \n"
+        "varying vec2 v_uv; \n"
+        "void main() { \n"
+        "v_uv = a_uv; \n"
+        "    gl_Position = vec4(a_point, 0,1); \n"
+        "} \n";
         char fsrc[] =
-                "#version 120 \n"
-                "uniform sampler2D u_canvas; \n"
-                "varying vec2 v_uv; \n"
-                "void main() \n"
-                "{ \n"
-                    "vec4 color = texture2D(u_canvas, v_uv); \n"
-                    "gl_FragColor = color; \n"
-                "} \n";
+        "#version 120 \n"
+        "uniform sampler2D u_canvas; \n"
+        "varying vec2 v_uv; \n"
+        "void main() \n"
+        "{ \n"
+        "vec4 color = texture2D(u_canvas, v_uv); \n"
+        "gl_FragColor = color; \n"
+        "} \n";
 
         GLuint objs[2] = {};
         objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER);
@@ -543,19 +586,19 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         render_data->background_program = glCreateProgram();
 
         char vsrc[] =
-                "#version 120 \n"
-                "attribute vec2 a_point; \n"
-                "void main() \n"
-                "{ \n"
-                "    gl_Position = vec4(a_point, 0,1); \n"
-                "} \n";
+        "#version 120 \n"
+        "attribute vec2 a_point; \n"
+        "void main() \n"
+        "{ \n"
+        "    gl_Position = vec4(a_point, 0,1); \n"
+        "} \n";
         char fsrc[] =
-                "#version 120 \n"
-                "uniform vec3 u_background_color;"
-                "void main() \n"
-                "{ \n"
-                    "gl_FragColor = vec4(u_background_color, 0); \n"
-                "} \n";
+        "#version 120 \n"
+        "uniform vec3 u_background_color;"
+        "void main() \n"
+        "{ \n"
+        "gl_FragColor = vec4(u_background_color, 0); \n"
+        "} \n";
         GLuint objs[2] = {};
         objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER);
         objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
@@ -586,15 +629,15 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         GLCHK (glGenTextures(1, &render_data->canvas_texture));
         glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
 
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
         glTexImage2D(GL_TEXTURE_2D,
-                     0, GL_RGBA,
-                     view->screen_size.w, view->screen_size.h,
-                     0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         0, GL_RGBA,
+         view->screen_size.w, view->screen_size.h,
+         0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
         glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
 
@@ -605,27 +648,25 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         GLCHK (glGenTextures(1, &render_data->output_buffer));
         glBindTexture(GL_TEXTURE_2D, render_data->output_buffer);
 
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
         glTexImage2D(GL_TEXTURE_2D,
-                     0, GL_RGBA,
-                     view->screen_size.w, view->screen_size.h,
-                     0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         0, GL_RGBA,
+         view->screen_size.w, view->screen_size.h,
+         0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        GLuint stencil_texture = 0;
-
-        glGenTextures(1, &stencil_texture);
-        glBindTexture(GL_TEXTURE_2D, stencil_texture);
+        glGenTextures(1, &render_data->stencil_texture);
+        glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
 
 
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
         /* glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY); */
@@ -633,10 +674,10 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL); */
         GLCHK( glTexImage2D(GL_TEXTURE_2D, 0,
                             /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
-                            view->screen_size.w, view->screen_size.h,
+            view->screen_size.w, view->screen_size.h,
                             /*border*/0, /*pixel_data_format*/GL_DEPTH_STENCIL,
                             /*component type*/GL_UNSIGNED_INT_24_8,
-                            NULL) );
+            NULL) );
 
 
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -657,65 +698,18 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
             GLuint fbo = 0;
             glGenFramebuffers(1, &fbo);
             glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-            GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
-            GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, stencil_texture, 0) );
+            GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                render_data->canvas_texture, 0) );
+            GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D,
+                render_data->stencil_texture, 0) );
             render_data->fbo = fbo;
             print_framebuffer_status();
         }
-        {
-            GLuint fbo = 0;
-            glGenFramebuffers(1, &fbo);
-            render_data->source_fbo = fbo;
-        }
-
         GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     }
     // VBO for picker
-    {
-        Rect rect = get_bounds_for_picker_and_colors(picker);
-        // convert to clip space
-        auto screen_size = view->screen_size;
-        float top = (float)rect.top / screen_size.h;
-        float bottom = (float)rect.bottom / screen_size.h;
-        float left = (float)rect.left / screen_size.w;
-        float right = (float)rect.right / screen_size.w;
-        top = (top*2.0f - 1.0f) * -1;
-        bottom = (bottom*2.0f - 1.0f) *-1;
-        left = left*2.0f - 1.0f;
-        right = right*2.0f - 1.0f;
-        // a------d
-        // |  \   |
-        // |    \ |
-        // b______c
-        GLfloat data[] =
-        {
-            left, top,
-            left, bottom,
-            right, bottom,
-            right, top,
-        };
-        float ratio = (float)(rect.bottom-rect.top) / (float)(rect.right-rect.left);
-        ratio = (ratio*2)-1;
-        // normalized positions.
-        GLfloat norm[] =
-        {
-            -1, -1,
-            -1, ratio,
-            1, ratio,
-            1, -1,
-        };
-        // Create buffers and upload
-        GLuint vbo = 0;
-        glGenBuffers(1, &vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_STATIC_DRAW);
-        GLuint vbo_norm = 0;
-        glGenBuffers(1, &vbo_norm);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_norm);
-        glBufferData(GL_ARRAY_BUFFER, array_count(norm)*sizeof(*norm), norm, GL_STATIC_DRAW);
-        render_data->vbo_picker = vbo;
-        render_data->vbo_picker_norm = vbo_norm;
-    }
+    glGenBuffers(1, &render_data->vbo_picker);
+    glGenBuffers(1, &render_data->vbo_picker_norm);
 
     // Call gpu_update_picker() to initialize the color picker
     gpu_update_picker(render_data, picker);
@@ -742,12 +736,15 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
                         tex_w, tex_h,
                         /*border*/0, /*pixel_data_format*/GL_BGRA,
                         /*component type*/GL_UNSIGNED_BYTE, NULL));
-    GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-    GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-    GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-    GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-    gl_set_uniform_i(render_data->quad_program, "u_canvas", /*GL_TEXTURE1*/g_texture_unit_canvas.id);
+
+    glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
+    GLCHK( glTexImage2D(GL_TEXTURE_2D, 0,
+                        /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
+                        tex_w, tex_h,
+                        /*border*/0, /*pixel_data_format*/GL_DEPTH_STENCIL,
+                        /*component type*/GL_UNSIGNED_INT_24_8,
+                        NULL) );
 }
 
 void gpu_update_scale(RenderData* render_data, i32 scale)
@@ -786,8 +783,8 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 #endif
     glUseProgram(render_data->stroke_program);
 
-    auto center = view->screen_center;
-    auto pan = view->pan_vector;
+    auto center = divide2i(view->screen_center, 1);
+    auto pan = divide2i(view->pan_vector, 1);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, pan.d);
     gl_set_uniform_vec2i(render_data->blend_program, "u_pan_vector", 1, pan.d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, center.d);
@@ -798,7 +795,6 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
     gl_set_uniform_i(render_data->blend_program, "u_scale", view->scale);
 }
-
 
 void gpu_clip_strokes(RenderData* render_data, Layer* root_layer, Stroke* working_stroke)
 {
@@ -885,7 +881,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             v3i* apoints;
             v3i* bpoints;
             Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
-                                             + 2*count_points*sizeof(decltype(*apoints)));
+             + 2*count_points*sizeof(decltype(*apoints)));
 
             bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
             apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
@@ -995,6 +991,8 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
 
 void gpu_render(RenderData* render_data)
 {
+    glViewport(0,0, render_data->width, render_data->height);
+    glScissor(0,0, render_data->width, render_data->height);
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
     print_framebuffer_status();
 
@@ -1158,38 +1156,9 @@ void gpu_render(RenderData* render_data)
             }
         }
     }
-    glDisable(GL_STENCIL_TEST);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->output_buffer, 0);
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
+    GLCHK( glDisable(GL_STENCIL_TEST) );
 
-    //if (0)
-    // Render output buffer
-    {
-        glUseProgram(render_data->quad_program);
-        glActiveTexture(g_texture_unit_canvas.opengl_id);
-        glBindTexture(GL_TEXTURE_2D, render_data->output_buffer);
-
-        GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
-        if (loc >= 0)
-        {
-            GLint loc_uv = glGetAttribLocation(render_data->quad_program, "a_uv");
-            if (loc_uv >=0)
-            {
-                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv) );
-                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_uv,
-                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                             /*stride*/0, /*ptr*/0));
-                glEnableVertexAttribArray((GLuint)loc_uv);
-            }
-
-            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
-            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                         /*stride*/0, /*ptr*/0));
-            glEnableVertexAttribArray((GLuint)loc);
-            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
-        }
-    }
+    GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->output_buffer, 0) );
     // Render picker
     if (render_data->gui_visible)
     {
@@ -1219,6 +1188,50 @@ void gpu_render(RenderData* render_data)
         }
         glDisable(GL_BLEND);
     }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0,0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    glScissor(0,0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    //if (0)
+    // Render output buffer
+    {
+        glUseProgram(render_data->quad_program);
+        glActiveTexture(g_texture_unit_canvas.opengl_id);
+        glBindTexture(GL_TEXTURE_2D, render_data->output_buffer);
+
+        GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
+        if (loc >= 0)
+        {
+            GLint loc_uv = glGetAttribLocation(render_data->quad_program, "a_uv");
+            if (loc_uv >=0)
+            {
+                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv) );
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_uv,
+                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                glEnableVertexAttribArray((GLuint)loc_uv);
+            }
+
+            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            glEnableVertexAttribArray((GLuint)loc);
+            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
+        }
+    }
     GLCHK (glUseProgram(0));
+
+
+#if 0
+    // Resolve SSAA
+    GLCHK( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0) );
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
+    GLCHK( glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->output_buffer, 0) );
+    //GLCHK( glDrawBuffer(GL_BACK) );
+    GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
+                             0, 0, render_data->width, render_data->height,
+                             GL_COLOR_BUFFER_BIT, GL_LINEAR) );
+#endif
 }
 

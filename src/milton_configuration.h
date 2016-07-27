@@ -21,6 +21,8 @@
         #define MILTON_ZOOM_DEBUG 0
     #endif
 
+
+#define SSAA_FACTOR 4
 #define MILTON_MULTITHREADED 1
 
 #define MILTON_ENABLE_PROFILING 1

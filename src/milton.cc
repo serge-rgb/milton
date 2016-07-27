@@ -684,6 +684,8 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
+    new_screen_size = scale2i(new_screen_size, SSAA_FACTOR);
+
     b32 pan_ok = true;
     if ((new_screen_size.w > 8000 ||
          new_screen_size.h > 8000 ||
@@ -748,13 +750,13 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
 
         // Upload data to gpu
         gpu_set_canvas(milton_state->render_data, milton_state->view);
+        gpu_resize(milton_state->render_data, milton_state->view);
+        gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
     }
     else
     {
         milton_die_gracefully("Fatal error. Screen size is more than Milton can handle.");
     }
-
-    gpu_resize(milton_state->render_data, milton_state->view);
 
     return pan_ok;
 }
