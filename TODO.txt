@@ -14,7 +14,7 @@ To-Do
         [] Resizing (manage FBO memory, screen_size dependent updates)
     [] Brush outline
     [] Export to image (draw rect outline, split render func, out of memory handling)
-    [] Undo/Redo
+    [x] Undo/Redo
     [] Unload image
     [] Layer visibility
     [] Clip to screen

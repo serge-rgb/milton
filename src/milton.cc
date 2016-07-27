@@ -222,6 +222,9 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     {
         v2i in_point = input->points[input_i];
 
+        // Scale the points that come from the window system by the AA factor.
+        in_point = scale2i(in_point, SSAA_FACTOR);
+
         v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
         f32 pressure = NO_PRESSURE_INFO;
@@ -734,7 +737,7 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
         milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
 
         // Add delta to pan vector
-        v2i pan_vector = add2i(milton_state->view->pan_vector, (scale2i(pan_delta, milton_state->view->scale)));
+        v2i pan_vector = add2i(milton_state->view->pan_vector, (scale2i(pan_delta, milton_state->real_scale)));
 
         if (pan_vector.x > milton_state->view->canvas_radius_limit || pan_vector.x <= -milton_state->view->canvas_radius_limit)
         {
@@ -1155,14 +1158,16 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
         i32 min_scale = MILTON_MINIMUM_SCALE;
 
-        if (input->scale > 0 && milton_state->view->scale >= min_scale)
+        if (input->scale > 0 && milton_state->real_scale >= min_scale)
         {
-            milton_state->view->scale = (i32)(ceilf(milton_state->view->scale / scale_factor));
+            milton_state->real_scale = (i32)(ceilf(milton_state->real_scale / scale_factor));
         }
-        else if (input->scale < 0 && milton_state->view->scale < view_scale_limit)
+        else if (input->scale < 0 && milton_state->real_scale < view_scale_limit)
         {
-            milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
+            milton_state->real_scale = (i32)(milton_state->real_scale * scale_factor) + 1;
         }
+        milton_state->view->scale = milton_state->real_scale / SSAA_FACTOR;
+
         milton_update_brushes(milton_state);
         gpu_update_scale(milton_state->render_data, milton_state->view->scale);
     }

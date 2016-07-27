@@ -401,7 +401,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     {
         Rect rect = get_bounds_for_picker_and_colors(picker);
         // convert to clip space
-        v2i screen_size = {render_data->width, render_data->height};
+        v2i screen_size = {render_data->width / SSAA_FACTOR, render_data->height / SSAA_FACTOR};
         float top = (float)rect.top / screen_size.h;
         float bottom = (float)rect.bottom / screen_size.h;
         float left = (float)rect.left / screen_size.w;
@@ -1142,6 +1142,17 @@ void gpu_render(RenderData* render_data)
                     if (blend_pos_loc >= 0)
                     {
                         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+#if 0
+                        GLint blend_uv_loc = glGetAttribLocation(render_data->blend_program, "a_uv");
+                        if (blend_uv_loc >= 0)
+                        {
+                            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv);
+                            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)blend_uv_loc,
+                                                         /*size*/2, GL_INT, /*normalize*/GL_FALSE,
+                                                         /*stride*/0, /*ptr*/0));
+                            glEnableVertexAttribArray((GLuint)blend_uv_loc);
+                        }
+#endif
 
                         GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke) );
                         GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)blend_pos_loc,
@@ -1192,7 +1203,6 @@ void gpu_render(RenderData* render_data)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0,0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
     glScissor(0,0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
-    //if (0)
     // Render output buffer
     {
         glUseProgram(render_data->quad_program);
@@ -1221,17 +1231,5 @@ void gpu_render(RenderData* render_data)
         }
     }
     GLCHK (glUseProgram(0));
-
-
-#if 0
-    // Resolve SSAA
-    GLCHK( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0) );
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
-    GLCHK( glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->output_buffer, 0) );
-    //GLCHK( glDrawBuffer(GL_BACK) );
-    GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
-                             0, 0, render_data->width, render_data->height,
-                             GL_COLOR_BUFFER_BIT, GL_LINEAR) );
-#endif
 }
 
