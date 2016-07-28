@@ -507,8 +507,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         char* fsrc = debug_load_shader_from_file(TO_PATH_STR("src/blend.f.glsl"), &fsz);
 #endif
 
-        objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
+        objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER, "src/blend.v.glsl");
+        objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER, "src/blend.f.glsl");
 
         render_data->blend_program = glCreateProgram();
         gl_link_program(render_data->blend_program, objs, array_count(objs));
@@ -629,8 +629,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         GLCHK (glGenTextures(1, &render_data->canvas_texture));
         glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
 
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
@@ -648,8 +648,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         GLCHK (glGenTextures(1, &render_data->output_buffer));
         glBindTexture(GL_TEXTURE_2D, render_data->output_buffer);
 
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
@@ -665,8 +665,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
 
 
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
         /* glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY); */
@@ -1203,6 +1203,7 @@ void gpu_render(RenderData* render_data)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0,0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
     glScissor(0,0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+#if 0
     // Render output buffer
     {
         glUseProgram(render_data->quad_program);
@@ -1229,7 +1230,23 @@ void gpu_render(RenderData* render_data)
             glEnableVertexAttribArray((GLuint)loc);
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
-    }
+
+#else
+    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
+
+
+    // Resolve MSAA
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->output_buffer, 0);
+    GLCHK( glDrawBuffer(GL_BACK) );
+    GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
+                             0, 0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR,
+                             GL_COLOR_BUFFER_BIT, GL_LINEAR) );
+#endif
+
+
     GLCHK (glUseProgram(0));
 }
 

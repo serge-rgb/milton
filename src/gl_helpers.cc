@@ -24,7 +24,7 @@ void gl_log(char* str)
 
 #endif
 
-GLuint gl_compile_shader(const char* src, GLuint type)
+GLuint gl_compile_shader(const char* src, GLuint type, char* shader_name)
 {
     GLuint obj = glCreateShader(type);
 
@@ -36,6 +36,10 @@ GLuint gl_compile_shader(const char* src, GLuint type)
     GLCHK ( glGetShaderiv(obj, GL_COMPILE_STATUS, &res) );
     if (!res)
     {
+        if (shader_name != NULL)
+        {
+            milton_log("Shader: \"%s\"\n", shader_name);
+        }
 		milton_log("SHADER SOURCE:\n%s\n", src);
         GLint length;
         GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
