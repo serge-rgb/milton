@@ -10,18 +10,21 @@ To-Do
     [x] Color picker
     [x] Eraser (sort VBOs)
     [] Figure out how to get around the FBO size limitations.
-        [] Anti-aliasing (Multisample FBOs, etc)
-        [] Resizing (manage FBO memory, screen_size dependent updates)
+        [x] Anti-aliasing (Multisample FBOs, etc)
+        [] >2x Anti-aliasing (resolve in shader)
+        [x] Resizing (manage FBO memory, screen_size dependent updates)
     [] Brush outline
+    [] Brush size preview
     [] Export to image (draw rect outline, split render func, out of memory handling)
     [x] Undo/Redo
     [] Unload image
     [] Layer visibility
-    [] Clip to screen
-    [] Coalesce strokes.
+    [] Clip to screen (clip <1px strokes, clip strokes outside window)
     [] Single point strokes
     [] use triangle strips
+    [] end of "infinite" canvas
     [] LOTS of redundancy in vertex attributes regardless of triangle strips
+
 
 - Application
     - Porting (dialogs and File I/O)
