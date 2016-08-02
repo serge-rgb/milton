@@ -1270,7 +1270,6 @@ void gpu_render(RenderData* render_data)
 #endif
 #endif
 
-
     GLCHK (glUseProgram(0));
 }
 

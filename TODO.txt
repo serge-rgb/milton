@@ -45,13 +45,11 @@ To-Do
         - Brush
             - Support for general, implicitly defined brushes
     - Feature Requests:
-        - Perfect AA for exporting
+        - eraser toggle
         - pressure toggle
         - pressure response graph
-        - eraser toggle
         - unzoomable&unpannable layer ("pin layer" feature) ?
-        -
-        -
+        - Perfect AA for exporting
 
 - Polish and/or Debug layer
     - Memory allocation profiler.
