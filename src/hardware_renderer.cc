@@ -1087,7 +1087,8 @@ void gpu_render(RenderData* render_data)
                     glEnable(GL_STENCIL_TEST);
                     glDisable(GL_BLEND);
 
-                    GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
+                    GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                                  GL_TEXTURE_2D, render_data->layer_texture, 0) );
                     glClear(GL_COLOR_BUFFER_BIT);
                 }
                 else
@@ -1216,9 +1217,9 @@ void gpu_render(RenderData* render_data)
     // Render output buffer
     {
         glUseProgram(render_data->quad_program);
+
         glActiveTexture(g_texture_unit_layer.opengl_id);
         glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
-
         GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
         if (loc >= 0)
         {
@@ -1239,6 +1240,7 @@ void gpu_render(RenderData* render_data)
             glEnableVertexAttribArray((GLuint)loc);
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
+    }
 
 #else
 

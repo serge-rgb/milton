@@ -4,10 +4,6 @@
 // TODO: this layout qualifier introduces GLSL 150 dependency.
 layout(origin_upper_left) in vec4 gl_FragCoord;
 
-flat in vec3 v_pointa;
-flat in vec3 v_pointb;
-// in vec2 v_uv;
-
 uniform sampler2D u_canvas;
 
 bool brush_is_eraser()
@@ -32,9 +28,11 @@ void main()
 {
     // vec4 g_eraser_magic = vec4(0,1,0,1);
 
-    vec2 coord = gl_FragCoord.xy / u_screen_size;
+    vec2 coord = gl_FragCoord.xy/ u_screen_size;
+    //vec2 coord = (2.0*gl_FragCoord.xy+1.0) / (2.0*u_screen_size);
     coord.y = 1-coord.y;
-    vec4 color = texture2D(u_canvas, coord);
+    //vec4 color = texture2D(u_canvas, coord);
+    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.x, 1-gl_FragCoord.y), 0);
 
     //if (color.a == 1) { discard; }
 
