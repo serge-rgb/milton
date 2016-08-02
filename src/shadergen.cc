@@ -28,7 +28,7 @@ char* read_entire_file(char* fname)
     if (fd)
     {
         auto sz = bytes_until_end(fd);
-        contents = (char*)calloc(1, sz);
+        contents = (char*)calloc(1, sz+1);
         if (contents)
         {
             auto read = fread(contents, 1, sz, fd);
@@ -110,6 +110,8 @@ int main()
         output_shader(outfd, "../src/picker.f.glsl", "g_picker_f");
         output_shader(outfd, "../src/layer_blend.v.glsl", "g_layer_blend_v");
         output_shader(outfd, "../src/layer_blend.f.glsl", "g_layer_blend_f");
+        output_shader(outfd, "../src/simple.v.glsl", "g_simple_v");
+        output_shader(outfd, "../src/ssaa_resolve.f.glsl", "g_ssaa_resolve_f");
     }
     else
     {
