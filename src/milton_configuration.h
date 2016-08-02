@@ -22,7 +22,7 @@
     #endif
 
 
-#define SSAA_FACTOR 2
+#define SSAA_FACTOR 2  // Possible values: 1,2,4
 #define MILTON_MULTITHREADED 1
 
 #define MILTON_ENABLE_PROFILING 1

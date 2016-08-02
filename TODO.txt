@@ -11,7 +11,7 @@ To-Do
     [x] Eraser (sort VBOs)
     [] Figure out how to get around the FBO size limitations.
         [x] Anti-aliasing (Multisample FBOs, etc)
-        [] >2x Anti-aliasing (resolve in shader)
+        [x] >2x Anti-aliasing (resolve in shader)
         [x] Resizing (manage FBO memory, screen_size dependent updates)
     [] Brush outline
     [] Brush size preview

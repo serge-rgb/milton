@@ -1244,30 +1244,37 @@ void gpu_render(RenderData* render_data)
 
     // Resolve MSAA
 
-#if 0
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
-    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0);
-    GLCHK( glDrawBuffer(GL_BACK) );
-    GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
-                             0, 0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR,
-                             GL_COLOR_BUFFER_BIT, GL_LINEAR) );
-#else
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(render_data->ssaa_program);
+    if (SSAA_FACTOR == 2 || SSAA_FACTOR == 1)
     {
-        GLint loc = glGetAttribLocation(render_data->ssaa_program, "a_position");
-        if (loc >= 0)
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0);
+        GLCHK( glDrawBuffer(GL_BACK) );
+        GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
+                                 0, 0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR,
+                                 GL_COLOR_BUFFER_BIT, GL_LINEAR) );
+    }
+    else if (SSAA_FACTOR == 4)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glUseProgram(render_data->ssaa_program);
         {
-            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
-            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                         /*stride*/0, /*ptr*/0));
-            glEnableVertexAttribArray((GLuint)loc);
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+            GLint loc = glGetAttribLocation(render_data->ssaa_program, "a_position");
+            if (loc >= 0)
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                glEnableVertexAttribArray((GLuint)loc);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+            }
         }
     }
-#endif
+    else
+    {
+        milton_die_gracefully("unsupported SSAA_FACTOR");
+    }
 #endif
 
     GLCHK (glUseProgram(0));

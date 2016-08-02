@@ -99,14 +99,18 @@ void milton_set_background_color(MiltonState* milton_state, v3f background_color
     gpu_set_background(milton_state->render_data, background_color);
 }
 
-static void milton_set_default_view(CanvasView* view)
+static void milton_set_default_view_and_scale(MiltonState* milton_state)
 {
+    CanvasView* view = milton_state->view;
+
     *view = CanvasView{};
 
     view->scale               = MILTON_DEFAULT_SCALE;
     view->downsampling_factor = 1;
     view->num_layers          = 1;
     view->canvas_radius_limit = 1 << 30;  // A higher limit and certain assumptions start to break
+
+    milton_state->real_scale = view->scale * SSAA_FACTOR;
 
 }
 
@@ -592,7 +596,8 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
     milton_gl_backend_init(milton_state);
 
     milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
-    milton_set_default_view(milton_state->view);
+    milton_set_default_view_and_scale(milton_state);
+
 
     milton_state->view->screen_size = { width, height };
 
@@ -737,14 +742,17 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
         milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
 
         // Add delta to pan vector
-        v2i pan_vector = add2i(milton_state->view->pan_vector, (scale2i(pan_delta, milton_state->real_scale)));
+        v2i pan_vector = add2i(milton_state->view->pan_vector,
+                                (scale2i(pan_delta, milton_state->real_scale)));
 
-        if (pan_vector.x > milton_state->view->canvas_radius_limit || pan_vector.x <= -milton_state->view->canvas_radius_limit)
+        if (pan_vector.x > milton_state->view->canvas_radius_limit ||
+             pan_vector.x <= -milton_state->view->canvas_radius_limit)
         {
             pan_vector.x = milton_state->view->pan_vector.x;
             pan_ok = false;
         }
-        if (pan_vector.y > milton_state->view->canvas_radius_limit || pan_vector.y <= -milton_state->view->canvas_radius_limit)
+        if (pan_vector.y > milton_state->view->canvas_radius_limit ||
+            pan_vector.y <= -milton_state->view->canvas_radius_limit)
         {
             pan_vector.y = milton_state->view->pan_vector.y;
             pan_ok = false;
@@ -795,7 +803,7 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state)
     reset(&milton_state->stroke_graveyard);
 
     // New View
-    milton_set_default_view(milton_state->view);
+    milton_set_default_view_and_scale(milton_state);
     milton_state->view->background_color = {1,1,1};
     gpu_set_background(milton_state->render_data, milton_state->view->background_color);
 
