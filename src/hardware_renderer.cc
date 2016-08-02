@@ -217,6 +217,7 @@ struct RenderData
     GLuint picker_program;
     GLuint layer_blend_program;
     GLuint ssaa_program;
+    GLuint outline_program;
 
     // VBO for the screen-covering quad.
     GLuint vbo_quad;
@@ -224,6 +225,9 @@ struct RenderData
 
     GLuint vbo_picker;
     GLuint vbo_picker_norm;
+
+    GLuint vbo_outline;
+    GLuint vbo_outline_sizes;
 
     GLuint layer_texture;
     GLuint canvas_texture;
@@ -442,6 +446,43 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     }
 }
 
+void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 width)
+{
+    if (render_data->vbo_outline == 0)
+    {
+        mlt_assert(render_data->vbo_outline_sizes == 0);
+        glGenBuffers(1, &render_data->vbo_outline);
+        glGenBuffers(1, &render_data->vbo_outline_sizes);
+    }
+    mlt_assert(render_data->vbo_outline_sizes != 0);
+
+    float radius = ((float)width)/2.0f;
+
+    GLfloat data[] =
+    {
+        2*((cx-radius) / (render_data->width/SSAA_FACTOR))-1,  -2*((cy-radius) / (render_data->height/SSAA_FACTOR))+1,
+        2*((cx-radius) / (render_data->width/SSAA_FACTOR))-1,  -2*((cy+radius) / (render_data->height/SSAA_FACTOR))+1,
+        2*((cx+radius) / (render_data->width/SSAA_FACTOR))-1,  -2*((cy+radius) / (render_data->height/SSAA_FACTOR))+1,
+        2*((cx+radius) / (render_data->width/SSAA_FACTOR))-1,  -2*((cy-radius) / (render_data->height/SSAA_FACTOR))+1,
+    };
+
+    GLfloat sizes[] =
+    {
+        -2*radius, -2*radius,
+        -2*radius,  2*radius,
+         2*radius,  2*radius,
+         2*radius, -2*radius,
+    };
+
+    glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline_sizes);
+    glBufferData(GL_ARRAY_BUFFER, array_count(sizes)*sizeof(*sizes), sizes, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline);
+    GLCHK( glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_DYNAMIC_DRAW) );
+
+    gl_set_uniform_i(render_data->outline_program, "u_radius", width - 5);  // Constant 5 the same as in shader outline.f.glsl
+}
+
 b32 is_layer(RenderElement* render_element)
 {
     b32 result = render_element->count == RenderElementType_LAYER;
@@ -633,6 +674,14 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         gl_link_program(render_data->ssaa_program, objs, array_count(objs));
 
         gl_set_uniform_i(render_data->ssaa_program, "u_canvas", g_texture_unit_canvas.id);
+    }
+    {  // Brush outline program
+        render_data->outline_program = glCreateProgram();
+        GLuint objs[2] = {};
+        objs[0] = gl_compile_shader(g_outline_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_outline_f, GL_FRAGMENT_SHADER);
+
+        gl_link_program(render_data->outline_program, objs, array_count(objs));
     }
 
     // Framebuffer object for canvas. Layer buffer
@@ -1003,10 +1052,10 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
     }
 }
 
-void gpu_render(RenderData* render_data)
+void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 {
-    glViewport(0,0, render_data->width, render_data->height);
-    glScissor(0,0, render_data->width, render_data->height);
+    glViewport(x, y, w, h);
+    glScissor(x, y, w, h);
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
     print_framebuffer_status();
 
@@ -1179,9 +1228,10 @@ void gpu_render(RenderData* render_data)
     GLCHK( glDisable(GL_STENCIL_TEST) );
 
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
-    // Render picker
     if (render_data->gui_visible)
     {
+        // Render picker
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glUseProgram(render_data->picker_program);
@@ -1206,12 +1256,37 @@ void gpu_render(RenderData* render_data)
             }
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
+
         glDisable(GL_BLEND);
+        // Render outline
+
+        glUseProgram(render_data->outline_program);
+        loc = glGetAttribLocation(render_data->outline_program, "a_position");
+        if (loc >= 0)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline);
+
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            glEnableVertexAttribArray((GLuint)loc);
+            GLint loc_s = glGetAttribLocation(render_data->outline_program, "a_sizes");
+            if (loc_s >= 0)
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline_sizes);
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_s,
+                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                glEnableVertexAttribArray((GLuint)loc_s);
+            }
+        }
+        glDrawArrays(GL_TRIANGLE_FAN, 0,4);
+
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0,0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
-    glScissor(0,0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    glViewport(x/SSAA_FACTOR,y/SSAA_FACTOR, w/SSAA_FACTOR, h/SSAA_FACTOR);
+    glScissor(x/SSAA_FACTOR,y/SSAA_FACTOR, w/SSAA_FACTOR, h/SSAA_FACTOR);
 
 #if 0
     // Render output buffer
@@ -1281,4 +1356,16 @@ void gpu_render(RenderData* render_data)
 
     GLCHK (glUseProgram(0));
 }
+
+void gpu_render(RenderData* render_data)
+{
+    // TODO: Figure out how to split into viewports.
+#if 1
+    gpu_render_viewport(render_data, 0,0, render_data->width, render_data->height);
+#else
+    gpu_render_viewport(render_data, 0,0, render_data->width/2, render_data->height/2);
+    //gpu_render_viewport(render_data, render_data->width/2, render_data->height/2, render_data->width, render_data->height);
+#endif
+}
+
 

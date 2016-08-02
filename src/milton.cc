@@ -1479,6 +1479,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
+
+    gpu_update_brush_outline(milton_state->render_data,
+                             milton_state->hover_point.x, milton_state->hover_point.y,
+                             milton_get_brush_size(milton_state));
+
+
     PROFILE_GRAPH_PUSH(update);
     // milton_render(milton_state, render_flags, input->pan_delta);
 

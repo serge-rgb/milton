@@ -13,19 +13,25 @@ To-Do
         [x] Anti-aliasing (Multisample FBOs, etc)
         [x] >2x Anti-aliasing (resolve in shader)
         [x] Resizing (manage FBO memory, screen_size dependent updates)
-    [] Brush outline
+    [x] Brush outline
+    [] sort working stroke when clipping
     [] Brush size preview
     [] Export to image (draw rect outline, split render func, out of memory handling)
     [x] Undo/Redo
     [] Unload image
     [] Layer visibility
     [] Clip to screen (clip <1px strokes, clip strokes outside window)
+    [] sandwich buffers
     [] Single point strokes
     [] use triangle strips
-    [] end of "infinite" canvas
+    [] end of "infcolor pickinginite" canvas
     [] LOTS of redundancy in vertex attributes regardless of triangle strips
+    [] eye dropper
     [] Deal with 32 bit limits
     [] float<->int. Try out ivec2 attributes.
+
+    [] BUG: triangle invisibility not linked to GUI visibility
+
 
 
 - Application

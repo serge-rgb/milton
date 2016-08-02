@@ -112,6 +112,8 @@ int main()
         output_shader(outfd, "../src/layer_blend.f.glsl", "g_layer_blend_f");
         output_shader(outfd, "../src/simple.v.glsl", "g_simple_v");
         output_shader(outfd, "../src/ssaa_resolve.f.glsl", "g_ssaa_resolve_f");
+        output_shader(outfd, "../src/outline.v.glsl", "g_outline_v");
+        output_shader(outfd, "../src/outline.f.glsl", "g_outline_f");
     }
     else
     {
