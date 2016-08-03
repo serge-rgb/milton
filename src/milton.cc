@@ -1487,9 +1487,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
-    float radius = brush_outline_should_draw ? (float)milton_get_brush_radius(milton_state) : 0;
-
-
+    float radius = brush_outline_should_draw ? (float)milton_get_brush_radius(milton_state) : -1;
 
     gpu_update_brush_outline(milton_state->render_data,
                              milton_state->hover_point.x, milton_state->hover_point.y,

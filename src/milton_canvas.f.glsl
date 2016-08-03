@@ -68,11 +68,11 @@ vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
 void main()
 {
 // Note: this doesn't seem to help at all on the GPU!
-#if 0
+#if 1
     vec2 coord = gl_FragCoord.xy / u_screen_size;
     coord.y = 1-coord.y;
     vec4 color = texture2D(u_canvas, coord);
-    if (color.a == 1) { discard; }
+    //if (color.a == 1) { discard; }
 #endif
 
     vec2 fragment_point = raster_to_canvas_gl(gl_FragCoord.xy);
@@ -90,7 +90,6 @@ void main()
     }
     else
     {
-
         vec2 ab = b.xy - a.xy;
         float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
 
@@ -116,7 +115,8 @@ void main()
     }
     if (found)
     {
-        gl_FragColor = vec4(1);
+        // gl_FragColor = vec4(1);
+        gl_FragColor = brush_is_eraser() ? vec4(0) : blend(color, u_brush_color);
     }
     else
     {

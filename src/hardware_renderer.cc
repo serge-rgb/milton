@@ -198,6 +198,7 @@ static vec4 gl_FragColor;
 //
 
 #define PRESSURE_RESOLUTION (1<<20)
+#define MAX_DEPTH_VALUE 1000   // Strokes have 1000 different z values. 1/i for each i in [0, 1000)
 
 struct TextureUnitID
 {
@@ -243,6 +244,7 @@ struct RenderData
     i32 height;
 
     v3f background_color;
+    i32 stroke_z;
 };
 
 // Load a shader and append line `#version 120`, which is invalid C++
@@ -897,6 +899,7 @@ void gpu_clip_strokes(RenderData* render_data, Layer* root_layer, Stroke* workin
 
 // TODO: Measure memory consumption of glBufferData and their ilk
 
+
 enum CookStrokeOpt
 {
     CookStroke_NEW                   = 0,
@@ -904,6 +907,9 @@ enum CookStrokeOpt
 };
 void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrokeOpt cook_option = CookStroke_NEW)
 {
+    render_data->stroke_z = (render_data->stroke_z + 1) % MAX_DEPTH_VALUE;
+    const i32 stroke_z = render_data->stroke_z;
+
     if (cook_option == CookStroke_NEW && stroke->render_element.vbo_stroke != 0)
     {
         // We already have our data cooked
@@ -944,13 +950,13 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             // N-1 (num segments)
             const size_t count_points = 6*((size_t)npoints-1);
 
-            v2i* bounds;
+            v3i* bounds;
             v3i* apoints;
             v3i* bpoints;
             Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
              + 2*count_points*sizeof(decltype(*apoints)));
 
-            bounds  = arena_alloc_array(&scratch_arena, count_bounds, v2i);
+            bounds  = arena_alloc_array(&scratch_arena, count_bounds, v3i);
             apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
             bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
 
@@ -975,13 +981,13 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 // Bounding rect
                 //  Counter-clockwise
                 //  TODO: Use triangle strips and flat shading to reduce redundant data
-                bounds[bounds_i++] = { min_x, min_y };
-                bounds[bounds_i++] = { min_x, max_y };
-                bounds[bounds_i++] = { max_x, max_y };
+                bounds[bounds_i++] = { min_x, min_y, stroke_z };
+                bounds[bounds_i++] = { min_x, max_y, stroke_z };
+                bounds[bounds_i++] = { max_x, max_y, stroke_z };
 
-                bounds[bounds_i++] = { max_x, max_y };
-                bounds[bounds_i++] = { min_x, min_y };
-                bounds[bounds_i++] = { max_x, min_y };
+                bounds[bounds_i++] = { max_x, max_y, stroke_z };
+                bounds[bounds_i++] = { min_x, min_y, stroke_z };
+                bounds[bounds_i++] = { max_x, min_y, stroke_z };
 
                 // Pressures are in (0,1] but we need to encode them as integers.
                 i32 pressure_a = (i32)(stroke->pressures[i] * (float)(PRESSURE_RESOLUTION));
@@ -1058,6 +1064,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
 
 void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 {
+    glClearDepth(0.0f);
     glViewport(x, y, w, h);
     glScissor(x, y, w, h);
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
@@ -1065,7 +1072,7 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 
     GLCHK( glActiveTexture(g_texture_unit_layer.opengl_id) );
     GLCHK( glBindTexture(GL_TEXTURE_2D, render_data->layer_texture) );
-    GLCHK( glClear(GL_COLOR_BUFFER_BIT) );
+    GLCHK( glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT) );
     // Render background color onto canvas_texture
     {
         GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
@@ -1084,10 +1091,12 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
         }
     }
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
-    glClear(GL_COLOR_BUFFER_BIT);
-    glEnable(GL_STENCIL_TEST);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // glEnable(GL_STENCIL_TEST);
     // Render strokes
     {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_NOTEQUAL);
         GLCHK( glUseProgram(render_data->stroke_program) );
         GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
         GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
@@ -1137,12 +1146,12 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 
                         GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
                     }
-                    glEnable(GL_STENCIL_TEST);
+                    // glEnable(GL_STENCIL_TEST);
                     glDisable(GL_BLEND);
 
                     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                   GL_TEXTURE_2D, render_data->layer_texture, 0) );
-                    glClear(GL_COLOR_BUFFER_BIT);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 }
                 else
                 {
@@ -1185,7 +1194,7 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 
                     GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke) );
                     GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                                 /*size*/2, GL_INT, /*normalize*/GL_FALSE,
+                                                 /*size*/3, GL_INT, /*normalize*/GL_FALSE,
                                                  /*stride*/0, /*ptr*/0));
                     GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
@@ -1195,10 +1204,11 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
                     //glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
 
                     GLCHK( glUseProgram(render_data->stroke_program) );
-                    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-                    glStencilFunc(GL_ALWAYS,1,0xFF);
-                    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                    // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    // glStencilFunc(GL_ALWAYS,1,0xFF);
+                    // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                     GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
+#if 0
                     GLCHK( glUseProgram(render_data->blend_program) );
                     GLint blend_pos_loc = glGetAttribLocation(render_data->blend_program, "a_position");
                     if (blend_pos_loc >= 0)
@@ -1218,18 +1228,21 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 
                         GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke) );
                         GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)blend_pos_loc,
-                                                     /*size*/2, GL_INT, /*normalize*/GL_FALSE,
+                                                     /*size*/3, GL_INT, /*normalize*/GL_FALSE,
                                                      /*stride*/0, /*ptr*/0));
                         GLCHK( glEnableVertexAttribArray((GLuint)blend_pos_loc) );
                         glStencilFunc(GL_EQUAL,1,0xFF);
                         glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
                         GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
                     }
+#endif
                 }
             }
         }
     }
+    glDisable(GL_DEPTH_TEST);
     GLCHK( glDisable(GL_STENCIL_TEST) );
+
 
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
     if (render_data->gui_visible)
