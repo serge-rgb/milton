@@ -65,38 +65,29 @@ vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
 
 #define MAX_DIST (1<<24)
 
-void main()
+int sample_stroke(vec2 point, vec3 a, vec3 b)
 {
-// Note: this doesn't seem to help at all on the GPU!
+    int value = 0;
+
 #if 1
-    vec2 coord = gl_FragCoord.xy / u_screen_size;
-    coord.y = 1-coord.y;
-    vec4 color = texture2D(u_canvas, coord);
-    //if (color.a == 1) { discard; }
-#endif
-
-    vec2 fragment_point = raster_to_canvas_gl(gl_FragCoord.xy);
-    bool found = false;
-    vec3 a = v_pointa;
-    vec3 b = v_pointb;
-
-    float dist_a = distance(fragment_point, a.xy);
-    float dist_b = distance(fragment_point, b.xy);
+    float dist_a = distance(point, a.xy);
+    float dist_b = distance(point, b.xy);
     float radius_a = float(a.z*u_radius)/PRESSURE_RESOLUTION_GL;
     float radius_b = float(b.z*u_radius)/PRESSURE_RESOLUTION_GL;
     if (dist_a < radius_a || dist_b < radius_b)
     {
-        found = true;
+        value = 1;
     }
     else
+#endif
     {
         vec2 ab = b.xy - a.xy;
         float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
 
         if (ab_magnitude_squared > 0)
         {
-            vec3 stroke_point = closest_point_in_segment_gl(a.xy, b.xy, ab, ab_magnitude_squared, fragment_point);
-            float d = distance(stroke_point.xy, fragment_point);
+            vec3 stroke_point = closest_point_in_segment_gl(a.xy, b.xy, ab, ab_magnitude_squared, point);
+            float d = distance(stroke_point.xy, point);
             float t = stroke_point.z;
             float pressure_a = a.z;
             float pressure_b = b.z;
@@ -109,14 +100,39 @@ void main()
                 //color = brush_is_eraser() ? blend(color, vec4(u_background_color, 1)) : blend(color, u_brush_color);
                 // If rendering front-to-back, with screen cleared:
                 //color = brush_is_eraser() ? blend(vec4(u_background_color, 1), color) : blend(u_brush_color, color);
-                found = true;
+                value = 1;
             }
         }
     }
-    if (found)
+    return value;
+}
+
+void main()
+{
+// Note: this doesn't seem to help at all on the GPU!
+#if 1
+    vec2 coord = gl_FragCoord.xy / u_screen_size;
+    coord.y = 1-coord.y;
+    vec4 color = texture2D(u_canvas, coord);
+    //if (color.a == 1) { discard; }
+#endif
+
+    vec3 a = v_pointa;
+    vec3 b = v_pointb;
+    int samples = 0;
+    samples += sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy + vec2(-0.5,-0.5)), a, b);
+    samples += sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy + vec2(0.5,-0.5)), a, b);
+    samples += sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy + vec2(-0.5,0.5)), a, b);
+    samples += sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy + vec2(0.5,0.5)), a, b);
+
+
+
+    if (samples > 0)
     {
+        float coverage = samples / 4.0;
         // gl_FragColor = vec4(1);
-        gl_FragColor = brush_is_eraser() ? vec4(0) : blend(color, u_brush_color);
+        gl_FragColor = brush_is_eraser() ? vec4(0) : blend(color, vec4(u_brush_color.rgb,
+                                                                        coverage*u_brush_color.a));
     }
     else
     {
