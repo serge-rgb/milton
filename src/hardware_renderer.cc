@@ -446,7 +446,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     }
 }
 
-void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 width)
+void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius)
 {
     if (render_data->vbo_outline == 0)
     {
@@ -456,22 +456,26 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 width
     }
     mlt_assert(render_data->vbo_outline_sizes != 0);
 
-    float radius = ((float)width)/2.0f;
+    radius*=SSAA_FACTOR;
 
+    float radius_plus_girth = radius + 4.0f; // Girth defined in outline.f.glsl
+
+
+    // Normalized to [-1,1]
     GLfloat data[] =
     {
-        2*((cx-radius) / (render_data->width/SSAA_FACTOR))-1,  -2*((cy-radius) / (render_data->height/SSAA_FACTOR))+1,
-        2*((cx-radius) / (render_data->width/SSAA_FACTOR))-1,  -2*((cy+radius) / (render_data->height/SSAA_FACTOR))+1,
-        2*((cx+radius) / (render_data->width/SSAA_FACTOR))-1,  -2*((cy+radius) / (render_data->height/SSAA_FACTOR))+1,
-        2*((cx+radius) / (render_data->width/SSAA_FACTOR))-1,  -2*((cy-radius) / (render_data->height/SSAA_FACTOR))+1,
+        2*((cx-radius_plus_girth) / (render_data->width))-1,  -2*((cy-radius_plus_girth) / (render_data->height))+1,
+        2*((cx-radius_plus_girth) / (render_data->width))-1,  -2*((cy+radius_plus_girth) / (render_data->height))+1,
+        2*((cx+radius_plus_girth) / (render_data->width))-1,  -2*((cy+radius_plus_girth) / (render_data->height))+1,
+        2*((cx+radius_plus_girth) / (render_data->width))-1,  -2*((cy-radius_plus_girth) / (render_data->height))+1,
     };
 
     GLfloat sizes[] =
     {
-        -2*radius, -2*radius,
-        -2*radius,  2*radius,
-         2*radius,  2*radius,
-         2*radius, -2*radius,
+        -radius_plus_girth, -radius_plus_girth,
+        -radius_plus_girth,  radius_plus_girth,
+         radius_plus_girth,  radius_plus_girth,
+         radius_plus_girth, -radius_plus_girth,
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline_sizes);
@@ -480,7 +484,7 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 width
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_DYNAMIC_DRAW) );
 
-    gl_set_uniform_i(render_data->outline_program, "u_radius", width - 5);  // Constant 5 the same as in shader outline.f.glsl
+    gl_set_uniform_i(render_data->outline_program, "u_radius", radius);  // Constant 5 the same as in shader outline.f.glsl
 }
 
 b32 is_layer(RenderElement* render_element)
@@ -959,8 +963,8 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 v2i point_j = stroke->points[i+1];
 
                 Brush brush = stroke->brush;
-                float radius_i = stroke->pressures[i]*brush.radius;
-                float radius_j = stroke->pressures[i+1]*brush.radius;
+                float radius_i = stroke->pressures[i]*brush.radius*SSAA_FACTOR;
+                float radius_j = stroke->pressures[i+1]*brush.radius*SSAA_FACTOR;
 
                 i32 min_x = min(point_i.x-radius_i, point_j.x-radius_j);
                 i32 min_y = min(point_i.y-radius_i, point_j.y-radius_j);
@@ -1042,7 +1046,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             re.vbo_pointb = vbo_pointb;
             re.count = (i64)bounds_i;
             re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
-            re.radius = stroke->brush.radius;
+            re.radius = stroke->brush.radius*SSAA_FACTOR;
             mlt_assert(re.count > 1);
 
             stroke->render_element = re;
@@ -1257,7 +1261,6 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
 
-        glDisable(GL_BLEND);
         // Render outline
 
         glUseProgram(render_data->outline_program);
@@ -1282,6 +1285,7 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
         }
         glDrawArrays(GL_TRIANGLE_FAN, 0,4);
 
+        glDisable(GL_BLEND);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

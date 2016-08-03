@@ -462,7 +462,7 @@ void milton_gl_backend_draw(MiltonState* milton_state)
     GLCHK (glDrawArrays (GL_TRIANGLE_FAN, 0, 4) );
 }
 
-i32 milton_get_brush_size(MiltonState* milton_state)
+i32 milton_get_brush_radius(MiltonState* milton_state)
 {
     i32 brush_size = 0;
     if ( milton_state->current_mode == MiltonMode_PEN )
@@ -494,7 +494,7 @@ void milton_increase_brush_size(MiltonState* milton_state)
 {
     if ( current_mode_is_for_painting(milton_state) )
     {
-        i32 brush_size = milton_get_brush_size(milton_state);
+        i32 brush_size = milton_get_brush_radius(milton_state);
         if (brush_size < MILTON_MAX_BRUSH_SIZE && brush_size > 0)
         {
             milton_set_brush_size(milton_state, brush_size + 1);
@@ -508,7 +508,7 @@ void milton_decrease_brush_size(MiltonState* milton_state)
 {
     if ( current_mode_is_for_painting(milton_state) )
     {
-        i32 brush_size = milton_get_brush_size(milton_state);
+        i32 brush_size = milton_get_brush_radius(milton_state);
         if (brush_size > 1)
         {
             milton_set_brush_size(milton_state, brush_size - 1);
@@ -1061,6 +1061,8 @@ static void milton_validate(MiltonState* milton_state)
 
 void milton_update(MiltonState* milton_state, MiltonInput* input)
 {
+    b32 brush_outline_should_draw = false;
+
     PROFILE_GRAPH_BEGIN(update);
     b32 should_save =
             ((input->flags & MiltonInputFlags_OPEN_FILE)) ||
@@ -1282,17 +1284,19 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->current_mode == MiltonMode_ERASER)
     {
         render_flags |= MiltonRenderFlags_BRUSH_HOVER;
+        brush_outline_should_draw = true;
     }
 
     if ((input->flags & MiltonInputFlags_HOVERING))
     {
-        milton_state->hover_point = input->hover_point;
+        milton_state->hover_point = scale2i(input->hover_point, SSAA_FACTOR);
         render_flags |= MiltonRenderFlags_BRUSH_HOVER;
     }
 
     if (milton_state->gui->active)
     {
         render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
+        brush_outline_should_draw = false;
     }
 
     if (is_user_drawing(milton_state))
@@ -1334,6 +1338,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         // Start drawing the preview if we just grabbed a slider.
         render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
+        brush_outline_should_draw = false;
+
         if ((milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))
         {
             render_flags |= MiltonRenderFlags_BRUSH_PREVIEW;
@@ -1393,6 +1399,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
             gui_deactivate(milton_state->gui);
             render_flags |= MiltonRenderFlags_UI_UPDATED;
             render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
+            brush_outline_should_draw = false;
         }
         else
         {
@@ -1451,6 +1458,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (input->flags & MiltonInputFlags_PANNING)
     {
         render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
+        brush_outline_should_draw = false;
     }
 
     // If the brush size was changed, set up the renderer
@@ -1479,10 +1487,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
+    float radius = brush_outline_should_draw ? (float)milton_get_brush_radius(milton_state) : 0;
+
+
 
     gpu_update_brush_outline(milton_state->render_data,
                              milton_state->hover_point.x, milton_state->hover_point.y,
-                             milton_get_brush_size(milton_state));
+                             radius);
 
 
     PROFILE_GRAPH_PUSH(update);

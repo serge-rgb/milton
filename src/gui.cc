@@ -326,7 +326,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     }
                 }
 
-                const auto size = milton_get_brush_size(milton_state);
+                const auto size = milton_get_brush_radius(milton_state);
                 auto mut_size = size;
 
                 ImGui::SliderInt(LOC(brush_size), &mut_size, 1, MILTON_MAX_BRUSH_SIZE);
@@ -366,7 +366,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             // Important to place this before ImGui::End()
             const v2i pos =
             {
-                (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_size(milton_state)),
+                (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_radius(milton_state)),
                 (i32)(ImGui::GetWindowPos().y),
             };
             ImGui::End();  // Brushes

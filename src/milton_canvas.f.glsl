@@ -80,25 +80,38 @@ void main()
     vec3 a = v_pointa;
     vec3 b = v_pointb;
 
-    vec2 ab = b.xy - a.xy;
-    float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
-    if (ab_magnitude_squared > 0)
+    float dist_a = distance(fragment_point, a.xy);
+    float dist_b = distance(fragment_point, b.xy);
+    float radius_a = float(a.z*u_radius)/PRESSURE_RESOLUTION_GL;
+    float radius_b = float(b.z*u_radius)/PRESSURE_RESOLUTION_GL;
+    if (dist_a < radius_a || dist_b < radius_b)
     {
-        vec3 stroke_point = closest_point_in_segment_gl(a.xy, b.xy, ab, ab_magnitude_squared, fragment_point);
-        float d = distance(stroke_point.xy, fragment_point);
-        float t = stroke_point.z;
-        float pressure_a = a.z;
-        float pressure_b = b.z;
-        float pressure = (1-t)*pressure_a + t*pressure_b;
-        pressure /= float(PRESSURE_RESOLUTION_GL);
-        float radius = pressure * u_radius;
-        bool inside = d < radius;
-        if (inside)
+        found = true;
+    }
+    else
+    {
+
+        vec2 ab = b.xy - a.xy;
+        float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
+
+        if (ab_magnitude_squared > 0)
         {
-            //color = brush_is_eraser() ? blend(color, vec4(u_background_color, 1)) : blend(color, u_brush_color);
-            // If rendering front-to-back, with screen cleared:
-            //color = brush_is_eraser() ? blend(vec4(u_background_color, 1), color) : blend(u_brush_color, color);
-            found = true;
+            vec3 stroke_point = closest_point_in_segment_gl(a.xy, b.xy, ab, ab_magnitude_squared, fragment_point);
+            float d = distance(stroke_point.xy, fragment_point);
+            float t = stroke_point.z;
+            float pressure_a = a.z;
+            float pressure_b = b.z;
+            float pressure = (1-t)*pressure_a + t*pressure_b;
+            pressure /= float(PRESSURE_RESOLUTION_GL);
+            float radius = pressure * u_radius;
+            bool inside = d < radius;
+            if (inside)
+            {
+                //color = brush_is_eraser() ? blend(color, vec4(u_background_color, 1)) : blend(color, u_brush_color);
+                // If rendering front-to-back, with screen cleared:
+                //color = brush_is_eraser() ? blend(vec4(u_background_color, 1), color) : blend(u_brush_color, color);
+                found = true;
+            }
         }
     }
     if (found)

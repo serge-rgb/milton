@@ -1865,7 +1865,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
         if ((render_flags & MiltonRenderFlags_BRUSH_PREVIEW))
         {
             mlt_assert (gui->preview_pos.x >= 0 && gui->preview_pos.y >= 0);
-            const i32 radius = milton_get_brush_size(milton_state);
+            const i32 radius = milton_get_brush_radius(milton_state);
 
             v4f preview_color;
             preview_color.rgb = milton_state->view->background_color;
@@ -1912,7 +1912,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
     {
         float outline_alpha = 1.0f;
         float gray = 0.25f;
-        const i32 radius = milton_get_brush_size(milton_state);
+        const i32 radius = milton_get_brush_radius(milton_state);
 
         // Draw brush outline if...
         if (milton_state->current_mode == MiltonMode_ERASER ||

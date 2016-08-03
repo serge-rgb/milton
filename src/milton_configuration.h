@@ -4,7 +4,7 @@
 #pragma once
 
 #define MILTON_MAJOR_VERSION 1
-#define MILTON_MINOR_VERSION 2
+#define MILTON_MINOR_VERSION 3
 #define MILTON_MICRO_VERSION 6
 
 // When MILTON_DEBUG is 1,
@@ -22,7 +22,7 @@
     #endif
 
 
-#define SSAA_FACTOR 2  // Possible values: 1,2,4
+#define SSAA_FACTOR 4  // Possible values: 1,2,4
 #define MILTON_MULTITHREADED 1
 
 #define MILTON_ENABLE_PROFILING 1
