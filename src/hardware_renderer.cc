@@ -212,7 +212,6 @@ static TextureUnitID g_texture_unit_canvas = { GL_TEXTURE1, 1 };
 struct RenderData
 {
     GLuint stroke_program;
-    // GLuint blend_program;  // TODO: cleanup
     GLuint quad_program;
     GLuint background_program;
     GLuint picker_program;
@@ -547,23 +546,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
         GLCHK( glUseProgram(render_data->stroke_program) );
     }
-    { // blend program
-#if MILTON_DEBUG
-        GLuint objs[2] = {};
-        size_t vsz, fsz;
-        char* vsrc = debug_load_shader_from_file(TO_PATH_STR("src/blend.v.glsl"), &vsz);
-        char* fsrc = debug_load_shader_from_file(TO_PATH_STR("src/blend.f.glsl"), &fsz);
-#endif
 
-        objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER, "src/blend.v.glsl");
-        objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER, "src/blend.f.glsl");
-
-        // render_data->blend_program = glCreateProgram();
-        // gl_link_program(render_data->blend_program, objs, array_count(objs));
-        // GLCHK( glUseProgram(render_data->blend_program) );
-    }
-
-    // gl_set_uniform_i(render_data->blend_program, "u_canvas", g_texture_unit_layer.id);
     gl_set_uniform_i(render_data->stroke_program, "u_canvas", g_texture_unit_layer.id);
 
     // Quad for screen!
@@ -821,7 +804,6 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
     // u_scale = scale;
 #endif
     gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
-    // gl_set_uniform_i(render_data->blend_program, "u_scale", scale);
 }
 
 static void gpu_set_background(RenderData* render_data, v3f background_color)
@@ -831,7 +813,6 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
     // for(int i=0;i<3;++i) u_background_color.d[i] = background_color.d[i];
 #endif
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
-    // gl_set_uniform_vec3(render_data->blend_program, "u_background_color", 1, background_color.d);
     gl_set_uniform_vec3(render_data->background_program, "u_background_color", 1, background_color.d);
 
     render_data->background_color = background_color;
@@ -853,16 +834,12 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     auto center = divide2i(view->screen_center, 1);
     auto pan = divide2i(view->pan_vector, 1);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, pan.d);
-    // gl_set_uniform_vec2i(render_data->blend_program, "u_pan_vector", 1, pan.d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, center.d);
-    // gl_set_uniform_vec2i(render_data->blend_program, "u_screen_center", 1, center.d);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
-    // gl_set_uniform_vec2(render_data->blend_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
-    // gl_set_uniform_i(render_data->blend_program, "u_scale", view->scale);
 }
 
 void gpu_clip_strokes(RenderData* render_data, Layer* root_layer, Stroke* working_stroke)
@@ -878,12 +855,11 @@ void gpu_clip_strokes(RenderData* render_data, Layer* root_layer, Stroke* workin
         l != NULL;
         l = l->next)
     {
-        // TODO: This loop is ugly and stupid and needs a better way of being expressed.
         for (u64 i = 0; i <= l->strokes.count; ++i)
         {
             Stroke* s = &l->strokes.data[i];
             // Only push the working stroke when the next layer is NULL, which means that we are at the topmost layer.
-            if (i == l->strokes.count && l->next == NULL)
+            if (i == l->strokes.count && l->id == working_stroke->layer_id)
             {
                 push(render_elements, working_stroke->render_element);
             }
@@ -1062,6 +1038,45 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
     }
 }
 
+void gpu_free_strokes(Stroke* strokes, i64 count)
+{
+    for (i64 i = 0; i < count; ++i)
+    {
+        Stroke* s = strokes + i;
+        RenderElement* re = &s->render_element;
+        if (re->vbo_stroke != 0)
+        {
+            mlt_assert(re->vbo_pointa != 0);
+            mlt_assert(re->vbo_pointb != 0);
+            glDeleteBuffers(1, &re->vbo_stroke);
+            glDeleteBuffers(1, &re->vbo_pointa);
+            glDeleteBuffers(1, &re->vbo_pointb);
+            re->vbo_stroke = 0;
+            re->vbo_pointa = 0;
+            re->vbo_pointb = 0;
+        }
+        else
+        {
+            milton_log("Warning, calling gpu_free_strokes on a stroke without gpu data.");
+        }
+    }
+}
+
+void gpu_free_strokes(MiltonState* milton_state)
+{
+    if (milton_state->root_layer != NULL &&
+        milton_state->root_layer->strokes.data[0].render_element.vbo_stroke!=0)
+    {
+        for(Layer* l = milton_state->root_layer;
+            l != NULL;
+            l = l->next)
+        {
+            gpu_free_strokes(l->strokes.data, (i64)l->strokes.count);
+        }
+
+    }
+}
+
 void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 {
     glClearDepth(0.0f);
@@ -1159,7 +1174,6 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 
                     // TODO. Only set these uniforms when both are different from the ones in use.
                     gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re->color.d);
-                    // gl_set_uniform_vec4(render_data->blend_program, "u_brush_color", 1, re->color.d);
                     gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
 
                     if (loc_a >=0)
@@ -1208,34 +1222,6 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
                     // glStencilFunc(GL_ALWAYS,1,0xFF);
                     // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                     GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
-#if 0
-                    GLCHK( glUseProgram(render_data->blend_program) );
-                    GLint blend_pos_loc = glGetAttribLocation(render_data->blend_program, "a_position");
-                    if (blend_pos_loc >= 0)
-                    {
-                        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-#if 0
-                        GLint blend_uv_loc = glGetAttribLocation(render_data->blend_program, "a_uv");
-                        if (blend_uv_loc >= 0)
-                        {
-                            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv);
-                            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)blend_uv_loc,
-                                                         /*size*/2, GL_INT, /*normalize*/GL_FALSE,
-                                                         /*stride*/0, /*ptr*/0));
-                            glEnableVertexAttribArray((GLuint)blend_uv_loc);
-                        }
-#endif
-
-                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke) );
-                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)blend_pos_loc,
-                                                     /*size*/3, GL_INT, /*normalize*/GL_FALSE,
-                                                     /*stride*/0, /*ptr*/0));
-                        GLCHK( glEnableVertexAttribArray((GLuint)blend_pos_loc) );
-                        glStencilFunc(GL_EQUAL,1,0xFF);
-                        glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
-                        GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
-                    }
-#endif
                 }
             }
         }

@@ -109,30 +109,21 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
 
 void main()
 {
-// Note: this doesn't seem to help at all on the GPU!
-#if 1
     vec2 coord = gl_FragCoord.xy / u_screen_size;
     coord.y = 1-coord.y;
     vec4 color = texture2D(u_canvas, coord);
     //if (color.a == 1) { discard; }
-#endif
+
 
     vec3 a = v_pointa;
     vec3 b = v_pointb;
-    int samples = 0;
-    samples += sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy + vec2(-0.5,-0.5)), a, b);
-    samples += sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy + vec2(0.5,-0.5)), a, b);
-    samples += sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy + vec2(-0.5,0.5)), a, b);
-    samples += sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy + vec2(0.5,0.5)), a, b);
+    int sample = 0;
+    sample = sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy), a, b);
 
-
-
-    if (samples > 0)
+    if (sample > 0)
     {
-        float coverage = samples / 4.0;
-        // gl_FragColor = vec4(1);
-        gl_FragColor = brush_is_eraser() ? vec4(0) : blend(color, vec4(u_brush_color.rgb,
-                                                                        coverage*u_brush_color.a));
+        // TODO: is there a way to do front-to-back rendering with a working eraser?
+        gl_FragColor = brush_is_eraser() ? vec4(0) : blend(color, u_brush_color);
     }
     else
     {

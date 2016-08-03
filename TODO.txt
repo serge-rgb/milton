@@ -14,11 +14,11 @@ To-Do
         [x] >2x Anti-aliasing (resolve in shader)
         [x] Resizing (manage FBO memory, screen_size dependent updates)
     [x] Brush outline
-    [] sort working stroke when clipping
+    [x] sort working stroke when clipping
     [] Brush size preview
     [] Export to image (draw rect outline, split render func, out of memory handling)
     [x] Undo/Redo
-    [] Unload image
+    [x] Unload image
     [] Layer visibility
     [] Clip to screen (clip <1px strokes, clip strokes outside window)
     [] sandwich buffers

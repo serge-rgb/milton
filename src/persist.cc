@@ -85,6 +85,8 @@ static void milton_unset_last_canvas_fname()
 
 void milton_load(MiltonState* milton_state)
 {
+    // Unload gpu data if the strokes have been cooked.
+    gpu_free_strokes(milton_state);
     mlt_assert(milton_state->mlt_file_path);
     FILE* fd = platform_fopen(milton_state->mlt_file_path, TO_PATH_STR("rb"));
     b32 ok = true;  // fread check

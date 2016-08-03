@@ -774,6 +774,7 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
 
 void milton_reset_canvas_and_set_default(MiltonState* milton_state)
 {
+    gpu_free_strokes(milton_state);
     milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
     Layer* l = milton_state->root_layer;
     while ( l != NULL )
