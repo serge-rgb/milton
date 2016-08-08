@@ -1343,7 +1343,21 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
         if ((milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))
         {
+            auto preview_pos = milton_state->gui->preview_pos;
+            mlt_assert(preview_pos.x >= 0);
+            mlt_assert(preview_pos.y >= 0);
             render_flags |= MiltonRenderFlags_BRUSH_PREVIEW;
+            v4f color = {};
+            color.rgb = milton_state->view->background_color;
+            color.a = 1;
+            if (milton_state->current_mode == MiltonMode_PEN)
+            {
+                color = to_premultiplied(hsv_to_rgb(milton_state->gui->picker.data.hsv),
+                                        milton_get_pen_alpha(milton_state));
+            }
+            gpu_update_brush_outline(milton_state->render_data,
+                                     preview_pos.x, preview_pos.y,
+                                     milton_get_brush_radius(milton_state), BrushOutline_FILL, color);
         }
     }
     else
@@ -1490,10 +1504,12 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
     float radius = brush_outline_should_draw ? (float)milton_get_brush_radius(milton_state) : -1;
 
-    gpu_update_brush_outline(milton_state->render_data,
-                             milton_state->hover_point.x, milton_state->hover_point.y,
-                             radius);
-
+    if (!(milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))
+    {
+        gpu_update_brush_outline(milton_state->render_data,
+                                milton_state->hover_point.x, milton_state->hover_point.y,
+                                radius);
+    }
 
     PROFILE_GRAPH_PUSH(update);
     // milton_render(milton_state, render_flags, input->pan_delta);

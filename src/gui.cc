@@ -366,8 +366,8 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             // Important to place this before ImGui::End()
             const v2i pos =
             {
-                (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_radius(milton_state)),
-                (i32)(ImGui::GetWindowPos().y),
+                SSAA_FACTOR*((i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_radius(milton_state))),
+                SSAA_FACTOR*(i32)(ImGui::GetWindowPos().y),
             };
             ImGui::End();  // Brushes
             if ((milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))
@@ -1120,7 +1120,7 @@ void gui_toggle_visibility(MiltonState* milton_state)
     MiltonGui* gui = milton_state->gui;
     gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
     gui->visible = !gui->visible;
-    milton_state->render_data->gui_visible = !milton_state->render_data->gui_visible;
+    milton_state->render_data->gui_visible = gui->visible;
 }
 
 void gui_toggle_help(MiltonGui* gui)

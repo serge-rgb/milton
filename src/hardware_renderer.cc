@@ -447,7 +447,14 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     }
 }
 
-void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius)
+enum BrushOutlineEnum
+{
+    BrushOutline_NO_FILL = 1<<0,
+    BrushOutline_FILL    = 1<<1,
+};
+
+void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
+                                BrushOutlineEnum outline_enum = BrushOutline_NO_FILL, v4f color = {})
 {
     if (render_data->vbo_outline == 0)
     {
@@ -486,6 +493,15 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radiu
     GLCHK( glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_DYNAMIC_DRAW) );
 
     gl_set_uniform_i(render_data->outline_program, "u_radius", radius);  // Constant 5 the same as in shader outline.f.glsl
+    if (outline_enum == BrushOutline_FILL)
+    {
+        gl_set_uniform_i(render_data->outline_program, "u_fill", true);
+        gl_set_uniform_vec4(render_data->outline_program, "u_color", 1, color.d);
+    }
+    else if (outline_enum == BrushOutline_NO_FILL)
+    {
+        gl_set_uniform_i(render_data->outline_program, "u_fill", false);
+    }
 }
 
 b32 is_layer(RenderElement* render_element)
@@ -704,9 +720,9 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
         glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA,
-         view->screen_size.w, view->screen_size.h,
-         0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                        0, GL_RGBA,
+                        view->screen_size.w, view->screen_size.h,
+                        0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 
         glBindTexture(GL_TEXTURE_2D, 0);

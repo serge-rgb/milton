@@ -9,30 +9,30 @@ To-Do
 - GPU Renderer checklist
     [x] Color picker
     [x] Eraser (sort VBOs)
-    [] Figure out how to get around the FBO size limitations.
+    [ ] Figure out how to get around the FBO size limitations.
         [x] Anti-aliasing (Multisample FBOs, etc)
         [x] >2x Anti-aliasing (resolve in shader)
         [x] Resizing (manage FBO memory, screen_size dependent updates)
     [x] Brush outline
     [x] sort working stroke when clipping
-    [] Brush size preview
-    [] Export to image (draw rect outline, split render func, out of memory handling)
+    [x] Brush size preview
+    [ ] Export to image (draw rect outline, split render func, out of memory handling)
     [x] Undo/Redo
     [x] Unload image
-    [] Layer visibility
-    [] Clip to screen (clip <1px strokes, clip strokes outside window)
-    [] sandwich buffers
-    [] Single point strokes
-    [] use triangle strips
-    [] end of "infinite" canvas
-    [] LOTS of redundancy in vertex attributes regardless of triangle strips
-    [] eye dropper
-    [] Deal with 32 bit limits
-    [] float<->int. Try out ivec2 attributes.
-    [] get rid of stencil, use depth buffer
+    [ ] Layer visibility
+    [ ] Clip to screen (clip <1px strokes, clip strokes outside window)
+    [ ] sandwich buffers
+    [ ] Single point strokes
+    [ ] use triangle strips
+    [ ] end of "infinite" canvas
+    [ ] LOTS of redundancy in vertex attributes regardless of triangle strips
+    [ ] eye dropper
+    [ ] Deal with 32 bit limits
+    [ ] float<->int. Try out ivec2 attributes.
+    [x] get rid of stencil, use depth buffer
 
-    [] BUG: triangle invisibility not linked to GUI visibility
-    [] COMPAT: load pre-1.3.X mlt files and scale brush radii by SSAA factor.
+    [x] BUG: triangle invisibility not linked to GUI visibility
+    [ ] COMPAT: load pre-1.3.X mlt files and scale brush radii by SSAA factor.
 
 
 

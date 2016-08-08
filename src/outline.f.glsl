@@ -3,6 +3,8 @@
 in vec2 v_sizes;
 
 uniform int u_radius;
+uniform bool u_fill;
+uniform vec4 u_color;
 
 void main()
 {
@@ -19,6 +21,10 @@ void main()
     else if (r < u_radius + girth && r >= u_radius)
     {
         gl_FragColor = vec4(1,1,1,ring_alpha);
+    }
+    else if (u_fill && r < u_radius)
+    {
+        gl_FragColor = u_color;
     }
     else
     {
