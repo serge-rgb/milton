@@ -454,7 +454,7 @@ enum BrushOutlineEnum
 };
 
 void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
-                                BrushOutlineEnum outline_enum = BrushOutline_NO_FILL, v4f color = {})
+                              BrushOutlineEnum outline_enum = BrushOutline_NO_FILL, v4f color = {})
 {
     if (render_data->vbo_outline == 0)
     {
@@ -701,12 +701,11 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
         glTexImage2D(GL_TEXTURE_2D,
-         0, GL_RGBA,
-         view->screen_size.w, view->screen_size.h,
-         0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                     0, GL_RGBA,
+                     view->screen_size.w, view->screen_size.h,
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
         glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
-
 
         glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -720,9 +719,9 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
         glTexImage2D(GL_TEXTURE_2D,
-                        0, GL_RGBA,
-                        view->screen_size.w, view->screen_size.h,
-                        0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+                     0, GL_RGBA,
+                     view->screen_size.w, view->screen_size.h,
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -740,10 +739,10 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL); */
         GLCHK( glTexImage2D(GL_TEXTURE_2D, 0,
                             /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
-            view->screen_size.w, view->screen_size.h,
+                            view->screen_size.w, view->screen_size.h,
                             /*border*/0, /*pixel_data_format*/GL_DEPTH_STENCIL,
                             /*component type*/GL_UNSIGNED_INT_24_8,
-            NULL) );
+                            NULL) );
 
 
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -858,7 +857,9 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
 }
 
-void gpu_clip_strokes(RenderData* render_data, Layer* root_layer, Stroke* working_stroke)
+void gpu_clip_strokes(RenderData* render_data,
+                      CanvasView* view,
+                      Layer* root_layer, Stroke* working_stroke)
 {
     auto *render_elements = &render_data->render_elems;
 
@@ -871,17 +872,35 @@ void gpu_clip_strokes(RenderData* render_data, Layer* root_layer, Stroke* workin
         l != NULL;
         l = l->next)
     {
+        if (!(l->flags & LayerFlags_VISIBLE))
+        {
+            // Skip invisible layers.
+            continue;
+        }
         for (u64 i = 0; i <= l->strokes.count; ++i)
         {
-            Stroke* s = &l->strokes.data[i];
             // Only push the working stroke when the next layer is NULL, which means that we are at the topmost layer.
             if (i == l->strokes.count && l->id == working_stroke->layer_id)
             {
-                push(render_elements, working_stroke->render_element);
+                if (working_stroke->num_points > 0)
+                {
+                    push(render_elements, working_stroke->render_element);
+                }
             }
             else if (i < l->strokes.count)
             {
-                push(render_elements, s->render_element);
+                Stroke* s = &l->strokes.data[i];
+                Rect bounds = s->bounding_rect;
+                bounds.top_left = canvas_to_raster(view, bounds.top_left);
+                bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
+                b32 is_outside = bounds.left > render_data->width || bounds.right < 0 ||
+                                bounds.top > render_data->height || bounds.bottom < 0;
+                i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
+
+                if (!is_outside && area!=0)
+                {
+                    push(render_elements, s->render_element);
+                }
             }
         }
 
@@ -1070,10 +1089,6 @@ void gpu_free_strokes(Stroke* strokes, i64 count)
             re->vbo_stroke = 0;
             re->vbo_pointa = 0;
             re->vbo_pointb = 0;
-        }
-        else
-        {
-            milton_log("Warning, calling gpu_free_strokes on a stroke without gpu data.");
         }
     }
 }

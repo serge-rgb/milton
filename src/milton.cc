@@ -1343,7 +1343,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
 
         if ((milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))
         {
-            auto preview_pos = milton_state->gui->preview_pos;
+            auto preview_pos = scale2i(milton_state->gui->preview_pos, SSAA_FACTOR);
             mlt_assert(preview_pos.x >= 0);
             mlt_assert(preview_pos.y >= 0);
             render_flags |= MiltonRenderFlags_BRUSH_PREVIEW;
@@ -1402,7 +1402,8 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     }
 
     // Clipping
-    gpu_clip_strokes(milton_state->render_data, milton_state->root_layer, &milton_state->working_stroke);
+    gpu_clip_strokes(milton_state->render_data, milton_state->view,
+                     milton_state->root_layer, &milton_state->working_stroke);
 
     // ---- End stroke
     if ((input->flags & MiltonInputFlags_END_STROKE))

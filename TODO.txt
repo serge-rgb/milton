@@ -16,24 +16,24 @@ To-Do
     [x] Brush outline
     [x] sort working stroke when clipping
     [x] Brush size preview
-    [ ] Export to image (draw rect outline, split render func, out of memory handling)
+    [] Export to image (draw rect outline, split render func, out of memory handling)
     [x] Undo/Redo
     [x] Unload image
-    [ ] Layer visibility
-    [ ] Clip to screen (clip <1px strokes, clip strokes outside window)
-    [ ] sandwich buffers
-    [ ] Single point strokes
-    [ ] use triangle strips
-    [ ] end of "infinite" canvas
-    [ ] LOTS of redundancy in vertex attributes regardless of triangle strips
-    [ ] eye dropper
-    [ ] Deal with 32 bit limits
-    [ ] float<->int. Try out ivec2 attributes.
+    [x] Layer visibility
+    [x] Clip to screen (clip <1px strokes, clip strokes outside window)
+    [] sandwich buffers
+    [] Single point strokes
+    [] use triangle strips
+    [] end of "infinite" canvas
+    [] LOTS of redundancy in vertex attributes regardless of triangle strips
+    [] eye dropper
+    [] Deal with 32 bit limits
+    [] float<->int. Try out ivec2 attributes.
     [x] get rid of stencil, use depth buffer
+    [] should brush radius be stored multiplied by SSAA factor?
 
     [x] BUG: triangle invisibility not linked to GUI visibility
-    [ ] COMPAT: load pre-1.3.X mlt files and scale brush radii by SSAA factor.
-
+    [] COMPAT: load pre-1.3.X mlt files and scale brush radii by SSAA factor.
 
 
 - Application

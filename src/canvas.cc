@@ -54,7 +54,7 @@ b32 is_eraser(Brush* brush)
 Rect bounding_box_for_stroke(Stroke* stroke)
 {
     Rect bb = bounding_rect_for_points(stroke->points, stroke->num_points);
-    Rect bb_enlarged = rect_enlarge(bb, stroke->brush.radius);
+    Rect bb_enlarged = rect_enlarge(bb, stroke->brush.radius*SSAA_FACTOR);
     return bb_enlarged;
 }
 
