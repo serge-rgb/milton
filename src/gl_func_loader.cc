@@ -5,11 +5,12 @@
 #pragma once
 
 #if defined(_WIN32)
+
+// GL 2.1 ===
 PFNGLACTIVETEXTUREPROC              glActiveTexture;
 PFNGLATTACHSHADERPROC               glAttachShader;
 PFNGLBINDATTRIBLOCATIONPROC         glBindAttribLocation;
 PFNGLBINDBUFFERPROC                 glBindBuffer;
-PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
 PFNGLBLENDEQUATIONPROC              glBlendEquation;
 PFNGLBLENDEQUATIONSEPARATEPROC      glBlendEquationSeparate;
 PFNGLBUFFERDATAPROC                 glBufferData;
@@ -20,10 +21,8 @@ PFNGLCREATESHADERPROC               glCreateShader;
 PFNGLDELETEBUFFERSPROC              glDeleteBuffers;
 PFNGLDELETEPROGRAMPROC              glDeleteProgram;
 PFNGLDELETESHADERPROC               glDeleteShader;
-PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
 PFNGLDETACHSHADERPROC               glDetachShader;
 PFNGLGENBUFFERSPROC                 glGenBuffers;
-PFNGLGENVERTEXARRAYSPROC            glGenVertexArrays;
 PFNGLGETATTRIBLOCATIONPROC          glGetAttribLocation;
 PFNGLGETPROGRAMINFOLOGPROC          glGetProgramInfoLog;
 PFNGLGETPROGRAMIVPROC               glGetProgramiv;
@@ -47,41 +46,34 @@ PFNGLUNIFORMMATRIX3FVPROC           glUniformMatrix3fv;
 PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC                 glUseProgram;
 PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
+PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
+PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
+PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
+//=======
 
+#if MILTON_DEBUG
+PFNGLGENVERTEXARRAYSPROC            glGenVertexArrays;
+PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
+PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
+#endif
+
+// TODO: Use GL_EXT_framebuffer_blit
 PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
 
-PFNGLTEXIMAGE2DMULTISAMPLEPROC      glTexImage2DMultisample;
+// TODO: Figure out if we're going to use this.
+// PFNGLVERTEXATTRIBIPOINTERPROC       glVertexAttribIPointer;
 
-PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
-PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
 
-PFNGLVERTEXATTRIBIPOINTERPROC       glVertexAttribIPointer;
-PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
-
-PFNGLGETUNIFORMBLOCKINDEXPROC       glGetUniformBlockIndex;
-PFNGLBINDBUFFERBASEPROC             glBindBufferBase;
-PFNGLUNIFORMBLOCKBINDINGPROC        glUniformBlockBinding;
-
+// TODO: Use GL_EXT_framebuffer_object
 PFNGLGENFRAMEBUFFERSPROC      glGenFramebuffers;
 PFNGLBINDFRAMEBUFFERPROC      glBindFramebuffer;
 PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
-
 PFNGLGENRENDERBUFFERSPROC glGenRenderbuffers;
 PFNGLBINDRENDERBUFFERPROC glBindRenderbuffer;
 PFNGLRENDERBUFFERSTORAGEPROC glRenderbufferStorage;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
 PFNGLCHECKFRAMEBUFFERSTATUSPROC glCheckFramebufferStatus;
 
-PFNGLGENERATEMIPMAPPROC glGenerateMipmap;
-
-typedef void (*PFNGLGLMEMORYBARRIEREXTPROC) (GLbitfield barriers);
-PFNGLGLMEMORYBARRIEREXTPROC glMemoryBarrierEXT;
-
-typedef void (*PFNGLTEXTUREBARRIERPROC)();
-PFNGLTEXTUREBARRIERPROC glTextureBarrierNV;
-
-typedef void (*PFNGLMINSAMPLESHADINGARBPROC) (GLclampf value);
-PFNGLMINSAMPLESHADINGARBPROC glMinSampleShadingARB;
 
 
 #endif  //_WIN32
@@ -139,15 +131,11 @@ bool load_gl_functions()
     GETADDRESS(glUniform1f);
 
     GETADDRESS(glBlitFramebuffer);
-    GETADDRESS(glTexImage2DMultisample);
 
     GETADDRESS(glVertexAttribPointer);
-    GETADDRESS(glVertexAttribIPointer);
+    //GETADDRESS(glVertexAttribIPointer);
     GETADDRESS(glEnableVertexAttribArray);
     GETADDRESS(glDisableVertexAttribArray);
-    GETADDRESS(glGetUniformBlockIndex);
-    GETADDRESS(glBindBufferBase);
-    GETADDRESS(glUniformBlockBinding);
 
     GETADDRESS(glGenFramebuffers);
     GETADDRESS(glBindFramebuffer);
@@ -157,14 +145,6 @@ bool load_gl_functions()
     GETADDRESS(glRenderbufferStorage);
     GETADDRESS(glFramebufferRenderbuffer);
     GETADDRESS(glCheckFramebufferStatus);
-
-    GETADDRESS(glMemoryBarrierEXT);
-
-    GETADDRESS(glGenerateMipmap);
-
-    GETADDRESS(glTextureBarrierNV);
-
-    GETADDRESS(glMinSampleShadingARB);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

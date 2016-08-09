@@ -106,7 +106,7 @@ void main()
     if (sample > 0)
     {
         // TODO: is there a way to do front-to-back rendering with a working eraser?
-        gl_FragColor = brush_is_eraser() ? vec4(0) : blend(color, u_brush_color);
+        gl_FragColor = brush_is_eraser() ? color : u_brush_color;
     }
     else
     {

@@ -213,7 +213,6 @@ struct RenderData
 {
     GLuint stroke_program;
     GLuint quad_program;
-    GLuint background_program;
     GLuint picker_program;
     GLuint layer_blend_program;
     GLuint ssaa_program;
@@ -465,7 +464,6 @@ b32 fills_screen(RenderElement* render_element)
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
     glEnable(GL_SAMPLE_SHADING_ARB);
-    glMinSampleShadingARB(1.0);
     //mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
     // TODO: Handle this. New MLT version?
     // mlt_assert(STROKE_MAX_POINTS == STROKE_MAX_POINTS_GL);
@@ -494,7 +492,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         gl_link_program(render_data->stroke_program, objs, array_count(objs));
 
         GLCHK( glUseProgram(render_data->stroke_program) );
-        gl_set_uniform_i(render_data->stroke_program, "u_canvas", g_texture_unit_layer.id);
+        gl_set_uniform_i(render_data->stroke_program, "u_canvas", g_texture_unit_canvas.id);
     }
 
 
@@ -561,29 +559,6 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         render_data->quad_program = glCreateProgram();
         gl_link_program(render_data->quad_program, objs, array_count(objs));
     }
-    // Background fill program
-    {
-        render_data->background_program = glCreateProgram();
-
-        char vsrc[] =
-                "#version 120 \n"
-                "attribute vec2 a_point; \n"
-                "void main() \n"
-                "{ \n"
-                "    gl_Position = vec4(a_point, 0,1); \n"
-                "} \n";
-        char fsrc[] =
-                "#version 120 \n"
-                "uniform vec3 u_background_color;"
-                "void main() \n"
-                "{ \n"
-                "   gl_FragColor = vec4(u_background_color, 0); \n"
-                "} \n";
-        GLuint objs[2] = {};
-        objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
-        gl_link_program(render_data->background_program, objs, array_count(objs));
-    }
     {  // Color picker program
         render_data->picker_program = glCreateProgram();
         GLuint objs[2] = {};
@@ -600,7 +575,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         objs[0] = gl_compile_shader(g_layer_blend_v, GL_VERTEX_SHADER);
         objs[1] = gl_compile_shader(g_layer_blend_f, GL_FRAGMENT_SHADER);
         gl_link_program(render_data->layer_blend_program, objs, array_count(objs));
-        gl_set_uniform_i(render_data->layer_blend_program, "u_canvas", g_texture_unit_layer.id);
+        gl_set_uniform_i(render_data->layer_blend_program, "u_canvas", g_texture_unit_canvas.id);
     }
     {  // SSAA resolve program
         render_data->ssaa_program = glCreateProgram();
@@ -771,7 +746,6 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
     // for(int i=0;i<3;++i) u_background_color.d[i] = background_color.d[i];
 #endif
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
-    gl_set_uniform_vec3(render_data->background_program, "u_background_color", 1, background_color.d);
 
     render_data->background_color = background_color;
 }
@@ -1094,27 +1068,15 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
 
     GLCHK( glActiveTexture(g_texture_unit_layer.opengl_id) );
     GLCHK( glBindTexture(GL_TEXTURE_2D, render_data->layer_texture) );
-    GLCHK( glClear(GL_COLOR_BUFFER_BIT| GL_DEPTH_BUFFER_BIT) );
-    // Render background color onto canvas_texture
-    {
-        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
-        // glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(render_data->background_program);
-
-        GLint loc = glGetAttribLocation(render_data->background_program, "a_point");
-        if (loc >= 0)
-        {
-            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
-            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                         /*stride*/0, /*ptr*/0));
-            glEnableVertexAttribArray((GLuint)loc);
-            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
-        }
-    }
+    glClearColor(
+                 render_data->background_color.r,
+                 render_data->background_color.g,
+                 render_data->background_color.b,
+                 1.0f);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // glEnable(GL_STENCIL_TEST);
     // Render strokes
     {
         glEnable(GL_DEPTH_TEST);
@@ -1134,46 +1096,9 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
                 if (is_layer(re))
                 {
                     // Layer render element.
-                    //  Render to render_data->canvas_texture texture, blending the contents of layer_texture.
-                    //  Then clearing layer_texture.
-                    glDisable(GL_STENCIL_TEST);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-                    // Got to the end of a layer.
-                    // Blend onto the canvas buffer.
-                    glUseProgram(render_data->layer_blend_program);
-
-                    //glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
-                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                                            render_data->canvas_texture, 0);
-
-                    GLint p_loc = glGetAttribLocation(render_data->layer_blend_program, "a_position");
-                    if (p_loc >= 0)
-                    {
-                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
-                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)p_loc,
-                                                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                                     /*stride*/0, /*ptr*/0));
-                        glEnableVertexAttribArray((GLuint)p_loc);
-
-                        GLint uv_loc = glGetAttribLocation(render_data->layer_blend_program, "a_uv");
-                        if (uv_loc >= 0)
-                        {
-                            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv) );
-                            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)uv_loc,
-                                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                                         /*stride*/0, /*ptr*/0));
-                            glEnableVertexAttribArray((GLuint)uv_loc);
-                        }
-
-                        GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
-                    }
-                    // glEnable(GL_STENCIL_TEST);
-                    glDisable(GL_BLEND);
-
-                    GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                                  GL_TEXTURE_2D, render_data->layer_texture, 0) );
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                    // The current frambuffer is layer_texture. We copy its contents to the canvas_texture
+                    glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+                    GLCHK( glCopyTexImage2D(GL_TEXTURE_2D, /*lod*/0, GL_RGBA8, x,y, w,h, /*border*/0) );
                 }
                 else
                 {
@@ -1201,6 +1126,8 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
                     }
                     else
                     {
+                        glEnable(GL_BLEND);
+                        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                         i64 count = re->count;
 
                         // TODO. Only set these uniforms when both are different from the ones in use.
@@ -1243,23 +1170,18 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
                                                      /*stride*/0, /*ptr*/0));
                         GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
-
-                        // TODO: Check which one of these is available. And use glMemoryBarrierARB, not EXT
-                        glTextureBarrierNV();
-                        //glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
-
                         GLCHK( glUseProgram(render_data->stroke_program) );
                         // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
                         // glStencilFunc(GL_ALWAYS,1,0xFF);
                         // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                         GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
+                        glDisable(GL_BLEND);  // TODO: everyone is using blend?
                     }
                 }
             }
         }
     }
     glDisable(GL_DEPTH_TEST);
-    GLCHK( glDisable(GL_STENCIL_TEST) );
 
 
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
@@ -1323,37 +1245,6 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
     glViewport(x/SSAA_FACTOR,y/SSAA_FACTOR, w/SSAA_FACTOR, h/SSAA_FACTOR);
     glScissor(x/SSAA_FACTOR,y/SSAA_FACTOR, w/SSAA_FACTOR, h/SSAA_FACTOR);
 
-#if 0
-    // Render output buffer
-    {
-        glUseProgram(render_data->quad_program);
-
-        glActiveTexture(g_texture_unit_layer.opengl_id);
-        glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
-        GLint loc = glGetAttribLocation(render_data->quad_program, "a_point");
-        if (loc >= 0)
-        {
-            GLint loc_uv = glGetAttribLocation(render_data->quad_program, "a_uv");
-            if (loc_uv >=0)
-            {
-                GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad_uv) );
-                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_uv,
-                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                             /*stride*/0, /*ptr*/0));
-                glEnableVertexAttribArray((GLuint)loc_uv);
-            }
-
-            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
-            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                         /*stride*/0, /*ptr*/0));
-            glEnableVertexAttribArray((GLuint)loc);
-            GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
-        }
-    }
-
-#else
-
     // Resolve MSAA
 
     if (SSAA_FACTOR == 2 || SSAA_FACTOR == 1)
@@ -1387,7 +1278,6 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
     {
         milton_die_gracefully("unsupported SSAA_FACTOR");
     }
-#endif
 
     GLCHK (glUseProgram(0));
 }
