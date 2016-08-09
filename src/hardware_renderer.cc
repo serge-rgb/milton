@@ -211,6 +211,9 @@ static TextureUnitID g_texture_unit_canvas = { GL_TEXTURE1, 1 };
 
 struct RenderData
 {
+    f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
+    // TODO: Tiled rendering to get around the viewport limitation.
+
     GLuint stroke_program;
     GLuint quad_program;
     GLuint picker_program;
@@ -241,6 +244,9 @@ struct RenderData
 
     i32 width;
     i32 height;
+
+    i32 view_width;
+    i32 view_height;
 
     v3f background_color;
     i32 stroke_z;
@@ -463,6 +469,13 @@ b32 fills_screen(RenderElement* render_element)
 
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
+    {
+        GLfloat viewport_dims[2] = {};
+        glGetFloatv(GL_MAX_VIEWPORT_DIMS, viewport_dims);
+        milton_log("Maximum viewport dimensions, %dx%d\n", viewport_dims[0], viewport_dims[1]);
+        render_data->viewport_limits[0] = viewport_dims[0];
+        render_data->viewport_limits[1] = viewport_dims[1];
+    }
     glEnable(GL_SAMPLE_SHADING_ARB);
     //mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
     // TODO: Handle this. New MLT version?
@@ -703,8 +716,14 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
 {
     render_data->width = view->screen_size.w;
     render_data->height = view->screen_size.h;
-    i32 tex_w = view->screen_size.w;
-    i32 tex_h = view->screen_size.h;
+
+    // TODO: Render tiles.
+    // Compute this based on OpenGL FBO size limits
+    render_data->view_width = render_data->width;
+    render_data->view_height =render_data->height;
+
+    i32 tex_w = render_data->view_width;
+    i32 tex_h = render_data->view_height;
     // Create canvas texture
 
     glActiveTexture(g_texture_unit_canvas.opengl_id);
@@ -730,6 +749,8 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
                         NULL) );
 }
 
+i32 g_scale = -1;
+
 void gpu_update_scale(RenderData* render_data, i32 scale)
 {
 #if MILTON_DEBUG // set the shader values in C++
@@ -737,6 +758,7 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
     // u_scale = scale;
 #endif
     gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
+    g_scale = scale;
 }
 
 static void gpu_set_background(RenderData* render_data, v3f background_color)
@@ -748,6 +770,14 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
 
     render_data->background_color = background_color;
+}
+
+void set_screen_size(RenderData* render_data, float* fscreen)
+{
+    gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
+    gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
+    gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
+    gl_set_uniform_vec2(render_data->flood_program, "u_screen_size", 1, fscreen);
 }
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
@@ -767,12 +797,9 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     auto pan = divide2i(view->pan_vector, 1);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, pan.d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, center.d);
-    float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
-    gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->flood_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
+    float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
+    set_screen_size(render_data, fscreen);
 }
 
 void gpu_clip_strokes(RenderData* render_data,
@@ -1058,18 +1085,20 @@ void gpu_free_strokes(MiltonState* milton_state)
     }
 }
 
-void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
+void gpu_render_canvas(RenderData* render_data)
 {
-    glClearDepth(0.0f);
+    i32 x = 0;
+    i32 y = 0;
+    i32 w = render_data->view_width;
+    i32 h = render_data->view_height;
     glViewport(x, y, w, h);
-    glScissor(x, y, w, h);
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
-    print_framebuffer_status();
-
+    {
+        float fscreen[2] = { (float)w, (float)h };
+        set_screen_size(render_data, fscreen);
+    }
     GLCHK( glActiveTexture(g_texture_unit_layer.opengl_id) );
     GLCHK( glBindTexture(GL_TEXTURE_2D, render_data->layer_texture) );
-    glClearColor(
-                 render_data->background_color.r,
+    glClearColor(render_data->background_color.r,
                  render_data->background_color.g,
                  render_data->background_color.b,
                  1.0f);
@@ -1077,112 +1106,122 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
     glClear(GL_COLOR_BUFFER_BIT);
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // Render strokes
-    {
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_NOTEQUAL);
-        GLCHK( glUseProgram(render_data->stroke_program) );
-        GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
-        GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
-        GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
-        if (loc >= 0)
-        {
-            // NOTE: Front to back w/discard is faster without stencil, but slower with stencil.
-            //for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
-            for (i64 i = 0 ; i <(i64)render_data->render_elems.count; i++)
-            {
-                RenderElement* re = &render_data->render_elems.data[i];
 
-                if (is_layer(re))
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_NOTEQUAL);
+    GLCHK( glUseProgram(render_data->stroke_program) );
+    GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
+    GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
+    GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
+    if (loc >= 0)
+    {
+
+        //for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
+        for (i64 i = 0 ; i <(i64)render_data->render_elems.count; i++)
+        {
+            RenderElement* re = &render_data->render_elems.data[i];
+
+            if (is_layer(re))
+            {
+                // Layer render element.
+                // The current frambuffer is layer_texture. We copy its contents to the canvas_texture
+                glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+                GLCHK( glCopyTexImage2D(GL_TEXTURE_2D, /*lod*/0, GL_RGBA8, 0,0, render_data->view_width,render_data->view_height, /*border*/0) );
+            }
+            else
+            {
+                if (fills_screen(re))
                 {
-                    // Layer render element.
-                    // The current frambuffer is layer_texture. We copy its contents to the canvas_texture
-                    glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
-                    GLCHK( glCopyTexImage2D(GL_TEXTURE_2D, /*lod*/0, GL_RGBA8, x,y, w,h, /*border*/0) );
+                    glDisable(GL_DEPTH_TEST);
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+                    gl_set_uniform_vec4(render_data->flood_program, "u_brush_color", 1, re->color.d);
+                    // Fill screen path
+                    glUseProgram(render_data->flood_program);
+                    GLint p_loc = glGetAttribLocation(render_data->flood_program, "a_position");
+                    if (p_loc >= 0)
+                    {
+                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
+                        GLCHK( glVertexAttribPointer(/*attrib p_location*/(GLuint)p_loc,
+                                                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                                     /*stride*/0, /*ptr*/0));
+                        glEnableVertexAttribArray((GLuint)p_loc);
+                        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+                    }
+                    glUseProgram(render_data->stroke_program);
+                    glEnable(GL_DEPTH_TEST);
+                    glDisable(GL_BLEND);
                 }
                 else
                 {
-                    if (fills_screen(re))
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+                    i64 count = re->count;
+
+                    // TODO. Only set these uniforms when both are different from the ones in use.
+                    gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re->color.d);
+                    gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
+
+                    if (loc_a >=0)
                     {
-                        glDisable(GL_DEPTH_TEST);
-                        glEnable(GL_BLEND);
-                        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-                        gl_set_uniform_vec4(render_data->flood_program, "u_brush_color", 1, re->color.d);
-                        // Fill screen path
-                        glUseProgram(render_data->flood_program);
-                        GLint p_loc = glGetAttribLocation(render_data->flood_program, "a_position");
-                        if (p_loc >= 0)
-                        {
-                            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
-                            GLCHK( glVertexAttribPointer(/*attrib p_location*/(GLuint)p_loc,
-                                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                                         /*stride*/0, /*ptr*/0));
-                            glEnableVertexAttribArray((GLuint)p_loc);
-                            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-                        }
-                        glUseProgram(render_data->stroke_program);
-                        glEnable(GL_DEPTH_TEST);
-                        glDisable(GL_BLEND);
-                    }
-                    else
-                    {
-                        glEnable(GL_BLEND);
-                        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-                        i64 count = re->count;
-
-                        // TODO. Only set these uniforms when both are different from the ones in use.
-                        gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re->color.d);
-                        gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
-
-                        if (loc_a >=0)
-                        {
-                            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa) );
+                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa) );
 #if 0
-                            GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_a,
-                                                          /*size*/3, GL_INT,
-                                                          /*stride*/0, /*ptr*/0));
+                        GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_a,
+                                                      /*size*/3, GL_INT,
+                                                      /*stride*/0, /*ptr*/0));
 #else
-                            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_a,
-                                                         /*size*/3, GL_INT, /*normalize*/GL_FALSE,
-                                                         /*stride*/0, /*ptr*/0));
-#endif
-                            GLCHK( glEnableVertexAttribArray((GLuint)loc_a) );
-                        }
-                        if (loc_b >=0)
-                        {
-                            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointb) );
-#if 0
-                            GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
-                                                          /*size*/3, GL_INT,
-                                                          /*stride*/0, /*ptr*/0));
-#else
-                            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_b,
-                                                         /*size*/3, GL_INT, /*normalize*/GL_FALSE,
-                                                         /*stride11,059,200*/0, /*ptr*/0));
-#endif
-                            GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
-                        }
-
-
-                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke) );
-                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_a,
                                                      /*size*/3, GL_INT, /*normalize*/GL_FALSE,
                                                      /*stride*/0, /*ptr*/0));
-                        GLCHK( glEnableVertexAttribArray((GLuint)loc) );
-
-                        GLCHK( glUseProgram(render_data->stroke_program) );
-                        // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-                        // glStencilFunc(GL_ALWAYS,1,0xFF);
-                        // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-                        GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
-                        glDisable(GL_BLEND);  // TODO: everyone is using blend?
+#endif
+                        GLCHK( glEnableVertexAttribArray((GLuint)loc_a) );
                     }
+                    if (loc_b >=0)
+                    {
+                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointb) );
+#if 0
+                        GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
+                                                      /*size*/3, GL_INT,
+                                                      /*stride*/0, /*ptr*/0));
+#else
+                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_b,
+                                                     /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                                     /*stride11,059,200*/0, /*ptr*/0));
+#endif
+                        GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
+                    }
+
+
+                    GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke) );
+                    GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                                 /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                                 /*stride*/0, /*ptr*/0));
+                    GLCHK( glEnableVertexAttribArray((GLuint)loc) );
+
+                    GLCHK( glUseProgram(render_data->stroke_program) );
+                    // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    // glStencilFunc(GL_ALWAYS,1,0xFF);
+                    // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                    GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
+                    glDisable(GL_BLEND);  // TODO: everyone is using blend?
                 }
             }
         }
     }
     glDisable(GL_DEPTH_TEST);
+    glViewport(0, 0, render_data->width, render_data->height);
+}
 
+void gpu_render(RenderData* render_data)
+{
+    glClearDepth(0.0f);
+    glViewport(0, 0, render_data->width, render_data->height);
+    glScissor(0, 0, render_data->width, render_data->height);
+    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
+    print_framebuffer_status();
+
+    gpu_render_canvas(render_data);
 
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
     if (render_data->gui_visible)
@@ -1242,8 +1281,8 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(x/SSAA_FACTOR,y/SSAA_FACTOR, w/SSAA_FACTOR, h/SSAA_FACTOR);
-    glScissor(x/SSAA_FACTOR,y/SSAA_FACTOR, w/SSAA_FACTOR, h/SSAA_FACTOR);
+    glViewport(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    glScissor(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
 
     // Resolve MSAA
 
@@ -1280,17 +1319,6 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
     }
 
     GLCHK (glUseProgram(0));
-}
-
-void gpu_render(RenderData* render_data)
-{
-    // TODO: Figure out how to split into viewports.
-#if 1
-    gpu_render_viewport(render_data, 0,0, render_data->width, render_data->height);
-#else
-    gpu_render_viewport(render_data, 0,0, render_data->width/2, render_data->height/2);
-    //gpu_render_viewport(render_data, render_data->width/2, render_data->height/2, render_data->width, render_data->height);
-#endif
 }
 
 

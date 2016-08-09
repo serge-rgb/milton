@@ -9,7 +9,7 @@ To-Do
 - GPU Renderer checklist
     [x] Color picker
     [x] Eraser (sort VBOs)
-    [ ] Figure out how to get around the FBO size limitations.
+    [-] Figure out how to get around the FBO size limitations.
         [x] Anti-aliasing (Multisample FBOs, etc)
         [x] >2x Anti-aliasing (resolve in shader)
         [x] Resizing (manage FBO memory, screen_size dependent updates)
