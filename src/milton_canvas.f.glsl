@@ -12,23 +12,6 @@ uniform sampler2D u_canvas;
 
 #define PRESSURE_RESOLUTION_GL (1<<20)
 
-bool brush_is_eraser()
-{
-    bool is_eraser = false;
-    if (u_brush_color == vec4(23,34,45,56)) // defined in canvas.cc k_eraser_color
-    {
-        is_eraser = true;
-    }
-    return is_eraser;
-}
-
-
-vec4 blend(vec4 dst, vec4 src)
-{
-    vec4 result = src + dst*(1.0f-src.a);
-
-    return result;
-}
 
 // x,y  - closest point
 // z    - t in [0,1] interpolation value

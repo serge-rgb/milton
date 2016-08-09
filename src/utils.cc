@@ -433,13 +433,3 @@ char* str_trim_to_last_slash(char* str)
     return cool_char;
 }
 
-static size_t bytes_in_fd(FILE* fd)
-{
-    fpos_t fd_pos;
-    fgetpos(fd, &fd_pos);
-    fseek(fd, 0, SEEK_END);
-    size_t len = (size_t)ftell(fd);
-    fsetpos(fd, &fd_pos);
-    return len;
-}
-

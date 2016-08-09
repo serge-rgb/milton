@@ -494,9 +494,9 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         gl_link_program(render_data->stroke_program, objs, array_count(objs));
 
         GLCHK( glUseProgram(render_data->stroke_program) );
+        gl_set_uniform_i(render_data->stroke_program, "u_canvas", g_texture_unit_layer.id);
     }
 
-    gl_set_uniform_i(render_data->stroke_program, "u_canvas", g_texture_unit_layer.id);
 
     // Quad for screen!
     {
@@ -584,7 +584,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
         gl_link_program(render_data->background_program, objs, array_count(objs));
     }
-    {  // Color picker shader
+    {  // Color picker program
         render_data->picker_program = glCreateProgram();
         GLuint objs[2] = {};
 
@@ -593,7 +593,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         objs[1] = gl_compile_shader(g_picker_f, GL_FRAGMENT_SHADER);
         gl_link_program(render_data->picker_program, objs, array_count(objs));
     }
-    {  // Layer blend shader
+    {  // Layer blend program
         render_data->layer_blend_program = glCreateProgram();
         GLuint objs[2] = {};
 
@@ -620,6 +620,16 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         objs[1] = gl_compile_shader(g_outline_f, GL_FRAGMENT_SHADER);
 
         gl_link_program(render_data->outline_program, objs, array_count(objs));
+    }
+    {  // Flood fill program
+        render_data->flood_program = glCreateProgram();
+
+        GLuint objs[2] = {};
+        objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_flood_f, GL_FRAGMENT_SHADER);
+
+        gl_link_program(render_data->flood_program, objs, array_count(objs));
+        gl_set_uniform_i(render_data->flood_program, "u_canvas", g_texture_unit_canvas.id);
     }
 
     // Framebuffer object for canvas. Layer buffer
@@ -787,6 +797,7 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
+    gl_set_uniform_vec2(render_data->flood_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
 }
 
@@ -830,14 +841,37 @@ void gpu_clip_strokes(RenderData* render_data,
                                 bounds.top > render_data->height || bounds.bottom < 0;
                 i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
 
+                s->render_element.fills = false;
                 if (bounds.left <= 0 && bounds.right >= render_data->width &&
                     bounds.top <= 0 && bounds.bottom >= render_data->height)
                 {
-                    s->render_element.fills = true;
-                }
-                else
-                {
-                    s->render_element.fills = false;
+                    // Check that the screen is inside the stroke.
+                    auto np = s->num_points;
+                    if (np > 1)
+                    {
+                        for (i32 pi = 0; pi < np-1; ++pi)
+                        {
+                            v2i a = canvas_to_raster(view, s->points[pi]);
+                            v2i b = canvas_to_raster(view, s->points[pi+1]);
+
+                            f32 pa = s->pressures[pi];
+                            f32 pb = s->pressures[pi+1];
+
+                            f32 radius = s->brush.radius/(float)view->scale * SSAA_FACTOR * min(pa, pb);
+
+                            float left = min(a.x, b.x) - radius;
+                            float right = max(a.x, b.x) + radius;
+                            float top = min(a.y, b.y) - radius;
+                            float bottom = max(a.y, b.y) + radius;
+
+                            if (left <= 0 && right >= render_data->width &&
+                                top <= 0 && bottom >= render_data->height)
+                            {
+                                s->render_element.fills = true;
+                                break;
+                            }
+                        }
+                    }
                 }
                 if (!is_outside && area!=0)
                 {
@@ -1145,7 +1179,25 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
                 {
                     if (fills_screen(re))
                     {
+                        glDisable(GL_DEPTH_TEST);
+                        glEnable(GL_BLEND);
+                        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+                        gl_set_uniform_vec4(render_data->flood_program, "u_brush_color", 1, re->color.d);
                         // Fill screen path
+                        glUseProgram(render_data->flood_program);
+                        GLint p_loc = glGetAttribLocation(render_data->flood_program, "a_position");
+                        if (p_loc >= 0)
+                        {
+                            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
+                            GLCHK( glVertexAttribPointer(/*attrib p_location*/(GLuint)p_loc,
+                                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                                         /*stride*/0, /*ptr*/0));
+                            glEnableVertexAttribArray((GLuint)p_loc);
+                            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+                        }
+                        glUseProgram(render_data->stroke_program);
+                        glEnable(GL_DEPTH_TEST);
+                        glDisable(GL_BLEND);
                     }
                     else
                     {

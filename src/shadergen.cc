@@ -129,6 +129,7 @@ int main()
         output_shader(outfd, "../src/outline.f.glsl", "g_outline_f");
         output_shader(outfd, "../src/milton_canvas.v.glsl", "g_milton_canvas_v", "../src/common.glsl");
         output_shader(outfd, "../src/milton_canvas.f.glsl", "g_milton_canvas_f", "../src/common.glsl");
+        output_shader(outfd, "../src/stroke_flood.f.glsl", "g_flood_f", "../src/common.glsl");
     }
     else
     {

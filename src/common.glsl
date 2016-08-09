@@ -72,3 +72,20 @@ vec2 raster_to_canvas_gl(vec2 raster_point)
     return canvas_point;
 }
 
+bool brush_is_eraser()
+{
+    bool is_eraser = false;
+    if (u_brush_color == vec4(23,34,45,56)) // defined in canvas.cc k_eraser_color
+    {
+        is_eraser = true;
+    }
+    return is_eraser;
+}
+
+
+vec4 blend(vec4 dst, vec4 src)
+{
+    vec4 result = src + dst*(1.0f-src.a);
+
+    return result;
+}
