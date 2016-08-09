@@ -218,6 +218,7 @@ struct RenderData
     GLuint layer_blend_program;
     GLuint ssaa_program;
     GLuint outline_program;
+    GLuint flood_program;
 
     // VBO for the screen-covering quad.
     GLuint vbo_quad;
@@ -245,61 +246,6 @@ struct RenderData
     v3f background_color;
     i32 stroke_z;
 };
-
-// Load a shader and append line `#version 120`, which is invalid C++
-#if MILTON_DEBUG
-char* debug_load_shader_from_file(PATH_CHAR* path, size_t* out_size)
-{
-    char* contents = NULL;
-    FILE* common_fd = platform_fopen(TO_PATH_STR("src/common.glsl"), TO_PATH_STR("r"));
-    mlt_assert(common_fd);
-
-    size_t bytes_in_common = bytes_in_fd(common_fd);
-
-    char* common_contents = (char*)mlt_calloc(1, bytes_in_common);
-
-    fread(common_contents, 1, bytes_in_common, common_fd);
-
-
-    FILE* fd = platform_fopen(path, TO_PATH_STR("r"));
-
-    if (fd)
-    {
-        char prelude[] = "#version 150\n";
-        size_t prelude_len = strlen(prelude);
-        size_t common_len = strlen(common_contents);
-        size_t len = bytes_in_fd(fd);
-        contents = (char*)mlt_calloc(len + 1 + common_len + prelude_len, 1);
-        if (contents)
-        {
-            strcpy(contents, prelude);
-            strcpy(contents+strlen(contents), common_contents);
-            mlt_free(common_contents);
-
-            char* file_data = (char*)mlt_calloc(len,1);
-            size_t read = fread((void*)(file_data), 1, (size_t)len, fd);
-            file_data[read] = '\0';
-            strcpy(contents+strlen(contents), file_data);
-            mlt_free(file_data);
-            mlt_assert (read <= len);
-            fclose(fd);
-            if (out_size)
-            {
-                *out_size = strlen(contents)+1;
-            }
-            contents[*out_size] = '\0';
-        }
-    }
-    else
-    {
-        if (out_size)
-        {
-            *out_size = 0;
-        }
-    }
-    return contents;
-}
-#endif
 
 static void print_framebuffer_status()
 {
@@ -510,6 +456,12 @@ b32 is_layer(RenderElement* render_element)
     return result;
 }
 
+b32 fills_screen(RenderElement* render_element)
+{
+    b32 result = render_element->fills != false;
+    return result;
+}
+
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
     glEnable(GL_SAMPLE_SHADING_ARB);
@@ -534,27 +486,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
     {
         GLuint objs[2];
 
-        // TODO: In release, include the code directly.
-#if MILTON_DEBUG
-        size_t src_sz[2] = {0};
-        char* src[2] =
-        {
-            debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.v.glsl"), &src_sz[0]),
-            debug_load_shader_from_file(TO_PATH_STR("src/milton_canvas.f.glsl"), &src_sz[1]),
-        };
-        GLuint types[2] =
-        {
-            GL_VERTEX_SHADER,
-            GL_FRAGMENT_SHADER
-        };
-#endif
-        result = src_sz[0] != 0 && src_sz[1] != 0;
-
-        mlt_assert(array_count(src) == array_count(objs));
-        for (i64 i=0; i < array_count(src); ++i)
-        {
-            objs[i] = gl_compile_shader(src[i], types[i]);
-        }
+        objs[0] = gl_compile_shader(g_milton_canvas_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_milton_canvas_f, GL_FRAGMENT_SHADER);
 
         render_data->stroke_program = glCreateProgram();
 
@@ -897,6 +830,15 @@ void gpu_clip_strokes(RenderData* render_data,
                                 bounds.top > render_data->height || bounds.bottom < 0;
                 i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
 
+                if (bounds.left <= 0 && bounds.right >= render_data->width &&
+                    bounds.top <= 0 && bounds.bottom >= render_data->height)
+                {
+                    s->render_element.fills = true;
+                }
+                else
+                {
+                    s->render_element.fills = false;
+                }
                 if (!is_outside && area!=0)
                 {
                     push(render_elements, s->render_element);
@@ -1201,58 +1143,65 @@ void gpu_render_viewport(RenderData* render_data, i32 x, i32 y, i32 w, i32 h)
                 }
                 else
                 {
-                    i64 count = re->count;
-
-                    // TODO. Only set these uniforms when both are different from the ones in use.
-                    gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re->color.d);
-                    gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
-
-                    if (loc_a >=0)
+                    if (fills_screen(re))
                     {
-                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa) );
+                        // Fill screen path
+                    }
+                    else
+                    {
+                        i64 count = re->count;
+
+                        // TODO. Only set these uniforms when both are different from the ones in use.
+                        gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re->color.d);
+                        gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
+
+                        if (loc_a >=0)
+                        {
+                            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa) );
 #if 0
-                        GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_a,
-                                                      /*size*/3, GL_INT,
-                                                      /*stride*/0, /*ptr*/0));
+                            GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_a,
+                                                          /*size*/3, GL_INT,
+                                                          /*stride*/0, /*ptr*/0));
 #else
-                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_a,
+                            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_a,
+                                                         /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                                         /*stride*/0, /*ptr*/0));
+#endif
+                            GLCHK( glEnableVertexAttribArray((GLuint)loc_a) );
+                        }
+                        if (loc_b >=0)
+                        {
+                            GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointb) );
+#if 0
+                            GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
+                                                          /*size*/3, GL_INT,
+                                                          /*stride*/0, /*ptr*/0));
+#else
+                            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_b,
+                                                         /*size*/3, GL_INT, /*normalize*/GL_FALSE,
+                                                         /*stride11,059,200*/0, /*ptr*/0));
+#endif
+                            GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
+                        }
+
+
+                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke) );
+                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                                      /*size*/3, GL_INT, /*normalize*/GL_FALSE,
                                                      /*stride*/0, /*ptr*/0));
-#endif
-                        GLCHK( glEnableVertexAttribArray((GLuint)loc_a) );
+                        GLCHK( glEnableVertexAttribArray((GLuint)loc) );
+
+
+                        // TODO: Check which one of these is available. And use glMemoryBarrierARB, not EXT
+                        glTextureBarrierNV();
+                        //glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
+
+                        GLCHK( glUseProgram(render_data->stroke_program) );
+                        // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                        // glStencilFunc(GL_ALWAYS,1,0xFF);
+                        // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                        GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
                     }
-                    if (loc_b >=0)
-                    {
-                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointb) );
-#if 0
-                        GLCHK( glVertexAttribIPointer(/*attrib location*/(GLuint)loc_b,
-                                                      /*size*/3, GL_INT,
-                                                      /*stride*/0, /*ptr*/0));
-#else
-                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_b,
-                                                     /*size*/3, GL_INT, /*normalize*/GL_FALSE,
-                                                     /*stride11,059,200*/0, /*ptr*/0));
-#endif
-                        GLCHK( glEnableVertexAttribArray((GLuint)loc_b) );
-                    }
-
-
-                    GLCHK( glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke) );
-                    GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                                 /*size*/3, GL_INT, /*normalize*/GL_FALSE,
-                                                 /*stride*/0, /*ptr*/0));
-                    GLCHK( glEnableVertexAttribArray((GLuint)loc) );
-
-
-                    // TODO: Check which one of these is available. And use glMemoryBarrierARB, not EXT
-                    glTextureBarrierNV();
-                    //glMemoryBarrierEXT(GL_TEXTURE_FETCH_BARRIER_BIT_EXT);
-
-                    GLCHK( glUseProgram(render_data->stroke_program) );
-                    // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-                    // glStencilFunc(GL_ALWAYS,1,0xFF);
-                    // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-                    GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
                 }
             }
         }

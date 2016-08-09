@@ -1,4 +1,3 @@
-#version 150
 
 // The triangle, in [-1,1].
 uniform vec2 u_pointa;

@@ -1,5 +1,3 @@
-#version 150
-
 uniform vec2        u_screen_size;
 uniform sampler2D   u_canvas;
 

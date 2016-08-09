@@ -84,13 +84,26 @@ char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
     return lines;
 }
 
-void output_shader(FILE* of, char* fname, char* varname)
+void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = NULL)
 {
     char* contents = read_entire_file(fname);
+    char** prelude_lines = NULL;
+    i64 prelude_lines_count = 0;
+    if (fname_prelude)
+    {
+        char* prelude = read_entire_file(fname_prelude);
+        prelude_lines = split_lines(prelude, &prelude_lines_count);
+    }
     char** lines;
     i64 count;
     lines = split_lines(contents, &count);
     fprintf(of, "char %s[] = \n", varname);
+    fprintf(of, "\"#version 150\\n\"");
+    for (i64 i = 0; i < prelude_lines_count; ++i)
+    {
+        prelude_lines[i][strlen(prelude_lines[i])-1]='\0';  // Strip newline
+        fprintf(of, "\"%s\\n\"\n", prelude_lines[i]);
+    }
     for (i64 i = 0; i < count; ++i)
     {
         lines[i][strlen(lines[i])-1]='\0';  // Strip newline
@@ -114,6 +127,8 @@ int main()
         output_shader(outfd, "../src/ssaa_resolve.f.glsl", "g_ssaa_resolve_f");
         output_shader(outfd, "../src/outline.v.glsl", "g_outline_v");
         output_shader(outfd, "../src/outline.f.glsl", "g_outline_f");
+        output_shader(outfd, "../src/milton_canvas.v.glsl", "g_milton_canvas_v", "../src/common.glsl");
+        output_shader(outfd, "../src/milton_canvas.f.glsl", "g_milton_canvas_f", "../src/common.glsl");
     }
     else
     {

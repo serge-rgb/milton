@@ -4,7 +4,7 @@
 // Special values that RenderElement.count can take.
 enum RenderElementType
 {
-    RenderElementType_LAYER = -1,
+    RenderElementType_LAYER        = -1,
 };
 
 // Draw data for single stroke
@@ -17,6 +17,8 @@ struct RenderElement
     i64     count;
     v4f     color;
     i32     radius;
+
+    b32     fills;
 };
 
 
