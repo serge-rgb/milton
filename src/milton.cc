@@ -1503,6 +1503,17 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
+    if (milton_get_brush_radius(milton_state) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE)
+    {
+        brush_outline_should_draw = false;
+    }
+
+    if (!brush_outline_should_draw &&
+        (i32)SDL_GetTicks() - milton_state->hover_flash_ms < HOVER_FLASH_THRESHOLD_MS)
+    {
+        brush_outline_should_draw = true;
+    }
+
     float radius = brush_outline_should_draw ? (float)milton_get_brush_radius(milton_state) : -1;
 
     if (!(milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))

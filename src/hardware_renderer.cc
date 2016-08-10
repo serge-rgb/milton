@@ -1224,11 +1224,11 @@ void gpu_render(RenderData* render_data)
     gpu_render_canvas(render_data);
 
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
+    glEnable(GL_BLEND);
     if (render_data->gui_visible)
     {
         // Render picker
 
-        glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glUseProgram(render_data->picker_program);
         GLint loc = glGetAttribLocation(render_data->picker_program, "a_position");
@@ -1253,10 +1253,12 @@ void gpu_render(RenderData* render_data)
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
 
-        // Render outline
+    }
+    // Render outline
 
+    {
         glUseProgram(render_data->outline_program);
-        loc = glGetAttribLocation(render_data->outline_program, "a_position");
+        GLint loc = glGetAttribLocation(render_data->outline_program, "a_position");
         if (loc >= 0)
         {
             glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline);
@@ -1276,9 +1278,9 @@ void gpu_render(RenderData* render_data)
             }
         }
         glDrawArrays(GL_TRIANGLE_FAN, 0,4);
-
-        glDisable(GL_BLEND);
     }
+
+    glDisable(GL_BLEND);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);

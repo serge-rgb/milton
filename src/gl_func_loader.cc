@@ -60,9 +60,6 @@ PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
 // TODO: Use GL_EXT_framebuffer_blit
 PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
 
-// TODO: Figure out if we're going to use this.
-// PFNGLVERTEXATTRIBIPOINTERPROC       glVertexAttribIPointer;
-
 
 // TODO: Use GL_EXT_framebuffer_object
 PFNGLGENFRAMEBUFFERSPROC      glGenFramebuffers;
