@@ -1613,6 +1613,9 @@ cleanup:
     i32 view_height = 0;
 
 
+#if REDRAW_EVERY_FRAME
+    do_full_redraw = true;
+#endif
     //TODO: Draw rect for new stroke.
     if (do_full_redraw)
     {

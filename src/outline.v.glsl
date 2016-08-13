@@ -2,7 +2,7 @@
 attribute vec2 a_position;
 attribute vec2 a_sizes;
 
-out vec2 v_sizes;
+varying vec2 v_sizes;
 
 void main()
 {

@@ -34,24 +34,30 @@ GLuint gl_compile_shader(const char* src, GLuint type, char* shader_name)
     int res = 0;
     //GLCHK ( glGetObjectParameteriv(obj, GL_COMPILE_STATUS, &res) );
     GLCHK ( glGetShaderiv(obj, GL_COMPILE_STATUS, &res) );
-    if (!res)
+    if (shader_name != NULL)
     {
-        if (shader_name != NULL)
+        milton_log("Shader: \"%s\"\n", shader_name);
+    }
+    GLint length;
+    GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
+    if (length > 0)
+    {
+        if (!res)
         {
-            milton_log("Shader: \"%s\"\n", shader_name);
+            milton_log("SHADER SOURCE:\n%s\n", src);
         }
-		milton_log("SHADER SOURCE:\n%s\n", src);
-        GLint length;
-        GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
         char* log = (char*)malloc((size_t)length);
         GLsizei written_len;
         // GLCHK ( glGetShaderInfoLog(obj, length, &written_len, log) );
         GLCHK ( glGetShaderInfoLog (obj, length, &written_len, log) );
-        gl_log("Shader compilation failed. \n    ---- Info log:\n");
+        gl_log("Shader compilation info. \n    ---- Info log:\n");
         gl_log(log);
         free(log);
 
-        mlt_assert(!"Shader compilation error");
+        if (!res)
+        {
+            mlt_assert(!"Shader compilation error");
+        }
     }
     return obj;
 }

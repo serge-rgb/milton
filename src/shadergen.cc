@@ -98,7 +98,7 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
     i64 count;
     lines = split_lines(contents, &count);
     fprintf(of, "char %s[] = \n", varname);
-    fprintf(of, "\"#version 150\\n\"");
+    fprintf(of, "\"#version 120\\n\"");
     for (i64 i = 0; i < prelude_lines_count; ++i)
     {
         prelude_lines[i][strlen(prelude_lines[i])-1]='\0';  // Strip newline
@@ -129,8 +129,6 @@ int main()
         output_shader(outfd, "../src/outline.f.glsl", "g_outline_f");
         output_shader(outfd, "../src/stroke_raster.v.glsl", "g_stroke_raster_v", "../src/common.glsl");
         output_shader(outfd, "../src/stroke_raster.f.glsl", "g_stroke_raster_f", "../src/common.glsl");
-        output_shader(outfd, "../src/stencil_blend.v.glsl", "g_stencil_blend_v");
-        output_shader(outfd, "../src/stencil_blend.f.glsl", "g_stencil_blend_f");
         output_shader(outfd, "../src/stroke_flood.f.glsl", "g_flood_f", "../src/common.glsl");
     }
     else

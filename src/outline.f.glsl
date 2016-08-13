@@ -1,5 +1,5 @@
 
-in vec2 v_sizes;
+varying vec2 v_sizes;
 
 uniform int u_radius;
 uniform bool u_fill;

@@ -2,7 +2,7 @@
 attribute vec2 a_position;
 attribute vec2 a_norm;  // Normalized position
 
-out vec2 v_norm;
+varying vec2 v_norm;
 
 void main()
 {

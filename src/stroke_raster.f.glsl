@@ -2,15 +2,16 @@
 // License: https://github.com/serge-rgb/milton#license
 
 // TODO: this layout qualifier introduces GLSL 150 dependency.
-layout(origin_upper_left) in vec4 gl_FragCoord;
+//layout(origin_upper_left) in vec4 gl_FragCoord;
 
-flat in vec3 v_pointa;
-flat in vec3 v_pointb;
+// TODO: flat interpolation
+varying vec3 v_pointa;
+varying vec3 v_pointb;
 
 uniform sampler2D u_canvas;
 
 
-#define PRESSURE_RESOLUTION_GL (1<<20)
+#define PRESSURE_RESOLUTION_GL 1048576	//(1<<20)
 
 
 // x,y  - closest point
@@ -92,21 +93,24 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
 
 void main()
 {
-    vec2 coord = gl_FragCoord.xy / u_screen_size;
+#if 1
+    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y);
+    vec2 coord = screen_point / u_screen_size;
     coord.y = 1-coord.y;
     vec4 color = texture2D(u_canvas, coord);
     //if (color.a == 1) { discard; }
-
+#endif
 
     vec3 a = v_pointa;
     vec3 b = v_pointb;
     int sample = 0;
-    sample = sample_stroke(raster_to_canvas_gl(gl_FragCoord.xy), a, b);
+    sample = sample_stroke(raster_to_canvas_gl(screen_point), a, b);
 
     if (sample > 0)
     {
         // TODO: is there a way to do front-to-back rendering with a working eraser?
         gl_FragColor = brush_is_eraser() ? color : u_brush_color;
+        //gl_FragColor = vec4(1);
     }
     else
     {

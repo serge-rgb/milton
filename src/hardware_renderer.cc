@@ -185,20 +185,14 @@ static vec4 gl_FragColor;
 //      - If it is inside, blend color.
 //
 //
-//
-//
-// == Future?
-//
-// 1. Sandwich buffers.
-//
-//      We can render to two textures. One for strokes below the working stroke
-//      and one for strokes above. As a final canvas rendering pass, we render
-//      the working stroke and blend it between the two textures.
-//      This would make the common case for rendering much faster.
-//
 
 #define PRESSURE_RESOLUTION (1<<20)
-#define MAX_DEPTH_VALUE (1<<15)   // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
+#define MAX_DEPTH_VALUE (1<<24)   // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
+                                    // Also defined in stroke_raster.v.glsl
+                                    //
+                                    // NOTE: Using this technique means that the algorithm is not correct.
+                                    //  There is a low probability that one stroke will cover another
+                                    //  stroke with the same z value.
 
 struct TextureUnitID
 {
@@ -221,7 +215,6 @@ struct RenderData
     GLuint ssaa_program;
     GLuint outline_program;
     GLuint flood_program;
-    GLuint blend_program;
 
     // VBO for the screen-covering quad.
     GLuint vbo_quad;
@@ -489,6 +482,10 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         render_data->viewport_limits[0] = viewport_dims[0];
         render_data->viewport_limits[1] = viewport_dims[1];
     }
+
+    // Check stroke_z range
+    //render_data->stroke_z = (1<<24) - 500;
+
     //mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
     // TODO: Handle this. New MLT version?
     // mlt_assert(STROKE_MAX_POINTS == STROKE_MAX_POINTS_GL);
@@ -498,7 +495,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
     render_data->gui_visible = true;
 
-#if MILTON_DEBUG
+#if USE_3_2_CONTEXT
     // Assume our context is 3.0+
     // Create a single VAO and bind it.
     GLuint proxy_vao = 0;
@@ -520,7 +517,6 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         GLCHK( glUseProgram(render_data->stroke_program) );
         gl_set_uniform_i(render_data->stroke_program, "u_canvas", g_texture_unit_canvas.id);
     }
-
 
     // Quad for screen!
     {
@@ -1111,6 +1107,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     glClear(GL_COLOR_BUFFER_BIT);
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_DEPTH_TEST);
 
 
     glEnable(GL_DEPTH_TEST);
@@ -1205,10 +1202,8 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                     GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
                     GLCHK( glUseProgram(render_data->stroke_program) );
-                    // glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-                    // glStencilFunc(GL_ALWAYS,1,0xFF);
-                    // glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                     GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
+
                     glDisable(GL_BLEND);  // TODO: everyone is using blend?
                 }
             }
