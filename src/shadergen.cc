@@ -127,8 +127,10 @@ int main()
         output_shader(outfd, "../src/ssaa_resolve.f.glsl", "g_ssaa_resolve_f");
         output_shader(outfd, "../src/outline.v.glsl", "g_outline_v");
         output_shader(outfd, "../src/outline.f.glsl", "g_outline_f");
-        output_shader(outfd, "../src/milton_canvas.v.glsl", "g_milton_canvas_v", "../src/common.glsl");
-        output_shader(outfd, "../src/milton_canvas.f.glsl", "g_milton_canvas_f", "../src/common.glsl");
+        output_shader(outfd, "../src/stroke_raster.v.glsl", "g_stroke_raster_v", "../src/common.glsl");
+        output_shader(outfd, "../src/stroke_raster.f.glsl", "g_stroke_raster_f", "../src/common.glsl");
+        output_shader(outfd, "../src/stencil_blend.v.glsl", "g_stencil_blend_v");
+        output_shader(outfd, "../src/stencil_blend.f.glsl", "g_stencil_blend_f");
         output_shader(outfd, "../src/stroke_flood.f.glsl", "g_flood_f", "../src/common.glsl");
     }
     else

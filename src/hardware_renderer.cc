@@ -143,12 +143,12 @@ static vec4 gl_FragColor;
 #pragma warning (disable : 4200)
 #define buffer struct
 //#include "common.glsl"
-//#include "milton_canvas.v.glsl"
+//#include "stroke_raster.v.glsl"
 #undef main
 #define main fragmentShaderMain
 #define texture2D(a,b) VEC4(0)
 #define sampler2D int
-//#include "milton_canvas.f.glsl"
+//#include "stroke_raster.f.glsl"
 #pragma warning (pop)
 #undef texture2D
 #undef main
@@ -198,7 +198,7 @@ static vec4 gl_FragColor;
 //
 
 #define PRESSURE_RESOLUTION (1<<20)
-#define MAX_DEPTH_VALUE 1000   // Strokes have 1000 different z values. 1/i for each i in [0, 1000)
+#define MAX_DEPTH_VALUE (1<<15)   // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
 
 struct TextureUnitID
 {
@@ -221,6 +221,7 @@ struct RenderData
     GLuint ssaa_program;
     GLuint outline_program;
     GLuint flood_program;
+    GLuint blend_program;
 
     // VBO for the screen-covering quad.
     GLuint vbo_quad;
@@ -509,8 +510,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
     {
         GLuint objs[2];
 
-        objs[0] = gl_compile_shader(g_milton_canvas_v, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(g_milton_canvas_f, GL_FRAGMENT_SHADER);
+        objs[0] = gl_compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER);
 
         render_data->stroke_program = glCreateProgram();
 
