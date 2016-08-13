@@ -1,12 +1,6 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-// Special values that RenderElement.count can take.
-enum RenderElementType
-{
-    RenderElementType_LAYER        = -1,
-};
-
 // Draw data for single stroke
 struct RenderElement
 {
@@ -18,7 +12,7 @@ struct RenderElement
     v4f     color;
     i32     radius;
 
-    b32     fills;
+    int     flags;  // RenderElementFlags enum;
 };
 
 

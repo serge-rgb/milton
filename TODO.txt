@@ -22,7 +22,9 @@ To-Do
     [x] Unload image
     [x] Layer visibility
     [x] Clip to screen (clip <1px strokes, clip strokes outside window)
-    [] sandwich buffers
+    [-] sandwich buffers
+        [x] OR Only draw necesary area (background rect. clipping)
+
     [] Single point strokes
     [] use triangle strips
     [] end of "infinite" canvas

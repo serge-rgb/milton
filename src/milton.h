@@ -245,7 +245,7 @@ void milton_use_previous_mode(MiltonState* milton_state);
 void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
 
 // Our "game loop" inner function.
-void milton_update(MiltonState* milton_state, MiltonInput* input);
+void milton_update_and_render(MiltonState* milton_state, MiltonInput* input);
 
 // If memory has been requested after rendering failed, this function will realloc.
 void milton_expand_render_memory(MiltonState* milton_state);

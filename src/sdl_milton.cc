@@ -103,7 +103,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
     i32 input_flags = (i32)MiltonInputFlags_NONE;
 
     SDL_Event event;
-    while ( SDL_PollEvent(&event) )
+    while (SDL_PollEvent(&event))
     {
         //ImGui_ImplSdl_ProcessEvent(&event);
         ImGui_ImplSdlGL3_ProcessEvent(&event);
@@ -1117,14 +1117,13 @@ int milton_main()
         platform_state.pan_start = platform_state.pan_point;
         // ==== Update and render
         PROFILE_GRAPH_PUSH(polling);
-        milton_update(milton_state, &milton_input);
+        milton_update_and_render(milton_state, &milton_input);
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) )
         {
             platform_state.should_quit = true;
         }
         PROFILE_GRAPH_BEGIN(GL);
         //milton_gl_backend_draw(milton_state);
-        gpu_render(milton_state->render_data);
         ImGui::Render();
         PROFILE_GRAPH_PUSH(GL);
         PROFILE_GRAPH_BEGIN(system);

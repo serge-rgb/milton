@@ -603,6 +603,8 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 
     gpu_init(milton_state->render_data, milton_state->view, &milton_state->gui->picker);
 
+    milton_state->working_stroke.render_element.flags |= RenderElementFlags_WORKING_STROKE;
+
     milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
 
 
@@ -1060,8 +1062,9 @@ static void milton_validate(MiltonState* milton_state)
     mlt_free(layer_ids);
 }
 
-void milton_update(MiltonState* milton_state, MiltonInput* input)
+void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 {
+    b32 do_full_redraw = false;
     b32 brush_outline_should_draw = false;
 
     PROFILE_GRAPH_BEGIN(update);
@@ -1087,6 +1090,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_load(milton_state);
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
         input->flags |= MiltonInputFlags_FAST_DRAW;
+        do_full_redraw = true;
     }
 
 
@@ -1094,6 +1098,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     {
         milton_expand_render_memory(milton_state);
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        do_full_redraw = true;
     }
 
     if (milton_state->flags & MiltonStateFlags_REQUEST_QUALITY_REDRAW)
@@ -1101,6 +1106,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         milton_state->view->downsampling_factor = 1;  // See how long it takes to redraw at full quality
         milton_state->flags &= ~MiltonStateFlags_REQUEST_QUALITY_REDRAW;
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        do_full_redraw = true;
     }
 
     i32 now = (i32)SDL_GetTicks();
@@ -1120,11 +1126,13 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
     if (input->flags & MiltonInputFlags_FULL_REFRESH)
     {
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        do_full_redraw = true;
     }
 
     if (input->scale)
     {
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        do_full_redraw = true;
 
 // Debug
 #if MILTON_ZOOM_DEBUG
@@ -1189,6 +1197,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
         if (!equ2i(input->pan_delta, v2i{}))
         {
             render_flags |= MiltonRenderFlags_PAN_COPY;
+            do_full_redraw = true;
         }
     }
 
@@ -1243,6 +1252,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                         push(&milton_state->redo_stack, h);
                         // TODO: FULL_REDRAW is overkill
                         render_flags |= MiltonRenderFlags_FULL_REDRAW;
+                        do_full_redraw = true;
                     }
                     break;
                 }
@@ -1267,6 +1277,7 @@ void milton_update(MiltonState* milton_state, MiltonInput* input)
                             push(&milton_state->history, h);
                             // TODO: FULL_REDRAW is overkill
                             render_flags |= MiltonRenderFlags_FULL_REDRAW;
+                            do_full_redraw = true;
                             break;
                         }
                         stroke = pop(&milton_state->stroke_graveyard);  // Keep popping in case the graveyard has info from deleted layers
@@ -1595,6 +1606,32 @@ cleanup:
         }
     }
     profiler_output();
+
+    i32 view_x = 0;
+    i32 view_y = 0;
+    i32 view_width = 0;
+    i32 view_height = 0;
+
+
+    //TODO: Draw rect for new stroke.
+    if (do_full_redraw)
+    {
+        view_width = milton_state->view->screen_size.w;
+        view_height = milton_state->view->screen_size.h;
+    }
+    else if (milton_state->working_stroke.num_points > 0)
+    {
+        Rect bounds = bounding_box_for_stroke(&milton_state->working_stroke);
+        bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
+        bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
+        view_x = bounds.left;
+        view_y = milton_state->view->screen_size.h/1 - bounds.bottom;
+
+        view_width = bounds.right - bounds.left;
+        view_height = bounds.bottom - bounds.top;
+    }
+
+    gpu_render(milton_state->render_data, view_x, view_y, view_width, view_height);
 
     //milton_validate(milton_state);
     ARENA_VALIDATE(milton_state->root_arena);
