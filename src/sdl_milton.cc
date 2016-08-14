@@ -377,6 +377,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     {
                         input_flags |= MiltonInputFlags_CHANGE_MODE;
                         milton_input.mode_to_set = MiltonMode_EXPORTING;
+                        gpu_export(milton_state->render_data);
                     }
                     if (keycode == SDLK_q)
                     {

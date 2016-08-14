@@ -889,9 +889,43 @@ void gpu_clip_strokes(RenderData* render_data,
     }
 }
 
+void resolve_SSAA(RenderData* render_data)
+{
+    if (SSAA_FACTOR == 2 || SSAA_FACTOR == 1)
+    {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0);
+        GLCHK( glDrawBuffer(GL_BACK) );
+        GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
+                                 0, 0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR,
+                                 GL_COLOR_BUFFER_BIT, GL_LINEAR) );
+    }
+    else if (SSAA_FACTOR == 4)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glUseProgram(render_data->ssaa_program);
+        {
+            GLint loc = glGetAttribLocation(render_data->ssaa_program, "a_position");
+            if (loc >= 0)
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
+                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                             /*stride*/0, /*ptr*/0));
+                glEnableVertexAttribArray((GLuint)loc);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+            }
+        }
+    }
+    else
+    {
+        milton_die_gracefully("unsupported SSAA_FACTOR");
+    }
+
+
+}
 // TODO: Measure memory consumption of glBufferData and their ilk
-
-
 enum CookStrokeOpt
 {
     CookStroke_NEW                   = 0,
@@ -1103,6 +1137,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                  render_data->background_color.b,
                  1.0f);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0);
     glClear(GL_COLOR_BUFFER_BIT);
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
@@ -1214,6 +1249,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     glScissor(0, 0, render_data->width, render_data->height);
 }
 
+
 void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
 {
     glClearDepth(0.0f);
@@ -1229,39 +1265,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glScissor(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
 
     // Resolve MSAA
-
-    if (SSAA_FACTOR == 2 || SSAA_FACTOR == 1)
-    {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0);
-        GLCHK( glDrawBuffer(GL_BACK) );
-        GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
-                                 0, 0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR,
-                                 GL_COLOR_BUFFER_BIT, GL_LINEAR) );
-    }
-    else if (SSAA_FACTOR == 4)
-    {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(render_data->ssaa_program);
-        {
-            GLint loc = glGetAttribLocation(render_data->ssaa_program, "a_position");
-            if (loc >= 0)
-            {
-                glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
-                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                             /*stride*/0, /*ptr*/0));
-                glEnableVertexAttribArray((GLuint)loc);
-                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-            }
-        }
-    }
-    else
-    {
-        milton_die_gracefully("unsupported SSAA_FACTOR");
-    }
-
+    resolve_SSAA(render_data);
 
     //GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
     glEnable(GL_BLEND);
@@ -1324,4 +1328,40 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK (glUseProgram(0));
 }
 
+void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);  // Defined in persist.cc
+void gpu_export(RenderData* render_data)
+{
+    u8* data = (u8*)mlt_malloc(render_data->width * render_data->height * sizeof(i32));
+
+    i32 x = 0;
+    i32 y = 0;
+    i32 w = render_data->width;
+    i32 h = render_data->height;
+
+    glViewport(0, 0, render_data->width, render_data->height);
+
+    gpu_render_canvas(render_data, x, y, w,h);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+
+    // Resolve MSAA
+    resolve_SSAA(render_data);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    w/=SSAA_FACTOR;
+    h/=SSAA_FACTOR;
+
+    glReadPixels(0,0,
+                 w,h,
+                 GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 (GLvoid*)data);
+
+    milton_save_buffer_to_file(TO_PATH_STR("test.png"), data, w,h);
+
+    mlt_free(data);
+    glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
+}
 

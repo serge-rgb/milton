@@ -556,10 +556,14 @@ void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
         }
         len = (int)sz;
     }
-    PATH_CHAR* ext = fname + len;
+    size_t ext_sz = ( len+1 ) * sizeof(PATH_CHAR);
+    PATH_CHAR* fname_copy = (PATH_CHAR*)mlt_calloc(ext_sz, 1);
+    fname_copy[0] = '\0';
+    PATH_STRCPY(fname_copy, fname);
 
     // NOTE: This should work with unicode.
     int ext_len = 0;
+    PATH_CHAR* ext = fname_copy + len;
     b32 found = false;
     {
         int safety = len;
@@ -583,7 +587,7 @@ void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
         for (int i = 0; i < ext_len; ++i)
         {
             PATH_CHAR c = ext[i];
-            ext[i] = (PATH_CHAR)PATH_TOLOWER(c);
+            ext[i] = PATH_TOLOWER(c);
         }
 
         FILE* fd = NULL;
@@ -632,6 +636,7 @@ void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
     {
         platform_dialog("File name missing extension!\n", "Error");
     }
+    mlt_free(fname_copy);
 }
 
 void milton_prefs_load(PlatformPrefs* prefs)
