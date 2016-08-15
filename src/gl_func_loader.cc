@@ -70,6 +70,7 @@ PFNGLBINDRENDERBUFFERPROC glBindRenderbuffer;
 PFNGLRENDERBUFFERSTORAGEPROC glRenderbufferStorage;
 PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
 PFNGLCHECKFRAMEBUFFERSTATUSPROC glCheckFramebufferStatus;
+PFNGLDELETEFRAMEBUFFERSPROC glDeleteFramebuffers;
 
 
 
@@ -142,6 +143,7 @@ bool load_gl_functions()
     GETADDRESS(glRenderbufferStorage);
     GETADDRESS(glFramebufferRenderbuffer);
     GETADDRESS(glCheckFramebufferStatus);
+    GETADDRESS(glDeleteFramebuffers);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

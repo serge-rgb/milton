@@ -186,6 +186,12 @@ static vec4 gl_FragColor;
 //
 //
 
+
+// Forward declarations:
+//
+void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);  // Defined in persist.cc
+// ====
+
 #define PRESSURE_RESOLUTION (1<<20)
 #define MAX_DEPTH_VALUE (1<<24)   // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
                                     // Also defined in stroke_raster.v.glsl
@@ -813,7 +819,6 @@ void gpu_clip_strokes(RenderData* render_data,
     auto *render_elements = &render_data->render_elems;
 
     RenderElement layer_element = {};
-
     layer_element.flags |= RenderElementFlags_LAYER;
 
     reset(render_elements);
@@ -889,14 +894,13 @@ void gpu_clip_strokes(RenderData* render_data,
     }
 }
 
-void resolve_SSAA(RenderData* render_data)
+void resolve_SSAA(RenderData* render_data, GLuint draw_framebuffer)
 {
     if (SSAA_FACTOR == 2 || SSAA_FACTOR == 1)
     {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        GLCHK( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw_framebuffer) );
         glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0);
-        GLCHK( glDrawBuffer(GL_BACK) );
+        GLCHK( glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
         GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
                                  0, 0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR,
                                  GL_COLOR_BUFFER_BIT, GL_LINEAR) );
@@ -1142,11 +1146,11 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     glClear(GL_COLOR_BUFFER_BIT);
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
 
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_NOTEQUAL);
+
     GLCHK( glUseProgram(render_data->stroke_program) );
     GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
     GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
@@ -1265,7 +1269,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glScissor(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
 
     // Resolve MSAA
-    resolve_SSAA(render_data);
+    resolve_SSAA(render_data, 0/*default framebuffer*/);
 
     //GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
     glEnable(GL_BLEND);
@@ -1328,40 +1332,145 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK (glUseProgram(0));
 }
 
-void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);  // Defined in persist.cc
-void gpu_export(RenderData* render_data)
+void gpu_export(MiltonState* milton_state)
 {
-    u8* data = (u8*)mlt_malloc(render_data->width * render_data->height * sizeof(i32));
+    CanvasView saved_view = *milton_state->view;
+    RenderData* render_data = milton_state->render_data;
+    CanvasView* view = milton_state->view;
 
+    i32 saved_width = render_data->width;
+    i32 saved_height = render_data->height;
+    GLuint saved_fbo = render_data->fbo;
+
+
+    int scale = 2;
     i32 x = 0;
     i32 y = 0;
     i32 w = render_data->width;
     i32 h = render_data->height;
+    i32 buf_w = render_data->width * scale;
+    i32 buf_h = render_data->height * scale;
 
-    glViewport(0, 0, render_data->width, render_data->height);
 
-    gpu_render_canvas(render_data, x, y, w,h);
+#if 1
+    v2i center = divide2i(milton_state->view->screen_size, 2);
+    v2i pan_delta = sub2i(center, v2i{x + (w/2), y + (h/2)}) ;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    milton_state->view->pan_vector = add2i(milton_state->view->pan_vector, scale2i(pan_delta, milton_state->view->scale));
 
-    // Resolve MSAA
-    resolve_SSAA(render_data);
+    milton_state->view->screen_size = v2i{ buf_w, buf_h };
+    render_data->width = buf_w;
+    render_data->height = buf_h;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
+    if ( scale > 1 )
+    {
+        milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
+    }
 
-    w/=SSAA_FACTOR;
-    h/=SSAA_FACTOR;
+    gpu_resize(render_data, view);
+    gpu_set_canvas(render_data, view);
+#endif
 
+    u8* data = (u8*)mlt_malloc((render_data->width/SSAA_FACTOR) * (render_data->height/SSAA_FACTOR) * sizeof(i32));
+
+    GLsizei sizes[2][2] =
+    {
+        { buf_w, buf_h },
+        { buf_w/SSAA_FACTOR, buf_h/SSAA_FACTOR },
+    };
+    GLuint export_fbo = 0;
+    GLuint export_texture = 0;  // The resized canvas.
+    GLuint buffer_texture = 0;  // The final, SSAA-resolved texture.
+
+    glGenTextures(1, &buffer_texture);
+    GLCHK (glGenTextures(1, &export_texture) );
+
+
+    for (int tex_i=0; tex_i < 2; ++tex_i)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        switch(tex_i)
+        {
+        case 0:
+            glBindTexture(GL_TEXTURE_2D, export_texture);
+            break;
+        case 1:
+            glBindTexture(GL_TEXTURE_2D, buffer_texture);
+            break;
+        }
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        GLsizei tex_w = sizes[tex_i][0];
+        GLsizei tex_h = sizes[tex_i][1];
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_w, tex_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    }
+
+    {
+        glGenFramebuffers(1, &export_fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, export_fbo);
+        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, buffer_texture, 0) );
+        print_framebuffer_status();
+    }
+
+    // TODO: Check for out-of-memory errors.
+
+    mlt_assert(buf_w == render_data->width);
+    mlt_assert(buf_h == render_data->height);
+
+    glViewport(0, 0, buf_w, buf_h);
+    gpu_clip_strokes(render_data, milton_state->view, milton_state->root_layer, &milton_state->working_stroke);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, export_texture, 0);
+
+    gpu_render_canvas(render_data, 0, 0, buf_w, buf_h);
+
+    // Resolve AA
+    resolve_SSAA(render_data, export_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, export_fbo);
+
+    // Read onto buffer
     glReadPixels(0,0,
-                 w,h,
+                 buf_w/SSAA_FACTOR, buf_h/SSAA_FACTOR,
                  GL_RGBA,
                  GL_UNSIGNED_BYTE,
                  (GLvoid*)data);
 
-    milton_save_buffer_to_file(TO_PATH_STR("test.png"), data, w,h);
+    {  // Flip texture
+        u32* pixels = (u32*)data;
+        for (i64 j=0;j < (buf_h/SSAA_FACTOR) / 2; ++j)
+        {
+            for (i64 i=0; i<buf_w/SSAA_FACTOR; ++i)
+            {
+                i64 idx_up = j*(buf_w/SSAA_FACTOR) + i;
+                i64 j_down = buf_h/SSAA_FACTOR-1 - j;
+                i64 idx_down = j_down*(buf_w/SSAA_FACTOR) + i;
+                // Swap
+                u32 pixel = pixels[idx_down];
+                pixels[idx_down] = pixels[idx_up];
+                pixels[idx_up] = pixel;
+            }
+        }
+    }
 
+    milton_save_buffer_to_file(TO_PATH_STR("test.png"), data, buf_w/SSAA_FACTOR,buf_h/SSAA_FACTOR);
+
+    // Cleanup.
     mlt_free(data);
+
+    render_data->fbo = saved_fbo;
+    *milton_state->view = saved_view;
+    render_data->width = saved_width;
+    render_data->height = saved_height;
+
+    glDeleteFramebuffers(1, &export_fbo);
+    glDeleteTextures(1, &export_texture);
+    glDeleteTextures(1, &buffer_texture);
     glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
 }
 

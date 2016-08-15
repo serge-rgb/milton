@@ -1635,6 +1635,9 @@ cleanup:
     }
 
     gpu_render(milton_state->render_data, view_x, view_y, view_width, view_height);
+    //gpu_export(milton_state);
+
+
 
     //milton_validate(milton_state);
     ARENA_VALIDATE(milton_state->root_arena);
