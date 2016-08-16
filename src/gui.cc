@@ -1120,7 +1120,14 @@ void gui_toggle_visibility(MiltonState* milton_state)
     MiltonGui* gui = milton_state->gui;
     gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
     gui->visible = !gui->visible;
-    milton_state->render_data->gui_visible = gui->visible;
+    if (gui->visible)
+    {
+        milton_state->render_data->flags |= RenderDataFlags_GUI_VISIBLE;
+    }
+    else
+    {
+        milton_state->render_data->flags &= ~RenderDataFlags_GUI_VISIBLE;
+    }
 }
 
 void gui_toggle_help(MiltonGui* gui)

@@ -238,7 +238,7 @@ struct RenderData
 
     GLuint fbo;
 
-    b32 gui_visible;
+    i32 flags;  // RenderDataFlags enum
 
     DArray<RenderElement> render_elems;
 
@@ -247,6 +247,14 @@ struct RenderData
 
     v3f background_color;
     i32 stroke_z;
+};
+
+enum RenderDataFlags
+{
+    RenderDataFlags_NONE = 0,
+
+    RenderDataFlags_GUI_VISIBLE = 1<<0,
+    RenderDataFlags_EXPORTING   = 1<<1,
 };
 
 enum RenderElementFlags
@@ -479,12 +487,12 @@ b32 render_element_is_working_stroke(RenderElement* render_element)
     return result;
 }
 
-b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
+b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
     {
         GLfloat viewport_dims[2] = {};
         glGetFloatv(GL_MAX_VIEWPORT_DIMS, viewport_dims);
-        milton_log("Maximum viewport dimensions, %dx%d\n", viewport_dims[0], viewport_dims[1]);
+        milton_log("Maximum viewport dimensions, %fx%f\n", viewport_dims[0], viewport_dims[1]);
         render_data->viewport_limits[0] = viewport_dims[0];
         render_data->viewport_limits[1] = viewport_dims[1];
     }
@@ -499,7 +507,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
     bool result = true;
 
-    render_data->gui_visible = true;
+    render_data->flags = render_data_flags;
 
 #if USE_3_2_CONTEXT
     // Assume our context is 3.0+
@@ -1273,7 +1281,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
 
     //GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
     glEnable(GL_BLEND);
-    if (render_data->gui_visible)
+    if (render_data->flags & RenderDataFlags_GUI_VISIBLE)
     {
         // Render picker
 

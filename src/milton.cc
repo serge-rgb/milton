@@ -601,7 +601,14 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 
     milton_state->view->screen_size = { width, height };
 
-    gpu_init(milton_state->render_data, milton_state->view, &milton_state->gui->picker);
+    {
+        i32 flags = RenderDataFlags_NONE;
+        if (milton_state->gui->visible)
+        {
+            flags |= RenderDataFlags_GUI_VISIBLE;
+        }
+        gpu_init(milton_state->render_data, milton_state->view, &milton_state->gui->picker, flags);
+    }
 
     milton_state->working_stroke.render_element.flags |= RenderElementFlags_WORKING_STROKE;
 
@@ -1344,6 +1351,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         {
             render_flags |= MiltonRenderFlags_UI_UPDATED;
         }
+        milton_state->render_data->flags |= RenderDataFlags_EXPORTING;
     }
 
     if ((input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT))
@@ -1635,9 +1643,6 @@ cleanup:
     }
 
     gpu_render(milton_state->render_data, view_x, view_y, view_width, view_height);
-    //gpu_export(milton_state);
-
-
 
     //milton_validate(milton_state);
     ARENA_VALIDATE(milton_state->root_arena);

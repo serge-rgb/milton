@@ -166,7 +166,7 @@ void main()
     else if (v_norm.y >= 1)  // Render buttons
     {
         // Get the color for the rects
-        int rect_i = int(((v_norm.x+1)/4) * 10); // % 5
+        int rect_i = int(((v_norm.x+1)/4) * 10);
         vec4 rect_color = u_colors[rect_i];
         color = rect_color;
 
