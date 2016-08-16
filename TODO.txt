@@ -29,7 +29,7 @@ To-Do
     [] use triangle strips
     [] end of "infinite" canvas
     [] LOTS of redundancy in vertex attributes regardless of triangle strips
-    [] eye dropper
+    [x] eye dropper
     [] Deal with 32 bit limits
     [] float<->int. Try out ivec2 attributes.
     [x] get rid of stencil, use depth buffer

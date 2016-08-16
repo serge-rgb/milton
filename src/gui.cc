@@ -569,7 +569,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     i32 h = raster_h * exporter->scale;
                     size_t size = (size_t)w * h * bpp;
                     u8* buffer = (u8*)mlt_malloc(size);
-                    if ( buffer )
+                    if (buffer)
                     {
                         opened = false;
                         gpu_render_to_buffer(milton_state, buffer, exporter->scale,
@@ -1004,9 +1004,9 @@ Rect picker_get_bounds(ColorPicker* picker)
     return picker_rect;
 }
 
-void eyedropper_input(MiltonGui* gui, u32* canvas_buffer, i32 w, i32 h, v2i point)
+void eyedropper_input(MiltonGui* gui, u32* buffer, i32 w, i32 h, v2i point)
 {
-    v4f color = color_u32_to_v4f(canvas_buffer[point.y*w+point.x]);
+    v4f color = color_u32_to_v4f(buffer[point.y*(w/SSAA_FACTOR)+point.x]);
 
     picker_from_rgb(&gui->picker, color.rgb);
 }

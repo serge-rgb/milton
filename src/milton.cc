@@ -849,11 +849,17 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
         milton_state->last_mode = milton_state->current_mode;
         milton_state->current_mode = mode;
 
-        if ( mode == MiltonMode_EXPORTING && milton_state->gui->visible)
+        if (milton_state->last_mode == MiltonMode_EYEDROPPER &&
+            milton_state->eyedropper_buffer != NULL)
+        {
+            mlt_free(milton_state->eyedropper_buffer);
+        }
+
+        if (mode == MiltonMode_EXPORTING && milton_state->gui->visible)
         {
             gui_toggle_visibility(milton_state);
         }
-        if ( milton_state->last_mode == MiltonMode_EXPORTING && !milton_state->gui->visible)
+        if (milton_state->last_mode == MiltonMode_EXPORTING && !milton_state->gui->visible)
         {
             gui_toggle_visibility(milton_state);
         }
@@ -1230,9 +1236,9 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         else
         {
             // Change the current mode if it's different from the current mode.
-            milton_switch_mode( milton_state, input->mode_to_set );
+            milton_switch_mode(milton_state, input->mode_to_set);
             if (input->mode_to_set == MiltonMode_PEN ||
-                 input->mode_to_set == MiltonMode_ERASER)
+                input->mode_to_set == MiltonMode_ERASER)
             {
                 milton_update_brushes(milton_state);
             }
@@ -1394,6 +1400,19 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     if (milton_state->current_mode == MiltonMode_EYEDROPPER)
     {
+        if (milton_state->eyedropper_buffer == NULL)
+        {
+            size_t bpp = 4;
+            i32 w = milton_state->view->screen_size.w;
+            i32 h = milton_state->view->screen_size.h;
+            milton_state->eyedropper_buffer = (u8*)mlt_calloc(w*h*bpp, 1);
+            if (milton_state->eyedropper_buffer)
+            {
+                gpu_render_to_buffer(milton_state, milton_state->eyedropper_buffer, 1,
+                                     0,0,w,h);
+            }
+
+        }
         v2i point = {0};
         b32 in = false;
         if ((input->flags & MiltonInputFlags_CLICK))
@@ -1408,7 +1427,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         }
         if (in)
         {
-            eyedropper_input(milton_state->gui, (u32*)milton_state->canvas_buffer,
+            mlt_assert(milton_state->eyedropper_buffer != NULL);
+            eyedropper_input(milton_state->gui, (u32*)milton_state->eyedropper_buffer,
                              milton_state->view->screen_size.w,
                              milton_state->view->screen_size.h,
                              point);

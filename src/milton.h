@@ -70,6 +70,7 @@ struct MiltonState
     i32 max_height;
     u8* raster_buffer; // Final image goes here
     u8* canvas_buffer; // Rasterized canvas stored here
+    u8* eyedropper_buffer;  // Get pixels from OpenGL framebuffer and store them here for eydropper operations.
 
     // The screen is rendered in blockgroups
     // Each blockgroup is rendered in blocks of size (block_width*block_width).
