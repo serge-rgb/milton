@@ -610,11 +610,10 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
         gpu_init(milton_state->render_data, milton_state->view, &milton_state->gui->picker, flags);
     }
 
-    milton_state->working_stroke.render_element.flags |= RenderElementFlags_WORKING_STROKE;
-
     milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
 
 
+    // TODO: re-enable milton canvas loading
 #if 0
     { // Get/Set Milton Canvas (.mlt) file
 

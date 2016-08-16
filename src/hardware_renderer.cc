@@ -269,7 +269,6 @@ enum RenderElementFlags
 
     RenderElementFlags_LAYER          = 1<<0,
     RenderElementFlags_FILLS          = 1<<1,  // Fills screen. TODO: render in tiles?
-    RenderElementFlags_WORKING_STROKE = 1<<2,  // Valid for working stroke. Used to split the canvas into two buffers.
 };
 
 static void print_framebuffer_status()
@@ -484,12 +483,6 @@ b32 render_element_is_layer(RenderElement* render_element)
 b32 render_element_fills_screen(RenderElement* render_element)
 {
     b32 result = (render_element->flags & RenderElementFlags_FILLS);
-    return result;
-}
-
-b32 render_element_is_working_stroke(RenderElement* render_element)
-{
-    b32 result = (render_element->flags & RenderElementFlags_WORKING_STROKE);
     return result;
 }
 
@@ -966,23 +959,20 @@ void gpu_clip_strokes(RenderData* render_data,
                     auto np = s->num_points;
                     if (np > 1)
                     {
-                        for (i32 pi = 0; pi < np-1; ++pi)
+                        for (i32 pi = 0; pi < np; ++pi)
                         {
-                            v2i a = canvas_to_raster(view, s->points[pi]);
-                            v2i b = canvas_to_raster(view, s->points[pi+1]);
+                            v2i point = canvas_to_raster(view, s->points[pi]);
 
-                            f32 pa = s->pressures[pi];
-                            f32 pb = s->pressures[pi+1];
+                            f32 pressure = s->pressures[pi];
 
-                            f32 radius = s->brush.radius/(float)view->scale * SSAA_FACTOR * min(pa, pb);
+                            f32 radius = (s->brush.radius/(float)(view->scale)) * pressure;
 
-                            float left = min(a.x, b.x) - radius;
-                            float right = max(a.x, b.x) + radius;
-                            float top = min(a.y, b.y) - radius;
-                            float bottom = max(a.y, b.y) + radius;
-
-                            if (left <= 0 && right >= render_data->width &&
-                                top <= 0 && bottom >= render_data->height)
+                            i32 w = view->screen_size.w;
+                            i32 h = view->screen_size.h;
+                            // Check the distance from the center of the screen to this point.
+                            f32 rect_radius = sqrt(SQUARE(w/2.0f) + SQUARE(h/2.0f));
+                            f32 dist = sqrt(SQUARE(w/2.0f - point.x) + SQUARE(h/2.0f - point.y));
+                            if (dist + rect_radius < radius)
                             {
                                 s->render_element.flags |= RenderElementFlags_FILLS;
                                 break;
