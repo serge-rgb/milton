@@ -1449,7 +1449,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK (glUseProgram(0));
 }
 
-void gpu_export(MiltonState* milton_state)
+void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h)
 {
     CanvasView saved_view = *milton_state->view;
     RenderData* render_data = milton_state->render_data;
@@ -1459,14 +1459,8 @@ void gpu_export(MiltonState* milton_state)
     i32 saved_height = render_data->height;
     GLuint saved_fbo = render_data->fbo;
 
-
-    int scale = 2;
-    i32 x = 0;
-    i32 y = 0;
-    i32 w = render_data->width;
-    i32 h = render_data->height;
-    i32 buf_w = render_data->width * scale;
-    i32 buf_h = render_data->height * scale;
+    i32 buf_w = w * scale;
+    i32 buf_h = h * scale;
 
 
     v2i center = divide2i(milton_state->view->screen_size, 2);
@@ -1486,8 +1480,6 @@ void gpu_export(MiltonState* milton_state)
 
     gpu_resize(render_data, view);
     gpu_set_canvas(render_data, view);
-
-    u8* data = (u8*)mlt_malloc((render_data->width/SSAA_FACTOR) * (render_data->height/SSAA_FACTOR) * sizeof(i32));
 
     GLsizei sizes[2][2] =
     {
@@ -1550,14 +1542,15 @@ void gpu_export(MiltonState* milton_state)
     glBindFramebuffer(GL_FRAMEBUFFER, export_fbo);
 
     // Read onto buffer
-    glReadPixels(0,0,
+    glReadPixels(//x/SSAA_FACTOR,y/SSAA_FACTOR,
+                 0,0,
                  buf_w/SSAA_FACTOR, buf_h/SSAA_FACTOR,
                  GL_RGBA,
                  GL_UNSIGNED_BYTE,
-                 (GLvoid*)data);
+                 (GLvoid*)buffer);
 
     {  // Flip texture
-        u32* pixels = (u32*)data;
+        u32* pixels = (u32*)buffer;
         for (i64 j=0;j < (buf_h/SSAA_FACTOR) / 2; ++j)
         {
             for (i64 i=0; i<buf_w/SSAA_FACTOR; ++i)
@@ -1573,10 +1566,7 @@ void gpu_export(MiltonState* milton_state)
         }
     }
 
-    milton_save_buffer_to_file(TO_PATH_STR("test.png"), data, buf_w/SSAA_FACTOR,buf_h/SSAA_FACTOR);
-
     // Cleanup.
-    mlt_free(data);
 
     render_data->fbo = saved_fbo;
     *milton_state->view = saved_view;

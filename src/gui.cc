@@ -544,8 +544,16 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 ImGui::Text("%s: %dx%d\n",
                             LOC(current_selection),
                             raster_w, raster_h);
-                if ( ImGui::InputInt(LOC(scale_up), &exporter->scale, 1, /*step_fast=*/2) ) {}
-                if ( exporter->scale <= 0 ) exporter->scale = 1;
+                if (ImGui::InputInt(LOC(scale_up), &exporter->scale, 1, /*step_fast=*/2)) {}
+                if (exporter->scale <= 0)
+                {
+                    exporter->scale = 1;
+                }
+                while (exporter->scale*raster_w*SSAA_FACTOR > milton_state->render_data->viewport_limits[0] ||
+                       exporter->scale*raster_h*SSAA_FACTOR > milton_state->render_data->viewport_limits[1])
+                {
+                    --exporter->scale;
+                }
                 i32 max_scale = milton_state->view->scale / 2;
                 if ( exporter->scale > max_scale)
                 {
@@ -564,9 +572,11 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     if ( buffer )
                     {
                         opened = false;
-                        milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
+                        gpu_render_to_buffer(milton_state, buffer, exporter->scale,
+                                             x*SSAA_FACTOR,y*SSAA_FACTOR, raster_w*SSAA_FACTOR, raster_h*SSAA_FACTOR);
+                        //milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
                         PATH_CHAR* fname = platform_save_dialog(FileKind_IMAGE);
-                        if ( fname )
+                        if (fname)
                         {
                             milton_save_buffer_to_file(fname, buffer, w, h);
                         }
@@ -574,8 +584,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     }
                     else
                     {
-                        platform_dialog(LOC(MSG_memerr_did_not_write),
-                                        LOC(error));
+                        platform_dialog(LOC(MSG_memerr_did_not_write), LOC(error));
                     }
                 }
             }
