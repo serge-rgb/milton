@@ -221,6 +221,7 @@ struct RenderData
     GLuint ssaa_program;
     GLuint outline_program;
     GLuint flood_program;
+    GLuint exporter_program;
 #if MILTON_DEBUG
     GLuint simple_program;
 #endif
@@ -235,7 +236,7 @@ struct RenderData
     GLuint vbo_outline;
     GLuint vbo_outline_sizes;
 
-    GLuint vbo_exporter;
+    GLuint vbo_exporter[4]; // One for each line in rectangle
 
     GLuint layer_texture;
     GLuint canvas_texture;
@@ -647,6 +648,16 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         gl_link_program(render_data->flood_program, objs, array_count(objs));
         gl_set_uniform_i(render_data->flood_program, "u_canvas", g_texture_unit_canvas.id);
     }
+    {  // Exporter program
+        render_data->exporter_program = glCreateProgram();
+
+        GLuint objs[2] = {};
+        objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_exporter_f, GL_FRAGMENT_SHADER);
+
+        gl_link_program(render_data->exporter_program, objs, array_count(objs));
+        gl_set_uniform_i(render_data->exporter_program, "u_canvas", g_texture_unit_layer.id);
+    }
     {  // Simple program
         render_data->simple_program = glCreateProgram();
 
@@ -795,11 +806,10 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
 
 void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
 {
-    if (render_data->vbo_exporter == 0)
+    if (render_data->vbo_exporter[0] == 0)
     {
-        glGenBuffers(1, &render_data->vbo_exporter);
+        glGenBuffers(4, render_data->vbo_exporter);
     }
-    glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter);
 
     i32 x = min(exporter->pivot.x, exporter->needle.x);
     i32 y = min(exporter->pivot.y, exporter->needle.y);
@@ -807,14 +817,61 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     i32 h = abs(exporter->pivot.y - exporter->needle.y);
 
     // Normalize to [-1,1]^2
-    GLfloat data[] =
+    float normalized_rect[] =
     {
         2*((GLfloat)    x/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)y    /(render_data->height/SSAA_FACTOR))-1),
         2*((GLfloat)    x/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)(y+h)/(render_data->height/SSAA_FACTOR))-1),
         2*((GLfloat)(x+w)/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)(y+h)/(render_data->height/SSAA_FACTOR))-1),
         2*((GLfloat)(x+w)/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)y    /(render_data->height/SSAA_FACTOR))-1),
     };
-    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(data)*sizeof(*data), data, GL_DYNAMIC_DRAW) );
+
+    float px = 2.0f;
+    float line_width = px / (render_data->height/SSAA_FACTOR);
+    float aspect = render_data->width / (float)render_data->height;
+
+    float top[] =
+    {
+        normalized_rect[0], normalized_rect[1],
+        normalized_rect[2], normalized_rect[1]+line_width,
+        normalized_rect[4], normalized_rect[1]+line_width,
+        normalized_rect[6], normalized_rect[1],
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[0]);
+    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(top)*sizeof(*top), top, GL_DYNAMIC_DRAW) );
+
+    float bottom[] =
+    {
+        normalized_rect[0], normalized_rect[3]-line_width,
+        normalized_rect[2], normalized_rect[3],
+        normalized_rect[4], normalized_rect[3],
+        normalized_rect[6], normalized_rect[3]-line_width,
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[1]);
+    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(bottom)*sizeof(*bottom), bottom, GL_DYNAMIC_DRAW) );
+
+
+    line_width = px / (render_data->width/SSAA_FACTOR);
+
+    float right[] =
+    {
+        normalized_rect[4]-line_width, normalized_rect[1],
+        normalized_rect[4]-line_width, normalized_rect[3],
+        normalized_rect[4], normalized_rect[5],
+        normalized_rect[4], normalized_rect[7],
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[2]);
+    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(right)*sizeof(*right), right, GL_DYNAMIC_DRAW) );
+
+    float left[] =
+    {
+        normalized_rect[0], normalized_rect[1],
+        normalized_rect[0], normalized_rect[3],
+        normalized_rect[0]+line_width, normalized_rect[5],
+        normalized_rect[0]+line_width, normalized_rect[7],
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[3]);
+    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(left)*sizeof(*left), left, GL_DYNAMIC_DRAW) );
+
 }
 
 static void gpu_set_background(RenderData* render_data, v3f background_color)
@@ -834,6 +891,10 @@ void set_screen_size(RenderData* render_data, float* fscreen)
     gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->flood_program, "u_screen_size", 1, fscreen);
+
+    // Post SSAA
+    float fscreen2[2] = {fscreen[0]/SSAA_FACTOR, fscreen[1]/SSAA_FACTOR};
+    gl_set_uniform_vec2(render_data->exporter_program, "u_screen_size", 1, fscreen2);
 }
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
@@ -1378,15 +1439,18 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
         glDisable(GL_DEPTH_TEST);
         // Update data if rect is not degenerate.
         // Draw outline.
-        glUseProgram(render_data->simple_program);
-        GLint loc = glGetAttribLocation(render_data->simple_program, "a_position");
+        glUseProgram(render_data->exporter_program);
+        GLint loc = glGetAttribLocation(render_data->exporter_program, "a_position");
         if (loc>=0 && render_data->vbo_exporter>0)
         {
-            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter);
-            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0,0);
-            glEnableVertexAttribArray((GLuint)loc);
+            for (int vbo_i = 0; vbo_i < 4; ++vbo_i)
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[vbo_i]);
+                glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0,0);
+                glEnableVertexAttribArray((GLuint)loc);
 
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+            }
         }
         glEnable(GL_DEPTH_TEST);
     }
