@@ -221,6 +221,9 @@ struct RenderData
     GLuint ssaa_program;
     GLuint outline_program;
     GLuint flood_program;
+#if MILTON_DEBUG
+    GLuint simple_program;
+#endif
 
     // VBO for the screen-covering quad.
     GLuint vbo_quad;
@@ -231,6 +234,8 @@ struct RenderData
 
     GLuint vbo_outline;
     GLuint vbo_outline_sizes;
+
+    GLuint vbo_exporter;
 
     GLuint layer_texture;
     GLuint canvas_texture;
@@ -642,6 +647,15 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         gl_link_program(render_data->flood_program, objs, array_count(objs));
         gl_set_uniform_i(render_data->flood_program, "u_canvas", g_texture_unit_canvas.id);
     }
+    {  // Simple program
+        render_data->simple_program = glCreateProgram();
+
+        GLuint objs[2] = {};
+        objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_simple_f, GL_FRAGMENT_SHADER);
+
+        gl_link_program(render_data->simple_program, objs, array_count(objs));
+    }
 
     // Framebuffer object for canvas. Layer buffer
     {
@@ -777,6 +791,30 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
 #endif
     gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
     g_scale = scale;
+}
+
+void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
+{
+    if (render_data->vbo_exporter == 0)
+    {
+        glGenBuffers(1, &render_data->vbo_exporter);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter);
+
+    i32 x = min(exporter->pivot.x, exporter->needle.x);
+    i32 y = min(exporter->pivot.y, exporter->needle.y);
+    i32 w = abs(exporter->pivot.x - exporter->needle.x);
+    i32 h = abs(exporter->pivot.y - exporter->needle.y);
+
+    // Normalize to [-1,1]^2
+    GLfloat data[] =
+    {
+        2*((GLfloat)    x/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)y    /(render_data->height/SSAA_FACTOR))-1),
+        2*((GLfloat)    x/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)(y+h)/(render_data->height/SSAA_FACTOR))-1),
+        2*((GLfloat)(x+w)/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)(y+h)/(render_data->height/SSAA_FACTOR))-1),
+        2*((GLfloat)(x+w)/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)y    /(render_data->height/SSAA_FACTOR))-1),
+    };
+    GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(data)*sizeof(*data), data, GL_DYNAMIC_DRAW) );
 }
 
 static void gpu_set_background(RenderData* render_data, v3f background_color)
@@ -1334,8 +1372,25 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
         }
         glDrawArrays(GL_TRIANGLE_FAN, 0,4);
     }
-
     glDisable(GL_BLEND);
+    if (render_data->flags & RenderDataFlags_EXPORTING)
+    {
+        glDisable(GL_DEPTH_TEST);
+        // Update data if rect is not degenerate.
+        // Draw outline.
+        glUseProgram(render_data->simple_program);
+        GLint loc = glGetAttribLocation(render_data->simple_program, "a_position");
+        if (loc>=0 && render_data->vbo_exporter>0)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter);
+            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0,0);
+            glEnableVertexAttribArray((GLuint)loc);
+
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+        glEnable(GL_DEPTH_TEST);
+    }
+
 
     GLCHK (glUseProgram(0));
 }
@@ -1360,7 +1415,6 @@ void gpu_export(MiltonState* milton_state)
     i32 buf_h = render_data->height * scale;
 
 
-#if 1
     v2i center = divide2i(milton_state->view->screen_size, 2);
     v2i pan_delta = sub2i(center, v2i{x + (w/2), y + (h/2)}) ;
 
@@ -1378,7 +1432,6 @@ void gpu_export(MiltonState* milton_state)
 
     gpu_resize(render_data, view);
     gpu_set_canvas(render_data, view);
-#endif
 
     u8* data = (u8*)mlt_malloc((render_data->width/SSAA_FACTOR) * (render_data->height/SSAA_FACTOR) * sizeof(i32));
 
@@ -1480,5 +1533,8 @@ void gpu_export(MiltonState* milton_state)
     glDeleteTextures(1, &export_texture);
     glDeleteTextures(1, &buffer_texture);
     glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
+
+    gpu_resize(render_data, view);
+    gpu_set_canvas(render_data, view);
 }
 

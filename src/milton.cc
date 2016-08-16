@@ -1346,12 +1346,21 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     if (milton_state->current_mode == MiltonMode_EXPORTING)
     {
-        b32 changed = exporter_input(&milton_state->gui->exporter, input);
+        Exporter* exporter = &milton_state->gui->exporter;
+        b32 changed = exporter_input(exporter, input);
         if (changed)
         {
             render_flags |= MiltonRenderFlags_UI_UPDATED;
+            gpu_update_export_rect(milton_state->render_data, exporter);
         }
-        milton_state->render_data->flags |= RenderDataFlags_EXPORTING;
+        if (exporter->state != ExporterState_EMPTY)
+        {
+            milton_state->render_data->flags |= RenderDataFlags_EXPORTING;
+        }
+    }
+    else if (milton_state->render_data->flags & RenderDataFlags_EXPORTING)
+    {
+        milton_state->render_data->flags &= ~RenderDataFlags_EXPORTING;
     }
 
     if ((input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT))
