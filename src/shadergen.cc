@@ -110,7 +110,6 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
         fprintf(of, "\"%s\\n\"\n", lines[i]);
     }
     fprintf(of, ";\n");
-    fprintf(stderr, "\n");
 }
 
 // Assuming this is being called from the build directory

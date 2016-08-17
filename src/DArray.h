@@ -98,7 +98,17 @@ T pop(DArray<T>* arr)
     {
         elem = arr->data[--arr->count];
     }
+    else
+    {
+        mlt_assert(!"Attempting to pop from an empty array.");
+    }
     return elem;
+}
+
+template <typename T>
+u64 count(DArray<T>* arr)
+{
+    return arr->count;
 }
 
 template <typename T>

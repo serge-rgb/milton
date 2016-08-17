@@ -914,7 +914,8 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 
 void gpu_clip_strokes(RenderData* render_data,
                       CanvasView* view,
-                      Layer* root_layer, Stroke* working_stroke)
+                      Layer* root_layer, Stroke* working_stroke,
+                      i32 x, i32 y, i32 w, i32 h)
 {
     auto *render_elements = &render_data->render_elems;
 
@@ -933,55 +934,63 @@ void gpu_clip_strokes(RenderData* render_data,
         }
         for (u64 i = 0; i <= l->strokes.count; ++i)
         {
+            Stroke* s = NULL;
             // Only push the working stroke when the next layer is NULL, which means that we are at the topmost layer.
             if (i == l->strokes.count && l->id == working_stroke->layer_id)
             {
-                if (working_stroke->num_points > 0)
-                {
-                    push(render_elements, working_stroke->render_element);
-                }
+                s = working_stroke;
             }
             else if (i < l->strokes.count)
             {
-                Stroke* s = &l->strokes.data[i];
+                s = &l->strokes.data[i];
+            }
+            if (s != NULL)
+            {
                 Rect bounds = s->bounding_rect;
                 bounds.top_left = canvas_to_raster(view, bounds.top_left);
                 bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
-                b32 is_outside = bounds.left > render_data->width || bounds.right < 0 ||
-                                bounds.top > render_data->height || bounds.bottom < 0;
+
+                // Flip rectangle
+                {
+                    i32 bot = bounds.bottom;
+                    // t' = H - b
+                    // b' = y+h = (H-b) + h = (H-b) + (b-t) = H-t
+                    bounds.bottom = render_data->height - bounds.top;
+                    bounds.top = render_data->height - bot;
+                }
+                b32 is_outside = bounds.left > (x+w) || bounds.right < x ||
+                                bounds.top > (y+h) || bounds.bottom < y;
                 i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
 
-                s->render_element.flags = RenderElementFlags_NONE;
-                if (bounds.left <= 0 && bounds.right >= render_data->width &&
-                    bounds.top <= 0 && bounds.bottom >= render_data->height)
+                if (!is_outside && area!=0)
                 {
-                    // Check that the screen is inside the stroke.
-                    auto np = s->num_points;
-                    if (np > 1)
+                    s->render_element.flags = RenderElementFlags_NONE;
+                    if (bounds.left <= x && bounds.right >= (x+w) &&
+                        bounds.top <= y && bounds.bottom >= (y+h))
                     {
-                        for (i32 pi = 0; pi < np; ++pi)
+                        // Check that the screen is inside the stroke.
+                        auto np = s->num_points;
+                        if (np > 1)
                         {
-                            v2i point = canvas_to_raster(view, s->points[pi]);
-
-                            f32 pressure = s->pressures[pi];
-
-                            f32 radius = (s->brush.radius/(float)(view->scale)) * pressure;
-
-                            i32 w = view->screen_size.w;
-                            i32 h = view->screen_size.h;
-                            // Check the distance from the center of the screen to this point.
-                            f32 rect_radius = sqrt(SQUARE(w/2.0f) + SQUARE(h/2.0f));
-                            f32 dist = sqrt(SQUARE(w/2.0f - point.x) + SQUARE(h/2.0f - point.y));
-                            if (dist + rect_radius < radius)
+                            for (i32 pi = 0; pi < np; ++pi)
                             {
-                                s->render_element.flags |= RenderElementFlags_FILLS;
-                                break;
+                                v2i point = canvas_to_raster(view, s->points[pi]);
+
+                                f32 pressure = s->pressures[pi];
+
+                                f32 radius = (s->brush.radius/(float)(view->scale)) * pressure;
+
+                                // Check the distance from the center of the screen to this point.
+                                f32 rect_radius = sqrt(SQUARE(w/2.0f) + SQUARE(h/2.0f));
+                                f32 dist = sqrt(SQUARE(x + w/2.0f - point.x) + SQUARE(x + h/2.0f - point.y));
+                                if (dist + rect_radius < radius)
+                                {
+                                    s->render_element.flags |= RenderElementFlags_FILLS;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
-                if (!is_outside && area!=0)
-                {
                     push(render_elements, s->render_element);
                 }
             }
@@ -1565,7 +1574,8 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     mlt_assert(buf_h == render_data->height);
 
     glViewport(0, 0, buf_w, buf_h);
-    gpu_clip_strokes(render_data, milton_state->view, milton_state->root_layer, &milton_state->working_stroke);
+    gpu_clip_strokes(render_data, milton_state->view, milton_state->root_layer, &milton_state->working_stroke,
+                     0, 0, buf_w, buf_h);
 
     glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, export_texture, 0);

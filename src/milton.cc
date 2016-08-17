@@ -1079,6 +1079,13 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     b32 do_full_redraw = false;
     b32 brush_outline_should_draw = false;
 
+    b32 draw_custom_rectangle = false;  // Custom rectangle used for new strokes, undo/redo.
+    Rect custom_rectangle = {};
+    custom_rectangle.left = INT_MAX;
+    custom_rectangle.right = INT_MIN;
+    custom_rectangle.top = INT_MAX;
+    custom_rectangle.bottom = INT_MIN;
+
     PROFILE_GRAPH_BEGIN(update);
     b32 should_save =
             ((input->flags & MiltonInputFlags_OPEN_FILE)) ||
@@ -1262,9 +1269,15 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                         Stroke stroke = pop(&l->strokes);
                         push(&milton_state->stroke_graveyard, stroke);
                         push(&milton_state->redo_stack, h);
-                        // TODO: FULL_REDRAW is overkill
+
                         render_flags |= MiltonRenderFlags_FULL_REDRAW;
-                        do_full_redraw = true;
+
+                        draw_custom_rectangle = true;
+                        Rect bounds = stroke.bounding_rect;
+                        bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
+                        bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
+
+                        custom_rectangle = rect_union(custom_rectangle, bounds);
                     }
                     break;
                 }
@@ -1280,7 +1293,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 case HistoryElement_STROKE_ADD:
                     {
                     Layer* l = layer_get_by_id(milton_state->root_layer, h.layer_id);
-                    if (l)
+                    if (l && count(&milton_state->stroke_graveyard) > 0)
                     {
                         Stroke stroke = pop(&milton_state->stroke_graveyard);
                         if (stroke.layer_id == h.layer_id)
@@ -1289,7 +1302,13 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                             push(&milton_state->history, h);
                             // TODO: FULL_REDRAW is overkill
                             render_flags |= MiltonRenderFlags_FULL_REDRAW;
-                            do_full_redraw = true;
+
+                            draw_custom_rectangle = true;
+                            Rect bounds = stroke.bounding_rect;
+                            bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
+                            bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
+                            custom_rectangle = rect_union(custom_rectangle, bounds);
+
                             break;
                         }
                         stroke = pop(&milton_state->stroke_graveyard);  // Keep popping in case the graveyard has info from deleted layers
@@ -1448,10 +1467,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    // Clipping
-    gpu_clip_strokes(milton_state->render_data, milton_state->view,
-                     milton_state->root_layer, &milton_state->working_stroke);
-
     // ---- End stroke
     if ((input->flags & MiltonInputFlags_END_STROKE))
     {
@@ -1489,6 +1504,12 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                     memcpy(new_stroke.pressures, milton_state->working_stroke.pressures,
                            milton_state->working_stroke.num_points * sizeof(f32));
                     new_stroke.bounding_rect = bounding_box_for_stroke(&new_stroke);
+
+                    draw_custom_rectangle = true;
+                    Rect bounds = new_stroke.bounding_rect;
+                    bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
+                    bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
+                    custom_rectangle = rect_union(custom_rectangle, bounds);
                 }
 
                 auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
@@ -1506,12 +1527,12 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 clear_stroke_redo(milton_state);
 
                 render_flags |= MiltonRenderFlags_FINISHED_STROKE;
-
             }
         }
     }
     else if (is_user_drawing(milton_state))
     {
+        milton_state->working_stroke.bounding_rect = bounding_box_for_stroke(&milton_state->working_stroke);
         // Update working stroke
         gpu_cook_stroke(milton_state->root_arena, milton_state->render_data,
                         &milton_state->working_stroke, CookStroke_UPDATE_WORKING_STROKE);
@@ -1652,23 +1673,35 @@ cleanup:
 #if REDRAW_EVERY_FRAME
     do_full_redraw = true;
 #endif
-    //TODO: Draw rect for new stroke.
+    // Note: We flip the rectangles. GL is bottom-left by default.
     if (do_full_redraw)
     {
         view_width = milton_state->view->screen_size.w;
         view_height = milton_state->view->screen_size.h;
     }
+    else if (draw_custom_rectangle)
+    {
+        view_x = custom_rectangle.left;
+        view_y = milton_state->view->screen_size.h - custom_rectangle.bottom;
+        view_width = custom_rectangle.right - custom_rectangle.left;
+        view_height = custom_rectangle.bottom - custom_rectangle.top;
+        VALIDATE_RECT(custom_rectangle);
+    }
     else if (milton_state->working_stroke.num_points > 0)
     {
-        Rect bounds = bounding_box_for_stroke(&milton_state->working_stroke);
+        Rect bounds = milton_state->working_stroke.bounding_rect;
         bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
         bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
         view_x = bounds.left;
-        view_y = milton_state->view->screen_size.h/1 - bounds.bottom;
+        view_y = milton_state->view->screen_size.h - bounds.bottom;
 
         view_width = bounds.right - bounds.left;
         view_height = bounds.bottom - bounds.top;
     }
+
+    gpu_clip_strokes(milton_state->render_data, milton_state->view,
+                     milton_state->root_layer, &milton_state->working_stroke,
+                     view_x, view_y, view_width, view_height);
 
     gpu_render(milton_state->render_data, view_x, view_y, view_width, view_height);
 
