@@ -1625,5 +1625,10 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
 
     gpu_resize(render_data, view);
     gpu_set_canvas(render_data, view);
+
+    // Re-render
+    gpu_clip_strokes(render_data, milton_state->view, milton_state->root_layer, &milton_state->working_stroke,
+                     0,0, render_data->width, render_data->height);
+    gpu_render(render_data, 0,0, render_data->width, render_data->height);
 }
 

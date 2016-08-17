@@ -24,15 +24,14 @@ To-Do
     [x] Clip to screen (clip <1px strokes, clip strokes outside window)
     [-] sandwich buffers
         [x] OR Only draw necesary area (background rect. clipping)
-
-    [] Single point strokes
-    [] use triangle strips
-    [] end of "infinite" canvas
-    [] LOTS of redundancy in vertex attributes regardless of triangle strips
+    [x] use triangle strips
+    [-] LOTS of redundancy in vertex attributes regardless of triangle strips
     [x] eye dropper
+    [x] get rid of stencil, use depth buffer
+    [] Single point strokes
+    [] end of "infinite" canvas
     [] Deal with 32 bit limits
     [] float<->int. Try out ivec2 attributes.
-    [x] get rid of stencil, use depth buffer
     [] should brush radius be stored multiplied by SSAA factor?
     [] Profile clipping (debug code to duplicate canvas)
 
