@@ -1086,9 +1086,12 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             apoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
             bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3i);
 
+            u16* indices = (u16*)mlt_malloc(count_bounds*sizeof(u16));
+
             size_t bounds_i = 0;
             size_t apoints_i = 0;
             size_t bpoints_i = 0;
+            size_t indices_i = 0;
             for (i64 i=0; i < npoints-1; ++i)
             {
                 v2i point_i = stroke->points[i];
@@ -1104,36 +1107,55 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 i32 max_x = max(point_i.x+radius_i, point_j.x+radius_j);
                 i32 max_y = max(point_i.y+radius_i, point_j.y+radius_j);
 
-                // Bounding rect
-                //  Counter-clockwise
-                //  TODO: Use triangle strips and flat shading to reduce redundant data
+                // Bounding geometry and attributes
+
+                mlt_assert (bounds_i < (1<<16));
+                u16 idx = (u16)bounds_i;
+
                 bounds[bounds_i++] = { min_x, min_y, stroke_z };
                 bounds[bounds_i++] = { min_x, max_y, stroke_z };
                 bounds[bounds_i++] = { max_x, max_y, stroke_z };
 
-                bounds[bounds_i++] = { max_x, max_y, stroke_z };
-                bounds[bounds_i++] = { min_x, min_y, stroke_z };
+                //bounds[bounds_i++] = { max_x, max_y, stroke_z };
+                //bounds[bounds_i++] = { min_x, min_y, stroke_z };
                 bounds[bounds_i++] = { max_x, min_y, stroke_z };
+
+                indices[indices_i++] = (u16)(idx + 0);
+                indices[indices_i++] = (u16)(idx + 1);
+                indices[indices_i++] = (u16)(idx + 2);
+
+                //indices[indices_i++] = (u16)(idx + 3);
+                indices[indices_i++] = (u16)(idx + 2);
+
+                //indices[indices_i++] = (u16)(idx + 4);
+                indices[indices_i++] = (u16)(idx + 0);
+
+                //indices[indices_i++] = (u16)(idx + 5);
+                indices[indices_i++] = (u16)(idx + 3);
 
                 // Pressures are in (0,1] but we need to encode them as integers.
                 i32 pressure_a = (i32)(stroke->pressures[i] * (float)(PRESSURE_RESOLUTION));
                 i32 pressure_b = (i32)(stroke->pressures[i+1] * (float)(PRESSURE_RESOLUTION));
 
                 // one for every point in the triangle.
-                for (int repeat = 0; repeat < 6; ++repeat)
+
+                for (int repeat = 0; repeat < 4; ++repeat)
                 {
                     apoints[apoints_i++] = { point_i.x, point_i.y, pressure_a };
                     bpoints[bpoints_i++] = { point_j.x, point_j.y, pressure_b };
                 }
             }
 
-            mlt_assert(bounds_i == count_bounds);
+            //mlt_assert(bounds_i == count_bounds);
+            mlt_assert(apoints_i == bpoints_i);
+            mlt_assert(apoints_i == bounds_i);
 
             // TODO: check for GL_OUT_OF_MEMORY
 
             GLuint vbo_stroke = 0;
             GLuint vbo_pointa = 0;
             GLuint vbo_pointb = 0;
+            GLuint indices_buffer = 0;
 
 
             GLenum hint = GL_STATIC_DRAW;
@@ -1146,18 +1168,23 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 glGenBuffers(1, &vbo_stroke);
                 glGenBuffers(1, &vbo_pointa);
                 glGenBuffers(1, &vbo_pointb);
+                glGenBuffers(1, &indices_buffer);
+
                 glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
                 GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), bounds, hint) );
                 glBindBuffer(GL_ARRAY_BUFFER, vbo_pointa);
                 GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), apoints, hint) );
                 glBindBuffer(GL_ARRAY_BUFFER, vbo_pointb);
                 GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), bpoints, hint) );
+                glBindBuffer(GL_ARRAY_BUFFER, indices_buffer);
+                GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(indices_i*sizeof(decltype(*indices))), indices, hint) );
             }
             else  // Updating the working stroke
             {
                 vbo_stroke = stroke->render_element.vbo_stroke;
                 vbo_pointa = stroke->render_element.vbo_pointa;
                 vbo_pointb = stroke->render_element.vbo_pointb;
+                indices_buffer = stroke->render_element.indices;
 
                 glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
                 GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), NULL, hint) );
@@ -1168,6 +1195,9 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 glBindBuffer(GL_ARRAY_BUFFER, vbo_pointb);
                 GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), NULL, hint) );
                 GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), bpoints, hint) );
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_buffer);
+                GLCHK( glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(indices_i*sizeof(decltype(*indices))), NULL, hint) );
+                GLCHK( glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(indices_i*sizeof(decltype(*indices))), indices, hint) );
             }
 
             GLuint ubo = 0;
@@ -1176,13 +1206,15 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             re.vbo_stroke = vbo_stroke;
             re.vbo_pointa = vbo_pointa;
             re.vbo_pointb = vbo_pointb;
-            re.count = (i64)bounds_i;
+            re.indices = indices_buffer;
+            re.count = (i64)(indices_i);
             re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
             re.radius = stroke->brush.radius*SSAA_FACTOR;
             mlt_assert(re.count > 1);
 
             stroke->render_element = re;
 
+            mlt_free(indices);
             arena_pop(&scratch_arena);
         }
     }
@@ -1198,12 +1230,15 @@ void gpu_free_strokes(Stroke* strokes, i64 count)
         {
             mlt_assert(re->vbo_pointa != 0);
             mlt_assert(re->vbo_pointb != 0);
+            mlt_assert(re->indices != 0);
             glDeleteBuffers(1, &re->vbo_stroke);
             glDeleteBuffers(1, &re->vbo_pointa);
             glDeleteBuffers(1, &re->vbo_pointb);
+            glDeleteBuffers(1, &re->indices);
             re->vbo_stroke = 0;
             re->vbo_pointa = 0;
             re->vbo_pointb = 0;
+            re->indices = 0;
         }
     }
 }
@@ -1337,8 +1372,8 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                                                  /*stride*/0, /*ptr*/0));
                     GLCHK( glEnableVertexAttribArray((GLuint)loc) );
 
-                    GLCHK( glUseProgram(render_data->stroke_program) );
-                    GLCHK( glDrawArrays(GL_TRIANGLES, 0, count) );
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
+                    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
 
                     glDisable(GL_BLEND);  // TODO: everyone is using blend?
                 }

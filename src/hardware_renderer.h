@@ -7,6 +7,7 @@ struct RenderElement
     GLuint  vbo_stroke;
     GLuint  vbo_pointa;
     GLuint  vbo_pointb;
+    GLuint  indices;
 
     i64     count;
     v4f     color;

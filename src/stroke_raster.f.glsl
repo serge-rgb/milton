@@ -1,10 +1,6 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-// TODO: this layout qualifier introduces GLSL 150 dependency.
-//layout(origin_upper_left) in vec4 gl_FragCoord;
-
-// TODO: flat interpolation
 varying vec3 v_pointa;
 varying vec3 v_pointb;
 
