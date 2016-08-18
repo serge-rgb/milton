@@ -18,6 +18,7 @@ Source: "Milton.exe"; DestDir: "{app}"
 Source: "Carlito.ttf"; DestDir: "{app}"
 Source: "Carlito.LICENSE"; DestDir: "{app}"
 Source: "LICENSE.txt"; DestDir: "{app}"
+Source: "milton_icon.ico"; DestDir: "{app}"
 
 [Icons]
 Name: "{group}\Milton"; Filename: "{app}\Milton.exe"
