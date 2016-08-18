@@ -220,7 +220,6 @@ struct RenderData
     GLuint layer_blend_program;
     GLuint ssaa_program;
     GLuint outline_program;
-    GLuint flood_program;
     GLuint exporter_program;
 #if MILTON_DEBUG
     GLuint simple_program;
@@ -268,7 +267,6 @@ enum RenderElementFlags
     RenderElementFlags_NONE = 0,
 
     RenderElementFlags_LAYER          = 1<<0,
-    RenderElementFlags_FILLS          = 1<<1,  // Fills screen. TODO: render in tiles?
 };
 
 static void print_framebuffer_status()
@@ -480,12 +478,6 @@ b32 render_element_is_layer(RenderElement* render_element)
     return result;
 }
 
-b32 render_element_fills_screen(RenderElement* render_element)
-{
-    b32 result = (render_element->flags & RenderElementFlags_FILLS);
-    return result;
-}
-
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
     {
@@ -630,16 +622,6 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         objs[1] = gl_compile_shader(g_outline_f, GL_FRAGMENT_SHADER);
 
         gl_link_program(render_data->outline_program, objs, array_count(objs));
-    }
-    {  // Flood fill program
-        render_data->flood_program = glCreateProgram();
-
-        GLuint objs[2] = {};
-        objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(g_flood_f, GL_FRAGMENT_SHADER);
-
-        gl_link_program(render_data->flood_program, objs, array_count(objs));
-        gl_set_uniform_i(render_data->flood_program, "u_canvas", g_texture_unit_canvas.id);
     }
     {  // Exporter program
         render_data->exporter_program = glCreateProgram();
@@ -883,7 +865,6 @@ void set_screen_size(RenderData* render_data, float* fscreen)
     gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->flood_program, "u_screen_size", 1, fscreen);
 
     // Post SSAA
     float fscreen2[2] = {fscreen[0]/SSAA_FACTOR, fscreen[1]/SSAA_FACTOR};
@@ -964,50 +945,6 @@ void gpu_clip_strokes(RenderData* render_data,
 
                 if (!is_outside && area!=0)
                 {
-                    // Flood-fill (disabled)
-#if 0
-                    s->render_element.flags = RenderElementFlags_NONE;
-                    if (bounds.left <= x && bounds.right >= (x+w) &&
-                        bounds.top <= y && bounds.bottom >= (y+h))
-                    {
-                        // Check that the screen is inside the stroke.
-                        auto np = s->num_points;
-                        if (np > 1)
-                        {
-                            for (i32 pi = 0; pi < np; ++pi)
-                            {
-                                v2i point = canvas_to_raster(view, s->points[pi]);
-
-                                f32 pressure = s->pressures[pi];
-
-                                f32 radius = (s->brush.radius/(float)(view->scale)) * pressure;
-
-                                // Check the distance from the center of the screen to this point.
-                                v2i rect_points[4] =
-                                {
-                                    {x, y},
-                                    {x+w, y},
-                                    {x+w, y+h},
-                                    {x, y+h},
-                                };
-                                b32 inside = true;
-                                for (size_t ri = 0; ri < array_count(rect_points); ++ri)
-                                {
-                                    i32 dist = sqrt(SQUARE((i64)rect_points[ri].x - point.x) + SQUARE((i64)rect_points[ri].y - point.y));
-                                    if (dist > radius)
-                                    {
-                                        inside = false;
-                                    }
-                                }
-                                if (inside)
-                                {
-                                    s->render_element.flags |= RenderElementFlags_FILLS;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-#endif
                     push(render_elements, s->render_element);
                 }
             }
@@ -1343,31 +1280,6 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
             }
             else
             {
-#if 1
-                if (render_element_fills_screen(re))
-                {
-                    glDisable(GL_DEPTH_TEST);
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-                    gl_set_uniform_vec4(render_data->flood_program, "u_brush_color", 1, re->color.d);
-                    // Fill screen path
-                    glUseProgram(render_data->flood_program);
-                    GLint p_loc = glGetAttribLocation(render_data->flood_program, "a_position");
-                    if (p_loc >= 0)
-                    {
-                        GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad) );
-                        GLCHK( glVertexAttribPointer(/*attrib p_location*/(GLuint)p_loc,
-                                                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                                     /*stride*/0, /*ptr*/0));
-                        glEnableVertexAttribArray((GLuint)p_loc);
-                        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-                    }
-                    glUseProgram(render_data->stroke_program);
-                    glEnable(GL_DEPTH_TEST);
-                    glDisable(GL_BLEND);
-                }
-                else
-#endif
                 {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
