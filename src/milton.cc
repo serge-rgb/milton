@@ -613,11 +613,7 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
     milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
 
 
-    // TODO: re-enable milton canvas loading
-#if 0
     { // Get/Set Milton Canvas (.mlt) file
-
-
         PATH_CHAR* last_fname = milton_get_last_canvas_fname();
 
         if (last_fname != NULL)
@@ -629,9 +625,6 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
             milton_set_default_canvas_file(milton_state);
         }
     }
-#else
-    milton_set_default_canvas_file(milton_state);
-#endif
 
     // Set default brush sizes.
     for (int i = 0; i < BrushEnum_COUNT; ++i)

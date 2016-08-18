@@ -964,6 +964,8 @@ void gpu_clip_strokes(RenderData* render_data,
 
                 if (!is_outside && area!=0)
                 {
+                    // Flood-fill (disabled)
+#if 0
                     s->render_element.flags = RenderElementFlags_NONE;
                     if (bounds.left <= x && bounds.right >= (x+w) &&
                         bounds.top <= y && bounds.bottom >= (y+h))
@@ -981,9 +983,23 @@ void gpu_clip_strokes(RenderData* render_data,
                                 f32 radius = (s->brush.radius/(float)(view->scale)) * pressure;
 
                                 // Check the distance from the center of the screen to this point.
-                                f32 rect_radius = sqrt(SQUARE(w/2.0f) + SQUARE(h/2.0f));
-                                f32 dist = sqrt(SQUARE(x + w/2.0f - point.x) + SQUARE(y + h/2.0f - point.y));
-                                if (dist + rect_radius < radius)
+                                v2i rect_points[4] =
+                                {
+                                    {x, y},
+                                    {x+w, y},
+                                    {x+w, y+h},
+                                    {x, y+h},
+                                };
+                                b32 inside = true;
+                                for (size_t ri = 0; ri < array_count(rect_points); ++ri)
+                                {
+                                    i32 dist = sqrt(SQUARE((i64)rect_points[ri].x - point.x) + SQUARE((i64)rect_points[ri].y - point.y));
+                                    if (dist > radius)
+                                    {
+                                        inside = false;
+                                    }
+                                }
+                                if (inside)
                                 {
                                     s->render_element.flags |= RenderElementFlags_FILLS;
                                     break;
@@ -991,6 +1007,7 @@ void gpu_clip_strokes(RenderData* render_data,
                             }
                         }
                     }
+#endif
                     push(render_elements, s->render_element);
                 }
             }
@@ -1326,6 +1343,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
             }
             else
             {
+#if 1
                 if (render_element_fills_screen(re))
                 {
                     glDisable(GL_DEPTH_TEST);
@@ -1349,6 +1367,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                     glDisable(GL_BLEND);
                 }
                 else
+#endif
                 {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
