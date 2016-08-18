@@ -982,7 +982,7 @@ void gpu_clip_strokes(RenderData* render_data,
 
                                 // Check the distance from the center of the screen to this point.
                                 f32 rect_radius = sqrt(SQUARE(w/2.0f) + SQUARE(h/2.0f));
-                                f32 dist = sqrt(SQUARE(x + w/2.0f - point.x) + SQUARE(x + h/2.0f - point.y));
+                                f32 dist = sqrt(SQUARE(x + w/2.0f - point.x) + SQUARE(y + h/2.0f - point.y));
                                 if (dist + rect_radius < radius)
                                 {
                                     s->render_element.flags |= RenderElementFlags_FILLS;
@@ -1067,10 +1067,23 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
         auto npoints = stroke->num_points;
         if (npoints == 1)
         {
-            // TODO: handle special case...
-            // So uncommon that adding an extra degenerate point might make sense,
-            // if the algorithm can handle it
+            // Create a 2-point stroke and recurse
+            Stroke duplicate = *stroke;
+            duplicate.num_points = 2;
+            Arena scratch_arena = arena_push(arena, arena_available_space(arena));
+            duplicate.points = arena_alloc_array(&scratch_arena, 2, v2i);
+            duplicate.pressures = arena_alloc_array(&scratch_arena, 2, f32);
+            duplicate.points[0] = stroke->points[0];
+            duplicate.points[1] = stroke->points[0];
+            duplicate.pressures[0] = stroke->pressures[0];
+            duplicate.pressures[1] = stroke->pressures[0];
 
+            gpu_cook_stroke(&scratch_arena, render_data, &duplicate, cook_option);
+
+            // Copy render element to stroke
+            stroke->render_element = duplicate.render_element;
+
+            arena_pop(&scratch_arena);
         }
         else if (npoints > 1)
         {
@@ -1146,8 +1159,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 i32 pressure_a = (i32)(stroke->pressures[i] * (float)(PRESSURE_RESOLUTION));
                 i32 pressure_b = (i32)(stroke->pressures[i+1] * (float)(PRESSURE_RESOLUTION));
 
-                // one for every point in the triangle.
-
+                // Add attributes for each new vertex.
                 for (int repeat = 0; repeat < 4; ++repeat)
                 {
                     apoints[apoints_i++] = { point_i.x, point_i.y, pressure_a };
@@ -1308,8 +1320,9 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
             {
                 // Layer render element.
                 // The current frambuffer is layer_texture. We copy its contents to the canvas_texture
-                glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+                glActiveTexture(g_texture_unit_canvas.opengl_id);
                 GLCHK( glCopyTexImage2D(GL_TEXTURE_2D, /*lod*/0, GL_RGBA8, 0,0, render_data->width,render_data->height, /*border*/0) );
+                glActiveTexture(g_texture_unit_layer.opengl_id);
             }
             else
             {
