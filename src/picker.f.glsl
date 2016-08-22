@@ -11,7 +11,11 @@ uniform vec2 u_triangle_point;
 
 uniform vec4 u_colors[5]; // Colors for picker buttons.
 
+uniform sampler2D u_canvas;
+uniform vec2 u_screen_size;
+
 varying vec2 v_norm;
+
 
 #define PI 3.14159
 
@@ -42,40 +46,41 @@ vec3 hsv_to_rgb(vec3 hsv)
     float x = cr * (1.0 - abs(rem - 1.0));
     float m = v - cr;
 
-    switch (hi)
+    if(hi == 0)
     {
-    case 0:
         rgb.r = cr;
         rgb.g = x;
         rgb.b = 0;
-        break;
-    case 1:
+    }
+    if(hi == 1)
+    {
         rgb.r = x;
         rgb.g = cr;
         rgb.b = 0;
-        break;
-    case 2:
+    }
+    if(hi == 2)
+    {
         rgb.r = 0;
         rgb.g = cr;
         rgb.b = x;
-        break;
-    case 3:
+    }
+    if(hi == 3)
+    {
         rgb.r = 0;
         rgb.g = x;
         rgb.b = cr;
-        break;
-    case 4:
+    }
+    if(hi == 4)
+    {
         rgb.r = x;
         rgb.g = 0;
         rgb.b = cr;
-        break;
-    case 5:
+    }
+    if(hi == 5)
+    {
         rgb.r = cr;
         rgb.g = 0;
         rgb.b = x;
-        break;
-    default:
-        break;
     }
     rgb.r += m;
     rgb.g += m;
@@ -104,13 +109,26 @@ bool is_inside_triangle(vec2 p)
 
 void main()
 {
+    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y);
+    vec2 coord = screen_point / u_screen_size;
+    coord.y = 1-coord.y;
+    vec4 color = texture2D(u_canvas, coord);
+
+    gl_FragColor = color;
+}
+void old_main()
+{
     // NOTE:
     //  These constants gotten from gui.cc in gui_init. From bounds_radius_px, wheel_half_width, and so on.
     float half_width = 12.0 / 100.0;
     float radius = 1.0 - (12.0 + 5) / 100.0;
 
 
-    vec4 color = vec4(0.5,0.5,0.55,0.4);
+    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y);
+    vec2 coord = screen_point / u_screen_size;
+    coord.y = 1-coord.y;
+    vec4 color = texture2D(u_canvas, coord);
+    //vec4 color = vec4(0.5,0.5,0.55,0.4);
 
     float dist = distance(vec2(0), v_norm);
     // Wheel and triangle

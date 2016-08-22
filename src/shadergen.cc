@@ -130,6 +130,7 @@ int main()
         output_shader(outfd, "../src/stroke_raster.v.glsl", "g_stroke_raster_v", "../src/common.glsl");
         output_shader(outfd, "../src/stroke_raster.f.glsl", "g_stroke_raster_f", "../src/common.glsl");
         output_shader(outfd, "../src/exporter_rect.f.glsl", "g_exporter_f");
+        output_shader(outfd, "../src/texture_fill.f.glsl", "g_texture_fill_f");
     }
     else
     {

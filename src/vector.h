@@ -583,5 +583,37 @@ typedef struct
     };
 } v4f;
 
+typedef struct
+{
+    union
+    {
+        struct
+        {
+            i32 x;
+            i32 y;
+            i32 z;
+            i32 w;
+        };
+        struct
+        {
+            i32 r;
+            i32 g;
+            i32 b;
+            i32 a;
+        };
+        union
+        {
+            v3i rgb;
+            i32  pad__a;
+        };
+        union
+        {
+            v3i xyz;
+            i32  pad__w;
+        };
+        float d[4];
+    };
+} v4i;
+
 b32 equ4f(v4f a, v4f b);
 

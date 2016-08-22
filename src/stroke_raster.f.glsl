@@ -43,8 +43,6 @@ vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
     return result;
 }
 
-#define MAX_DIST (1<<24)
-
 int sample_stroke(vec2 point, vec3 a, vec3 b)
 {
     int value = 0;
@@ -95,7 +93,6 @@ void main()
     coord.y = 1-coord.y;
     vec4 color = texture2D(u_canvas, coord);
     //if (color.a == 1) { discard; }
-#endif
 
     vec3 a = v_pointa;
     vec3 b = v_pointb;
@@ -112,5 +109,8 @@ void main()
     {
         discard;
     }
+#else
+    gl_FragColor = u_brush_color;
+#endif
 }
 //End

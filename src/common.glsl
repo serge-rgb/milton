@@ -13,7 +13,6 @@ uniform int   u_scale;
 uniform int   u_radius;
 
 
-#if GL_core_profile
 vec3 as_vec3(ivec3 v)
 {
     return vec3(v);
@@ -46,14 +45,13 @@ vec2 as_vec2(ivec2 v)
 #define VEC3 vec3
 #define VEC4 vec4
 
-#endif
 
 vec2 canvas_to_raster_gl(vec2 cp)
 {
-    vec2 rp = as_vec2( ((u_pan_vector + as_ivec2(cp)) / as_ivec2(u_scale)) + u_screen_center );
+    vec2 rp = ( ((u_pan_vector + cp) / u_scale) + u_screen_center ) / u_screen_size;
     // rp in [0, W]x[0, H]
 
-    rp /= u_screen_size;
+    //rp /= u_screen_size;
     /* // rp in [0, 1]x[0, 1] */
 
     rp *= 2.0;

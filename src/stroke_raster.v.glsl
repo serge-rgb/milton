@@ -19,6 +19,8 @@ void main()
     v_pointa = a_pointa;
     v_pointb = a_pointb;
     gl_Position.xy = canvas_to_raster_gl(a_position.xy);
+    gl_Position.w = 1;
+
     gl_Position.z = a_position.z / MAX_DEPTH_VALUE;
 }
 

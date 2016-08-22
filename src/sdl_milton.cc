@@ -644,14 +644,25 @@ int milton_main()
 
     SDL_GL_SetSwapInterval(1);
 
+    int major = 0;
+    int minor = 0;
+    glGetIntegerv(GL_MAJOR_VERSION, &major);
+    glGetIntegerv(GL_MINOR_VERSION, &minor);
+    if (major < 2 ||
+        (major == 2 && minor < 1))
+    {
+        milton_die_gracefully("This graphics driver does not support OpenGL 2.1 or higher.");
+    }
+    milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
+    milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+
+#if 1
     if (!load_gl_functions())
     {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
     }
-
-    milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
-    milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+#endif
 
 
 
@@ -743,7 +754,8 @@ int milton_main()
 
     // Every X ms, call this callback to send us an event so we don't wait for user input.
     // Called periodically to force updates that don't depend on user input.
-    SDL_AddTimer(100,
+#if 0
+    SDL_AddTimer(1000,
                  [](u32 interval, void *param)
                  {
                      SDL_Event event;
@@ -760,6 +772,7 @@ int milton_main()
                      SDL_PushEvent(&event);
                      return(interval);
                  }, NULL);
+#endif
 
     // Init ImGUI
     //ImGui_ImplSdl_Init(window);
