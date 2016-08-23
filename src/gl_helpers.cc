@@ -40,7 +40,7 @@ GLuint gl_compile_shader(const char* src, GLuint type, char* shader_name)
     }
     GLint length;
     GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
-    if (length > 0)
+    if (!res && length > 0)
     {
         if (!res)
         {

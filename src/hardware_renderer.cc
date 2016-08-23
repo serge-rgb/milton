@@ -239,7 +239,7 @@ struct RenderData
     GLuint vbo_exporter[4]; // One for each line in rectangle
 
     GLuint layer_texture;
-    GLuint canvas_texture;
+    GLuint eraser_texture;
     GLuint stencil_texture;
 
     GLuint fbo;
@@ -677,8 +677,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         glBindTexture(GL_TEXTURE_2D, 0);
 
         //glActiveTexture(g_texture_unit_canvas.opengl_id);
-        GLCHK (glGenTextures(1, &render_data->canvas_texture));
-        glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+        GLCHK (glGenTextures(1, &render_data->eraser_texture));
+        glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
 
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
         GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
@@ -758,7 +758,7 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
     // Create canvas texture
 
     //glActiveTexture(g_texture_unit_canvas.opengl_id);
-    GLCHK (glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture));
+    GLCHK (glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture));
     GLCHK (glTexImage2D(GL_TEXTURE_2D, 0, /*internalFormat, num of components*/GL_RGBA8,
                         tex_w, tex_h,
                         /*border*/0, /*pixel_data_format*/GL_BGRA,
@@ -876,11 +876,11 @@ void set_screen_size(RenderData* render_data, float* fscreen)
     gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
+    gl_set_uniform_vec2(render_data->texture_fill_program, "u_screen_size", 1, fscreen);
 
     // Post SSAA
     float fscreen2[2] = {fscreen[0]/SSAA_FACTOR, fscreen[1]/SSAA_FACTOR};
     gl_set_uniform_vec2(render_data->exporter_program, "u_screen_size", 1, fscreen2);
-    gl_set_uniform_vec2(render_data->texture_fill_program, "u_screen_size", 1, fscreen2);
     gl_set_uniform_vec2(render_data->picker_program, "u_screen_size", 1, fscreen2);
 }
 
@@ -967,21 +967,23 @@ void gpu_clip_strokes(RenderData* render_data,
     }
 }
 
-void resolve_SSAA(RenderData* render_data, GLuint draw_framebuffer)
+void resolve_SSAA(RenderData* render_data, GLuint draw_framebuffer, i32 x, i32 y, i32 w, i32 h)
 {
     if (SSAA_FACTOR == 2 || SSAA_FACTOR == 1)
     {
         GLCHK( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw_framebuffer) );
         glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
-        GLCHK( glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0) );
-        GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
-                                 0, 0, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR,
+        GLCHK( glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
+        GLCHK( glBlitFramebuffer(x, y, x+w, y+h,
+                                 x/SSAA_FACTOR, y/SSAA_FACTOR, (x+w)/SSAA_FACTOR, (y+h)/SSAA_FACTOR,
                                  GL_COLOR_BUFFER_BIT, GL_LINEAR) );
+        glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
+        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
     }
     else if (SSAA_FACTOR == 4)
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+        glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
         glUseProgram(render_data->ssaa_program);
         {
             GLint loc = glGetAttribLocation(render_data->ssaa_program, "a_position");
@@ -1060,23 +1062,28 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             // 3 (triangle) *
             // 2 (two per segment) *
             // N-1 (segments per stroke)
-            const size_t count_bounds = 3*2*((size_t)npoints-1);
+            // Reduced to 4 by using indices
+            const size_t count_attribs = 4*((size_t)npoints-1);
 
             // 6 (3 * 2 from count_bounds)
             // N-1 (num segments)
-            const size_t count_points = 6*((size_t)npoints-1);
+            const size_t count_indices = 6*((size_t)npoints-1);
 
             v3f* bounds;
             v3f* apoints;
             v3f* bpoints;
-            Arena scratch_arena = arena_push(arena, count_bounds*sizeof(decltype(*bounds))
-                                             + 2*count_points*sizeof(decltype(*apoints)));
+            u16* indices;
+            Arena scratch_arena = arena_push(arena,
+                                             count_attribs*sizeof(decltype(*bounds))  // Bounds
+                                             + 2*count_attribs*sizeof(decltype(*apoints)) // Attributes a,b
+                                             + count_indices*sizeof(decltype(*indices)));  // Indices
 
-            bounds  = arena_alloc_array(&scratch_arena, count_bounds, v3f);
-            apoints = arena_alloc_array(&scratch_arena, count_bounds, v3f);
-            bpoints = arena_alloc_array(&scratch_arena, count_bounds, v3f);
+            bounds  = arena_alloc_array(&scratch_arena, count_attribs, v3f);
+            apoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
+            bpoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
+            indices = arena_alloc_array(&scratch_arena, count_indices, u16);
 
-            u16* indices = (u16*)mlt_malloc(count_bounds*sizeof(u16));
+            //u16* indices = (u16*)mlt_malloc(count_bounds*sizeof(u16));
 
             size_t bounds_i = 0;
             size_t apoints_i = 0;
@@ -1204,7 +1211,6 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
 
             stroke->render_element = re;
 
-            mlt_free(indices);
             arena_pop(&scratch_arena);
         }
     }
@@ -1258,7 +1264,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
 
     glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
 
-    glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+    glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
 
     //GLCHK( glActiveTexture(g_texture_unit_canvas.opengl_id) );
     glClearColor(render_data->background_color.r,
@@ -1266,7 +1272,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                  render_data->background_color.b,
                  1.0f);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->canvas_texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->eraser_texture, 0);
     glClear(GL_COLOR_BUFFER_BIT);
     GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_data->layer_texture, 0) );
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1294,8 +1300,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
             if (render_element_is_layer(re))
             {
                 // Layer render element.
-                // The current framebuffer texture is layer_texture. We copy its contents to the canvas_texture
-                //glActiveTexture(g_texture_unit_canvas.opengl_id);
+                // The current framebuffer texture is layer_texture. We blend its contents to the eraser_texture
                 GLCHK( glCopyTexImage2D(GL_TEXTURE_2D, /*lod*/0, GL_RGBA8, 0,0, render_data->width,render_data->height, /*border*/0) );
             }
             else
@@ -1359,12 +1364,16 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glClearDepth(0.0f);
     glViewport(0, 0, render_data->width, render_data->height);
     glScissor(0, 0, render_data->width, render_data->height);
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
-    print_framebuffer_status();
-    /* glClearColor(0,0,0,1); */
+    /* glBindFramebuffer(GL_FRAMEBUFFER, 0); */
+    /* glClearColor(0,0.4,0,1); */
     /* glClear(GL_COLOR_BUFFER_BIT); */
 
+    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
+    print_framebuffer_status();
+
 #if 1
+    glDisable(GL_DEPTH_TEST);
+    glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
     glUseProgram(render_data->texture_fill_program);
     {
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
@@ -1378,20 +1387,27 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
+    glEnable(GL_DEPTH_TEST);
 #endif
 
     gpu_render_canvas(render_data, view_x, view_y, view_width, view_height);
+    //gpu_render_canvas(render_data, 0, 0, render_data->width, render_data->height);
 
+    glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    /* glViewport(view_x/SSAA_FACTOR,view_y/SSAA_FACTOR, view_width/SSAA_FACTOR, view_height/SSAA_FACTOR); */
-    /* glScissor(view_x/SSAA_FACTOR,view_y/SSAA_FACTOR, view_width/SSAA_FACTOR, view_height/SSAA_FACTOR); */
-    glViewport(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
-    glScissor(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    //glViewport(view_x/SSAA_FACTOR,view_y/SSAA_FACTOR, view_width/SSAA_FACTOR, view_height/SSAA_FACTOR);
+    //glScissor(view_x/SSAA_FACTOR,view_y/SSAA_FACTOR, view_width/SSAA_FACTOR, view_height/SSAA_FACTOR);
 
     // Resolve MSAA
-    resolve_SSAA(render_data, 0/*default framebuffer*/);
+    //resolve_SSAA(render_data, 0/*default framebuffer*/,
+    //             view_x, view_y, view_width, view_height);
+    glViewport(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    glScissor(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    resolve_SSAA(render_data, 0/*default framebuffer*/,
+                 0, 0, render_data->width, render_data->height);
 
+    // FBO 0 has the texture we want for next frame.
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glEnable(GL_BLEND);
 
@@ -1566,7 +1582,7 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     gpu_render_canvas(render_data, 0, 0, buf_w, buf_h);
 
     // Resolve AA
-    resolve_SSAA(render_data, export_fbo);
+    resolve_SSAA(render_data, export_fbo, 0, 0, buf_w, buf_h);
     glBindFramebuffer(GL_FRAMEBUFFER, export_fbo);
 
     // Read onto buffer
@@ -1576,7 +1592,6 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
                  GL_RGBA,
                  GL_UNSIGNED_BYTE,
                  (GLvoid*)buffer);
-
     {  // Flip texture
         u32* pixels = (u32*)buffer;
         for (i64 j=0;j < (buf_h/SSAA_FACTOR) / 2; ++j)

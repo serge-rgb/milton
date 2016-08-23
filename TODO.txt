@@ -35,8 +35,10 @@ To-Do
     [] should brush radius be stored multiplied by SSAA factor?
     [] Profile clipping (debug code to duplicate canvas)
     [] Clear video memory for far-away strokes. Re-create VBOs as needed.
+    [] Does it work on AMD?
 
 
+    [] BUG: Intel driver problem
     [x] BUG: triangle invisibility not linked to GUI visibility
     [] BUG: when panning, brush outline doesn't update
     [] BUG: screen flood-filling wì
