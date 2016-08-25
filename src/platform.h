@@ -131,6 +131,10 @@ FILE*   fopen_error(const char* fname, const char* mode)
     return NULL;
 }
 
+#if !defined(MAX_PATH) && defined(PATH_MAX)
+    #define MAX_PATH PATH_MAX
+#endif
+
 typedef struct PlatformPrefs
 {
     // Store the window size at the time of quitting.

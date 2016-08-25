@@ -1,166 +1,9 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-#include "shaders.gen.h"
+// TODO: Include
+// #include "shaders.gen.h"
 
-#if MILTON_DEBUG
-#define uniform
-#define attribute
-#define varying
-#define in
-#define out
-#define flat
-#define layout(param)
-#define main vertexShaderMain
-vec4 gl_Position;
-vec2 as_vec2(ivec2 v)
-{
-    vec2 r;
-    r.x = v.x;
-    r.y = v.y;
-    return r;
-}
-ivec2 as_ivec2(vec2 v)
-{
-    ivec2 r;
-    r.x = v.x;
-    r.y = v.y;
-    return r;
-}
-ivec3 as_ivec3(vec3 v)
-{
-    ivec3 r;
-    r.x = v.x;
-    r.y = v.y;
-    r.z = v.z;
-    return r;
-}
-vec3 as_vec3(ivec3 v)
-{
-    vec3 r;
-    r.x = v.x;
-    r.y = v.y;
-    r.z = v.z;
-    return r;
-}
-vec4 as_vec4(ivec3 v)
-{
-    vec4 r;
-    r.x = v.x;
-    r.y = v.y;
-    r.z = v.z;
-    r.w = 1;
-    return r;
-}
-vec4 as_vec4(vec3 v)
-{
-    vec4 r;
-    r.x = v.x;
-    r.y = v.y;
-    r.z = v.z;
-    r.w = 1;
-    return r;
-}
-vec2 VEC2(ivec2 v)
-{
-    vec2 r;
-    r.x = v.x;
-    r.y = v.y;
-    return r;
-}
-vec2 VEC2(float x,float y)
-{
-    vec2 r;
-    r.x = x;
-    r.y = y;
-    return r;
-}
-ivec3 IVEC3(i32 x,i32 y,i32 z)
-{
-    ivec3 r;
-    r.x = x;
-    r.y = y;
-    r.z = z;
-    return r;
-}
-vec3 VEC3(float v)
-{
-    vec3 r;
-    r.x = v;
-    r.y = v;
-    r.z = v;
-    return r;
-}
-vec3 VEC3(float x,float y,float z)
-{
-    vec3 r;
-    r.x = x;
-    r.y = y;
-    r.z = z;
-    return r;
-}
-ivec4 IVEC4(i32 x, i32 y, i32 z, i32 w)
-{
-    ivec4 r;
-    r.x = x;
-    r.y = y;
-    r.z = z;
-    r.w = w;
-    return r;
-}
-vec4 VEC4(float v)
-{
-    vec4 r;
-    r.x = v;
-    r.y = v;
-    r.z = v;
-    r.w = v;
-    return r;
-}
-vec4 VEC4(float x,float y,float z,float w)
-{
-    vec4 r;
-    r.x = x;
-    r.y = y;
-    r.z = z;
-    r.w = w;
-    return r;
-}
-float distance(vec2 a, vec2 b)
-{
-    float dx = fabs(a.x-b.x);
-    float dy = fabs(a.y-b.y);
-    float d = dx*dx + dy*dy;
-    if (d > 0) d = sqrtf(d);
-    return d;
-}
-
-static vec2 gl_PointCoord;
-static vec4 gl_FragColor;
-
-#pragma warning (push)
-#pragma warning (disable : 4668)
-#pragma warning (disable : 4200)
-#define buffer struct
-//#include "common.glsl"
-//#include "stroke_raster.v.glsl"
-#undef main
-#define main fragmentShaderMain
-#define texture2D(a,b) VEC4(0)
-#define sampler2D int
-//#include "stroke_raster.f.glsl"
-#pragma warning (pop)
-#undef texture2D
-#undef main
-#undef attribute
-#undef uniform
-#undef buffer
-#undef varying
-#undef in
-#undef out
-#undef flat
-#undef sampler2D
-#endif //MILTON_DEBUG
 
 // Milton GPU renderer.
 //
@@ -321,7 +164,7 @@ static void print_framebuffer_status()
     if (status != GL_FRAMEBUFFER_COMPLETE)
     {
         char warning[1024];
-        snprintf(warning, "Framebuffer Error: %s", msg);
+        snprintf(warning, 1024, "Framebuffer Error: %s", msg);
         milton_log("Warning %s\n", warning);
     }
 }

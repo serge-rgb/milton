@@ -39,6 +39,15 @@
 
 #endif // MAP_ANONYMOUS
 
+
+#define PATH_STRLEN strlen
+#define PATH_TOLOWER tolower
+#define PATH_STRCMP strcmp
+#define PATH_STRNCPY strncpy
+#define PATH_STRCPY srcpy
+#define PATH_STRCAT strcat
+#define PATH_STRNCAT strncat
+#define PATH_SNPRINTF snprintf
 #define platform_milton_log printf
 
 #if defined(__MACH__)

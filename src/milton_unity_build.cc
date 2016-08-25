@@ -16,21 +16,26 @@
 #include "common.h"
 #include "memory.h"
 
-#include "DArray.h"
-#include "Vector.h"
-
 #include "vector.h"
-#include "vector.cc"
-
 #include "utils.h"
 
-
 #include "platform.h"
+
+#include "DArray.h"
+
+#include "vector.cc"
+
+
+
 #if defined(_WIN32)
 #include "platform_windows.cc"
-#elif defined(__linux__) || defined(__MACH__)
+#elif defined(__linux__)
 #include "platform_unix.cc"
+#elif defined(__MACH__)
+#include "platform_unix.cc"
+#include "platform_mac.cc"
 #endif
+
 
 #undef main // Defined by SDL
 

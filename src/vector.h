@@ -93,15 +93,17 @@ typedef Vector2<float>   vec2;
 }
 
 
-op2(+)
-op2(-)
-op2(/)
-op2_T(*)
-op2_M(*=)
-op2_F(/=, i32)
+/* op2(+) */
+/* op2(-) */
+/* op2(/) */
+/* op2_T(*) */
+/* op2_M(*=) */
+/* op2_F(/=, i32) */
 
+#if defined(_WIN32)
 #pragma warning(push)
 #pragma warning(disable:4587) // Constructor for xyz not implicitly called
+#endif
 template<typename T>
 struct Vector3
 {
@@ -157,7 +159,9 @@ struct Vector3
         return *this;
     }
 };
+#if defined(_WIN32)
 #pragma warning(pop)
+#endif
 
 // Types
 typedef Vector3<int>     ivec3;
@@ -205,16 +209,18 @@ typedef Vector3<float>   vec3;
 }
 
 
-op3_T(*)
+/* op3_T(*) */
 /* op3_T(+) */
-op3_F(*=, i32)
-op3_F(/=, i32)
-op3_M(+=)
+/* op3_F(*=, i32) */
+/* op3_F(/=, i32) */
+/* op3_M(+=) */
 
 /* op3(+) */
 
+#if defined(_WIN32)
 #pragma warning(push)
 #pragma warning(disable:4587) // Constructor for xyz not implicitly called
+#endif
 template<typename T>
 struct Vector4
 {
@@ -290,7 +296,9 @@ struct Vector4
         return *this;
     }
 };
+#if defined(_WIN32)
 #pragma warning(pop)
+#endif
 #define op4_T(OP) \
         template<typename T> \
         Vector4<T> operator OP (const Vector4<T>& v, T f) \
@@ -326,11 +334,11 @@ struct Vector4
     return v;\
 }
 
-op4_T(*)
-op4_T(+)
+/* op4_T(*) */
+/* op4_T(+) */
 //op4_M(*=, i32)
 
-op4(+)
+/* op4(+) */
 
 
 // Types
