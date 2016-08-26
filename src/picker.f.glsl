@@ -1,3 +1,4 @@
+#extension GL_ARB_texture_multisample : enable
 
 // The triangle, in [-1,1].
 uniform vec2 u_pointa;
@@ -11,7 +12,7 @@ uniform vec2 u_triangle_point;
 
 uniform vec4 u_colors[5]; // Colors for picker buttons.
 
-uniform sampler2D u_canvas;
+uniform sampler2DMS u_canvas;
 uniform vec2 u_screen_size;
 
 varying vec2 v_norm;

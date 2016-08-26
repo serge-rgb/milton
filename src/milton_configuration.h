@@ -23,6 +23,8 @@
 
 
 #define SSAA_FACTOR 1  // Possible values: 1,2,4
+#define MSAA_NUM_SAMPLES 2
+
 #define MILTON_MULTITHREADED 1
 
 #define MILTON_ENABLE_PROFILING 1
@@ -32,7 +34,7 @@
 #define RESTRICT_NUM_WORKERS_TO_2 0
 
 #define USE_3_2_CONTEXT 0  // Used to debug with RenderDoc
-#define REDRAW_EVERY_FRAME 0
+#define REDRAW_EVERY_FRAME 1
 
 // Large files get impractical to save in a blocking function.
 // Disabled for now. This was implemented when a bug was causing files to be huge.

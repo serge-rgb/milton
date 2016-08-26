@@ -9,7 +9,7 @@ void main()
 {
     float r = length(v_sizes);
 
-    float girth = u_fill ? 4.0 : 2.0;
+    float girth = u_fill ? 2.0 : 1.0;
     const float ring_alpha = 0.4;
 
     if (r <= u_radius &&

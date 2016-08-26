@@ -72,6 +72,14 @@ PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
 PFNGLCHECKFRAMEBUFFERSTATUSPROC glCheckFramebufferStatus;
 PFNGLDELETEFRAMEBUFFERSPROC glDeleteFramebuffers;
 
+// TODO: Alternative codepath for when ARB_texture_multisample extension is not present
+PFNGLTEXIMAGE2DMULTISAMPLEPROC glTexImage2DMultisample;
+PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT;
+
+
+// ARB_sample_shading
+PFNGLMINSAMPLESHADINGARBPROC glMinSampleShadingARB;
+
 
 
 #endif  //_WIN32
@@ -144,6 +152,11 @@ bool load_gl_functions()
     GETADDRESS(glFramebufferRenderbuffer);
     GETADDRESS(glCheckFramebufferStatus);
     GETADDRESS(glDeleteFramebuffers);
+
+    GETADDRESS(glTexImage2DMultisample);
+    GETADDRESS(glFramebufferTexture2DEXT);
+
+    GETADDRESS(glMinSampleShadingARB);
 #pragma warning(pop)
 #undef GETADDRESS
 #endif
