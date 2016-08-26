@@ -802,7 +802,7 @@ int milton_main()
         char* andmask = arena_alloc_array(&root_arena, arr_sz, char);
         char* xormask = arena_alloc_array(&root_arena, arr_sz, char);
 
-        b32 toggle_black = true;
+        i32 counter = 0;
         {
             size_t cx = w/2;
             size_t cy = h/2;
@@ -813,26 +813,25 @@ int milton_main()
                     size_t dist = (i-cx)*(i-cx) + (j-cy)*(j-cy);
 
                     // 32x32 default;
-                    i64 girth = 5; // girth of cursor in pixels
-                    size_t radius;
+                    i64 girth = 3; // girth of cursor in pixels
+                    size_t radius = 8;
                     if (w == 32 && h == 32)
                     {
                         // 32x32
-                        radius = 9;
                     }
                     else if (w == 64 && h == 64)
                     {
-                        girth = 8;
-                        radius = 20;
+                        girth *= 2;
+                        radius *= 2;
                     }
                     else
                     {
-                        radius = 9;
+                        INVALID_CODE_PATH;
                     }
-                    size_t radiussq = radius*radius;
-                    i64 girthsq     = girth*girth;
-                    i64 diff        = (i64)(dist - radiussq);
-                    b32 incircle    = diff < girthsq && diff > -girthsq;
+                    i64 diff        = (i64)(dist - SQUARE(radius));
+                    b32 in_white = diff < SQUARE(girth-0.5f) && diff > -SQUARE(girth-0.5f);
+                    diff = (i64)(dist - SQUARE(radius+1));
+                    b32 in_black = diff < SQUARE(girth) && diff > -SQUARE(girth);
 
                     size_t idx = j*w + i;
 
@@ -862,20 +861,18 @@ int milton_main()
                     }
 #endif
                     // SDL code block
-                    if (incircle &&
+                    if (in_white)
                         // Cross-hair effect. Only pixels inside half-radius bands get drawn.
-                        (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2))
+                        /* (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2)) */
                     {
-                        if (toggle_black)
-                        {
-                            xormask[ai] |= (1 << (7 - bi));  // White
-                        }
-                        else
-                        {
-                            xormask[ai] |= (1 << (7 - bi));  // Black
-                            andmask[ai] |= (1 << (7 - bi));
-                        }
-                        toggle_black = !toggle_black;
+                        andmask[ai] &= ~(1 << (7 - bi));  // White
+                        xormask[ai] |= (1 << (7 - bi));
+                    }
+                    else if (in_black)
+                    {
+                        xormask[ai] |= (1 << (7 - bi));  // Black
+                        andmask[ai] |= (1 << (7 - bi));
+
                     }
                     else
                     {
