@@ -45,7 +45,7 @@
 #define PATH_STRCMP strcmp
 #define PATH_STRNCPY strncpy
 #define PATH_STRCPY srcpy
-#define PATH_STRCAT strcat
+//#define PATH_STRCAT strcat
 #define PATH_STRNCAT strncat
 #define PATH_SNPRINTF snprintf
 #define platform_milton_log printf

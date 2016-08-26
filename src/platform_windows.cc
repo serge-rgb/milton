@@ -74,6 +74,7 @@ HRESULT SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE h
 #define PATH_STRNCPY wcsncpy
 #define PATH_STRCPY wcscpy
 #define PATH_STRCAT wcscat
+//#define PATH_STRNCAT wcsncat
 #define PATH_SNPRINTF _snwprintf
 
 int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)

@@ -2,7 +2,7 @@
 // License: https://github.com/serge-rgb/milton#license
 
 // TODO: Include
-// #include "shaders.gen.h"
+#include "shaders.gen.h"
 
 
 // Milton GPU renderer.

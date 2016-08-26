@@ -109,26 +109,17 @@ bool is_inside_triangle(vec2 p)
 
 void main()
 {
-    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y);
-    vec2 coord = screen_point / u_screen_size;
-    coord.y = 1-coord.y;
-    vec4 color = texture2D(u_canvas, coord);
-
-    gl_FragColor = color;
-}
-void old_main()
-{
     // NOTE:
     //  These constants gotten from gui.cc in gui_init. From bounds_radius_px, wheel_half_width, and so on.
     float half_width = 12.0 / 100.0;
     float radius = 1.0 - (12.0 + 5) / 100.0;
 
 
-    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y);
-    vec2 coord = screen_point / u_screen_size;
-    coord.y = 1-coord.y;
-    vec4 color = texture2D(u_canvas, coord);
-    //vec4 color = vec4(0.5,0.5,0.55,0.4);
+    /* vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y); */
+    /* vec2 coord = screen_point / u_screen_size; */
+    /* coord.y = 1-coord.y; */
+    /* vec4 color = texture2D(u_canvas, coord); */
+    vec4 color = vec4(0.5,0.5,0.55,0.4);
 
     float dist = distance(vec2(0), v_norm);
     // Wheel and triangle
