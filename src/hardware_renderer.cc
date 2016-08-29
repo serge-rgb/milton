@@ -1,7 +1,6 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-// TODO: Include
 #include "shaders.gen.h"
 
 
@@ -410,28 +409,9 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         render_data->vbo_quad = vbo;
         render_data->vbo_quad_uv = vbo_uv;
 
-        char vsrc[] =
-                "#version 120 \n"
-                "attribute vec2 a_point; \n"
-                "attribute vec2 a_uv; \n"
-                "varying vec2 v_uv; \n"
-                "void main() { \n"
-                "v_uv = a_uv; \n"
-                "    gl_Position = vec4(a_point, 0,1); \n"
-                "} \n";
-        char fsrc[] =
-                "#version 120 \n"
-                "uniform sampler2D u_canvas; \n"
-                "varying vec2 v_uv; \n"
-                "void main() \n"
-                "{ \n"
-                "vec4 color = texture2D(u_canvas, v_uv); \n"
-                "gl_FragColor = color; \n"
-                "} \n";
-
         GLuint objs[2] = {};
-        objs[0] = gl_compile_shader(vsrc, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(fsrc, GL_FRAGMENT_SHADER);
+        objs[0] = gl_compile_shader(g_quad_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_quad_f, GL_FRAGMENT_SHADER);
         render_data->quad_program = glCreateProgram();
         gl_link_program(render_data->quad_program, objs, array_count(objs));
     }

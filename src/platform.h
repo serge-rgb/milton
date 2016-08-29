@@ -146,7 +146,7 @@ typedef struct PlatformPrefs
 
 
 // Defined in platform_windows.cc
-// FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode);
+FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode);
 
 // Returns a 0-terminated string with the full path of the target file. NULL if error.
 PATH_CHAR*   platform_open_dialog(FileKind kind);

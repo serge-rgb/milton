@@ -19,6 +19,7 @@
 
 #elif defined(__MACH__)
 #include <sys/mman.h>
+#include <unistd.h> // getpid
 #else
 #error "This is not the Unix you're looking for"
 #endif
@@ -44,7 +45,7 @@
 #define PATH_TOLOWER tolower
 #define PATH_STRCMP strcmp
 #define PATH_STRNCPY strncpy
-#define PATH_STRCPY srcpy
+#define PATH_STRCPY strcpy
 //#define PATH_STRCAT strcat
 #define PATH_STRNCAT strncat
 #define PATH_SNPRINTF snprintf

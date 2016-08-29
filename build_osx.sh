@@ -9,11 +9,23 @@ fi
 cd build
 
 clang++ -O0 -g \
+   -Wno-c++11-compat-deprecated-writable-strings \
+    -Wno-c++11-extensions \
+    $MILTON_SRC_DIR/shadergen.cc -o shadergen
+
+./shadergen
+
+
+clang++ -O0 -g \
     -Isrc -Ithird_party -Ithird_party/imgui \
     -std=c++11 -Wall -Werror -Wno-missing-braces -Wno-unused-function \
     -Wno-unused-variable -Wno-unused-result -Wno-write-strings \
     -Wno-c++11-compat-deprecated-writable-strings -fno-strict-aliasing \
+    -Wno-format-security \
+    -Wno-format \
+    -Wno-c++11-extensions \
     -fno-omit-frame-pointer \
+    -Wno-unknown-pragmas \
     $MILTON_SRC_DIR/milton_unity_build.cc \
     ../third_party/build/libSDL2.a \
     ../third_party/build/libSDL2main.a \

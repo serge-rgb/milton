@@ -73,7 +73,9 @@
 
 
 #undef GetWindowFont
+#if defined(_WIN32)
 #pragma warning(push,0)
+#endif
 #include "../third_party/imgui/imgui.cpp"
 #include "../third_party/imgui/imgui_draw.cpp"
 #include "../third_party/imgui/imgui_impl_sdl_gl3.cpp"
@@ -97,4 +99,6 @@ extern "C"
 
 }
 
+#if defined(_WIN32)
 #pragma warning(pop)
+#endif

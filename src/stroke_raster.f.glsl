@@ -9,7 +9,6 @@ varying vec3 v_pointb;
 
 uniform sampler2DMS u_canvas;
 
-
 #define PRESSURE_RESOLUTION_GL 1048576	//(1<<20)
 
 

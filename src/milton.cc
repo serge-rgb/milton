@@ -2,97 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-static void milton_gl_backend_init(MiltonState* milton_state)
-{
-    // Init quad program
-    {
-        const char* shader_contents[2];
-        shader_contents[0] =
-            "#version 120\n"
-            "attribute vec2 position;\n"
-            "\n"
-            "varying vec2 coord;\n"
-            "\n"
-            "void main()\n"
-            "{\n"
-            "   coord = (position + vec2(1.0,1.0))/2.0;\n"
-            "   coord.y = 1.0 - coord.y;"
-            "   // direct to clip space. must be in [-1, 1]^2\n"
-            "   gl_Position = vec4(position, 0.0, 1.0);\n"
-            "}\n";
-
-        shader_contents[1] =
-            "#version 120\n"
-            "\n"
-            "uniform sampler2D raster_buffer;\n"
-            "varying vec2 coord;\n"
-            "\n"
-            "void main(void)\n"
-            "{\n"
-            "   vec4 color = texture2D(raster_buffer, coord); \n"
-            "   gl_FragColor = color; \n"
-            "}\n";
-
-        GLuint shader_objects[2] = {0};
-        for ( int i = 0; i < 2; ++i )
-        {
-            GLuint shader_type = (GLuint)((i == 0) ? GL_VERTEX_SHADER_ARB : GL_FRAGMENT_SHADER_ARB);
-            shader_objects[i] = gl_compile_shader(shader_contents[i], shader_type);
-        }
-        milton_state->gl->quad_program = glCreateProgram();
-        gl_link_program(milton_state->gl->quad_program, shader_objects, 2);
-
-        GLCHK (glUseProgram(milton_state->gl->quad_program));
-    }
-
-    // Create texture
-    {
-        GLCHK (glActiveTexture (GL_TEXTURE0) );
-        // Create texture
-        GLCHK (glGenTextures   (1, &milton_state->gl->texture));
-        GLCHK (glBindTexture   (GL_TEXTURE_2D, milton_state->gl->texture));
-
-        // Note for the future: These are needed.
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-        GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-    }
-    // Create quad
-    {
-#define u -1.0f
-        // full
-        GLfloat vert_data[] =
-        {
-            -u, +u,
-            -u, -u,
-            +u, -u,
-            +u, +u,
-        };
-#undef u
-#if MILTON_USE_VAO
-        GLCHK (glGenVertexArrays(1, &milton_state->gl->quad_vao));
-        GLCHK (glBindVertexArray(milton_state->gl->quad_vao));
-#endif
-
-        GLCHK (glGenBuffers (1, &milton_state->gl->vbo));
-        mlt_assert (milton_state->gl->vbo > 0);
-        GLCHK (glBindBuffer (GL_ARRAY_BUFFER, milton_state->gl->vbo));
-
-        GLint pos_loc     = glGetAttribLocation(milton_state->gl->quad_program, "position");
-        GLint sampler_loc = glGetUniformLocation(milton_state->gl->quad_program, "raster_buffer");
-        mlt_assert (pos_loc     >= 0);
-        mlt_assert (sampler_loc >= 0);
-        GLCHK (glBufferData (GL_ARRAY_BUFFER, sizeof(vert_data), vert_data, GL_STATIC_DRAW));
-#if MILTON_USE_VAO
-        GLCHK (glVertexAttribPointer (/*attrib location*/(GLuint)pos_loc,
-                                      /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                      /*stride*/0, /*ptr*/0));
-        GLCHK (glEnableVertexAttribArray ((GLuint)pos_loc) );
-#endif
-    }
-}
-
 void milton_set_background_color(MiltonState* milton_state, v3f background_color)
 {
     milton_state->view->background_color = background_color;
@@ -431,37 +340,6 @@ void milton_set_default_canvas_file(MiltonState* milton_state)
     milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
 }
 
-void milton_gl_backend_draw(MiltonState* milton_state)
-{
-    MiltonGLState* gl = milton_state->gl;
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gl->texture);
-    u8* raster_buffer = milton_state->raster_buffer;
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                 milton_state->view->screen_size.w, milton_state->view->screen_size.h,
-                 0, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)raster_buffer);
-
-    GLCHK (glUseProgram(gl->quad_program));
-#if MILTON_USE_VAO
-    glBindVertexArray(gl->quad_vao);
-#else
-    GLint pos_loc     = glGetAttribLocation(gl->quad_program, "position");
-    GLint sampler_loc = glGetUniformLocation(gl->quad_program, "raster_buffer");
-    mlt_assert (pos_loc     >= 0);
-    mlt_assert (sampler_loc >= 0);
-    GLCHK (glUniform1i(sampler_loc, 0 /*GL_TEXTURE0*/));
-    GLCHK (glBindBuffer(GL_ARRAY_BUFFER, milton_state->gl->vbo) );
-    GLCHK (glVertexAttribPointer(/*attrib location*/(GLuint)pos_loc,
-                                 /*size*/2, GL_FLOAT,
-                                 /*normalize*/ GL_FALSE,
-                                 /*stride*/0,
-                                 /*ptr*/0));
-
-    GLCHK (glEnableVertexAttribArray((GLuint)pos_loc));
-#endif
-    GLCHK (glDrawArrays (GL_TRIANGLE_FAN, 0, 4) );
-}
-
 i32 milton_get_brush_radius(MiltonState* milton_state)
 {
     i32 brush_size = 0;
@@ -593,7 +471,6 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
     milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
     gui_init(milton_state->root_arena, milton_state->gui);
 
-    milton_gl_backend_init(milton_state);
 
     milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
     milton_set_default_view_and_scale(milton_state);
@@ -1094,7 +971,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     {
         // Someone tried to kill milton from outside the update. Make sure we save.
         should_save = true;
-        goto cleanup;
     }
 
     if (input->flags & MiltonInputFlags_OPEN_FILE)
@@ -1575,10 +1451,10 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         brush_outline_should_draw = true;
     }
 
-    float radius = brush_outline_should_draw ? (float)milton_get_brush_radius(milton_state) : -1;
 
     if (!(milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))
     {
+        float radius = brush_outline_should_draw ? (float)milton_get_brush_radius(milton_state) : -1;
         gpu_update_brush_outline(milton_state->render_data,
                                 milton_state->hover_point.x, milton_state->hover_point.y,
                                 radius);
@@ -1587,7 +1463,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     PROFILE_GRAPH_PUSH(update);
     // milton_render(milton_state, render_flags, input->pan_delta);
 
-cleanup:
     if (!(milton_state->flags & MiltonStateFlags_RUNNING))
     {
         cursor_show();

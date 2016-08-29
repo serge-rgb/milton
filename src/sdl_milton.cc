@@ -677,7 +677,7 @@ int milton_main()
 
     if (!big_chunk_of_memory)
     {
-        milton_fatal("Could allocate bounded virtual memory for Milton.\n");
+        milton_fatal("Could not allocate bounded virtual memory for Milton.\n");
     }
 
     Arena root_arena = arena_init(big_chunk_of_memory, sz_root_arena);
@@ -1052,14 +1052,14 @@ int milton_main()
 
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
 #if defined(__MACH__)
-        mlt_assert( num_pressure_results == 0 );
+        mlt_assert( platform_state.num_pressure_results == 0 );
         int num_polled_pressures = 0;
         float* polled_pressures = milton_osx_poll_pressures(&num_polled_pressures);
         if ( num_polled_pressures )
         {
             for (int i = num_polled_pressures - 1; i >= 0; --i)
             {
-                milton_input.pressures[num_pressure_results++] = polled_pressures[i];
+                milton_input.pressures[platform_state.num_pressure_results++] = polled_pressures[i];
             }
         }
 #endif
@@ -1148,7 +1148,9 @@ int milton_main()
         SDL_WaitEvent(NULL);  // Wait for our custom event to force an update if there is no user input
     }
 
+#if defined(_WIN32) || defined(__LINUX__)
     EasyTab_Unload();
+#endif
 
     // Release pages. Not really necessary but we don't want to piss off leak
     // detectors, do we?

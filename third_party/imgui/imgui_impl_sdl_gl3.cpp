@@ -11,7 +11,7 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
-#include "gl_helpers.h"
+//#include "gl_helpers.h"
 
 // Data
 static SDL_Window*  g_Window = NULL;
