@@ -138,6 +138,8 @@ struct MiltonState
 
     size_t      worker_memory_size;
 
+    b32         supports_multisampling;
+
     // ====
     // Debug helpers
     // ====

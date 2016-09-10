@@ -33,8 +33,8 @@
 // Force things to be a bit slower
 #define RESTRICT_NUM_WORKERS_TO_2 0
 
-#define USE_3_2_CONTEXT 0  // Used to debug with RenderDoc
-#define REDRAW_EVERY_FRAME 1
+#define USE_3_2_CONTEXT 1  // Used to debug with RenderDoc
+#define REDRAW_EVERY_FRAME 0
 
 // Large files get impractical to save in a blocking function.
 // Disabled for now. This was implemented when a bug was causing files to be huge.
@@ -60,6 +60,3 @@
         #define MILTON_MULTITHREADED 0
     #endif  // MILTON_MULTITHREADED != 0
 #endif  // MILTON_ENABLE_PROFILING
-
-
-

@@ -49,6 +49,8 @@ PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
 PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
 PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
+//typedef const GLubyte* PFNGLGETSTRINGIPROC (GLenum name, GLuint index);
+PFNGLGETSTRINGIPROC                 glGetStringi;
 //=======
 
 #if MILTON_DEBUG
@@ -57,11 +59,8 @@ PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
 PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
 #endif
 
-// TODO: Use GL_EXT_framebuffer_blit
 PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
 
-
-// TODO: Use GL_EXT_framebuffer_object
 PFNGLGENFRAMEBUFFERSPROC      glGenFramebuffers;
 PFNGLBINDFRAMEBUFFERPROC      glBindFramebuffer;
 PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
@@ -72,9 +71,7 @@ PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
 PFNGLCHECKFRAMEBUFFERSTATUSPROC glCheckFramebufferStatus;
 PFNGLDELETEFRAMEBUFFERSPROC glDeleteFramebuffers;
 
-// TODO: Alternative codepath for when ARB_texture_multisample extension is not present
 PFNGLTEXIMAGE2DMULTISAMPLEPROC glTexImage2DMultisample;
-PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT;
 
 
 // ARB_sample_shading
@@ -85,12 +82,31 @@ PFNGLMINSAMPLESHADINGARBPROC glMinSampleShadingARB;
 #endif  //_WIN32
 
 
-bool load_gl_functions()
+bool gl_load(b32* supports_sample_shading)
 {
     bool ok = true;
 #if defined(_WIN32)
 #define GETADDRESS(func) if (ok) { func = (decltype(func))wglGetProcAddress(#func); \
                                     ok   = (func!=NULL); }
+
+    // Extension checking.
+    i64 num_extensions = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions);
+    GETADDRESS(glGetStringi);
+    *supports_sample_shading = false;
+
+    if (glGetStringi)
+    {
+        for (i64 extension_i = 0; extension_i < num_extensions; ++extension_i)
+        {
+            char* extension_string = (char*)glGetStringi(GL_EXTENSIONS, (GLuint)extension_i);
+
+            if (strcmp(extension_string, "ARB_sample_shading") == 0)
+            {
+                *supports_sample_shading = true;
+            }
+        }
+    }
 
 #pragma warning(push, 0)
     GETADDRESS(glActiveTexture);
@@ -154,9 +170,12 @@ bool load_gl_functions()
     GETADDRESS(glDeleteFramebuffers);
 
     GETADDRESS(glTexImage2DMultisample);
-    GETADDRESS(glFramebufferTexture2DEXT);
+    GETADDRESS(glFramebufferTexture2D);
 
-    GETADDRESS(glMinSampleShadingARB);
+    if (*supports_sample_shading)
+    {
+        GETADDRESS(glMinSampleShadingARB);
+}
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

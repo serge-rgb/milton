@@ -658,16 +658,6 @@ int milton_main()
     milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-
-#if 1
-    if (!load_gl_functions())
-    {
-        milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
-    }
-#endif
-
-
-
     // ==== Initialize milton
     //  Total (static) memory requirement for Milton
     size_t sz_root_arena = (size_t)10 * 1024 * 1024;
@@ -683,10 +673,21 @@ int milton_main()
     Arena root_arena = arena_init(big_chunk_of_memory, sz_root_arena);
 
     MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
+
+    b32 supports_sample_shading = false;
+
+    if (!gl_load(&supports_sample_shading))
+    {
+        milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
+    }
+
+    // Initialize milton_state
     {
         milton_state->root_arena = &root_arena;
 
         milton_init(milton_state, platform_state.width, platform_state.height);
+
+        milton_state->render_data->supports_sample_shading = supports_sample_shading;
     }
 
     // Ask for native events to poll tablet events.
