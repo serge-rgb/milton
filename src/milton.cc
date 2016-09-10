@@ -8,7 +8,7 @@ void milton_set_background_color(MiltonState* milton_state, v3f background_color
     gpu_set_background(milton_state->render_data, background_color);
 }
 
-static void milton_set_default_view_and_scale(MiltonState* milton_state)
+static void milton_set_default_view(MiltonState* milton_state)
 {
     CanvasView* view = milton_state->view;
 
@@ -18,9 +18,6 @@ static void milton_set_default_view_and_scale(MiltonState* milton_state)
     view->downsampling_factor = 1;
     view->num_layers          = 1;
     view->canvas_radius_limit = 1 << 30;  // A higher limit and certain assumptions start to break
-
-    milton_state->real_scale = view->scale * SSAA_FACTOR;
-
 }
 
 static void milton_update_brushes(MiltonState* milton_state)
@@ -134,9 +131,6 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     for (int input_i = 0; input_i < input->input_count; ++input_i)
     {
         v2i in_point = input->points[input_i];
-
-        // Scale the points that come from the window system by the AA factor.
-        in_point = scale2i(in_point, SSAA_FACTOR);
 
         v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
 
@@ -473,7 +467,7 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 
 
     milton_state->view = arena_alloc_elem(milton_state->root_arena, CanvasView);
-    milton_set_default_view_and_scale(milton_state);
+    milton_set_default_view(milton_state);
 
 
     milton_state->view->screen_size = { width, height };
@@ -570,8 +564,6 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
-    new_screen_size = scale2i(new_screen_size, SSAA_FACTOR);
-
     b32 pan_ok = true;
     if ((new_screen_size.w > 8000 ||
          new_screen_size.h > 8000 ||
@@ -621,7 +613,7 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
 
         // Add delta to pan vector
         v2i pan_vector = add2i(milton_state->view->pan_vector,
-                                (scale2i(pan_delta, milton_state->real_scale)));
+                                (scale2i(pan_delta, milton_state->view->scale)));
 
         if (pan_vector.x > milton_state->view->canvas_radius_limit ||
              pan_vector.x <= -milton_state->view->canvas_radius_limit)
@@ -682,7 +674,7 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state)
     reset(&milton_state->stroke_graveyard);
 
     // New View
-    milton_set_default_view_and_scale(milton_state);
+    milton_set_default_view(milton_state);
     milton_state->view->background_color = {1,1,1};
     gpu_set_background(milton_state->render_data, milton_state->view->background_color);
 
@@ -1065,15 +1057,14 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
         i32 min_scale = MILTON_MINIMUM_SCALE;
 
-        if (input->scale > 0 && milton_state->real_scale >= min_scale)
+        if (input->scale > 0 && milton_state->view->scale >= min_scale)
         {
-            milton_state->real_scale = (i32)(ceilf(milton_state->real_scale / scale_factor));
+            milton_state->view->scale = (i32)(ceilf(milton_state->view->scale / scale_factor));
         }
-        else if (input->scale < 0 && milton_state->real_scale < view_scale_limit)
+        else if (input->scale < 0 && milton_state->view->scale < view_scale_limit)
         {
-            milton_state->real_scale = (i32)(milton_state->real_scale * scale_factor) + 1;
+            milton_state->view->scale = (i32)(milton_state->view->scale * scale_factor) + 1;
         }
-        milton_state->view->scale = milton_state->real_scale / SSAA_FACTOR;
 
         milton_update_brushes(milton_state);
         gpu_update_scale(milton_state->render_data, milton_state->view->scale);
@@ -1201,7 +1192,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     if ((input->flags & MiltonInputFlags_HOVERING))
     {
-        milton_state->hover_point = scale2i(input->hover_point, SSAA_FACTOR);
+        milton_state->hover_point = input->hover_point;
         render_flags |= MiltonRenderFlags_BRUSH_HOVER;
     }
 
@@ -1264,7 +1255,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
         if ((milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW))
         {
-            auto preview_pos = scale2i(milton_state->gui->preview_pos, SSAA_FACTOR);
+            auto preview_pos = milton_state->gui->preview_pos;
             mlt_assert(preview_pos.x >= 0);
             mlt_assert(preview_pos.y >= 0);
             render_flags |= MiltonRenderFlags_BRUSH_PREVIEW;

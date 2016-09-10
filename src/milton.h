@@ -105,7 +105,6 @@ struct MiltonState
     Stroke      working_stroke;
 
     CanvasView* view;
-    i32 real_scale;  // Like view->scale but dependent on supersampling scale. i.e. view->scale/SSAA_FACTOR
 
     // ----  // gui->picker.info also stored
 

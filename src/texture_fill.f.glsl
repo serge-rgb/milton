@@ -11,5 +11,9 @@ void main()
     coord.y = 1-coord.y;
     //vec4 color = texture2D(u_canvas, coord);
     vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
+    color += texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 1);
+    color += texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 2);
+    color += texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 3);
+    color /= 4;
     gl_FragColor = color;
 }

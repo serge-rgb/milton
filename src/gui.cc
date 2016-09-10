@@ -549,8 +549,8 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 {
                     exporter->scale = 1;
                 }
-                while (exporter->scale*raster_w*SSAA_FACTOR > milton_state->render_data->viewport_limits[0] ||
-                       exporter->scale*raster_h*SSAA_FACTOR > milton_state->render_data->viewport_limits[1])
+                while (exporter->scale*raster_w > milton_state->render_data->viewport_limits[0] ||
+                       exporter->scale*raster_h > milton_state->render_data->viewport_limits[1])
                 {
                     --exporter->scale;
                 }
@@ -573,7 +573,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     {
                         opened = false;
                         gpu_render_to_buffer(milton_state, buffer, exporter->scale,
-                                             x*SSAA_FACTOR,y*SSAA_FACTOR, raster_w*SSAA_FACTOR, raster_h*SSAA_FACTOR);
+                                             x,y, raster_w, raster_h);
                         //milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
                         PATH_CHAR* fname = platform_save_dialog(FileKind_IMAGE);
                         if (fname)
@@ -1006,7 +1006,7 @@ Rect picker_get_bounds(ColorPicker* picker)
 
 void eyedropper_input(MiltonGui* gui, u32* buffer, i32 w, i32 h, v2i point)
 {
-    v4f color = color_u32_to_v4f(buffer[point.y*(w/SSAA_FACTOR)+point.x]);
+    v4f color = color_u32_to_v4f(buffer[point.y*w + point.x]);
 
     picker_from_rgb(&gui->picker, color.rgb);
 }

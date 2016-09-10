@@ -315,8 +315,6 @@ void milton_load(MiltonState* milton_state)
                 }
             }
 
-            milton_state->real_scale = milton_state->view->scale*SSAA_FACTOR;
-
             // Update GPU
             milton_set_background_color(milton_state, milton_state->view->background_color);
             gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);

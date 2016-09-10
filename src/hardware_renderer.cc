@@ -218,7 +218,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     {
         Rect rect = get_bounds_for_picker_and_colors(picker);
         // convert to clip space
-        v2i screen_size = {render_data->width / SSAA_FACTOR, render_data->height / SSAA_FACTOR};
+        v2i screen_size = {render_data->width, render_data->height};
         float top = (float)rect.top / screen_size.h;
         float bottom = (float)rect.bottom / screen_size.h;
         float left = (float)rect.left / screen_size.w;
@@ -274,8 +274,6 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radiu
         glGenBuffers(1, &render_data->vbo_outline_sizes);
     }
     mlt_assert(render_data->vbo_outline_sizes != 0);
-
-    radius*=SSAA_FACTOR;
 
     float radius_plus_girth = radius + 4.0f; // Girth defined in outline.f.glsl
 
@@ -629,21 +627,21 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     // Normalize to [-1,1]^2
     float normalized_rect[] =
     {
-        2*((GLfloat)    x/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)y    /(render_data->height/SSAA_FACTOR))-1),
-        2*((GLfloat)    x/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)(y+h)/(render_data->height/SSAA_FACTOR))-1),
-        2*((GLfloat)(x+w)/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)(y+h)/(render_data->height/SSAA_FACTOR))-1),
-        2*((GLfloat)(x+w)/(render_data->width/SSAA_FACTOR))-1, -(2*((GLfloat)y    /(render_data->height/SSAA_FACTOR))-1),
+        2*((GLfloat)    x/(render_data->width))-1, -(2*((GLfloat)y    /(render_data->height))-1),
+        2*((GLfloat)    x/(render_data->width))-1, -(2*((GLfloat)(y+h)/(render_data->height))-1),
+        2*((GLfloat)(x+w)/(render_data->width))-1, -(2*((GLfloat)(y+h)/(render_data->height))-1),
+        2*((GLfloat)(x+w)/(render_data->width))-1, -(2*((GLfloat)y    /(render_data->height))-1),
     };
 
     float px = 2.0f;
-    float line_width = px / (render_data->height/SSAA_FACTOR);
+    float line_length = px / render_data->height;
     float aspect = render_data->width / (float)render_data->height;
 
     float top[] =
     {
         normalized_rect[0], normalized_rect[1],
-        normalized_rect[2], normalized_rect[1]+line_width,
-        normalized_rect[4], normalized_rect[1]+line_width,
+        normalized_rect[2], normalized_rect[1]+line_length,
+        normalized_rect[4], normalized_rect[1]+line_length,
         normalized_rect[6], normalized_rect[1],
     };
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[0]);
@@ -651,21 +649,21 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
 
     float bottom[] =
     {
-        normalized_rect[0], normalized_rect[3]-line_width,
+        normalized_rect[0], normalized_rect[3]-line_length,
         normalized_rect[2], normalized_rect[3],
         normalized_rect[4], normalized_rect[3],
-        normalized_rect[6], normalized_rect[3]-line_width,
+        normalized_rect[6], normalized_rect[3]-line_length,
     };
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[1]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(bottom)*sizeof(*bottom), bottom, GL_DYNAMIC_DRAW) );
 
 
-    line_width = px / (render_data->width/SSAA_FACTOR);
+    line_length = px / (render_data->width);
 
     float right[] =
     {
-        normalized_rect[4]-line_width, normalized_rect[1],
-        normalized_rect[4]-line_width, normalized_rect[3],
+        normalized_rect[4]-line_length, normalized_rect[1],
+        normalized_rect[4]-line_length, normalized_rect[3],
         normalized_rect[4], normalized_rect[5],
         normalized_rect[4], normalized_rect[7],
     };
@@ -676,8 +674,8 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     {
         normalized_rect[0], normalized_rect[1],
         normalized_rect[0], normalized_rect[3],
-        normalized_rect[0]+line_width, normalized_rect[5],
-        normalized_rect[0]+line_width, normalized_rect[7],
+        normalized_rect[0]+line_length, normalized_rect[5],
+        normalized_rect[0]+line_length, normalized_rect[7],
     };
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[3]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(left)*sizeof(*left), left, GL_DYNAMIC_DRAW) );
@@ -701,11 +699,8 @@ void set_screen_size(RenderData* render_data, float* fscreen)
     gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->texture_fill_program, "u_screen_size", 1, fscreen);
-
-    // Post SSAA
-    float fscreen2[2] = {fscreen[0]/SSAA_FACTOR, fscreen[1]/SSAA_FACTOR};
-    gl_set_uniform_vec2(render_data->exporter_program, "u_screen_size", 1, fscreen2);
-    gl_set_uniform_vec2(render_data->picker_program, "u_screen_size", 1, fscreen2);
+    gl_set_uniform_vec2(render_data->exporter_program, "u_screen_size", 1, fscreen);
+    gl_set_uniform_vec2(render_data->picker_program, "u_screen_size", 1, fscreen);
 }
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
@@ -791,44 +786,6 @@ void gpu_clip_strokes(RenderData* render_data,
     }
 }
 
-void resolve_SSAA(RenderData* render_data, GLuint draw_framebuffer, i32 x, i32 y, i32 w, i32 h)
-{
-    if (SSAA_FACTOR == 2 || SSAA_FACTOR == 1)
-    {
-        GLCHK( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw_framebuffer) );
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
-        GLCHK( glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture, 0) );
-        GLCHK( glBlitFramebuffer(x, y, x+w, y+h,
-                                 x/SSAA_FACTOR, y/SSAA_FACTOR, (x+w)/SSAA_FACTOR, (y+h)/SSAA_FACTOR,
-                                 GL_COLOR_BUFFER_BIT, GL_LINEAR) );
-        glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
-        GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture, 0) );
-    }
-    else if (SSAA_FACTOR == 4)
-    {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
-        glUseProgram(render_data->ssaa_program);
-        {
-            GLint loc = glGetAttribLocation(render_data->ssaa_program, "a_position");
-            if (loc >= 0)
-            {
-                glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
-                glEnableVertexAttribArray((GLuint)loc);
-                GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                             /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                             /*stride*/0, /*ptr*/0));
-                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-            }
-        }
-    }
-    else
-    {
-        milton_die_gracefully("unsupported SSAA_FACTOR");
-    }
-
-
-}
 // TODO: Measure memory consumption of glBufferData and their ilk
 enum CookStrokeOpt
 {
@@ -919,8 +876,8 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 v2i point_j = stroke->points[i+1];
 
                 Brush brush = stroke->brush;
-                float radius_i = stroke->pressures[i]*brush.radius*SSAA_FACTOR;
-                float radius_j = stroke->pressures[i+1]*brush.radius*SSAA_FACTOR;
+                float radius_i = stroke->pressures[i]*brush.radius;
+                float radius_j = stroke->pressures[i+1]*brush.radius;
 
                 i32 min_x = min(point_i.x-radius_i, point_j.x-radius_j);
                 i32 min_y = min(point_i.y-radius_i, point_j.y-radius_j);
@@ -1030,7 +987,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             /* re.count = (i64)(bounds_i); */
             re.count = (i64)(indices_i);
             re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
-            re.radius = stroke->brush.radius*SSAA_FACTOR;
+            re.radius = stroke->brush.radius;
             mlt_assert(re.count > 1);
 
             stroke->render_element = re;
@@ -1220,7 +1177,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     glDisable(GL_DEPTH_TEST);
-#if 1
+#if 0
     glUseProgram(render_data->texture_fill_program);
     {
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
@@ -1242,8 +1199,12 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK(glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo));
     GLCHK(glDrawBuffer(GL_BACK));                       // Set the back buffer as the draw buffer
 
-    // GLCHK(glBlitFramebuffer(0, 0, render_data->width, render_data->height, 0, 0, render_data->width,
-    //                       render_data->height, GL_COLOR_BUFFER_BIT, GL_LINEAR));
+    GLCHK(glBlitFramebuffer(0, 0, render_data->width, render_data->height, 0, 0, render_data->width,
+                          render_data->height, GL_COLOR_BUFFER_BIT, GL_LINEAR));
+    // GLCHK(glBlitFramebuffer(view_x, view_y, view_width, view_height,
+    //                         view_x, view_y, view_width, view_height,
+    //                         GL_COLOR_BUFFER_BIT, GL_NEAREST));
+
 
     GLCHK(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture));
 
@@ -1253,8 +1214,8 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     // Resolve MSAA
     //resolve_SSAA(render_data, 0/*default framebuffer*/,
     //             view_x, view_y, view_width, view_height);
-    GLCHK(glViewport(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR));
-    glScissor(0/SSAA_FACTOR,0/SSAA_FACTOR, render_data->width/SSAA_FACTOR, render_data->height/SSAA_FACTOR);
+    GLCHK(glViewport(0,0, render_data->width, render_data->height));
+    glScissor(0,0, render_data->width, render_data->height);
 #if 0
     resolve_SSAA(render_data, 0/*default framebuffer*/,
                  0, 0, render_data->width, render_data->height);
@@ -1454,19 +1415,19 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     // Read onto buffer
     glReadPixels(//x/SSAA_FACTOR,y/SSAA_FACTOR,
                  0,0,
-                 buf_w/SSAA_FACTOR, buf_h/SSAA_FACTOR,
+                 buf_w, buf_h,
                  GL_RGBA,
                  GL_UNSIGNED_BYTE,
                  (GLvoid*)buffer);
     {  // Flip texture
         u32* pixels = (u32*)buffer;
-        for (i64 j=0;j < (buf_h/SSAA_FACTOR) / 2; ++j)
+        for (i64 j=0;j < buf_h / 2; ++j)
         {
-            for (i64 i=0; i<buf_w/SSAA_FACTOR; ++i)
+            for (i64 i=0; i < buf_w; ++i)
             {
-                i64 idx_up = j*(buf_w/SSAA_FACTOR) + i;
-                i64 j_down = buf_h/SSAA_FACTOR-1 - j;
-                i64 idx_down = j_down*(buf_w/SSAA_FACTOR) + i;
+                i64 idx_up = j*buf_w + i;
+                i64 j_down = buf_h - 1 - j;
+                i64 idx_down = j_down*buf_w + i;
                 // Swap
                 u32 pixel = pixels[idx_down];
                 pixels[idx_down] = pixels[idx_up];

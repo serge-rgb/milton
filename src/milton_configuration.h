@@ -22,7 +22,6 @@
     #endif
 
 
-#define SSAA_FACTOR 1  // Possible values: 1,2,4
 #define MSAA_NUM_SAMPLES 2
 
 #define MILTON_MULTITHREADED 1
