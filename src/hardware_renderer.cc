@@ -335,7 +335,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     if (glMinSampleShadingARB != NULL)
     {
         glEnable(GL_SAMPLE_SHADING_ARB);
-        GLCHK( glMinSampleShadingARB(1.0f) );
+        GLCHK( glMinSampleShadingARB(0.5f) );
     }
 
     {
@@ -1187,31 +1187,11 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     print_framebuffer_status();
 
-#if 0
-    glDisable(GL_DEPTH_TEST);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
-    glUseProgram(render_data->texture_fill_program);
-    {
-        GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
-        if (loc >= 0)
-        {
-            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
-            glEnableVertexAttribArray((GLuint)loc);
-            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
-                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
-                                         /*stride*/0, /*ptr*/0));
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
-    }
-    glEnable(GL_DEPTH_TEST);
-#endif
-
     gpu_render_canvas(render_data, view_x, view_y, view_width, view_height);
 
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     glDisable(GL_DEPTH_TEST);
-#if 1
     glUseProgram(render_data->texture_fill_program);
     {
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
@@ -1225,36 +1205,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
-#endif
     glEnable(GL_DEPTH_TEST);
-    //gpu_render_canvas(render_data, 0, 0, render_data->width, render_data->height);
-    //
-    GLCHK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    GLCHK(glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo));
-    GLCHK(glDrawBuffer(GL_BACK));                       // Set the back buffer as the draw buffer
-
-    // GLCHK(glBlitFramebuffer(0, 0, render_data->width, render_data->height, 0, 0, render_data->width,
-                          // render_data->height, GL_COLOR_BUFFER_BIT, GL_LINEAR));
-    // GLCHK(glBlitFramebuffer(view_x, view_y, view_width, view_height,
-    //                         view_x, view_y, view_width, view_height,
-    //                         GL_COLOR_BUFFER_BIT, GL_NEAREST));
-
-
-    GLCHK(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture));
-
-    //glViewport(view_x/SSAA_FACTOR,view_y/SSAA_FACTOR, view_width/SSAA_FACTOR, view_height/SSAA_FACTOR);
-    //glScissor(view_x/SSAA_FACTOR,view_y/SSAA_FACTOR, view_width/SSAA_FACTOR, view_height/SSAA_FACTOR);
-
-    // Resolve MSAA
-    //resolve_SSAA(render_data, 0/*default framebuffer*/,
-    //             view_x, view_y, view_width, view_height);
-    GLCHK(glViewport(0,0, render_data->width, render_data->height));
-    glScissor(0,0, render_data->width, render_data->height);
-#if 0
-    resolve_SSAA(render_data, 0/*default framebuffer*/,
-                 0, 0, render_data->width, render_data->height);
-#else
-#endif
 
     // FBO 0 has the texture we want for next frame.
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
