@@ -82,7 +82,7 @@ PFNGLMINSAMPLESHADINGARBPROC glMinSampleShadingARB;
 #endif  //_WIN32
 
 
-bool gl_load(b32* supports_sample_shading)
+bool gl_load()
 {
     bool ok = true;
 #if defined(_WIN32)
@@ -93,7 +93,7 @@ bool gl_load(b32* supports_sample_shading)
     i64 num_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions);
     GETADDRESS(glGetStringi);
-    *supports_sample_shading = false;
+    b32 supports_sample_shading = false;
 
     if (glGetStringi)
     {
@@ -101,9 +101,9 @@ bool gl_load(b32* supports_sample_shading)
         {
             char* extension_string = (char*)glGetStringi(GL_EXTENSIONS, (GLuint)extension_i);
 
-            if (strcmp(extension_string, "ARB_sample_shading") == 0)
+            if (strcmp(extension_string, "GL_ARB_sample_shading") == 0)
             {
-                *supports_sample_shading = true;
+                supports_sample_shading = true;
             }
         }
     }
@@ -172,10 +172,14 @@ bool gl_load(b32* supports_sample_shading)
     GETADDRESS(glTexImage2DMultisample);
     GETADDRESS(glFramebufferTexture2D);
 
-    if (*supports_sample_shading)
+    if (supports_sample_shading)
     {
         GETADDRESS(glMinSampleShadingARB);
-}
+    }
+    else
+    {
+        glMinSampleShadingARB = NULL;
+    }
 #pragma warning(pop)
 #undef GETADDRESS
 #endif

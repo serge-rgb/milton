@@ -95,8 +95,6 @@ struct RenderData
 
     v3f background_color;
     i32 stroke_z;
-
-    b32 supports_sample_shading;
 };
 
 enum RenderDataFlags
@@ -326,7 +324,7 @@ b32 render_element_is_layer(RenderElement* render_element)
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
     glEnable(GL_MULTISAMPLE);
-    if (render_data->supports_sample_shading)
+    if (glMinSampleShadingARB != NULL)
     {
         glEnable(GL_SAMPLE_SHADING_ARB);
         GLCHK( glMinSampleShadingARB(1) );
@@ -1222,6 +1220,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     glDisable(GL_DEPTH_TEST);
+#if 1
     glUseProgram(render_data->texture_fill_program);
     {
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
@@ -1235,6 +1234,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
+    #endif
     glEnable(GL_DEPTH_TEST);
     //gpu_render_canvas(render_data, 0, 0, render_data->width, render_data->height);
     //
@@ -1242,8 +1242,8 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK(glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo));
     GLCHK(glDrawBuffer(GL_BACK));                       // Set the back buffer as the draw buffer
 
-    //GLCHK(glBlitFramebuffer(0, 0, render_data->width, render_data->height, 0, 0, render_data->width,
-    //                       render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+    // GLCHK(glBlitFramebuffer(0, 0, render_data->width, render_data->height, 0, 0, render_data->width,
+    //                       render_data->height, GL_COLOR_BUFFER_BIT, GL_LINEAR));
 
     GLCHK(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture));
 

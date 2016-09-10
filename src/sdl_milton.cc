@@ -674,9 +674,7 @@ int milton_main()
 
     MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
 
-    b32 supports_sample_shading = false;
-
-    if (!gl_load(&supports_sample_shading))
+    if (!gl_load())
     {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
     }
@@ -686,8 +684,6 @@ int milton_main()
         milton_state->root_arena = &root_arena;
 
         milton_init(milton_state, platform_state.width, platform_state.height);
-
-        milton_state->render_data->supports_sample_shading = supports_sample_shading;
     }
 
     // Ask for native events to poll tablet events.
