@@ -77,8 +77,6 @@ PFNGLTEXIMAGE2DMULTISAMPLEPROC glTexImage2DMultisample;
 // ARB_sample_shading
 PFNGLMINSAMPLESHADINGARBPROC glMinSampleShadingARB;
 
-
-
 #endif  //_WIN32
 
 

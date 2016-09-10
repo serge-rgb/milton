@@ -321,11 +321,21 @@ b32 render_element_is_layer(RenderElement* render_element)
 
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
+    GLint max_samples = 0;
+    glGetIntegerv(GL_MAX_SAMPLES, &max_samples);
+
+    milton_log("Max number of samples: %d\n", max_samples);
+    GLint texture_size = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texture_size);
+    milton_log("Max texture size: %d\n", texture_size);
     glEnable(GL_MULTISAMPLE);
+    float min_sample_fraction = 1.0;
+    glGetFloatv(GL_MIN_SAMPLE_SHADING_VALUE, &min_sample_fraction);
+    milton_log("Min sample shading value %f\n", min_sample_fraction);
     if (glMinSampleShadingARB != NULL)
     {
         glEnable(GL_SAMPLE_SHADING_ARB);
-        GLCHK( glMinSampleShadingARB(1) );
+        GLCHK( glMinSampleShadingARB(1.0f) );
     }
 
     {
@@ -1082,8 +1092,32 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
             {
                 // Layer render element.
                 // The current framebuffer texture is layer_texture. We blend its contents to the eraser_texture
-                // TODO: Multisampling needs another approach
-                //GLCHK( glCopyTexImage2D(GL_TEXTURE_2D, /*lod*/0, GL_RGBA8, 0,0, render_data->width,render_data->height, /*border*/0) );
+
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture, 0);
+                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
+                glClear(GL_COLOR_BUFFER_BIT);
+                glDisable(GL_DEPTH_TEST);
+#if 1
+                glUseProgram(render_data->texture_fill_program);
+                {
+                    GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
+                    if (t_loc >= 0)
+                    {
+                        glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
+                        glEnableVertexAttribArray((GLuint)t_loc);
+                        GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)t_loc,
+                                                     /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                                     /*stride*/0, /*ptr*/0));
+                        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+                    }
+                }
+#endif
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
+                                     render_data->layer_texture, 0);
+                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture);
+                glEnable(GL_DEPTH_TEST);
+                //glTextureBarrierNV();
+
             }
             else
             {
@@ -1177,7 +1211,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     glDisable(GL_DEPTH_TEST);
-#if 0
+#if 1
     glUseProgram(render_data->texture_fill_program);
     {
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
@@ -1191,7 +1225,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
-    #endif
+#endif
     glEnable(GL_DEPTH_TEST);
     //gpu_render_canvas(render_data, 0, 0, render_data->width, render_data->height);
     //
@@ -1199,8 +1233,8 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK(glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo));
     GLCHK(glDrawBuffer(GL_BACK));                       // Set the back buffer as the draw buffer
 
-    GLCHK(glBlitFramebuffer(0, 0, render_data->width, render_data->height, 0, 0, render_data->width,
-                          render_data->height, GL_COLOR_BUFFER_BIT, GL_LINEAR));
+    // GLCHK(glBlitFramebuffer(0, 0, render_data->width, render_data->height, 0, 0, render_data->width,
+                          // render_data->height, GL_COLOR_BUFFER_BIT, GL_LINEAR));
     // GLCHK(glBlitFramebuffer(view_x, view_y, view_width, view_height,
     //                         view_x, view_y, view_width, view_height,
     //                         GL_COLOR_BUFFER_BIT, GL_NEAREST));
@@ -1256,7 +1290,6 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
             }
             GLCHK( glDrawArrays(GL_TRIANGLE_FAN,0,4) );
         }
-
     }
 
     // Render outline
