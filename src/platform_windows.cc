@@ -80,7 +80,7 @@ HRESULT SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE h
 int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
 {
     va_list args;
-    mlt_assert (format);
+    mlt_assert (format != NULL);
     va_start(args, format);
 
 #pragma warning(push)
@@ -130,13 +130,13 @@ void win32_log(char *format, ...)
 
     va_list args;
 
-    mlt_assert ( format );
+    mlt_assert (format != NULL);
 
-    va_start( args, format );
+    va_start(args, format);
 
     num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
 
-    if ( num_bytes_written > 0 )
+    if (num_bytes_written > 0)
     {
         OutputDebugStringA( message );
     }
@@ -157,8 +157,6 @@ void milton_die_gracefully(char* message)
     mlt_assert(!"break here");
     exit(EXIT_FAILURE);
 }
-
-
 
 static PATH_CHAR* win32_filter_strings_image =
     L"PNG file\0" L"*.png\0"
@@ -374,7 +372,6 @@ void platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
     //PATH_CHAR* base = SDL_GetPrefPath("MiltonPaint", "data");
     WCHAR path[MAX_PATH];
-    char *retval = NULL;
     WCHAR* worg = L"MiltonPaint";
     WCHAR* wapp = L"data";
     size_t new_wpath_len = 0;

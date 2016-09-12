@@ -405,26 +405,23 @@ float milton_get_pen_alpha(MiltonState* milton_state)
 void milton_init(MiltonState* milton_state, i32 width, i32 height)
 {
     init_localization();
+
+    milton_state->working_stroke.points    = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, v2i);
+    milton_state->working_stroke.pressures = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
+
+#if SOFTWARE_RENDERER_COMPILED
     // Initialize render queue
     milton_state->render_stack = arena_alloc_elem(milton_state->root_arena, RenderStack);
     {
         milton_state->render_stack->work_available      = SDL_CreateSemaphore(0);
         milton_state->render_stack->completed_semaphore = SDL_CreateSemaphore(0);
         milton_state->render_stack->mutex               = SDL_CreateMutex();
+        milton_state->num_render_workers = min(SDL_GetCPUCount(), MAX_NUM_WORKERS);
     }
 
-#if MILTON_SAVE_ASYNC
-    milton_state->save_mutex = SDL_CreateMutex();
-    milton_state->save_flag = SaveEnum_GOOD_TO_GO;
-#endif
-
-//#if SOFTWARE_RENDERER_ENABLED
-    milton_state->num_render_workers = min(SDL_GetCPUCount(), MAX_NUM_WORKERS);
 #if RESTRICT_NUM_WORKERS_TO_2
     milton_state->num_render_workers = min(2, SDL_GetCPUCount());
 #endif
-//#endif
-
 
     milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
 
@@ -435,16 +432,21 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 
 
     mlt_assert (milton_state->num_render_workers);
-
-    milton_state->bytes_per_pixel = 4;
-
-    milton_state->working_stroke.points    = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, v2i);
-    milton_state->working_stroke.pressures = arena_alloc_array(milton_state->root_arena, STROKE_MAX_POINTS, f32);
     // Make the working stroke visible
     for (int wi=0; wi< milton_state->num_render_workers; ++wi)
     {
         milton_state->working_stroke.visibility[wi] = true;
     }
+
+
+#endif //SOFTWARE_RENDERER_COMPILED
+
+#if MILTON_SAVE_ASYNC
+    milton_state->save_mutex = SDL_CreateMutex();
+    milton_state->save_flag = SaveEnum_GOOD_TO_GO;
+#endif
+
+   milton_state->bytes_per_pixel = 4;
 
 
     milton_state->current_mode = MiltonMode_PEN;
@@ -533,6 +535,7 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
     milton_state->viz_window_visible = true;
 #endif
 
+#if SOFTWARE_RENDERER_COMPILED
     for (i32 i = 0; i < milton_state->num_render_workers; ++i)
     {
         WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
@@ -551,6 +554,7 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 
         SDL_CreateThread(renderer_worker_thread, "Milton Render Worker", (void*)params);
     }
+#endif
 
     milton_state->flags |= MiltonStateFlags_RUNNING;
 
@@ -615,6 +619,7 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
         v2i pan_vector = add2i(milton_state->view->pan_vector,
                                 (scale2i(pan_delta, milton_state->view->scale)));
 
+#if 0
         if (pan_vector.x > milton_state->view->canvas_radius_limit ||
              pan_vector.x <= -milton_state->view->canvas_radius_limit)
         {
@@ -627,6 +632,7 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
             pan_vector.y = milton_state->view->pan_vector.y;
             pan_ok = false;
         }
+#endif
         milton_state->view->pan_vector = pan_vector;
 
         // Upload data to gpu
@@ -747,6 +753,7 @@ void milton_try_quit(MiltonState* milton_state)
 
 void milton_expand_render_memory(MiltonState* milton_state)
 {
+#if SOFTWARE_RENDERER_COMPILED
     if (milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY)
     {
         size_t prev_memory_value = milton_state->worker_memory_size;
@@ -773,6 +780,7 @@ void milton_expand_render_memory(MiltonState* milton_state)
 
         milton_state->flags &= ~MiltonStateFlags_WORKER_NEEDS_MEMORY;
     }
+#endif  // SOFTWARE_RENDERER_COMPILED
 }
 
 static void milton_save_postlude(MiltonState* milton_state)
@@ -1275,6 +1283,15 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     else
     {
         gui_imgui_set_ungrabbed(milton_state->gui);
+    }
+
+    if (milton_state->gui->visible)
+    {
+        milton_state->render_data->flags |= RenderDataFlags_GUI_VISIBLE;
+    }
+    else
+    {
+        milton_state->render_data->flags &= ~RenderDataFlags_GUI_VISIBLE;
     }
 
     if (milton_state->current_mode == MiltonMode_EYEDROPPER)

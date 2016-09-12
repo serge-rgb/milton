@@ -118,7 +118,6 @@ struct MiltonState
     i32 hover_flash_ms;  // Set on keyboard shortcut to change brush size.
                         // Brush hover "flashes" if it is currently hidden to show its current size.
 
-
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
     MiltonMode current_mode;
@@ -128,16 +127,16 @@ struct MiltonState
 
     RenderData* render_data;  // Hardware Renderer
 
-    i32             num_render_workers;
-    RenderStack*    render_stack;
-
     // Heap
     Arena*      root_arena;         // Bounded allocations
-    Arena*      render_worker_arenas;
 
+    // Software Rendering stuff
+#if SOFTWARE_RENDERER_COMPILED
+    i32             num_render_workers;
+    RenderStack*    render_stack;
     size_t      worker_memory_size;
-
-    b32         supports_multisampling;
+    Arena*      render_worker_arenas;
+#endif
 
     // ====
     // Debug helpers
@@ -211,19 +210,6 @@ enum SaveEnum
     SaveEnum_IN_USE,
     SaveEnum_GOOD_TO_GO,
 };
-
-
-// See gl_helpers.h for the reason for defining this
-#if defined(__MACH__)
-#define glGetAttribLocationARB glGetAttribLocation
-#define glGetUniformLocationARB glGetUniformLocation
-#define glUseProgramObjectARB glUseProgram
-#define glCreateProgramObjectARB glCreateProgram
-#define glEnableVertexAttribArrayARB glEnableVertexAttribArray
-#define glVertexAttribPointerARB glVertexAttribPointer
-#define glGenVertexArrays glGenVertexArraysAPPLE
-#define glBindVertexArray glBindVertexArrayAPPLE
-#endif
 
 void milton_init(MiltonState* milton_state, i32 width, i32 height);
 

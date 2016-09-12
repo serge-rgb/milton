@@ -9,8 +9,8 @@ varying vec3 v_pointb;
 
 uniform sampler2DMS u_canvas;
 
+// Same value as PRESSURE_RESOLUTION defined in hardware_renderer.cc
 #define PRESSURE_RESOLUTION_GL 1048576	//(1<<20)
-
 
 // x,y  - closest point
 // z    - t in [0,1] interpolation value

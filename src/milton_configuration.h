@@ -14,7 +14,7 @@
 //  - Runtime renderer implementation switching with F4
 #define MILTON_DEBUG 1
 
-#define MILTON_ZOOM_DEBUG 1
+#define MILTON_ZOOM_DEBUG 0
     // If MILTON_DEBUG is 0, MILTON_ZOOM_DEBUG will be 0 too!
     #if !MILTON_DEBUG
         #undef MILTON_ZOOM_DEBUG
@@ -32,13 +32,16 @@
 // Force things to be a bit slower
 #define RESTRICT_NUM_WORKERS_TO_2 0
 
-#define USE_3_2_CONTEXT 1  // Used to debug with RenderDoc
 #define REDRAW_EVERY_FRAME 0
 
 // Large files get impractical to save in a blocking function.
 // Disabled for now. This was implemented when a bug was causing files to be huge.
 // Hopefully milton will never need this. Leaving it just in case.
 #define MILTON_SAVE_ASYNC 0
+
+// Include the software renderer.
+#define SOFTWARE_RENDERER_COMPILED 0
+// TODO: Enable software renderer as a runtime option?
 
 
 // -- Esoteric and/or Stupid stuff.

@@ -2,9 +2,8 @@ To-Do
 =====
 
 - Bugs
-    - :)
     - MoveFileEx randomly fails with return code 5 - access denied
-        The bigger the file, the likelier it is to fail.
+    - Undo leaves some pixels without redrawing.
 
 - GPU Renderer checklist
     [x] Color picker
@@ -36,6 +35,7 @@ To-Do
     [] Profile clipping (debug code to duplicate canvas)
     [] Clear video memory for far-away strokes. Re-create VBOs as needed.
     [] Does it work on AMD?
+    [] TODOs in hardware_renderer.cc
 
 
     [x] BUG: Intel driver problem
@@ -50,6 +50,7 @@ To-Do
         - Linux
         - OSX
         - Ctrl -> Cmd in OSX. Other cross platform binding issues?
+        - 32 bit Windows
     - Tablet:
         - Easytab: Distinction between eraser and pen.
         - Easytab: Stylus buttons.

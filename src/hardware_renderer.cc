@@ -4,58 +4,20 @@
 #include "shaders.gen.h"
 
 
-// Milton GPU renderer.
-//
-//
-// Rough outline:
-//
-// The vertex shader rasterizes bounding slabs for each segment of the stroke
-//  a    b      c    d
-// o-----o------o----o (a four point stroke)
-//
-//    ___
-// a|  / | b   the stroke gets drawn within slabs ab, bc, cd,
-//  |/__|
-//
-//
-// The vertex shader: Translate from raster to canvas (i.e. do zoom&panning).
-//
-// The pixel shader.
-//
-//      - Check distance to line. (1) get closest point. (2) euclidean dist.
-//      (3) brush function
-//      - If it is inside, blend color.
-//
-//
-
-
-// Forward declarations:
-//
-void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);  // Defined in persist.cc
-// ====
-
 #define PRESSURE_RESOLUTION (1<<20)
-#define MAX_DEPTH_VALUE (1<<24)   // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
+
+#define MAX_DEPTH_VALUE (1<<24)     // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
                                     // Also defined in stroke_raster.v.glsl
                                     //
                                     // NOTE: Using this technique means that the algorithm is not correct.
                                     //  There is a low probability that one stroke will cover another
                                     //  stroke with the same z value.
 
-/* struct TextureUnitID */
-/* { */
-/*     GLenum opengl_id; */
-/*     GLint id; */
-/* }; */
-
-/* static TextureUnitID g_texture_unit_layer = { GL_TEXTURE2, 2 }; */
-/* static TextureUnitID g_texture_unit_canvas = { GL_TEXTURE1, 1 }; */
-
 struct RenderData
 {
     f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
-    // TODO: Tiled rendering to get around the viewport limitation.
 
+    // OpenGL programs.
     GLuint stroke_program;
     GLuint quad_program;
     GLuint picker_program;
@@ -69,31 +31,37 @@ struct RenderData
 #endif
 
     // VBO for the screen-covering quad.
-    GLuint vbo_quad;
-    GLuint vbo_quad_uv;  // TODO: Remove and use gl_FragCoord?
+    GLuint vbo_screen_quad;
 
+    // Handles for color picker.
     GLuint vbo_picker;
     GLuint vbo_picker_norm;
 
+    // Handles for brush outline.
     GLuint vbo_outline;
     GLuint vbo_outline_sizes;
 
+    // Handles for exporter rectangle.
     GLuint vbo_exporter[4]; // One for each line in rectangle
 
+    // Objects used in rendering.
     GLuint layer_texture;
     GLuint eraser_texture;
     GLuint stencil_texture;
-
     GLuint fbo;
 
     i32 flags;  // RenderDataFlags enum
 
+    // Each frame has
     DArray<RenderElement> render_elems;
 
+    // Screen size.
     i32 width;
     i32 height;
 
     v3f background_color;
+
+    // See MAX_DEPTH_VALUE
     i32 stroke_z;
 };
 
@@ -168,6 +136,7 @@ static void print_framebuffer_status()
     }
 }
 
+// Send Color Picker data to OpenGL.
 void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
 {
     glUseProgram(render_data->picker_program);
@@ -301,7 +270,7 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radiu
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_DYNAMIC_DRAW) );
 
-    gl_set_uniform_i(render_data->outline_program, "u_radius", radius);  // Constant 5 the same as in shader outline.f.glsl
+    gl_set_uniform_i(render_data->outline_program, "u_radius", radius);
     if (outline_enum == BrushOutline_FILL)
     {
         gl_set_uniform_i(render_data->outline_program, "u_fill", true);
@@ -321,21 +290,10 @@ b32 render_element_is_layer(RenderElement* render_element)
 
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
-    GLint max_samples = 0;
-    glGetIntegerv(GL_MAX_SAMPLES, &max_samples);
-
-    milton_log("Max number of samples: %d\n", max_samples);
-    GLint texture_size = 0;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &texture_size);
-    milton_log("Max texture size: %d\n", texture_size);
-    glEnable(GL_MULTISAMPLE);
-    float min_sample_fraction = 1.0;
-    glGetFloatv(GL_MIN_SAMPLE_SHADING_VALUE, &min_sample_fraction);
-    milton_log("Min sample shading value %f\n", min_sample_fraction);
     if (glMinSampleShadingARB != NULL)
     {
         glEnable(GL_SAMPLE_SHADING_ARB);
-        GLCHK( glMinSampleShadingARB(0.5f) );
+        GLCHK( glMinSampleShadingARB(1.0f) );
     }
 
     {
@@ -346,26 +304,14 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         render_data->viewport_limits[1] = viewport_dims[1];
     }
 
-    // Check stroke_z range
-    //render_data->stroke_z = (1<<24) - 500;
-
-    //mlt_assert(PRESSURE_RESOLUTION == PRESSURE_RESOLUTION_GL);
-    // TODO: Handle this. New MLT version?
-    // mlt_assert(STROKE_MAX_POINTS == STROKE_MAX_POINTS_GL);
     glEnable(GL_SCISSOR_TEST);
     glActiveTexture(GL_TEXTURE0);
-
     bool result = true;
 
-    render_data->flags = render_data_flags;
-
-#if USE_3_2_CONTEXT
-    // Assume our context is 3.0+
     // Create a single VAO and bind it.
     GLuint proxy_vao = 0;
     GLCHK( glGenVertexArrays(1, &proxy_vao) );
     GLCHK( glBindVertexArray(proxy_vao) );
-#endif
 
     // Load shader into opengl.
     {
@@ -382,7 +328,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         gl_set_uniform_i(render_data->stroke_program, "u_canvas", 0);
     }
 
-    // Quad for screen!
+    // Quad that fills the screen.
     {
         // a------d
         // |  \   |
@@ -416,8 +362,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         glBindBuffer(GL_ARRAY_BUFFER, vbo_uv);
         glBufferData(GL_ARRAY_BUFFER, array_count(uv_data)*sizeof(*uv_data), uv_data, GL_STATIC_DRAW);
 
-        render_data->vbo_quad = vbo;
-        render_data->vbo_quad_uv = vbo_uv;
+        render_data->vbo_screen_quad = vbo;
 
         GLuint objs[2] = {};
         objs[0] = gl_compile_shader(g_quad_v, GL_VERTEX_SHADER);
@@ -483,6 +428,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         gl_set_uniform_i(render_data->texture_fill_program, "u_canvas", 0);
 
     }
+#if MILTON_DEBUG
     {  // Simple program
         render_data->simple_program = glCreateProgram();
 
@@ -492,17 +438,13 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
 
         gl_link_program(render_data->simple_program, objs, array_count(objs));
     }
+#endif
 
     // Framebuffer object for canvas. Layer buffer
     {
-        //glActiveTexture(g_texture_unit_layer.opengl_id);
         GLCHK (glGenTextures(1, &render_data->layer_texture));
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
 
-        /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)); */
-        /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)); */
-        /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)); */
-        /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)); */
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
 
         glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
                                 GL_RGBA,
@@ -520,20 +462,11 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
                                        view->screen_size.w, view->screen_size.h,
                                        GL_TRUE) );
 
-
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
         glGenTextures(1, &render_data->stencil_texture);
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture);
 
-
-        /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)); */
-        /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)); */
-        /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)); */
-        /* GLCHK (glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)); */
-        /* glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY); */
-        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE); */
-        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL); */
         GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
                                        /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
                                        view->screen_size.w, view->screen_size.h,
@@ -541,19 +474,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
 
 
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-        /* GLuint rbo = 0; */
-        /* glGenRenderbuffers(1, &rbo); */
-        /* glBindRenderbuffer(GL_RENDERBUFFER, rbo); */
-        /* glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, view->screen_size.w, view->screen_size.h); */
-        //GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MUL, stencil_texture, 0) );
 
-#if 0
-        int depth_size;
-        GLCHK( glGetIntegerv(GL_DEPTH_BITS, &depth_size) );
-        int stencil_size;
-        GLCHK( glGetIntegerv(GL_STENCIL_BITS, &stencil_size) );
-#endif
-
+        // Create framebuffer object.
         {
             GLuint fbo = 0;
             glGenFramebuffers(1, &fbo);
@@ -583,43 +505,29 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
 
     i32 tex_w = render_data->width;
     i32 tex_h = render_data->height;
-    // Create canvas texture
 
-    //glActiveTexture(g_texture_unit_canvas.opengl_id);
     GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture));
-
     GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
                                    GL_RGBA,
                                    tex_w, tex_h,
                                    GL_TRUE));
 
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                            GL_RGBA,
-                            view->screen_size.w, view->screen_size.h,
-                            GL_TRUE);
-    //glActiveTexture(g_texture_unit_layer.opengl_id);
     GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture));
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
                             GL_RGBA,
                             view->screen_size.w, view->screen_size.h,
                             GL_TRUE);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture);
-    GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+
+    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture));
+    GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
                                    GL_DEPTH24_STENCIL8,
                                    view->screen_size.w, view->screen_size.h,
                                    GL_TRUE) );
 }
 
-i32 g_scale = -1;
-
 void gpu_update_scale(RenderData* render_data, i32 scale)
 {
-#if MILTON_DEBUG // set the shader values in C++
-    // Shader
-    // u_scale = scale;
-#endif
     gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
-    g_scale = scale;
 }
 
 void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
@@ -667,7 +575,6 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[1]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(bottom)*sizeof(*bottom), bottom, GL_DYNAMIC_DRAW) );
 
-
     line_length = px / (render_data->width);
 
     float right[] =
@@ -689,15 +596,10 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     };
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[3]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(left)*sizeof(*left), left, GL_DYNAMIC_DRAW) );
-
 }
 
 static void gpu_set_background(RenderData* render_data, v3f background_color)
 {
-#if MILTON_DEBUG
-    // SHADER
-    // for(int i=0;i<3;++i) u_background_color.d[i] = background_color.d[i];
-#endif
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
 
     render_data->background_color = background_color;
@@ -715,15 +617,6 @@ void set_screen_size(RenderData* render_data, float* fscreen)
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 {
-#if MILTON_DEBUG // set the shader values in C++
-#define COPY_VEC(a,b) a.x = b.x; a.y = b.y;
-    // SHADER
-    //COPY_VEC( u_pan_vector, view->pan_vector );
-    //COPY_VEC( u_screen_center, view->screen_center );
-    //COPY_VEC( u_screen_size, view->screen_size );
-    //u_scale = view->scale;
-#undef COPY_VEC
-#endif
     glUseProgram(render_data->stroke_program);
 
     auto center = divide2i(view->screen_center, 1);
@@ -758,7 +651,7 @@ void gpu_clip_strokes(RenderData* render_data,
         for (u64 i = 0; i <= l->strokes.count; ++i)
         {
             Stroke* s = NULL;
-            // Only push the working stroke when the next layer is NULL, which means that we are at the topmost layer.
+
             if (i == l->strokes.count && l->id == working_stroke->layer_id)
             {
                 s = working_stroke;
@@ -818,13 +711,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
         vec2 cp;
         cp.x = stroke->points[stroke->num_points-1].x;
         cp.y = stroke->points[stroke->num_points-1].y;
-#if MILTON_DEBUG
-        // SHADER
-        //if (u_scale != 0)
-        //{
-        //    canvas_to_raster_gl(cp);
-        //}
-#endif
+
         auto npoints = stroke->num_points;
         if (npoints == 1)
         {
@@ -856,7 +743,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             // Reduced to 4 by using indices
             const size_t count_attribs = 4*((size_t)npoints-1);
 
-            // 6 (3 * 2 from count_bounds)
+            // 6 (3 * 2 from count_attribs)
             // N-1 (num segments)
             const size_t count_indices = 6*((size_t)npoints-1);
 
@@ -874,7 +761,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             bpoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             indices = arena_alloc_array(&scratch_arena, count_indices, u16);
 
-            //u16* indices = (u16*)mlt_malloc(count_bounds*sizeof(u16));
+            //u16* indices = (u16*)mlt_malloc(count_attribs*sizeof(u16));
 
             size_t bounds_i = 0;
             size_t apoints_i = 0;
@@ -904,6 +791,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 bounds[bounds_i++] = { (float)min_x, (float)max_y, (float)stroke_z };
                 bounds[bounds_i++] = { (float)max_x, (float)max_y, (float)stroke_z };
 
+                // Leaving this commented to show how each quad works, conceptually.
                 //bounds[bounds_i++] = { (float)max_x, (float)max_y, (float)stroke_z };
                 //bounds[bounds_i++] = { (float)min_x, (float)min_y, (float)stroke_z };
                 bounds[bounds_i++]   = { (float)max_x, (float)min_y, (float)stroke_z };
@@ -933,9 +821,9 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 }
             }
 
-            //mlt_assert(bounds_i == count_bounds);
-            //mlt_assert(apoints_i == bpoints_i);
-            //mlt_assert(apoints_i == bounds_i);
+            mlt_assert(bounds_i == count_attribs);
+            mlt_assert(apoints_i == bpoints_i);
+            mlt_assert(apoints_i == bounds_i);
 
             // TODO: check for GL_OUT_OF_MEMORY
 
@@ -943,7 +831,6 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             GLuint vbo_pointa = 0;
             GLuint vbo_pointb = 0;
             GLuint indices_buffer = 0;
-
 
             GLenum hint = GL_STATIC_DRAW;
             if (cook_option == CookStroke_UPDATE_WORKING_STROKE)
@@ -1082,8 +969,6 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
     if (loc >= 0)
     {
-
-        //for (i64 i = (i64)render_data->render_elems.count-1; i>=0; --i)
         for (i64 i = 0 ; i <(i64)render_data->render_elems.count; i++)
         {
             RenderElement* re = &render_data->render_elems.data[i];
@@ -1091,19 +976,20 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
             if (render_element_is_layer(re))
             {
                 // Layer render element.
-                // The current framebuffer texture is layer_texture. We blend its contents to the eraser_texture
+                // The current framebuffer's color attachment is layer_texture.
+                // Copy layer_texture's contents to the eraser_texture.
 
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture, 0);
                 glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
                 glClear(GL_COLOR_BUFFER_BIT);
                 glDisable(GL_DEPTH_TEST);
-#if 1
+
                 glUseProgram(render_data->texture_fill_program);
                 {
                     GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
                     if (t_loc >= 0)
                     {
-                        glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
+                        glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
                         glEnableVertexAttribArray((GLuint)t_loc);
                         GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)t_loc,
                                                      /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
@@ -1111,17 +997,15 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
                     }
                 }
-#endif
+
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
-                                     render_data->layer_texture, 0);
+                                       render_data->layer_texture, 0);
                 glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture);
                 glEnable(GL_DEPTH_TEST);
-                //glTextureBarrierNV();
 
             }
             else
             {
-
                 glEnable(GL_BLEND);
                 glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                 i64 count = re->count;
@@ -1155,12 +1039,8 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                                                  /*size*/3, GL_FLOAT, /*normalize*/GL_FALSE,
                                                  /*stride*/0, /*ptr*/0));
 
-#if 1
                     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
-#else
-                    glDrawArrays(GL_TRIANGLES, 0, count);
-#endif
 
                     glDisable(GL_BLEND);  // TODO: everyone is using blend?
                 }
@@ -1181,13 +1061,15 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glScissor(0, 0, render_data->width, render_data->height);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0,0.4,0,1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     print_framebuffer_status();
 
     gpu_render_canvas(render_data, view_x, view_y, view_width, view_height);
+
+    // Blit canvas texture to main framebuffer, and do`` AA resolve.
 
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
@@ -1197,7 +1079,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
         if (loc >= 0)
         {
-            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_quad);
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
             glEnableVertexAttribArray((GLuint)loc);
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
@@ -1207,11 +1089,11 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     }
     glEnable(GL_DEPTH_TEST);
 
-    // FBO 0 has the texture we want for next frame.
+    // Render Gui
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glEnable(GL_BLEND);
-
 
     // TODO: Only render if view rect intersects picker rect
     if (render_data->flags & RenderDataFlags_GUI_VISIBLE)
@@ -1317,7 +1199,7 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     render_data->height = buf_h;
 
     milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
-    if ( scale > 1 )
+    if (scale > 1)
     {
         milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
     }
@@ -1325,11 +1207,6 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     gpu_resize(render_data, view);
     gpu_set_canvas(render_data, view);
 
-    GLsizei sizes[2][2] =
-    {
-        { buf_w, buf_h },
-        { buf_w, buf_h },
-    };
     GLuint export_fbo = 0;
     GLuint export_texture = 0;  // The resized canvas.
     GLuint buffer_texture = 0;  // The final, SSAA-resolved texture.
@@ -1337,33 +1214,30 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     glGenTextures(1, &buffer_texture);
     GLCHK (glGenTextures(1, &export_texture) );
 
-
     for (int tex_i=0; tex_i < 2; ++tex_i)
     {
         glActiveTexture(GL_TEXTURE0);
         switch(tex_i)
         {
         case 0:
+            // glBindTexture(GL_TEXTURE_2D, export_texture);
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, export_texture);
+            //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buf_w, buf_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                    GL_RGBA,
+                                    buf_w, buf_h,
+                                    GL_TRUE);
+
+
             break;
         case 1:
             glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, buffer_texture);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                    GL_RGBA,
+                                    buf_w, buf_h,
+                                    GL_TRUE);
             break;
         }
-
-        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); */
-        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); */
-        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); */
-        /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); */
-
-        GLsizei tex_w = sizes[tex_i][0];
-        GLsizei tex_h = sizes[tex_i][1];
-        //glTexImage2D(GL_TEXTURE_2D_MULTISAMPLE, 0, GL_RGBA, tex_w, tex_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                GL_RGBA,
-                                tex_w, tex_h,
-                                GL_TRUE);
-
 
     }
 
@@ -1380,29 +1254,43 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     mlt_assert(buf_h == render_data->height);
 
     glViewport(0, 0, buf_w, buf_h);
+    glScissor(0, 0, buf_w, buf_h);
     gpu_clip_strokes(render_data, milton_state->view, milton_state->root_layer, &milton_state->working_stroke,
                      0, 0, buf_w, buf_h);
 
     glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, export_texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, export_texture, 0);
 
     gpu_render_canvas(render_data, 0, 0, buf_w, buf_h);
 
-    // Resolve AA
-#if 0
-    resolve_SSAA(render_data, export_fbo, 0, 0, buf_w, buf_h);
-#else
-    mlt_assert(!"IMPL!");
-#endif
-    glBindFramebuffer(GL_FRAMEBUFFER, export_fbo);
+    // Resolve
+
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
+    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
+    glDisable(GL_DEPTH_TEST);
+    glUseProgram(render_data->texture_fill_program);
+    {
+        GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
+        if (loc >= 0)
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
+            glEnableVertexAttribArray((GLuint)loc);
+            GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
+                                         /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
+                                         /*stride*/0, /*ptr*/0));
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+    }
+    glEnable(GL_DEPTH_TEST);
 
     // Read onto buffer
-    glReadPixels(//x/SSAA_FACTOR,y/SSAA_FACTOR,
-                 0,0,
+    glReadPixels(0,0,
                  buf_w, buf_h,
                  GL_RGBA,
                  GL_UNSIGNED_BYTE,
                  (GLvoid*)buffer);
+
+    if (0)
     {  // Flip texture
         u32* pixels = (u32*)buffer;
         for (i64 j=0;j < buf_h / 2; ++j)

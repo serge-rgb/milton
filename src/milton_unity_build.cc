@@ -55,12 +55,16 @@
 #include "milton.h"
 #include "color.h"
 #include "color.cc"
-#include "software_renderer.h"
+#if SOFTWARE_RENDERER_COMPILED
+    #include "software_renderer.h"
+#endif
 #include "gui.h"
 #include "hardware_renderer.cc"
 #include "persist.cc"
 #include "gui.cc"
-#include "software_renderer.cc"
+#if SOFTWARE_RENDERER_COMPILED
+    #include "software_renderer.cc"
+#endif
 #include "memory.h"
 #include "memory.cc"
 #if MILTON_DEBUG

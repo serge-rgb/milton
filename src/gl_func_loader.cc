@@ -6,7 +6,7 @@
 
 #if defined(_WIN32)
 
-// GL 2.1 ===
+// OpenGL 2.1 ===
 PFNGLACTIVETEXTUREPROC              glActiveTexture;
 PFNGLATTACHSHADERPROC               glAttachShader;
 PFNGLBINDATTRIBLOCATIONPROC         glBindAttribLocation;
@@ -14,7 +14,6 @@ PFNGLBINDBUFFERPROC                 glBindBuffer;
 PFNGLBLENDEQUATIONPROC              glBlendEquation;
 PFNGLBLENDEQUATIONSEPARATEPROC      glBlendEquationSeparate;
 PFNGLBUFFERDATAPROC                 glBufferData;
-//PFNGLBUFFERSUBDATAPROC              glBufferSubData;
 PFNGLCOMPILESHADERPROC              glCompileShader;
 PFNGLCREATEPROGRAMPROC              glCreateProgram;
 PFNGLCREATESHADERPROC               glCreateShader;
@@ -49,33 +48,31 @@ PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
 PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
 PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
-//typedef const GLubyte* PFNGLGETSTRINGIPROC (GLenum name, GLuint index);
 PFNGLGETSTRINGIPROC                 glGetStringi;
-//=======
+//PFNGLBUFFERSUBDATAPROC              glBufferSubData;
 
-#if MILTON_DEBUG
+// OpenGL 3.0+
 PFNGLGENVERTEXARRAYSPROC            glGenVertexArrays;
-PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
 PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
-#endif
+PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
 
-PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
+PFNGLGENFRAMEBUFFERSPROC            glGenFramebuffers;
+PFNGLBINDFRAMEBUFFERPROC            glBindFramebuffer;
+PFNGLFRAMEBUFFERTEXTURE2DPROC       glFramebufferTexture2D;
+PFNGLGENRENDERBUFFERSPROC           glGenRenderbuffers;
+PFNGLBINDRENDERBUFFERPROC           glBindRenderbuffer;
+PFNGLCHECKFRAMEBUFFERSTATUSPROC     glCheckFramebufferStatus;
+PFNGLDELETEFRAMEBUFFERSPROC         glDeleteFramebuffers;
+// PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
+// PFNGLRENDERBUFFERSTORAGEPROC        glRenderbufferStorage;
+// PFNGLFRAMEBUFFERRENDERBUFFERPROC    glFramebufferRenderbuffer;
 
-PFNGLGENFRAMEBUFFERSPROC      glGenFramebuffers;
-PFNGLBINDFRAMEBUFFERPROC      glBindFramebuffer;
-PFNGLFRAMEBUFFERTEXTURE2DPROC glFramebufferTexture2D;
-PFNGLGENRENDERBUFFERSPROC glGenRenderbuffers;
-PFNGLBINDRENDERBUFFERPROC glBindRenderbuffer;
-PFNGLRENDERBUFFERSTORAGEPROC glRenderbufferStorage;
-PFNGLFRAMEBUFFERRENDERBUFFERPROC glFramebufferRenderbuffer;
-PFNGLCHECKFRAMEBUFFERSTATUSPROC glCheckFramebufferStatus;
-PFNGLDELETEFRAMEBUFFERSPROC glDeleteFramebuffers;
 
-PFNGLTEXIMAGE2DMULTISAMPLEPROC glTexImage2DMultisample;
-
+// OpenGL 3.2+
+PFNGLTEXIMAGE2DMULTISAMPLEPROC      glTexImage2DMultisample;
 
 // ARB_sample_shading
-PFNGLMINSAMPLESHADINGARBPROC glMinSampleShadingARB;
+PFNGLMINSAMPLESHADINGARBPROC        glMinSampleShadingARB;
 
 #endif  //_WIN32
 
@@ -149,21 +146,20 @@ bool gl_load()
     GETADDRESS(glUseProgram);
     GETADDRESS(glValidateProgram);
     GETADDRESS(glUniform1f);
-
-    GETADDRESS(glBlitFramebuffer);
-
     GETADDRESS(glVertexAttribPointer);
-    //GETADDRESS(glVertexAttribIPointer);
     GETADDRESS(glEnableVertexAttribArray);
     GETADDRESS(glDisableVertexAttribArray);
+
+    // GETADDRESS(glBlitFramebuffer);
+    //GETADDRESS(glVertexAttribIPointer);
 
     GETADDRESS(glGenFramebuffers);
     GETADDRESS(glBindFramebuffer);
     GETADDRESS(glFramebufferTexture2D);
     GETADDRESS(glGenRenderbuffers);
     GETADDRESS(glBindRenderbuffer);
-    GETADDRESS(glRenderbufferStorage);
-    GETADDRESS(glFramebufferRenderbuffer);
+    // GETADDRESS(glRenderbufferStorage);
+    // GETADDRESS(glFramebufferRenderbuffer);
     GETADDRESS(glCheckFramebufferStatus);
     GETADDRESS(glDeleteFramebuffers);
 
