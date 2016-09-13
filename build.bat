@@ -91,7 +91,7 @@ popd
 goto end
 
 :fail
-echo    [FATAL] -- ... error building Milton
+echo    [FATAL] -- ... Error building Milton
 popd && (call)
 
 :end

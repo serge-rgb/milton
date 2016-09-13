@@ -63,7 +63,7 @@ PFNGLGENRENDERBUFFERSPROC           glGenRenderbuffers;
 PFNGLBINDRENDERBUFFERPROC           glBindRenderbuffer;
 PFNGLCHECKFRAMEBUFFERSTATUSPROC     glCheckFramebufferStatus;
 PFNGLDELETEFRAMEBUFFERSPROC         glDeleteFramebuffers;
-// PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
+PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
 // PFNGLRENDERBUFFERSTORAGEPROC        glRenderbufferStorage;
 // PFNGLFRAMEBUFFERRENDERBUFFERPROC    glFramebufferRenderbuffer;
 
@@ -150,7 +150,7 @@ bool gl_load()
     GETADDRESS(glEnableVertexAttribArray);
     GETADDRESS(glDisableVertexAttribArray);
 
-    // GETADDRESS(glBlitFramebuffer);
+    GETADDRESS(glBlitFramebuffer);
     //GETADDRESS(glVertexAttribIPointer);
 
     GETADDRESS(glGenFramebuffers);
