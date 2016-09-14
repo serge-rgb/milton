@@ -933,7 +933,8 @@ void gpu_free_strokes(MiltonState* milton_state)
 }
 
 void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_width,
-                       i32 view_height) {
+                       i32 view_height)
+{
     i32 x = view_x;
     i32 y = view_y;
     i32 w = view_width;
@@ -1266,13 +1267,13 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
 
     {  // Flip texture
         u32* pixels = (u32*)buffer;
-        for (i64 j=0;j < buf_h / 2; ++j)
+        for (i64 j = 0; j < buf_h / 2; ++j)
         {
-            for (i64 i=0; i < buf_w; ++i)
+            for (i64 i = 0; i < buf_w; ++i)
             {
-                i64 idx_up = j*buf_w + i;
+                i64 idx_up = j * buf_w + i;
                 i64 j_down = buf_h - 1 - j;
-                i64 idx_down = j_down*buf_w + i;
+                i64 idx_down = j_down * buf_w + i;
                 // Swap
                 u32 pixel = pixels[idx_down];
                 pixels[idx_down] = pixels[idx_up];
