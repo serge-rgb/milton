@@ -1421,12 +1421,7 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
             color = v4f{0,0,0,1};
         }
 
-        // Barycentric to cartesian
-        f32 a = hsv.s;
-        f32 b = 1 - hsv.v;
-        f32 c = 1 - a - b;
-
-        v2f point = add2f(add2f((scale2f(picker->data.c,a)), scale2f(picker->data.b,b)), scale2f(picker->data.a,c));
+        v2f point = lerp2f(picker->data.b, lerp2f(picker->data.a, picker->data.c, hsv.s), hsv.v);
 
         // De-center
         point.x -= picker->center.x - picker->bounds_radius_px;
