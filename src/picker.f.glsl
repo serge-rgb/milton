@@ -157,19 +157,13 @@ void main()
         }
         else if (is_inside_triangle(v_norm))  // Triangle
         {
+			// NOTE(Tilmann): Instead of doing this you could just have OpenGL draw a triangle with linearly interpolated vertex colors.
             float area = orientation(u_pointa, u_pointb, u_pointc);
             float inv_area = 1.0f / area;
-            float s = orientation(u_pointb, v_norm, u_pointa) * inv_area;
-            if (s > 1) { s = 1; }
-            if (s < 0) { s = 0; }
             float v = 1 - (orientation(v_norm, u_pointc, u_pointa) * inv_area);
-            if (v > 1) { v = 1; }
-            if (v < 0) { v = 0; }
-
-            vec3 hsv = vec3(u_angle,
-                            s,
-                            v);
-            color = vec4(hsv_to_rgb(hsv),1);
+            float s = orientation(u_pointb, v_norm, u_pointa) * inv_area / v;
+            vec3 pure_color = hsv_to_rgb(vec3(u_angle,1.0,1.0));
+            color = vec4((1.0-(1.0-pure_color)*s)*v,1.0);
         }
 
     }

@@ -164,12 +164,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
 
     // Point within triangle
     {
-        // Barycentric to cartesian
-        f32 fa = hsv.s;
-        f32 fb = 1 - hsv.v;
-        f32 fc = 1 - fa - fb;
-
-        v2f point = add2f(add2f((scale2f(picker->data.c,fa)), scale2f(picker->data.b,fb)), scale2f(picker->data.a,fc));
+		v2f point = lerp2f(picker->data.b, lerp2f(picker->data.a, picker->data.c, hsv.s), hsv.v);
         // Move to [-1,1]^2
         point = transform(point);
         gl_set_uniform_vec2(render_data->picker_program, "u_triangle_point", 1, point.d);

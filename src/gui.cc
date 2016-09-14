@@ -839,22 +839,19 @@ static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
     return is_inside;
 }
 
+static b32 picker_is_active(ColorPicker* picker)
+{
+    b32 is_active = (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) || (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE);
+
+    return is_active;
+}
+
 static b32 picker_is_accepting_input(ColorPicker* picker, v2i point)
 {
-    // If wheel is active, yes! Gimme input.
-    if ((picker->flags & ColorPickerFlags_WHEEL_ACTIVE))
-    {
-        return true;
-    }
-    else if (is_inside_picker_rect(picker, point))
-    {
-        //return is_inside_picker_active_area(picker, point);
-        return true;
-    }
-    else
-    {
-        return is_inside_picker_button_area(picker, point);
-    }
+    b32 result = picker_is_active(picker)
+		|| is_inside_picker_rect(picker, point)
+		|| is_inside_picker_button_area(picker, point);
+    return result;
 }
 
 static void picker_from_rgb(ColorPicker* picker, v3f rgb)
@@ -897,8 +894,11 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
     {
         if (picker_hits_wheel(picker, fpoint))
         {
-            picker->flags |= ColorPickerFlags_WHEEL_ACTIVE;
+            picker->flags = ColorPickerFlags_WHEEL_ACTIVE;
         }
+		else if (picker_hits_triangle(picker, fpoint)) {
+			picker->flags = ColorPickerFlags_TRIANGLE_ACTIVE;
+		}
     }
     if ((picker->flags & ColorPickerFlags_WHEEL_ACTIVE))
     {
@@ -908,41 +908,63 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
             result = ColorPickResult_CHANGE_COLOR;
         }
     }
-    if (picker_hits_triangle(picker, fpoint))
+	if ((picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
     {
-        if (!(picker->flags & ColorPickerFlags_WHEEL_ACTIVE))
-        {
-            picker->flags |= ColorPickerFlags_TRIANGLE_ACTIVE;
-            picker->data.hsv = picker_hsv_from_point(picker, fpoint);
-            result = ColorPickResult_CHANGE_COLOR;
-        }
-    }
-    else if ((picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
-    {
+		PickerData& d = picker->data; // Just shortening the identifier.
+		
         // We don't want the chooser to "stick" if go outside the triangle
         // (i.e. picking black should be easy)
-        v2f segments[] =
-        {
-            picker->data.a, picker->data.b,
-            picker->data.b, picker->data.c,
-            picker->data.c, picker->data.a,
-        };
+		f32 abp = orientation(d.a, d.b, fpoint);
+		f32 bcp = orientation(d.b, d.c, fpoint);
+		f32 cap = orientation(d.c, d.a, fpoint);
+		int insideness = (abp < 0.0f) + (bcp < 0.0f) + (cap < 0.0f);
 
-        for (i32 segment_i = 0; segment_i < 6; segment_i += 2)
-        {
-            v2i a = v2f_to_v2i(segments[segment_i    ]);
-            v2i b = v2f_to_v2i(segments[segment_i + 1]);
-            v2f intersection = { 0 };
-            b32 hit = intersect_line_segments(point, picker->center,
-                                              a, b,
-                                              &intersection);
-            if (hit)
-            {
-                picker->data.hsv = picker_hsv_from_point(picker, intersection);
-                result = ColorPickResult_CHANGE_COLOR;
-                break;
-            }
-        }
+		// inside the triangle
+		if (insideness == 3) {
+			float inv_area = 1.0f / orientation(d.a, d.b, d.c);
+			d.hsv.v = 1.0f - (cap * inv_area);
+			d.hsv.s = abp * inv_area / d.hsv.v;
+		}
+
+		// near a corner
+		else if(insideness < 2){
+			if (abp < 0.0f) {
+				d.hsv.s = 1.0f;
+				d.hsv.v = 1.0f;
+			}
+			else if (bcp < 0.0f) {
+				d.hsv.s = 0.0f;
+				d.hsv.v = 1.0f;
+			}
+			else {
+				d.hsv.s = 0.5f;
+				d.hsv.v = 0.0f;
+			}
+		}
+		
+		// near an edge
+		else {
+#define GET_T(A, B, C)\
+    v2f perp = perpendicular2f(sub2f(fpoint, C));\
+    f32 t = DOT(sub2f(C, A), perp) / DOT(sub2f(B, A), perp);
+			if (abp >= 0.0f) {
+				GET_T(d.b, d.a, d.c)
+				d.hsv.s = 0.0f;
+				d.hsv.v = t;
+			}
+			else if (bcp >= 0.0f) {
+				GET_T(d.b, d.c, d.a)
+				d.hsv.s = 1.0f;
+				d.hsv.v = t;
+			}
+			else {
+				GET_T(d.a, d.c, d.b)
+				d.hsv.s = t;
+				d.hsv.v = 1.0f;
+			}
+		}
+#undef GET_T
+        result = ColorPickResult_CHANGE_COLOR;
     }
 
     return result;
@@ -984,13 +1006,6 @@ void picker_init(ColorPicker* picker)
     };
     picker_update_wheel(picker, fpoint);
     picker->data.hsv = v3f{ 0, 1, 1 };
-}
-
-static b32 picker_is_active(ColorPicker* picker)
-{
-    b32 is_active = (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) || (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE);
-
-    return is_active;
 }
 
 Rect picker_get_bounds(ColorPicker* picker)
