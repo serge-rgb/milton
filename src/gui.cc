@@ -849,8 +849,8 @@ static b32 picker_is_active(ColorPicker* picker)
 static b32 picker_is_accepting_input(ColorPicker* picker, v2i point)
 {
     b32 result = picker_is_active(picker)
-		|| is_inside_picker_rect(picker, point)
-		|| is_inside_picker_button_area(picker, point);
+        || is_inside_picker_rect(picker, point)
+        || is_inside_picker_button_area(picker, point);
     return result;
 }
 
@@ -896,9 +896,9 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
         {
             picker->flags = ColorPickerFlags_WHEEL_ACTIVE;
         }
-		else if (picker_hits_triangle(picker, fpoint)) {
-			picker->flags = ColorPickerFlags_TRIANGLE_ACTIVE;
-		}
+        else if (picker_hits_triangle(picker, fpoint)) {
+            picker->flags = ColorPickerFlags_TRIANGLE_ACTIVE;
+        }
     }
     if ((picker->flags & ColorPickerFlags_WHEEL_ACTIVE))
     {
@@ -908,61 +908,61 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
             result = ColorPickResult_CHANGE_COLOR;
         }
     }
-	if ((picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
+    if ((picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
     {
-		PickerData& d = picker->data; // Just shortening the identifier.
-		
+        PickerData& d = picker->data; // Just shortening the identifier.
+        
         // We don't want the chooser to "stick" if go outside the triangle
         // (i.e. picking black should be easy)
-		f32 abp = orientation(d.a, d.b, fpoint);
-		f32 bcp = orientation(d.b, d.c, fpoint);
-		f32 cap = orientation(d.c, d.a, fpoint);
-		int insideness = (abp < 0.0f) + (bcp < 0.0f) + (cap < 0.0f);
+        f32 abp = orientation(d.a, d.b, fpoint);
+        f32 bcp = orientation(d.b, d.c, fpoint);
+        f32 cap = orientation(d.c, d.a, fpoint);
+        int insideness = (abp < 0.0f) + (bcp < 0.0f) + (cap < 0.0f);
 
-		// inside the triangle
-		if (insideness == 3) {
-			float inv_area = 1.0f / orientation(d.a, d.b, d.c);
-			d.hsv.v = 1.0f - (cap * inv_area);
-			d.hsv.s = abp * inv_area / d.hsv.v;
-		}
+        // inside the triangle
+        if (insideness == 3) {
+            float inv_area = 1.0f / orientation(d.a, d.b, d.c);
+            d.hsv.v = 1.0f - (cap * inv_area);
+            d.hsv.s = abp * inv_area / d.hsv.v;
+        }
 
-		// near a corner
-		else if(insideness < 2){
-			if (abp < 0.0f) {
-				d.hsv.s = 1.0f;
-				d.hsv.v = 1.0f;
-			}
-			else if (bcp < 0.0f) {
-				d.hsv.s = 0.0f;
-				d.hsv.v = 1.0f;
-			}
-			else {
-				d.hsv.s = 0.5f;
-				d.hsv.v = 0.0f;
-			}
-		}
-		
-		// near an edge
-		else {
+        // near a corner
+        else if(insideness < 2){
+            if (abp < 0.0f) {
+                d.hsv.s = 1.0f;
+                d.hsv.v = 1.0f;
+            }
+            else if (bcp < 0.0f) {
+                d.hsv.s = 0.0f;
+                d.hsv.v = 1.0f;
+            }
+            else {
+                d.hsv.s = 0.5f;
+                d.hsv.v = 0.0f;
+            }
+        }
+        
+        // near an edge
+        else {
 #define GET_T(A, B, C)\
     v2f perp = perpendicular2f(sub2f(fpoint, C));\
     f32 t = DOT(sub2f(C, A), perp) / DOT(sub2f(B, A), perp);
-			if (abp >= 0.0f) {
-				GET_T(d.b, d.a, d.c)
-				d.hsv.s = 0.0f;
-				d.hsv.v = t;
-			}
-			else if (bcp >= 0.0f) {
-				GET_T(d.b, d.c, d.a)
-				d.hsv.s = 1.0f;
-				d.hsv.v = t;
-			}
-			else {
-				GET_T(d.a, d.c, d.b)
-				d.hsv.s = t;
-				d.hsv.v = 1.0f;
-			}
-		}
+            if (abp >= 0.0f) {
+                GET_T(d.b, d.a, d.c)
+                d.hsv.s = 0.0f;
+                d.hsv.v = t;
+            }
+            else if (bcp >= 0.0f) {
+                GET_T(d.b, d.c, d.a)
+                d.hsv.s = 1.0f;
+                d.hsv.v = t;
+            }
+            else {
+                GET_T(d.a, d.c, d.b)
+                d.hsv.s = t;
+                d.hsv.v = 1.0f;
+            }
+        }
 #undef GET_T
         result = ColorPickResult_CHANGE_COLOR;
     }
@@ -985,15 +985,8 @@ b32 picker_hits_wheel(ColorPicker* picker, v2f point)
 
 float picker_wheel_get_angle(ColorPicker* picker, v2f point)
 {
-    v2f center = v2i_to_v2f(picker->center);
-    v2f arrow = sub2f(point, center);
-    v2f baseline = { 1, 0 };
-    float dotp = (DOT(arrow, baseline)) / (magnitude(arrow));
-    float angle = acosf(dotp);
-    if (point.y > center.y)
-    {
-        angle = (2 * kPi) - angle;
-    }
+    v2f direction = sub2f(point, v2i_to_v2f(picker->center));
+    f32 angle = atan2f(direction.y, -direction.x) + kPi;
     return angle;
 }
 
@@ -1082,12 +1075,8 @@ v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
     if (area != 0)
     {
         float inv_area = 1.0f / area;
-        float s = orientation(picker->data.b, point, picker->data.a) * inv_area;
-        if (s > 1) { s = 1; }
-        if (s < 0) { s = 0; }
         float v = 1 - (orientation(point, picker->data.c, picker->data.a) * inv_area);
-        if (v > 1) { v = 1; }
-        if (v < 0) { v = 0; }
+        float s = orientation(picker->data.b, point, picker->data.a) * inv_area / v;
 
         hsv = v3f
         {

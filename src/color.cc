@@ -150,6 +150,7 @@ v3f hsv_to_rgb(v3f hsv)
     switch (hi)
     {
     case 0:
+    case 6:
         rgb.r = cr;
         rgb.g = x;
         rgb.b = 0;

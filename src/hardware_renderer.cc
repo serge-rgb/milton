@@ -164,7 +164,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
 
     // Point within triangle
     {
-		v2f point = lerp2f(picker->data.b, lerp2f(picker->data.a, picker->data.c, hsv.s), hsv.v);
+        v2f point = lerp2f(picker->data.b, lerp2f(picker->data.a, picker->data.c, hsv.s), hsv.v);
         // Move to [-1,1]^2
         point = transform(point);
         gl_set_uniform_vec2(render_data->picker_program, "u_triangle_point", 1, point.d);

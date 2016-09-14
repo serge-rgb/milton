@@ -47,7 +47,7 @@ vec3 hsv_to_rgb(vec3 hsv)
     float x = cr * (1.0 - abs(rem - 1.0));
     float m = v - cr;
 
-    if(hi == 0)
+    if(hi == 0 || hi == 6)
     {
         rgb.r = cr;
         rgb.g = x;
@@ -157,7 +157,7 @@ void main()
         }
         else if (is_inside_triangle(v_norm))  // Triangle
         {
-			// NOTE(Tilmann): Instead of doing this you could just have OpenGL draw a triangle with linearly interpolated vertex colors.
+            // NOTE(Tilmann): Instead of doing this you could just have OpenGL draw a triangle with linearly interpolated vertex colors.
             float area = orientation(u_pointa, u_pointb, u_pointc);
             float inv_area = 1.0f / area;
             float v = 1 - (orientation(v_norm, u_pointc, u_pointa) * inv_area);
