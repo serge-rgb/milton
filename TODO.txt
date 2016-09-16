@@ -31,9 +31,9 @@ To-Do
     [] end of "infinite" canvas
     [] Deal with 32 bit limits
     [] float<->int. Try out ivec2 attributes.
-    [] should brush radius be stored multiplied by SSAA factor?
+    [-] should brush radius be stored multiplied by SSAA factor?
     [] Profile clipping (debug code to duplicate canvas)
-    [] Clear video memory for far-away strokes. Re-create VBOs as needed.
+    [x] Clear video memory for far-away strokes. Re-create VBOs as needed.
     [] Does it work on AMD?
     [] TODOs in hardware_renderer.cc
 

@@ -619,7 +619,6 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
         v2i pan_vector = add2i(milton_state->view->pan_vector,
                                 (scale2i(pan_delta, milton_state->view->scale)));
 
-#if 0
         if (pan_vector.x > milton_state->view->canvas_radius_limit ||
              pan_vector.x <= -milton_state->view->canvas_radius_limit)
         {
@@ -632,7 +631,6 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
             pan_vector.y = milton_state->view->pan_vector.y;
             pan_ok = false;
         }
-#endif
         milton_state->view->pan_vector = pan_vector;
 
         // Upload data to gpu
@@ -1390,7 +1388,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 }
 
                 auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
-                gpu_cook_stroke(milton_state->root_arena, milton_state->render_data, stroke);
+
                 // Invalidate working stroke render element
                 milton_state->working_stroke.render_element.count = 0;
 
@@ -1545,6 +1543,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     i32 view_width = 0;
     i32 view_height = 0;
 
+    ClipFlags clip_flags = ClipFlags_DONT_UPDATE;
 
 #if REDRAW_EVERY_FRAME
     do_full_redraw = true;
@@ -1554,6 +1553,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     {
         view_width = milton_state->view->screen_size.w;
         view_height = milton_state->view->screen_size.h;
+        clip_flags = ClipFlags_UPDATE;
     }
     else if (draw_custom_rectangle)
     {
@@ -1578,9 +1578,10 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     if (view_width == 0 || view_height == 0) {
         int foo=1;
     }
-    gpu_clip_strokes(milton_state->render_data, milton_state->view,
-                     milton_state->root_layer, &milton_state->working_stroke,
-                     view_x, view_y, view_width, view_height);
+
+    gpu_clip_strokes_and_upload(milton_state->root_arena, milton_state->render_data, milton_state->view,
+                                milton_state->root_layer, &milton_state->working_stroke,
+                                view_x, view_y, view_width, view_height, clip_flags);
 
     gpu_render(milton_state->render_data, view_x, view_y, view_width, view_height);
 

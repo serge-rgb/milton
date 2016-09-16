@@ -623,67 +623,6 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     set_screen_size(render_data, fscreen);
 }
 
-void gpu_clip_strokes(RenderData* render_data,
-                      CanvasView* view,
-                      Layer* root_layer, Stroke* working_stroke,
-                      i32 x, i32 y, i32 w, i32 h)
-{
-    auto *render_elements = &render_data->render_elems;
-
-    RenderElement layer_element = {};
-    layer_element.flags |= RenderElementFlags_LAYER;
-
-    reset(render_elements);
-    for(Layer* l = root_layer;
-        l != NULL;
-        l = l->next)
-    {
-        if (!(l->flags & LayerFlags_VISIBLE))
-        {
-            // Skip invisible layers.
-            continue;
-        }
-        for (u64 i = 0; i <= l->strokes.count; ++i)
-        {
-            Stroke* s = NULL;
-
-            if (i == l->strokes.count && l->id == working_stroke->layer_id)
-            {
-                s = working_stroke;
-            }
-            else if (i < l->strokes.count)
-            {
-                s = &l->strokes.data[i];
-            }
-            if (s != NULL)
-            {
-                Rect bounds = s->bounding_rect;
-                bounds.top_left = canvas_to_raster(view, bounds.top_left);
-                bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
-
-                // Flip rectangle
-                {
-                    i32 bot = bounds.bottom;
-                    // t' = H - b
-                    // b' = y+h = (H-b) + h = (H-b) + (b-t) = H-t
-                    bounds.bottom = render_data->height - bounds.top;
-                    bounds.top = render_data->height - bot;
-                }
-                b32 is_outside = bounds.left > (x+w) || bounds.right < x ||
-                                bounds.top > (y+h) || bounds.bottom < y;
-                i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
-
-                if (!is_outside && area!=0)
-                {
-                    push(render_elements, s->render_element);
-                }
-            }
-        }
-
-        push(render_elements, layer_element);
-    }
-}
-
 // TODO: Measure memory consumption of glBufferData and their ilk
 enum CookStrokeOpt
 {
@@ -923,6 +862,94 @@ void gpu_free_strokes(MiltonState* milton_state)
             gpu_free_strokes(l->strokes.data, (i64)l->strokes.count);
         }
 
+    }
+}
+
+enum ClipFlags
+{
+    ClipFlags_UPDATE      = 1<<0,
+    ClipFlags_DONT_UPDATE = 1<<1,
+};
+// Creates OpenGL objects for strokes that are in view but are not loaded on the GPU. Deletes
+// content for strokes that are far away.
+void gpu_clip_strokes_and_upload(Arena* arena,
+                                 RenderData* render_data,
+                                 CanvasView* view,
+                                 Layer* root_layer, Stroke* working_stroke,
+                                 i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_DONT_UPDATE)
+{
+    auto *render_elements = &render_data->render_elems;
+
+    RenderElement layer_element = {};
+    layer_element.flags |= RenderElementFlags_LAYER;
+
+    reset(render_elements);
+    for(Layer* l = root_layer;
+        l != NULL;
+        l = l->next)
+    {
+        if (!(l->flags & LayerFlags_VISIBLE))
+        {
+            // Skip invisible layers.
+            continue;
+        }
+        for (u64 i = 0; i <= l->strokes.count; ++i)
+        {
+            Stroke* s = NULL;
+
+            if (i == l->strokes.count && l->id == working_stroke->layer_id)
+            {
+                s = working_stroke;
+            }
+            else if (i < l->strokes.count)
+            {
+                s = &l->strokes.data[i];
+            }
+            if (s != NULL)
+            {
+                Rect bounds = s->bounding_rect;
+                bounds.top_left = canvas_to_raster(view, bounds.top_left);
+                bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
+
+                // Flip rectangle
+                // TODO: Store bounds as origin-at-bottom-left?
+                {
+                    i32 bot = bounds.bottom;
+                    // t' = H - b
+                    // b' = y+h = (H-b) + h = (H-b) + (b-t) = H-t
+                    bounds.bottom = render_data->height - bounds.top;
+                    bounds.top = render_data->height - bot;
+                }
+                b32 is_outside = bounds.left > (x+w) || bounds.right < x ||
+                                bounds.top > (y+h) || bounds.bottom < y;
+
+                i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
+
+                if (!is_outside && area!=0)
+                {
+                    if (s->render_element.vbo_stroke == 0)
+                    {
+                        gpu_cook_stroke(arena, render_data, s);
+                    }
+                    push(render_elements, s->render_element);
+                }
+                else if (is_outside && (flags & ClipFlags_UPDATE) && s->render_element.vbo_stroke != 0)
+                {
+                    // If it is far away, delete.
+                    i32 distance = abs(bounds.left - x + bounds.top - y);
+                    const i32 min_number_of_screens = 10;
+                    if ((bounds.top < y - min_number_of_screens*h)
+						|| (bounds.bottom > y+h + min_number_of_screens*h)
+                        || (bounds.left > x+w + min_number_of_screens*w)
+                        || (bounds.right < x - min_number_of_screens*w))
+                    {
+                        gpu_free_strokes(s, 1);
+                    }
+                }
+            }
+        }
+
+        push(render_elements, layer_element);
     }
 }
 
@@ -1232,8 +1259,8 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
 
     glViewport(0, 0, buf_w, buf_h);
     glScissor(0, 0, buf_w, buf_h);
-    gpu_clip_strokes(render_data, milton_state->view, milton_state->root_layer,
-                     &milton_state->working_stroke, 0, 0, buf_w, buf_h);
+    gpu_clip_strokes_and_upload(milton_state->root_arena, render_data, milton_state->view, milton_state->root_layer,
+                                &milton_state->working_stroke, 0, 0, buf_w, buf_h);
 
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
 
@@ -1295,8 +1322,9 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     gpu_set_canvas(render_data, view);
 
     // Re-render
-    gpu_clip_strokes(render_data, milton_state->view, milton_state->root_layer,
-                     &milton_state->working_stroke, 0, 0, render_data->width,
-                     render_data->height);
+    gpu_clip_strokes_and_upload(milton_state->root_arena,
+                                render_data, milton_state->view, milton_state->root_layer,
+                                &milton_state->working_stroke, 0, 0, render_data->width,
+                                render_data->height);
     gpu_render(render_data, 0, 0, render_data->width, render_data->height);
 }
