@@ -914,8 +914,7 @@ void gpu_free_strokes(Stroke* strokes, i64 count)
 
 void gpu_free_strokes(MiltonState* milton_state)
 {
-    if (milton_state->root_layer != NULL &&
-        milton_state->root_layer->strokes.data[0].render_element.vbo_stroke!=0)
+    if (milton_state->root_layer != NULL)
     {
         for(Layer* l = milton_state->root_layer;
             l != NULL;

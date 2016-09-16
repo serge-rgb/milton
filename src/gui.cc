@@ -896,7 +896,8 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
         {
             picker->flags = ColorPickerFlags_WHEEL_ACTIVE;
         }
-        else if (picker_hits_triangle(picker, fpoint)) {
+        else if (picker_hits_triangle(picker, fpoint))
+        {
             picker->flags = ColorPickerFlags_TRIANGLE_ACTIVE;
         }
     }
@@ -910,9 +911,9 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
     }
     if ((picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE))
     {
-        PickerData& d = picker->data; // Just shortening the identifier.
-        
-        // We don't want the chooser to "stick" if go outside the triangle
+        PickerData& d = picker->data;  // Just shortening the identifier.
+
+        // We don't want the chooser to "stick" if it goes outside the triangle
         // (i.e. picking black should be easy)
         f32 abp = orientation(d.a, d.b, fpoint);
         f32 bcp = orientation(d.b, d.c, fpoint);
@@ -920,44 +921,54 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
         int insideness = (abp < 0.0f) + (bcp < 0.0f) + (cap < 0.0f);
 
         // inside the triangle
-        if (insideness == 3) {
+        if (insideness == 3)
+        {
             float inv_area = 1.0f / orientation(d.a, d.b, d.c);
             d.hsv.v = 1.0f - (cap * inv_area);
-            d.hsv.s = abp * inv_area / d.hsv.v;
-        }
 
+            d.hsv.s = abp * inv_area / d.hsv.v;
+            d.hsv.s = abp  / (orientation(d.a, d.b, d.c) - cap);
+            d.hsv.s = 1 - (bcp * inv_area) / d.hsv.v;
+        }
         // near a corner
-        else if(insideness < 2){
-            if (abp < 0.0f) {
+        else if (insideness < 2)
+        {
+            if (abp < 0.0f)
+            {
                 d.hsv.s = 1.0f;
                 d.hsv.v = 1.0f;
             }
-            else if (bcp < 0.0f) {
+            else if (bcp < 0.0f)
+            {
                 d.hsv.s = 0.0f;
                 d.hsv.v = 1.0f;
             }
-            else {
+            else
+            {
                 d.hsv.s = 0.5f;
                 d.hsv.v = 0.0f;
             }
         }
-        
         // near an edge
-        else {
-#define GET_T(A, B, C)\
-    v2f perp = perpendicular2f(sub2f(fpoint, C));\
+        else
+        {
+#define GET_T(A, B, C)                            \
+    v2f perp = perpendicular2f(sub2f(fpoint, C)); \
     f32 t = DOT(sub2f(C, A), perp) / DOT(sub2f(B, A), perp);
-            if (abp >= 0.0f) {
+            if (abp >= 0.0f)
+            {
                 GET_T(d.b, d.a, d.c)
                 d.hsv.s = 0.0f;
                 d.hsv.v = t;
             }
-            else if (bcp >= 0.0f) {
+            else if (bcp >= 0.0f)
+            {
                 GET_T(d.b, d.c, d.a)
                 d.hsv.s = 1.0f;
                 d.hsv.v = t;
             }
-            else {
+            else
+            {
                 GET_T(d.a, d.c, d.b)
                 d.hsv.s = t;
                 d.hsv.v = 1.0f;

@@ -165,7 +165,6 @@ void main()
             vec3 pure_color = hsv_to_rgb(vec3(u_angle,1.0,1.0));
             color = vec4((1.0-(1.0-pure_color)*s)*v,1.0);
         }
-
     }
     else if (v_norm.y >= 1)  // Render buttons
     {
