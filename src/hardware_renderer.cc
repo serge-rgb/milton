@@ -947,7 +947,8 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
                            render_data->eraser_texture, 0);
 
-    // glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     GLCHK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE,
                                  render_data->layer_texture, 0));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -966,7 +967,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
         for (i64 i = 0; i < (i64)render_data->render_elems.count; i++) {
             RenderElement* re = &render_data->render_elems.data[i];
 
-            if (render_element_is_layer(re)) 
+            if (render_element_is_layer(re))
 			{
                 // Layer render element.
                 // The current framebuffer's color attachment is layer_texture.
