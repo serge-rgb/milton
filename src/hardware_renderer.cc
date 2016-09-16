@@ -966,7 +966,8 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
         for (i64 i = 0; i < (i64)render_data->render_elems.count; i++) {
             RenderElement* re = &render_data->render_elems.data[i];
 
-            if (render_element_is_layer(re)) {
+            if (render_element_is_layer(re)) 
+			{
                 // Layer render element.
                 // The current framebuffer's color attachment is layer_texture.
                 // Copy layer_texture's contents to the eraser_texture.
@@ -1252,6 +1253,8 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     }
 
     glEnable(GL_DEPTH_TEST);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, export_fbo);
 
     // Read onto buffer
     GLCHK( glReadPixels(0,0,
