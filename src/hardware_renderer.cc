@@ -879,7 +879,7 @@ enum ClipFlags
 };
 // Creates OpenGL objects for strokes that are in view but are not loaded on the GPU. Deletes
 // content for strokes that are far away.
-void gpu_clip_strokes_and_upload(Arena* arena,
+void gpu_clip_strokes_and_update(Arena* arena,
                                  RenderData* render_data,
                                  CanvasView* view,
                                  Layer* root_layer, Stroke* working_stroke,
@@ -1204,8 +1204,8 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK(glUseProgram(0));
 }
 
-void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
-                          i32 h)
+void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale,
+                          i32 x, i32 y, i32 w, i32 h)
 
 {
     CanvasView saved_view = *milton_state->view;
@@ -1274,7 +1274,7 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
 
     glViewport(0, 0, buf_w, buf_h);
     glScissor(0, 0, buf_w, buf_h);
-    gpu_clip_strokes_and_upload(milton_state->root_arena, render_data, milton_state->view, milton_state->root_layer,
+    gpu_clip_strokes_and_update(milton_state->root_arena, render_data, milton_state->view, milton_state->root_layer,
                                 &milton_state->working_stroke, 0, 0, buf_w, buf_h);
 
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
@@ -1337,7 +1337,7 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 
     gpu_set_canvas(render_data, view);
 
     // Re-render
-    gpu_clip_strokes_and_upload(milton_state->root_arena,
+    gpu_clip_strokes_and_update(milton_state->root_arena,
                                 render_data, milton_state->view, milton_state->root_layer,
                                 &milton_state->working_stroke, 0, 0, render_data->width,
                                 render_data->height);

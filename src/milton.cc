@@ -1579,7 +1579,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         int foo=1;
     }
 
-    gpu_clip_strokes_and_upload(milton_state->root_arena, milton_state->render_data, milton_state->view,
+    gpu_clip_strokes_and_update(milton_state->root_arena, milton_state->render_data, milton_state->view,
                                 milton_state->root_layer, &milton_state->working_stroke,
                                 view_x, view_y, view_width, view_height, clip_flags);
 
