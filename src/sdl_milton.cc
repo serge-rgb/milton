@@ -219,11 +219,11 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         milton_input.click = point;
 
                         platform_state->is_pointer_down = true;
-						if( event.button.button == SDL_BUTTON_MIDDLE
-						 || event.button.button == SDL_BUTTON_RIGHT)
-						{
-							platform_state->is_panning = true;
-						}
+                        if (event.button.button == SDL_BUTTON_MIDDLE ||
+                            event.button.button == SDL_BUTTON_RIGHT)
+                        {
+                            platform_state->is_panning = true;
+                        }
                         if (platform_state->is_panning)
                         {
                             platform_state->pan_start = { event.button.x, event.button.y };
@@ -245,19 +245,19 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             } break;
         case SDL_MOUSEBUTTONUP:
             {
-                if ( event.button.windowID != platform_state->window_id )
+                if (event.button.windowID != platform_state->window_id)
                 {
                     break;
                 }
-                if ( event.button.button == SDL_BUTTON_LEFT || event.button.button == SDL_BUTTON_MIDDLE || event.button.button == SDL_BUTTON_RIGHT )
+                if (event.button.button == SDL_BUTTON_LEFT || event.button.button == SDL_BUTTON_MIDDLE || event.button.button == SDL_BUTTON_RIGHT)
                 {
                     pointer_up = true;
                     input_flags |= MiltonInputFlags_CLICKUP;
-					if ( event.button.button == SDL_BUTTON_MIDDLE 
-					 || event.button.button == SDL_BUTTON_RIGHT)
-					{
-						platform_state->is_panning = false;
-					}
+                    if (event.button.button == SDL_BUTTON_MIDDLE ||
+                        event.button.button == SDL_BUTTON_RIGHT)
+                    {
+                        platform_state->is_panning = false;
+                    }
                 }
             } break;
         case SDL_MOUSEMOTION:

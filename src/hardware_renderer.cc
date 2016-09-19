@@ -63,6 +63,10 @@ struct RenderData
 
     // See MAX_DEPTH_VALUE
     i32 stroke_z;
+
+    // Cached values for stroke rendering uniforms .
+    v4f current_color;
+    float current_radius;
 };
 
 enum RenderDataFlags
@@ -299,6 +303,9 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         render_data->viewport_limits[0] = viewport_dims[0];
         render_data->viewport_limits[1] = viewport_dims[1];
     }
+
+    render_data->current_color = {-1,-1,-1,-1};
+    render_data->current_radius = -1;
 
     glEnable(GL_SCISSOR_TEST);
     glActiveTexture(GL_TEXTURE0);
@@ -1029,11 +1036,19 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                 glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                 i64 count = re->count;
 
-                if (count > 0) {
-                    // TODO. Only set these uniforms when both are different from the ones in use.
-                    gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1,
-                                        re->color.d);
-                    gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
+                if (count > 0)
+                {
+                    if (equ4f(render_data->current_color, re->color) == false)
+                    {
+                        gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1,
+                                            re->color.d);
+                        render_data->current_color = re->color;
+                    }
+                    if (render_data->current_radius != re->radius)
+                    {
+                        gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
+                        render_data->current_radius = re->radius;
+                    }
 
                     if (loc_a >= 0) {
                         GLCHK(glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa));
