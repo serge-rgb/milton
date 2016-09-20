@@ -64,7 +64,7 @@ struct RenderData
     // See MAX_DEPTH_VALUE
     i32 stroke_z;
 
-    // Cached values for stroke rendering uniforms .
+    // Cached values for stroke rendering uniforms.
     v4f current_color;
     float current_radius;
 };
@@ -751,14 +751,14 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 indices[indices_i++] = (u16)(idx + 3);
 
                 // Pressures are in (0,1] but we need to encode them as integers.
-                i32 pressure_a = (i32)(stroke->pressures[i] * (float)(PRESSURE_RESOLUTION));
-                i32 pressure_b = (i32)(stroke->pressures[i+1] * (float)(PRESSURE_RESOLUTION));
+                float pressure_a = stroke->pressures[i];
+                float pressure_b = stroke->pressures[i+1];
 
                 // Add attributes for each new vertex.
                 for (int repeat = 0; repeat < 4; ++repeat)
                 {
-                    apoints[apoints_i++] = { (float)point_i.x, (float)point_i.y, (float)pressure_a };
-                    bpoints[bpoints_i++] = { (float)point_j.x, (float)point_j.y, (float)pressure_b };
+                    apoints[apoints_i++] = { (float)point_i.x, (float)point_i.y, pressure_a };
+                    bpoints[bpoints_i++] = { (float)point_j.x, (float)point_j.y, pressure_b };
                 }
             }
 
@@ -822,7 +822,6 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             re.vbo_pointa = vbo_pointa;
             re.vbo_pointb = vbo_pointb;
             re.indices = indices_buffer;
-            /* re.count = (i64)(bounds_i); */
             re.count = (i64)(indices_i);
             re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
             re.radius = stroke->brush.radius;
@@ -946,7 +945,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
                     i32 distance = abs(bounds.left - x + bounds.top - y);
                     const i32 min_number_of_screens = 10;
                     if ((bounds.top < y - min_number_of_screens*h)
-						|| (bounds.bottom > y+h + min_number_of_screens*h)
+                        || (bounds.bottom > y+h + min_number_of_screens*h)
                         || (bounds.left > x+w + min_number_of_screens*w)
                         || (bounds.right < x - min_number_of_screens*w))
                     {
@@ -987,6 +986,8 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glDepthFunc(GL_NOTEQUAL);
 
     gl_set_uniform_i(render_data->picker_program, "u_canvas", 0);
@@ -1001,7 +1002,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
             RenderElement* re = &render_data->render_elems.data[i];
 
             if (render_element_is_layer(re))
-			{
+            {
                 // Layer render element.
                 // The current framebuffer's color attachment is layer_texture.
                 // Copy layer_texture's contents to the eraser_texture.
@@ -1032,8 +1033,6 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                 glEnable(GL_DEPTH_TEST);
 
             } else {
-                glEnable(GL_BLEND);
-                glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                 i64 count = re->count;
 
                 if (count > 0)
@@ -1050,14 +1049,16 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                         render_data->current_radius = re->radius;
                     }
 
-                    if (loc_a >= 0) {
+                    if (loc_a >= 0)
+                    {
                         GLCHK(glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa));
                         GLCHK(glEnableVertexAttribArray((GLuint)loc_a));
                         GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc_a,
                                                     /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
                                                     /*stride*/ 0, /*ptr*/ 0));
                     }
-                    if (loc_b >= 0) {
+                    if (loc_b >= 0)
+                    {
                         GLCHK(glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointb));
                         GLCHK(glEnableVertexAttribArray((GLuint)loc_b));
                         GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc_b,
@@ -1073,13 +1074,10 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
 
                     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
-
-                    glDisable(GL_BLEND);  // TODO: everyone is using blend?
                 }
             }
         }
     }
-    glDisable(GL_DEPTH_TEST);
     glViewport(0, 0, render_data->width, render_data->height);
     GLCHK(glScissor(0, 0, render_data->width, render_data->height));
 }
@@ -1089,12 +1087,8 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glClearDepth(0.0f);
     glViewport(0, 0, render_data->width, render_data->height);
     glScissor(0, 0, render_data->width, render_data->height);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(0,0.4,0,1);
-    glClear(GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_BLEND);
 
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     print_framebuffer_status();
 
     gpu_render_canvas(render_data, view_x, view_y, view_width, view_height);
@@ -1117,13 +1111,10 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
-    glEnable(GL_DEPTH_TEST);
 
     // Render Gui
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    glEnable(GL_BLEND);
 
     // TODO: Only render if view rect intersects picker rect
     if (render_data->flags & RenderDataFlags_GUI_VISIBLE)
@@ -1182,7 +1173,6 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     glDisable(GL_BLEND);
     if (render_data->flags & RenderDataFlags_EXPORTING)
     {
-        glDisable(GL_DEPTH_TEST);
         // Update data if rect is not degenerate.
         // Draw outline.
         glUseProgram(render_data->exporter_program);
@@ -1198,7 +1188,6 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
         }
-        glEnable(GL_DEPTH_TEST);
     }
 
     GLCHK(glUseProgram(0));

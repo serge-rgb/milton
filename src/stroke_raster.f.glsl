@@ -9,9 +9,6 @@ varying vec3 v_pointb;
 
 uniform sampler2DMS u_canvas;
 
-// Same value as PRESSURE_RESOLUTION defined in hardware_renderer.cc
-#define PRESSURE_RESOLUTION_GL 1048576	//(1<<20)
-
 // x,y  - closest point
 // z    - t in [0,1] interpolation value
 vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
@@ -52,8 +49,8 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
 #if 1
     float dist_a = distance(point, a.xy);
     float dist_b = distance(point, b.xy);
-    float radius_a = float(a.z*u_radius)/PRESSURE_RESOLUTION_GL;
-    float radius_b = float(b.z*u_radius)/PRESSURE_RESOLUTION_GL;
+    float radius_a = float(a.z*u_radius);
+    float radius_b = float(b.z*u_radius);
     if (dist_a < radius_a || dist_b < radius_b)
     {
         value = 1;
@@ -72,7 +69,6 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
             float pressure_a = a.z;
             float pressure_b = b.z;
             float pressure = (1-t)*pressure_a + t*pressure_b;
-            pressure /= float(PRESSURE_RESOLUTION_GL);
             float radius = pressure * u_radius;
             bool inside = d < radius;
             if (inside)
