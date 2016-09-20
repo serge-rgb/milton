@@ -63,12 +63,10 @@ To-Do
         - Brush
             - Support for general, implicitly defined brushes
     - Feature Requests:
-        - middle mouse to pan
         - eraser toggle
         - pressure toggle
         - pressure response graph
         - unzoomable&unpannable layer ("pin layer" feature) ?
-        - Perfect AA for exporting
 
 - Polish and/or Debug layer
     - Memory allocation profiler.

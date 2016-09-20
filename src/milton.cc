@@ -1390,13 +1390,13 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
 
                 // Invalidate working stroke render element
-                milton_state->working_stroke.render_element.count = 0;
 
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
                 push(&milton_state->history, h);
                 // Clear working_stroke
                 {
                     milton_state->working_stroke.num_points = 0;
+                    milton_state->working_stroke.render_element.count = 0;
                 }
 
                 clear_stroke_redo(milton_state);
@@ -1408,9 +1408,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     else if (is_user_drawing(milton_state))
     {
         milton_state->working_stroke.bounding_rect = bounding_box_for_stroke(&milton_state->working_stroke);
-        // Update working stroke
-        gpu_cook_stroke(milton_state->root_arena, milton_state->render_data,
-                        &milton_state->working_stroke, CookStroke_UPDATE_WORKING_STROKE);
     }
 
     // Disable hover if panning.
@@ -1475,13 +1472,13 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
     if (should_save)
     {
-
-        // If quitting, always be serial. Otherwise, be async.
         if (!(milton_state->flags & MiltonStateFlags_RUNNING))
         {
             // We want to block so that the main thread doesn't die before the async function finishes.
             milton_save(milton_state);
-        } else {
+        }
+        else
+        {
 #if MILTON_SAVE_ASYNC
             SDL_CreateThread(milton_save_async, "Async Save Thread", (void*)milton_state);
 #else
@@ -1573,10 +1570,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
         view_width = bounds.right - bounds.left;
         view_height = bounds.bottom - bounds.top;
-    }
-
-    if (view_width == 0 || view_height == 0) {
-        int foo=1;
     }
 
     gpu_clip_strokes_and_update(milton_state->root_arena, milton_state->render_data, milton_state->view,

@@ -638,8 +638,8 @@ enum CookStrokeOpt
 };
 void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrokeOpt cook_option = CookStroke_NEW)
 {
-    render_data->stroke_z = (render_data->stroke_z + 1) % MAX_DEPTH_VALUE;
-    const i32 stroke_z = render_data->stroke_z;
+    render_data->stroke_z = (render_data->stroke_z + 1) % (MAX_DEPTH_VALUE-1);
+    const i32 stroke_z = render_data->stroke_z + 1;
 
     if (cook_option == CookStroke_NEW && stroke->render_element.vbo_stroke != 0)
     {
@@ -899,18 +899,10 @@ void gpu_clip_strokes_and_update(Arena* arena,
             // Skip invisible layers.
             continue;
         }
-        for (u64 i = 0; i <= l->strokes.count; ++i)
+        for (u64 i = 0; i < l->strokes.count; ++i)
         {
-            Stroke* s = NULL;
+            Stroke* s = &l->strokes.data[i];
 
-            if (i == l->strokes.count && l->id == working_stroke->layer_id)
-            {
-                s = working_stroke;
-            }
-            else if (i < l->strokes.count)
-            {
-                s = &l->strokes.data[i];
-            }
             if (s != NULL)
             {
                 Rect bounds = s->bounding_rect;
@@ -927,7 +919,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
                     bounds.top = render_data->height - bot;
                 }
                 b32 is_outside = bounds.left > (x+w) || bounds.right < x ||
-                                bounds.top > (y+h) || bounds.bottom < y;
+                        bounds.top > (y+h) || bounds.bottom < y;
 
                 i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
 
@@ -939,19 +931,31 @@ void gpu_clip_strokes_and_update(Arena* arena,
                     }
                     push(render_elements, s->render_element);
                 }
+#if 0
                 else if (is_outside && (flags & ClipFlags_UPDATE) && s->render_element.vbo_stroke != 0)
                 {
                     // If it is far away, delete.
                     i32 distance = abs(bounds.left - x + bounds.top - y);
                     const i32 min_number_of_screens = 10;
-                    if ((bounds.top < y - min_number_of_screens*h)
-                        || (bounds.bottom > y+h + min_number_of_screens*h)
-                        || (bounds.left > x+w + min_number_of_screens*w)
-                        || (bounds.right < x - min_number_of_screens*w))
+                    if ((bounds.top     < y - min_number_of_screens*h) ||
+                        (bounds.bottom  > y+h + min_number_of_screens*h) ||
+                        (bounds.left    > x+w + min_number_of_screens*w) ||
+                        (bounds.right   < x - min_number_of_screens*w))
                     {
                         gpu_free_strokes(s, 1);
                     }
                 }
+#endif
+            }
+        }
+
+        // Add the working stroke on the current layer.
+        if (working_stroke->layer_id == l->id)
+        {
+            if (working_stroke->num_points > 0)
+            {
+                gpu_cook_stroke(arena, render_data, working_stroke, CookStroke_UPDATE_WORKING_STROKE);
+                push(render_elements, working_stroke->render_element);
             }
         }
 
@@ -997,8 +1001,10 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
     GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
     GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
-    if (loc >= 0) {
-        for (i64 i = 0; i < (i64)render_data->render_elems.count; i++) {
+    if (loc >= 0)
+    {
+        for (i64 i = 0; i < (i64)render_data->render_elems.count; i++)
+        {
             RenderElement* re = &render_data->render_elems.data[i];
 
             if (render_element_is_layer(re))
@@ -1015,9 +1021,9 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
 
                 glUseProgram(render_data->texture_fill_program);
                 {
-                    GLint t_loc =
-                        glGetAttribLocation(render_data->texture_fill_program, "a_position");
-                    if (t_loc >= 0) {
+                    GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
+                    if (t_loc >= 0)
+                    {
                         glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
                         glEnableVertexAttribArray((GLuint)t_loc);
                         GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
@@ -1030,9 +1036,11 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                        GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture, 0);
                 glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture);
+                glUseProgram(render_data->stroke_program);
                 glEnable(GL_DEPTH_TEST);
-
-            } else {
+            }
+            else
+            {
                 i64 count = re->count;
 
                 if (count > 0)

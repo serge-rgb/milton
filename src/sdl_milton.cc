@@ -343,7 +343,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         milton_state->hover_flash_ms = (i32)SDL_GetTicks();
                         milton_state->flags |= MiltonStateFlags_BRUSH_HOVER_FLASHING;
                     }
-                    if ( platform_state->is_ctrl_down )
+                    if (platform_state->is_ctrl_down)
                     {
                         if (keycode == SDLK_EQUALS)
                         {
@@ -363,6 +363,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                             {
                                 input_flags |= MiltonInputFlags_UNDO;
                             }
+                        }
+                        else if (keycode != SDLK_LCTRL)
+                        {
+                            int foo = 1;
                         }
                     }
 
@@ -432,7 +436,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         {
                             milton_set_pen_alpha(milton_state, 0.3f);
                         }
-                        else if ( keycode == SDLK_4 )
+                        else if (keycode == SDLK_4)
                         {
                             milton_set_pen_alpha(milton_state, 0.4f);
                         }
@@ -1082,7 +1086,7 @@ int milton_main()
         milton_imgui_tick(&milton_input, &platform_state, milton_state);
 
         // Clear pan delta if we are zooming
-        if ( milton_input.scale != 0 )
+        if (milton_input.scale != 0)
         {
             milton_input.pan_delta = {};
             input_flags |= MiltonInputFlags_FAST_DRAW;
