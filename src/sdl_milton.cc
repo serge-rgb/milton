@@ -594,10 +594,12 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 int milton_main()
 {
     // TODO: windows scaling support
-#if 0
+#if 1
 #if defined(_WIN32)
-    // TODO: Try to load DLL instead of linking directly
-    SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
+    if (!SetProcessDPIAware())  // This function is only present in Windows versions higher than Vista.
+    {
+        milton_log("Could not set this process as DPI aware.\n");
+    }
 #endif
 #endif
     // Note: Possible crash regarding SDL_main entry point.

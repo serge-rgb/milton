@@ -166,6 +166,7 @@
 #include <X11/extensions/XInput.h>
 #endif // __linux__
 
+
 typedef enum
 {
     EASYTAB_OK = 0,
@@ -849,6 +850,20 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
 
         DWORD CoordRangeX = GetSystemMetrics(SM_CXSCREEN);
         DWORD CoordRangeY = GetSystemMetrics(SM_CYSCREEN);
+
+        // Adjust for DPI scaling.
+        float scale = 1.0f;
+
+        HDC dc = GetDC(NULL);
+        DWORD dpi = GetDeviceCaps(dc, LOGPIXELSX);
+        ReleaseDC(NULL, dc);
+
+        if (dpi > 96)
+        {
+            scale = dpi / 96.0f;
+            CoordRangeX *= scale;
+            CoordRangeY *= scale;
+        }
 
         LogContext.lcOutOrgX = 0;
         LogContext.lcOutOrgY = 0;
