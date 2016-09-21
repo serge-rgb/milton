@@ -207,7 +207,6 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
             }
         }
 
-
         // Cleared to be appended.
         if (passed_inspection && ws->num_points < STROKE_MAX_POINTS-1)
         {
@@ -1327,6 +1326,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                              milton_state->view->screen_size.h,
                              point);
             render_flags |= MiltonRenderFlags_UI_UPDATED;
+            gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
         }
         if(input->flags & MiltonInputFlags_CLICKUP)
         {

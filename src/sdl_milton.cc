@@ -125,7 +125,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 #pragma warning (push)
 #pragma warning (disable : 4061)
 #endif
-        switch ( event.type )
+        switch (event.type)
         {
         case SDL_QUIT:
             cursor_show();
@@ -206,11 +206,13 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             } break;
         case SDL_MOUSEBUTTONDOWN:
             {
-                if ( event.button.windowID != platform_state->window_id )
+                if (event.button.windowID != platform_state->window_id)
                 {
                     break;
                 }
-                if ( event.button.button == SDL_BUTTON_LEFT || event.button.button == SDL_BUTTON_MIDDLE || event.button.button == SDL_BUTTON_RIGHT)
+                if (event.button.button == SDL_BUTTON_LEFT ||
+                    event.button.button == SDL_BUTTON_MIDDLE ||
+                    event.button.button == SDL_BUTTON_RIGHT)
                 {
                     if ( !ImGui::GetIO().WantCaptureMouse )
                     {
@@ -249,7 +251,9 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 {
                     break;
                 }
-                if (event.button.button == SDL_BUTTON_LEFT || event.button.button == SDL_BUTTON_MIDDLE || event.button.button == SDL_BUTTON_RIGHT)
+                if (event.button.button == SDL_BUTTON_LEFT ||
+                    event.button.button == SDL_BUTTON_MIDDLE ||
+                    event.button.button == SDL_BUTTON_RIGHT)
                 {
                     pointer_up = true;
                     input_flags |= MiltonInputFlags_CLICKUP;

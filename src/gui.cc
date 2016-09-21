@@ -841,7 +841,8 @@ static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
 
 static b32 picker_is_active(ColorPicker* picker)
 {
-    b32 is_active = (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) || (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE);
+    b32 is_active = (picker->flags & ColorPickerFlags_WHEEL_ACTIVE) ||
+            (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE);
 
     return is_active;
 }
@@ -1129,16 +1130,14 @@ int gui_process_input(MiltonState* milton_state, MiltonInput* input)
     int render_flags = MiltonRenderFlags_NONE;
     v2i point = input->points[0];
     ColorPickResult pick_result = picker_update(&milton_state->gui->picker, point);
-    if ( pick_result == ColorPickResult_CHANGE_COLOR &&
-         milton_state->current_mode == MiltonMode_PEN )
+    if (pick_result == ColorPickResult_CHANGE_COLOR &&
+        milton_state->current_mode == MiltonMode_PEN)
     {
         /* v3f rgb = hsv_to_rgb(milton_state->gui->picker.data.hsv); */
         /* milton_state->brushes[BrushEnum_PEN].color = to_premultiplied(rgb, milton_state->brushes[BrushEnum_PEN].alpha); */
+        render_flags |= MiltonRenderFlags_UI_UPDATED;
+        milton_state->gui->active = true;
     }
-
-    render_flags |= MiltonRenderFlags_UI_UPDATED;
-    milton_state->gui->active = true;
-
 
     return render_flags;
 }
@@ -1254,7 +1253,6 @@ b32 gui_mark_color_used(MiltonGui* gui)
             button_color = tmp_color;
             button = button->next;
         }
-
     }
 
     return changed;
