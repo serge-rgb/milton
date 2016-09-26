@@ -88,6 +88,42 @@ static void cursor_set_and_show(SDL_Cursor* cursor)
     }
 }
 
+LayoutType get_current_keyboard_layout()
+{
+    LayoutType layout = LayoutType_QWERTY;  // Default to QWERTY bindings.
+
+    char keys[] =
+    {
+        (char)SDL_GetKeyFromScancode(SDL_SCANCODE_Q),
+        (char)SDL_GetKeyFromScancode(SDL_SCANCODE_R),
+        (char)SDL_GetKeyFromScancode(SDL_SCANCODE_Y),
+        '\0',
+    };
+
+    if (strcmp(keys, "qry") == 0)
+    {
+        layout = LayoutType_QWERTY;
+    }
+    else if (strcmp(keys, "ary") == 0)
+    {
+        layout = LayoutType_AZERTY;
+    }
+    else if (strcmp(keys, "qrz") == 0)
+    {
+        layout = LayoutType_QWERTZ;
+    }
+    else if (strcmp(keys, "q,f"))
+    {
+        layout = LayoutType_DVORAK;
+    }
+    else if (strcmp(keys, "qwj") == 0)
+    {
+        layout = LayoutType_COLEMAK;
+    }
+
+    return layout;
+}
+
 MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 {
     MiltonInput milton_input = {};
@@ -99,6 +135,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
     platform_state->num_pressure_results = 0;
     platform_state->num_point_results = 0;
     platform_state->stopped_panning = false;
+    platform_state->keyboard_layout = get_current_keyboard_layout();
 
     i32 input_flags = (i32)MiltonInputFlags_NONE;
 
@@ -189,7 +226,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     {
                         platform_state->is_pointer_down = true;
                     }
-                    if (EasyTab->NumPackets>0)
+                    if (EasyTab->NumPackets > 0)
                     {
                         v2i point = { EasyTab->PosX[EasyTab->NumPackets-1], EasyTab->PosY[EasyTab->NumPackets-1] };
                         milton_input.hover_point = point;
@@ -214,7 +251,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     event.button.button == SDL_BUTTON_MIDDLE ||
                     event.button.button == SDL_BUTTON_RIGHT)
                 {
-                    if ( !ImGui::GetIO().WantCaptureMouse )
+                    if (!ImGui::GetIO().WantCaptureMouse)
                     {
                         v2i point = { event.button.x, event.button.y };
                         input_flags |= MiltonInputFlags_CLICK;
@@ -349,11 +386,15 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     }
                     if (platform_state->is_ctrl_down)
                     {
-                        if (keycode == SDLK_EQUALS)
+                        if ((platform_state->keyboard_layout == LayoutType_QWERTZ && (keycode == SDLK_ASTERISK)) ||
+                            (platform_state->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_EQUALS)) ||
+                            (platform_state->keyboard_layout == LayoutType_QWERTY && (keycode == SDLK_EQUALS)) ||
+                            keycode == SDLK_PLUS)
                         {
                             milton_input.scale++;
                         }
-                        if (keycode == SDLK_MINUS)
+                        if ((platform_state->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_6)) ||
+                            keycode == SDLK_MINUS)
                         {
                             milton_input.scale--;
                         }
@@ -630,6 +671,8 @@ int milton_main()
         platform_state.width = prefs.width;
         platform_state.height = prefs.height;
     }
+
+    platform_state.keyboard_layout = get_current_keyboard_layout();
 
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     //SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);

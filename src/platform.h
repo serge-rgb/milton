@@ -47,6 +47,15 @@ HRESULT WINAPI SetProcessDpiAwareness(
 // TODO: Are we using this?
 #endif
 
+enum LayoutType
+{
+    LayoutType_QWERTY,
+    LayoutType_AZERTY,
+    LayoutType_QWERTZ,
+    LayoutType_DVORAK,
+    LayoutType_COLEMAK,
+};
+
 struct SDL_Cursor;
 struct PlatformState
 {
@@ -80,6 +89,9 @@ struct PlatformState
     SDL_Cursor* cursor_crosshair;
     SDL_Cursor* cursor_sizeall;
     SDL_Cursor* cursor_brush;  // Custom cursor.
+
+    // Current keyboard layout.
+    LayoutType keyboard_layout;
 
     // Windows hardware cursor
 #if defined(_WIN32)
