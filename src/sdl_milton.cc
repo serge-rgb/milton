@@ -247,7 +247,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     if (EasyTab->NumPackets > 0)
                     {
                         v2i point = { EasyTab->PosX[EasyTab->NumPackets-1], EasyTab->PosY[EasyTab->NumPackets-1] };
-                        milton_input.hover_point = point;
                         input_flags |= MiltonInputFlags_HOVERING;
 
                         platform_state->pointer = point;
@@ -343,7 +342,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     else
                     {
                         input_flags |= MiltonInputFlags_HOVERING;
-                        milton_input.hover_point = input_point;
                     }
                 }
                 break;
@@ -601,7 +599,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 milton_input.points[platform_state->num_point_results++] = input_point;
             }
             // Start drawing hover as soon as we stop the stroke.
-            milton_input.hover_point = input_point;
             input_flags |= MiltonInputFlags_HOVERING;
         }
         platform_state->is_pointer_down = false;
@@ -999,6 +996,12 @@ int milton_main()
 
         panning_update(&platform_state);
 
+        if (!platform_state.is_panning)
+        {
+            milton_input.flags |= MiltonInputFlags_HOVERING;
+            milton_input.hover_point = platform_state.pointer;
+        }
+
         static b32 first_run = true;
         if (first_run)
         {
@@ -1006,17 +1009,6 @@ int milton_main()
             milton_input.flags = MiltonInputFlags_FULL_REFRESH;
             milton_state->gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
         }
-
-#if 0
-#if defined(_WIN32)
-        // If the Wacom DLL was loaded but there is no context, try to reload.
-        if (EasyTab->Dll && !EasyTab->Context)
-        {
-            milton_log("Trying to re-load Wacom \n");
-            EasyTab_Load(platform_state.hwnd);
-        }
-#endif
-#endif
 
         {
             int x = 0;
@@ -1165,7 +1157,6 @@ int milton_main()
             platform_state.should_quit = true;
         }
         PROFILE_GRAPH_BEGIN(GL);
-        //milton_gl_backend_draw(milton_state);
         ImGui::Render();
         PROFILE_GRAPH_PUSH(GL);
         PROFILE_GRAPH_BEGIN(system);
