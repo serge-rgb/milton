@@ -11,7 +11,7 @@ attribute vec3 a_pointb;
 varying vec3 v_pointa;
 varying vec3 v_pointb;
 
-#define MAX_DEPTH_VALUE (16777216.0)    // (1<<24)
+#define MAX_DEPTH_VALUE 1048576.0
 
 
 void main()

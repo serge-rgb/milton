@@ -6,12 +6,6 @@
 #include <imgui.h>
 #include <imgui_impl_sdl_gl3.h>
 
-enum PanningFSM
-{
-    PanningFSM_NOTHING,
-    PanningFSM_MOUSE_PANNING,
-};
-
 static b32 g_cursor_count = 0;
 
 void cursor_hide()
@@ -53,28 +47,6 @@ void cursor_show()
         SDL_ShowCursor(1);
     }
 #endif
-}
-
-static void turn_panning_on(PlatformState* p)
-{
-    p->is_space_down = true;
-    p->is_panning = true;
-}
-
-static void turn_panning_off(PlatformState* p)
-{
-    if (p->is_panning)
-    {
-        if (p->is_pointer_down)
-        {
-            p->panning_fsm = PanningFSM_MOUSE_PANNING;
-        }
-        else
-        {
-            p->is_panning = false;
-            p->stopped_panning = true;
-        }
-    }
 }
 
 SDL_Cursor* g_curr_cursor = NULL;
@@ -124,6 +96,53 @@ LayoutType get_current_keyboard_layout()
     return layout;
 }
 
+void panning_update(PlatformState* platform_state)
+{
+    auto reset_pan_start = [platform_state]()
+    {
+        platform_state->pan_start = platform_state->pointer;
+        platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
+    };
+
+    if (platform_state->waiting_for_pan_input)
+    {
+        if (platform_state->is_pointer_down || platform_state->is_middle_button_down)
+        {
+            platform_state->waiting_for_pan_input = false;
+            reset_pan_start();
+        }
+        // Space cancels waiting
+        if (platform_state->is_space_down)
+        {
+            platform_state->waiting_for_pan_input = false;
+        }
+    }
+    else
+    {
+        if (platform_state->is_panning)
+        {
+            if ((!platform_state->is_pointer_down && !platform_state->is_space_down) ||
+                !platform_state->is_pointer_down)
+            {
+                platform_state->is_panning = false;
+            }
+            else
+            {
+                platform_state->pan_point = platform_state->pointer;
+            }
+        }
+        else
+        {
+            if ((platform_state->is_space_down && platform_state->is_pointer_down) ||
+                platform_state->is_middle_button_down)
+            {
+                platform_state->is_panning = true;
+                reset_pan_start();
+            }
+        }
+    }
+}
+
 MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 {
     MiltonInput milton_input = {};
@@ -134,7 +153,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
     platform_state->num_pressure_results = 0;
     platform_state->num_point_results = 0;
-    platform_state->stopped_panning = false;
     platform_state->keyboard_layout = get_current_keyboard_layout();
 
     i32 input_flags = (i32)MiltonInputFlags_NONE;
@@ -232,10 +250,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         milton_input.hover_point = point;
                         input_flags |= MiltonInputFlags_HOVERING;
 
-                        if (platform_state->is_panning && platform_state->is_pointer_down)
-                        {
-                            platform_state->pan_point = point;
-                        }
+                        platform_state->pointer = point;
                     }
                     // Wasn't drawing, and now we got a result with pressure>0
                     b32 pen_touched_tab = !was_pen_down && EasyTab->PenInProximity && (platform_state->num_pressure_results>0);
@@ -258,17 +273,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         milton_input.click = point;
 
                         platform_state->is_pointer_down = true;
-                        if (event.button.button == SDL_BUTTON_MIDDLE ||
-                            event.button.button == SDL_BUTTON_RIGHT)
-                        {
-                            platform_state->is_panning = true;
-                        }
-                        if (platform_state->is_panning)
-                        {
-                            platform_state->pan_start = { event.button.x, event.button.y };
-                            platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
-                        }
-                        else if (point.x >= 0 && point.y >= 0)
+                        platform_state->pointer = point;
+                        platform_state->is_middle_button_down = (event.button.button == SDL_BUTTON_MIDDLE);
+
+                        if (platform_state->is_panning && point.x >= 0 && point.y >= 0)
                         {
                             if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
                             {
@@ -294,11 +302,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 {
                     pointer_up = true;
                     input_flags |= MiltonInputFlags_CLICKUP;
-                    if (event.button.button == SDL_BUTTON_MIDDLE ||
-                        event.button.button == SDL_BUTTON_RIGHT)
-                    {
-                        platform_state->is_panning = false;
-                    }
                 }
             } break;
         case SDL_MOUSEMOTION:
@@ -309,6 +312,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 }
                 input_point = { event.motion.x, event.motion.y };
 
+                platform_state->pointer = input_point;
 
                 // Check if it is empty. In case the wacom driver craps out, or
                 // anything goes wrong (like the event queue overflowing ;))
@@ -333,10 +337,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                                     milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
                                 }
                             }
-                        }
-                        else if (platform_state->is_panning)
-                        {
-                            platform_state->pan_point = input_point;
                         }
                         input_flags &= ~MiltonInputFlags_HOVERING;
                     }
@@ -409,10 +409,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                                 input_flags |= MiltonInputFlags_UNDO;
                             }
                         }
-                        else if (keycode != SDLK_LCTRL)
-                        {
-                            int foo = 1;
-                        }
                     }
 
                 }
@@ -422,12 +418,11 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 }
 
                 // Stop stroking when any key is hit
-                platform_state->is_pointer_down = false;
                 input_flags |= MiltonInputFlags_END_STROKE;
 
                 if (keycode == SDLK_SPACE)
                 {
-                    turn_panning_on(platform_state);
+                    platform_state->is_space_down = true;
                     // Stahp
                 }
                 if (platform_state->is_ctrl_down)
@@ -539,7 +534,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
                 if (keycode == SDLK_SPACE)
                 {
-                    turn_panning_off(platform_state);
                     platform_state->is_space_down = false;
                 }
             } break;
@@ -569,11 +563,6 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     {
                         break;
                     }
-                    if ( platform_state->is_pointer_down )
-                    {
-                        // Not enough info..
-                        pointer_up = true;
-                    }
                     cursor_show();
                     break;
                     // --- A couple of events we might want to catch later...
@@ -599,10 +588,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
         }
     }  // ---- End of SDL event loop
 
-    if ( pointer_up )
+    if (pointer_up)
     {
         // Add final point
-        if ( !platform_state->is_panning && platform_state->is_pointer_down )
+        if (!platform_state->is_panning && platform_state->is_pointer_down)
         {
             input_flags |= MiltonInputFlags_END_STROKE;
             input_point = { event.button.x, event.button.y };
@@ -615,21 +604,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             milton_input.hover_point = input_point;
             input_flags |= MiltonInputFlags_HOVERING;
         }
-        else if ( platform_state->is_panning && !platform_state->panning_locked )
-        {
-            if (!platform_state->is_space_down)
-            {
-                platform_state->is_panning = false;
-                platform_state->stopped_panning = true;
-            }
-        }
         platform_state->is_pointer_down = false;
 
-        platform_state->num_point_results = 0;
-    }
-
-    if (platform_state->panning_fsm == PanningFSM_MOUSE_PANNING)
-    {
         platform_state->num_point_results = 0;
     }
 
@@ -1021,18 +997,14 @@ int milton_main()
 
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
 
+        panning_update(&platform_state);
+
         static b32 first_run = true;
         if (first_run)
         {
             first_run = false;
             milton_input.flags = MiltonInputFlags_FULL_REFRESH;
             milton_state->gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
-        }
-
-        if ( platform_state.stopped_panning )
-        {
-            milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
-            platform_state.panning_fsm = PanningFSM_NOTHING;
         }
 
 #if 0
@@ -1055,11 +1027,6 @@ int milton_main()
             if (platform_state.is_panning)
             {
                 cursor_set_and_show(platform_state.cursor_sizeall);
-            }
-            else if (platform_state.stopped_panning)
-            {
-                milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
-                cursor_set_and_show(platform_state.cursor_default);
             }
             else if (milton_state->current_mode == MiltonMode_EXPORTING)
             {
@@ -1138,13 +1105,10 @@ int milton_main()
             milton_input.pan_delta = {};
             input_flags |= MiltonInputFlags_FAST_DRAW;
         }
-        else
+        else if (platform_state.is_panning)
         {
-            if (platform_state.is_panning)
-            {
-                input_flags |= MiltonInputFlags_PANNING;
-                platform_state.num_point_results = 0;
-            }
+            input_flags |= MiltonInputFlags_PANNING;
+            platform_state.num_point_results = 0;
         }
 
 #if 0
@@ -1163,30 +1127,36 @@ int milton_main()
 
         milton_input.input_count = platform_state.num_point_results;
 
-        v2i pan_delta = sub2i(platform_state.pan_point, platform_state.pan_start);
-        if (pan_delta.x != 0 ||
-            pan_delta.y != 0 ||
-            platform_state.width != milton_state->view->screen_size.x ||
-            platform_state.height != milton_state->view->screen_size.y)
+        if (platform_state.is_panning)
         {
-            b32 pan_ok = milton_resize_and_pan(milton_state, pan_delta, {platform_state.width, platform_state.height});
-            if (platform_state.is_panning && !pan_ok)
+            v2i pan_delta = sub2i(platform_state.pan_point, platform_state.pan_start);
+            if (pan_delta.x != 0 ||
+                pan_delta.y != 0 ||
+                platform_state.width != milton_state->view->screen_size.x ||
+                platform_state.height != milton_state->view->screen_size.y)
             {
-                turn_panning_off(&platform_state);
-                // Force a full re-render.
-                // The hover point gets updated and the renderer does a memcpy on most of the screen.
-                // TODO: Remove use of MiltonInputFlags_FULL_REFRESH after switching to HW rendering...
-                input_flags |= MiltonInputFlags_FULL_REFRESH;
-                milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
-            }
-            else if (!platform_state.is_panning && !pan_ok)
-            {
-                INVALID_CODE_PATH;
-            }
-        }
-        milton_input.pan_delta = pan_delta;
+                b32 pan_ok = milton_resize_and_pan(milton_state, pan_delta, {platform_state.width, platform_state.height});
+                if (!pan_ok)
+                {
+                    // TODO: Turn panning off
 
-        platform_state.pan_start = platform_state.pan_point;
+                    // Force a full re-render.
+                    // The hover point gets updated and the renderer does a memcpy on most of the screen.
+                    // TODO: Remove use of MiltonInputFlags_FULL_REFRESH after switching to HW rendering...
+                    input_flags |= MiltonInputFlags_FULL_REFRESH;
+                    milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+                }
+                else if (!platform_state.is_panning && !pan_ok)
+                {
+                    INVALID_CODE_PATH;
+                }
+            }
+            milton_input.pan_delta = pan_delta;
+
+            // Reset pan_start. Delta is not cumulative.
+            platform_state.pan_start = platform_state.pan_point;
+        }
+
         // ==== Update and render
         PROFILE_GRAPH_PUSH(polling);
         milton_update_and_render(milton_state, &milton_input);

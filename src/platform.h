@@ -62,15 +62,16 @@ struct PlatformState
     i32 width;
     i32 height;
 
+    v2i pointer;
+
     b32 is_ctrl_down;
     b32 is_shift_down;
     b32 is_space_down;
     b32 is_pointer_down;
-
-    int panning_fsm;
+    b32 is_middle_button_down;
 
     b32 is_panning;
-    b32 panning_locked; // locked when panning from GUI
+    b32 waiting_for_pan_input; // Start panning from GUI menu.
 
     b32 was_exporting;
     v2i pan_start;

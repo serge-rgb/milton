@@ -221,7 +221,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             if (ImGui::MenuItem(move_str))
             {
                 platform_state->is_panning = !platform_state->is_panning;
-                platform_state->panning_locked = true;
+                platform_state->waiting_for_pan_input = true;
             }
             // Eye Dropper
             if ( ImGui::MenuItem(LOC(eye_dropper)) )

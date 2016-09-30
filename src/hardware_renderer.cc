@@ -6,7 +6,7 @@
 
 #define PRESSURE_RESOLUTION (1<<20)
 
-#define MAX_DEPTH_VALUE (1<<24)     // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
+#define MAX_DEPTH_VALUE (1<<20)     // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
                                     // Also defined in stroke_raster.v.glsl
                                     //
                                     // NOTE: Using this technique means that the algorithm is not correct.
@@ -293,6 +293,7 @@ b32 render_element_is_layer(RenderElement* render_element)
 
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
+    render_data->stroke_z = MAX_DEPTH_VALUE - 20;
     glEnable(GL_MULTISAMPLE);
     if (glMinSampleShadingARB != NULL)
     {
@@ -705,8 +706,6 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             apoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             bpoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             indices = arena_alloc_array(&scratch_arena, count_indices, u16);
-
-            //u16* indices = (u16*)mlt_malloc(count_attribs*sizeof(u16));
 
             size_t bounds_i = 0;
             size_t apoints_i = 0;
