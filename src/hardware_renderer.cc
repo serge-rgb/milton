@@ -67,6 +67,10 @@ struct RenderData
     // Cached values for stroke rendering uniforms.
     v4f current_color;
     float current_radius;
+
+
+    // Debug info.
+    i32 clipped_count;  // Number of strokes in GPU memory.
 };
 
 enum RenderDataFlags
@@ -890,6 +894,10 @@ void gpu_clip_strokes_and_update(Arena* arena,
     layer_element.flags |= RenderElementFlags_LAYER;
 
     reset(render_elements);
+    if (flags & ClipFlags_UPDATE)
+    {
+        render_data->clipped_count = 0;
+    }
     for(Layer* l = root_layer;
         l != NULL;
         l = l->next)
@@ -925,18 +933,14 @@ void gpu_clip_strokes_and_update(Arena* arena,
 
                 if (!is_outside && area!=0)
                 {
-                    if (s->render_element.vbo_stroke == 0)
-                    {
-                        gpu_cook_stroke(arena, render_data, s);
-                    }
+                    gpu_cook_stroke(arena, render_data, s);
                     push(render_elements, s->render_element);
                 }
-#if 0
-                else if (is_outside && (flags & ClipFlags_UPDATE) && s->render_element.vbo_stroke != 0)
+                else if (is_outside && (flags & ClipFlags_UPDATE))// && (flags & ClipFlags_UPDATE) && s->render_element.vbo_stroke != 0)
                 {
                     // If it is far away, delete.
                     i32 distance = abs(bounds.left - x + bounds.top - y);
-                    const i32 min_number_of_screens = 10;
+                    const i32 min_number_of_screens = 2;
                     if ((bounds.top     < y - min_number_of_screens*h) ||
                         (bounds.bottom  > y+h + min_number_of_screens*h) ||
                         (bounds.left    > x+w + min_number_of_screens*w) ||
@@ -945,7 +949,10 @@ void gpu_clip_strokes_and_update(Arena* arena,
                         gpu_free_strokes(s, 1);
                     }
                 }
-#endif
+                if ((flags & ClipFlags_UPDATE) && s->render_element.vbo_stroke != 0)
+                {
+                    render_data->clipped_count++;
+                }
             }
         }
 

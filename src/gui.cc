@@ -339,9 +339,9 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
 
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1});
                 {
-                    if ( milton_state->current_mode != MiltonMode_PEN )
+                    if (milton_state->current_mode != MiltonMode_PEN)
                     {
-                        if ( ImGui::Button(LOC(switch_to_brush)) )
+                        if (ImGui::Button(LOC(switch_to_brush)))
                         {
                             i32 f = input->flags;
                             f |= MiltonInputFlags_CHANGE_MODE;
@@ -661,6 +661,11 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
             snprintf(msg, array_count(msg),
                      "System %f ms\n",
                      system);
+            ImGui::Text(msg);
+
+            snprintf(msg, array_count(msg),
+                     "Number of strokes in GPU memory: %d\n",
+                     milton_state->render_data->clipped_count);
             ImGui::Text(msg);
 
             float hist[] = { poll, update, raster, GL, system };

@@ -63,6 +63,7 @@ To-Do
         - Brush
             - Support for general, implicitly defined brushes
     - Feature Requests:
+        - pop out panels. make it multi-window.
         - eraser toggle
         - pressure toggle
         - pressure response graph
