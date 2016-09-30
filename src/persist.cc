@@ -110,11 +110,13 @@ void milton_load(MiltonState* milton_state)
             handled = true;
         }
 
+        auto saved_size = milton_state->view->screen_size;
         if (ok) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
 
         // The screen size might hurt us.
         // TODO: Maybe shouldn't save the whole CanvasView?
-        milton_state->view->screen_size = v2i{};
+        milton_state->view->screen_size = saved_size;
+
         // The process of loading changes state. working_layer_id changes when creating layers.
         i32 saved_working_layer_id = milton_state->view->working_layer_id;
 

@@ -626,8 +626,8 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
 {
     glUseProgram(render_data->stroke_program);
 
-    auto center = divide2i(view->screen_center, 1);
-    auto pan = divide2i(view->pan_vector, 1);
+    auto center = view->screen_center;
+    auto pan = view->pan_vector;
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, pan.d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, center.d);
     gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
@@ -876,8 +876,8 @@ void gpu_free_strokes(MiltonState* milton_state)
 
 enum ClipFlags
 {
-    ClipFlags_UPDATE      = 1<<0,
-    ClipFlags_DONT_UPDATE = 1<<1,
+    ClipFlags_UPDATE_GPU_DATA   = 1<<0,
+    ClipFlags_JUST_CLIP         = 1<<1,
 };
 // Creates OpenGL objects for strokes that are in view but are not loaded on the GPU. Deletes
 // content for strokes that are far away.
@@ -885,7 +885,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
                                  RenderData* render_data,
                                  CanvasView* view,
                                  Layer* root_layer, Stroke* working_stroke,
-                                 i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_DONT_UPDATE)
+                                 i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_JUST_CLIP)
 {
     auto *render_elements = &render_data->render_elems;
 
@@ -893,7 +893,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
     layer_element.flags |= RenderElementFlags_LAYER;
 
     reset(render_elements);
-    if (flags & ClipFlags_UPDATE)
+    if (flags & ClipFlags_UPDATE_GPU_DATA)
     {
         render_data->clipped_count = 0;
     }
@@ -935,7 +935,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
                     gpu_cook_stroke(arena, render_data, s);
                     push(render_elements, s->render_element);
                 }
-                else if (is_outside && (flags & ClipFlags_UPDATE))// && (flags & ClipFlags_UPDATE) && s->render_element.vbo_stroke != 0)
+                else if (is_outside && (flags & ClipFlags_UPDATE_GPU_DATA))
                 {
                     // If it is far away, delete.
                     i32 distance = abs(bounds.left - x + bounds.top - y);
@@ -948,7 +948,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
                         gpu_free_strokes(s, 1);
                     }
                 }
-                if ((flags & ClipFlags_UPDATE) && s->render_element.vbo_stroke != 0)
+                if ((flags & ClipFlags_UPDATE_GPU_DATA) && s->render_element.vbo_stroke != 0)
                 {
                     render_data->clipped_count++;
                 }

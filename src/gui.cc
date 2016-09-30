@@ -452,18 +452,18 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
 
             Layer* a = NULL;
             Layer* b = NULL;
-            if ( ImGui::Button(LOC(up)) )
+            if (ImGui::Button(LOC(up)))
             {
                 b = milton_state->working_layer;
                 a = b->next;
             }
             ImGui::SameLine();
-            if ( ImGui::Button(LOC(down)) )
+            if (ImGui::Button(LOC(down)))
             {
                 a = milton_state->working_layer;
                 b = a->prev;
             }
-            if ( a && b )
+            if (a && b)
             {
                 // n <-> a <-> b <-> p
                 // n <-> b <-> a <-> p
@@ -486,9 +486,9 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                 input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
             }
 
-            if ( milton_state->working_layer->next ||
-                 milton_state->working_layer->prev )
-            {
+            if (milton_state->working_layer->next ||
+                milton_state->working_layer->prev)
+           {
                 static bool deleting = false;
                 if ( deleting == false )
                 {
@@ -497,7 +497,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                         deleting = true;
                     }
                 }
-                else if ( deleting )
+                else if (deleting)
                 {
                     ImGui::Text(LOC(are_you_sure));
                     ImGui::Text(LOC(cant_be_undone));
@@ -520,7 +520,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
     } // Visible
 
     // Note: The export window is drawn regardless of gui visibility.
-    if ( milton_state->current_mode == MiltonMode_EXPORTING )
+    if (milton_state->current_mode == MiltonMode_EXPORTING)
     {
         bool opened = true;
         b32 reset = false;
@@ -642,16 +642,17 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                      update);
             ImGui::Text(msg);
 
+#if SOFTWARE_RENDERER_COMPILED
             snprintf(msg, array_count(msg),
                      "Raster %f ms\n",
                      raster);
             ImGui::Text(msg);
             ImGui::SameLine();
+#endif
             snprintf(msg, array_count(msg),
-                     "(Clipping %f ms)\n",
+                     "Clipping & Update %f ms\n",
                      clipping);
             ImGui::Text(msg);
-
 
             snprintf(msg, array_count(msg),
                      "OpenGL commands %f ms\n",

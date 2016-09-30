@@ -12,8 +12,12 @@ static void milton_set_default_view(MiltonState* milton_state)
 {
     CanvasView* view = milton_state->view;
 
+    auto saved_size = view->screen_size;
+
     *view = CanvasView{};
 
+    view->screen_size         = saved_size;
+    view->screen_center       = divide2i(saved_size, 2);
     view->scale               = MILTON_DEFAULT_SCALE;
     view->downsampling_factor = 1;
     view->num_layers          = 1;
@@ -564,6 +568,13 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 
 }
 
+void upload_gui(MiltonState* milton_state)
+{
+    gpu_set_canvas(milton_state->render_data, milton_state->view);
+    gpu_resize(milton_state->render_data, milton_state->view);
+    gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
+}
+
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
@@ -632,10 +643,7 @@ b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_scre
         }
         milton_state->view->pan_vector = pan_vector;
 
-        // Upload data to gpu
-        gpu_set_canvas(milton_state->render_data, milton_state->view);
-        gpu_resize(milton_state->render_data, milton_state->view);
-        gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
+        upload_gui(milton_state);
     }
     else
     {
@@ -705,6 +713,7 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state)
     }
     milton_update_brushes(milton_state);
     milton_set_default_canvas_file(milton_state);
+    upload_gui(milton_state);
 }
 
 void milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
@@ -973,11 +982,11 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     if (input->flags & MiltonInputFlags_OPEN_FILE)
     {
         milton_load(milton_state);
+        upload_gui(milton_state);
         render_flags |= MiltonRenderFlags_FULL_REDRAW;
         input->flags |= MiltonInputFlags_FAST_DRAW;
         do_full_redraw = true;
     }
-
 
     if (milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY)
     {
@@ -1540,7 +1549,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     i32 view_width = 0;
     i32 view_height = 0;
 
-    ClipFlags clip_flags = ClipFlags_DONT_UPDATE;
+    ClipFlags clip_flags = ClipFlags_JUST_CLIP;
 
 #if REDRAW_EVERY_FRAME
     do_full_redraw = true;
@@ -1550,7 +1559,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     {
         view_width = milton_state->view->screen_size.w;
         view_height = milton_state->view->screen_size.h;
-        clip_flags = ClipFlags_UPDATE;
+        clip_flags = ClipFlags_UPDATE_GPU_DATA;
     }
     else if (draw_custom_rectangle)
     {
