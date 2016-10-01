@@ -164,6 +164,8 @@ void milton_load(MiltonState* milton_state)
                 {
                     Stroke* stroke = layer_push_stroke(layer, Stroke{});
 
+                    stroke->id = milton_state->stroke_id_count++;
+
                     if (ok) { ok = fread_checked(&stroke->brush, sizeof(Brush), 1, fd); }
                     if (ok) { ok = fread_checked(&stroke->num_points, sizeof(i32), 1, fd); }
                     if (stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0)

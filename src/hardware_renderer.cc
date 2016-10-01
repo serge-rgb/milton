@@ -13,6 +13,77 @@
                                     //  There is a low probability that one stroke will cover another
                                     //  stroke with the same z value.
 
+
+#define YOUNG_MAP_MAX 1
+
+// A separate thread fills clipped_array[current_clip_array] while the rendering thread works on
+// clipped_array[(current_clip_array+1)%2]. The rendering thread will always draw the elements in
+// young_array.
+struct ClipInfo
+{
+    i32 index;
+    DArray<RenderElement> clip_array[2];
+    Stroke*               young_map[YOUNG_MAP_MAX];
+};
+
+u64 stroke_hash(Stroke* s)
+{
+    u64 hash = (u64)s->brush.radius * u64(s->brush.color.r+1) * u64(s->brush.color.g+1) * u64(s->brush.color.b+1) +
+                s->num_points;
+    hash += s->id * 2877;
+    hash *= 90817348017230984l;
+    return hash;
+}
+
+void remove_young(ClipInfo* clip_info, Stroke* stroke)
+{
+    u64 hash = stroke_hash(stroke) % YOUNG_MAP_MAX;
+    Stroke* young = clip_info->young_map[hash];
+    if (young == stroke)
+    {
+        clip_info->young_map[hash] = stroke->young_next;
+    }
+    else
+    {
+        while (young->young_next != stroke)
+        {
+            mlt_assert(young);
+            mlt_assert(young->young_next);
+            young = young->young_next;
+        }
+        mlt_assert(young->young_next == stroke);
+        young->young_next = stroke->young_next;
+    }
+    stroke->young_next = NULL;
+}
+
+bool is_young(ClipInfo* clip_info, Stroke* stroke)
+{
+    u64 hash = stroke_hash(stroke) % YOUNG_MAP_MAX;
+    Stroke* young = clip_info->young_map[hash];
+
+    b32 is_young = false;
+    while (young != NULL)
+    {
+        if (young == stroke)
+        {
+            is_young = true;
+            break;
+        }
+        young = young->young_next;
+    }
+    return is_young;
+}
+
+void mark_as_young(ClipInfo* clip_info, Stroke* stroke)
+{
+    u64 hash = stroke_hash(stroke) % YOUNG_MAP_MAX;
+    Stroke* first = clip_info->young_map[hash];
+    mlt_assert(stroke->young_next == NULL);
+    stroke->young_next = first;
+    clip_info->young_map[hash] = stroke;
+}
+
 struct RenderData
 {
     f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
@@ -52,8 +123,8 @@ struct RenderData
 
     i32 flags;  // RenderDataFlags enum
 
-    // Each frame has
-    DArray<RenderElement> render_elems;
+    //DArray<RenderElement> render_elems;
+    ClipInfo clip_info;
 
     // Screen size.
     i32 width;
@@ -293,6 +364,7 @@ b32 render_element_is_layer(RenderElement* render_element)
 
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
+    memset(&render_data->clip_info, 0, sizeof(render_data->clip_info));
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
     glEnable(GL_MULTISAMPLE);
     if (glMinSampleShadingARB != NULL)
@@ -837,7 +909,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
     }
 }
 
-void gpu_free_strokes(Stroke* strokes, i64 count)
+void gpu_free_strokes(ClipInfo* clip_info, Stroke* strokes, i64 count)
 {
     for (i64 i = 0; i < count; ++i)
     {
@@ -857,18 +929,23 @@ void gpu_free_strokes(Stroke* strokes, i64 count)
             re->vbo_pointb = 0;
             re->indices = 0;
         }
+        if (is_young(clip_info, s))
+        {
+            remove_young(clip_info, s);
+        }
     }
 }
 
 void gpu_free_strokes(MiltonState* milton_state)
 {
+    ClipInfo* clip_info = &milton_state->render_data->clip_info;
     if (milton_state->root_layer != NULL)
     {
         for(Layer* l = milton_state->root_layer;
             l != NULL;
             l = l->next)
         {
-            gpu_free_strokes(l->strokes.data, (i64)l->strokes.count);
+            gpu_free_strokes(clip_info, l->strokes.data, (i64)l->strokes.count);
         }
 
     }
@@ -876,7 +953,7 @@ void gpu_free_strokes(MiltonState* milton_state)
 
 enum ClipFlags
 {
-    ClipFlags_UPDATE_GPU_DATA   = 1<<0,
+    ClipFlags_UPDATE_GPU_DATA   = 1<<0,  // Free all strokes that are far away.
     ClipFlags_JUST_CLIP         = 1<<1,
 };
 // Creates OpenGL objects for strokes that are in view but are not loaded on the GPU. Deletes
@@ -887,12 +964,19 @@ void gpu_clip_strokes_and_update(Arena* arena,
                                  Layer* root_layer, Stroke* working_stroke,
                                  i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_JUST_CLIP)
 {
-    auto *render_elements = &render_data->render_elems;
+    // TODO. Wrap around a mutex.
+
+    ClipInfo* clip_info = &render_data->clip_info;
+    auto index = (clip_info->index + 1) % 2;
+    clip_info->index = index;
+
+    DArray<RenderElement>* clip_array = &clip_info->clip_array[0];
 
     RenderElement layer_element = {};
     layer_element.flags |= RenderElementFlags_LAYER;
 
-    reset(render_elements);
+    reset(clip_array);
+
     if (flags & ClipFlags_UPDATE_GPU_DATA)
     {
         render_data->clipped_count = 0;
@@ -906,11 +990,15 @@ void gpu_clip_strokes_and_update(Arena* arena,
             // Skip invisible layers.
             continue;
         }
+        // Iterate through;
+        //      All strokes in the Young Array.
+        //      All strokes in the current Clipped Array
         for (u64 i = 0; i < l->strokes.count; ++i)
         {
             Stroke* s = &l->strokes.data[i];
 
-            if (s != NULL)
+            //if (s != NULL)
+            if (s != NULL && !is_young(clip_info, s))
             {
                 Rect bounds = s->bounding_rect;
                 bounds.top_left = canvas_to_raster(view, bounds.top_left);
@@ -933,7 +1021,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
                 if (!is_outside && area!=0)
                 {
                     gpu_cook_stroke(arena, render_data, s);
-                    push(render_elements, s->render_element);
+                    // push(clip_array, s->render_element);
                 }
                 else if (is_outside && (flags & ClipFlags_UPDATE_GPU_DATA))
                 {
@@ -945,7 +1033,8 @@ void gpu_clip_strokes_and_update(Arena* arena,
                         (bounds.left    > x+w + min_number_of_screens*w) ||
                         (bounds.right   < x - min_number_of_screens*w))
                     {
-                        gpu_free_strokes(s, 1);
+                        // TODO: Do this somewhere else.
+                        // gpu_free_strokes(s, 1);
                     }
                 }
                 if ((flags & ClipFlags_UPDATE_GPU_DATA) && s->render_element.vbo_stroke != 0)
@@ -961,12 +1050,27 @@ void gpu_clip_strokes_and_update(Arena* arena,
             if (working_stroke->num_points > 0)
             {
                 gpu_cook_stroke(arena, render_data, working_stroke, CookStroke_UPDATE_WORKING_STROKE);
-                push(render_elements, working_stroke->render_element);
+
+                push(clip_array, working_stroke->render_element);
             }
         }
 
-        push(render_elements, layer_element);
+        // TODO: Push
+        // push(render_elements, layer_element);
     }
+
+    // Push all young strokes.
+    for (int young_i = 0; young_i < YOUNG_MAP_MAX; ++young_i)
+    {
+        Stroke* s = clip_info->young_map[young_i];
+        while (s)
+        {
+            gpu_cook_stroke(arena, render_data, s);
+            push(clip_array, s->render_element);
+            s = s->young_next;
+        }
+    }
+
 }
 
 void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_width,
@@ -1009,9 +1113,12 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
     if (loc >= 0)
     {
-        for (i64 i = 0; i < (i64)render_data->render_elems.count; i++)
+        ClipInfo* clip_info = &render_data->clip_info;
+        DArray<RenderElement> clip_array = clip_info->clip_array[0];
+
+        for (i64 i = 0; i < (i64)clip_array.count; i++)
         {
-            RenderElement* re = &render_data->render_elems.data[i];
+            RenderElement* re = &clip_array.data[i];
 
             if (render_element_is_layer(re))
             {

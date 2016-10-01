@@ -950,8 +950,38 @@ static void milton_validate(MiltonState* milton_state)
     mlt_free(layer_ids);
 }
 
+void age_strokes(MiltonState* milton_state)
+{
+    ClipInfo* clip_info = &milton_state->render_data->clip_info;
+    i64 young_count = 0;
+    const i64 max_num_young = 3;
+    for(Layer* layer = milton_state->root_layer;
+        layer != NULL;
+        layer = layer->next)
+    {
+        i64 num_strokes = (i64)count(&layer->strokes);
+        for(i64 i = num_strokes-1; i >= 0; --i)
+        {
+            Stroke* s = &layer->strokes.data[i];
+            if (is_young(clip_info, s))
+            {
+                if (young_count++ > max_num_young)
+                {
+                    remove_young(clip_info, s);
+                }
+            }
+            else if (young_count > max_num_young)
+            {
+                break;
+            }
+        }
+    }
+}
+
 void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 {
+    PROFILE_GRAPH_BEGIN(update);
+
     b32 do_full_redraw = false;
     b32 brush_outline_should_draw = false;
 
@@ -962,13 +992,15 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     custom_rectangle.top = INT_MAX;
     custom_rectangle.bottom = INT_MIN;
 
-    PROFILE_GRAPH_BEGIN(update);
     b32 should_save =
             ((input->flags & MiltonInputFlags_OPEN_FILE)) ||
             ((input->flags & MiltonInputFlags_SAVE_FILE)) ||
             ((input->flags & MiltonInputFlags_END_STROKE)) ||
             ((input->flags & MiltonInputFlags_UNDO)) ||
             ((input->flags & MiltonInputFlags_REDO));
+
+    // Age strokes.
+    age_strokes(milton_state);
 
     //MiltonRenderFlags
     int render_flags = MiltonRenderFlags_NONE;
@@ -1129,6 +1161,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     { // Undo / Redo
+        ClipInfo* clip_info = &milton_state->render_data->clip_info;
         if ((input->flags & MiltonInputFlags_UNDO))
         {
             // Grab undo elements. They might be from deleted layers, so discard dead results.
@@ -1140,6 +1173,11 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 { // found a thing to undo.
                     if (l->strokes.count > 0)
                     {
+                        Stroke* stroke_ptr = peek(&l->strokes);
+                        if (is_young(clip_info, stroke_ptr))
+                        {
+                            remove_young(clip_info, stroke_ptr);
+                        }
                         Stroke stroke = pop(&l->strokes);
                         push(&milton_state->stroke_graveyard, stroke);
                         push(&milton_state->redo_stack, h);
@@ -1389,6 +1427,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                            milton_state->working_stroke.num_points * sizeof(f32));
                     new_stroke.bounding_rect = bounding_box_for_stroke(&new_stroke);
 
+                    new_stroke.id = milton_state->stroke_id_count++;
+
                     draw_custom_rectangle = true;
                     Rect bounds = new_stroke.bounding_rect;
                     bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
@@ -1397,6 +1437,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 }
 
                 auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
+
+                mark_as_young(&milton_state->render_data->clip_info, stroke);
 
                 // Invalidate working stroke render element
 

@@ -87,6 +87,7 @@ i64 count_strokes(Layer* root)
     return count;
 }
 
+#if SOFTWARE_RENDERER_COMPILED
 i64 count_clipped_strokes(Layer* root, i32 num_workers)
 {
     i64 count = 0;
@@ -110,6 +111,7 @@ i64 count_clipped_strokes(Layer* root, i32 num_workers)
     }
     return count;
 }
+#endif
 
 Layer* layer_get_topmost(Layer* root)
 {

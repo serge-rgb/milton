@@ -99,6 +99,7 @@ struct MiltonState
     i32         brush_sizes[BrushEnum_COUNT];  // In screen pixels
 
     i32         layer_guid;  // to create unique ids;
+    i32         stroke_id_count;
     Layer*      root_layer;
     Layer*      working_layer;
 

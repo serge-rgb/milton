@@ -64,7 +64,7 @@ void reserve(DArray<T>* arr, u64 size)
 }
 
 template <typename T>
-void push(DArray<T>* arr, const T& elem)
+T* push(DArray<T>* arr, const T& elem)
 {
     if (arr->data == NULL)
     {
@@ -77,6 +77,7 @@ void push(DArray<T>* arr, const T& elem)
         grow(arr);
     }
     arr->data[arr->count++] = elem;
+    return &arr->data[arr->count];
 }
 
 template <typename T>
