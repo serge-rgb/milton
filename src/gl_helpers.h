@@ -4,7 +4,11 @@
 #pragma once
 
 
+#if MILTON_DEBUG
 #define GLCHK(stmt) stmt; gl_query_error(#stmt, __FILE__, __LINE__)
+#else
+#define GLCHK(stmt) stmt;
+#endif
 
 void    gl_log(char* str);
 void    gl_query_error(const char* expr, const char* file, int line);

@@ -347,6 +347,16 @@ Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_poi
     return rect;
 }
 
+Rect rect_without_size()
+{
+    Rect rect;
+    rect.left = INT_MAX;
+    rect.right = INT_MIN;
+    rect.top = INT_MAX;
+    rect.bottom = INT_MIN;
+    return rect;
+}
+
 i32 rect_area(Rect rect)
 {
     return (rect.right - rect.left) * (rect.bottom - rect.top);

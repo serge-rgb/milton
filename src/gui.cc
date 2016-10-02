@@ -743,9 +743,9 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
                     l != NULL;
                     l = l->next)
                 {
-                    for (size_t i = 0; i < l->strokes.count; ++i)
+                    for (i64 i = 0; i < l->strokes.count; ++i)
                     {
-                        Stroke* s = l->strokes.data + i;
+                        Stroke* s = get(&l->strokes, i);
                         avg += s->num_points;
                     }
                 }

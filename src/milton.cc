@@ -104,12 +104,12 @@ static void clear_stroke_redo(MiltonState* milton_state)
         mlt_free(s.points);
         mlt_free(s.pressures);
     }
-    for (u64 i = 0; i < milton_state->redo_stack.count; ++i)
+    for (i64 i = 0; i < milton_state->redo_stack.count; ++i)
     {
         HistoryElement h = milton_state->redo_stack.data[i];
         if (h.type == HistoryElement_STROKE_ADD)
         {
-            for (u64 j = i; j < milton_state->redo_stack.count-1; ++j)
+            for (i64 j = i; j < milton_state->redo_stack.count-1; ++j)
             {
                 milton_state->redo_stack.data[j] = milton_state->redo_stack.data[j+1];
             }
@@ -660,9 +660,9 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state)
     Layer* l = milton_state->root_layer;
     while ( l != NULL )
     {
-        for (u64 si = 0; si < l->strokes.count; ++si)
+        for (i64 si = 0; si < l->strokes.count; ++si)
         {
-            stroke_free(&l->strokes.data[si]);
+            stroke_free(get(&l->strokes, si));
         }
         release(&l->strokes);
         mlt_free(l->name);
@@ -915,7 +915,7 @@ static void milton_validate(MiltonState* milton_state)
     }
 
     i64 history_count = 0;
-    for (u64 hi = 0; hi < milton_state->history.count; ++hi)
+    for (i64 hi = 0; hi < milton_state->history.count; ++hi)
     {
         i32 id = milton_state->history.data[hi].layer_id;
         for (i64 li = 0; li < num_layers; ++li)
@@ -938,9 +938,9 @@ static void milton_validate(MiltonState* milton_state)
             l != NULL;
             l = l->next)
         {
-            for (u64 si = 0; si < l->strokes.count; ++si)
+            for (i64 si = 0; si < l->strokes.count; ++si)
             {
-                Stroke* s = l->strokes.data + si;
+                Stroke* s = get(&l->strokes, si);
                 HistoryElement he = { HistoryElement_STROKE_ADD, s->layer_id };
                 push(&milton_state->history, he);
             }
@@ -948,34 +948,6 @@ static void milton_validate(MiltonState* milton_state)
     }
 
     mlt_free(layer_ids);
-}
-
-void age_strokes(MiltonState* milton_state)
-{
-    ClipInfo* clip_info = &milton_state->render_data->clip_info;
-    i64 young_count = 0;
-    const i64 max_num_young = 3;
-    for(Layer* layer = milton_state->root_layer;
-        layer != NULL;
-        layer = layer->next)
-    {
-        i64 num_strokes = (i64)count(&layer->strokes);
-        for(i64 i = num_strokes-1; i >= 0; --i)
-        {
-            Stroke* s = &layer->strokes.data[i];
-            if (is_young(clip_info, s))
-            {
-                if (young_count++ > max_num_young)
-                {
-                    remove_young(clip_info, s);
-                }
-            }
-            else if (young_count > max_num_young)
-            {
-                break;
-            }
-        }
-    }
 }
 
 void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
@@ -986,11 +958,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     b32 brush_outline_should_draw = false;
 
     b32 draw_custom_rectangle = false;  // Custom rectangle used for new strokes, undo/redo.
-    Rect custom_rectangle = {};
-    custom_rectangle.left = INT_MAX;
-    custom_rectangle.right = INT_MIN;
-    custom_rectangle.top = INT_MAX;
-    custom_rectangle.bottom = INT_MIN;
+    Rect custom_rectangle = rect_without_size();
 
     b32 should_save =
             ((input->flags & MiltonInputFlags_OPEN_FILE)) ||
@@ -998,9 +966,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             ((input->flags & MiltonInputFlags_END_STROKE)) ||
             ((input->flags & MiltonInputFlags_UNDO)) ||
             ((input->flags & MiltonInputFlags_REDO));
-
-    // Age strokes.
-    age_strokes(milton_state);
 
     //MiltonRenderFlags
     int render_flags = MiltonRenderFlags_NONE;
@@ -1161,7 +1126,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     { // Undo / Redo
-        ClipInfo* clip_info = &milton_state->render_data->clip_info;
         if ((input->flags & MiltonInputFlags_UNDO))
         {
             // Grab undo elements. They might be from deleted layers, so discard dead results.
@@ -1174,10 +1138,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                     if (l->strokes.count > 0)
                     {
                         Stroke* stroke_ptr = peek(&l->strokes);
-                        if (is_young(clip_info, stroke_ptr))
-                        {
-                            remove_young(clip_info, stroke_ptr);
-                        }
                         Stroke stroke = pop(&l->strokes);
                         push(&milton_state->stroke_graveyard, stroke);
                         push(&milton_state->redo_stack, h);
@@ -1438,8 +1398,6 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
                 auto* stroke = layer_push_stroke(milton_state->working_layer, new_stroke);
 
-                mark_as_young(&milton_state->render_data->clip_info, stroke);
-
                 // Invalidate working stroke render element
 
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton_state->working_layer->id };
@@ -1606,7 +1564,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     else if (draw_custom_rectangle)
     {
         view_x = custom_rectangle.left;
-        view_y = milton_state->view->screen_size.h - custom_rectangle.bottom;
+        view_y = custom_rectangle.top;
+        //view_y = milton_state->view->screen_size.h - custom_rectangle.bottom;
         view_width = custom_rectangle.right - custom_rectangle.left;
         view_height = custom_rectangle.bottom - custom_rectangle.top;
         VALIDATE_RECT(custom_rectangle);
@@ -1617,7 +1576,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
         bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
         view_x = bounds.left;
-        view_y = milton_state->view->screen_size.h - bounds.bottom;
+        view_y = bounds.top;
+        // view_y = milton_state->view->screen_size.h - bounds.bottom;
 
         view_width = bounds.right - bounds.left;
         view_height = bounds.bottom - bounds.top;

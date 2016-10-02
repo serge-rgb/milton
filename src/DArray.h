@@ -9,13 +9,13 @@
 template <typename T>
 struct DArray
 {
-    u64     count;
-    u64     capacity;
+    i64     count;
+    i64     capacity;
     T*      data;
 };
 
 template <typename T>
-DArray<T> dynamic_array(u64 capacity)
+DArray<T> dynamic_array(i64 capacity)
 {
     DArray<T> arr;
     arr.count = 0;
@@ -45,13 +45,13 @@ void grow(DArray<T>* arr)
     }
     else
     {
-        arr->data = (T*)mlt_calloc(arr->capacity, sizeof(T));
+        arr->data = (T*)mlt_calloc((size_t)arr->capacity, sizeof(T));
     }
 }
 
 
 template <typename T>
-void reserve(DArray<T>* arr, u64 size)
+void reserve(DArray<T>* arr, i64 size)
 {
     if (arr)
     {
@@ -81,6 +81,13 @@ T* push(DArray<T>* arr, const T& elem)
 }
 
 template <typename T>
+T* get(DArray<T>* arr, i64 i)
+{
+    T* e = &arr->data[i];
+    return e;
+}
+
+template <typename T>
 T* peek(DArray<T>* arr)
 {
     T* elem = NULL;
@@ -107,7 +114,7 @@ T pop(DArray<T>* arr)
 }
 
 template <typename T>
-u64 count(DArray<T>* arr)
+i64 count(DArray<T>* arr)
 {
     return arr->count;
 }

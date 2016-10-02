@@ -162,39 +162,39 @@ void milton_load(MiltonState* milton_state)
 
                 for (i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i)
                 {
-                    Stroke* stroke = layer_push_stroke(layer, Stroke{});
+                    Stroke stroke = Stroke{};
 
-                    stroke->id = milton_state->stroke_id_count++;
+                    stroke.id = milton_state->stroke_id_count++;
 
-                    if (ok) { ok = fread_checked(&stroke->brush, sizeof(Brush), 1, fd); }
-                    if (ok) { ok = fread_checked(&stroke->num_points, sizeof(i32), 1, fd); }
-                    if (stroke->num_points >= STROKE_MAX_POINTS || stroke->num_points <= 0)
+                    if (ok) { ok = fread_checked(&stroke.brush, sizeof(Brush), 1, fd); }
+                    if (ok) { ok = fread_checked(&stroke.num_points, sizeof(i32), 1, fd); }
+                    if (stroke.num_points >= STROKE_MAX_POINTS || stroke.num_points <= 0)
                     {
-                        if (stroke->num_points == STROKE_MAX_POINTS)
+                        if (stroke.num_points == STROKE_MAX_POINTS)
                         {
                             // Fix the out of bounds bug.
                             if (ok)
                             {
-                                stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
-                                ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
-                                if ( !ok ) mlt_free(stroke->pressures);
+                                stroke.points = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i));
+                                ok = fread_checked_nocopy(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
+                                if ( !ok ) mlt_free(stroke.pressures);
                             }
                             if (ok)
                             {
-                                stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
-                                ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
-                                if ( !ok ) mlt_free (stroke->points);
+                                stroke.pressures = (f32*)mlt_calloc((size_t)stroke.num_points, sizeof(f32));
+                                ok = fread_checked_nocopy(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
+                                if ( !ok ) mlt_free (stroke.points);
                             }
 
                             if (ok)
                             {
-                                ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
+                                ok = fread_checked(&stroke.layer_id, sizeof(i32), 1, fd);
                             }
                             pop(&layer->strokes);
                         }
                         else
                         {
-                            milton_log("ERROR: File has a stroke with %d points\n", stroke->num_points);
+                            milton_log("ERROR: File has a stroke with %d points\n", stroke.num_points);
                             ok = false;
                             reset(&milton_state->root_layer->strokes);
                             // Corrupt file. Avoid
@@ -205,21 +205,27 @@ void milton_load(MiltonState* milton_state)
                     {
                         if (ok)
                         {
-                            stroke->points = (v2i*)mlt_calloc((size_t)stroke->num_points, sizeof(v2i));
-                            ok = fread_checked_nocopy(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd);
-                            if ( !ok ) mlt_free(stroke->pressures);
+                            stroke.points = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i));
+                            ok = fread_checked_nocopy(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
+                            if ( !ok ) mlt_free(stroke.pressures);
                         }
                         if (ok)
                         {
-                            stroke->pressures = (f32*)mlt_calloc((size_t)stroke->num_points, sizeof(f32));
-                            ok = fread_checked_nocopy(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
-                            if ( !ok ) mlt_free (stroke->points);
+                            stroke.pressures = (f32*)mlt_calloc((size_t)stroke.num_points, sizeof(f32));
+                            ok = fread_checked_nocopy(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
+                            if ( !ok ) mlt_free (stroke.points);
                         }
                         if (ok)
                         {
-                            ok = fread_checked(&stroke->layer_id, sizeof(i32), 1, fd);
+                            ok = fread_checked(&stroke.layer_id, sizeof(i32), 1, fd);
                         }
-                        gpu_cook_stroke(milton_state->root_arena, milton_state->render_data, stroke);
+                        if (ok)
+                        {
+                            stroke.bounding_rect = bounding_box_for_stroke(&stroke);
+                        }
+
+                        Stroke* ptr = layer_push_stroke(layer, stroke);
+                        gpu_cook_stroke(milton_state->root_arena, milton_state->render_data, ptr);
                     }
                 }
             }
@@ -262,13 +268,13 @@ void milton_load(MiltonState* milton_state)
             if (ok)
             {
                 reset(&milton_state->history);
-                reserve(&milton_state->history, (size_t)history_count);
+                reserve(&milton_state->history, history_count);
             }
             if (ok) { ok = fread_checked_nocopy(milton_state->history.data, sizeof(*milton_state->history.data),
                                                 (size_t)history_count, fd); }
             if (ok)
             {
-                milton_state->history.count = (u64)history_count;
+                milton_state->history.count = history_count;
             }
         }
         int err = fclose(fd);
@@ -302,22 +308,6 @@ void milton_load(MiltonState* milton_state)
                 }
             }
             milton_state->layer_guid = layer_guid;
-
-            // Build bounding rects for every stroke.
-            for (Layer* l = milton_state->root_layer;
-                 l != NULL;
-                 l = l->next)
-            {
-                Stroke* strokes = l->strokes.data;
-
-                for (u64 stroke_i = 0;
-                     stroke_i < l->strokes.count;
-                     ++stroke_i)
-                {
-                    Stroke* stroke = strokes + stroke_i;
-                    stroke->bounding_rect = bounding_box_for_stroke(stroke);
-                }
-            }
 
             // Update GPU
             milton_set_background_color(milton_state, milton_state->view->background_color);
@@ -363,7 +353,6 @@ void milton_save(MiltonState* milton_state)
         i32 test_count = 0;
         for (Layer* layer = milton_state->root_layer; layer; layer=layer->next )
         {
-            Stroke* strokes = layer->strokes.data;
             if (layer->strokes.count > INT_MAX)
             {
                 milton_die_gracefully("FATAL. Number of strokes in layer greater than can be stored in file format. ");
@@ -380,7 +369,7 @@ void milton_save(MiltonState* milton_state)
             {
                 for (i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i)
                 {
-                    Stroke* stroke = &strokes[stroke_i];
+                    Stroke* stroke = get(&layer->strokes, stroke_i);
                     mlt_assert(stroke->num_points > 0);
                     // TODO: remove this line. Used for changes in new format
                     // stroke->brush.radius /= 2;

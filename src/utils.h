@@ -83,13 +83,17 @@ b32 intersect_line_segments(v2i a, v2i b,
 // The mighty rect
 // ---------------
 
-typedef struct {
-    union {
-        struct {
+typedef struct
+{
+    union
+    {
+        struct
+        {
             v2i top_left;
             v2i bot_right;
         };
-        struct {
+        struct
+        {
             i32 left;
             i32 top;
             i32 right;
@@ -103,6 +107,10 @@ typedef struct {
 // Splits src_rect into a number of rectangles stored in dest_rects
 // Returns the number of rectangles into which src_rect was split.
 i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height);
+
+
+// Returns a rectangle R such that for any other rectangle B , R union B = B
+Rect rect_without_size();
 
 // Set operations on rectangles
 Rect rect_union(Rect a, Rect b);
