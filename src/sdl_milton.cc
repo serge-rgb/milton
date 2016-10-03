@@ -275,7 +275,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         platform_state->pointer = point;
                         platform_state->is_middle_button_down = (event.button.button == SDL_BUTTON_MIDDLE);
 
-                        if (platform_state->is_panning && point.x >= 0 && point.y >= 0)
+                        if (!platform_state->is_panning && point.x >= 0 && point.y >= 0)
                         {
                             if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
                             {
@@ -301,6 +301,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 {
                     pointer_up = true;
                     input_flags |= MiltonInputFlags_CLICKUP;
+                    input_flags |= MiltonInputFlags_END_STROKE;
                 }
             } break;
         case SDL_MOUSEMOTION:
@@ -1119,35 +1120,32 @@ int milton_main()
 
         milton_input.input_count = platform_state.num_point_results;
 
-        if (platform_state.is_panning)
+        v2i pan_delta = sub2i(platform_state.pan_point, platform_state.pan_start);
+        if (pan_delta.x != 0 ||
+            pan_delta.y != 0 ||
+            platform_state.width != milton_state->view->screen_size.x ||
+            platform_state.height != milton_state->view->screen_size.y)
         {
-            v2i pan_delta = sub2i(platform_state.pan_point, platform_state.pan_start);
-            if (pan_delta.x != 0 ||
-                pan_delta.y != 0 ||
-                platform_state.width != milton_state->view->screen_size.x ||
-                platform_state.height != milton_state->view->screen_size.y)
+            b32 pan_ok = milton_resize_and_pan(milton_state, pan_delta, {platform_state.width, platform_state.height});
+            if (!pan_ok)
             {
-                b32 pan_ok = milton_resize_and_pan(milton_state, pan_delta, {platform_state.width, platform_state.height});
-                if (!pan_ok)
-                {
-                    // TODO: Turn panning off
+                // TODO: Turn panning off
 
-                    // Force a full re-render.
-                    // The hover point gets updated and the renderer does a memcpy on most of the screen.
-                    // TODO: Remove use of MiltonInputFlags_FULL_REFRESH after switching to HW rendering...
-                    input_flags |= MiltonInputFlags_FULL_REFRESH;
-                    milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
-                }
-                else if (!platform_state.is_panning && !pan_ok)
-                {
-                    INVALID_CODE_PATH;
-                }
+                // Force a full re-render.
+                // The hover point gets updated and the renderer does a memcpy on most of the screen.
+                // TODO: Remove use of MiltonInputFlags_FULL_REFRESH after switching to HW rendering...
+                input_flags |= MiltonInputFlags_FULL_REFRESH;
+                milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
             }
-            milton_input.pan_delta = pan_delta;
-
-            // Reset pan_start. Delta is not cumulative.
-            platform_state.pan_start = platform_state.pan_point;
+            else if (!platform_state.is_panning && !pan_ok)
+            {
+                INVALID_CODE_PATH;
+            }
         }
+        milton_input.pan_delta = pan_delta;
+
+        // Reset pan_start. Delta is not cumulative.
+        platform_state.pan_start = platform_state.pan_point;
 
         // ==== Update and render
         PROFILE_GRAPH_PUSH(polling);

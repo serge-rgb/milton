@@ -99,7 +99,7 @@ struct MiltonGui
     b32 visible;
     b32 show_help_widget;
 
-    b32 active;  // `active == true` when gui currently owns all user input.
+    b32 owns_user_input;
     b32 did_hit_button;  // Avoid multiple clicks.
 
     int flags;  // MiltonGuiFlags
@@ -127,9 +127,7 @@ void                gui_toggle_visibility(MiltonState* milton_state);
 void                gui_toggle_help(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
-b32                 picker_consume_input(MiltonGui* gui, MiltonInput* input);
-// Use if picker_consume_input was true and nothing else wants to capture input.
-/*MiltonRenderFlags*/   int gui_process_input(MiltonState* milton_state, MiltonInput* input);
+b32                 gui_consume_input(MiltonGui* gui, MiltonInput* input);
 void                gui_imgui_set_ungrabbed(MiltonGui* gui);
 
 void exporter_init(Exporter* exporter);

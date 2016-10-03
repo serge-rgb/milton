@@ -1205,10 +1205,10 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     if ((input->flags & MiltonInputFlags_HOVERING))
     {
         milton_state->hover_point = input->hover_point;
-        render_flags |= MiltonRenderFlags_BRUSH_HOVER;
     }
 
-    if (milton_state->gui->active)
+    if (gui_point_hovers(milton_state->gui, milton_state->hover_point))
+    // if (milton_state->gui->owns_user_input)
     {
         render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
         brush_outline_should_draw = false;
@@ -1223,17 +1223,17 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    if (input->input_count > 0)
+    if (input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK))
     {
         if (current_mode_is_for_painting(milton_state))
         {
-            if (!is_user_drawing(milton_state) && picker_consume_input(milton_state->gui, input))
+            if (!is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input))
             {
-                render_flags |= gui_process_input(milton_state, input);
                 milton_update_brushes(milton_state);
                 gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
             }
-            else if (!milton_state->gui->active && (milton_state->working_layer->flags & LayerFlags_VISIBLE))
+            else if (!milton_state->gui->owns_user_input &&
+                    (milton_state->working_layer->flags & LayerFlags_VISIBLE))
             {
                 milton_stroke_input(milton_state, input);
             }
@@ -1354,7 +1354,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     {
         milton_state->flags &= ~MiltonStateFlags_STROKE_IS_FROM_TABLET;
 
-        if (milton_state->gui->active)
+        if (milton_state->gui->owns_user_input)
         {
             gui_deactivate(milton_state->gui);
             render_flags |= MiltonRenderFlags_UI_UPDATED;

@@ -67,9 +67,9 @@ struct RenderData
     v4f current_color;
     float current_radius;
 
-
-    // Debug info.
+#if MILTON_ENABLE_PROFILING
     i32 clipped_count;  // Number of strokes in GPU memory.
+#endif
 };
 
 enum RenderDataFlags
@@ -881,7 +881,8 @@ void gpu_free_strokes(MiltonState* milton_state)
                 if (count >= STROKELIST_BUCKET_COUNT)
                 {
                     bucketcount = STROKELIST_BUCKET_COUNT;
-                    count -= STROKELIST_BUCKET_COUNT;
+                    count -= STROKELIST_BUCKET_COUNT * (count / STROKELIST_BUCKET_COUNT);
+                    // count -= STROKELIST_BUCKET_COUNT;
                 }
                 else
                 {
@@ -916,31 +917,20 @@ void gpu_clip_strokes_and_update(Arena* arena,
     Rect screen_bounds;
     screen_bounds.left = 0;
     screen_bounds.right = render_data->width;
-    #if 1
     screen_bounds.top = render_data->height;
     screen_bounds.bottom = 0;
-    #else
-    screen_bounds.top = 0;
-    screen_bounds.bottom = render_data->height;
-    #endif
 
     screen_bounds.left = x;
     screen_bounds.right = x + w;
     screen_bounds.top = y;
     screen_bounds.bottom = y+h;
-    // screen_bounds.top = render_data->height - screen_bounds.top;
-    // screen_bounds.bottom = render_data->height - screen_bounds.bottom;
-
-
-    // screen_bounds.top_left = raster_to_canvas(view, screen_bounds.top_left);
-    // screen_bounds.bot_right = raster_to_canvas(view, screen_bounds.bot_right);
 
     reset(clip_array);
-
-    if (flags & ClipFlags_UPDATE_GPU_DATA)
+    #if MILTON_ENABLE_PROFILING
     {
         render_data->clipped_count = 0;
     }
+    #endif
     for(Layer* l = root_layer;
         l != NULL;
         l = l->next)
@@ -1014,7 +1004,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
             {
                 gpu_free_strokes(bucket->data, count);
             }
-            if ((flags & ClipFlags_UPDATE_GPU_DATA))
+            #if MILTON_ENABLE_PROFILING
             {
                 for (i64 i = 0; i < count; ++i)
                 {
@@ -1025,6 +1015,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
                     }
                 }
             }
+            #endif
             bucket = bucket->next;
             bucket_count += 1;
         }

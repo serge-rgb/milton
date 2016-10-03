@@ -7,16 +7,16 @@
 
 struct StrokeBucket
 {
-    Stroke  data[STROKELIST_BUCKET_COUNT];
-    StrokeBucket* next;
-    Rect    bounding_rect;
+    Stroke          data[STROKELIST_BUCKET_COUNT];
+    StrokeBucket*   next;
+    Rect            bounding_rect;
 };
 
 struct StrokeList
 {
-    StrokeBucket  root;
-    i64     count;
-    Stroke* operator[](i64 i);
+    StrokeBucket    root;
+    i64             count;
+    Stroke*         operator[](i64 i);
 };
 
 StrokeBucket* create_bucket()
