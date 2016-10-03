@@ -238,7 +238,7 @@ void milton_load(MiltonState* milton_state)
         {
             i32 button_count = 0;
             MiltonGui* gui = milton_state->gui;
-            ColorButton* btn = &gui->picker.color_buttons;
+            ColorButton* btn = gui->picker.color_buttons;
 
             if (ok) { ok = fread_checked(&button_count, sizeof(i32), 1, fd); }
             if (ok)
@@ -402,12 +402,12 @@ void milton_save(MiltonState* milton_state)
             i32 button_count = 0;
             MiltonGui* gui = milton_state->gui;
             // Count buttons
-            for ( ColorButton* b = &gui->picker.color_buttons; b!= NULL; b = b->next, button_count++ ) { }
+            for (ColorButton* b = gui->picker.color_buttons; b!= NULL; b = b->next, button_count++) { }
             // Write
             if (ok) { ok = fwrite_checked(&button_count, sizeof(i32), 1, fd); }
             if (ok)
             {
-                for ( ColorButton* b = &gui->picker.color_buttons; ok && b!= NULL; b = b->next )
+                for (ColorButton* b = gui->picker.color_buttons; ok && b!= NULL; b = b->next)
                 {
                     ok = fwrite_checked(&b->rgba, sizeof(v4f), 1, fd);
                 }

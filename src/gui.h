@@ -49,7 +49,7 @@ struct ColorPicker
 
     PickerData data;
 
-    ColorButton color_buttons;
+    ColorButton* color_buttons;
 
     int flags;  // ColorPickerFlags
 };

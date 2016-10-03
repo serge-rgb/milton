@@ -690,7 +690,7 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state)
     gpu_set_background(milton_state->render_data, milton_state->view->background_color);
 
     // Reset color buttons
-    for (ColorButton* b = &milton_state->gui->picker.color_buttons; b!=NULL; b=b->next)
+    for (ColorButton* b = milton_state->gui->picker.color_buttons; b!=NULL; b=b->next)
     {
         b->rgba = {};
     }

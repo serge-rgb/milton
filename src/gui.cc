@@ -829,7 +829,7 @@ static Rect picker_color_buttons_bounds(const ColorPicker* picker)
     bounds.left = INT_MAX;
     bounds.top = INT_MAX;
     bounds.bottom = INT_MIN;
-    const ColorButton* button = &picker->color_buttons;
+    const ColorButton* button = picker->color_buttons;
     while (button)
     {
         bounds = rect_union(bounds, color_button_as_rect(button));
@@ -860,25 +860,59 @@ static void picker_from_rgb(ColorPicker* picker, v3f rgb)
     picker_update_points(picker, angle);
 }
 
+static void update_button_bounds(ColorPicker* picker)
+{
+    i32 bounds_radius_px = 100;
+
+    i32 spacing = 4;
+    i32 num_buttons = 5;
+
+    i32 button_size = (2*bounds_radius_px - (num_buttons - 1) * spacing) / num_buttons;
+    i32 current_x = 40 - button_size / 2;
+
+    for (ColorButton* cur_button = picker->color_buttons;
+         cur_button != NULL;
+         cur_button = cur_button->next)
+    {
+        cur_button->x = current_x;
+        cur_button->y = picker->center.y + bounds_radius_px + spacing;
+        cur_button->w = button_size;
+        cur_button->h = button_size;
+
+        current_x += spacing + button_size;
+    }
+
+}
+
 static b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
 {
     b32 hits = false;
-    ColorButton* first = &picker->color_buttons;
+    ColorButton* first = picker->color_buttons;
     ColorButton* button = first;
+    ColorButton* prev = NULL;
     while (button)
     {
-        if ( button->rgba.a != 0 &&
-             is_inside_rect(color_button_as_rect(button), point) )
+        if (button->rgba.a != 0 &&
+            is_inside_rect(color_button_as_rect(button), point))
         {
             hits = true;
-            //picker->data = button->picker_data;
-            picker_from_rgb(picker, button->rgba.rgb);
-            v4f swp_color = button->rgba;
-            button->rgba = first->rgba;
-            first->rgba = swp_color;
 
+            picker_from_rgb(picker, button->rgba.rgb);
+
+            if (prev)
+            {
+                prev->next = button->next;
+            }
+            if (button != picker->color_buttons)
+            {
+                button->next = picker->color_buttons;
+            }
+            picker->color_buttons = button;
+
+            update_button_bounds(picker);
             break;
         }
+        prev = button;
         button = button->next;
     }
     return hits;
@@ -1166,35 +1200,18 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
     gui->picker.bounds = bounds;
     gui->picker.pixels = arena_alloc_array(root_arena, (4 * bounds_radius_px * bounds_radius_px), u32);
     gui->visible = true;
+    gui->picker.color_buttons = arena_alloc_elem(root_arena, ColorButton);
 
     picker_init(&gui->picker);
 
-    i32 spacing = 4;
     i32 num_buttons = 5;
-
-    i32 button_size = (2*bounds_radius_px - (num_buttons - 1) * spacing) / num_buttons;
-
-    i32 current_x = 40 - button_size / 2;
-
-    ColorButton* cur_button = &gui->picker.color_buttons;
-    for (i32 i = 0; i < num_buttons; ++i)
+    auto* cur_button = gui->picker.color_buttons;
+    for (i64 i = 0; i != (num_buttons - 1); ++i)
     {
-        mlt_assert (cur_button->next == NULL);
-
-        cur_button->x = current_x;
-        cur_button->y = gui->picker.center.y + bounds_radius_px + spacing;
-        cur_button->w = button_size;
-        cur_button->h = button_size;
-        cur_button->rgba = {};
-
-        current_x += spacing + button_size;
-
-        if (i != (num_buttons - 1))
-        {
-            cur_button->next = arena_alloc_elem(root_arena, ColorButton);
-        }
+        cur_button->next = arena_alloc_elem(root_arena, ColorButton);
         cur_button = cur_button->next;
     }
+    update_button_bounds(&gui->picker);
 
     gui->preview_pos      = v2i{-1, -1};
     gui->preview_pos_prev = v2i{-1, -1};
@@ -1207,7 +1224,7 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 b32 gui_mark_color_used(MiltonGui* gui)
 {
     b32 changed = false;
-    ColorButton* start = &gui->picker.color_buttons;
+    ColorButton* start = gui->picker.color_buttons;
     v3f picker_color  = hsv_to_rgb(gui->picker.data.hsv);
     // Search for a color that is already in the list
     ColorButton* button = start;

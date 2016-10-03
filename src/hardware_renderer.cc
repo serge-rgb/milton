@@ -177,7 +177,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
         gl_set_uniform_vec2(render_data->picker_program, "u_triangle_point", 1, point.d);
     }
     v4f colors[5] = {};
-    ColorButton* button = &picker->color_buttons;
+    ColorButton* button = picker->color_buttons;
     colors[0] = button->rgba; button = button->next;
     colors[1] = button->rgba; button = button->next;
     colors[2] = button->rgba; button = button->next;
