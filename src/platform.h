@@ -84,6 +84,8 @@ struct PlatformState
     i32 num_point_results;
     b32 stopped_panning;
 
+    b32 force_next_frame;  // Used for IMGUI, since some operations take 1+ frames.
+
     // SDL Cursors
     SDL_Cursor* cursor_default;
     SDL_Cursor* cursor_hand;

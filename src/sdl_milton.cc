@@ -287,6 +287,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                             }
                         }
                     }
+                    else
+                    {
+                        platform_state->force_next_frame = true;
+                    }
                 }
             } break;
         case SDL_MOUSEBUTTONUP:
@@ -1159,7 +1163,16 @@ int milton_main()
         PROFILE_GRAPH_PUSH(GL);
         PROFILE_GRAPH_BEGIN(system);
         SDL_GL_SwapWindow(window);
-        SDL_WaitEvent(NULL);  // Wait for our custom event to force an update if there is no user input
+
+        // IMGUI events might update until the frame after they are created.
+        if (!platform_state.force_next_frame)
+        {
+            SDL_WaitEvent(NULL);
+        }
+        else
+        {
+            platform_state.force_next_frame = true;
+        }
     }
 
 #if defined(_WIN32) || defined(__LINUX__)
