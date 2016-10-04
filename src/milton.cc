@@ -228,15 +228,11 @@ static void milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                     v2i average = {};
                     float factor = 0.55f;
 
-                    // TODO: possible overflow.
-                    //  Not for N=2? Canvas is [-2^30, 2^30]
                     for (i64 i = 0; i < N; ++i)
                     {
-                        average.x += ws->points[ws->num_points-1 - i].x;
-                        average.y += ws->points[ws->num_points-1 - i].y;
+                        average.x += ws->points[ws->num_points-1 - i].x / N;
+                        average.y += ws->points[ws->num_points-1 - i].y / N;
                     }
-                    average.x /= N;
-                    average.y /= N;
 
                     auto* view = milton_state->view;
 
