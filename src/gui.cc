@@ -2,6 +2,9 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
+#define NUM_BUTTONS 5
+#define BOUNDS_RADIUS_PX 100
+
 static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
     // ImGui Section
@@ -863,10 +866,10 @@ static void picker_from_rgb(ColorPicker* picker, v3f rgb)
 
 static void update_button_bounds(ColorPicker* picker)
 {
-    i32 bounds_radius_px = 100;
+    i32 bounds_radius_px = BOUNDS_RADIUS_PX;
 
     i32 spacing = 4;
-    i32 num_buttons = 5;
+    i32 num_buttons = NUM_BUTTONS;
 
     i32 button_size = (2*bounds_radius_px - (num_buttons - 1) * spacing) / num_buttons;
     i32 current_x = 40 - button_size / 2;
@@ -1187,7 +1190,7 @@ void gui_toggle_help(MiltonGui* gui)
 
 void gui_init(Arena* root_arena, MiltonGui* gui)
 {
-    i32 bounds_radius_px = 100;
+    i32 bounds_radius_px = BOUNDS_RADIUS_PX;
     f32 wheel_half_width = 12;
     gui->picker.center = v2i{ bounds_radius_px + 20, bounds_radius_px + 30 };
     gui->picker.bounds_radius_px = bounds_radius_px;
@@ -1206,7 +1209,7 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 
     picker_init(&gui->picker);
 
-    i32 num_buttons = 5;
+    i32 num_buttons = NUM_BUTTONS;
     auto* cur_button = gui->picker.color_buttons;
     for (i64 i = 0; i != (num_buttons - 1); ++i)
     {
