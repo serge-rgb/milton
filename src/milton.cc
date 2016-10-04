@@ -1366,7 +1366,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             if (milton_state->working_stroke.num_points > 0)
             {
                 // We used the selected color to draw something. Push.
-                if (gui_mark_color_used(milton_state->gui))
+                if (milton_state->current_mode == MiltonMode_PEN &&
+                    gui_mark_color_used(milton_state->gui))
                 {
                     render_flags |= MiltonRenderFlags_UI_UPDATED;
                     // Tell the renderer to update the picker

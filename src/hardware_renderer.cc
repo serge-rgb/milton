@@ -941,11 +941,12 @@ void gpu_clip_strokes_and_update(Arena* arena,
             continue;
         }
         StrokeBucket* bucket = &l->strokes.root;
-        i64 bucket_count = 0;
-        while (bucket)
+        i64 bucket_i = 0;
+
+        while(bucket)
         {
             i64 count = 0;
-            if (l->strokes.count - bucket_count*STROKELIST_BUCKET_COUNT > STROKELIST_BUCKET_COUNT)
+            if (l->strokes.count - bucket_i*STROKELIST_BUCKET_COUNT >= STROKELIST_BUCKET_COUNT)
             {
                 count = STROKELIST_BUCKET_COUNT;
             }
@@ -1017,7 +1018,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
             }
             #endif
             bucket = bucket->next;
-            bucket_count += 1;
+            bucket_i += 1;
         }
 
 

@@ -847,8 +847,9 @@ static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
 
 static b32 gui_point_hovers(MiltonGui* gui, v2i point)
 {
-    b32 hovers = is_inside_picker_rect(&gui->picker, point) ||
-                is_inside_picker_button_area(&gui->picker, point);
+    b32 hovers = gui->visible &&
+                    (is_inside_picker_rect(&gui->picker, point) ||
+                     is_inside_picker_button_area(&gui->picker, point));
     return hovers;
 }
 
@@ -881,7 +882,6 @@ static void update_button_bounds(ColorPicker* picker)
 
         current_x += spacing + button_size;
     }
-
 }
 
 static b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
@@ -1061,9 +1061,11 @@ Rect picker_get_bounds(ColorPicker* picker)
 
 void eyedropper_input(MiltonGui* gui, u32* buffer, i32 w, i32 h, v2i point)
 {
-    v4f color = color_u32_to_v4f(buffer[point.y*w + point.x]);
-
-    picker_from_rgb(&gui->picker, color.rgb);
+    if (point.y > 0 && point.y <= h && point.x > 0 && point.x <= w)
+    {
+        v4f color = color_u32_to_v4f(buffer[point.y * w + point.x]);
+        picker_from_rgb(&gui->picker, color.rgb);
+    }
 }
 
 void exporter_init(Exporter* exporter)
