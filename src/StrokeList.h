@@ -3,7 +3,7 @@
 // - Works as a dynamically-sized array for Strokes.
 // - Pointers to elements in the StrokeList stay valid for the lifetime of the program.
 
-#define STROKELIST_BUCKET_COUNT 100
+#define STROKELIST_BUCKET_COUNT 500
 
 struct StrokeBucket
 {
