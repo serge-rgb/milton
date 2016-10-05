@@ -248,13 +248,16 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radiu
 
     float radius_plus_girth = radius + 4.0f; // Girth defined in outline.f.glsl
 
+    auto w = render_data->width;
+    auto h = render_data->height;
+
     // Normalized to [-1,1]
     GLfloat data[] =
     {
-        2*((cx-radius_plus_girth) / (render_data->width))-1,  -2*((cy-radius_plus_girth) / (render_data->height))+1,
-        2*((cx-radius_plus_girth) / (render_data->width))-1,  -2*((cy+radius_plus_girth) / (render_data->height))+1,
-        2*((cx+radius_plus_girth) / (render_data->width))-1,  -2*((cy+radius_plus_girth) / (render_data->height))+1,
-        2*((cx+radius_plus_girth) / (render_data->width))-1,  -2*((cy-radius_plus_girth) / (render_data->height))+1,
+        2*((cx-radius_plus_girth) / w)-1,  -2*((cy-radius_plus_girth) / h)+1,
+        2*((cx-radius_plus_girth) / w)-1,  -2*((cy+radius_plus_girth) / h)+1,
+        2*((cx+radius_plus_girth) / w)-1,  -2*((cy+radius_plus_girth) / h)+1,
+        2*((cx+radius_plus_girth) / w)-1,  -2*((cy-radius_plus_girth) / h)+1,
     };
 
     GLfloat sizes[] =

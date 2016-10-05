@@ -21,6 +21,14 @@
         #define MILTON_ZOOM_DEBUG 0
     #endif
 
+#if defined(_WIN32)
+    #define WIN32_DEBUGGER_OUTPUT 0
+    #if !MILTON_DEBUG
+        #undef WIN32_DEBUGGER_OUTPUT
+        #define WIN32_DEBUGGER_OUTPUT 0
+    #endif
+#endif
+
 
 #define MSAA_NUM_SAMPLES 4
 

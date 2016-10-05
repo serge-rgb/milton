@@ -686,10 +686,10 @@ int milton_main()
     int minor = 0;
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
-    if (major < 2 ||
+    if (major < 3 ||
         (major == 2 && minor < 1))
     {
-        milton_die_gracefully("This graphics driver does not support OpenGL 2.1 or higher.");
+        milton_die_gracefully("This graphics driver does not support OpenGL 3.2+");
     }
     milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));

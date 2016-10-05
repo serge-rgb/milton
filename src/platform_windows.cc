@@ -76,6 +76,9 @@ HRESULT SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE h
 #define PATH_STRCAT wcscat
 //#define PATH_STRNCAT wcsncat
 #define PATH_SNPRINTF _snwprintf
+#define PATH_FPUTS  fputws
+
+static FILE* g_win32_logfile;
 
 int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
 {
@@ -122,6 +125,14 @@ void platform_deallocate_internal(void* pointer)
     VirtualFree(pointer, 0, MEM_RELEASE);
 }
 
+void win32_debug_output(char* str)
+{
+    if (g_win32_logfile)
+    {
+        fputs(str, g_win32_logfile);
+    }
+}
+
 void win32_log(char *format, ...)
 {
     char message[ 4096 ];
@@ -138,7 +149,11 @@ void win32_log(char *format, ...)
 
     if (num_bytes_written > 0)
     {
-        OutputDebugStringA( message );
+        #if WIN32_DEBUGGER_OUTPUT
+        OutputDebugStringA(message);
+        #else
+        win32_debug_output(message);
+        #endif
     }
 
     va_end( args );
@@ -506,6 +521,9 @@ int CALLBACK WinMain(
         )
 {
     win32_cleanup_appdata();
+    PATH_CHAR path[MAX_PATH] = TO_PATH_STR("milton.log");
+    platform_fname_at_config(path, MAX_PATH);
+    g_win32_logfile = platform_fopen(path, TO_PATH_STR("w"));
     milton_main();
 }
 

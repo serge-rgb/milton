@@ -193,7 +193,6 @@ WallTime platform_get_walltime();
 u64 perf_counter();
 float perf_count_to_sec(u64 counter);
 
-
 #if defined(_WIN32)
 #define platform_milton_log win32_log
 void win32_log(char *format, ...);
