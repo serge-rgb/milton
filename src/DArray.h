@@ -37,7 +37,7 @@ void grow(DArray<T>* arr)
     }
     if (arr->data)
     {
-        arr->data = (T*)mlt_realloc(arr->data, arr->capacity*sizeof(T));
+        arr->data = (T*)mlt_realloc(arr->data, (size_t)(arr->capacity*sizeof(T)));
         if (arr->data == NULL)
         {
             milton_die_gracefully("Milton ran out of memory :(");

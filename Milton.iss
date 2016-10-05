@@ -9,9 +9,9 @@ DefaultGroupName=Milton
 ;UninstallDisplayIcon={app}\Milton.exe
 Compression=lzma2
 SolidCompression=yes
-OutputBaseFilename=MiltonSetup_1.2.6
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+OutputBaseFilename=MiltonSetup_1.2.6_x86
+;ArchitecturesAllowed=x64
+;ArchitecturesInstallIn64BitMode=x64
 
 [Files]
 Source: "Milton.exe"; DestDir: "{app}"

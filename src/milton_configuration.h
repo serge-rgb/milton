@@ -16,7 +16,7 @@
 
 #define MILTON_ZOOM_DEBUG 0
     // If MILTON_DEBUG is 0, MILTON_ZOOM_DEBUG will be 0 too!
-    #if !MILTON_DEBUG
+#if !MILTON_DEBUG
         #undef MILTON_ZOOM_DEBUG
         #define MILTON_ZOOM_DEBUG 0
     #endif
@@ -34,7 +34,7 @@
 
 #define MILTON_MULTITHREADED 1
 
-#define MILTON_ENABLE_PROFILING 1
+#define MILTON_ENABLE_PROFILING 0
 
 #define MAX_NUM_WORKERS 64
 // Force things to be a bit slower

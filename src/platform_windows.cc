@@ -47,7 +47,7 @@ extern "C"
 #endif  // NTDDI_WINXP
 #define CSIDL_FLAG_MASK                 0xFF00        // mask for all possible flag values
 
-HRESULT SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE hToken, __in DWORD dwFlags, __out_ecount(MAX_PATH) LPWSTR pszPath);
+HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE hToken, __in DWORD dwFlags, __out_ecount(MAX_PATH) LPWSTR pszPath);
 
 
     //*
@@ -62,7 +62,7 @@ HRESULT SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE h
 #define snprintf sprintf_s
 #endif
 
-#if MILTON_DEBUG
+#if MILTON_DEBUG && 0  // Disabled. Milton 1.2.6 x86
 #define HEAP_BEGIN_ADDRESS ((LPVOID)(1<<18))  // Location to begin allocations
 #else
 #define HEAP_BEGIN_ADDRESS NULL
@@ -162,7 +162,7 @@ void win32_log(char *format, ...)
 void milton_fatal(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");
-    puts(message);
+    milton_log(message);
     exit(EXIT_FAILURE);
 }
 
