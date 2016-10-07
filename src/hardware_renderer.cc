@@ -292,11 +292,25 @@ b32 render_element_is_layer(RenderElement* render_element)
     return result;
 }
 
+GLenum textureTarget()
+{
+    GLenum e;
+    if (g_gl_supports_multisampling)
+    {
+        e = GL_TEXTURE_2D_MULTISAMPLE;
+    }
+    else
+    {
+        e = GL_TEXTURE_2D;
+    }
+    return e;
+}
+
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
     glEnable(GL_MULTISAMPLE);
-    if (glMinSampleShadingARB != NULL)
+    //if (glMinSampleShadingARB != NULL)
     {
         glEnable(GL_SAMPLE_SHADING_ARB);
         GLCHK( glMinSampleShadingARB(1.0f) );
@@ -398,6 +412,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         gl_link_program(render_data->layer_blend_program, objs, array_count(objs));
         gl_set_uniform_i(render_data->layer_blend_program, "u_canvas", 0);
     }
+    #if 0
     {  // SSAA resolve program
         render_data->ssaa_program = glCreateProgram();
 
@@ -409,6 +424,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
 
         gl_set_uniform_i(render_data->ssaa_program, "u_canvas", 0);
     }
+    #endif
     {  // Brush outline program
         render_data->outline_program = glCreateProgram();
         GLuint objs[2] = {};

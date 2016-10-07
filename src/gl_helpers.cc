@@ -52,12 +52,13 @@ GLuint gl_compile_shader(const char* src, GLuint type, char* shader_name)
         GLCHK ( glGetShaderInfoLog (obj, length, &written_len, log) );
         gl_log("Shader compilation info. \n    ---- Info log:\n");
         gl_log(log);
-        free(log);
 
         if (!res)
         {
             mlt_assert(!"Shader compilation error");
         }
+
+        free(log);
     }
     return obj;
 }

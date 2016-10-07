@@ -79,6 +79,5 @@ void free_layers(Layer* root);
 i64 count_strokes(Layer* root);
 i64 count_clipped_strokes(Layer* root, i32 num_workers);
 
-
 void stroke_free(Stroke* stroke);
 

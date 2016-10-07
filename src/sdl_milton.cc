@@ -324,7 +324,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 // If we catch a single point, then it's fine. It will get filtered out in milton_stroke_input
                 b32 is_empty = platform_state->num_point_results == 0;
 
-                if (!EasyTab->PenInProximity || is_empty)  // Only get mouse info when wacom is not in use..
+                // Only get mouse info when wacom is not in use..
+                if (EasyTab && (!EasyTab->PenInProximity || is_empty))
                 {
                     if (platform_state->is_pointer_down)
                     {
@@ -652,15 +653,17 @@ int milton_main()
 
     platform_state.keyboard_layout = get_current_keyboard_layout();
 
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    // SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     //SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #if MILTON_DEBUG
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 #endif
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+    // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
 
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -687,7 +690,7 @@ int milton_main()
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
     if (major < 3 ||
-        (major == 2 && minor < 1))
+        (major == 3 && minor < 1))
     {
         milton_die_gracefully("This graphics driver does not support OpenGL 3.2+");
     }
@@ -1071,7 +1074,7 @@ int milton_main()
 
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
 #if defined(__MACH__)
-        mlt_assert( platform_state.num_pressure_results == 0 );
+        //mlt_assert( platform_state.num_pressure_results == 0 );
         int num_polled_pressures = 0;
         float* polled_pressures = milton_osx_poll_pressures(&num_polled_pressures);
         if ( num_polled_pressures )

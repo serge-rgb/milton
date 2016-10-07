@@ -1,4 +1,4 @@
-#extension GL_ARB_texture_multisample : enable
+
 
 // The triangle, in [-1,1].
 uniform vec2 u_pointa;
@@ -12,7 +12,13 @@ uniform vec2 u_triangle_point;
 
 uniform vec4 u_colors[5]; // Colors for picker buttons.
 
+#if HAS_MULTISAMPLE
+#extension GL_ARB_texture_multisample : enable
 uniform sampler2DMS u_canvas;
+#else
+uniform sampler2D u_canvas;
+#endif
+
 uniform vec2 u_screen_size;
 
 varying vec2 v_norm;
@@ -119,7 +125,7 @@ void main()
     /* vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y); */
     /* vec2 coord = screen_point / u_screen_size; */
     /* coord.y = 1-coord.y; */
-    /* vec4 color = texture2D(u_canvas, coord); */
+    /* vec4 color = texture(u_canvas, coord); */
     vec4 color = vec4(0.5,0.5,0.55,0.4);
 
     float dist = distance(vec2(0), v_norm);

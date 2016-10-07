@@ -460,7 +460,8 @@ void milton_save(MiltonState* milton_state)
     }
     else
     {
-        milton_die_gracefully("Could not create file for saving! ");
+        // milton_die_gracefully("Could not create file for saving! ");
+        // TODO: Fix this!
         return;
     }
 }

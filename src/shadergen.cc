@@ -105,7 +105,9 @@ void output_shader(FILE* of, char* fname, char* varname, ShaderType shader_type,
     lines = split_lines(contents, &count);
     fprintf(of, "char %s[] = \n", varname);
     fprintf(of, "\"#version 330\\n\"\n");
-    fprintf(of, "\"#define texture2D texture\\n\"\n");
+    fprintf(of, "\"#define HAS_MULTISAMPLE 1\\n\"\n");
+    //fprintf(of, "\"#define texture2D texture\\n\"\n");
+#if 1
     if (shader_type == VERTEX)
     {
         fprintf(of, "\"#define attribute in\\n\"\n");
@@ -117,6 +119,7 @@ void output_shader(FILE* of, char* fname, char* varname, ShaderType shader_type,
         fprintf(of, "\"out vec4 out_color;\\n\"\n");
         fprintf(of, "\"#define gl_FragColor out_color\\n\"\n");
     }
+#endif
 
     for (i64 i = 0; i < prelude_lines_count; ++i)
     {
