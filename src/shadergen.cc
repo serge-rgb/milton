@@ -146,7 +146,6 @@ int main()
         output_shader(outfd, "../src/layer_blend.f.glsl", "g_layer_blend_f", FRAGMENT);
         output_shader(outfd, "../src/simple.v.glsl", "g_simple_v", VERTEX);
         output_shader(outfd, "../src/simple.f.glsl", "g_simple_f", FRAGMENT);
-        output_shader(outfd, "../src/ssaa_resolve.f.glsl", "g_ssaa_resolve_f", FRAGMENT);
         output_shader(outfd, "../src/outline.v.glsl", "g_outline_v", VERTEX);
         output_shader(outfd, "../src/outline.f.glsl", "g_outline_f", FRAGMENT);
         output_shader(outfd, "../src/stroke_raster.v.glsl", "g_stroke_raster_v", VERTEX, "../src/common.glsl");

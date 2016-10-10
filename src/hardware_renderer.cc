@@ -22,7 +22,6 @@ struct RenderData
     GLuint quad_program;
     GLuint picker_program;
     GLuint layer_blend_program;
-    GLuint ssaa_program;
     GLuint outline_program;
     GLuint exporter_program;
     GLuint texture_fill_program;
@@ -412,19 +411,6 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         gl_link_program(render_data->layer_blend_program, objs, array_count(objs));
         gl_set_uniform_i(render_data->layer_blend_program, "u_canvas", 0);
     }
-    #if 0
-    {  // SSAA resolve program
-        render_data->ssaa_program = glCreateProgram();
-
-        GLuint objs[2] = {};
-        objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(g_ssaa_resolve_f, GL_FRAGMENT_SHADER);
-
-        gl_link_program(render_data->ssaa_program, objs, array_count(objs));
-
-        gl_set_uniform_i(render_data->ssaa_program, "u_canvas", 0);
-    }
-    #endif
     {  // Brush outline program
         render_data->outline_program = glCreateProgram();
         GLuint objs[2] = {};
@@ -477,7 +463,6 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
 
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
-        //glActiveTexture(g_texture_unit_canvas.opengl_id);
         GLCHK (glGenTextures(1, &render_data->eraser_texture));
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture);
 
@@ -632,7 +617,6 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
 void set_screen_size(RenderData* render_data, float* fscreen)
 {
     gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->ssaa_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->texture_fill_program, "u_screen_size", 1, fscreen);
     gl_set_uniform_vec2(render_data->exporter_program, "u_screen_size", 1, fscreen);
