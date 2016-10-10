@@ -224,8 +224,7 @@ void milton_load(MiltonState* milton_state)
                             stroke.bounding_rect = bounding_box_for_stroke(&stroke);
                         }
 
-                        Stroke* ptr = layer_push_stroke(layer, stroke);
-                        gpu_cook_stroke(milton_state->root_arena, milton_state->render_data, ptr);
+                        layer_push_stroke(layer, stroke);
                     }
                 }
             }
