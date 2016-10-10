@@ -653,17 +653,17 @@ int milton_main()
 
     platform_state.keyboard_layout = get_current_keyboard_layout();
 
-    // SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    //SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-#if MILTON_DEBUG
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-#endif
+    i32 gl_version_major = 4;
+    i32 gl_version_minor = 0;
+
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_version_major);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_version_minor);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    // SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
 
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -685,12 +685,12 @@ int milton_main()
 
     SDL_GL_SetSwapInterval(1);
 
-    int major = 0;
-    int minor = 0;
-    glGetIntegerv(GL_MAJOR_VERSION, &major);
-    glGetIntegerv(GL_MINOR_VERSION, &minor);
-    if (major < 3 ||
-        (major == 3 && minor < 1))
+    int actual_major = 0;
+    int actual_minor = 0;
+    glGetIntegerv(GL_MAJOR_VERSION, &actual_major);
+    glGetIntegerv(GL_MINOR_VERSION, &actual_minor);
+    if (actual_major < gl_version_major ||
+        (actual_major == gl_version_major && actual_minor < gl_version_minor))
     {
         milton_die_gracefully("This graphics driver does not support OpenGL 3.2+");
     }

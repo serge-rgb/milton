@@ -50,7 +50,7 @@
 #include "profiler.h"
 #include "profiler.cc"
 #include "hardware_renderer.h"
-#include "Stroke.h"
+#include "stroke.h"
 #include "StrokeList.h"
 #include "canvas.h"
 #include "canvas.cc"
