@@ -30,7 +30,7 @@
 #endif
 
 
-#define MSAA_NUM_SAMPLES 8
+#define MSAA_NUM_SAMPLES 4
 
 #define MILTON_MULTITHREADED 1
 

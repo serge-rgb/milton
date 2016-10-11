@@ -58,6 +58,7 @@ struct RenderData
     i32 height;
 
     v3f background_color;
+    i32 scale;
 
     // See MAX_DEPTH_VALUE
     i32 stroke_z;
@@ -537,6 +538,7 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
 
 void gpu_update_scale(RenderData* render_data, i32 scale)
 {
+    render_data->scale = scale;
     gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
 }
 
@@ -632,7 +634,7 @@ void gpu_set_canvas(RenderData* render_data, CanvasView* view)
     auto pan = view->pan_vector;
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, pan.d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, center.d);
-    gl_set_uniform_i(render_data->stroke_program, "u_scale", view->scale);
+    gpu_update_scale(render_data, view->scale);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     set_screen_size(render_data, fscreen);
 }
@@ -709,6 +711,9 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             bpoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             indices = arena_alloc_array(&scratch_arena, count_indices, u16);
 
+            mlt_assert(render_data->scale > 0);
+            i32 scale = render_data->scale;
+
             size_t bounds_i = 0;
             size_t apoints_i = 0;
             size_t bpoints_i = 0;
@@ -722,8 +727,8 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 float radius_i = stroke->pressures[i]*brush.radius;
                 float radius_j = stroke->pressures[i+1]*brush.radius;
 
-                i32 min_x = min(point_i.x-radius_i, point_j.x-radius_j);
-                i32 min_y = min(point_i.y-radius_i, point_j.y-radius_j);
+                i32 min_x = min(point_i.x-radius_i, point_j.x-radius_j) - 1*scale;
+                i32 min_y = min(point_i.y-radius_i, point_j.y-radius_j) - 1*scale;
 
                 i32 max_x = max(point_i.x+radius_i, point_j.x+radius_j);
                 i32 max_y = max(point_i.y+radius_i, point_j.y+radius_j);
