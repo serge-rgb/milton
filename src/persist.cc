@@ -583,7 +583,7 @@ void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
 
         if (fd)
         {
-            if (!PATH_STRCMP( ext, TO_PATH_STR("png") ))
+            if (!PATH_STRCMP(ext, TO_PATH_STR("png")))
             {
                 stbi_write_png_to_func(write_func, &fd, w, h, 4, buffer, 0);
             }

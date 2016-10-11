@@ -653,8 +653,8 @@ int milton_main()
 
     platform_state.keyboard_layout = get_current_keyboard_layout();
 
-    i32 gl_version_major = 4;
-    i32 gl_version_minor = 0;
+    i32 gl_version_major = 3;
+    i32 gl_version_minor = 2;
 
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);

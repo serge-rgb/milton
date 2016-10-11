@@ -22,7 +22,7 @@
     #endif
 
 #if defined(_WIN32)
-    #define WIN32_DEBUGGER_OUTPUT 0
+    #define WIN32_DEBUGGER_OUTPUT 1
     #if !MILTON_DEBUG
         #undef WIN32_DEBUGGER_OUTPUT
         #define WIN32_DEBUGGER_OUTPUT 0
@@ -30,7 +30,7 @@
 #endif
 
 
-#define MSAA_NUM_SAMPLES 4
+#define MSAA_NUM_SAMPLES 8
 
 #define MILTON_MULTITHREADED 1
 

@@ -309,7 +309,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
 {
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
     glEnable(GL_MULTISAMPLE);
-    //if (glMinSampleShadingARB != NULL)
+    // Using the & operator to silence clang warning on OSX.
+    if (&glMinSampleShadingARB != NULL)
     {
         glEnable(GL_SAMPLE_SHADING_ARB);
         GLCHK( glMinSampleShadingARB(1.0f) );
