@@ -268,15 +268,16 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     if (!ImGui::GetIO().WantCaptureMouse)
                     {
                         v2i point = { event.button.x, event.button.y };
-                        input_flags |= MiltonInputFlags_CLICK;
-                        milton_input.click = point;
 
-                        platform_state->is_pointer_down = true;
-                        platform_state->pointer = point;
-                        platform_state->is_middle_button_down = (event.button.button == SDL_BUTTON_MIDDLE);
-
-                        if (!platform_state->is_panning && point.x >= 0 && point.y >= 0)
+                        if (!platform_state->is_panning && point.x >= 0 && point.y > 0)
                         {
+                            input_flags |= MiltonInputFlags_CLICK;
+                            milton_input.click = point;
+
+                            platform_state->is_pointer_down = true;
+                            platform_state->pointer = point;
+                            platform_state->is_middle_button_down = (event.button.button == SDL_BUTTON_MIDDLE);
+
                             if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
                             {
                                 milton_input.points[platform_state->num_point_results++] = point;
