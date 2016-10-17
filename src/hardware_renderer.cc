@@ -351,19 +351,20 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         char *vendor_string = (char *)glGetString(GL_VENDOR);
         if (vendor_string)
         {
-            if (strcmp("NVIDIA", vendor_string) != 0)
+            if (strcmp("NVIDIA Corporation", vendor_string) == 0)
             {
                 vendor = GLVendor_NVIDIA;
             }
-            else if (strcmp("AMD", vendor_string))
+            else if (strcmp("AMD", vendor_string) == 0)
             {
                 vendor = GLVendor_AMD;
             }
-            else if (strcmp("INTEL", vendor_string) != 0)
+            else if (strcmp("Intel", vendor_string) == 0)
             {
                 vendor = GLVendor_INTEL;
             }
         }
+        milton_log("Vendor string: \"%s\"\n", vendor_string);
     }
     // Quad that fills the screen.
     {
