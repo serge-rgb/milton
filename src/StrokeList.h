@@ -51,7 +51,7 @@ void push(StrokeList* list, const Stroke& element)
 
 Stroke* get(StrokeList* list, i64 idx)
 {
-	mlt_assert(idx < list->count);
+    mlt_assert(idx < list->count);
     int bucket_i = idx / STROKELIST_BUCKET_COUNT;
     int i = idx % STROKELIST_BUCKET_COUNT;
     StrokeBucket* bucket = &list->root;
@@ -89,8 +89,22 @@ void reset(StrokeList* list)
 
 void release(StrokeList* list)
 {
-    // TODO: free memory
-    reset(list);
+    list->count = 0;
+    StrokeBucket* bucket = &list->root;
+    while(bucket)
+    {
+        StrokeBucket* next = bucket->next;
+        if (bucket != &list->root)
+        {
+            mlt_free(bucket);
+        }
+        else
+        {
+            *bucket = {};
+            bucket->bounding_rect = rect_without_size();
+        }
+        bucket = next;
+    }
 }
 
 i64 count(StrokeList* list)

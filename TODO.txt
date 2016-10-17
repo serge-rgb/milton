@@ -17,9 +17,11 @@ To-Do
         - Gestures (OSX, Windows)
     - Renderer
         - Fallback multi-sampling in stroke rendering when min_sample_shading is not available
-    - ImGUI details:
+    - GUI
         - Image Button
         - Reduce or remove widget rounding
+        - Move color picker
+        - Radial menu
     - Future
         - Brush
             - Support for general, implicitly defined brushes
