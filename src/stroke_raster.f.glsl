@@ -14,6 +14,16 @@ uniform sampler2DMS u_canvas;
 uniform sampler2D u_canvas;
 #endif
 
+
+//          enum GLVendor
+//          {
+//              GLVendor_NVIDIA,
+//              GLVendor_INTEL,
+//              GLVendor_AMD,
+//              GLVendor_UNKNOWN,
+//          };
+uniform int u_vendor;
+
 // x,y  - closest point
 // z    - t in [0,1] interpolation value
 vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
@@ -90,7 +100,16 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
 
 void main()
 {
-    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + gl_SamplePosition;
+    vec2 offset;
+    if (u_vendor == 0 /*GLVendor_NVIDIA*/)
+    {
+        offset = vec2(0, 0);
+    }
+    else
+    {
+        offset = gl_SamplePosition;
+    }
+    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
 #if HAS_MULTISAMPLE
     vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
 #else

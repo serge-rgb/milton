@@ -131,13 +131,13 @@ void    milton_die_gracefully(char* message);
 void cursor_show();
 void cursor_hide();
 
-typedef enum FileKind
+enum FileKind
 {
     FileKind_IMAGE,
     FileKind_MILTON_CANVAS,
 
     FileKind_COUNT,
-} FileKind;
+};
 
 #define fopen fopen_error
 FILE*   fopen_error(const char* fname, const char* mode)
@@ -150,15 +150,14 @@ FILE*   fopen_error(const char* fname, const char* mode)
     #define MAX_PATH PATH_MAX
 #endif
 
-typedef struct PlatformPrefs
+struct PlatformPrefs
 {
     // Store the window size at the time of quitting.
     i32 width;
     i32 height;
     // Last opened file.
     PATH_CHAR last_mlt_file[MAX_PATH];
-} PlatformPrefs;
-
+};
 
 // Defined in platform_windows.cc
 FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode);

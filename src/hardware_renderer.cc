@@ -87,6 +87,14 @@ enum RenderElementFlags
     RenderElementFlags_LAYER          = 1<<0,
 };
 
+enum GLVendor
+{
+    GLVendor_NVIDIA,
+    GLVendor_INTEL,
+    GLVendor_AMD,
+    GLVendor_UNKNOWN,
+};
+
 static void print_framebuffer_status()
 {
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -337,21 +345,26 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     GLCHK( glGenVertexArrays(1, &proxy_vao) );
     GLCHK( glBindVertexArray(proxy_vao) );
 
-    // Load shader into opengl.
+    GLVendor vendor = GLVendor_UNKNOWN;
     {
-        GLuint objs[2];
 
-        objs[0] = gl_compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER);
-
-        render_data->stroke_program = glCreateProgram();
-
-        gl_link_program(render_data->stroke_program, objs, array_count(objs));
-
-        GLCHK( glUseProgram(render_data->stroke_program) );
-        gl_set_uniform_i(render_data->stroke_program, "u_canvas", 0);
+        char *vendor_string = (char *)glGetString(GL_VENDOR);
+        if (vendor_string)
+        {
+            if (strcmp("NVIDIA", vendor_string) != 0)
+            {
+                vendor = GLVendor_NVIDIA;
+            }
+            else if (strcmp("AMD", vendor_string))
+            {
+                vendor = GLVendor_AMD;
+            }
+            else if (strcmp("INTEL", vendor_string) != 0)
+            {
+                vendor = GLVendor_INTEL;
+            }
+        }
     }
-
     // Quad that fills the screen.
     {
         // a------d
@@ -393,6 +406,21 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         objs[1] = gl_compile_shader(g_quad_f, GL_FRAGMENT_SHADER);
         render_data->quad_program = glCreateProgram();
         gl_link_program(render_data->quad_program, objs, array_count(objs));
+    }
+
+    {  // Stroke raster program
+        GLuint objs[2];
+
+        objs[0] = gl_compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER);
+
+        render_data->stroke_program = glCreateProgram();
+
+        gl_link_program(render_data->stroke_program, objs, array_count(objs));
+
+        GLCHK( glUseProgram(render_data->stroke_program) );
+        gl_set_uniform_i(render_data->stroke_program, "u_canvas", 0);
+        gl_set_uniform_i(render_data->stroke_program, "u_vendor", vendor);
     }
     {  // Color picker program
         render_data->picker_program = glCreateProgram();
