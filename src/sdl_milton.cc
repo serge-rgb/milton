@@ -325,8 +325,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 // If we catch a single point, then it's fine. It will get filtered out in milton_stroke_input
                 b32 is_empty = platform_state->num_point_results == 0;
 
-                // Only get mouse info when wacom is not in use..
-                if (EasyTab && (!EasyTab->PenInProximity || is_empty))
+                // Only get mouse info when wacom is not in use, or if EasyTab is NULL.
+                if ((EasyTab == NULL) || (EasyTab && (!EasyTab->PenInProximity || is_empty)))
                 {
                     if (platform_state->is_pointer_down)
                     {
