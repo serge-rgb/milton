@@ -5,7 +5,7 @@
 
 #define MILTON_MAJOR_VERSION 1
 #define MILTON_MINOR_VERSION 2
-#define MILTON_MICRO_VERSION 6
+#define MILTON_MICRO_VERSION 7
 
 // When MILTON_DEBUG is 1,
 //  - Asserts
@@ -22,7 +22,7 @@
     #endif
 
 #if defined(_WIN32)
-    #define WIN32_DEBUGGER_OUTPUT 1
+    #define WIN32_DEBUGGER_OUTPUT 0
     #if !MILTON_DEBUG
         #undef WIN32_DEBUGGER_OUTPUT
         #define WIN32_DEBUGGER_OUTPUT 0

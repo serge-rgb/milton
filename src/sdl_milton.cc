@@ -261,6 +261,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 {
                     break;
                 }
+
                 if (event.button.button == SDL_BUTTON_LEFT ||
                     event.button.button == SDL_BUTTON_MIDDLE ||
                     event.button.button == SDL_BUTTON_RIGHT)
