@@ -942,7 +942,7 @@ int milton_main()
     {
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = NULL;  // Don't save any imgui.ini file
-        PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("carlito.ttf");
+        PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("Carlito.ttf");
         platform_fname_at_exe(fname, MAX_PATH); // TODO: check that this works again
         FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
 

@@ -139,6 +139,14 @@ enum FileKind
     FileKind_COUNT,
 };
 
+
+// Define this function before we substitute fopen in Mitlon with a macro.
+FILE* fopen_unix(const char* fname, const char* mode)
+{
+    FILE* fd = fopen(fname, mode);
+    return fd;
+}
+
 #define fopen fopen_error
 FILE*   fopen_error(const char* fname, const char* mode)
 {

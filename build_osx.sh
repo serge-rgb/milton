@@ -6,6 +6,9 @@ if [ ! -d build ]; then
     mkdir build
 fi
 
+cp third_party/Carlito.ttf build/
+cp third_party/Carlito.LICENSE build/
+
 cd build
 
 clang++ -O0 -g \

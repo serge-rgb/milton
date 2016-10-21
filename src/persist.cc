@@ -630,6 +630,7 @@ void milton_prefs_load(PlatformPrefs* prefs)
 {
     PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
     platform_fname_at_config(fname, MAX_PATH);
+    
     FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
     if (fd)
     {
