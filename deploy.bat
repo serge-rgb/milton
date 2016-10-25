@@ -11,6 +11,14 @@ copy LICENSE.txt OUTPUT\LICENSE.txt
 copy build\Carlito.LICENSE OUTPUT\Carlito.LICENSE
 copy build\Carlito.ttf OUTPUT\Carlito.ttf
 
+mkdir OUTPUT\Standalone
+copy OUTPUT\Milton.exe OUTPUT\Standalone\
+copy OUTPUT\milton_icon.ico OUTPUT\Standalone\
+copy OUTPUT\LICENSE.txt OUTPUT\Standalone\
+copy OUTPUT\Carlito.ttf OUTPUT\Standalone\
+copy OUTPUT\Carlito.LICENSE OUTPUT\Standalone\
+
+
 goto end
 
 :OUTPUT_EXISTS

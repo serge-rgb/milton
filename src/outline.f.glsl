@@ -1,9 +1,11 @@
 
-varying vec2 v_sizes;
+in vec2 v_sizes;
 
 uniform int u_radius;
 uniform bool u_fill;
 uniform vec4 u_color;
+
+out vec4 out_color;
 
 void main()
 {
@@ -15,15 +17,15 @@ void main()
     if (r <= u_radius &&
         r > u_radius - girth)
     {
-        gl_FragColor = vec4(0,0,0,ring_alpha);
+        out_color = vec4(0,0,0,ring_alpha);
     }
     else if (r < u_radius + girth && r >= u_radius)
     {
-        gl_FragColor = vec4(1,1,1,ring_alpha);
+        out_color = vec4(1,1,1,ring_alpha);
     }
     else if (u_fill && r < u_radius)
     {
-        gl_FragColor = u_color;
+        out_color = u_color;
     }
     else
     {

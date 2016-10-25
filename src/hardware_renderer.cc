@@ -76,8 +76,9 @@ enum RenderDataFlags
 {
     RenderDataFlags_NONE = 0,
 
-    RenderDataFlags_GUI_VISIBLE = 1<<0,
-    RenderDataFlags_EXPORTING   = 1<<1,
+    RenderDataFlags_GUI_VISIBLE        = 1<<0,
+    RenderDataFlags_EXPORTING          = 1<<1,
+    RenderDataFlags_HAS_SAMPLE_SHADING = 1<<2,
 };
 
 enum RenderElementFlags
@@ -314,6 +315,20 @@ GLenum textureTarget()
     return e;
 }
 
+
+char* config_shader(char* shader_str, char* config_str)
+{
+    size_t shader_length = strlen(shader_str) + strlen(config_str) + 1;
+    // TODO: Separate allocator for strings. Right now we're letting this leak.
+    char* new_shader_str = (char*)mlt_calloc(1, sizeof(char)*shader_length);
+    if (new_shader_str)
+    {
+        strcat(new_shader_str, config_str);
+        strcat(new_shader_str, shader_str);
+    }
+    return new_shader_str;
+}
+
 b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
@@ -412,8 +427,25 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     {  // Stroke raster program
         GLuint objs[2];
 
+        char* config_string = "";
+        if (render_data->flags & RenderDataFlags_HAS_SAMPLE_SHADING)
+        {
+            if (vendor == GLVendor_NVIDIA)
+            {
+                config_string =
+                        "#define HAS_SAMPLE_SHADING 1\n"
+                        "#define VENDOR_NVIDIA 1\n";
+            }
+            else
+            {
+                config_string =
+                        "#define HAS_SAMPLE_SHADING 1\n";
+            }
+        }
+
+        char* stroke_raster_f = config_shader(g_stroke_raster_f, config_string);
         objs[0] = gl_compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER);
+        objs[1] = gl_compile_shader(stroke_raster_f, GL_FRAGMENT_SHADER);
 
         render_data->stroke_program = glCreateProgram();
 
@@ -421,7 +453,6 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
 
         GLCHK( glUseProgram(render_data->stroke_program) );
         gl_set_uniform_i(render_data->stroke_program, "u_canvas", 0);
-        gl_set_uniform_i(render_data->stroke_program, "u_vendor", vendor);
     }
     {  // Color picker program
         render_data->picker_program = glCreateProgram();

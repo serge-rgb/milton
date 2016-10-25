@@ -84,13 +84,7 @@ char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
     return lines;
 }
 
-enum ShaderType
-{
-    VERTEX,
-    FRAGMENT,
-};
-
-void output_shader(FILE* of, char* fname, char* varname, ShaderType shader_type, char* fname_prelude = NULL)
+void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = NULL)
 {
     char* contents = read_entire_file(fname);
     char** prelude_lines = NULL;
@@ -104,21 +98,7 @@ void output_shader(FILE* of, char* fname, char* varname, ShaderType shader_type,
     i64 count;
     lines = split_lines(contents, &count);
     fprintf(of, "char %s[] = \n", varname);
-    fprintf(of, "\"#version 330\\n\"\n");
-    fprintf(of, "\"#define HAS_MULTISAMPLE 1\\n\"\n");
-    //fprintf(of, "\"#define texture2D texture\\n\"\n");
-
-    if (shader_type == VERTEX)
-    {
-        fprintf(of, "\"#define attribute in\\n\"\n");
-        fprintf(of, "\"#define varying out\\n\"\n");
-    }
-    else if (shader_type == FRAGMENT)
-    {
-        fprintf(of, "\"#define varying in\\n\"\n");
-        fprintf(of, "\"out vec4 out_color;\\n\"\n");
-        fprintf(of, "\"#define gl_FragColor out_color\\n\"\n");
-    }
+    fprintf(of, "\"#define HAS_MULTISAMPLE 1\\n\"\n");  // MSAA in OpenGL 3.0+. Multisampled Texture in GL 3.2+
 
     for (i64 i = 0; i < prelude_lines_count; ++i)
     {
@@ -139,20 +119,20 @@ int main()
     FILE* outfd = fopen("./../src/shaders.gen.h", "w");
     if (outfd)
     {
-        output_shader(outfd, "../src/picker.v.glsl", "g_picker_v", VERTEX);
-        output_shader(outfd, "../src/picker.f.glsl", "g_picker_f", FRAGMENT);
-        output_shader(outfd, "../src/layer_blend.v.glsl", "g_layer_blend_v", VERTEX);
-        output_shader(outfd, "../src/layer_blend.f.glsl", "g_layer_blend_f", FRAGMENT);
-        output_shader(outfd, "../src/simple.v.glsl", "g_simple_v", VERTEX);
-        output_shader(outfd, "../src/simple.f.glsl", "g_simple_f", FRAGMENT);
-        output_shader(outfd, "../src/outline.v.glsl", "g_outline_v", VERTEX);
-        output_shader(outfd, "../src/outline.f.glsl", "g_outline_f", FRAGMENT);
-        output_shader(outfd, "../src/stroke_raster.v.glsl", "g_stroke_raster_v", VERTEX, "../src/common.glsl");
-        output_shader(outfd, "../src/stroke_raster.f.glsl", "g_stroke_raster_f", FRAGMENT, "../src/common.glsl");
-        output_shader(outfd, "../src/exporter_rect.f.glsl", "g_exporter_f", FRAGMENT);
-        output_shader(outfd, "../src/texture_fill.f.glsl", "g_texture_fill_f", FRAGMENT);
-        output_shader(outfd, "../src/quad.v.glsl", "g_quad_v", VERTEX);
-        output_shader(outfd, "../src/quad.f.glsl", "g_quad_f", FRAGMENT);
+        output_shader(outfd, "../src/picker.v.glsl", "g_picker_v");
+        output_shader(outfd, "../src/picker.f.glsl", "g_picker_f");
+        output_shader(outfd, "../src/layer_blend.v.glsl", "g_layer_blend_v");
+        output_shader(outfd, "../src/layer_blend.f.glsl", "g_layer_blend_f");
+        output_shader(outfd, "../src/simple.v.glsl", "g_simple_v");
+        output_shader(outfd, "../src/simple.f.glsl", "g_simple_f");
+        output_shader(outfd, "../src/outline.v.glsl", "g_outline_v");
+        output_shader(outfd, "../src/outline.f.glsl", "g_outline_f");
+        output_shader(outfd, "../src/stroke_raster.v.glsl", "g_stroke_raster_v", "../src/common.glsl");
+        output_shader(outfd, "../src/stroke_raster.f.glsl", "g_stroke_raster_f", "../src/common.glsl");
+        output_shader(outfd, "../src/exporter_rect.f.glsl", "g_exporter_f");
+        output_shader(outfd, "../src/texture_fill.f.glsl", "g_texture_fill_f");
+        output_shader(outfd, "../src/quad.v.glsl", "g_quad_v");
+        output_shader(outfd, "../src/quad.f.glsl", "g_quad_f");
     }
     else
     {

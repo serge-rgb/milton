@@ -79,7 +79,7 @@ PFNGLMINSAMPLESHADINGARBPROC        glMinSampleShadingARB;
 #endif  //_WIN32
 
 
-bool gl_load()
+bool gl_load(b32* out_supports_sample_shading)
 {
     bool ok = true;
 #if defined(_WIN32)
@@ -103,6 +103,11 @@ bool gl_load()
                 supports_sample_shading = true;
             }
         }
+    }
+
+    if (out_supports_sample_shading)
+    {
+        *out_supports_sample_shading = supports_sample_shading;
     }
 
 #pragma warning(push, 0)

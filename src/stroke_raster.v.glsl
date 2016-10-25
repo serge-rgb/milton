@@ -4,12 +4,12 @@
 // Note:
 //  TODO: write documentation here about float<->int regarding strokes and milton
 // TODO: use int?
-attribute vec3 a_position;
-attribute vec3 a_pointa;
-attribute vec3 a_pointb;
+in vec3 a_position;
+in vec3 a_pointa;
+in vec3 a_pointb;
 
-varying vec3 v_pointa;
-varying vec3 v_pointb;
+out vec3 v_pointa;
+out vec3 v_pointb;
 
 #define MAX_DEPTH_VALUE 1048576.0
 

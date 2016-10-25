@@ -21,8 +21,9 @@ uniform sampler2D u_canvas;
 
 uniform vec2 u_screen_size;
 
-varying vec2 v_norm;
+in vec2 v_norm;
 
+out vec4 out_color;
 
 #define PI 3.14159
 
@@ -205,5 +206,5 @@ void main()
         color.rgb = vec3(1- color.r, 1 - color.g, 1 - color.b);
     }
 
-    gl_FragColor = color;
+    out_color = color;
 }

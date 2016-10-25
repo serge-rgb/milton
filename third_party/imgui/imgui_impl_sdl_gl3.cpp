@@ -207,8 +207,7 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects()
 	glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
 	glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
 
-	const GLchar *vertex_shader =
-		"#version 330\n"
+	const GLchar *vertex_shader =		
 		"uniform mat4 ProjMtx;\n"
 		"in vec2 Position;\n"
 		"in vec2 UV;\n"
@@ -222,8 +221,7 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects()
 		"	gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
 		"}\n";
 
-	const GLchar* fragment_shader =
-		"#version 330\n"
+	const GLchar* fragment_shader =		
 		"uniform sampler2D Texture;\n"
 		"in vec2 Frag_UV;\n"
 		"in vec4 Frag_Color;\n"
