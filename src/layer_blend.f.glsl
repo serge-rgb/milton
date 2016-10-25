@@ -1,6 +1,5 @@
 
 #if HAS_MULTISAMPLE
-#extension GL_ARB_texture_multisample : enable
 #extension GL_ARB_sample_shading : enable
 uniform sampler2DMS u_canvas;
 #else
@@ -8,6 +7,7 @@ uniform sampler2D u_canvas;
 #endif
 uniform vec2      u_screen_size;
 
+out vec4 out_color;
 
 void main()
 {
@@ -27,5 +27,5 @@ void main()
     {
         discard;
     }
-    gl_FragColor = vec4(color);
+    out_color = vec4(color);
 }

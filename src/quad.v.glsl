@@ -1,7 +1,7 @@
 
-attribute vec2 a_point;
-attribute vec2 a_uv;
-varying vec2 v_uv;
+in vec2 a_point;
+in vec2 a_uv;
+out vec2 v_uv;
 
 void main()
 {

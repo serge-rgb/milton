@@ -1,6 +1,6 @@
 
-attribute vec2 a_position;
-attribute vec2 a_norm;  // Normalized position
+in vec2 a_position;
+in vec2 a_norm;  // Normalized position
 
 varying vec2 v_norm;
 

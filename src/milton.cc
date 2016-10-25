@@ -463,7 +463,6 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height)
 #endif
 
     milton_state->gui = arena_alloc_elem(milton_state->root_arena, MiltonGui);
-    milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
     gui_init(milton_state->root_arena, milton_state->gui);
 
 

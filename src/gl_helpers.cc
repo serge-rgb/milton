@@ -24,11 +24,14 @@ void gl_log(char* str)
 
 #endif
 
-GLuint gl_compile_shader(const char* src, GLuint type, char* shader_name)
+GLuint gl_compile_shader(const char* in_src, GLuint type, char* shader_name)
 {
+    static char* version_string = "#version 330\n";
+    const char* src[] = {version_string, in_src};
+
     GLuint obj = glCreateShader(type);
 
-    GLCHK ( glShaderSource(obj, 1, &src, NULL) );
+    GLCHK ( glShaderSource(obj, 2, src, NULL) );
     GLCHK ( glCompileShader(obj) );
     // ERROR CHECKING
     int res = 0;

@@ -2,8 +2,8 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-varying vec3 v_pointa;
-varying vec3 v_pointb;
+in vec3 v_pointa;
+in vec3 v_pointb;
 
 #if HAS_MULTISAMPLE
 #extension GL_ARB_sample_shading : enable
@@ -14,15 +14,7 @@ uniform sampler2DMS u_canvas;
 uniform sampler2D u_canvas;
 #endif
 
-
-//          enum GLVendor
-//          {
-//              GLVendor_NVIDIA,
-//              GLVendor_INTEL,
-//              GLVendor_AMD,
-//              GLVendor_UNKNOWN,
-//          };
-uniform int u_vendor;
+out vec4 out_color;
 
 // x,y  - closest point
 // z    - t in [0,1] interpolation value
@@ -101,14 +93,15 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
 void main()
 {
     vec2 offset;
-    if (u_vendor == 0 /*GLVendor_NVIDIA*/)
-    {
-        offset = vec2(0, 0);
-    }
-    else
-    {
+
+#if HAS_SAMPLE_SHADING
+    #if VENDOR_NVIDIA
+        offset = vec2(2, 2);
+    #else
         offset = gl_SamplePosition;
-    }
+    #endif
+#endif
+
     vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
 #if HAS_MULTISAMPLE
     vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
@@ -127,8 +120,8 @@ void main()
     if (sample > 0)
     {
         // TODO: is there a way to do front-to-back rendering with a working eraser?
-        gl_FragColor = brush_is_eraser() ? color : u_brush_color;
-        //gl_FragColor = vec4(1);
+        out_color = brush_is_eraser() ? color : u_brush_color;
+        //out_color = vec4(1);
     }
     else
     {

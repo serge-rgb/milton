@@ -7,6 +7,7 @@ uniform sampler2DMS u_canvas;
 uniform sampler2D u_canvas;
 #endif
 uniform vec2      u_screen_size;
+out vec4 out_color;
 
 void main()
 {
@@ -18,5 +19,5 @@ void main()
 #endif
 
 
-    gl_FragColor = vec4(vec3(1)-color, 1);
+    out_color = vec4(vec3(1)-color, 1);
 }

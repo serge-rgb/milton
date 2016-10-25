@@ -327,7 +327,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 b32 is_empty = platform_state->num_point_results == 0;
 
                 // Only get mouse info when wacom is not in use, or if EasyTab is NULL.
-                if ((EasyTab == NULL) || (EasyTab && (!EasyTab->PenInProximity || is_empty)))
+                if (EasyTab == NULL || !EasyTab->PenInProximity || is_empty)
                 {
                     if (platform_state->is_pointer_down)
                     {
@@ -714,8 +714,9 @@ int milton_main()
     Arena root_arena = arena_init(big_chunk_of_memory, sz_root_arena);
 
     MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
+    b32 has_sample_shading = false;
 
-    if (!gl_load())
+    if (!gl_load(&has_sample_shading))
     {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
     }
@@ -724,6 +725,11 @@ int milton_main()
     {
         milton_state->root_arena = &root_arena;
 
+        milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
+        if (has_sample_shading)
+        {
+            milton_state->render_data->flags |= RenderDataFlags_HAS_SAMPLE_SHADING;
+        }
         milton_init(milton_state, platform_state.width, platform_state.height);
     }
 
