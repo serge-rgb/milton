@@ -4,8 +4,6 @@
 
 #pragma once
 
-b32 g_gl_supports_multisampling = false;
-
 #if defined(_WIN32)
 
 // OpenGL 2.1 ===

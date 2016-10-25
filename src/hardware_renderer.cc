@@ -301,21 +301,6 @@ b32 render_element_is_layer(RenderElement* render_element)
     return result;
 }
 
-GLenum textureTarget()
-{
-    GLenum e;
-    if (g_gl_supports_multisampling)
-    {
-        e = GL_TEXTURE_2D_MULTISAMPLE;
-    }
-    else
-    {
-        e = GL_TEXTURE_2D;
-    }
-    return e;
-}
-
-
 char* config_shader(char* shader_str, char* config_str)
 {
     size_t shader_length = strlen(shader_str) + strlen(config_str) + 1;
