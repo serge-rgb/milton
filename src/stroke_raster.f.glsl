@@ -94,11 +94,11 @@ void main()
 {
     vec2 offset;
 
-#if HAS_SAMPLE_SHADING
-    #if VENDOR_NVIDIA
+#if defined(HAS_SAMPLE_SHADING)
+    #if defined(VENDOR_NVIDIA)
         offset = vec2(0, 0);
     #else
-        offset = gl_SamplePosition;
+        offset = gl_SamplePosition - vec2(0.5, 0.5);
     #endif
 #else
         offset = vec2(0, 0);
@@ -112,7 +112,6 @@ void main()
     coord.y = 1-coord.y;
     vec4 color = texture(u_canvas, coord);
 #endif
-    //if (color.a == 1) { discard; }
 
     vec3 a = v_pointa;
     vec3 b = v_pointb;

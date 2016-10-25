@@ -79,18 +79,22 @@ PFNGLMINSAMPLESHADINGARBPROC        glMinSampleShadingARB;
 
 bool gl_load(b32* out_supports_sample_shading)
 {
-    bool ok = true;
 #if defined(_WIN32)
 #define GETADDRESS(func) if (ok) { func = (decltype(func))wglGetProcAddress(#func); \
                                     ok   = (func!=NULL); }
+#else
+#define GETADDRESS(func)  // Ignore
+#endif
 
+    bool ok = true;
     // Extension checking.
     i64 num_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions);
+
     GETADDRESS(glGetStringi);
     b32 supports_sample_shading = false;
 
-    if (glGetStringi)
+    if (&glGetStringi)
     {
         for (i64 extension_i = 0; extension_i < num_extensions; ++extension_i)
         {
@@ -108,6 +112,7 @@ bool gl_load(b32* out_supports_sample_shading)
         *out_supports_sample_shading = supports_sample_shading;
     }
 
+#if defined(_WIN32)
 #pragma warning(push, 0)
     GETADDRESS(glActiveTexture);
     GETADDRESS(glAttachShader);
