@@ -127,8 +127,9 @@ Credits and Thanks
 Glorious Patrons of the Coding Craft
 ------------------------------------
 
-Thank you so much for supporting Milton on [Patreon](https://www.patreon.com/serge_rgb?ty=h) to:
+Thank you so much for supporting Milton on [Patreon](https://www.patreon.com/serge_rgb?ty=h):
 
 * [Neil Blakey-Milner](https://www.patreon.com/nxsy)
+* [Pau Fernández](https://twitter.com/pauek)
 * [Maria Lopez-Lacroix](https://amacasera.com/)
 * [Jeroen van Rijn](https://twitter.com/J_vanRijn)
