@@ -31,6 +31,7 @@
 #include "platform_windows.cc"
 #elif defined(__linux__)
 #include "platform_unix.cc"
+#include "platform_linux.cc"
 #elif defined(__MACH__)
 #include "platform_unix.cc"
 #include "platform_mac.cc"
