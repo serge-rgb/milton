@@ -9,6 +9,7 @@
 #define __USE_MISC 1  // MAP_ANONYMOUS and MAP_NORESERVE dont' get defined without this
 #include <sys/mman.h>
 #undef __USE_MISC
+#include <unistd.h>
 
 #include <X11/Xlib.h>
 #include <X11/extensions/XInput.h>

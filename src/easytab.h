@@ -738,9 +738,9 @@ EasyTabResult EasyTab_HandleEvent(XEvent* Event)
     if (Event->type != EasyTab->MotionType) { return EASYTAB_EVENT_NOT_HANDLED; }
 
     XDeviceMotionEvent* MotionEvent = (XDeviceMotionEvent*)(Event);
-    EasyTab->PosX     = MotionEvent->x;
-    EasyTab->PosY     = MotionEvent->y;
-    EasyTab->Pressure = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
+    EasyTab->PosX[0]     = MotionEvent->x;
+    EasyTab->PosY[0]     = MotionEvent->y;
+    EasyTab->Pressure[0] = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
     return EASYTAB_OK;
 }
 
