@@ -100,8 +100,9 @@ Credits and Thanks
 
 * Code
     * [Apoorva Joshi](http://apoorvaj.io) - Author of [Papaya](https://github.com/ApoorvaJ/Papaya) for joining forces and creating [EasyTab](https://github.com/ApoorvaJ/EasyTab).
-    * [Michael Freundorfer](https://github.com/mordecai154)
     * [Joshua Mendoza](https://github.com/jomendoz)
+    * [Michael Freundorfer](https://github.com/mordecai154)
+    * [Mio Iwakura](http://miotatsu.github.io) - Original Linux platform layer.
     * [Tilmann Rübbelke](https://github.com/TilmannR) - Color picker fixes & improvements.
 
 * Rubber-ducking / Whiteboarding

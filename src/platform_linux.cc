@@ -1,6 +1,6 @@
 #define IMPL_MISSING mlt_assert(!"IMPLEMENT")
 
-#define _GNU_SOURCE //temporarily targeting gcc for program_invocation_name
+// #define _GNU_SOURCE //temporarily targeting gcc for program_invocation_name
 #include <errno.h>
 
 // IMPLEMENT ====

@@ -3,6 +3,7 @@ CXX=clang++
 
 BUILDDIR    = build
 
+SHELL = /bin/bash
 CFLAGS = -O0 -g
 
 INCLUDES = -I src \
@@ -12,6 +13,11 @@ INCLUDES = -I src \
 
 SHG_SOURCES      = src/shadergen.cc
 MLT_SOURCES      = src/milton_unity_build.cc
+
+SHG_CFLAGS = $(CFLAGS) \
+			-std=c++11 \
+			-Wno-writable-strings
+
 
 MLT_CFLAGS = $(CFLAGS) \
              -std=c++11 \
@@ -34,10 +40,10 @@ MLT_LDFLAGS = $(LDFLAGS) -lGL `pkg-config --libs sdl2` -lXi
 all: directories shadergen milton
 
 shadergen:
-	$(CC) $(CFLAGS) $(SHG_SOURCES) -o $(BUILDDIR)/shadergen
+	$(CC) $(SHG_CFLAGS) $(SHG_SOURCES) -o $(BUILDDIR)/shadergen
 
 milton:
-	$(BUILDDIR)/shadergen
+	pushd $(BUILDDIR) && ./shadergen && popd
 	$(CXX) $(MLT_CFLAGS) $(INCLUDES) $(MLT_SOURCES) $(MLT_LDFLAGS) -o $(BUILDDIR)/milton
 
 directories:
