@@ -760,11 +760,11 @@ int milton_main()
                     platform_state.hwnd = hwnd;
 
                     i32 snap_threshold = 300;
-                    if ( win_rect.right  != platform_state.width ||
-                         win_rect.bottom != platform_state.height
-                         // Also maximize if the size is large enough to "snap"
-                         || (win_rect.right + snap_threshold >= res_rect.right &&
-                             win_rect.left + snap_threshold >= res_rect.left))
+                    if (win_rect.right  != platform_state.width ||
+                        win_rect.bottom != platform_state.height ||
+                        // Also maximize if the size is large enough to "snap"
+                        (win_rect.right + snap_threshold >= res_rect.right &&
+                         win_rect.left + snap_threshold >= res_rect.left))
                     {
                         // Our prefs weren't right. Let's maximize.
                         SetWindowPos(hwnd, HWND_TOP, 20,20, win_rect.right-20, win_rect.bottom -20, SWP_SHOWWINDOW);
@@ -797,28 +797,6 @@ int milton_main()
     milton_resize_and_pan(milton_state, {}, {platform_state.width, platform_state.height});
 
     platform_state.window_id = SDL_GetWindowID(window);
-
-    // Every X ms, call this callback to send us an event so we don't wait for user input.
-    // Called periodically to force updates that don't depend on user input.
-#if 0
-    SDL_AddTimer(1000,
-                 [](u32 interval, void *param)
-                 {
-                     SDL_Event event;
-                     SDL_UserEvent userevent;
-
-                     userevent.type = SDL_USEREVENT;
-                     userevent.code = 0;
-                     userevent.data1 = NULL;
-                     userevent.data2 = NULL;
-
-                     event.type = SDL_USEREVENT;
-                     event.user = userevent;
-
-                     SDL_PushEvent(&event);
-                     return(interval);
-                 }, NULL);
-#endif
 
     // Init ImGUI
     //ImGui_ImplSdl_Init(window);

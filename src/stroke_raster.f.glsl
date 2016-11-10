@@ -101,7 +101,7 @@ void main()
         offset = gl_SamplePosition - vec2(0.5, 0.5);
     #endif
 #else
-        offset = vec2(0, 0);
+    offset = vec2(0, 0);
 #endif
 
     vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;

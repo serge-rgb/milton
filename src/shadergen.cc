@@ -12,7 +12,9 @@ typedef int16_t     i16;
 typedef int32_t     i32;
 typedef int64_t     i64;
 
+// #if defined(__linux__) || defined(__MACH__)
 void handle_errno(int error);
+// #endif
 
 static size_t bytes_until_end(FILE* fd)
 {
@@ -167,19 +169,19 @@ void handle_errno(int error)
 
        case EALREADY:        str = "Connection already in progress (POSIX.1)"; break;
 
-       case EBADE:           str = "Invalid exchange"; break;
+       // case EBADE:           str = "Invalid exchange"; break;
 
        case EBADF:           str = "Bad file descriptor (POSIX.1)"; break;
 
-       case EBADFD:          str = "File descriptor in bad state"; break;
+       // case EBADFD:          str = "File descriptor in bad state"; break;
 
        case EBADMSG:         str = "Bad message (POSIX.1)"; break;
 
-       case EBADR:           str = "Invalid request descriptor"; break;
+       // case EBADR:           str = "Invalid request descriptor"; break;
 
-       case EBADRQC:         str = "Invalid request code"; break;
+       // case EBADRQC:         str = "Invalid request code"; break;
 
-       case EBADSLT:         str = "Invalid slot"; break;
+       // case EBADSLT:         str = "Invalid slot"; break;
 
        case EBUSY:           str = "Device or resource busy (POSIX.1)"; break;
 
@@ -187,9 +189,9 @@ void handle_errno(int error)
 
        case ECHILD:          str = "No child processes (POSIX.1)"; break;
 
-       case ECHRNG:          str = "Channel number out of range"; break;
+       // case ECHRNG:          str = "Channel number out of range"; break;
 
-       case ECOMM:           str = "Communication error on send"; break;
+       // case ECOMM:           str = "Communication error on send"; break;
 
        case ECONNABORTED:    str = "Connection aborted (POSIX.1)"; break;
 
@@ -203,9 +205,9 @@ void handle_errno(int error)
 
        case EDESTADDRREQ:    str = "Destination address required (POSIX.1)"; break;
 
-    case EDOM:            str = "Mathematics argument out of domain of function (POSIX.1, C99)"; break;
+       case EDOM:            str = "Mathematics argument out of domain of function (POSIX.1, C99)"; break;
 
-       case EDQUOT:          str = "Disk quota exceeded (POSIX.1)"; break;
+       // case EDQUOT:          str = "Disk quota exceeded (POSIX.1)"; break;
 
        case EEXIST:          str = "File exists (POSIX.1)"; break;
 
@@ -213,7 +215,7 @@ void handle_errno(int error)
 
        case EFBIG:           str = "File too large (POSIX.1)"; break;
 
-       case EHOSTDOWN:       str = "Host is down"; break;
+       // case EHOSTDOWN:       str = "Host is down"; break;
 
        case EHOSTUNREACH:    str = "Host is unreachable (POSIX.1)"; break;
 
@@ -233,35 +235,35 @@ void handle_errno(int error)
 
        case EISDIR:          str = "Is a directory (POSIX.1)"; break;
 
-       case EISNAM:          str = "Is a named type file"; break;
+       // case EISNAM:          str = "Is a named type file"; break;
 
-       case EKEYEXPIRED:     str = "Key has expired"; break;
+       // case EKEYEXPIRED:     str = "Key has expired"; break;
 
-       case EKEYREJECTED:    str = "Key was rejected by service"; break;
+       // case EKEYREJECTED:    str = "Key was rejected by service"; break;
 
-       case EKEYREVOKED:     str = "Key has been revoked"; break;
+       // case EKEYREVOKED:     str = "Key has been revoked"; break;
 
-       case EL2HLT:          str = "Level 2 halted"; break;
+       // case EL2HLT:          str = "Level 2 halted"; break;
 
-       case EL2NSYNC:        str = "Level 2 not synchronized"; break;
+       // case EL2NSYNC:        str = "Level 2 not synchronized"; break;
 
-       case EL3HLT:          str = "Level 3 halted"; break;
+       // case EL3HLT:          str = "Level 3 halted"; break;
 
-       case EL3RST:          str = "Level 3 halted"; break;
+       // case EL3RST:          str = "Level 3 halted"; break;
 
-       case ELIBACC:         str = "Cannot access a needed shared library"; break;
+       // case ELIBACC:         str = "Cannot access a needed shared library"; break;
 
-       case ELIBBAD:         str = "Accessing a corrupted shared library"; break;
+       // case ELIBBAD:         str = "Accessing a corrupted shared library"; break;
 
-       case ELIBMAX:         str = "Attempting to link in too many shared libraries"; break;
+       // case ELIBMAX:         str = "Attempting to link in too many shared libraries"; break;
 
-       case ELIBSCN:         str = "lib section in a.out corrupted"; break;
+       // case ELIBSCN:         str = "lib section in a.out corrupted"; break;
 
-       case ELIBEXEC:        str = "Cannot exec a shared library directly"; break;
+       // case ELIBEXEC:        str = "Cannot exec a shared library directly"; break;
 
        case ELOOP:           str = "Too many levels of symbolic links (POSIX.1)"; break;
 
-       case EMEDIUMTYPE:     str = "Wrong medium type"; break;
+       // case EMEDIUMTYPE:     str = "Wrong medium type"; break;
 
        case EMFILE:          str = "Too many open files (POSIX.1); commonly caused by exceeding the RLIMIT_NOFILE resource limit described in getrlimit(2)"; break;
 
@@ -269,7 +271,7 @@ void handle_errno(int error)
 
        case EMSGSIZE:        str = "Message too long (POSIX.1)"; break;
 
-       case EMULTIHOP:       str = "Multihop attempted (POSIX.1)"; break;
+       // case EMULTIHOP:       str = "Multihop attempted (POSIX.1)"; break;
 
        case ENAMETOOLONG:    str = "Filename too long (POSIX.1)"; break;
 
@@ -296,21 +298,21 @@ void handle_errno(int error)
 
        case ENOEXEC:         str = "Exec format error (POSIX.1)"; break;
 
-       case ENOKEY:          str = "Required key not available"; break;
+       // case ENOKEY:          str = "Required key not available"; break;
 
        case ENOLCK:          str = "No locks available (POSIX.1)"; break;
 
        case ENOLINK:         str = "Link has been severed (POSIX.1)"; break;
 
-       case ENOMEDIUM:       str = "No medium found"; break;
+       // case ENOMEDIUM:       str = "No medium found"; break;
 
        case ENOMEM:          str = "Not enough space (POSIX.1)"; break;
 
        case ENOMSG:          str = "No message of the desired type (POSIX.1)"; break;
 
-       case ENONET:          str = "Machine is not on the network"; break;
+       // case ENONET:          str = "Machine is not on the network"; break;
 
-       case ENOPKG:          str = "Package not installed"; break;
+       // case ENOPKG:          str = "Package not installed"; break;
 
        case ENOPROTOOPT:     str = "Protocol not available (POSIX.1)"; break;
 
@@ -322,7 +324,7 @@ void handle_errno(int error)
 
        case ENOSYS:          str = "Function not implemented (POSIX.1)"; break;
 
-       case ENOTBLK:         str = "Block device required"; break;
+       // case ENOTBLK:         str = "Block device required"; break;
 
        case ENOTCONN:        str = "The socket is not connected (POSIX.1)"; break;
 
@@ -336,7 +338,7 @@ void handle_errno(int error)
 
        case ENOTTY:          str = "Inappropriate I/O control operation (POSIX.1)"; break;
 
-       case ENOTUNIQ:        str = "Name not unique on network"; break;
+       // case ENOTUNIQ:        str = "Name not unique on network"; break;
 
        case ENXIO:           str = "No such device or address (POSIX.1)"; break;
 
@@ -350,7 +352,7 @@ void handle_errno(int error)
 
        case EPERM:           str = "Operation not permitted (POSIX.1)"; break;
 
-       case EPFNOSUPPORT:    str = "Protocol family not supported"; break;
+       // case EPFNOSUPPORT:    str = "Protocol family not supported"; break;
 
        case EPIPE:           str = "Broken pipe (POSIX.1)"; break;
 
@@ -362,30 +364,30 @@ void handle_errno(int error)
 
        case ERANGE:          str = "Result too large (POSIX.1, C99)"; break;
 
-       case EREMCHG:         str = "Remote address changed"; break;
+       // case EREMCHG:         str = "Remote address changed"; break;
 
-       case EREMOTE:         str = "Object is remote"; break;
+       // case EREMOTE:         str = "Object is remote"; break;
 
-       case EREMOTEIO:       str = "Remote I/O error"; break;
+       // case EREMOTEIO:       str = "Remote I/O error"; break;
 
-       case ERESTART:        str = "Interrupted system call should be restarted"; break;
+       // case ERESTART:        str = "Interrupted system call should be restarted"; break;
 
        case EROFS:           str = "Read-only filesystem (POSIX.1)"; break;
 
-       case ESHUTDOWN:       str = "Cannot send after transport endpoint shutdown"; break;
+       // case ESHUTDOWN:       str = "Cannot send after transport endpoint shutdown"; break;
 
        case ESPIPE:          str = "Invalid seek (POSIX.1)"; break;
 
-       case ESOCKTNOSUPPORT: str = "Socket type not supported"; break;
+       // case ESOCKTNOSUPPORT: str = "Socket type not supported"; break;
 
        case ESRCH:           str = "No such process (POSIX.1)"; break;
 
-       case ESTALE:          str = "Stale file handle (POSIX.1)"; break;
+       // case ESTALE:          str = "Stale file handle (POSIX.1)"; break;
 
                        // This error can occur for NFS and for other
                        // filesystems
 
-       case ESTRPIPE:        str = "Streams pipe error"; break;
+       // case ESTRPIPE:        str = "Streams pipe error"; break;
 
        case ETIME:           str = "Timer expired (POSIX.1 (XSI STREAMS option))"; break;
 
@@ -395,17 +397,17 @@ void handle_errno(int error)
 
        case ETXTBSY:         str = "Text file busy (POSIX.1)"; break;
 
-       case EUCLEAN:         str = "Structure needs cleaning"; break;
+       // case EUCLEAN:         str = "Structure needs cleaning"; break;
 
-       case EUNATCH:         str = "Protocol driver not attached"; break;
+       // case EUNATCH:         str = "Protocol driver not attached"; break;
 
-       case EUSERS:          str = "Too many users"; break;
+       // case EUSERS:          str = "Too many users"; break;
 
        // case EWOULDBLOCK:     str = "Operation would block (may be same value as EAGAIN) (POSIX.1)"; break;
 
        case EXDEV:           str = "Improper link (POSIX.1)"; break;
 
-       case EXFULL:          str = "Exchange full"; break;
+       // case EXFULL:          str = "Exchange full"; break;
    }
    if (str)
    {
