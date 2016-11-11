@@ -24,30 +24,27 @@ void gl_log(char* str)
 
 #endif
 
-GLuint gl_compile_shader(const char* in_src, GLuint type, char* shader_name)
+GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
 {
     static char* version_string = "#version 330\n";
-    const char* src[] = {version_string, in_src};
+    const char* sources[] = {version_string, config, in_src,};
 
     GLuint obj = glCreateShader(type);
 
-    GLCHK ( glShaderSource(obj, 2, src, NULL) );
+    GLCHK ( glShaderSource(obj, array_count(sources), sources, NULL) );
     GLCHK ( glCompileShader(obj) );
     // ERROR CHECKING
     int res = 0;
     //GLCHK ( glGetObjectParameteriv(obj, GL_COMPILE_STATUS, &res) );
     GLCHK ( glGetShaderiv(obj, GL_COMPILE_STATUS, &res) );
-    if (shader_name != NULL)
-    {
-        milton_log("Shader: \"%s\"\n", shader_name);
-    }
+
     GLint length;
     GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
     if (!res && length > 0)
     {
         if (!res)
         {
-            milton_log("SHADER SOURCE:\n%s\n", src);
+            milton_log("SHADER SOURCE:\n%s\n", sources[2]);
         }
         char* log = (char*)malloc((size_t)length);
         GLsizei written_len;

@@ -80,6 +80,7 @@ void reset(StrokeList* list)
 {
     list->count = 0;
     StrokeBucket* bucket = &list->root;
+
     while(bucket)
     {
         bucket->bounding_rect = rect_without_size();

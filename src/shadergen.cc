@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "milton_configuration.h"
+
 typedef int8_t      i8;
 typedef int16_t     i16;
 typedef int32_t     i32;
@@ -105,7 +107,7 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
     i64 count;
     lines = split_lines(contents, &count);
     fprintf(of, "char %s[] = \n", varname);
-    fprintf(of, "\"#define HAS_MULTISAMPLE 1\\n\"\n");  // MSAA in OpenGL 3.0+. Multisampled Texture in GL 3.2+
+    fprintf(of, "\"#define HAS_MULTISAMPLE %d\\n\"\n", MULTISAMPLED_TEXTURES );
 
     for (i64 i = 0; i < prelude_lines_count; ++i)
     {

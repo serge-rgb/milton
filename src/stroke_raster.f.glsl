@@ -80,9 +80,6 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
             bool inside = d < radius;
             if (inside)
             {
-                //color = brush_is_eraser() ? blend(color, vec4(u_background_color, 1)) : blend(color, u_brush_color);
-                // If rendering front-to-back, with screen cleared:
-                //color = brush_is_eraser() ? blend(vec4(u_background_color, 1), color) : blend(u_brush_color, color);
                 value = 1;
             }
         }
@@ -92,21 +89,23 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
 
 void main()
 {
-    vec2 offset;
+    // vec2 offset;
 
-#if defined(HAS_SAMPLE_SHADING)
-    #if defined(VENDOR_NVIDIA)
-        offset = vec2(0, 0);
-    #else
-        offset = gl_SamplePosition - vec2(0.5, 0.5);
-    #endif
-#else
-    offset = vec2(0, 0);
-#endif
+// #if defined(HAS_SAMPLE_SHADING)
+//     #if defined(VENDOR_NVIDIA)
+//         offset = vec2(0, 0);
+//     #else
+//         offset = gl_SamplePosition - vec2(0.5, 0.5);
+//     #endif
+// #else
+//     offset = vec2(0, 0);
+// #endif
 
-    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
+    // vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
+    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y);// + offset;
 #if HAS_MULTISAMPLE
-    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
+    // vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
+    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
 #else
     vec2 coord = screen_point / u_screen_size;
     coord.y = 1-coord.y;
@@ -116,13 +115,22 @@ void main()
     vec3 a = v_pointa;
     vec3 b = v_pointb;
     int sample = 0;
+    // float subpixel_width = 0.25;
+    // float subpixel_height = 0.25;
+
+
     sample = sample_stroke(raster_to_canvas_gl(screen_point), a, b);
+    // sample = sample_stroke(raster_to_canvas_gl(screen_point + vec2(subpixel_width, subpixel_height)), a, b);
+    // sample += sample_stroke(raster_to_canvas_gl(screen_point + vec2(subpixel_width, -subpixel_height)), a, b);
+    // sample += sample_stroke(raster_to_canvas_gl(screen_point + vec2(-subpixel_width, -subpixel_height)), a, b);
+    // sample += sample_stroke(raster_to_canvas_gl(screen_point + vec2(-subpixel_width, subpixel_height)), a, b);
+
 
     if (sample > 0)
     {
         // TODO: is there a way to do front-to-back rendering with a working eraser?
         out_color = brush_is_eraser() ? color : u_brush_color;
-        //out_color = vec4(1);
+        // out_color.a = out_color.a * (sample/4.0);
     }
     else
     {

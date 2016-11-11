@@ -12,7 +12,7 @@
 
 void    gl_log(char* str);
 void    gl_query_error(const char* expr, const char* file, int line);
-GLuint  gl_compile_shader(const char* src, GLuint type, char* shader_name = NULL);
+GLuint  gl_compile_shader(const char* src, GLuint type, char* config = "");
 void    gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders);
 
 // TODO: When porting to OSX, check if this is still necessary.
