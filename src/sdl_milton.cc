@@ -2,10 +2,6 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-
-#include <imgui.h>
-#include <imgui_impl_sdl_gl3.h>
-
 static b32 g_cursor_count = 0;
 
 void cursor_hide()
@@ -305,6 +301,10 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     event.button.button == SDL_BUTTON_MIDDLE ||
                     event.button.button == SDL_BUTTON_RIGHT)
                 {
+                    if (event.button.button == SDL_BUTTON_MIDDLE)
+                    {
+                        platform_state->is_middle_button_down = false;
+                    }
                     pointer_up = true;
                     input_flags |= MiltonInputFlags_CLICKUP;
                     input_flags |= MiltonInputFlags_END_STROKE;
@@ -1013,10 +1013,12 @@ int milton_main()
             int y = 0;
             SDL_GetMouseState(&x, &y);
 
+            static b32 debug_did_pan = false;
             // Handle system cursor and platform state related to current_mode
             if (platform_state.is_panning)
             {
                 cursor_set_and_show(platform_state.cursor_sizeall);
+                debug_did_pan = true;
             }
             else if (milton_state->current_mode == MiltonMode_EXPORTING)
             {
@@ -1045,10 +1047,19 @@ int milton_main()
             else if (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER)
             {
                 cursor_set_and_show(platform_state.cursor_brush);
+                if (debug_did_pan)
+                {
+                    int foo=1;
+                }
             }
             else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER)
             {
                 cursor_hide();
+                if (debug_did_pan)
+                {
+                    int foo=1;
+                }
+
             }
 
             // Show resize icon

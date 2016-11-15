@@ -5,14 +5,18 @@
 in vec3 v_pointa;
 in vec3 v_pointb;
 
+// #extension GL_ARB_sample_shading : enable
+// #extension GL_ARB_texture_multisample : enable
+
+
 #if HAS_MULTISAMPLE
 #extension GL_ARB_sample_shading : enable
 #extension GL_ARB_texture_multisample : enable
 uniform sampler2DMS u_canvas;
-// uniform sampler2D u_canvas;
 #else
 uniform sampler2D u_canvas;
 #endif
+
 
 out vec4 out_color;
 
@@ -89,27 +93,21 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
 
 void main()
 {
-    // vec2 offset;
+    vec2 offset = vec2(0.0);
 
-// #if defined(HAS_SAMPLE_SHADING)
-//     #if defined(VENDOR_NVIDIA)
-//         offset = vec2(0, 0);
-//     #else
-//         offset = gl_SamplePosition - vec2(0.5, 0.5);
-//     #endif
-// #else
-//     offset = vec2(0, 0);
-// #endif
+    #if defined(HAS_SAMPLE_SHADING)
+        #if !defined(VENDOR_NVIDIA)
+            offset = gl_SamplePosition - vec2(0.5);
+        #endif
+    #endif
 
-    // vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
-    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y);// + offset;
+    vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
 #if HAS_MULTISAMPLE
-    // vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
-    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
+    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
 #else
-    vec2 coord = screen_point / u_screen_size;
-    coord.y = 1-coord.y;
-    vec4 color = texture(u_canvas, coord);
+    vec2 coord = gl_FragCoord.xy / u_screen_size;
+    // vec4 color = texture(u_canvas, coord);
+    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
 #endif
 
     vec3 a = v_pointa;
@@ -118,13 +116,11 @@ void main()
     // float subpixel_width = 0.25;
     // float subpixel_height = 0.25;
 
-
     sample = sample_stroke(raster_to_canvas_gl(screen_point), a, b);
     // sample = sample_stroke(raster_to_canvas_gl(screen_point + vec2(subpixel_width, subpixel_height)), a, b);
     // sample += sample_stroke(raster_to_canvas_gl(screen_point + vec2(subpixel_width, -subpixel_height)), a, b);
     // sample += sample_stroke(raster_to_canvas_gl(screen_point + vec2(-subpixel_width, -subpixel_height)), a, b);
     // sample += sample_stroke(raster_to_canvas_gl(screen_point + vec2(-subpixel_width, subpixel_height)), a, b);
-
 
     if (sample > 0)
     {

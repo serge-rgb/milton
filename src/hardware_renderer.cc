@@ -1311,7 +1311,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
     glDisable(GL_DEPTH_TEST);
 
-    #if 0
+    #if 1
     glUseProgram(render_data->texture_fill_program);
     {
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");

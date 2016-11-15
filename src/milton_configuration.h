@@ -12,9 +12,9 @@
 #define MILTON_ZOOM_DEBUG 0
     // If MILTON_DEBUG is 0, MILTON_ZOOM_DEBUG will be 0 too!
 #if !MILTON_DEBUG
-        #undef MILTON_ZOOM_DEBUG
-        #define MILTON_ZOOM_DEBUG 0
-    #endif
+    #undef MILTON_ZOOM_DEBUG
+    #define MILTON_ZOOM_DEBUG 0
+#endif
 
 #if defined(_WIN32)
     #define WIN32_DEBUGGER_OUTPUT 0
