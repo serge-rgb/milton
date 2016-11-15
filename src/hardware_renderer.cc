@@ -409,13 +409,13 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
             if (vendor == GLVendor_NVIDIA)
             {
                 config_string =
-                        "#define HAS_SAMPLE_SHADING 1\n"
-                        "#define VENDOR_NVIDIA 1n";
+                        "#define HAS_SAMPLE_SHADING 1 \n"
+                        "#define VENDOR_NVIDIA 1 \n";
             }
             else
             {
                 config_string =
-                        "#define HAS_SAMPLE_SHADING 1\n";
+                        "#define HAS_SAMPLE_SHADING 1 \n";
             }
         }
 

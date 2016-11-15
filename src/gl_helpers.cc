@@ -26,10 +26,11 @@ void gl_log(char* str)
 
 GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
 {
-    static char* version_string = "#version 330\n";
-    const char* sources[] = {version_string, config, in_src,};
+    const char* sources[] = {"#version 330 \n", config, in_src};
 
     GLuint obj = glCreateShader(type);
+
+	size_t num_sources = array_count(sources);
 
     GLCHK ( glShaderSource(obj, array_count(sources), sources, NULL) );
     GLCHK ( glCompileShader(obj) );

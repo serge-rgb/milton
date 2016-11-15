@@ -1013,12 +1013,10 @@ int milton_main()
             int y = 0;
             SDL_GetMouseState(&x, &y);
 
-            static b32 debug_did_pan = false;
             // Handle system cursor and platform state related to current_mode
             if (platform_state.is_panning)
             {
                 cursor_set_and_show(platform_state.cursor_sizeall);
-                debug_did_pan = true;
             }
             else if (milton_state->current_mode == MiltonMode_EXPORTING)
             {
@@ -1047,19 +1045,10 @@ int milton_main()
             else if (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER)
             {
                 cursor_set_and_show(platform_state.cursor_brush);
-                if (debug_did_pan)
-                {
-                    int foo=1;
-                }
             }
             else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER)
             {
                 cursor_hide();
-                if (debug_did_pan)
-                {
-                    int foo=1;
-                }
-
             }
 
             // Show resize icon
