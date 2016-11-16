@@ -2,17 +2,27 @@
 
 // #define _GNU_SOURCE //temporarily targeting gcc for program_invocation_name
 #include <errno.h>
+#include <time.h>
 
-// IMPLEMENT ====
 float perf_count_to_sec(u64 counter)
 {
-    IMPL_MISSING;
-    return 0.0;
+    // Input as nanoseconds
+    return (float)counter * 1e-9;
 }
+
 u64 perf_counter()
 {
-    IMPL_MISSING;
-    return 0;
+    // http://stackoverflow.com/a/2660610/4717805
+    timespec tp;
+    int res = clock_gettime(CLOCK_REALTIME, &tp);
+
+    // TODO: Check errno and provide more informations
+    if (res)
+    {
+        milton_log("Something went wrong with clock_gettime\n");
+    }
+
+    return tp.tv_nsec;
 }
 void*   platform_allocate_bounded_memory(size_t size)
 {
