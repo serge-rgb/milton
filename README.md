@@ -60,7 +60,9 @@ Milton will be compiled to `build\Milton.exe`
 Linux
 -----
 
-_No linux support at the moment._
+Porting in progress.
+
+Build it with `make` and run it with `build/milton`. You need to install the SDL libraries (`libsdl2-dev` on Ubuntu).
 
 
 OSX
@@ -100,6 +102,7 @@ Credits and Thanks
 
 * Code
     * [Apoorva Joshi](http://apoorvaj.io) - Author of [Papaya](https://github.com/ApoorvaJ/Papaya) for joining forces and creating [EasyTab](https://github.com/ApoorvaJ/EasyTab).
+    * [Charly Mourglia](http://github.com/Zouch) - Help with Linux.
     * [Joshua Mendoza](https://github.com/jomendoz)
     * [Michael Freundorfer](https://github.com/mordecai154)
     * [Mio Iwakura](http://miotatsu.github.io) - Original Linux platform layer.
