@@ -44,8 +44,12 @@ How to Compile
 Windows
 -------
 
-Requirements: VS2015. If you have another version, edit scripts\vcvars.bat
-to point to your Visual Studio path. (2010 == 10.0, 2012 == 11.0, 2013 == 12.0, 2015 == 14.0)
+Requirements: VS2015. Compiling with other versions of Visual Studio will
+probably not work, since Milton provides a pre-compiled SDL.lib. If you want to
+use another version of Visual Studio, you will need to compile SDL and copy
+SDL.lib to the `build` directory.
+
+To build:
 
 Run `cmd.exe` and type the following
 

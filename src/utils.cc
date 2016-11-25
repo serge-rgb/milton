@@ -373,13 +373,13 @@ b32 is_inside_rect_scalar(Rect bounds, i32 point_x, i32 point_y)
 
 b32 is_rect_within_rect(Rect a, Rect b)
 {
-    if ( (a.left   < b.left)    ||
-         (a.right  > b.right)   ||
-         (a.top    < b.top)     ||
-         (a.bottom > b.bottom) )
+    if ((a.left   < b.left)    ||
+        (a.right  > b.right)   ||
+        (a.top    < b.top)     ||
+        (a.bottom > b.bottom))
     {
         return false;
-      }
+    }
    return true;
 }
 

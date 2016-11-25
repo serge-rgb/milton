@@ -26,8 +26,6 @@
 
 #include "vector.cc"
 
-
-
 #if defined(_WIN32)
 #include "platform_windows.cc"
 #elif defined(__linux__)

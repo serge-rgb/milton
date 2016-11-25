@@ -1,6 +1,8 @@
 To-Do
 =====
 
+- Cleanup
+    required GL should be 2.1 and just use extensions.
 - Bugs
     - MoveFileEx randomly fails with return code 5 - access denied
     - Undo leaves some pixels without redrawing.
@@ -16,7 +18,7 @@ To-Do
         - Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
     - Renderer
-        - Fallback multi-sampling in stroke rendering when min_sample_shading is not available
+        -
     - GUI
         - Image Button
         - Reduce or remove widget rounding
@@ -25,12 +27,14 @@ To-Do
     - Future
         - Brush
             - Support for general, implicitly defined brushes
-    - Feature Requests:
+    - Features:
         - pop out panels. make it multi-window.
         - eraser toggle
         - pressure toggle
         - pressure response graph
         - unzoomable&unpannable layer ("pin layer" feature) ?
+        - zoom to cursor position instead of screen center.
+        - zoom-out toggle for overview and for navigation
 
 - Polish and/or Debug layer
     - Memory allocation profiler.

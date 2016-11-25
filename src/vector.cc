@@ -129,6 +129,7 @@ b32 equ4f(v4f a, v4f b)
 }
 
 
-v2f lerp2f(v2f a, v2f b, f32 t){
+v2f lerp2f(v2f a, v2f b, f32 t)
+{
     return add2f(scale2f(b, t), scale2f(a, 1.0f-t));
 }

@@ -29,12 +29,6 @@ typedef i32         b32;
 #endif
 
 
-#define type(name) \
-        typedef struct name name; \
-        struct name
-
-#include "system_includes.h"
-
 #ifdef UNUSED
 #error "Someone else defined UNUSED macro"
 #else
