@@ -109,6 +109,31 @@ void platform_deallocate_internal(void* ptr)
     munmap(ptr, size);
 }
 
+// TODO: haven't checked if platform_cursor_hide or platform_cursor_show work.
+void platform_cursor_hide()
+{
+    int lvl = SDL_ShowCursor(-1);
+    if ( lvl >= 0 )
+    {
+        mlt_assert ( lvl == 1 );
+        int res = SDL_ShowCursor(0);
+        if (res < 0)
+        {
+            INVALID_CODE_PATH;
+        }
+    }
+}
+
+void platform_cursor_show()
+{
+    int lvl = SDL_ShowCursor(-1);
+    if ( lvl < 0 )
+    {
+        mlt_assert ( lvl == -1 );
+        SDL_ShowCursor(1);
+    }
+}
+
 int main(int argc, char** argv)
 {
 #ifdef __linux__

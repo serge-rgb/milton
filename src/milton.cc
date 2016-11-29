@@ -1473,7 +1473,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     if (!(milton_state->flags & MiltonStateFlags_RUNNING))
     {
-        cursor_show();
+        platform_cursor_show();
     }
     if (should_save)
     {

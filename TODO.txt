@@ -3,6 +3,7 @@ To-Do
 
 - Cleanup
     required GL should be 2.1 and just use extensions.
+    windows platform layer.
 - Bugs
     - MoveFileEx randomly fails with return code 5 - access denied
     - Undo leaves some pixels without redrawing.

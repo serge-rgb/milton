@@ -2,57 +2,15 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-static b32 g_cursor_count = 0;
 
-void cursor_hide()
-{
-#if defined(_WIN32)
-    while (g_cursor_count >= 0)
-    {
-        ShowCursor(FALSE);
-        g_cursor_count--;
-    }
-#else
-    // TODO: haven't checked if this works.
-    int lvl = SDL_ShowCursor(-1);
-    if ( lvl >= 0 )
-    {
-        mlt_assert ( lvl == 1 );
-        int res = SDL_ShowCursor(0);
-        if (res < 0)
-        {
-            INVALID_CODE_PATH;
-        }
-    }
-#endif
-}
-
-void cursor_show()
-{
-#if defined(_WIN32)
-    while (g_cursor_count < 0)
-    {
-        ShowCursor(TRUE);
-        g_cursor_count++;
-    }
-#else
-    int lvl = SDL_ShowCursor(-1);
-    if ( lvl < 0 )
-    {
-        mlt_assert ( lvl == -1 );
-        SDL_ShowCursor(1);
-    }
-#endif
-}
-
-SDL_Cursor* g_curr_cursor = NULL;
 static void cursor_set_and_show(SDL_Cursor* cursor)
 {
-    if (g_curr_cursor != cursor)
+    static SDL_Cursor* curr_cursor = NULL;
+    if (curr_cursor != cursor)
     {
-        g_curr_cursor = cursor;
+        curr_cursor = cursor;
         SDL_SetCursor(cursor);
-        cursor_show();
+        platform_cursor_show();
     }
 }
 
@@ -179,7 +137,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
         switch (event.type)
         {
         case SDL_QUIT:
-            cursor_show();
+            platform_cursor_show();
             milton_try_quit(milton_state);
             break;
         case SDL_SYSWMEVENT:
@@ -569,7 +527,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     {
                         break;
                     }
-                    cursor_show();
+                    platform_cursor_show();
                     break;
                     // --- A couple of events we might want to catch later...
                 case SDL_WINDOWEVENT_ENTER:
@@ -624,13 +582,11 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 int milton_main()
 {
     // TODO: windows scaling support
-#if 1
 #if defined(_WIN32)
     if (!SetProcessDPIAware())  // This function is only present in Windows versions higher than Vista.
     {
         milton_log("Could not set this process as DPI aware.\n");
     }
-#endif
 #endif
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
@@ -655,8 +611,8 @@ int milton_main()
 
     platform_state.keyboard_layout = get_current_keyboard_layout();
 
-    i32 gl_version_major = 3;
-    i32 gl_version_minor = 2;
+    i32 gl_version_major = 2;
+    i32 gl_version_minor = 1;
 
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -698,7 +654,7 @@ int milton_main()
     if (actual_major < gl_version_major ||
         (actual_major == gl_version_major && actual_minor < gl_version_minor))
     {
-        milton_die_gracefully("This graphics driver does not support OpenGL 3.2+");
+        milton_die_gracefully("This graphics driver does not support OpenGL 2.1+");
     }
     milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
@@ -1033,12 +989,12 @@ int milton_main()
                 cursor_set_and_show(platform_state.cursor_crosshair);
                 platform_state.is_pointer_down = false;
             }
-            else if ( milton_state->gui->visible &&
-                      is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) )
+            else if (milton_state->gui->visible &&
+                     is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y))
             {
                 cursor_set_and_show(platform_state.cursor_default);
             }
-            else if ( ImGui::GetIO().WantCaptureMouse )
+            else if (ImGui::GetIO().WantCaptureMouse)
             {
                 cursor_set_and_show(platform_state.cursor_default);
             }
@@ -1048,7 +1004,7 @@ int milton_main()
             }
             else if (milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER)
             {
-                cursor_hide();
+                platform_cursor_hide();
             }
 
             // Show resize icon
@@ -1100,11 +1056,6 @@ int milton_main()
             input_flags |= MiltonInputFlags_PANNING;
             platform_state.num_point_results = 0;
         }
-
-#if 0
-        milton_log ("#Pressure results: %d\n", num_pressure_results);
-        milton_log ("#   Point results: %d\n", num_point_results);
-#endif
 
         if ( platform_state.num_pressure_results < platform_state.num_point_results )
         {

@@ -79,6 +79,7 @@ HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt H
 #define PATH_FPUTS  fputws
 
 static FILE* g_win32_logfile;
+static i32 g_cursor_count = 0;
 
 int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
 {
@@ -97,13 +98,13 @@ int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...
 
 }
 
-FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
+FILE* platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
 {
     FILE* fd = _wfopen(fname, mode);
     return fd;
 }
 
-void*   platform_allocate_bounded_memory(size_t size)
+void* platform_allocate_bounded_memory(size_t size)
 {
 #if MILTON_DEBUG
     static b32 once_check = false;
@@ -190,25 +191,25 @@ void win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)
     {
     case FileKind_IMAGE:
         {
-        ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_image;
-        ofn->lpstrDefExt = L"jpg";
+            ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_image;
+            ofn->lpstrDefExt = L"jpg";
         } break;
     case FileKind_MILTON_CANVAS:
         {
-        ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_milton;
-        ofn->lpstrDefExt = L"mlt";
+            ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_milton;
+            ofn->lpstrDefExt = L"mlt";
         } break;
     default:
         {
-        INVALID_CODE_PATH;
-    }
+            milton_die_gracefully("Invalid filter in Open File Dialog.");
+        }
     }
 #pragma warning(pop)
 }
 
 PATH_CHAR* platform_save_dialog(FileKind kind)
 {
-    cursor_show();
+    platform_cursor_show();
     PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR));
 
     OPENFILENAMEW ofn = {0};
@@ -241,7 +242,7 @@ PATH_CHAR* platform_save_dialog(FileKind kind)
 
 PATH_CHAR* platform_open_dialog(FileKind kind)
 {
-    cursor_show();
+    platform_cursor_show();
     OPENFILENAMEW ofn = {0};
 
     PATH_CHAR* fname = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*fname));
@@ -264,7 +265,7 @@ PATH_CHAR* platform_open_dialog(FileKind kind)
 
 b32 platform_dialog_yesno(char* info, char* title)
 {
-    cursor_show();
+    platform_cursor_show();
     i32 yes = MessageBoxA(NULL, //_In_opt_ HWND    hWnd,
                           (LPCSTR)info, // _In_opt_ LPCTSTR lpText,
                           (LPCSTR)title,// _In_opt_ LPCTSTR lpCaption,
@@ -275,7 +276,7 @@ b32 platform_dialog_yesno(char* info, char* title)
 
 void platform_dialog(char* info, char* title)
 {
-    cursor_show();
+    platform_cursor_show();
     MessageBoxA( NULL, //_In_opt_ HWND    hWnd,
                  (LPCSTR)info, // _In_opt_ LPCTSTR lpText,
                  (LPCSTR)title,// _In_opt_ LPCTSTR lpCaption,
@@ -399,43 +400,45 @@ void platform_fname_at_config(PATH_CHAR* fname, size_t len)
 
     new_wpath_len = lstrlenW(worg) + lstrlenW(wapp) + lstrlenW(path) + (size_t)3;
 
-    if ((new_wpath_len + 1) > MAX_PATH)
+    if ((new_wpath_len + 1) < MAX_PATH)
     {
-        INVALID_CODE_PATH;
-    }
+        lstrcatW(path, L"\\");
+        lstrcatW(path, worg);
 
-    lstrcatW(path, L"\\");
-    lstrcatW(path, worg);
-
-    api_result = CreateDirectoryW(path, NULL);
-    if (api_result == FALSE)
-    {
-        if (GetLastError() != ERROR_ALREADY_EXISTS)
+        api_result = CreateDirectoryW(path, NULL);
+        if (api_result == FALSE)
         {
-            INVALID_CODE_PATH;
+            auto last_error = GetLastError();
+            if (last_error != ERROR_ALREADY_EXISTS)
+            {
+                win32_print_error((int)last_error);
+                milton_die_gracefully("Unexpected error when getting file name at config directory.");
+            }
         }
-    }
 
-    lstrcatW(path, L"\\");
-    lstrcatW(path, wapp);
+        lstrcatW(path, L"\\");
+        lstrcatW(path, wapp);
 
-    api_result = CreateDirectoryW(path, NULL);
-    if (api_result == FALSE)
-    {
-        if (GetLastError() != ERROR_ALREADY_EXISTS)
+        api_result = CreateDirectoryW(path, NULL);
+        if (api_result == FALSE)
         {
-            INVALID_CODE_PATH;
+            auto last_error = GetLastError();
+            if (last_error != ERROR_ALREADY_EXISTS)
+            {
+                win32_print_error((int)last_error);
+                milton_die_gracefully("Unexpected error when getting file name at config directory.");
+            }
         }
+
+        lstrcatW(path, L"\\");
+
+        PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len*sizeof(PATH_CHAR));  // store the fname here
+        PATH_STRCPY(tmp, fname);
+        fname[0] = '\0';
+        wcsncat(fname, path, len);
+        wcsncat(fname, tmp, len);
+        mlt_free(tmp);
     }
-
-    lstrcatW(path, L"\\");
-
-    PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len);  // store the fname here
-    PATH_STRCPY(tmp, fname);
-    fname[0] = '\0';
-    wcsncat(fname, path, len);
-    wcsncat(fname, tmp, len);
-    mlt_free(tmp) ;
 }
 
 // Delete old milton_tmp files from previous milton versions.
@@ -511,6 +514,24 @@ float perf_count_to_sec(u64 counter)
     QueryPerformanceFrequency(&freq);
     float sec = (float)counter / (float)freq.QuadPart;
     return sec;
+}
+
+void platform_cursor_hide()
+{
+    while (g_cursor_count >= 0)
+    {
+        ShowCursor(FALSE);
+        g_cursor_count--;
+    }
+}
+
+void platform_cursor_show()
+{
+    while (g_cursor_count < 0)
+    {
+        ShowCursor(TRUE);
+        g_cursor_count++;
+    }
 }
 
 int CALLBACK WinMain(

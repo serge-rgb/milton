@@ -196,6 +196,9 @@ void    platform_open_link(char* link);
 WallTime platform_get_walltime();
 
 
+void    platform_cursor_hide();
+void    platform_cursor_show();
+
 // Microsecond (us) resolution timer.
 u64 perf_counter();
 float perf_count_to_sec(u64 counter);
