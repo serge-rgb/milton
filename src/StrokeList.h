@@ -32,10 +32,8 @@ void push(StrokeList* list, const Stroke& element)
     int i = list->count % STROKELIST_BUCKET_COUNT;
 
     StrokeBucket* bucket = &list->root;
-    while (bucket_i != 0)
-    {
-        if (!bucket->next)
-        {
+    while ( bucket_i != 0 ) {
+        if ( !bucket->next ) {
             bucket->next = create_bucket();
         }
         bucket = bucket->next;
@@ -55,8 +53,7 @@ Stroke* get(StrokeList* list, i64 idx)
     int bucket_i = idx / STROKELIST_BUCKET_COUNT;
     int i = idx % STROKELIST_BUCKET_COUNT;
     StrokeBucket* bucket = &list->root;
-    while (bucket_i != 0)
-    {
+    while ( bucket_i != 0 ) {
         bucket = bucket->next;
         bucket_i -= 1;
     }
@@ -81,8 +78,7 @@ void reset(StrokeList* list)
     list->count = 0;
     StrokeBucket* bucket = &list->root;
 
-    while(bucket)
-    {
+    while( bucket ) {
         bucket->bounding_rect = rect_without_size();
         bucket = bucket->next;
     }
@@ -92,15 +88,12 @@ void release(StrokeList* list)
 {
     list->count = 0;
     StrokeBucket* bucket = &list->root;
-    while(bucket)
-    {
+    while( bucket ) {
         StrokeBucket* next = bucket->next;
-        if (bucket != &list->root)
-        {
+        if ( bucket != &list->root ) {
             mlt_free(bucket);
         }
-        else
-        {
+        else {
             *bucket = {};
             bucket->bounding_rect = rect_without_size();
         }

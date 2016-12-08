@@ -5,20 +5,17 @@ int milton_main()
 {
     arri x = {};
 
-    for (u64 i = 0; i < 10; ++i)
-    {
+    for ( u64 i = 0; i < 10; ++i ) {
         push(&x, (int)i);
     }
-    for (u64 i = 0; i < 10; ++i)
-    {
+    for ( u64 i = 0; i < 10; ++i ) {
         int d = x.data[i];
         mlt_assert (d == (int)i);
     }
 
     auto y = dynamic_array<int>(2);
 
-    for (int i=0; i < 10; ++i)
-    {
+    for ( int i=0; i < 10; ++i ) {
         push(&y, i);
     }
 

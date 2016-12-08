@@ -14,21 +14,17 @@ void main()
     float girth = u_fill ? 2.0 : 1.0;
     const float ring_alpha = 0.4;
 
-    if (r <= u_radius &&
-        r > u_radius - girth)
-    {
+    if ( r <= u_radius
+         && r > u_radius - girth ) {
         out_color = vec4(0,0,0,ring_alpha);
     }
-    else if (r < u_radius + girth && r >= u_radius)
-    {
+    else if ( r < u_radius + girth && r >= u_radius ) {
         out_color = vec4(1,1,1,ring_alpha);
     }
-    else if (u_fill && r < u_radius)
-    {
+    else if ( u_fill && r < u_radius ) {
         out_color = u_color;
     }
-    else
-    {
+    else {
         discard;
     }
 }

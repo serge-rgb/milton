@@ -30,8 +30,6 @@ GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
 
     GLuint obj = glCreateShader(type);
 
-	size_t num_sources = array_count(sources);
-
     GLCHK ( glShaderSource(obj, array_count(sources), sources, NULL) );
     GLCHK ( glCompileShader(obj) );
     // ERROR CHECKING
@@ -41,10 +39,8 @@ GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
 
     GLint length;
     GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
-    if (!res && length > 0)
-    {
-        if (!res)
-        {
+    if ( !res && length > 0 ) {
+        if ( !res ) {
             milton_log("SHADER SOURCE:\n%s\n", sources[2]);
         }
         char* log = (char*)malloc((size_t)length);
@@ -54,8 +50,7 @@ GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
         gl_log("Shader compilation info. \n    ---- Info log:\n");
         gl_log(log);
 
-        if (!res)
-        {
+        if ( !res ) {
             mlt_assert(!"Shader compilation error");
         }
 
@@ -80,8 +75,7 @@ GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
 void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
 {
     mlt_assert(glIsProgram (obj));
-    for (int i = 0; i < num_shaders; ++i)
-    {
+    for ( int i = 0; i < num_shaders; ++i ) {
         mlt_assert(glIsShader(shaders[i]));
 
         GLCHK ( glAttachShader(obj, shaders[i]) );
@@ -91,8 +85,7 @@ void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
     // ERROR CHECKING
     int res = 0;
     GLCHK ( glGetProgramiv(obj, GL_LINK_STATUS, &res) );
-    if (!res)
-    {
+    if ( !res ) {
         gl_log("ERROR: program did not link.\n");
         GLint len;
         glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &len);
@@ -119,11 +112,9 @@ void gl_query_error(const char* expr, const char* file, int line)
 {
     GLenum err = glGetError();
     const char* str = "";
-    if (err != GL_NO_ERROR)
-    {
+    if ( err != GL_NO_ERROR ) {
         char buffer[256];
-        switch(err)
-        {
+        switch( err ) {
 #ifdef GL_INVALID_ENUM
         case GL_INVALID_ENUM:
             str = "GL_INVALID_ENUM";
@@ -176,8 +167,7 @@ bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t dat
     bool ok = true;
     GLint loc = glGetAttribLocation(program, name);
     ok = loc >= 0;
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)data_sz, data, GL_STATIC_DRAW) );
     }
 
@@ -191,8 +181,7 @@ bool gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
 
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform4fv(loc, (GLsizei)count, vals) );
     }
     return ok;
@@ -205,8 +194,7 @@ bool gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
 
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform3iv(loc, (GLsizei)count, vals) );
     }
     return ok;
@@ -219,8 +207,7 @@ bool gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
 
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform3fv(loc, (GLsizei)count, vals) );
     }
     return ok;
@@ -232,8 +219,7 @@ bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform2fv(loc, (GLsizei)count, vals) );
     }
     return ok;
@@ -245,8 +231,7 @@ bool gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform2f(loc, x, y) );
     }
     return ok;
@@ -258,8 +243,7 @@ bool gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform2iv(loc, (GLsizei)count, vals) );
     }
     return ok;
@@ -271,8 +255,7 @@ bool gl_set_uniform_f(GLuint program, char* name, float val)
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform1f(loc, val) );
     }
     return ok;
@@ -284,8 +267,7 @@ bool gl_set_uniform_i(GLuint program, char* name, i32 val)
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform1i(loc, val) );
     }
     return ok;
@@ -297,8 +279,7 @@ bool gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
     bool ok = true;
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
-    if (ok)
-    {
+    if ( ok ) {
         GLCHK( glUniform2i(loc, x, y) );
     }
     return ok;

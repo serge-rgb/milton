@@ -52,18 +52,20 @@ PFNGLGETSTRINGIPROC                 glGetStringi;
 //PFNGLBUFFERSUBDATAPROC              glBufferSubData;
 
 // OpenGL 3.0+
+#if USE_GL_3_2
 PFNGLGENVERTEXARRAYSPROC            glGenVertexArrays;
 PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
 PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
+#endif
 
-PFNGLGENFRAMEBUFFERSPROC            glGenFramebuffers;
-PFNGLBINDFRAMEBUFFERPROC            glBindFramebuffer;
-PFNGLFRAMEBUFFERTEXTURE2DPROC       glFramebufferTexture2D;
-PFNGLGENRENDERBUFFERSPROC           glGenRenderbuffers;
-PFNGLBINDRENDERBUFFERPROC           glBindRenderbuffer;
-PFNGLCHECKFRAMEBUFFERSTATUSPROC     glCheckFramebufferStatus;
-PFNGLDELETEFRAMEBUFFERSPROC         glDeleteFramebuffers;
-PFNGLBLITFRAMEBUFFERPROC            glBlitFramebuffer;
+PFNGLGENFRAMEBUFFERSEXTPROC            glGenFramebuffersEXT;
+PFNGLBINDFRAMEBUFFEREXTPROC            glBindFramebufferEXT;
+PFNGLFRAMEBUFFERTEXTURE2DEXTPROC       glFramebufferTexture2DEXT;
+PFNGLGENRENDERBUFFERSEXTPROC           glGenRenderbuffersEXT;
+PFNGLBINDRENDERBUFFEREXTPROC           glBindRenderbufferEXT;
+PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC     glCheckFramebufferStatusEXT;
+PFNGLDELETEFRAMEBUFFERSEXTPROC         glDeleteFramebuffersEXT;
+PFNGLBLITFRAMEBUFFEREXTPROC            glBlitFramebufferEXT;
 // PFNGLRENDERBUFFERSTORAGEPROC        glRenderbufferStorage;
 // PFNGLFRAMEBUFFERRENDERBUFFERPROC    glFramebufferRenderbuffer;
 
@@ -80,8 +82,13 @@ PFNGLMINSAMPLESHADINGARBPROC        glMinSampleShadingARB;
 bool gl_load(b32* out_supports_sample_shading)
 {
 #if defined(_WIN32)
-#define GETADDRESS(func) if (ok) { func = (decltype(func))wglGetProcAddress(#func); \
-                                    ok   = (func!=NULL); }
+#define GETADDRESS(func) { func = (decltype(func))wglGetProcAddress(#func); \
+                            if (func == NULL) { \
+                                char* msg = "Could not load function " #func; \
+                                milton_log(msg);\
+                                milton_die_gracefully(msg); \
+                            } \
+                        }
 #else
 #define GETADDRESS(func)  // Ignore
 #endif
@@ -94,21 +101,17 @@ bool gl_load(b32* out_supports_sample_shading)
     GETADDRESS(glGetStringi);
     b32 supports_sample_shading = false;
 
-    if (&glGetStringi)
-    {
-        for (i64 extension_i = 0; extension_i < num_extensions; ++extension_i)
-        {
+    if ( &glGetStringi ) {
+        for ( i64 extension_i = 0; extension_i < num_extensions; ++extension_i ) {
             char* extension_string = (char*)glGetStringi(GL_EXTENSIONS, (GLuint)extension_i);
 
-            if (strcmp(extension_string, "GL_ARB_sample_shading") == 0)
-            {
+            if ( strcmp(extension_string, "GL_ARB_sample_shading") == 0 ) {
                 supports_sample_shading = true;
             }
         }
     }
 
-    if (out_supports_sample_shading)
-    {
+    if ( out_supports_sample_shading ) {
         *out_supports_sample_shading = supports_sample_shading;
     }
 
@@ -118,7 +121,6 @@ bool gl_load(b32* out_supports_sample_shading)
     GETADDRESS(glAttachShader);
     GETADDRESS(glBindAttribLocation);
     GETADDRESS(glBindBuffer);
-    GETADDRESS(glBindVertexArray);
     GETADDRESS(glBlendEquation);
     GETADDRESS(glBlendEquationSeparate);
     GETADDRESS(glBufferData);
@@ -129,10 +131,8 @@ bool gl_load(b32* out_supports_sample_shading)
     GETADDRESS(glDeleteBuffers);
     GETADDRESS(glDeleteProgram);
     GETADDRESS(glDeleteShader);
-    GETADDRESS(glDeleteVertexArrays);
     GETADDRESS(glDetachShader);
     GETADDRESS(glGenBuffers);
-    GETADDRESS(glGenVertexArrays);
     GETADDRESS(glGetAttribLocation);
     GETADDRESS(glGetProgramInfoLog);
     GETADDRESS(glGetProgramiv);
@@ -160,28 +160,27 @@ bool gl_load(b32* out_supports_sample_shading)
     GETADDRESS(glEnableVertexAttribArray);
     GETADDRESS(glDisableVertexAttribArray);
 
-    GETADDRESS(glBlitFramebuffer);
-    //GETADDRESS(glVertexAttribIPointer);
+#if USE_GL_3_2
+    GETADDRESS(glGenVertexArrays);
+    GETADDRESS(glDeleteVertexArrays);
+    GETADDRESS(glBindVertexArray);
+#endif
 
-    GETADDRESS(glGenFramebuffers);
-    GETADDRESS(glBindFramebuffer);
-    GETADDRESS(glFramebufferTexture2D);
-    GETADDRESS(glGenRenderbuffers);
-    GETADDRESS(glBindRenderbuffer);
-    // GETADDRESS(glRenderbufferStorage);
-    // GETADDRESS(glFramebufferRenderbuffer);
-    GETADDRESS(glCheckFramebufferStatus);
-    GETADDRESS(glDeleteFramebuffers);
+    GETADDRESS(glBlitFramebufferEXT);
+
+    GETADDRESS(glGenFramebuffersEXT);
+    GETADDRESS(glBindFramebufferEXT);
+    GETADDRESS(glFramebufferTexture2DEXT);
+    GETADDRESS(glGenRenderbuffersEXT);
+    GETADDRESS(glBindRenderbufferEXT);
+    GETADDRESS(glCheckFramebufferStatusEXT);
+    GETADDRESS(glDeleteFramebuffersEXT);
 
     GETADDRESS(glTexImage2DMultisample);
-    GETADDRESS(glFramebufferTexture2D);
 
-    if (supports_sample_shading)
-    {
+    if ( supports_sample_shading ) {
         GETADDRESS(glMinSampleShadingARB);
-    }
-    else
-    {
+    } else {
         glMinSampleShadingARB = NULL;
     }
 #pragma warning(pop)

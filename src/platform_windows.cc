@@ -108,8 +108,7 @@ void* platform_allocate_bounded_memory(size_t size)
 {
 #if MILTON_DEBUG
     static b32 once_check = false;
-    if ( once_check )
-    {
+    if ( once_check ) {
         INVALID_CODE_PATH;
     }
     once_check = true;
@@ -148,8 +147,7 @@ void win32_log(char *format, ...)
 
     num_bytes_written = _vsnprintf(message, sizeof( message ) - 1, format, args);
 
-    if (num_bytes_written > 0)
-    {
+    if ( num_bytes_written > 0 ) {
         #if WIN32_DEBUGGER_OUTPUT
         OutputDebugStringA(message);
         #else
@@ -187,22 +185,18 @@ void win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)
 {
 #pragma warning(push)
 #pragma warning(disable:4061)
-    switch(kind)
-    {
-    case FileKind_IMAGE:
-        {
-            ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_image;
-            ofn->lpstrDefExt = L"jpg";
-        } break;
-    case FileKind_MILTON_CANVAS:
-        {
-            ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_milton;
-            ofn->lpstrDefExt = L"mlt";
-        } break;
-    default:
-        {
-            milton_die_gracefully("Invalid filter in Open File Dialog.");
-        }
+    switch( kind ) {
+    case FileKind_IMAGE: {
+        ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_image;
+        ofn->lpstrDefExt = L"jpg";
+    } break;
+    case FileKind_MILTON_CANVAS: {
+        ofn->lpstrFilter = (LPCWSTR)win32_filter_strings_milton;
+        ofn->lpstrDefExt = L"mlt";
+    } break;
+    default: {
+        milton_die_gracefully("Invalid filter in Open File Dialog.");
+    } break;
     }
 #pragma warning(pop)
 }
@@ -232,8 +226,7 @@ PATH_CHAR* platform_save_dialog(FileKind kind)
 
     b32 ok = GetSaveFileNameW(&ofn);
 
-    if (!ok)
-    {
+    if ( !ok ) {
         mlt_free(save_filename);
         return NULL;
     }
@@ -254,8 +247,7 @@ PATH_CHAR* platform_open_dialog(FileKind kind)
     ofn.Flags = OFN_FILEMUSTEXIST;
 
     b32 ok = GetOpenFileNameW(&ofn);
-    if (ok == false)
-    {
+    if ( ok == false ) {
         free(fname);
         milton_log("[ERROR] could not open file! Error is %d\n", CommDlgExtendedError());
         return NULL;
@@ -297,12 +289,10 @@ void platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 
     {  // Remove the exe name
         PATH_CHAR* last_slash = fname;
-        for(PATH_CHAR* iter = fname;
-            *iter != '\0';
-            ++iter)
-        {
-            if (*iter == '\\')
-            {
+        for ( PATH_CHAR* iter = fname;
+              *iter != '\0';
+              ++iter ) {
+            if ( *iter == '\\' ) {
                 last_slash = iter;
             }
         }
@@ -321,14 +311,12 @@ b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
     PATH_STRNCPY(full, fname, MAX_PATH);
     platform_fname_at_config(full, MAX_PATH);
     int r = DeleteFileW(full);
-    if (r == 0)
-    {
+    if ( r == 0 ) {
         ok = false;
 
         int err = (int)GetLastError();
         if ( (error_tolerance&DeleteErrorTolerance_OK_NOT_EXIST) &&
-             err == ERROR_FILE_NOT_FOUND)
-        {
+             err == ERROR_FILE_NOT_FOUND ) {
             ok = true;
         }
     }
@@ -356,8 +344,7 @@ void win32_print_error(int err)
                   0, // minimum size for output buffer
                   NULL);   // arguments - see note
 
-    if ( error_text )
-    {
+    if ( error_text ) {
         milton_log(error_text);
         LocalFree(error_text);
     }
@@ -369,14 +356,12 @@ b32 platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 {
     b32 ok = MoveFileExW(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
     //b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH);
-    if (!ok)
-    {
+    if (!ok) {
         int err = (int)GetLastError();
         win32_print_error(err);
 
         BOOL could_delete = DeleteFileW(src);
-        if (could_delete == FALSE)
-        {
+        if ( could_delete == FALSE ) {
             win32_print_error((int)GetLastError());
 
         }
@@ -393,24 +378,20 @@ void platform_fname_at_config(PATH_CHAR* fname, size_t len)
     size_t new_wpath_len = 0;
     BOOL api_result = FALSE;
 
-    if (!SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, 0, path)))
-    {
+    if ( !SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, 0, path)) ) {
         milton_die_gracefully("Couldn't locate our prefpath");
     }
 
     new_wpath_len = lstrlenW(worg) + lstrlenW(wapp) + lstrlenW(path) + (size_t)3;
 
-    if ((new_wpath_len + 1) < MAX_PATH)
-    {
+    if ( (new_wpath_len + 1) < MAX_PATH ) {
         lstrcatW(path, L"\\");
         lstrcatW(path, worg);
 
         api_result = CreateDirectoryW(path, NULL);
-        if (api_result == FALSE)
-        {
+        if ( api_result == FALSE ) {
             auto last_error = GetLastError();
-            if (last_error != ERROR_ALREADY_EXISTS)
-            {
+            if ( last_error != ERROR_ALREADY_EXISTS ) {
                 win32_print_error((int)last_error);
                 milton_die_gracefully("Unexpected error when getting file name at config directory.");
             }
@@ -420,11 +401,9 @@ void platform_fname_at_config(PATH_CHAR* fname, size_t len)
         lstrcatW(path, wapp);
 
         api_result = CreateDirectoryW(path, NULL);
-        if (api_result == FALSE)
-        {
+        if ( api_result == FALSE ) {
             auto last_error = GetLastError();
-            if (last_error != ERROR_ALREADY_EXISTS)
-            {
+            if ( last_error != ERROR_ALREADY_EXISTS ) {
                 win32_print_error((int)last_error);
                 milton_die_gracefully("Unexpected error when getting file name at config directory.");
             }
@@ -453,11 +432,9 @@ void win32_cleanup_appdata()
     WIN32_FIND_DATAW find_data = {};
 
     HANDLE hfind = FindFirstFileW(fname, &find_data);
-    if (hfind != INVALID_HANDLE_VALUE)
-    {
+    if ( hfind != INVALID_HANDLE_VALUE ) {
         b32 can_delete = true;
-        while (can_delete)
-        {
+        while ( can_delete ) {
             PATH_CHAR* fn = find_data.cFileName;
             //milton_log("AppData Cleanup: Deleting %s\n", fn);
 
@@ -466,8 +443,7 @@ void win32_cleanup_appdata()
             wcscat(fname, fn);
 
             BOOL could_delete = DeleteFileW(fname);
-            if (could_delete == FALSE)
-            {
+            if ( could_delete == FALSE ) {
                 win32_print_error((int)GetLastError());
             }
             can_delete = FindNextFileW(hfind, &find_data);
@@ -518,8 +494,7 @@ float perf_count_to_sec(u64 counter)
 
 void platform_cursor_hide()
 {
-    while (g_cursor_count >= 0)
-    {
+    while ( g_cursor_count >= 0 ) {
         ShowCursor(FALSE);
         g_cursor_count--;
     }
@@ -527,8 +502,7 @@ void platform_cursor_hide()
 
 void platform_cursor_show()
 {
-    while (g_cursor_count < 0)
-    {
+    while ( g_cursor_count < 0 ) {
         ShowCursor(TRUE);
         g_cursor_count++;
     }

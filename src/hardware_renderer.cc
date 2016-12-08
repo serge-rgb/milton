@@ -98,54 +98,44 @@ enum GLVendor
 
 static void print_framebuffer_status()
 {
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
     char* msg = NULL;
-    switch (status)
-    {
-        case GL_FRAMEBUFFER_COMPLETE:
-        {
+    switch ( status ) {
+        case GL_FRAMEBUFFER_COMPLETE: {
             // OK!
             break;
         }
-        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-        {
+        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: {
             msg = "Incomplete Attachment";
             break;
         }
-        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-        {
+        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: {
             msg = "Missing Attachment";
             break;
         }
-        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-        {
+        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: {
             msg = "Incomplete Draw Buffer";
             break;
         }
-        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-        {
+        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: {
             msg = "Incomplete Read Buffer";
             break;
         }
-        case GL_FRAMEBUFFER_UNSUPPORTED:
-        {
+        case GL_FRAMEBUFFER_UNSUPPORTED: {
             msg = "Unsupported Framebuffer";
             break;
         }
-        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-        {
+        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: {
             msg = "Incomplete Multisample";
             break;
         }
-        default:
-        {
+        default: {
             msg = "Unknown";
             break;
         }
     }
 
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-    {
+    if ( status != GL_FRAMEBUFFER_COMPLETE ) {
         char warning[1024];
         snprintf(warning, 1024, "Framebuffer Error: %s", msg);
         milton_log("Warning %s\n", warning);
@@ -247,8 +237,7 @@ enum BrushOutlineEnum
 void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
                               BrushOutlineEnum outline_enum = BrushOutline_NO_FILL, v4f color = {})
 {
-    if (render_data->vbo_outline == 0)
-    {
+    if ( render_data->vbo_outline == 0 ) {
         mlt_assert(render_data->vbo_outline_sizes == 0);
         glGenBuffers(1, &render_data->vbo_outline);
         glGenBuffers(1, &render_data->vbo_outline_sizes);
@@ -261,16 +250,14 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radiu
     auto h = render_data->height;
 
     // Normalized to [-1,1]
-    GLfloat data[] =
-    {
+    GLfloat data[] = {
         2*((cx-radius_plus_girth) / w)-1,  -2*((cy-radius_plus_girth) / h)+1,
         2*((cx-radius_plus_girth) / w)-1,  -2*((cy+radius_plus_girth) / h)+1,
         2*((cx+radius_plus_girth) / w)-1,  -2*((cy+radius_plus_girth) / h)+1,
         2*((cx+radius_plus_girth) / w)-1,  -2*((cy-radius_plus_girth) / h)+1,
     };
 
-    GLfloat sizes[] =
-    {
+    GLfloat sizes[] = {
         -radius_plus_girth, -radius_plus_girth,
         -radius_plus_girth,  radius_plus_girth,
          radius_plus_girth,  radius_plus_girth,
@@ -284,13 +271,11 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radiu
     GLCHK( glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_DYNAMIC_DRAW) );
 
     gl_set_uniform_i(render_data->outline_program, "u_radius", radius);
-    if (outline_enum == BrushOutline_FILL)
-    {
+    if ( outline_enum == BrushOutline_FILL ) {
         gl_set_uniform_i(render_data->outline_program, "u_fill", true);
         gl_set_uniform_vec4(render_data->outline_program, "u_color", 1, color.d);
     }
-    else if (outline_enum == BrushOutline_NO_FILL)
-    {
+    else if ( outline_enum == BrushOutline_NO_FILL ) {
         gl_set_uniform_i(render_data->outline_program, "u_fill", false);
     }
 }
@@ -309,8 +294,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     #if MULTISAMPLED_TEXTURES
         glEnable(GL_MULTISAMPLE);
         // Using the & operator to silence clang warning on OSX.
-        if (&glMinSampleShadingARB != NULL)
-        {
+        if ( &glMinSampleShadingARB != NULL ) {
             glEnable(GL_SAMPLE_SHADING_ARB);
             GLCHK( glMinSampleShadingARB(1.0f) );
         }
@@ -332,26 +316,24 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     bool result = true;
 
     // Create a single VAO and bind it.
+#if USE_GL_3_2
     GLuint proxy_vao = 0;
     GLCHK( glGenVertexArrays(1, &proxy_vao) );
     GLCHK( glBindVertexArray(proxy_vao) );
+#endif
 
     GLVendor vendor = GLVendor_UNKNOWN;
     {
 
         char *vendor_string = (char *)glGetString(GL_VENDOR);
-        if (vendor_string)
-        {
-            if (strcmp("NVIDIA Corporation", vendor_string) == 0)
-            {
+        if ( vendor_string ) {
+            if ( strcmp("NVIDIA Corporation", vendor_string) == 0 ) {
                 vendor = GLVendor_NVIDIA;
             }
-            else if (strcmp("AMD", vendor_string) == 0)
-            {
+            else if ( strcmp("AMD", vendor_string) == 0 ) {
                 vendor = GLVendor_AMD;
             }
-            else if (strcmp("Intel", vendor_string) == 0)
-            {
+            else if ( strcmp("Intel", vendor_string) == 0 ) {
                 vendor = GLVendor_INTEL;
             }
         }
@@ -364,8 +346,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         // |    \ |
         // b______c
         //  Triangle fan:
-        GLfloat quad_data[] =
-        {
+        GLfloat quad_data[] = {
             -1 , -1 , // a
             -1 , 1  , // b
             1  , 1  , // c
@@ -379,8 +360,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         glBufferData(GL_ARRAY_BUFFER, array_count(quad_data)*sizeof(*quad_data), quad_data, GL_STATIC_DRAW);
 
         float u = 1.0f;
-        GLfloat uv_data[] =
-        {
+        GLfloat uv_data[] = {
             0,0,
             0,u,
             u,u,
@@ -404,16 +384,12 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         GLuint objs[2];
 
         char* config_string = "";
-        if (render_data->flags & RenderDataFlags_HAS_SAMPLE_SHADING)
-        {
-            if (vendor == GLVendor_NVIDIA)
-            {
+        if ( render_data->flags & RenderDataFlags_HAS_SAMPLE_SHADING ) {
+            if ( vendor == GLVendor_NVIDIA ) {
                 config_string =
                         "#define HAS_SAMPLE_SHADING 1 \n"
                         "#define VENDOR_NVIDIA 1 \n";
-            }
-            else
-            {
+            } else {
                 config_string =
                         "#define HAS_SAMPLE_SHADING 1 \n";
             }
@@ -565,8 +541,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         // Create framebuffer object.
         {
             GLuint fbo = 0;
-            glGenFramebuffers(1, &fbo);
-            GLCHK(glBindFramebuffer(GL_FRAMEBUFFER, fbo));
+            glGenFramebuffersEXT(1, &fbo);
+            GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, fbo));
             GLenum texture_target;
             #if MULTISAMPLED_TEXTURES
             texture_target = GL_TEXTURE_2D_MULTISAMPLE;
@@ -574,14 +550,14 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
             texture_target = GL_TEXTURE_2D;
             #endif
 
-            GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+            GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                              render_data->layer_texture, 0) );
-            GLCHK( glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture_target,
+            GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture_target,
                                              render_data->stencil_texture, 0) );
             render_data->fbo = fbo;
             print_framebuffer_status();
         }
-        GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
+        GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
     }
     // VBO for picker
     glGenBuffers(1, &render_data->vbo_picker);
@@ -646,8 +622,7 @@ void gpu_update_scale(RenderData* render_data, i32 scale)
 
 void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
 {
-    if (render_data->vbo_exporter[0] == 0)
-    {
+    if ( render_data->vbo_exporter[0] == 0 ) {
         glGenBuffers(4, render_data->vbo_exporter);
     }
 
@@ -657,8 +632,7 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     i32 h = abs(exporter->pivot.y - exporter->needle.y);
 
     // Normalize to [-1,1]^2
-    float normalized_rect[] =
-    {
+    float normalized_rect[] = {
         2*((GLfloat)    x/(render_data->width))-1, -(2*((GLfloat)y    /(render_data->height))-1),
         2*((GLfloat)    x/(render_data->width))-1, -(2*((GLfloat)(y+h)/(render_data->height))-1),
         2*((GLfloat)(x+w)/(render_data->width))-1, -(2*((GLfloat)(y+h)/(render_data->height))-1),
@@ -669,8 +643,7 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     float line_length = px / render_data->height;
     float aspect = render_data->width / (float)render_data->height;
 
-    float top[] =
-    {
+    float top[] = {
         normalized_rect[0], normalized_rect[1],
         normalized_rect[2], normalized_rect[1]+line_length,
         normalized_rect[4], normalized_rect[1]+line_length,
@@ -679,8 +652,7 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[0]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(top)*sizeof(*top), top, GL_DYNAMIC_DRAW) );
 
-    float bottom[] =
-    {
+    float bottom[] = {
         normalized_rect[0], normalized_rect[3]-line_length,
         normalized_rect[2], normalized_rect[3],
         normalized_rect[4], normalized_rect[3],
@@ -691,8 +663,7 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
 
     line_length = px / (render_data->width);
 
-    float right[] =
-    {
+    float right[] = {
         normalized_rect[4]-line_length, normalized_rect[1],
         normalized_rect[4]-line_length, normalized_rect[3],
         normalized_rect[4], normalized_rect[5],
@@ -701,8 +672,7 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[2]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(right)*sizeof(*right), right, GL_DYNAMIC_DRAW) );
 
-    float left[] =
-    {
+    float left[] = {
         normalized_rect[0], normalized_rect[1],
         normalized_rect[0], normalized_rect[3],
         normalized_rect[0]+line_length, normalized_rect[5],
@@ -752,21 +722,17 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
     render_data->stroke_z = (render_data->stroke_z + 1) % (MAX_DEPTH_VALUE-1);
     const i32 stroke_z = render_data->stroke_z + 1;
 
-    if (cook_option == CookStroke_NEW && stroke->render_element.vbo_stroke != 0)
-    {
+    if ( cook_option == CookStroke_NEW && stroke->render_element.vbo_stroke != 0 ) {
         // We already have our data cooked
         mlt_assert(stroke->render_element.vbo_pointa != 0);
         mlt_assert(stroke->render_element.vbo_pointb != 0);
-    }
-    else
-    {
+    } else {
         vec2 cp;
         cp.x = stroke->points[stroke->num_points-1].x;
         cp.y = stroke->points[stroke->num_points-1].y;
 
         auto npoints = stroke->num_points;
-        if (npoints == 1)
-        {
+        if ( npoints == 1 ) {
             // Create a 2-point stroke and recurse
             Stroke duplicate = *stroke;
             duplicate.num_points = 2;
@@ -785,8 +751,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
 
             arena_pop(&scratch_arena);
         }
-        else if (npoints > 1)
-        {
+        else if ( npoints > 1 ) {
             GLCHK( glUseProgram(render_data->stroke_program) );
 
             // 3 (triangle) *
@@ -820,8 +785,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             size_t apoints_i = 0;
             size_t bpoints_i = 0;
             size_t indices_i = 0;
-            for (i64 i=0; i < npoints-1; ++i)
-            {
+            for ( i64 i=0; i < npoints-1; ++i ) {
                 v2i point_i = stroke->points[i];
                 v2i point_j = stroke->points[i+1];
 
@@ -867,8 +831,7 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 float pressure_b = stroke->pressures[i+1];
 
                 // Add attributes for each new vertex.
-                for (int repeat = 0; repeat < 4; ++repeat)
-                {
+                for ( int repeat = 0; repeat < 4; ++repeat ) {
                     apoints[apoints_i++] = { (float)point_i.x, (float)point_i.y, pressure_a };
                     bpoints[bpoints_i++] = { (float)point_j.x, (float)point_j.y, pressure_b };
                 }
@@ -886,12 +849,11 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
             GLuint indices_buffer = 0;
 
             GLenum hint = GL_STATIC_DRAW;
-            if (cook_option == CookStroke_UPDATE_WORKING_STROKE)
-            {
+            if ( cook_option == CookStroke_UPDATE_WORKING_STROKE ) {
                 hint = GL_DYNAMIC_DRAW;
             }
-            if (stroke->render_element.vbo_stroke == 0)  // Cooking the stroke for the first time.
-            {
+            // Cooking the stroke for the first time.
+            if ( stroke->render_element.vbo_stroke == 0 ) {
                 glGenBuffers(1, &vbo_stroke);
                 glGenBuffers(1, &vbo_pointa);
                 glGenBuffers(1, &vbo_pointb);
@@ -906,8 +868,8 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
                 glBindBuffer(GL_ARRAY_BUFFER, indices_buffer);
                 GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(indices_i*sizeof(decltype(*indices))), indices, hint) );
             }
-            else  // Updating the working stroke
-            {
+            // Updating the working stroke
+            else {
                 vbo_stroke = stroke->render_element.vbo_stroke;
                 vbo_pointa = stroke->render_element.vbo_pointa;
                 vbo_pointb = stroke->render_element.vbo_pointb;
@@ -949,12 +911,10 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
 void gpu_free_strokes(Stroke* strokes, i64 count)
 {
     i64 fn = 0;
-    for (i64 i = 0; i < count; ++i)
-    {
+    for ( i64 i = 0; i < count; ++i ) {
         Stroke* s = &strokes[i];
         RenderElement* re = &s->render_element;
-        if (re->vbo_stroke != 0)
-        {
+        if ( re->vbo_stroke != 0 ) {
             mlt_assert(re->vbo_pointa != 0);
             mlt_assert(re->vbo_pointb != 0);
             mlt_assert(re->indices != 0);
@@ -977,33 +937,26 @@ void gpu_free_strokes(Stroke* strokes, i64 count)
 
 void gpu_free_strokes(MiltonState* milton_state)
 {
-    if (milton_state->root_layer != NULL)
-    {
-        for(Layer* l = milton_state->root_layer;
-            l != NULL;
-            l = l->next)
-        {
+    if ( milton_state->root_layer != NULL ) {
+        for ( Layer* l = milton_state->root_layer;
+              l != NULL;
+              l = l->next ) {
             StrokeList* sl = &l->strokes;
             StrokeBucket* bucket = &sl->root;
             i64 count = sl->count;
-            while (bucket)
-            {
+            while ( bucket ) {
                 i64 bucketcount = 0;
-                if (count >= STROKELIST_BUCKET_COUNT)
-                {
+                if ( count >= STROKELIST_BUCKET_COUNT ) {
                     bucketcount = STROKELIST_BUCKET_COUNT;
                     count -= STROKELIST_BUCKET_COUNT * (count / STROKELIST_BUCKET_COUNT);
                     // count -= STROKELIST_BUCKET_COUNT;
-                }
-                else
-                {
+                } else {
                     bucketcount = count;
                 }
                 gpu_free_strokes(bucket->data, count);
                 bucket = bucket->next;
             }
         }
-
     }
 }
 
@@ -1042,27 +995,21 @@ void gpu_clip_strokes_and_update(Arena* arena,
         render_data->clipped_count = 0;
     }
     #endif
-    for(Layer* l = root_layer;
-        l != NULL;
-        l = l->next)
-    {
-        if (!(l->flags & LayerFlags_VISIBLE))
-        {
+    for ( Layer* l = root_layer;
+          l != NULL;
+          l = l->next ) {
+        if ( !(l->flags & LayerFlags_VISIBLE) ) {
             // Skip invisible layers.
             continue;
         }
         StrokeBucket* bucket = &l->strokes.root;
         i64 bucket_i = 0;
 
-        while(bucket)
-        {
+        while ( bucket ) {
             i64 count = 0;
-            if (l->strokes.count - bucket_i*STROKELIST_BUCKET_COUNT >= STROKELIST_BUCKET_COUNT)
-            {
+            if ( l->strokes.count - bucket_i*STROKELIST_BUCKET_COUNT >= STROKELIST_BUCKET_COUNT ) {
                 count = STROKELIST_BUCKET_COUNT;
-            }
-            else
-            {
+            } else {
                 count = l->strokes.count % STROKELIST_BUCKET_COUNT;
             }
             Rect bbox = bucket->bounding_rect;
@@ -1074,14 +1021,11 @@ void gpu_clip_strokes_and_update(Arena* arena,
                                 screen_bounds.right <   bbox.left ||
                                 screen_bounds.bottom <  bbox.top;
 
-            if (!bucket_outside)
-            {
-                for (i64 i = 0; i < count; ++i)
-                {
+            if ( !bucket_outside ) {
+                for ( i64 i = 0; i < count; ++i ) {
                     Stroke* s = &bucket->data[i];
 
-                    if (s != NULL)
-                    {
+                    if ( s != NULL ) {
                         Rect bounds = s->bounding_rect;
                         bounds.top_left = canvas_to_raster(view, bounds.top_left);
                         bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
@@ -1091,38 +1035,32 @@ void gpu_clip_strokes_and_update(Arena* arena,
 
                         i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
 
-                        if (!is_outside && area!=0)
-                        {
+                        if ( !is_outside && area!=0 ) {
                             gpu_cook_stroke(arena, render_data, s);
                             push(clip_array, s->render_element);
                         }
-                        else if (is_outside && (flags & ClipFlags_UPDATE_GPU_DATA))
-                        {
+                        else if (is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA )) {
                             // If it is far away, delete.
                             i32 distance = abs(bounds.left - x + bounds.top - y);
                             const i32 min_number_of_screens = 4;
-                            if ((bounds.top     < y - min_number_of_screens*h) ||
-                                (bounds.bottom  > y+h + min_number_of_screens*h) ||
-                                (bounds.left    > x+w + min_number_of_screens*w) ||
-                                (bounds.right   < x - min_number_of_screens*w))
-                            {
+                            if ( (bounds.top     < y - min_number_of_screens*h) ||
+                                 (bounds.bottom  > y+h + min_number_of_screens*h) ||
+                                 (bounds.left    > x+w + min_number_of_screens*w) ||
+                                 (bounds.right   < x - min_number_of_screens*w) ) {
                                 gpu_free_strokes(s, 1);
                             }
                         }
                     }
                 }
             }
-            else if (flags & ClipFlags_UPDATE_GPU_DATA)
-            {
+            else if ( flags & ClipFlags_UPDATE_GPU_DATA ) {
                 gpu_free_strokes(bucket->data, count);
             }
             #if MILTON_ENABLE_PROFILING
             {
-                for (i64 i = 0; i < count; ++i)
-                {
+                for ( i64 i = 0; i < count; ++i ) {
                     Stroke* s = &bucket->data[i];
-                    if (s->render_element.vbo_stroke != 0)
-                    {
+                    if ( s->render_element.vbo_stroke != 0 ) {
                         render_data->clipped_count++;
                     }
                 }
@@ -1134,10 +1072,8 @@ void gpu_clip_strokes_and_update(Arena* arena,
 
 
         // Add the working stroke on the current layer.
-        if (working_stroke->layer_id == l->id)
-        {
-            if (working_stroke->num_points > 0)
-            {
+        if ( working_stroke->layer_id == l->id ) {
+            if ( working_stroke->num_points > 0 ) {
                 gpu_cook_stroke(arena, render_data, working_stroke, CookStroke_UPDATE_WORKING_STROKE);
 
                 push(clip_array, working_stroke->render_element);
@@ -1158,7 +1094,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     i32 h = view_height;
     glScissor(x, y, w, h);
 
-    GLCHK(glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo));
+    GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo));
 
     #if MULTISAMPLED_TEXTURES
     GLCHK(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture));
@@ -1175,12 +1111,12 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     #else
     texture_target = GL_TEXTURE_2D;
     #endif
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                            render_data->eraser_texture, 0);
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    GLCHK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+    GLCHK(glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                  render_data->layer_texture, 0));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1196,21 +1132,18 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
     GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
     GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
-    if (loc >= 0)
-    {
+    if ( loc >= 0 ) {
         DArray<RenderElement>* clip_array = &render_data->clip_array;
 
-        for (i64 i = 0; i < (i64)clip_array->count; i++)
-        {
+        for ( i64 i = 0; i < (i64)clip_array->count; i++ ) {
             RenderElement* re = &clip_array->data[i];
 
-            if (render_element_is_layer(re))
-            {
+            if ( render_element_is_layer(re) ) {
                 // Layer render element.
                 // The current framebuffer's color attachment is layer_texture.
                 // Copy layer_texture's contents to the eraser_texture.
 
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                        texture_target, render_data->eraser_texture, 0);
                 glBindTexture(texture_target, render_data->layer_texture);
                 glClear(GL_COLOR_BUFFER_BIT);
@@ -1219,8 +1152,7 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                 glUseProgram(render_data->texture_fill_program);
                 {
                     GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
-                    if (t_loc >= 0)
-                    {
+                    if ( t_loc >= 0 ) {
                         glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
                         glEnableVertexAttribArray((GLuint)t_loc);
                         GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
@@ -1230,40 +1162,35 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
                     }
                 }
 
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                        texture_target, render_data->layer_texture, 0);
                 glBindTexture(texture_target, render_data->eraser_texture);
                 glUseProgram(render_data->stroke_program);
                 glEnable(GL_DEPTH_TEST);
             }
-            else
-            {
+            // If this element is not a layer, then it is a stroke.
+            else {
                 i64 count = re->count;
 
-                if (count > 0)
-                {
-                    if (equ4f(render_data->current_color, re->color) == false)
-                    {
+                if ( count > 0 ) {
+                    if ( equ4f(render_data->current_color, re->color) == false ) {
                         gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1,
                                             re->color.d);
                         render_data->current_color = re->color;
                     }
-                    if (render_data->current_radius != re->radius)
-                    {
+                    if ( render_data->current_radius != re->radius ) {
                         gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
                         render_data->current_radius = re->radius;
                     }
 
-                    if (loc_a >= 0)
-                    {
+                    if ( loc_a >= 0 ) {
                         GLCHK(glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa));
                         GLCHK(glEnableVertexAttribArray((GLuint)loc_a));
                         GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc_a,
                                                     /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
                                                     /*stride*/ 0, /*ptr*/ 0));
                     }
-                    if (loc_b >= 0)
-                    {
+                    if ( loc_b >= 0 ) {
                         GLCHK(glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointb));
                         GLCHK(glEnableVertexAttribArray((GLuint)loc_b));
                         GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc_b,
@@ -1308,15 +1235,14 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     #endif
 
     glBindTexture(texture_target, render_data->layer_texture);
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, 0) );
+    GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
     glDisable(GL_DEPTH_TEST);
 
     #if 1
     glUseProgram(render_data->texture_fill_program);
     {
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
-        if (loc >= 0)
-        {
+        if ( loc >= 0 ) {
             glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
             glEnableVertexAttribArray((GLuint)loc);
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
@@ -1327,8 +1253,8 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     }
     #else
     {
-        GLCHK( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0) );
-        GLCHK( glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo) );
+        GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
+        GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
         // TODO: Does this fail on Intel?
         GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
                                  0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
@@ -1337,27 +1263,24 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
 
     // Render Gui
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 
     // TODO: Only render if view rect intersects picker rect
-    if (render_data->flags & RenderDataFlags_GUI_VISIBLE)
-    {
+    if ( render_data->flags & RenderDataFlags_GUI_VISIBLE ) {
         // Render picker
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glUseProgram(render_data->picker_program);
         GLint loc = glGetAttribLocation(render_data->picker_program, "a_position");
 
-        if (loc >= 0)
-        {
+        if ( loc >= 0 ) {
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker) );
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
                                          /*stride*/0, /*ptr*/0));
             glEnableVertexAttribArray((GLuint)loc);
             GLint loc_norm = glGetAttribLocation(render_data->picker_program, "a_norm");
-            if (loc_norm >= 0)
-            {
+            if ( loc_norm >= 0 ) {
                 GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker_norm) );
                 GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_norm,
                                              /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
@@ -1373,8 +1296,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     {
         glUseProgram(render_data->outline_program);
         GLint loc = glGetAttribLocation(render_data->outline_program, "a_position");
-        if (loc >= 0)
-        {
+        if ( loc >= 0 ) {
             glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline);
 
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
@@ -1382,8 +1304,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
                                          /*stride*/0, /*ptr*/0));
             glEnableVertexAttribArray((GLuint)loc);
             GLint loc_s = glGetAttribLocation(render_data->outline_program, "a_sizes");
-            if (loc_s >= 0)
-            {
+            if ( loc_s >= 0 ) {
                 glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline_sizes);
                 GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_s,
                                              /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
@@ -1394,16 +1315,13 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
         glDrawArrays(GL_TRIANGLE_FAN, 0,4);
     }
     glDisable(GL_BLEND);
-    if (render_data->flags & RenderDataFlags_EXPORTING)
-    {
+    if ( render_data->flags & RenderDataFlags_EXPORTING ) {
         // Update data if rect is not degenerate.
         // Draw outline.
         glUseProgram(render_data->exporter_program);
         GLint loc = glGetAttribLocation(render_data->exporter_program, "a_position");
-        if (loc>=0 && render_data->vbo_exporter>0)
-        {
-            for (int vbo_i = 0; vbo_i < 4; ++vbo_i)
-            {
+        if ( loc>=0 && render_data->vbo_exporter>0 ) {
+            for ( int vbo_i = 0; vbo_i < 4; ++vbo_i ) {
                 glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[vbo_i]);
                 glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0,0);
                 glEnableVertexAttribArray((GLuint)loc);
@@ -1443,8 +1361,7 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale,
     render_data->height = buf_h;
 
     milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
-    if (scale > 1)
-    {
+    if ( scale > 1 ) {
         milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
     }
 
@@ -1472,9 +1389,9 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale,
                  /*data = */ NULL);
 
     {
-        glGenFramebuffers(1, &export_fbo);
-        glBindFramebuffer(GL_FRAMEBUFFER, export_fbo);
-        GLCHK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        glGenFramebuffersEXT(1, &export_fbo);
+        glBindFramebufferEXT(GL_FRAMEBUFFER, export_fbo);
+        GLCHK(glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                      GL_TEXTURE_2D, image_texture, 0));
 
         print_framebuffer_status();
@@ -1490,26 +1407,26 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale,
     gpu_clip_strokes_and_update(milton_state->root_arena, render_data, milton_state->view, milton_state->root_layer,
                                 &milton_state->working_stroke, 0, 0, buf_w, buf_h);
 
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo) );
+    GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo) );
 
     gpu_render_canvas(render_data, 0, 0, buf_w, buf_h);
 
     // Resolve
 
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
-    GLCHK( glBindFramebuffer(GL_FRAMEBUFFER, export_fbo) );
+    GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, export_fbo) );
 
     {
-        GLCHK( glBindFramebuffer(GL_DRAW_FRAMEBUFFER, export_fbo) );
-        GLCHK( glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo) );
+        GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, export_fbo) );
+        GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
         // TODO: Does this fail on Intel?
-        GLCHK( glBlitFramebuffer(0, 0, buf_w, buf_h,
-                                 0, 0, buf_w,buf_h, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+        GLCHK( glBlitFramebufferEXT(0, 0, buf_w, buf_h,
+                                    0, 0, buf_w,buf_h, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
     }
 
     glEnable(GL_DEPTH_TEST);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, export_fbo);
+    glBindFramebufferEXT(GL_FRAMEBUFFER, export_fbo);
 
     // Read onto buffer
     GLCHK( glReadPixels(0,0,
@@ -1520,10 +1437,8 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale,
 
     {  // Flip texture
         u32* pixels = (u32*)buffer;
-        for (i64 j = 0; j < buf_h / 2; ++j)
-        {
-            for (i64 i = 0; i < buf_w; ++i)
-            {
+        for ( i64 j = 0; j < buf_h / 2; ++j ) {
+            for ( i64 i = 0; i < buf_w; ++i ) {
                 i64 idx_up = j * buf_w + i;
                 i64 j_down = buf_h - 1 - j;
                 i64 idx_down = j_down * buf_w + i;
@@ -1542,9 +1457,9 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale,
     render_data->width = saved_width;
     render_data->height = saved_height;
 
-    glDeleteFramebuffers(1, &export_fbo);
+    glDeleteFramebuffersEXT(1, &export_fbo);
     glDeleteTextures(1, &export_texture);
-    glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
+    glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo);
 
     gpu_resize(render_data, view);
     gpu_set_canvas(render_data, view);

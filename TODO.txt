@@ -3,7 +3,11 @@ To-Do
 
 - Cleanup
     required GL should be 2.1 and just use extensions.
-    windows platform layer.
+    check if smoothing is actually disabled for mouse input
+    is hover still flashing?
+    figure out what goes into headers...
+    ? use built-in GLSL functions ?
+    change persist.cc to stop using ugly branches.
 - Bugs
     - MoveFileEx randomly fails with return code 5 - access denied
     - Undo leaves some pixels without redrawing.
@@ -36,6 +40,7 @@ To-Do
         - unzoomable&unpannable layer ("pin layer" feature) ?
         - zoom to cursor position instead of screen center.
         - zoom-out toggle for overview and for navigation
+        - stroke masking?
 
 - Polish and/or Debug layer
     - Memory allocation profiler.

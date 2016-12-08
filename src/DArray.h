@@ -27,24 +27,19 @@ DArray<T> dynamic_array(i64 capacity)
 template <typename T>
 void grow(DArray<T>* arr)
 {
-    if (arr->capacity == 0)
-    {
+    // Default capacity.
+    if ( arr->capacity == 0 ) {
         arr->capacity = 32;
     }
-    while (arr->capacity <= arr->count)
-    {
+    while ( arr->capacity <= arr->count ) {
         arr->capacity *= 2;
     }
-    if (arr->data)
-    {
+    if ( arr->data ) {
         arr->data = (T*)mlt_realloc(arr->data, (size_t)(arr->capacity*sizeof(T)));
-        if (arr->data == NULL)
-        {
+        if ( arr->data == NULL ) {
             milton_die_gracefully("Milton ran out of memory :(");
         }
-    }
-    else
-    {
+    } else {
         arr->data = (T*)mlt_calloc((size_t)arr->capacity, sizeof(T));
     }
 }
@@ -53,10 +48,8 @@ void grow(DArray<T>* arr)
 template <typename T>
 void reserve(DArray<T>* arr, i64 size)
 {
-    if (arr)
-    {
-        if (arr->capacity < size || arr->data == NULL)
-        {
+    if ( arr ) {
+        if ( arr->capacity < size || arr->data == NULL ) {
             arr->capacity = size;
             grow(arr);
         }
@@ -66,14 +59,12 @@ void reserve(DArray<T>* arr, i64 size)
 template <typename T>
 T* push(DArray<T>* arr, const T& elem)
 {
-    if (arr->data == NULL)
-    {
+    if ( arr->data == NULL ) {
         arr->capacity = 32;
         arr->count = 0;
         grow(arr);
     }
-    else if (arr->capacity <= arr->count)
-    {
+    else if ( arr->capacity <= arr->count ) {
         grow(arr);
     }
     arr->data[arr->count++] = elem;
@@ -91,8 +82,7 @@ template <typename T>
 T* peek(DArray<T>* arr)
 {
     T* elem = NULL;
-    if (arr->count > 0)
-    {
+    if ( arr->count > 0 ) {
         elem = &arr->data[arr->count-1];
     }
     return elem;
@@ -102,12 +92,9 @@ template <typename T>
 T pop(DArray<T>* arr)
 {
     T elem = {};
-    if (arr->count > 0)
-    {
+    if ( arr->count > 0 ) {
         elem = arr->data[--arr->count];
-    }
-    else
-    {
+    } else {
         mlt_assert(!"Attempting to pop from an empty array.");
     }
     return elem;
@@ -129,8 +116,7 @@ void reset(DArray<T>* arr)
 template <typename T>
 void release(DArray<T>* arr)
 {
-    if (arr->data)
-    {
+    if ( arr->data ) {
         mlt_free(arr->data);
     }
 }
@@ -141,8 +127,7 @@ template <typename T>
 T* begin(const DArray<T>& arr)
 {
     T* result = NULL;
-    if (arr.count > 0)
-    {
+    if ( arr.count > 0 ) {
         result = &arr.data[0];
     }
     return result;
@@ -152,8 +137,7 @@ template <typename T>
 T* end(const DArray<T>& arr)
 {
     T* result = NULL;
-    if (arr.count > 0)
-    {
+    if ( arr.count > 0 ) {
         result = arr.data + arr.count;
     }
     return result;

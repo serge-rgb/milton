@@ -32,23 +32,19 @@ char* read_entire_file(char* fname)
 {
     char* contents = NULL;
     FILE* fd = fopen(fname, "r");
-    if (fd)
-    {
+    if ( fd ) {
         auto sz = bytes_until_end(fd);
         contents = (char*)calloc(1, sz+1);
-        if (contents)
-        {
+        if ( contents ) {
             auto read = fread(contents, 1, sz, fd);
             contents[read]='\0';
         }
-        else
-        {
+        else {
             fprintf(stderr, "Could not allocate memory for reading file.\n");
         }
         fclose(fd);
     }
-    else
-    {
+    else {
         int error = errno;
         fprintf(stderr, "Could not open shader for reading\n");
         handle_errno(error);
@@ -67,17 +63,13 @@ char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
 
     char* begin = contents;
     char* iter = contents;
-    for(;
-        *iter!='\0';
-        ++iter)
-    {
+    for ( ;
+          *iter!='\0';
+          ++iter ) {
         ++this_len;
-        if (*iter == '\n')
-        {
-            if (max_line != NULL)
-            {
-                if (this_len > *max_line)
-                {
+        if ( *iter == '\n' ) {
+            if ( max_line != NULL ) {
+                if ( this_len > *max_line ) {
                     *max_line = this_len;
                 }
             }
@@ -98,8 +90,7 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
     char* contents = read_entire_file(fname);
     char** prelude_lines = NULL;
     i64 prelude_lines_count = 0;
-    if (fname_prelude)
-    {
+    if ( fname_prelude ) {
         char* prelude = read_entire_file(fname_prelude);
         prelude_lines = split_lines(prelude, &prelude_lines_count);
     }
@@ -109,13 +100,11 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
     fprintf(of, "char %s[] = \n", varname);
     fprintf(of, "\"#define HAS_MULTISAMPLE %d\\n\"\n", MULTISAMPLED_TEXTURES );
 
-    for (i64 i = 0; i < prelude_lines_count; ++i)
-    {
+    for ( i64 i = 0; i < prelude_lines_count; ++i ) {
         prelude_lines[i][strlen(prelude_lines[i])-1]='\0';  // Strip newline
         fprintf(of, "\"%s\\n\"\n", prelude_lines[i]);
     }
-    for (i64 i = 0; i < count; ++i)
-    {
+    for ( i64 i = 0; i < count; ++i ) {
         lines[i][strlen(lines[i])-1]='\0';  // Strip newline
         fprintf(of, "\"%s\\n\"\n", lines[i]);
     }
@@ -126,8 +115,7 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
 int main(int argc, char** argv)
 {
     FILE* outfd = fopen("./../src/shaders.gen.h", "w");
-    if (outfd)
-    {
+    if ( outfd ) {
         output_shader(outfd, "../src/picker.v.glsl", "g_picker_v");
         output_shader(outfd, "../src/picker.f.glsl", "g_picker_f");
         output_shader(outfd, "../src/layer_blend.v.glsl", "g_layer_blend_v");
@@ -143,8 +131,7 @@ int main(int argc, char** argv)
         output_shader(outfd, "../src/quad.v.glsl", "g_quad_v");
         output_shader(outfd, "../src/quad.f.glsl", "g_quad_f");
     }
-    else
-    {
+    else {
         fprintf(stderr, "Could not open output file.\n");
         int error = errno;
         handle_errno(error);
@@ -155,8 +142,7 @@ int main(int argc, char** argv)
 void handle_errno(int error)
 {
     char* str = NULL;
-    switch(error)
-    {
+    switch ( error ) {
        case E2BIG:           str = "Argument list too long (POSIX.1)"; break;
 
        case EACCES:          str = "Permission denied (POSIX.1)"; break;
@@ -411,8 +397,7 @@ void handle_errno(int error)
 
        // case EXFULL:          str = "Exchange full"; break;
    }
-   if (str)
-   {
+   if ( str ) {
         fprintf(stderr, "Errno is set to \"%s\"", str);
    }
 }

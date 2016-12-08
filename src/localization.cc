@@ -154,15 +154,12 @@ char* get_localized_string(int id)
     i32 loc = Language_ENGLISH;
 
     char* result = g_localized_strings[loc][id];
-    if (result)
-    {
+    if ( result ) {
         char* cmd = g_command_abbreviations[id];
 
         // Include keyboard shortcut in string
-        if (cmd)
-        {
-            if (!g_baked_strings_with_commands[id])
-            {
+        if ( cmd ) {
+            if ( !g_baked_strings_with_commands[id] ) {
                 char* name = g_localized_strings[loc][id];
                 char* spacer = " - ";
 
@@ -179,9 +176,7 @@ char* get_localized_string(int id)
             }
             result = g_baked_strings_with_commands[id];
         }
-    }
-    else
-    {
+    } else {
         result = "STRING NEEDS LOCALIZATION";
     }
 

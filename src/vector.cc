@@ -74,8 +74,7 @@ v2i divide2i(v2i a, i32 factor)
 // NOTE(Tilmann): Rename to perpendicular2i?
 v2i perpendicular (v2i a)
 {
-    v2i result =
-    {
+    v2i result = {
         -a.y,
         a.x
     };
@@ -84,8 +83,7 @@ v2i perpendicular (v2i a)
 
 v2f perpendicular2f (v2f a)
 {
-    v2f result =
-    {
+    v2f result = {
         -a.y,
         a.x
     };
