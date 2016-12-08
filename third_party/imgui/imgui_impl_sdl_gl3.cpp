@@ -82,9 +82,7 @@ void ImGui_ImplSdlGL3_RenderDrawLists(ImDrawData* draw_data)
     GLCHK(glUseProgram((GLuint)g_ShaderHandle));
     GLCHK(glUniform1i(g_AttribLocationTex, 0));
     GLCHK(glUniformMatrix4fv(g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]));
-#if USE_GL_3_2
     GLCHK(glBindVertexArray(g_VaoHandle));
-#endif
 
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
@@ -118,9 +116,7 @@ void ImGui_ImplSdlGL3_RenderDrawLists(ImDrawData* draw_data)
     glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture);
     glBindBuffer(GL_ARRAY_BUFFER, (GLuint)last_array_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)last_element_array_buffer);
-#if USE_GL_3_2
     glBindVertexArray((GLuint)last_vertex_array);
-#endif
     glBlendEquationSeparate((GLenum)last_blend_equation_rgb, (GLenum)last_blend_equation_alpha);
     glBlendFunc((GLenum)last_blend_src, (GLenum)last_blend_dst);
     if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
@@ -256,10 +252,8 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects()
 	glGenBuffers(1, &g_VboHandle);
 	glGenBuffers(1, &g_ElementsHandle);
 
-#if USE_GL_3_2
 	glGenVertexArrays(1, &g_VaoHandle);
 	glBindVertexArray(g_VaoHandle);
-#endif
 	glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
 	glEnableVertexAttribArray(g_AttribLocationPosition);
 	glEnableVertexAttribArray(g_AttribLocationUV);
@@ -276,18 +270,14 @@ bool ImGui_ImplSdlGL3_CreateDeviceObjects()
 	// Restore modified GL state
 	glBindTexture(GL_TEXTURE_2D, last_texture);
 	glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-#if USE_GL_3_2
 	glBindVertexArray(last_vertex_array);
-#endif
 
 	return true;
 }
 
 void    ImGui_ImplSdlGL3_InvalidateDeviceObjects()
 {
-#if USE_GL_3_2
     if (g_VaoHandle) glDeleteVertexArrays(1, &g_VaoHandle);
-#endif
     if (g_VboHandle) glDeleteBuffers(1, &g_VboHandle);
     if (g_ElementsHandle) glDeleteBuffers(1, &g_ElementsHandle);
     g_VaoHandle = g_VboHandle = g_ElementsHandle = 0;

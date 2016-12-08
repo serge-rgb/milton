@@ -316,11 +316,9 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     bool result = true;
 
     // Create a single VAO and bind it.
-#if USE_GL_3_2
     GLuint proxy_vao = 0;
     GLCHK( glGenVertexArrays(1, &proxy_vao) );
     GLCHK( glBindVertexArray(proxy_vao) );
-#endif
 
     GLVendor vendor = GLVendor_UNKNOWN;
     {

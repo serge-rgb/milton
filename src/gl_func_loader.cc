@@ -51,13 +51,12 @@ PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
 PFNGLGETSTRINGIPROC                 glGetStringi;
 //PFNGLBUFFERSUBDATAPROC              glBufferSubData;
 
-// OpenGL 3.0+
-#if USE_GL_3_2
+// ARB_vertex_array_object
 PFNGLGENVERTEXARRAYSPROC            glGenVertexArrays;
 PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
 PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
-#endif
 
+// EXT_framebuffer_object
 PFNGLGENFRAMEBUFFERSEXTPROC            glGenFramebuffersEXT;
 PFNGLBINDFRAMEBUFFEREXTPROC            glBindFramebufferEXT;
 PFNGLFRAMEBUFFERTEXTURE2DEXTPROC       glFramebufferTexture2DEXT;
@@ -66,11 +65,8 @@ PFNGLBINDRENDERBUFFEREXTPROC           glBindRenderbufferEXT;
 PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC     glCheckFramebufferStatusEXT;
 PFNGLDELETEFRAMEBUFFERSEXTPROC         glDeleteFramebuffersEXT;
 PFNGLBLITFRAMEBUFFEREXTPROC            glBlitFramebufferEXT;
-// PFNGLRENDERBUFFERSTORAGEPROC        glRenderbufferStorage;
-// PFNGLFRAMEBUFFERRENDERBUFFERPROC    glFramebufferRenderbuffer;
 
-
-// OpenGL 3.2+
+// ARB_texture_multisample
 PFNGLTEXIMAGE2DMULTISAMPLEPROC      glTexImage2DMultisample;
 
 // ARB_sample_shading
@@ -160,11 +156,9 @@ bool gl_load(b32* out_supports_sample_shading)
     GETADDRESS(glEnableVertexAttribArray);
     GETADDRESS(glDisableVertexAttribArray);
 
-#if USE_GL_3_2
     GETADDRESS(glGenVertexArrays);
     GETADDRESS(glDeleteVertexArrays);
     GETADDRESS(glBindVertexArray);
-#endif
 
     GETADDRESS(glBlitFramebufferEXT);
 

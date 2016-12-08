@@ -24,8 +24,6 @@
     #endif
 #endif
 
-#define USE_GL_3_2 1
-
 #define MULTISAMPLED_TEXTURES 1
 
 #define MSAA_NUM_SAMPLES 4
