@@ -13,38 +13,37 @@ uniform int   u_scale;
 uniform int   u_radius;
 
 
-vec3 as_vec3(ivec3 v)
-{
-    return vec3(v);
-}
-vec4 as_vec4(ivec3 v)
-{
-    return vec4(vec3(v), 1);
-}
-vec4 as_vec4(vec3 v)
-{
-    return vec4(v, 1);
-}
-ivec2 as_ivec2(int v)
-{
-    return ivec2(v);
-}
-ivec2 as_ivec2(vec2 v)
-{
-    return ivec2(v);
-}
-ivec3 as_ivec3(vec3 v)
-{
-    return ivec3(v);
-}
-vec2 as_vec2(ivec2 v)
-{
-    return vec2(v);
-}
-#define VEC2 vec2
-#define VEC3 vec3
-#define VEC4 vec4
-
+// vec3 as_vec3(ivec3 v)
+// {
+//     return vec3(v);
+// }
+// vec4 as_vec4(ivec3 v)
+// {
+//     return vec4(vec3(v), 1);
+// }
+// vec4 as_vec4(vec3 v)
+// {
+//     return vec4(v, 1);
+// }
+// ivec2 as_ivec2(int v)
+// {
+//     return ivec2(v);
+// }
+// ivec2 as_ivec2(vec2 v)
+// {
+//     return ivec2(v);
+// }
+// ivec3 as_ivec3(vec3 v)
+// {
+//     return ivec3(v);
+// }
+// vec2 as_vec2(ivec2 v)
+// {
+//     return vec2(v);
+// }
+// #define VEC2 vec2
+// #define VEC3 vec3
+// #define VEC4 vec4
 
 vec2 canvas_to_raster_gl(vec2 cp)
 {
@@ -65,7 +64,7 @@ vec2 canvas_to_raster_gl(vec2 cp)
 
 vec2 raster_to_canvas_gl(vec2 raster_point)
 {
-    vec2 canvas_point = ((raster_point - u_screen_center) * u_scale) - VEC2(u_pan_vector);
+    vec2 canvas_point = ((raster_point - u_screen_center) * u_scale) - vec2(u_pan_vector);
 
     return canvas_point;
 }

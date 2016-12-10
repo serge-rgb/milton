@@ -224,27 +224,26 @@ void milton_load(MiltonState* milton_state)
         // Brush
         if ( milton_binary_version >= 2 ) {
             // PEN, ERASER
-            if (ok) { ok = fread_checked(&milton_state->brushes, sizeof(Brush), BrushEnum_COUNT, fd); }
+            if ( ok ) { ok = fread_checked(&milton_state->brushes, sizeof(Brush), BrushEnum_COUNT, fd); }
             // Sizes
-            if (ok) { ok = fread_checked(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd); }
+            if ( ok ) { ok = fread_checked(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd); }
         }
 
         if ( ok ) {
             i32 history_count = 0;
-            if (ok) { ok = fread_checked(&history_count, sizeof(history_count), 1, fd); }
+            if ( ok ) { ok = fread_checked(&history_count, sizeof(history_count), 1, fd); }
             if ( ok ) {
                 reset(&milton_state->history);
                 reserve(&milton_state->history, history_count);
             }
-            if (ok) { ok = fread_checked_nocopy(milton_state->history.data, sizeof(*milton_state->history.data),
+            if ( ok ) { ok = fread_checked_nocopy(milton_state->history.data, sizeof(*milton_state->history.data),
                                                 (size_t)history_count, fd); }
             if ( ok ) {
                 milton_state->history.count = history_count;
             }
         }
         int err = fclose(fd);
-        if (err != 0)
-        {
+        if ( err != 0 ) {
             ok = false;
         }
 
@@ -272,9 +271,7 @@ void milton_load(MiltonState* milton_state)
             milton_set_background_color(milton_state, milton_state->view->background_color);
             gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
         }
-    }
-    else
-    {
+    } else {
         milton_reset_canvas_and_set_default(milton_state);
     }
     milton_validate(milton_state);
@@ -316,23 +313,21 @@ void milton_save(MiltonState* milton_state)
             i32 num_strokes = (i32)layer->strokes.count;
             char* name = layer->name;
             i32 len = (i32)(strlen(name) + 1);
-            if (ok) { ok = fwrite_checked(&len, sizeof(i32), 1, fd); }
-            if (ok) { ok = fwrite_checked(name, sizeof(char), (size_t)len, fd); }
-            if (ok) { ok = fwrite_checked(&layer->id, sizeof(i32), 1, fd); }
-            if (ok) { ok = fwrite_checked(&layer->flags, sizeof(layer->flags), 1, fd); }
-            if (ok) { ok = fwrite_checked(&num_strokes, sizeof(i32), 1, fd); }
+            if ( ok ) { ok = fwrite_checked(&len, sizeof(i32), 1, fd); }
+            if ( ok ) { ok = fwrite_checked(name, sizeof(char), (size_t)len, fd); }
+            if ( ok ) { ok = fwrite_checked(&layer->id, sizeof(i32), 1, fd); }
+            if ( ok ) { ok = fwrite_checked(&layer->flags, sizeof(layer->flags), 1, fd); }
+            if ( ok ) { ok = fwrite_checked(&num_strokes, sizeof(i32), 1, fd); }
             if ( ok ) {
-                for (i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i)
-                {
+                for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
                     Stroke* stroke = get(&layer->strokes, stroke_i);
                     mlt_assert(stroke->num_points > 0);
-                    if (ok) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
-                    if (ok) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
-                    if (ok) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
-                    if (ok) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
-                    if (ok) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
-                    if ( !ok )
-                    {
+                    if ( ok ) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
+                    if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
+                    if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
+                    if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
+                    if ( ok ) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
+                    if ( !ok ) {
                         break;
                     }
                 }
@@ -354,10 +349,10 @@ void milton_save(MiltonState* milton_state)
             for (ColorButton* b = gui->picker.color_buttons; b!= NULL; b = b->next, button_count++) { }
             // Write
             if (ok) { ok = fwrite_checked(&button_count, sizeof(i32), 1, fd); }
-            if (ok)
-            {
-                for (ColorButton* b = gui->picker.color_buttons; ok && b!= NULL; b = b->next)
-                {
+            if ( ok ) {
+                for ( ColorButton* b = gui->picker.color_buttons;
+                      ok && b!= NULL;
+                      b = b->next ) {
                     ok = fwrite_checked(&b->rgba, sizeof(v4f), 1, fd);
                 }
             }

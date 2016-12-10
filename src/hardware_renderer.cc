@@ -689,11 +689,16 @@ static void gpu_set_background(RenderData* render_data, v3f background_color)
 
 void set_screen_size(RenderData* render_data, float* fscreen)
 {
-    gl_set_uniform_vec2(render_data->stroke_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->layer_blend_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->texture_fill_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->exporter_program, "u_screen_size", 1, fscreen);
-    gl_set_uniform_vec2(render_data->picker_program, "u_screen_size", 1, fscreen);
+    GLuint programs[] = {
+        render_data->stroke_program,
+        render_data->layer_blend_program,
+        render_data->texture_fill_program,
+        render_data->exporter_program,
+        render_data->picker_program,
+    };
+    for ( int pi = 0; pi < array_count(programs); ++pi ) {
+        gl_set_uniform_vec2(programs[pi], "u_screen_size", 1, fscreen);
+    }
 }
 
 void gpu_set_canvas(RenderData* render_data, CanvasView* view)
@@ -908,7 +913,6 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
 
 void gpu_free_strokes(Stroke* strokes, i64 count)
 {
-    i64 fn = 0;
     for ( i64 i = 0; i < count; ++i ) {
         Stroke* s = &strokes[i];
         RenderElement* re = &s->render_element;
@@ -924,13 +928,8 @@ void gpu_free_strokes(Stroke* strokes, i64 count)
             re->vbo_pointa = 0;
             re->vbo_pointb = 0;
             re->indices = 0;
-            fn++;
         }
     }
-    // if (fn > 0)
-    // {
-    //     milton_log("Freeing %d strokes\n", fn);
-    // }
 }
 
 void gpu_free_strokes(MiltonState* milton_state)
@@ -1028,8 +1027,8 @@ void gpu_clip_strokes_and_update(Arena* arena,
                         bounds.top_left = canvas_to_raster(view, bounds.top_left);
                         bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
 
-                        b32 is_outside = bounds.left > (x+w) || bounds.right < x ||
-                                bounds.top > (y+h) || bounds.bottom < y;
+                        b32 is_outside = bounds.left > (x+w) || bounds.right < x
+                                || bounds.top > (y+h) || bounds.bottom < y;
 
                         i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
 

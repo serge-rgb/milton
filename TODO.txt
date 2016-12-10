@@ -2,7 +2,6 @@ To-Do
 =====
 
 - Cleanup
-    required GL should be 2.1 and just use extensions.
     check if smoothing is actually disabled for mouse input
     is hover still flashing?
     figure out what goes into headers...

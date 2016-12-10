@@ -9,6 +9,8 @@
 
 #include "milton_configuration.h"
 
+#include "shadername.inl"
+
 typedef int8_t      i8;
 typedef int16_t     i16;
 typedef int32_t     i32;
@@ -34,9 +36,13 @@ char* read_entire_file(char* fname)
     FILE* fd = fopen(fname, "r");
     if ( fd ) {
         auto sz = bytes_until_end(fd);
-        contents = (char*)calloc(1, sz+1);
+        contents = (char*)calloc(1, sz+2);  // Add 2. A \0 char and a \n if last line not terminated
         if ( contents ) {
             auto read = fread(contents, 1, sz, fd);
+            // Append a newline if the last line is not newline terminated.
+            if ( contents[read-1] != '\n' ) {
+                contents[read++] = '\n';
+            }
             contents[read]='\0';
         }
         else {
@@ -67,7 +73,7 @@ char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
           *iter!='\0';
           ++iter ) {
         ++this_len;
-        if ( *iter == '\n' ) {
+        if ( *iter == '\n' || *(iter+1) == '\0' ) {
             if ( max_line != NULL ) {
                 if ( this_len > *max_line ) {
                     *max_line = this_len;
@@ -114,6 +120,8 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
 // Assuming this is being called from the build directory
 int main(int argc, char** argv)
 {
+    char out[128] = {};
+    //shadername("picker.v.glsl", out, 128);
     FILE* outfd = fopen("./../src/shaders.gen.h", "w");
     if ( outfd ) {
         output_shader(outfd, "../src/picker.v.glsl", "g_picker_v");
