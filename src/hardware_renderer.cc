@@ -436,7 +436,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
 
         GLuint objs[2] = {};
         objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(g_exporter_f, GL_FRAGMENT_SHADER);
+        objs[1] = gl_compile_shader(g_exporter_rect_f, GL_FRAGMENT_SHADER);
 
         gl_link_program(render_data->exporter_program, objs, array_count(objs));
         gl_set_uniform_i(render_data->exporter_program, "u_canvas", 0);

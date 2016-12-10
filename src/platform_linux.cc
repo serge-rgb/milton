@@ -19,8 +19,7 @@ u64 perf_counter()
     int res = clock_gettime(CLOCK_REALTIME, &tp);
 
     // TODO: Check errno and provide more informations
-    if (res)
-    {
+    if ( res ) {
         milton_log("Something went wrong with clock_gettime\n");
     }
 
@@ -39,8 +38,7 @@ b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
     platform_fname_at_config(fname_at_config, MAX_PATH*sizeof(char));
     int res = remove(fname_at_config);
     b32 result = true;
-    if (res != 0)
-    {
+    if ( res != 0 ) {
         result = false;
         // Delete failed for some reason.
         if ((error_tolerance == DeleteErrorTolerance_OK_NOT_EXIST) &&
@@ -55,25 +53,21 @@ b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
 
 void linux_set_GTK_filter(GtkFileChooser* chooser, GtkFileFilter* filter, FileKind kind)
 {
-    switch(kind)
-    {
-    case FileKind_IMAGE:
-        {
+    switch ( kind ) {
+    case FileKind_IMAGE: {
             gtk_file_filter_set_name(filter, "jpeg images (.jpg, .jpeg)");
             gtk_file_filter_add_pattern(filter, "*.[jJ][pP][gG]");
             gtk_file_filter_add_pattern(filter, "*.[jJ][pP][eE][gG]");
             gtk_file_chooser_add_filter(chooser, filter);
         } break;
-    case FileKind_MILTON_CANVAS:
-        {
+    case FileKind_MILTON_CANVAS: {
             gtk_file_filter_set_name(filter, "milton canvases (.mlt)");
             gtk_file_filter_add_pattern(filter, "*.[mM][lL][tT]");
             gtk_file_chooser_add_filter(chooser, filter);
         } break;
-    default:
-        {
+    default: {
         INVALID_CODE_PATH;
-    }
+        }
     }
 }
 
@@ -91,18 +85,16 @@ b32 platform_dialog_yesno(char* info, char* title)
 void platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
     char *string_copy = (char*)mlt_calloc(1, len);
-    if (string_copy)
-    {
+    if ( string_copy ) {
         strncpy(string_copy, fname, len);
         char *folder;
         char *home = getenv("XDG_DATA_HOME");
-        if(!home)
-        {
+        if ( !home ) {
             home = getenv("HOME");
             folder = ".milton";
-        }
-        else
+        } else {
             folder = "milton";
+        }
         snprintf(fname, len, "%s/%s", home, folder);
         mkdir(fname, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
         strncat(fname, "/", len);
@@ -119,12 +111,10 @@ void platform_fname_at_exe(PATH_CHAR* fname, size_t len)
     strncpy(fname, program_invocation_name, bufsize);
     {  // Remove the executable name
         PATH_CHAR* last_slash = fname;
-        for(PATH_CHAR* iter = fname;
+        for( PATH_CHAR* iter = fname;
             *iter != '\0';
-            ++iter)
-        {
-            if (*iter == '/')
-            {
+            ++iter ) {
+            if ( *iter == '/' ) {
                 last_slash = iter;
             }
         }
@@ -163,8 +153,7 @@ PATH_CHAR* platform_open_dialog(FileKind kind)
     GtkFileFilter *filter = gtk_file_filter_new();
     linux_set_GTK_filter(chooser, filter, kind);
     gtk_file_chooser_set_current_folder(chooser, getenv("HOME"));
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT)
-    {
+    if ( gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT ) {
         gtk_widget_destroy(dialog);
         return NULL;
     }
@@ -197,8 +186,7 @@ PATH_CHAR* platform_save_dialog(FileKind kind)
     gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
     gtk_file_chooser_set_current_folder(chooser, getenv("HOME"));
     gtk_file_chooser_set_current_name(chooser, kind == FileKind_IMAGE ? "untitled.jpg" : "untitled.mlt");
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT)
-    {
+    if ( gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT ) {
         gtk_widget_destroy(dialog);
         return NULL;
     }

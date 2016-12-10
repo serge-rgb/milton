@@ -9,7 +9,6 @@
 
 #include "milton_configuration.h"
 
-#include "shadername.inl"
 
 typedef int8_t      i8;
 typedef int16_t     i16;
@@ -91,7 +90,56 @@ char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
     return lines;
 }
 
-void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = NULL)
+// Computes the variable name of the form g_NAME_(v|f) for a given shader filename
+//    e.g. "../src/my_shader.v.glsl" -> g_my_shader_v
+int shadername(char* filename, char* out_varname, size_t sz_varname)
+{
+    if ( filename && out_varname ) {
+        // Skip filename until after all forward slashes.
+        char* last_forward_slash = NULL;
+        for ( char* c = filename; *c!='\0'; ++c ) {
+            if ( *c == '/' ) {
+                last_forward_slash = c;
+            }
+        }
+        if ( last_forward_slash ) {
+            filename = last_forward_slash+1;
+        }
+        size_t len_filename = strlen(filename);
+        char prefix[] = "g_";
+        size_t len_prefix = strlen(prefix);
+        if ( len_filename+3 <= sz_varname ) {
+            size_t out_i = 0;
+            size_t count_dots = 0;
+            // Append the prefix
+            for ( size_t pi = 0; pi < len_prefix; ++pi ) {
+                out_varname[out_i++] = prefix[pi];
+            }
+            // Append name. Translate the first dot to _
+            for ( char* c = filename;
+                  *c != '\0';
+                  ++c ) {
+                if ( *c != '.' ) {
+                    out_varname[out_i++] = *c;
+                } else {
+                    if ( count_dots++ == 0 ) {
+                        out_varname[out_i++] = '_';
+                    } else {
+                        break;
+                    }
+                }
+            }
+            out_varname[out_i] = '\0';
+        } else {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+#define VARNAME_MAX 128
+
+void output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
 {
     char* contents = read_entire_file(fname);
     char** prelude_lines = NULL;
@@ -103,6 +151,8 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
     char** lines;
     i64 count;
     lines = split_lines(contents, &count);
+    char varname[VARNAME_MAX] = {};
+    shadername(fname, varname, VARNAME_MAX);
     fprintf(of, "char %s[] = \n", varname);
     fprintf(of, "\"#define HAS_MULTISAMPLE %d\\n\"\n", MULTISAMPLED_TEXTURES );
 
@@ -121,23 +171,25 @@ void output_shader(FILE* of, char* fname, char* varname, char* fname_prelude = N
 int main(int argc, char** argv)
 {
     char out[128] = {};
-    //shadername("picker.v.glsl", out, 128);
+    shadername("./../src/picker.v.glsl", out, 128);
+    shadername("./../src/picker.f.glsl", out, 128);
+	  shadername("../src/exporter_rect.f.glsl", out, 128);
     FILE* outfd = fopen("./../src/shaders.gen.h", "w");
     if ( outfd ) {
-        output_shader(outfd, "../src/picker.v.glsl", "g_picker_v");
-        output_shader(outfd, "../src/picker.f.glsl", "g_picker_f");
-        output_shader(outfd, "../src/layer_blend.v.glsl", "g_layer_blend_v");
-        output_shader(outfd, "../src/layer_blend.f.glsl", "g_layer_blend_f");
-        output_shader(outfd, "../src/simple.v.glsl", "g_simple_v");
-        output_shader(outfd, "../src/simple.f.glsl", "g_simple_f");
-        output_shader(outfd, "../src/outline.v.glsl", "g_outline_v");
-        output_shader(outfd, "../src/outline.f.glsl", "g_outline_f");
-        output_shader(outfd, "../src/stroke_raster.v.glsl", "g_stroke_raster_v", "../src/common.glsl");
-        output_shader(outfd, "../src/stroke_raster.f.glsl", "g_stroke_raster_f", "../src/common.glsl");
-        output_shader(outfd, "../src/exporter_rect.f.glsl", "g_exporter_f");
-        output_shader(outfd, "../src/texture_fill.f.glsl", "g_texture_fill_f");
-        output_shader(outfd, "../src/quad.v.glsl", "g_quad_v");
-        output_shader(outfd, "../src/quad.f.glsl", "g_quad_f");
+        output_shader(outfd, "../src/picker.v.glsl");
+        output_shader(outfd, "../src/picker.f.glsl");
+        output_shader(outfd, "../src/layer_blend.v.glsl");
+        output_shader(outfd, "../src/layer_blend.f.glsl");
+        output_shader(outfd, "../src/simple.v.glsl");
+        output_shader(outfd, "../src/simple.f.glsl");
+        output_shader(outfd, "../src/outline.v.glsl");
+        output_shader(outfd, "../src/outline.f.glsl");
+        output_shader(outfd, "../src/stroke_raster.v.glsl", "../src/common.glsl");
+        output_shader(outfd, "../src/stroke_raster.f.glsl", "../src/common.glsl");
+        output_shader(outfd, "../src/exporter_rect.f.glsl");
+        output_shader(outfd, "../src/texture_fill.f.glsl");
+        output_shader(outfd, "../src/quad.v.glsl");
+        output_shader(outfd, "../src/quad.f.glsl");
     }
     else {
         fprintf(stderr, "Could not open output file.\n");
