@@ -74,6 +74,9 @@
     GL_FUNCTIONS
 #undef X
 
+#else
+    #define GL_FUNCTIONS
+    #define glBlitFramebufferEXT glBlitFramebuffer
 #endif  //_WIN32
 
 bool gl_load(b32* out_supports_sample_shading)

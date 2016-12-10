@@ -139,7 +139,7 @@ b32 platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 
 PATH_CHAR* platform_open_dialog(FileKind kind)
 {
-    cursor_show();
+    platform_cursor_show();
     GtkWidget *dialog = gtk_file_chooser_dialog_new(
             "Open File",
             NULL,
@@ -170,7 +170,7 @@ void platform_open_link(char* link)
 }
 PATH_CHAR* platform_save_dialog(FileKind kind)
 {
-    cursor_show();
+    platform_cursor_show();
     GtkWidget *dialog = gtk_file_chooser_dialog_new(
             "Save File",
             NULL,

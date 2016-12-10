@@ -294,7 +294,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     #if MULTISAMPLED_TEXTURES
         glEnable(GL_MULTISAMPLE);
         // Using the & operator to silence clang warning on OSX.
-        if ( glMinSampleShadingARB != NULL ) {
+        // TODO: Check if this works on Windows.
+        if ( &glMinSampleShadingARB != NULL ) {
             glEnable(GL_SAMPLE_SHADING_ARB);
             GLCHK( glMinSampleShadingARB(1.0f) );
         }
