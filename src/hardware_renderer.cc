@@ -294,7 +294,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     #if MULTISAMPLED_TEXTURES
         glEnable(GL_MULTISAMPLE);
         // Using the & operator to silence clang warning on OSX.
-        if ( &glMinSampleShadingARB != NULL ) {
+        if ( glMinSampleShadingARB != NULL ) {
             glEnable(GL_SAMPLE_SHADING_ARB);
             GLCHK( glMinSampleShadingARB(1.0f) );
         }
@@ -372,7 +372,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         render_data->vbo_screen_quad = vbo;
 
         GLuint objs[2] = {};
-        objs[0] = gl_compile_shader(g_quad_v, GL_VERTEX_SHADER);
+         objs[0] = gl_compile_shader(g_quad_v, GL_VERTEX_SHADER);
         objs[1] = gl_compile_shader(g_quad_f, GL_FRAGMENT_SHADER);
         render_data->quad_program = glCreateProgram();
         gl_link_program(render_data->quad_program, objs, array_count(objs));

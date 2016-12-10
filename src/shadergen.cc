@@ -151,8 +151,14 @@ void output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
     char** lines;
     i64 count;
     lines = split_lines(contents, &count);
+
     char varname[VARNAME_MAX] = {};
-    shadername(fname, varname, VARNAME_MAX);
+    int err = shadername(fname, varname, VARNAME_MAX);
+    if ( err != 0 ) {
+        fprintf(stderr, "Error when computing the variable name for file %s\n", fname);
+        return;
+    }
+
     fprintf(of, "char %s[] = \n", varname);
     fprintf(of, "\"#define HAS_MULTISAMPLE %d\\n\"\n", MULTISAMPLED_TEXTURES );
 

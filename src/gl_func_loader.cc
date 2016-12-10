@@ -6,80 +6,83 @@
 
 #if defined(_WIN32)
 
-// OpenGL 2.1 ===
-PFNGLACTIVETEXTUREPROC              glActiveTexture;
-PFNGLATTACHSHADERPROC               glAttachShader;
-PFNGLBINDATTRIBLOCATIONPROC         glBindAttribLocation;
-PFNGLBINDBUFFERPROC                 glBindBuffer;
-PFNGLBLENDEQUATIONPROC              glBlendEquation;
-PFNGLBLENDEQUATIONSEPARATEPROC      glBlendEquationSeparate;
-PFNGLBUFFERDATAPROC                 glBufferData;
-PFNGLCOMPILESHADERPROC              glCompileShader;
-PFNGLCREATEPROGRAMPROC              glCreateProgram;
-PFNGLCREATESHADERPROC               glCreateShader;
-PFNGLDELETEBUFFERSPROC              glDeleteBuffers;
-PFNGLDELETEPROGRAMPROC              glDeleteProgram;
-PFNGLDELETESHADERPROC               glDeleteShader;
-PFNGLDETACHSHADERPROC               glDetachShader;
-PFNGLGENBUFFERSPROC                 glGenBuffers;
-PFNGLGETATTRIBLOCATIONPROC          glGetAttribLocation;
-PFNGLGETPROGRAMINFOLOGPROC          glGetProgramInfoLog;
-PFNGLGETPROGRAMIVPROC               glGetProgramiv;
-PFNGLGETSHADERINFOLOGPROC           glGetShaderInfoLog;
-PFNGLGETSHADERIVPROC                glGetShaderiv;
-PFNGLGETUNIFORMLOCATIONPROC         glGetUniformLocation;
-PFNGLISPROGRAMPROC                  glIsProgram;
-PFNGLISSHADERPROC                   glIsShader;
-PFNGLLINKPROGRAMPROC                glLinkProgram;
-PFNGLSHADERSOURCEPROC               glShaderSource;
-PFNGLUNIFORM1FPROC                  glUniform1f;
-PFNGLUNIFORM1IPROC                  glUniform1i;
-PFNGLUNIFORM2FPROC                  glUniform2f;
-PFNGLUNIFORM2IPROC                  glUniform2i;
-PFNGLUNIFORM2FVPROC                 glUniform2fv;
-PFNGLUNIFORM2IVPROC                 glUniform2iv;
-PFNGLUNIFORM3FVPROC                 glUniform3fv;
-PFNGLUNIFORM3IVPROC                 glUniform3iv;
-PFNGLUNIFORM4FVPROC                 glUniform4fv;
-PFNGLUNIFORMMATRIX3FVPROC           glUniformMatrix3fv;
-PFNGLUNIFORMMATRIX4FVPROC           glUniformMatrix4fv;
-PFNGLUSEPROGRAMPROC                 glUseProgram;
-PFNGLVALIDATEPROGRAMPROC            glValidateProgram;
-PFNGLENABLEVERTEXATTRIBARRAYPROC    glEnableVertexAttribArray;
-PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
-PFNGLVERTEXATTRIBPOINTERARBPROC     glVertexAttribPointer;
-PFNGLGETSTRINGIPROC                 glGetStringi;
-//PFNGLBUFFERSUBDATAPROC              glBufferSubData;
+void gl_query_error(const char* expr, const char* file, int line);  // gl_helpers.cc
 
-// ARB_vertex_array_object
-PFNGLGENVERTEXARRAYSPROC            glGenVertexArrays;
-PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
-PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
+#define GL_FUNCTIONS \
+    X(GLint,    GetAttribLocation,      GLuint program, const GLchar* name)                     \
+    X(GLuint,   CreateProgram,          void)                                                   \
+    X(GLuint,   CreateShader,           GLenum type)                                            \
+    X(void,     ActiveTexture,          GLenum texture)                                         \
+    X(void,     AttachShader,           GLuint program, GLuint shader)                          \
+    X(void,     BindAttribLocation,     GLuint program, GLuint index, const GLchar* name)       \
+    X(void,     BindBuffer,             GLenum target, GLuint buffer)                           \
+    X(void,     BlendEquation,          GLenum mode)                                            \
+    X(void,     BlendEquationSeparate,  GLenum modeRGB, GLenum modeAlpha)                       \
+    X(void,     BufferData,             GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage) \
+    X(void,     CompileShader,          GLuint shader)                                          \
+    X(void,     DeleteBuffers,          GLsizei n, const GLuint* buffers)                       \
+    X(void,     DeleteProgram,          GLuint program)                                         \
+    X(void,     DeleteShader,           GLuint shader)                                          \
+    X(void,     DetachShader,           GLuint program, GLuint shader)                          \
+    X(void,     DisableVertexAttribArray, GLuint index)                                         \
+    X(void,     EnableVertexAttribArray, GLuint index)                                          \
+    X(void,     GenBuffers,             GLsizei n, GLuint *buffers)                             \
+    X(void,     GetProgramInfoLog,      GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog) \
+    X(void,     GetProgramiv,           GLuint program, GLenum pname, GLint* params)            \
+    X(void,     GetShaderInfoLog,       GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* source) \
+    X(void,     GetShaderiv,            GLuint shader, GLenum pname, GLint* params)             \
+    X(const GLubyte*, GetStringi,       GLenum name, GLuint index)                              \
+    X(GLint,    GetUniformLocation,     GLuint program, const GLchar *name)                     \
+    X(GLboolean, IsProgram,             GLuint program)                                         \
+    X(GLboolean, IsShader,              GLuint shader)                                          \
+    X(void,     LinkProgram,            GLuint program)                                         \
+    X(void,     ShaderSource,           GLuint shader, GLsizei count, const GLchar* *string, const GLint *length) \
+    X(void,     Uniform1f,              GLint location, GLfloat v0)                             \
+    X(void,     Uniform1i,              GLint location, GLint v0)                               \
+    X(void,     Uniform2f,              GLint location, GLfloat v0, GLfloat v1)                 \
+    X(void,     Uniform2fv,             GLint location, GLsizei count, const GLfloat *value )   \
+    X(void,     Uniform2i,              GLint location, GLint v0, GLint v1)                     \
+    X(void,     Uniform2iv,             GLint location, GLsizei count, const GLint *value )     \
+    X(void,     Uniform3f,              GLint location, GLfloat v0, GLfloat v1, GLfloat v3)     \
+    X(void,     Uniform3fv,             GLint location, GLsizei count, const GLfloat *value )   \
+    X(void,     Uniform3i,              GLint location, GLint v0, GLint v1, GLint v3)           \
+    X(void,     Uniform3iv,             GLint location, GLsizei count, const GLint *value )     \
+    X(void,     Uniform4fv,             GLint location, GLsizei count, const GLfloat *value )   \
+    X(void,     Uniform4iv,             GLint location, GLsizei count, const GLint *value )     \
+    X(void,     UniformMatrix3fv,       GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) \
+    X(void,     UniformMatrix4fv,       GLint location, GLsizei count, GLboolean transpose, const GLfloat* value) \
+    X(void,     UseProgram,             GLuint program)                                         \
+    X(void,     ValidateProgram,        GLuint program)                                         \
+    X(void,     VertexAttribPointer,    GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer) \
+    /*ARB_vertex_array_object*/\
+    X(void,     GenVertexArrays,        GLsizei n, GLuint* arrays)                              \
+    X(void,     DeleteVertexArrays,     GLsizei n, const GLuint* arrays)                        \
+    X(void,     BindVertexArray,        GLuint array)                                           \
+    /*EXT_framebuffer_object*/\
+    X(void,     GenFramebuffersEXT,     GLsizei n, GLuint* framebuffers)                        \
+    X(void,     BindFramebufferEXT,     GLenum target, GLuint framebuffer)                      \
+    X(GLenum,   CheckFramebufferStatusEXT, GLenum target)                                       \
+    X(void,     DeleteFramebuffersEXT,  GLsizei n, const GLuint *framebuffers)                  \
+    X(void,     BlitFramebufferEXT,     GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) \
+    X(void,     FramebufferTexture2DEXT, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) \
+    /*ARB_texture_multisample*/\
+    X(void,     TexImage2DMultisample,  GLenum target, GLsizei samples, GLint internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations) \
+    X(void,     MinSampleShadingARB,    GLclampf value)
 
-// EXT_framebuffer_object
-PFNGLGENFRAMEBUFFERSEXTPROC            glGenFramebuffersEXT;
-PFNGLBINDFRAMEBUFFEREXTPROC            glBindFramebufferEXT;
-PFNGLFRAMEBUFFERTEXTURE2DEXTPROC       glFramebufferTexture2DEXT;
-PFNGLGENRENDERBUFFERSEXTPROC           glGenRenderbuffersEXT;
-PFNGLBINDRENDERBUFFEREXTPROC           glBindRenderbufferEXT;
-PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC     glCheckFramebufferStatusEXT;
-PFNGLDELETEFRAMEBUFFERSEXTPROC         glDeleteFramebuffersEXT;
-PFNGLBLITFRAMEBUFFEREXTPROC            glBlitFramebufferEXT;
 
-// ARB_texture_multisample
-PFNGLTEXIMAGE2DMULTISAMPLEPROC      glTexImage2DMultisample;
-
-// ARB_sample_shading
-PFNGLMINSAMPLESHADINGARBPROC        glMinSampleShadingARB;
+// Function prototypes.
+// TODO: Does this compile on Linux?
+#define X(ret, name, ...) typedef ret WINAPI name##proc(__VA_ARGS__); name##proc * gl##name##;
+    GL_FUNCTIONS
+#undef X
 
 #endif  //_WIN32
-
 
 bool gl_load(b32* out_supports_sample_shading)
 {
 #if defined(_WIN32)
 #define GETADDRESS(func) { func = (decltype(func))wglGetProcAddress(#func); \
-                            if (func == NULL) { \
+                            if ( func == NULL && strcmp("glMinSampleShadingARB", #func)!=0 )  { \
                                 char* msg = "Could not load function " #func; \
                                 milton_log(msg);\
                                 milton_die_gracefully(msg); \
@@ -111,70 +114,14 @@ bool gl_load(b32* out_supports_sample_shading)
         *out_supports_sample_shading = supports_sample_shading;
     }
 
+    // Load
+#define X(ret, name, ...) GETADDRESS(gl##name)
+    GL_FUNCTIONS
+#undef X
+
 #if defined(_WIN32)
 #pragma warning(push, 0)
-    GETADDRESS(glActiveTexture);
-    GETADDRESS(glAttachShader);
-    GETADDRESS(glBindAttribLocation);
-    GETADDRESS(glBindBuffer);
-    GETADDRESS(glBlendEquation);
-    GETADDRESS(glBlendEquationSeparate);
-    GETADDRESS(glBufferData);
-    //GETADDRESS(glBufferSubData);
-    GETADDRESS(glCompileShader);
-    GETADDRESS(glCreateProgram);
-    GETADDRESS(glCreateShader);
-    GETADDRESS(glDeleteBuffers);
-    GETADDRESS(glDeleteProgram);
-    GETADDRESS(glDeleteShader);
-    GETADDRESS(glDetachShader);
-    GETADDRESS(glGenBuffers);
-    GETADDRESS(glGetAttribLocation);
-    GETADDRESS(glGetProgramInfoLog);
-    GETADDRESS(glGetProgramiv);
-    GETADDRESS(glGetShaderInfoLog);
-    GETADDRESS(glGetShaderiv);
-    GETADDRESS(glGetUniformLocation);
-    GETADDRESS(glIsProgram);
-    GETADDRESS(glIsShader);
-    GETADDRESS(glLinkProgram);
-    GETADDRESS(glShaderSource);
-    GETADDRESS(glUniform1i);
-    GETADDRESS(glUniform2f);
-    GETADDRESS(glUniform2i);
-    GETADDRESS(glUniform2fv);
-    GETADDRESS(glUniform2iv);
-    GETADDRESS(glUniform3fv);
-    GETADDRESS(glUniform3iv);
-    GETADDRESS(glUniform4fv);
-    GETADDRESS(glUniformMatrix3fv);
-    GETADDRESS(glUniformMatrix4fv);
-    GETADDRESS(glUseProgram);
-    GETADDRESS(glValidateProgram);
-    GETADDRESS(glUniform1f);
-    GETADDRESS(glVertexAttribPointer);
-    GETADDRESS(glEnableVertexAttribArray);
-    GETADDRESS(glDisableVertexAttribArray);
-
-    GETADDRESS(glGenVertexArrays);
-    GETADDRESS(glDeleteVertexArrays);
-    GETADDRESS(glBindVertexArray);
-
-    GETADDRESS(glBlitFramebufferEXT);
-
-    GETADDRESS(glGenFramebuffersEXT);
-    GETADDRESS(glBindFramebufferEXT);
-    GETADDRESS(glFramebufferTexture2DEXT);
-    GETADDRESS(glGenRenderbuffersEXT);
-    GETADDRESS(glBindRenderbufferEXT);
-    GETADDRESS(glCheckFramebufferStatusEXT);
-    GETADDRESS(glDeleteFramebuffersEXT);
-
-    GETADDRESS(glTexImage2DMultisample);
-
-    if ( supports_sample_shading ) {
-        GETADDRESS(glMinSampleShadingARB);
-    } else {
+    if ( !supports_sample_shading ) {
         glMinSampleShadingARB = NULL;
     }
 #pragma warning(pop)

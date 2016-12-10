@@ -5,7 +5,6 @@ To-Do
     check if smoothing is actually disabled for mouse input
     is hover still flashing?
     figure out what goes into headers...
-    ? use built-in GLSL functions ?
     change persist.cc to stop using ugly branches.
 - Bugs
     - MoveFileEx randomly fails with return code 5 - access denied
