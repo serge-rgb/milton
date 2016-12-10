@@ -735,12 +735,18 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
 
 EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 {
+    EasyTab->NumPackets = 0;
+    EasyTab->PenInProximity = EASYTAB_FALSE;
+
     if (Event->type != EasyTab->MotionType) { return EASYTAB_EVENT_NOT_HANDLED; }
 
     XDeviceMotionEvent* MotionEvent = (XDeviceMotionEvent*)(Event);
     EasyTab->PosX[0]     = MotionEvent->x;
     EasyTab->PosY[0]     = MotionEvent->y;
     EasyTab->Pressure[0] = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
+
+    EasyTab->NumPackets = 1;
+    EasyTab->PenInProximity = EASYTAB_TRUE;
     return EASYTAB_OK;
 }
 
