@@ -1253,7 +1253,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
         GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
         GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
         // TODO: Does this fail on Intel?
-        GLCHK( glBlitFramebuffer(0, 0, render_data->width, render_data->height,
+        GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
                                  0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
     }
     #endif

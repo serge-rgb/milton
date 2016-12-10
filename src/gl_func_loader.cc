@@ -6,8 +6,6 @@
 
 #if defined(_WIN32)
 
-void gl_query_error(const char* expr, const char* file, int line);  // gl_helpers.cc
-
 #define GL_FUNCTIONS \
     X(GLint,    GetAttribLocation,      GLuint program, const GLchar* name)                     \
     X(GLuint,   CreateProgram,          void)                                                   \

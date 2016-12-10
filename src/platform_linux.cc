@@ -41,9 +41,8 @@ b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
     if ( res != 0 ) {
         result = false;
         // Delete failed for some reason.
-        if ((error_tolerance == DeleteErrorTolerance_OK_NOT_EXIST) &&
-            (errno == EEXIST || errno == ENOENT))
-        {
+        if ( (error_tolerance == DeleteErrorTolerance_OK_NOT_EXIST) &&
+             (errno == EEXIST || errno == ENOENT) ) {
             result = true;
         }
     }

@@ -2,10 +2,8 @@ To-Do
 =====
 
 - Cleanup
-    check if smoothing is actually disabled for mouse input
     is hover still flashing?
     figure out what goes into headers...
-    change persist.cc to stop using ugly branches.
 - Bugs
     - MoveFileEx randomly fails with return code 5 - access denied
     - Undo leaves some pixels without redrawing.
