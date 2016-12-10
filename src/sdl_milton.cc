@@ -1157,6 +1157,9 @@ int milton_main()
         PROFILE_GRAPH_BEGIN(system);
         SDL_GL_SwapWindow(window);
 
+#ifdef __linux__
+        gtk_main_iteration_do(FALSE);
+#endif
         // IMGUI events might update until the frame after they are created.
         if (!platform_state.force_next_frame)
         {

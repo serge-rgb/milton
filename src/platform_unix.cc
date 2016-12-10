@@ -6,6 +6,7 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE  // To get MAP_ANONYMOUS on linux
 #endif
+#include <gtk/gtk.h>
 #define __USE_MISC 1  // MAP_ANONYMOUS and MAP_NORESERVE dont' get defined without this
 #include <sys/mman.h>
 #undef __USE_MISC
@@ -110,5 +111,8 @@ void platform_deallocate_internal(void* ptr)
 
 int main(int argc, char** argv)
 {
+#ifdef __linux__
+    gtk_init(&argc, &argv);
+#endif
     milton_main();
 }

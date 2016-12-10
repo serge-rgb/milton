@@ -21,7 +21,7 @@ SHG_CFLAGS = $(CFLAGS) \
 
 MLT_CFLAGS = $(CFLAGS) \
              -std=c++11 \
-             `pkg-config --cflags sdl2` \
+             `pkg-config --cflags sdl2 gtk+-2.0` \
              -std=c++11 \
              -Wno-missing-braces \
              -Wno-unused-function \
@@ -35,7 +35,7 @@ MLT_CFLAGS = $(CFLAGS) \
              -fno-omit-frame-pointer \
 #             -Werror
 
-MLT_LDFLAGS = $(LDFLAGS) -lGL `pkg-config --libs sdl2` -lXi
+MLT_LDFLAGS = $(LDFLAGS) -lGL `pkg-config --libs sdl2 gtk+-2.0` -lXi
 
 all: directories shadergen milton
 
