@@ -11,19 +11,6 @@ void gl_log(char* str)
 #endif
 }
 
-
-// Apple defines GLhandleARB as void*
-// our simple solution is to define functions as their core counterparts, which should be
-// very likely to be present in a random Mac system
-#if defined(__MACH__)
-#define glCreateShaderObjectARB glCreateShader
-#define glShaderSourceARB glShaderSource
-#define glCompileShaderARB glCompileShader
-#define glGetObjectParameterivARB glGetShaderiv
-#define glGetInfoLogARB glGetShaderInfoLog
-
-#endif
-
 GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
 {
     const char* sources[] = {"#version 330 \n", config, in_src};
@@ -51,7 +38,7 @@ GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
         gl_log(log);
 
         if ( !res ) {
-            mlt_assert(!"Shader compilation error");
+            milton_die_gracefully("Shader compilation error\n");
         }
 
         free(log);

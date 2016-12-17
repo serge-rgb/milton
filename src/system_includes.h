@@ -49,6 +49,8 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
+#include <dlfcn.h>  // Dynamic library loading.
+
 #elif defined (__MACH__)
 
 #define GL_GLEXT_PROTOTYPES 1

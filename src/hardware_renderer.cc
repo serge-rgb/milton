@@ -540,7 +540,7 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
         // Create framebuffer object.
         {
             GLuint fbo = 0;
-            glGenFramebuffersEXT(1, &fbo);
+            GLCHK(glGenFramebuffersEXT(1, &fbo));
             GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, fbo));
             GLenum texture_target;
             #if MULTISAMPLED_TEXTURES
@@ -1014,10 +1014,10 @@ void gpu_clip_strokes_and_update(Arena* arena,
             bbox.top_left = canvas_to_raster(view, bbox.top_left);
             bbox.bot_right = canvas_to_raster(view, bbox.bot_right);
 
-            b32 bucket_outside = screen_bounds.left >  bbox.right ||
-                                screen_bounds.top >     bbox.bottom ||
-                                screen_bounds.right <   bbox.left ||
-                                screen_bounds.bottom <  bbox.top;
+            b32 bucket_outside =   screen_bounds.left   > bbox.right
+                                || screen_bounds.top    > bbox.bottom
+                                || screen_bounds.right  < bbox.left
+                                || screen_bounds.bottom < bbox.top;
 
             if ( !bucket_outside ) {
                 for ( i64 i = 0; i < count; ++i ) {
@@ -1037,14 +1037,14 @@ void gpu_clip_strokes_and_update(Arena* arena,
                             gpu_cook_stroke(arena, render_data, s);
                             push(clip_array, s->render_element);
                         }
-                        else if (is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA )) {
+                        else if ( is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
                             // If it is far away, delete.
                             i32 distance = abs(bounds.left - x + bounds.top - y);
                             const i32 min_number_of_screens = 4;
-                            if ( (bounds.top     < y - min_number_of_screens*h) ||
-                                 (bounds.bottom  > y+h + min_number_of_screens*h) ||
-                                 (bounds.left    > x+w + min_number_of_screens*w) ||
-                                 (bounds.right   < x - min_number_of_screens*w) ) {
+                            if (    bounds.top    < y - min_number_of_screens*h
+                                 || bounds.bottom > y+h + min_number_of_screens*h
+                                 || bounds.left   > x+w + min_number_of_screens*w
+                                 || bounds.right  < x - min_number_of_screens*w ) {
                                 gpu_free_strokes(s, 1);
                             }
                         }
@@ -1236,7 +1236,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
     GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
     glDisable(GL_DEPTH_TEST);
 
-    #if 1
+    #if 0
     glUseProgram(render_data->texture_fill_program);
     {
         GLint loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
@@ -1255,7 +1255,7 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
         GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
         // TODO: Does this fail on Intel?
         GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
-                                 0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+                                    0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
     }
     #endif
 
@@ -1417,9 +1417,8 @@ void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale,
     {
         GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, export_fbo) );
         GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
-        // TODO: Does this fail on Intel?
         GLCHK( glBlitFramebufferEXT(0, 0, buf_w, buf_h,
-                                    0, 0, buf_w,buf_h, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+                                    0, 0, buf_w, buf_h, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
     }
 
     glEnable(GL_DEPTH_TEST);

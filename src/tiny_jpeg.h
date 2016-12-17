@@ -753,7 +753,9 @@ static float slow_fdct(int u, int v, float* data)
 }
 #endif
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
+#if !defined(ABS)
+  #define ABS(x) ((x) < 0 ? -(x) : (x))
+#endif
 
 static void tjei_encode_and_write_MCU(TJEState* state,
                                       float* mcu,

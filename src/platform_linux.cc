@@ -77,7 +77,7 @@ void platform_dialog(char* info, char* title)
 }
 b32 platform_dialog_yesno(char* info, char* title)
 {
-    IMPL_MISSING;
+    // IMPL_MISSING;
     return false;
 }
 

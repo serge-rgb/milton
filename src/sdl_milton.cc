@@ -6,8 +6,7 @@
 static void cursor_set_and_show(SDL_Cursor* cursor)
 {
     static SDL_Cursor* curr_cursor = NULL;
-    if (curr_cursor != cursor)
-    {
+    if ( curr_cursor != cursor ) {
         curr_cursor = cursor;
         SDL_SetCursor(cursor);
         platform_cursor_show();
@@ -18,8 +17,7 @@ LayoutType get_current_keyboard_layout()
 {
     LayoutType layout = LayoutType_QWERTY;  // Default to QWERTY bindings.
 
-    char keys[] =
-    {
+    char keys[] = {
         (char)SDL_GetKeyFromScancode(SDL_SCANCODE_Q),
         (char)SDL_GetKeyFromScancode(SDL_SCANCODE_R),
         (char)SDL_GetKeyFromScancode(SDL_SCANCODE_Y),
@@ -188,10 +186,16 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 if ( event.button.windowID != platform_state->window_id ) {
                     break;
                 }
-
+                #if 0
+                if ( event.button.button == SDL_BUTTON_LEFT ||
+                     event.button.button == SDL_BUTTON_MIDDLE ||
+                     // Ignoring right click events for now
+                     /*event.button.button == SDL_BUTTON_RIGHT*/ ) {
+                #else
                 if ( event.button.button == SDL_BUTTON_LEFT ||
                      event.button.button == SDL_BUTTON_MIDDLE ||
                      event.button.button == SDL_BUTTON_RIGHT ) {
+                #endif
                     if ( !ImGui::GetIO().WantCaptureMouse ) {
                         v2i point = { event.button.x, event.button.y };
 
@@ -534,7 +538,7 @@ int milton_main()
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_version_major);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_version_minor);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
     // TODO: This has a different meaning than "multisampled textures."
     #if MULTISAMPLED_TEXTURES
@@ -559,7 +563,8 @@ int milton_main()
         milton_fatal("Could not create OpenGL context\n");
     }
 
-    SDL_GL_SetSwapInterval(1);
+    // Setting swap interval to zero results in noticeable latency improvement. Probably worth it.
+    SDL_GL_SetSwapInterval(0);
 
     int actual_major = 0;
     int actual_minor = 0;
@@ -586,6 +591,7 @@ int milton_main()
     Arena root_arena = arena_init(big_chunk_of_memory, sz_root_arena);
 
     MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
+
     b32 has_sample_shading = false;
 
     if ( !gl_load(&has_sample_shading) ) {

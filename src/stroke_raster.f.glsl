@@ -7,6 +7,7 @@ in vec3 v_pointb;
 
 
 #if HAS_MULTISAMPLE
+// TODO: Technically we can't specify this here since it is not the beginning of the shader.
 #extension GL_ARB_sample_shading : enable
 #extension GL_ARB_texture_multisample : enable
 uniform sampler2DMS u_canvas;
@@ -68,9 +69,11 @@ void main()
 {
     vec2 offset = vec2(0.0);
 
-    #if defined(HAS_SAMPLE_SHADING)
-        #if !defined(VENDOR_NVIDIA)
-            offset = gl_SamplePosition - vec2(0.5);
+    #if HAS_MULTISAMPLE
+        #if defined(HAS_SAMPLE_SHADING)
+            #if !defined(VENDOR_NVIDIA)
+                offset = gl_SamplePosition - vec2(0.5);
+            #endif
         #endif
     #endif
 

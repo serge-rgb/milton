@@ -825,8 +825,7 @@ static void milton_validate(MiltonState* milton_state)
     }
 
     i64 stroke_count = count_strokes(milton_state->root_layer);
-    if (history_count != stroke_count)
-    {
+    if ( history_count != stroke_count ) {
         milton_log("Recreating history. File says History: %d(max %d) Actual strokes: %d\n",
                    history_count, milton_state->history.count,
                    stroke_count);
@@ -968,8 +967,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     else if ( (input->flags & MiltonInputFlags_PANNING) ) {
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
-        if (!equ2i(input->pan_delta, v2i{}))
-        {
+        if ( !equ2i(input->pan_delta, v2i{}) ) {
             render_flags |= MiltonRenderFlags_PAN_COPY;
             do_full_redraw = true;
         }
@@ -982,7 +980,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             if ( mode == MiltonMode_EYEDROPPER ) {
                 if ( milton_state->last_mode != MiltonMode_EYEDROPPER ) {
                     milton_use_previous_mode(milton_state);
-                } else {
+                }
+                else {
                     // This is not supposed to happen but if we get here we won't crash and burn.
                     milton_switch_mode(milton_state, MiltonMode_PEN);
                     milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
@@ -992,9 +991,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         // Change the current mode if it's different from the current mode.
         else {
             milton_switch_mode(milton_state, input->mode_to_set);
-            if (input->mode_to_set == MiltonMode_PEN ||
-                input->mode_to_set == MiltonMode_ERASER)
-            {
+            if (    input->mode_to_set == MiltonMode_PEN
+                 || input->mode_to_set == MiltonMode_ERASER ) {
                 milton_update_brushes(milton_state);
             }
         }
@@ -1089,7 +1087,8 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     if ( input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK) ) {
         if ( current_mode_is_for_painting(milton_state) ) {
-            if ( !is_user_drawing(milton_state) && gui_consume_input(milton_state->gui, input) ) {
+            if ( !is_user_drawing(milton_state)
+                 && gui_consume_input(milton_state->gui, input) ) {
                 milton_update_brushes(milton_state);
                 gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
             }
@@ -1314,7 +1313,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 #endif
         }
         // We're about to close and the last save failed and the drawing changed.
-        if ( !(milton_state->flags & MiltonStateFlags_RUNNING)
+        if (   !(milton_state->flags & MiltonStateFlags_RUNNING)
              && (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED)
              && (milton_state->flags & MiltonStateFlags_MOVE_FILE_FAILED)
              && milton_state->last_save_stroke_count != count_strokes(milton_state->root_layer) ) {
@@ -1324,7 +1323,7 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             SDL_Delay(3000);
             milton_save(milton_state);
 
-            if ( (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED)
+            if (    (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED)
                  && (milton_state->flags & MiltonStateFlags_MOVE_FILE_FAILED) ) {
                 char msg[1024];
                 WallTime lst = milton_state->last_save_time;
@@ -1369,6 +1368,9 @@ void milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     if ( do_full_redraw ) {
         view_width = milton_state->view->screen_size.w;
         view_height = milton_state->view->screen_size.h;
+        // Only update GPU data if we are redrawing the full screen. This means
+        // that the size of the screen will be used to determine if each stroke
+        // should be freed from GPU memory.
         clip_flags = ClipFlags_UPDATE_GPU_DATA;
     }
     else if ( draw_custom_rectangle ) {

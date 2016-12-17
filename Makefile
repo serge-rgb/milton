@@ -33,7 +33,8 @@ MLT_CFLAGS = $(CFLAGS) \
 			 -Wno-format \
              -fno-strict-aliasing \
              -fno-omit-frame-pointer \
-#             -Werror
+             -ldl \
+             -Werror
 
 MLT_LDFLAGS = $(LDFLAGS) -lGL `pkg-config --libs sdl2 gtk+-2.0` -lXi
 

@@ -32,12 +32,12 @@
 
 #define MILTON_ENABLE_PROFILING 1
 
+#define REDRAW_EVERY_FRAME 0
 
 // -- Software renderer config..
     #define MAX_NUM_WORKERS 64
     // Force things to be a bit slower
     #define RESTRICT_NUM_WORKERS_TO_2 0
-    #define REDRAW_EVERY_FRAME 0
 
 // Large files get impractical to save in a blocking function.
 // Disabled for now. This was implemented when a bug was causing files to be huge.
