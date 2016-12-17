@@ -28,7 +28,6 @@
     X(void,     glGetProgramiv,           GLuint program, GLenum pname, GLint* params)            \
     X(void,     glGetShaderInfoLog,       GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* source) \
     X(void,     glGetShaderiv,            GLuint shader, GLenum pname, GLint* params)             \
-    X(void,     glGetStringi,             GLenum name, GLuint index)                              \
     X(const GLubyte*, glGetStringi,       GLenum name, GLuint index)                              \
     X(GLint,    glGetUniformLocation,     GLuint program, const GLchar *name)                     \
     X(GLboolean, glIsProgram,             GLuint program)                                         \
@@ -111,6 +110,11 @@ bool gl_load(b32* out_supports_sample_shading)
     #endif
 #endif
 
+    // Load
+#define X(ret, name, ...) GETADDRESS(name)
+    GL_FUNCTIONS
+#undef X
+
     bool ok = true;
     // Extension checking.
     i64 num_extensions = 0;
@@ -132,10 +136,6 @@ bool gl_load(b32* out_supports_sample_shading)
         *out_supports_sample_shading = supports_sample_shading;
     }
 
-    // Load
-#define X(ret, name, ...) GETADDRESS(name)
-    GL_FUNCTIONS
-#undef X
 
 #if defined(_WIN32)
 #pragma warning(push, 0)

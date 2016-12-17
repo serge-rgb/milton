@@ -563,7 +563,6 @@ int milton_main()
         milton_fatal("Could not create OpenGL context\n");
     }
 
-    // Setting swap interval to zero results in noticeable latency improvement. Probably worth it.
     SDL_GL_SetSwapInterval(0);
 
     int actual_major = 0;
