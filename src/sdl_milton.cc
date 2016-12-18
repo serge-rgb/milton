@@ -121,8 +121,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
             platform_cursor_show();
             milton_try_quit(milton_state);
             break;
-        case SDL_SYSWMEVENT:
-            {
+        case SDL_SYSWMEVENT: {
                 f32 pressure = NO_PRESSURE_INFO;
                 SDL_SysWMEvent sysevent = event.syswm;
                 EasyTabResult er = EASYTAB_EVENT_NOT_HANDLED;
@@ -181,21 +180,14 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     b32 pen_touched_tab = !was_pen_down && EasyTab->PenInProximity && (platform_state->num_pressure_results>0);
                 }
             } break;
-        case SDL_MOUSEBUTTONDOWN:
-            {
+        case SDL_MOUSEBUTTONDOWN: {
                 if ( event.button.windowID != platform_state->window_id ) {
                     break;
                 }
-                #if 0
-                if ( event.button.button == SDL_BUTTON_LEFT ||
-                     event.button.button == SDL_BUTTON_MIDDLE ||
+                if ( event.button.button == SDL_BUTTON_LEFT
+                     || event.button.button == SDL_BUTTON_MIDDLE
                      // Ignoring right click events for now
-                     /*event.button.button == SDL_BUTTON_RIGHT*/ ) {
-                #else
-                if ( event.button.button == SDL_BUTTON_LEFT ||
-                     event.button.button == SDL_BUTTON_MIDDLE ||
-                     event.button.button == SDL_BUTTON_RIGHT ) {
-                #endif
+                     /*|| event.button.button == SDL_BUTTON_RIGHT*/ ) {
                     if ( !ImGui::GetIO().WantCaptureMouse ) {
                         v2i point = { event.button.x, event.button.y };
 
@@ -222,8 +214,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     }
                 }
             } break;
-        case SDL_MOUSEBUTTONUP:
-            {
+        case SDL_MOUSEBUTTONUP: {
                 if ( event.button.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -238,8 +229,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     input_flags |= MiltonInputFlags_END_STROKE;
                 }
             } break;
-        case SDL_MOUSEMOTION:
-            {
+        case SDL_MOUSEMOTION: {
                 if ( event.motion.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -274,8 +264,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                 }
                 break;
             }
-        case SDL_MOUSEWHEEL:
-            {
+        case SDL_MOUSEWHEEL: {
                 if ( event.wheel.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -285,8 +274,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
                 break;
             }
-        case SDL_KEYDOWN:
-            {
+        case SDL_KEYDOWN: {
                 if ( event.wheel.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -417,8 +405,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
                 break;
             }
-        case SDL_KEYUP:
-            {
+        case SDL_KEYUP: {
                 if ( event.key.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -429,8 +416,7 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                     platform_state->is_space_down = false;
                 }
             } break;
-        case SDL_WINDOWEVENT:
-            {
+        case SDL_WINDOWEVENT: {
                 if ( platform_state->window_id != event.window.windowID ) {
                     break;
                 }
@@ -531,21 +517,27 @@ int milton_main()
 
     platform_state.keyboard_layout = get_current_keyboard_layout();
 
+#if USE_GL_3_2
+    i32 gl_version_major = 3;
+    i32 gl_version_minor = 2;
+#else
     i32 gl_version_major = 2;
     i32 gl_version_minor = 1;
+#endif
 
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_version_major);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_version_minor);
-    // SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#if USE_GL_3_2
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#endif
 
     // TODO: This has a different meaning than "multisampled textures."
     #if MULTISAMPLED_TEXTURES
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
     #endif
-
 
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -620,8 +612,7 @@ int milton_main()
     if ( SDL_GetWindowWMInfo( window, &sysinfo ) ) {
         switch( sysinfo.subsystem ) {
 #if defined(_WIN32)
-        case SDL_SYSWM_WINDOWS:
-            {
+            case SDL_SYSWM_WINDOWS: {
                 { // Handle the case where the window was too big for the screen.
                     HWND hwnd = sysinfo.info.win.window;
                     RECT res_rect;
@@ -636,8 +627,8 @@ int milton_main()
                     if ( win_rect.right  != platform_state.width
                          || win_rect.bottom != platform_state.height
                          // Also maximize if the size is large enough to "snap"
-                         || (win_rect.right + snap_threshold >= res_rect.right &&
-                             win_rect.left + snap_threshold >= res_rect.left) ) {
+                         || (win_rect.right + snap_threshold >= res_rect.right
+                             && win_rect.left + snap_threshold >= res_rect.left) ) {
                         // Our prefs weren't right. Let's maximize.
                         SetWindowPos(hwnd, HWND_TOP, 20,20, win_rect.right-20, win_rect.bottom -20, SWP_SHOWWINDOW);
                         platform_state.width = win_rect.right - 20;
@@ -658,8 +649,7 @@ int milton_main()
             break;
         }
     }
-    else
-    {
+    else {
         milton_die_gracefully("Can't get system info!\n");
     }
 #if defined(_MSC_VER)
@@ -794,8 +784,7 @@ int milton_main()
         platform_fname_at_exe(fname, MAX_PATH); // TODO: check that this works again
         FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
 
-        if (fd)
-        {
+        if ( fd ) {
             size_t  ttf_sz = 0;
             void*   ttf_data = NULL;
             //ImFont* im_font =  io.Fonts->ImFontAtlas::AddFontFromFileTTF("carlito.ttf", 14);

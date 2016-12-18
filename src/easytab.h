@@ -166,6 +166,11 @@
 #include <X11/extensions/XInput.h>
 #endif // __linux__
 
+#ifdef _WIN32
+#include <windows.h>
+#endif // _WIN32
+
+#define MILTON_EASYTAB
 
 typedef enum
 {
@@ -177,21 +182,25 @@ typedef enum
     EASYTAB_DLL_LOAD_ERROR         = -3,
     EASYTAB_WACOM_WIN32_ERROR      = -4,
     EASYTAB_INVALID_FUNCTION_ERROR = -5,
+    #if defined MILTON_EASYTAB
     EASYTAB_QUEUE_SIZE_ERROR       = -6,
+    #endif
 
     EASYTAB_EVENT_NOT_HANDLED = -16,
 } EasyTabResult;
+
+#ifdef MILTON_EASYTAB
+#define EASYTAB_PACKETQUEUE_SIZE    128
+#define EASYTAB_TRUE                1
+#define EASYTAB_FALSE               0
+#define EASYTAB_BOOL                int
+#endif
 
 typedef enum
 {
     EASYTAB_TRACKING_MODE_SYSTEM   = 0,
     EASYTAB_TRACKING_MODE_RELATIVE = 1,
 } EasyTabTrackingMode;
-
-#define EASYTAB_PACKETQUEUE_SIZE    128
-#define EASYTAB_TRUE                1
-#define EASYTAB_FALSE               0
-#define EASYTAB_BOOL                int
 
 #ifdef WIN32
 // -----------------------------------------------------------------------------
@@ -386,7 +395,7 @@ typedef enum
 // -----------------------------------------------------------------------------
 
 #define PACKETDATA PK_X | PK_Y | PK_BUTTONS | PK_NORMAL_PRESSURE
-#define PACKETMODE PK_BUTTONS
+#define PACKETMODE 0
 
 // -----------------------------------------------------------------------------
 // pktdef.h
@@ -398,95 +407,95 @@ typedef enum
 
     #ifndef PACKETNAME
     /* if no packet name prefix */
-    #define __PFX(x)	x
-    #define __IFX(x,y)	x ## y
+    #define __PFX(x)    x
+    #define __IFX(x,y)  x ## y
     #else
     /* add prefixes and infixes to packet format names */
-    #define __PFX(x)		__PFX2(PACKETNAME,x)
-    #define __PFX2(p,x)		__PFX3(p,x)
-    #define __PFX3(p,x)		p ## x
-    #define __IFX(x,y)		__IFX2(x,PACKETNAME,y)
-    #define __IFX2(x,i,y)	__IFX3(x,i,y)
-    #define __IFX3(x,i,y)	x ## i ## y
+    #define __PFX(x)        __PFX2(PACKETNAME,x)
+    #define __PFX2(p,x)     __PFX3(p,x)
+    #define __PFX3(p,x)     p ## x
+    #define __IFX(x,y)      __IFX2(x,PACKETNAME,y)
+    #define __IFX2(x,i,y)   __IFX3(x,i,y)
+    #define __IFX3(x,i,y)   x ## i ## y
     #endif
 
-    #define __SFX2(x,s)		__SFX3(x,s)
-    #define __SFX3(x,s)		x ## s
+    #define __SFX2(x,s)     __SFX3(x,s)
+    #define __SFX3(x,s)     x ## s
 
-    #define __TAG  	__IFX(tag,PACKET)
-    #define __TYPES	__PFX(PACKET), * __IFX(P,PACKET), NEAR * __IFX(NP,PACKET), FAR * __IFX(LP,PACKET)
+    #define __TAG   __IFX(tag,PACKET)
+    #define __TYPES __PFX(PACKET), * __IFX(P,PACKET), NEAR * __IFX(NP,PACKET), FAR * __IFX(LP,PACKET)
 
-    #define __TAGE  	__IFX(tag,PACKETEXT)
-    #define __TYPESE	__PFX(PACKETEXT), * __IFX(P,PACKETEXT), NEAR * __IFX(NP,PACKETEXT), FAR * __IFX(LP,PACKETEXT)
+    #define __TAGE      __IFX(tag,PACKETEXT)
+    #define __TYPESE    __PFX(PACKETEXT), * __IFX(P,PACKETEXT), NEAR * __IFX(NP,PACKETEXT), FAR * __IFX(LP,PACKETEXT)
 
-    #define __DATA		(__PFX(PACKETDATA))
-    #define __MODE		(__PFX(PACKETMODE))
-    #define __EXT(x)	__SFX2(__PFX(PACKET),x)
+    #define __DATA      (__PFX(PACKETDATA))
+    #define __MODE      (__PFX(PACKETMODE))
+    #define __EXT(x)    __SFX2(__PFX(PACKET),x)
 
 
     typedef struct __TAG {
     #if (__DATA & PK_CONTEXT)
-        HCTX			pkContext;
+        HCTX            pkContext;
     #endif
     #if (__DATA & PK_STATUS)
-        UINT			pkStatus;
+        UINT            pkStatus;
     #endif
     #if (__DATA & PK_TIME)
-        DWORD			pkTime;
+        DWORD           pkTime;
     #endif
     #if (__DATA & PK_CHANGED)
-        WTPKT			pkChanged;
+        WTPKT           pkChanged;
     #endif
     #if (__DATA & PK_SERIAL_NUMBER)
-        UINT			pkSerialNumber;
+        UINT            pkSerialNumber;
     #endif
     #if (__DATA & PK_CURSOR)
-        UINT			pkCursor;
+        UINT            pkCursor;
     #endif
     #if (__DATA & PK_BUTTONS)
-        DWORD			pkButtons;
+        DWORD           pkButtons;
     #endif
     #if (__DATA & PK_X)
-        LONG			pkX;
+        LONG            pkX;
     #endif
     #if (__DATA & PK_Y)
-        LONG			pkY;
+        LONG            pkY;
     #endif
     #if (__DATA & PK_Z)
-        LONG			pkZ;
+        LONG            pkZ;
     #endif
     #if (__DATA & PK_NORMAL_PRESSURE)
     #if (__MODE & PK_NORMAL_PRESSURE)
         /* relative */
-        int			pkNormalPressure;
+        int         pkNormalPressure;
     #else
         /* absolute */
-        UINT		pkNormalPressure;
+        UINT        pkNormalPressure;
     #endif
     #endif
     #if (__DATA & PK_TANGENT_PRESSURE)
     #if (__MODE & PK_TANGENT_PRESSURE)
         /* relative */
-        int			pkTangentPressure;
+        int         pkTangentPressure;
     #else
         /* absolute */
-        UINT		pkTangentPressure;
+        UINT        pkTangentPressure;
     #endif
     #endif
     #if (__DATA & PK_ORIENTATION)
-        ORIENTATION		pkOrientation;
+        ORIENTATION     pkOrientation;
     #endif
     #if (__DATA & PK_ROTATION)
-        ROTATION		pkRotation; /* 1.1 */
+        ROTATION        pkRotation; /* 1.1 */
     #endif
 
     #ifndef NOWTEXTENSIONS
                                     /* extensions begin here. */
     #if (__EXT(FKEYS) == PKEXT_RELATIVE) || (__EXT(FKEYS) == PKEXT_ABSOLUTE)
-        UINT			pkFKeys;
+        UINT            pkFKeys;
     #endif
     #if (__EXT(TILT) == PKEXT_RELATIVE) || (__EXT(TILT) == PKEXT_ABSOLUTE)
-        TILT			pkTilt;
+        TILT            pkTilt;
     #endif
     #endif
 
@@ -494,16 +503,16 @@ typedef enum
 
     #ifndef NOWTEXTENSIONS
     typedef struct __TAGE {
-        EXTENSIONBASE	pkBase;
+        EXTENSIONBASE   pkBase;
 
     #if (__EXT(EXPKEYS) == PKEXT_RELATIVE) || (__EXT(EXPKEYS) == PKEXT_ABSOLUTE)
         EXPKEYSDATA pkExpKeys; /* 1.4 */
     #endif
     #if (__EXT(TOUCHSTRIP) == PKEXT_RELATIVE) || (__EXT(TOUCHSTRIP) == PKEXT_ABSOLUTE)
-        SLIDERDATA	pkTouchStrip; /* 1.4 */
+        SLIDERDATA  pkTouchStrip; /* 1.4 */
     #endif
     #if (__EXT(TOUCHRING) == PKEXT_RELATIVE) || (__EXT(TOUCHRING) == PKEXT_ABSOLUTE)
-        SLIDERDATA	pkTouchRing; /* 1.4 */
+        SLIDERDATA  pkTouchRing; /* 1.4 */
     #endif
 
     } __TYPESE;
@@ -544,26 +553,56 @@ typedef HCTX (WINAPI * WTRESTORE) (HWND, LPVOID, BOOL);
 typedef BOOL (WINAPI * WTEXTSET) (HCTX, UINT, LPVOID);
 typedef BOOL (WINAPI * WTEXTGET) (HCTX, UINT, LPVOID);
 typedef BOOL (WINAPI * WTQUEUESIZESET) (HCTX, int);
-typedef int  (WINAPI * WTQUEUESIZEGET) (HCTX);
 typedef int  (WINAPI * WTDATAPEEK) (HCTX, UINT, UINT, int, LPVOID, LPINT);
 typedef int  (WINAPI * WTPACKETSGET) (HCTX, int, LPVOID);
 typedef HMGR (WINAPI * WTMGROPEN) (HWND, UINT);
 typedef BOOL (WINAPI * WTMGRCLOSE) (HMGR);
 typedef HCTX (WINAPI * WTMGRDEFCONTEXT) (HMGR, BOOL);
 typedef HCTX (WINAPI * WTMGRDEFCONTEXTEX) (HMGR, UINT, BOOL);
+#ifdef MILTON_EASYTAB
+typedef int  (WINAPI * WTQUEUESIZEGET) (HCTX);
+#endif
 
 #endif // WIN32
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+/*
+    Use this enum in conjunction with EasyTab->Buttons to check for tablet button
+    presses.
+    e.g. To check for lower pen button press, use:
+
+    if (EasyTab->Buttons & EasyTab_Buttons_Pen_Lower)
+    {
+        // Lower button is pressed
+    }
+*/
+enum EasyTab_Buttons_
+{
+    EasyTab_Buttons_Pen_Touch = 1 << 0, // Pen is touching tablet
+    EasyTab_Buttons_Pen_Lower = 1 << 1, // Lower pen button is pressed
+    EasyTab_Buttons_Pen_Upper = 1 << 2, // Upper pen button is pressed
+};
 
 // -----------------------------------------------------------------------------
 // Structs
 // -----------------------------------------------------------------------------
 typedef struct
 {
+#ifdef MILTON_EASYTAB
     int32_t PosX[EASYTAB_PACKETQUEUE_SIZE];
     int32_t PosY[EASYTAB_PACKETQUEUE_SIZE];
     float   Pressure[EASYTAB_PACKETQUEUE_SIZE]; // Range: 0.0f to 1.0f
     int32_t NumPackets;  // Number of PosX, PosY, Pressure elements available in arrays.
     EASYTAB_BOOL PenInProximity;  // EASYTAB_TRUE if pen is in proximity to table. EASYTAB_FALSE otherwise.
+#else
+    int32_t PosX, PosY;
+    float   Pressure; // Range: 0.0f to 1.0f
+#endif
+    int32_t Buttons; // Bit field. Use with the EasyTab_Buttons_ enum.
+
 
     int32_t RangeX, RangeY;
     int32_t MaxPressure;
@@ -593,20 +632,22 @@ typedef struct
     WTEXTSET          WTExtSet;
     WTEXTGET          WTExtGet;
     WTQUEUESIZESET    WTQueueSizeSet;
+#ifdef MILTON_EASYTAB
     WTQUEUESIZEGET    WTQueueSizeGet;
+#endif
     WTDATAPEEK        WTDataPeek;
     WTPACKETSGET      WTPacketsGet;
     WTMGROPEN         WTMgrOpen;
     WTMGRCLOSE        WTMgrClose;
     WTMGRDEFCONTEXT   WTMgrDefContext;
     WTMGRDEFCONTEXTEX WTMgrDefContextEx;
+#endif // WIN32
 
     // The output region can be configured by the user.
     LONG    ScreenOriginX;
     LONG    ScreenOriginY;
     float   ScreenAreaRatioX;
     float   ScreenAreaRatioY;
-#endif // WIN32
 } EasyTabInfo;
 
 extern EasyTabInfo* EasyTab;
@@ -618,14 +659,14 @@ extern EasyTabInfo* EasyTab;
 
     EasyTabResult EasyTab_Load(Display* Disp, Window Win);
     EasyTabResult EasyTab_HandleEvent(XEvent* Event);
-    void EasyTab_Unload();
+    void EasyTab_Unload(Display* Disp);
 
 #elif defined(_WIN32)
 
     EasyTabResult EasyTab_Load(HWND Window);
     EasyTabResult EasyTab_Load_Ex(HWND Window,
                                   EasyTabTrackingMode Mode,
-                                  uint32_t RelativeModeSensitivity,
+                                  float RelativeModeSensitivity,
                                   int32_t MoveCursor);
     EasyTabResult EasyTab_HandleEvent(HWND Window,
                                       UINT Message,
@@ -636,8 +677,9 @@ extern EasyTabInfo* EasyTab;
 #else
 
     // Save some trouble when porting.
-    // TODO: Port to OSX?
-    // #error "Unsupported platform."
+    #ifndef MILTON_EASYTAB
+    #error "Unsupported platform."
+    #endif
 
 #endif // __linux__ _WIN32
 // -----------------------------------------------------------------------------
@@ -733,6 +775,7 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
     else                      { return EASYTAB_X11_ERROR; }
 }
 
+#if MILTON_EASYTAB
 EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 {
     EasyTab->NumPackets = 0;
@@ -749,9 +792,22 @@ EasyTabResult EasyTab_HandleEvent(XEvent* Event)
     EasyTab->PenInProximity = EASYTAB_TRUE;
     return EASYTAB_OK;
 }
-
-void EasyTab_Unload()
+#else
+EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 {
+    if (Event->type != EasyTab->MotionType) { return EASYTAB_EVENT_NOT_HANDLED; }
+
+    XDeviceMotionEvent* MotionEvent = (XDeviceMotionEvent*)(Event);
+    EasyTab->PosX     = MotionEvent->x;
+    EasyTab->PosY     = MotionEvent->y;
+    EasyTab->Pressure = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
+    return EASYTAB_OK;
+}
+#endif
+
+void EasyTab_Unload(Display* Disp)
+{
+    XCloseDevice(Disp, EasyTab->Device);
     free(EasyTab);
     EasyTab = NULL;
 }
@@ -780,7 +836,7 @@ EasyTabResult EasyTab_Load(HWND Window)
 
 EasyTabResult EasyTab_Load_Ex(HWND Window,
                               EasyTabTrackingMode TrackingMode,
-                              uint32_t RelativeModeSensitivity,
+                              float RelativeModeSensitivity,
                               int32_t MoveCursor)
 {
     EasyTab = (EasyTabInfo*)calloc(1, sizeof(EasyTabInfo)); // We want init to zero, hence calloc.
@@ -809,7 +865,6 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         GETPROCADDRESS(WTEXTSET          , WTExtSet);
         GETPROCADDRESS(WTEXTGET          , WTExtGet);
         GETPROCADDRESS(WTQUEUESIZESET    , WTQueueSizeSet);
-        GETPROCADDRESS(WTQUEUESIZEGET    , WTQueueSizeGet);  // Note: In wintab samples this is done via #defines
         GETPROCADDRESS(WTDATAPEEK        , WTDataPeek);
         GETPROCADDRESS(WTPACKETSGET      , WTPacketsGet);
         GETPROCADDRESS(WTMGROPEN         , WTMgrOpen);
@@ -818,12 +873,13 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         GETPROCADDRESS(WTMGRDEFCONTEXTEX , WTMgrDefContextEx);
     }
 
-    /* if (!EasyTab->WTInfoA(0, 0, NULL)) */
-    /* { */
-    /*     OutputDebugStringA("Wintab services not available.\n"); */
-    /*     return EASYTAB_WACOM_WIN32_ERROR; */
-    /* } */
+    if (!EasyTab->WTInfoA(0, 0, NULL))
+    {
+        OutputDebugStringA("Wintab services not available.\n");
+        return EASYTAB_WACOM_WIN32_ERROR;
+    }
 
+#ifdef MILTON_EASYTAB
     // Note(Sergio): I want about 3 packets per frame. This could be a parameter for Load_Ex
     UINT DesiredPktRate = 200;
     {
@@ -834,6 +890,8 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
             DesiredPktRate = min(200, MaxPktRate);
         }
     }
+#endif
+
 
     // Open context
     {
@@ -854,8 +912,9 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         LogContext.lcMoveMask = PACKETDATA;
         LogContext.lcBtnUpMask = LogContext.lcBtnDnMask;
 
-        DWORD CoordRangeX = GetSystemMetrics(SM_CXSCREEN);
-        DWORD CoordRangeY = GetSystemMetrics(SM_CYSCREEN);
+        #ifdef MILTON_EASYTAB
+        LogContext.lcPktRate = DesiredPktRate;
+        #endif
 
         // Adjust for DPI scaling.
         float scale = 1.0f;
@@ -863,6 +922,9 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         HDC dc = GetDC(NULL);
         DWORD dpi = GetDeviceCaps(dc, LOGPIXELSX);
         ReleaseDC(NULL, dc);
+
+        DWORD CoordRangeX = GetSystemMetrics(SM_CXSCREEN);
+        DWORD CoordRangeY = GetSystemMetrics(SM_CYSCREEN);
 
         if (dpi > 96)
         {
@@ -892,23 +954,39 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
             EasyTab->ScreenAreaRatioY = 1;
         }
 
-        // Note(Sergio): Setting packet rate..
-        {
-            LogContext.lcPktRate = DesiredPktRate;
-        }
-
         if (TrackingMode == EASYTAB_TRACKING_MODE_RELATIVE)
         {
             LogContext.lcPktMode |= PK_X | PK_Y; // TODO: Should this be included in the
                                                  //       PACKETMODE macro define up top?
             LogContext.lcSysMode = 1;
+
+            if (RelativeModeSensitivity > 1.0f)
+            {
+                RelativeModeSensitivity = 1.0f;
+            }
+            else if (RelativeModeSensitivity < 0.0f)
+            {
+                RelativeModeSensitivity = 0.0f;
+            }
+
+            // Wintab expects sensitivity to be a 32-bit fixed point number
+            // with the radix point between the two words. Thus, the type
+            // contains 16 bits to the left of the radix point and 16 bits to
+            // the right of it.
+            //
+            // 0x10000 Hex
+            // = 65,536 Decimal
+            // = 0000 0000 0000 0001 . 0000 0000 0000 0000 Binary
+            // = 1.0 Fixed Point
+            uint32_t Sensitivity = (uint32_t)(0x10000 * RelativeModeSensitivity);
+
             if (MoveCursor)
             {
-                LogContext.lcSysSensX = LogContext.lcSysSensY = RelativeModeSensitivity;
+                LogContext.lcSysSensX = LogContext.lcSysSensY = Sensitivity;
             }
             else
             {
-                LogContext.lcSensX = LogContext.lcSensY = RelativeModeSensitivity;
+                LogContext.lcSensX = LogContext.lcSensY = Sensitivity;
             }
         }
 
@@ -926,11 +1004,6 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
             EasyTab->RangeX      = RangeX.axMax;
             EasyTab->RangeY      = RangeY.axMax;
         }
-        int QueueSize = EasyTab->WTQueueSizeGet(EasyTab->Context);
-        if (!EasyTab->WTQueueSizeSet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE))
-        {
-            return EASYTAB_QUEUE_SIZE_ERROR;
-        }
     }
 
     return EASYTAB_OK;
@@ -938,6 +1011,8 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
 
 #undef GETPROCADDRESS
 
+
+#ifdef MILTON_EASYTAB
 EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPARAM WParam)
 {
     EasyTabResult result = EASYTAB_EVENT_NOT_HANDLED;
@@ -983,12 +1058,39 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 
     return result;
 }
+#else
+EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPARAM WParam)
+{
+    PACKET Packet = { 0 };
+
+    if (Message == WT_PACKET &&
+        (HCTX)LParam == EasyTab->Context &&
+        EasyTab->WTPacket(EasyTab->Context, (UINT)WParam, &Packet))
+    {
+        POINT Point = { 0 };
+        Point.x = Packet.pkX;
+        Point.y = Packet.pkY;
+        ScreenToClient(Window, &Point);
+        EasyTab->PosX = Point.x;
+        EasyTab->PosY = Point.y;
+
+        EasyTab->Pressure = (float)Packet.pkNormalPressure / (float)EasyTab->MaxPressure;
+        EasyTab->Buttons = Packet.pkButtons;
+        return EASYTAB_OK;
+    }
+
+    return EASYTAB_EVENT_NOT_HANDLED;
+}
+#endif
 
 void EasyTab_Unload()
 {
     if (EasyTab->Context) { EasyTab->WTClose(EasyTab->Context); }
+    #ifndef MILTON_EASYTAB
     // Note(sergio): Wacom DLL has a memory leak, AppVerifier nags about it
-    //if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); }
+    #else
+    if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); }
+    #endif
     free(EasyTab);
     EasyTab = NULL;
 }

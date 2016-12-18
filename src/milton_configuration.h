@@ -30,9 +30,15 @@
 
 #define MILTON_MULTITHREADED 1
 
-#define MILTON_ENABLE_PROFILING 1
+#define MILTON_ENABLE_PROFILING 0
 
 #define REDRAW_EVERY_FRAME 0
+
+#define USE_GL_3_2 1
+#if !MILTON_DEBUG  // Don't use 3.2 in release.
+    #undef USE_GL_3_2
+    #define USE_GL_3_2 0
+#endif
 
 // -- Software renderer config..
     #define MAX_NUM_WORKERS 64

@@ -37,6 +37,14 @@ To-Do
         - zoom to cursor position instead of screen center.
         - zoom-out toggle for overview and for navigation
         - stroke masking?
+        - Select strokes
+            - Scale, cut, copy, paste
+        - export with alpha background
+        - select layer by stroke
+        - merge layers
+        - lines
+        - rectangles
+        - circles / ellipses
 
 - Polish and/or Debug layer
     - Memory allocation profiler.
