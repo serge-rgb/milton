@@ -148,13 +148,15 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
                 }
                 if ( er == EASYTAB_OK ) {
-                    b32 got_pen = false;
                     // Pen in use but not drawing
-                    b32 was_pen_down = EasyTab->PenInProximity && !platform_state->is_pointer_down;
-                    for ( int pi = 0; pi < EasyTab->NumPackets; ++pi ) {
-                        bool is_down = EasyTab->Pressure[pi] > 0 && EasyTab->PenInProximity;
-                        if ( is_down ) {
-                            got_pen = true;
+                    b32 taking_pen_input = EasyTab->PenInProximity
+                                           && (EasyTab->Buttons & EasyTab_Buttons_Pen_Touch)
+                                           && !(   (EasyTab->Buttons & EasyTab_Buttons_Pen_Lower)
+                                                || (EasyTab->Buttons & EasyTab_Buttons_Pen_Upper));
+                    if ( taking_pen_input ) {
+                        platform_state->is_pointer_down = true;
+
+                        for ( int pi = 0; pi < EasyTab->NumPackets; ++pi ) {
                             v2i point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
                             if ( point.x >= 0 && point.y >= 0 ) {
                                 if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
@@ -167,25 +169,21 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
                         }
                     }
 
-                    if ( got_pen ) {
-                        platform_state->is_pointer_down = true;
-                    }
                     if ( EasyTab->NumPackets > 0 ) {
                         v2i point = { EasyTab->PosX[EasyTab->NumPackets-1], EasyTab->PosY[EasyTab->NumPackets-1] };
                         input_flags |= MiltonInputFlags_HOVERING;
 
                         platform_state->pointer = point;
                     }
-                    // Wasn't drawing, and now we got a result with pressure>0
-                    b32 pen_touched_tab = !was_pen_down && EasyTab->PenInProximity && (platform_state->num_pressure_results>0);
                 }
             } break;
         case SDL_MOUSEBUTTONDOWN: {
                 if ( event.button.windowID != platform_state->window_id ) {
                     break;
                 }
-                if ( event.button.button == SDL_BUTTON_LEFT
-                     || event.button.button == SDL_BUTTON_MIDDLE
+                if ( (   event.button.button == SDL_BUTTON_LEFT
+                      || event.button.button == SDL_BUTTON_MIDDLE)
+                     && ( EasyTab == NULL || !EasyTab->PenInProximity )
                      // Ignoring right click events for now
                      /*|| event.button.button == SDL_BUTTON_RIGHT*/ ) {
                     if ( !ImGui::GetIO().WantCaptureMouse ) {
@@ -237,23 +235,19 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
                 platform_state->pointer = input_point;
 
-                // Check if it is empty. In case the wacom driver craps out, or
-                // anything goes wrong (like the event queue overflowing ;))
-                // then we default to receiving WM_MOUSEMOVE.
-                // If we catch a single point, then it's fine. It will get filtered out in milton_stroke_input
-                b32 is_empty = platform_state->num_point_results == 0;
+                // In case the wacom driver craps out, or anything goes wrong (like the event queue
+                // overflowing ;)) then we default to receiving WM_MOUSEMOVE. If we catch a single
+                // point, then it's fine. It will get filtered out in milton_stroke_input
 
-                // Only get mouse info when wacom is not in use, or if EasyTab is NULL.
-                if ( EasyTab == NULL || !EasyTab->PenInProximity || is_empty ) {
+                if ( EasyTab == NULL || !EasyTab->PenInProximity) {
                     if ( platform_state->is_pointer_down ) {
-                        if ( !platform_state->is_panning ) {
-                            if ( input_point.x >= 0 && input_point.y >= 0 ) {
-                                if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
-                                    milton_input.points[platform_state->num_point_results++] = input_point;
-                                }
-                                if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS ) {
-                                    milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
-                                }
+                        if ( !platform_state->is_panning
+                             && (input_point.x >= 0 && input_point.y >= 0)) {
+                            if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
+                                milton_input.points[platform_state->num_point_results++] = input_point;
+                            }
+                            if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS ) {
+                                milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
                             }
                         }
                         input_flags &= ~MiltonInputFlags_HOVERING;

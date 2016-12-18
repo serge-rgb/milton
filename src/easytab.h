@@ -1026,6 +1026,7 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         int NumPackets = EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE, PacketBuffer);
         POINT PointBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };
 
+        EasyTab->Buttons = 0;
         for (int i = 0; i < NumPackets; ++i)
         {
             PointBuffer[i].x = EasyTab->ScreenOriginX + PacketBuffer[i].pkX / EasyTab->ScreenAreaRatioX;
@@ -1035,6 +1036,9 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
             EasyTab->PosY[i] = PointBuffer[i].y;
 
             EasyTab->Pressure[i] = (float)PacketBuffer[i].pkNormalPressure / (float)EasyTab->MaxPressure;
+
+            // Setting the Buttons variable if any of the packets had a button pushed
+            EasyTab->Buttons |= PacketBuffer[i].pkButtons;
         }
         EasyTab->NumPackets = NumPackets;
 

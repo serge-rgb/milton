@@ -16,8 +16,10 @@
     #define MILTON_ZOOM_DEBUG 0
 #endif
 
+// Windows Options
 #if defined(_WIN32)
-    #define WIN32_DEBUGGER_OUTPUT 0
+    // If 1, print to VS console. Else print to log file.
+    #define WIN32_DEBUGGER_OUTPUT 1
     #if !MILTON_DEBUG
         #undef WIN32_DEBUGGER_OUTPUT
         #define WIN32_DEBUGGER_OUTPUT 0

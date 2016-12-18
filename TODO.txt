@@ -15,7 +15,6 @@ To-Do
         - Ctrl -> Cmd in OSX. Other cross platform binding issues?
     - Tablet:
         - Easytab: Distinction between eraser and pen.
-        - Easytab: Stylus buttons.
         - Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
     - Renderer
