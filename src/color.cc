@@ -4,7 +4,8 @@
 
 /* #include "color.h" */
 
-u32 color_v4f_to_u32(v4f c)
+u32
+color_v4f_to_u32(v4f c)
 {
     u32 result = (u32)
         ((int)(c.r * 255.0f) << 0) |
@@ -14,7 +15,8 @@ u32 color_v4f_to_u32(v4f c)
     return result;
 }
 
-v4f color_u32_to_v4f(u32 color)
+v4f
+color_u32_to_v4f(u32 color)
 {
     v4f result = {
         (float)(0xff & (color >> 0)) / 255,
@@ -26,7 +28,8 @@ v4f color_u32_to_v4f(u32 color)
     return result;
 }
 
-v4f color_rgb_to_rgba(v3f rgb, float a)
+v4f
+color_rgb_to_rgba(v3f rgb, float a)
 {
     v4f rgba = {
         rgb.r,
@@ -38,7 +41,8 @@ v4f color_rgb_to_rgba(v3f rgb, float a)
 }
 
 // src over dst
-v4f blend_v4f(v4f dst, v4f src)
+v4f
+blend_v4f(v4f dst, v4f src)
 {
     //f32 alpha = 1 - ((1 - src.a) * (1 - dst.a));
 
@@ -53,7 +57,8 @@ v4f blend_v4f(v4f dst, v4f src)
     return result;
 }
 
-v3f clamp_01(v3f color)
+v3f
+clamp_01(v3f color)
 {
     v3f result = color;
     for ( int i = 0; i < 3; ++i ) {
@@ -67,7 +72,8 @@ v3f clamp_01(v3f color)
     return result;
 }
 
-v3f clamp_255(v3f color)
+v3f
+clamp_255(v3f color)
 {
     v3f result = color;
     for ( int i = 0; i < 3; ++i ) {
@@ -81,7 +87,8 @@ v3f clamp_255(v3f color)
     return result;
 }
 
-v3f rgb_to_hsv(v3f rgb)
+v3f
+rgb_to_hsv(v3f rgb)
 {
     v3f hsv = {0};
     float fmin = min( rgb.r, min(rgb.g, rgb.b) );
@@ -119,7 +126,8 @@ v3f rgb_to_hsv(v3f rgb)
     return hsv;
 }
 
-v3f hsv_to_rgb(v3f hsv)
+v3f
+hsv_to_rgb(v3f hsv)
 {
     v3f rgb = { 0 };
 
@@ -178,7 +186,8 @@ v3f hsv_to_rgb(v3f hsv)
     return rgb;
 }
 
-v4f to_premultiplied(v3f rgb, f32 a)
+v4f
+to_premultiplied(v3f rgb, f32 a)
 {
     v4f rgba = {
         rgb.r * a,

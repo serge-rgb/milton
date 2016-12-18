@@ -1,7 +1,8 @@
 
 typedef DArray<int> arri;
 
-int milton_main()
+int
+milton_main()
 {
     arri x = {};
 

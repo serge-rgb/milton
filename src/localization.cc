@@ -22,7 +22,8 @@ static char* g_baked_strings_with_commands[TXT_Count];  // These get malloc'd on
 #define EN(N,S) g_localized_strings[Language_ENGLISH][N] = S
 #define ES(N,S) g_localized_strings[Language_SPANISH][N] = S
 
-static void init_localization()
+static void
+init_localization()
 {
     { // English
         EN(TXT_file, "File");
@@ -148,7 +149,8 @@ static void init_localization()
 
 
 // str -- A string, translated and present in the tables within localization.c
-char* get_localized_string(int id)
+char*
+get_localized_string(int id)
 {
     // TODO: Grab this from system
     i32 loc = Language_ENGLISH;

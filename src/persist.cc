@@ -12,21 +12,25 @@ static void milton_save_postlude(MiltonState* milton_state);
 
 
 // Forward decl.
-static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
+static b32
+fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
 
 // Will allocate memory so that if the read fails, we will restore what was
 // originally in there.
-static b32 fread_checked(void* dst, size_t sz, size_t count, FILE* fd)
+static b32
+fread_checked(void* dst, size_t sz, size_t count, FILE* fd)
 {
     return fread_checked_impl(dst, sz, count, fd, true);
 }
 
-static b32 fread_checked_nocopy(void* dst, size_t sz, size_t count, FILE* fd)
+static b32
+fread_checked_nocopy(void* dst, size_t sz, size_t count, FILE* fd)
 {
     return fread_checked_impl(dst, sz, count, fd, false);
 }
 
-static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy)
+static b32
+fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy)
 {
     b32 ok = false;
 
@@ -53,7 +57,8 @@ static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 
     return ok;
 }
 
-static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
+static b32
+fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
 {
     b32 ok = false;
 
@@ -67,7 +72,8 @@ static b32 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
     return ok;
 }
 
-static void milton_unset_last_canvas_fname()
+static void
+milton_unset_last_canvas_fname()
 {
     b32 del = platform_delete_file_at_config(TO_PATH_STR("saved_path"), DeleteErrorTolerance_OK_NOT_EXIST);
     if ( del == false ) {
@@ -75,7 +81,8 @@ static void milton_unset_last_canvas_fname()
     }
 }
 
-void milton_load(MiltonState* milton_state)
+void
+milton_load(MiltonState* milton_state)
 {
     // Unload gpu data if the strokes have been cooked.
     gpu_free_strokes(milton_state);
@@ -277,7 +284,8 @@ void milton_load(MiltonState* milton_state)
     milton_validate(milton_state);
 }
 
-void milton_save(MiltonState* milton_state)
+void
+milton_save(MiltonState* milton_state)
 {
     milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
@@ -404,7 +412,8 @@ void milton_save(MiltonState* milton_state)
     }
 }
 
-PATH_CHAR* milton_get_last_canvas_fname()
+PATH_CHAR*
+milton_get_last_canvas_fname()
 {
     PATH_CHAR* last_fname = (PATH_CHAR*)mlt_calloc(1, MAX_PATH);
     PATH_CHAR full[MAX_PATH] = {};
@@ -435,7 +444,8 @@ PATH_CHAR* milton_get_last_canvas_fname()
 
 }
 
-void milton_set_last_canvas_fname(PATH_CHAR* last_fname)
+void
+milton_set_last_canvas_fname(PATH_CHAR* last_fname)
 {
     //PATH_CHAR* full = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(char));
     //wcscpy(full, "last_canvas_fname");
@@ -451,7 +461,8 @@ void milton_set_last_canvas_fname(PATH_CHAR* last_fname)
 }
 
 // Called by stb_image
-static void write_func(void* context, void* data, int size)
+static void
+write_func(void* context, void* data, int size)
 {
     FILE* fd = *(FILE**)context;
 
@@ -464,7 +475,8 @@ static void write_func(void* context, void* data, int size)
     }
 }
 
-void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
+void
+milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
 {
     int len = 0;
     {
@@ -542,7 +554,8 @@ void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
     mlt_free(fname_copy);
 }
 
-void milton_prefs_load(PlatformPrefs* prefs)
+void
+milton_prefs_load(PlatformPrefs* prefs)
 {
     PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
     platform_fname_at_config(fname, MAX_PATH);
@@ -563,7 +576,8 @@ void milton_prefs_load(PlatformPrefs* prefs)
     }
 }
 
-void milton_prefs_save(PlatformPrefs* prefs)
+void
+milton_prefs_save(PlatformPrefs* prefs)
 {
     PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
     platform_fname_at_config(fname, MAX_PATH);

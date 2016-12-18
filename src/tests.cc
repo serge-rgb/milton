@@ -10,14 +10,16 @@ static void milton_blend_tests();
 static void milton_startup_tests();
 static void milton_math_tests();
 
-void milton_run_tests(MiltonState* milton_state)
+void
+milton_run_tests(MiltonState* milton_state)
 {
     milton_math_tests();
     milton_blend_tests();
     milton_startup_tests();
 }
 
-static void milton_startup_tests()
+static void
+milton_startup_tests()
 {
     v3f rgb = hsv_to_rgb(v3f{ 0,0,0 });
     mlt_assert(rgb.r == 0 &&
@@ -37,7 +39,8 @@ static void milton_startup_tests()
                rgb.b == 0);
 }
 
-static void milton_blend_tests()
+static void
+milton_blend_tests()
 {
     v4f a = { 1,0,0, 0.5f };
     v4f b = { 0,1,0, 0.5f };
@@ -45,7 +48,8 @@ static void milton_blend_tests()
     mlt_assert (blend.r > 0);
 }
 
-static void milton_math_tests()
+static void
+milton_math_tests()
 {
     v2i a = { 0,  0 };
     v2i b = { 2,  0 };

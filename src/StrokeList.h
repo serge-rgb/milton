@@ -19,14 +19,16 @@ struct StrokeList
     Stroke*         operator[](i64 i);
 };
 
-StrokeBucket* create_bucket()
+StrokeBucket*
+create_bucket()
 {
     StrokeBucket* bucket = (StrokeBucket*)mlt_calloc(1, sizeof(*bucket));
     bucket->bounding_rect = rect_without_size();
     return bucket;
 }
 
-void push(StrokeList* list, const Stroke& element)
+void
+push(StrokeList* list, const Stroke& element)
 {
     int bucket_i = list->count / STROKELIST_BUCKET_COUNT;
     int i = list->count % STROKELIST_BUCKET_COUNT;
@@ -47,7 +49,8 @@ void push(StrokeList* list, const Stroke& element)
     list->count += 1;
 }
 
-Stroke* get(StrokeList* list, i64 idx)
+Stroke*
+get(StrokeList* list, i64 idx)
 {
     mlt_assert(idx < list->count);
     int bucket_i = idx / STROKELIST_BUCKET_COUNT;
@@ -60,20 +63,23 @@ Stroke* get(StrokeList* list, i64 idx)
     return &bucket->data[i];
 }
 
-Stroke pop(StrokeList* list)
+Stroke
+pop(StrokeList* list)
 {
     Stroke result = *get(list, list->count-1);
     list->count--;
     return result;
 }
 
-Stroke* peek(StrokeList* list)
+Stroke*
+peek(StrokeList* list)
 {
     Stroke* e = get(list, list->count-1);
     return e;
 }
 
-void reset(StrokeList* list)
+void
+reset(StrokeList* list)
 {
     list->count = 0;
     StrokeBucket* bucket = &list->root;
@@ -84,7 +90,8 @@ void reset(StrokeList* list)
     }
 }
 
-void release(StrokeList* list)
+void
+release(StrokeList* list)
 {
     list->count = 0;
     StrokeBucket* bucket = &list->root;
@@ -101,12 +108,14 @@ void release(StrokeList* list)
     }
 }
 
-i64 count(StrokeList* list)
+i64
+count(StrokeList* list)
 {
     return list->count;
 }
 
-Stroke* StrokeList::operator[] (i64 i)
+Stroke*
+StrokeList::operator[] (i64 i)
 {
     mlt_assert(i < this->count);
     Stroke* e = get(this, i);

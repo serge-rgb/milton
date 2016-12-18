@@ -3,7 +3,8 @@
 
 
 
-u8* arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags)
+u8*
+arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags)
 {
     size_t total = arena->count + num_bytes;
     if ( total > arena->size ) {
@@ -17,7 +18,8 @@ u8* arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags)
     return result;
 }
 
-Arena arena_init(void* base, size_t size)
+Arena
+arena_init(void* base, size_t size)
 {
     Arena arena = { 0 };
     arena.ptr = (u8*)base;
@@ -27,7 +29,8 @@ Arena arena_init(void* base, size_t size)
     return arena;
 }
 
-Arena arena_spawn(Arena* parent, size_t size)
+Arena
+arena_spawn(Arena* parent, size_t size)
 {
     u8* ptr = arena_alloc_bytes(parent, size);
     mlt_assert(ptr);
@@ -41,7 +44,8 @@ Arena arena_spawn(Arena* parent, size_t size)
     return child;
 }
 
-Arena arena_push(Arena* parent, size_t size)
+Arena
+arena_push(Arena* parent, size_t size)
 {
     mlt_assert ( size <= arena_available_space(parent));
     Arena child = { 0 };
@@ -56,7 +60,8 @@ Arena arena_push(Arena* parent, size_t size)
     return child;
 }
 
-void arena_pop(Arena* child)
+void
+arena_pop(Arena* child)
 {
     Arena* parent = child->parent;
     mlt_assert(parent);
@@ -70,7 +75,8 @@ void arena_pop(Arena* child)
     parent->num_children -= 1;
 }
 
-void   arena_pop_noclear(Arena* child)
+void
+arena_pop_noclear(Arena* child)
 {
     Arena* parent = child->parent;
     mlt_assert(parent);
@@ -82,13 +88,15 @@ void   arena_pop_noclear(Arena* child)
     parent->num_children -= 1;
 }
 
-void arena_reset(Arena* arena)
+void
+arena_reset(Arena* arena)
 {
     memset (arena->ptr, 0, arena->count);
     arena->count = 0;
 }
 
-void arena_reset_noclear(Arena* arena)
+void
+arena_reset_noclear(Arena* arena)
 {
     arena->count = 0;
 }

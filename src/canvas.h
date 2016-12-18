@@ -45,39 +45,39 @@ v2i raster_to_canvas(CanvasView* view, v2i raster_point);
 
 // Thread-safe
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
-b32* create_stroke_masks(Layer* root_layer, Rect rect);
+b32*    create_stroke_masks(Layer* root_layer, Rect rect);
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
-b32 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1);
+b32     stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1);
 
-Rect bounding_box_for_stroke(Stroke* stroke);
+Rect    bounding_box_for_stroke(Stroke* stroke);
 
-Rect bounding_box_for_last_n_points(Stroke* stroke, i32 last_n);
+Rect    bounding_box_for_last_n_points(Stroke* stroke, i32 last_n);
 
-Rect canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect);
+Rect    canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect);
 
 // ---- Layer functions.
 
-Layer* layer_get_topmost(Layer* root);
+Layer*  layer_get_topmost(Layer* root);
 
 // Get the topmost stroke for current layer.
-Stroke layer_get_top_stroke(Layer* layer);
+Stroke  layer_get_top_stroke(Layer* layer);
 
-Layer* layer_get_by_id(Layer* root_layer, i32 id);
+Layer*  layer_get_by_id(Layer* root_layer, i32 id);
 
-void layer_toggle_visibility(Layer* layer);
+void    layer_toggle_visibility(Layer* layer);
 
 Stroke* layer_push_stroke(Layer* layer, Stroke stroke);
 
 typedef struct MiltonState MiltonState;
-void layer_new(MiltonState* milton_state);
+void    layer_new(MiltonState* milton_state);
 
-i32 number_of_layers(Layer* root);
+i32     number_of_layers(Layer* root);
 
-void free_layers(Layer* root);
+void    free_layers(Layer* root);
 
-i64 count_strokes(Layer* root);
-i64 count_clipped_strokes(Layer* root, i32 num_workers);
+i64     count_strokes(Layer* root);
+i64     count_clipped_strokes(Layer* root, i32 num_workers);
 
-void stroke_free(Stroke* stroke);
+void    stroke_free(Stroke* stroke);
 

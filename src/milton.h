@@ -223,12 +223,12 @@ void milton_reset_canvas_and_set_default(MiltonState* milton_state);
 void milton_gl_backend_draw(MiltonState* milton_state);
 
 // Between 0 and k_max_brush_size
-i32 milton_get_brush_radius(MiltonState* milton_state);
-void milton_set_brush_size(MiltonState* milton_state, i32 size);
-void milton_increase_brush_size(MiltonState* milton_state);
-void milton_decrease_brush_size(MiltonState* milton_state);
-float milton_get_pen_alpha(MiltonState* milton_state);
-void milton_set_pen_alpha(MiltonState* milton_state, float alpha);
+i32     milton_get_brush_radius(MiltonState* milton_state);
+void    milton_set_brush_size(MiltonState* milton_state, i32 size);
+void    milton_increase_brush_size(MiltonState* milton_state);
+void    milton_decrease_brush_size(MiltonState* milton_state);
+float   milton_get_pen_alpha(MiltonState* milton_state);
+void    milton_set_pen_alpha(MiltonState* milton_state, float alpha);
 
 void milton_use_previous_mode(MiltonState* milton_state);
 void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);

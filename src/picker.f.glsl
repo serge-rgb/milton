@@ -27,20 +27,23 @@ out vec4 out_color;
 
 #define PI 3.14159
 
-float radians_to_degrees(float r)
+float
+radians_to_degrees(float r)
 {
     return (180.0 * r) / PI;
 }
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
-vec3 hsv2rgb(vec3 c)
+vec3
+hsv2rgb(vec3 c)
 {
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-vec3 hsv_to_rgb(vec3 hsv)
+vec3
+hsv_to_rgb(vec3 hsv)
 {
     vec3 rgb;
 
@@ -95,12 +98,14 @@ vec3 hsv_to_rgb(vec3 hsv)
 // triangle.
 // If positive, c is to the left of ab. Negative: right of ab. 0 if
 // colinear.
-float orientation(vec2 a, vec2 b, vec2 c)
+float
+orientation(vec2 a, vec2 b, vec2 c)
 {
     return (b.x - a.x)*(c.y - a.y) - (c.x - a.x)*(b.y - a.y);
 }
 
-bool is_inside_triangle(vec2 p)
+bool
+is_inside_triangle(vec2 p)
 {
     bool is_inside =
            (orientation(u_pointa, u_pointb, p) <= 0) &&
@@ -109,7 +114,8 @@ bool is_inside_triangle(vec2 p)
     return is_inside;
 }
 
-void main()
+void
+main()
 {
     // NOTE:
     //  These constants gotten from gui.cc in gui_init. From bounds_radius_px, wheel_half_width, and so on.

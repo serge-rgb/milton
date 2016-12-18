@@ -96,7 +96,8 @@ enum GLVendor
     GLVendor_UNKNOWN,
 };
 
-static void print_framebuffer_status()
+static void
+print_framebuffer_status()
 {
     GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
     char* msg = NULL;
@@ -143,7 +144,8 @@ static void print_framebuffer_status()
 }
 
 // Send Color Picker data to OpenGL.
-void gpu_update_picker(RenderData* render_data, ColorPicker* picker)
+void
+gpu_update_picker(RenderData* render_data, ColorPicker* picker)
 {
     glUseProgram(render_data->picker_program);
     // Transform to [-1,1]
@@ -234,8 +236,9 @@ enum BrushOutlineEnum
     BrushOutline_FILL    = 1<<1,
 };
 
-void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
-                              BrushOutlineEnum outline_enum = BrushOutline_NO_FILL, v4f color = {})
+void
+gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
+                         BrushOutlineEnum outline_enum = BrushOutline_NO_FILL, v4f color = {})
 {
     if ( render_data->vbo_outline == 0 ) {
         mlt_assert(render_data->vbo_outline_sizes == 0);
@@ -280,13 +283,15 @@ void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radiu
     }
 }
 
-b32 render_element_is_layer(RenderElement* render_element)
+b32
+render_element_is_layer(RenderElement* render_element)
 {
     b32 result = (render_element->flags & RenderElementFlags_LAYER);
     return result;
 }
 
-b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
+b32
+gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
 {
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
 
@@ -567,7 +572,8 @@ b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32
     return result;
 }
 
-void gpu_resize(RenderData* render_data, CanvasView* view)
+void
+gpu_resize(RenderData* render_data, CanvasView* view)
 {
     render_data->width = view->screen_size.w;
     render_data->height = view->screen_size.h;
@@ -613,13 +619,15 @@ void gpu_resize(RenderData* render_data, CanvasView* view)
     #endif
 }
 
-void gpu_update_scale(RenderData* render_data, i32 scale)
+void
+gpu_update_scale(RenderData* render_data, i32 scale)
 {
     render_data->scale = scale;
     gl_set_uniform_i(render_data->stroke_program, "u_scale", scale);
 }
 
-void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
+void
+gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
 {
     if ( render_data->vbo_exporter[0] == 0 ) {
         glGenBuffers(4, render_data->vbo_exporter);
@@ -681,14 +689,16 @@ void gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(left)*sizeof(*left), left, GL_DYNAMIC_DRAW) );
 }
 
-static void gpu_set_background(RenderData* render_data, v3f background_color)
+static void
+gpu_set_background(RenderData* render_data, v3f background_color)
 {
     gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
 
     render_data->background_color = background_color;
 }
 
-void set_screen_size(RenderData* render_data, float* fscreen)
+void
+set_screen_size(RenderData* render_data, float* fscreen)
 {
     GLuint programs[] = {
         render_data->stroke_program,
@@ -702,7 +712,8 @@ void set_screen_size(RenderData* render_data, float* fscreen)
     }
 }
 
-void gpu_set_canvas(RenderData* render_data, CanvasView* view)
+void
+gpu_set_canvas(RenderData* render_data, CanvasView* view)
 {
     glUseProgram(render_data->stroke_program);
 
@@ -721,7 +732,8 @@ enum CookStrokeOpt
     CookStroke_NEW                   = 0,
     CookStroke_UPDATE_WORKING_STROKE = 1,
 };
-void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrokeOpt cook_option = CookStroke_NEW)
+void
+gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrokeOpt cook_option = CookStroke_NEW)
 {
     render_data->stroke_z = (render_data->stroke_z + 1) % (MAX_DEPTH_VALUE-1);
     const i32 stroke_z = render_data->stroke_z + 1;
@@ -912,7 +924,8 @@ void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, Cook
     }
 }
 
-void gpu_free_strokes(Stroke* strokes, i64 count)
+void
+gpu_free_strokes(Stroke* strokes, i64 count)
 {
     for ( i64 i = 0; i < count; ++i ) {
         Stroke* s = &strokes[i];
@@ -933,7 +946,8 @@ void gpu_free_strokes(Stroke* strokes, i64 count)
     }
 }
 
-void gpu_free_strokes(MiltonState* milton_state)
+void
+gpu_free_strokes(MiltonState* milton_state)
 {
     if ( milton_state->root_layer != NULL ) {
         for ( Layer* l = milton_state->root_layer;
@@ -965,11 +979,12 @@ enum ClipFlags
 };
 // Creates OpenGL objects for strokes that are in view but are not loaded on the GPU. Deletes
 // content for strokes that are far away.
-void gpu_clip_strokes_and_update(Arena* arena,
-                                 RenderData* render_data,
-                                 CanvasView* view,
-                                 Layer* root_layer, Stroke* working_stroke,
-                                 i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_JUST_CLIP)
+void
+gpu_clip_strokes_and_update(Arena* arena,
+                            RenderData* render_data,
+                            CanvasView* view,
+                            Layer* root_layer, Stroke* working_stroke,
+                            i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_JUST_CLIP)
 {
     DArray<RenderElement>* clip_array = &render_data->clip_array;
 
@@ -1082,8 +1097,8 @@ void gpu_clip_strokes_and_update(Arena* arena,
     }
 }
 
-void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_width,
-                       i32 view_height)
+void
+gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_width, i32 view_height)
 {
     // FLip it. GL is bottom-left.
     i32 x = view_x;
@@ -1212,7 +1227,8 @@ void gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view
     GLCHK(glScissor(0, 0, render_data->width, render_data->height));
 }
 
-void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
+void
+gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
 {
     glClearDepth(0.0f);
     glViewport(0, 0, render_data->width, render_data->height);
@@ -1332,9 +1348,8 @@ void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width
 }
 
 // TODO: Different path for non-multisampled textures.
-void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale,
-                          i32 x, i32 y, i32 w, i32 h)
-
+void
+gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h)
 {
     CanvasView saved_view = *milton_state->view;
     RenderData* render_data = milton_state->render_data;

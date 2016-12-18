@@ -19,7 +19,8 @@ typedef int64_t     i64;
 void handle_errno(int error);
 // #endif
 
-static size_t bytes_until_end(FILE* fd)
+static size_t
+bytes_until_end(FILE* fd)
 {
     fpos_t fd_pos;
     fgetpos(fd, &fd_pos);
@@ -29,7 +30,8 @@ static size_t bytes_until_end(FILE* fd)
     return len;
 }
 
-char* read_entire_file(char* fname)
+char*
+read_entire_file(char* fname)
 {
     char* contents = NULL;
     FILE* fd = fopen(fname, "r");
@@ -59,7 +61,8 @@ char* read_entire_file(char* fname)
 
 #define MAX_LINES 10000
 
-char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
+char**
+split_lines(char* contents, i64* out_count, i64* max_line=NULL)
 {
     i64 this_len = 0;
 
@@ -92,7 +95,8 @@ char** split_lines(char* contents, i64* out_count, i64* max_line=NULL)
 
 // Computes the variable name of the form g_NAME_(v|f) for a given shader filename
 //    e.g. "../src/my_shader.v.glsl" -> g_my_shader_v
-int shadername(char* filename, char* out_varname, size_t sz_varname)
+int
+shadername(char* filename, char* out_varname, size_t sz_varname)
 {
     if ( filename && out_varname ) {
         // Skip filename until after all forward slashes.
@@ -139,7 +143,8 @@ int shadername(char* filename, char* out_varname, size_t sz_varname)
 
 #define VARNAME_MAX 128
 
-void output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
+void
+output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
 {
     char* contents = read_entire_file(fname);
     char** prelude_lines = NULL;
@@ -174,7 +179,8 @@ void output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
 }
 
 // Assuming this is being called from the build directory
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     char out[128] = {};
     shadername("./../src/picker.v.glsl", out, 128);
@@ -205,7 +211,8 @@ int main(int argc, char** argv)
 }
 
 
-void handle_errno(int error)
+void
+handle_errno(int error)
 {
     char* str = NULL;
     switch ( error ) {

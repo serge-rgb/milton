@@ -10,17 +10,20 @@
 
 
 // total RAM in bytes
-size_t get_system_RAM()
+size_t
+get_system_RAM()
 {
    return (size_t)SDL_GetSystemRAM() * 1024 * 1024;
 }
 
-v2i v2f_to_v2i(v2f p)
+v2i
+v2f_to_v2i(v2f p)
 {
     return v2i{(i32)p.x, (i32)p.y};
 }
 
-v2f v2i_to_v2f(v2i p)
+v2f
+v2i_to_v2f(v2i p)
 {
     return v2f{(f32)p.x, (f32)p.y};
 }
@@ -29,12 +32,14 @@ v2f v2i_to_v2f(v2i p)
 // Math functions.
 // ---------------
 
-f32 magnitude(v2f a)
+f32
+magnitude(v2f a)
 {
     return sqrtf(DOT(a, a));
 }
 
-f32 distance(v2f a, v2f b)
+f32
+distance(v2f a, v2f b)
 {
     v2f diff = sub2f(a, b);
 
@@ -43,35 +48,38 @@ f32 distance(v2f a, v2f b)
     return dist;
 }
 
-i32 manhattan_distance(v2i a, v2i b)
+i32
+manhattan_distance(v2i a, v2i b)
 {
    i32 dist = abs(a.x - b.x) + abs(a.y - b.y);
    return dist;
 }
 
-f32 deegrees_to_radians(int d)
+f32
+deegrees_to_radians(int d)
 {
     mlt_assert (0 <= d && d < 360);
     return kPi * ((f32)(d) / 180.0f);
 }
 
-f32 radians_to_degrees(f32 r)
+f32
+radians_to_degrees(f32 r)
 {
     return (180 * r) / kPi;
 }
-
-
 
 // Could be called a signed area. `orientation(a, b, c) / 2` is the area of the
 // triangle.
 // If positive, c is to the left of ab. Negative: right of ab. 0 if
 // colinear.
-f32 orientation(v2f a, v2f b, v2f c)
+f32
+orientation(v2f a, v2f b, v2f c)
 {
     return (b.x - a.x)*(c.y - a.y) - (c.x - a.x)*(b.y - a.y);
 }
 
-b32 is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
+b32
+is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
 {
    b32 is_inside =
            (orientation(a, b, point) <= 0) &&
@@ -80,7 +88,8 @@ b32 is_inside_triangle(v2f point, v2f a, v2f b, v2f c)
     return is_inside;
 }
 
-v2f polar_to_cartesian(f32 angle, f32 radius)
+v2f
+polar_to_cartesian(f32 angle, f32 radius)
 {
     v2f result = {
         radius * cosf(angle),
@@ -89,7 +98,8 @@ v2f polar_to_cartesian(f32 angle, f32 radius)
     return result;
 }
 
-v2i rotate_v2i(v2i p, f32 angle)
+v2i
+rotate_v2i(v2i p, f32 angle)
 {
     v2i r = {
         (i32)((p.x * cosf(angle)) - (p.y * sinf(angle))),
@@ -98,10 +108,11 @@ v2i rotate_v2i(v2i p, f32 angle)
     return r;
 }
 
-v2f closest_point_in_segment_f(i32 ax, i32 ay,
-                               i32 bx, i32 by,
-                               v2f ab, f32 ab_magnitude_squared,
-                               v2i point, f32* out_t)
+v2f
+closest_point_in_segment_f(i32 ax, i32 ay,
+                           i32 bx, i32 by,
+                           v2f ab, f32 ab_magnitude_squared,
+                           v2i point, f32* out_t)
 {
     v2f result;
     f32 mag_ab = sqrtf(ab_magnitude_squared);
@@ -119,7 +130,8 @@ v2f closest_point_in_segment_f(i32 ax, i32 ay,
     return result;
 }
 
-v2i closest_point_in_segment(v2i a, v2i b,
+v2i
+closest_point_in_segment(v2i a, v2i b,
                              v2f ab, f32 ab_magnitude_squared,
                              v2i point, f32* out_t)
 {
@@ -139,7 +151,8 @@ v2i closest_point_in_segment(v2i a, v2i b,
     return result;
 }
 
-b32 intersect_line_segments(v2i a, v2i b,
+b32
+intersect_line_segments(v2i a, v2i b,
                             v2i u, v2i v,
                             v2f* out_intersection)
 {
@@ -160,7 +173,8 @@ b32 intersect_line_segments(v2i a, v2i b,
     return hit;
 }
 
-i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
+i32
+rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
 {
     DArray<Rect> rects = {};
     reserve(&rects, 32);
@@ -193,7 +207,8 @@ i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
     return num_rects;
 }
 
-Rect rect_union(Rect a, Rect b)
+Rect
+rect_union(Rect a, Rect b)
 {
     Rect result;
     result.left = min(a.left, b.left);
@@ -210,7 +225,8 @@ Rect rect_union(Rect a, Rect b)
     return result;
 }
 
-b32 rect_intersects_rect(Rect a, Rect b)
+b32
+rect_intersects_rect(Rect a, Rect b)
 {
    b32 intersects = true;
    if ( a.left > b.right || b.left > a.right
@@ -220,7 +236,8 @@ b32 rect_intersects_rect(Rect a, Rect b)
    return intersects;
 }
 
-Rect rect_intersect(Rect a, Rect b)
+Rect
+rect_intersect(Rect a, Rect b)
 {
     Rect result;
     result.left = max(a.left, b.left);
@@ -236,7 +253,8 @@ Rect rect_intersect(Rect a, Rect b)
     }
     return result;
 }
-Rect rect_stretch(Rect rect, i32 width)
+Rect
+rect_stretch(Rect rect, i32 width)
 {
    Rect stretched = rect;
    // Make the raster limits at least as wide as a block
@@ -251,7 +269,8 @@ Rect rect_stretch(Rect rect, i32 width)
    return stretched;
 }
 
-Rect rect_clip_to_screen(Rect limits, v2i screen_size)
+Rect
+rect_clip_to_screen(Rect limits, v2i screen_size)
 {
     if (limits.left < 0) limits.left = 0;
     if (limits.right > screen_size.w) limits.right = screen_size.w;
@@ -260,7 +279,8 @@ Rect rect_clip_to_screen(Rect limits, v2i screen_size)
     return limits;
 }
 
-const Rect rect_enlarge(Rect src, i32 offset)
+const Rect
+rect_enlarge(Rect src, i32 offset)
 {
     Rect result;
     result.left = src.left - offset;
@@ -270,7 +290,8 @@ const Rect rect_enlarge(Rect src, i32 offset)
     return result;
 }
 
-Rect bounding_rect_for_points(v2i points[], i32 num_points)
+Rect
+bounding_rect_for_points(v2i points[], i32 num_points)
 {
     mlt_assert (num_points > 0);
 
@@ -289,7 +310,8 @@ Rect bounding_rect_for_points(v2i points[], i32 num_points)
     return rect;
 }
 
-b32 is_inside_rect(Rect bounds, v2i point)
+b32
+is_inside_rect(Rect bounds, v2i point)
 {
     return
         point.x >= bounds.left &&
@@ -298,13 +320,15 @@ b32 is_inside_rect(Rect bounds, v2i point)
         point.y <  bounds.bottom;
 }
 
-b32 rect_is_valid(Rect rect)
+b32
+rect_is_valid(Rect rect)
 {
     b32 valid = rect.left <= rect.right && rect.top <= rect.bottom;
     return valid;
 }
 
-Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_points)
+Rect
+bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_points)
 {
     mlt_assert (num_points > 0);
 
@@ -329,7 +353,8 @@ Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_poi
     return rect;
 }
 
-Rect rect_without_size()
+Rect
+rect_without_size()
 {
     Rect rect;
     rect.left = INT_MAX;
@@ -339,12 +364,14 @@ Rect rect_without_size()
     return rect;
 }
 
-i32 rect_area(Rect rect)
+i32
+rect_area(Rect rect)
 {
     return (rect.right - rect.left) * (rect.bottom - rect.top);
 }
 
-b32 is_inside_rect_scalar(Rect bounds, i32 point_x, i32 point_y)
+b32
+is_inside_rect_scalar(Rect bounds, i32 point_x, i32 point_y)
 {
     return
         point_x >= bounds.left &&
@@ -353,7 +380,8 @@ b32 is_inside_rect_scalar(Rect bounds, i32 point_x, i32 point_y)
         point_y <  bounds.bottom;
 }
 
-b32 is_rect_within_rect(Rect a, Rect b)
+b32
+is_rect_within_rect(Rect a, Rect b)
 {
     if (    (a.left   < b.left)
          || (a.right  > b.right)
@@ -364,7 +392,8 @@ b32 is_rect_within_rect(Rect a, Rect b)
    return true;
 }
 
-Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h)
+Rect
+rect_from_xywh(i32 x, i32 y, i32 w, i32 h)
 {
     Rect rect;
     rect.left = x;
@@ -375,12 +404,14 @@ Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h)
     return rect;
 }
 
-void utf16_to_utf8_simple(char* , char* )
+void
+utf16_to_utf8_simple(char* , char* )
 {
    // Nothing needs to be done
 }
 
-void utf16_to_utf8_simple(wchar_t* utf16_name, char* utf8_name)
+void
+utf16_to_utf8_simple(wchar_t* utf16_name, char* utf8_name)
 {
     for ( wchar_t* iter = utf16_name;
           *iter!='\0';
@@ -392,7 +423,8 @@ void utf16_to_utf8_simple(wchar_t* utf16_name, char* utf8_name)
    *utf8_name='\0';
 }
 
-wchar_t* str_trim_to_last_slash(wchar_t* str)
+wchar_t*
+str_trim_to_last_slash(wchar_t* str)
 {
     wchar_t* cool_char = str;
     for ( wchar_t* iter = str;
@@ -405,7 +437,8 @@ wchar_t* str_trim_to_last_slash(wchar_t* str)
     return cool_char;
 }
 
-char* str_trim_to_last_slash(char* str)
+char*
+str_trim_to_last_slash(char* str)
 {
     char* cool_char = str;
     for ( char* iter = str;

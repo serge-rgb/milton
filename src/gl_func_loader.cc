@@ -75,7 +75,8 @@
     #undef X
 #endif  //_WIN32
 
-bool gl_load(b32* out_supports_sample_shading)
+bool
+gl_load(b32* out_supports_sample_shading)
 {
 #if defined(_WIN32)
 #define GETADDRESS(func) { func = (decltype(func))wglGetProcAddress(#func); \

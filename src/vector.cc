@@ -2,19 +2,22 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-b32 equ2f(v2f a, v2f b)
+b32
+equ2f(v2f a, v2f b)
 {
     b32 result = a.x == b.x && a.y == b.y;
     return result;
 }
 
-b32 equ2i(v2i a, v2i b)
+b32
+equ2i(v2i a, v2i b)
 {
     b32 result = a.x == b.x && a.y == b.y;
     return result;
 }
 
-v2f sub2f(v2f a, v2f b)
+v2f
+sub2f(v2f a, v2f b)
 {
     v2f result;
     result.x = a.x - b.x;
@@ -22,7 +25,8 @@ v2f sub2f(v2f a, v2f b)
     return result;
 }
 
-v2i sub2i(v2i a, v2i b)
+v2i
+sub2i(v2i a, v2i b)
 {
 
     v2i result;
@@ -31,7 +35,8 @@ v2i sub2i(v2i a, v2i b)
     return result;
 }
 
-v2f add2f(v2f a, v2f b)
+v2f
+add2f(v2f a, v2f b)
 {
     v2f result;
     result.x = a.x + b.x;
@@ -39,7 +44,8 @@ v2f add2f(v2f a, v2f b)
     return result;
 }
 
-v2i add2i(v2i a, v2i b)
+v2i
+add2i(v2i a, v2i b)
 {
     v2i result;
     result.x = a.x + b.x;
@@ -47,7 +53,8 @@ v2i add2i(v2i a, v2i b)
     return result;
 }
 
-v2f scale2f(v2f a, float factor)
+v2f
+scale2f(v2f a, float factor)
 {
     v2f result = a;
     result.x *= factor;
@@ -55,7 +62,8 @@ v2f scale2f(v2f a, float factor)
     return result;
 }
 
-v2i scale2i(v2i a, i32 factor)
+v2i
+scale2i(v2i a, i32 factor)
 {
     v2i result = a;
     result.x *= factor;
@@ -63,7 +71,8 @@ v2i scale2i(v2i a, i32 factor)
     return result;
 }
 
-v2i divide2i(v2i a, i32 factor)
+v2i
+divide2i(v2i a, i32 factor)
 {
     v2i result = a;
     result.x /= factor;
@@ -72,7 +81,8 @@ v2i divide2i(v2i a, i32 factor)
 }
 
 // NOTE(Tilmann): Rename to perpendicular2i?
-v2i perpendicular (v2i a)
+v2i
+perpendicular (v2i a)
 {
     v2i result = {
         -a.y,
@@ -81,7 +91,8 @@ v2i perpendicular (v2i a)
     return result;
 }
 
-v2f perpendicular2f (v2f a)
+v2f
+perpendicular2f (v2f a)
 {
     v2f result = {
         -a.y,
@@ -90,19 +101,22 @@ v2f perpendicular2f (v2f a)
     return result;
 }
 
-b32 equ3f(v3f a, v3f b)
+b32
+equ3f(v3f a, v3f b)
 {
     bool result = a.x == b.x && a.y == b.y && a.z == b.z;
     return result;
 }
 
-b32 equ3i(v3i a, v3i b)
+b32
+equ3i(v3i a, v3i b)
 {
     bool result = a.x == b.x && a.y == b.y && a.z == b.z;
     return result;
 }
 
-v3f scale3f(v3f a, float factor)
+v3f
+scale3f(v3f a, float factor)
 {
     v3f result = a;
     result.x *= factor;
@@ -111,7 +125,8 @@ v3f scale3f(v3f a, float factor)
     return result;
 }
 
-v3i scale3i(v3i a, i32 factor)
+v3i
+scale3i(v3i a, i32 factor)
 {
     v3i result = a;
     result.x *= factor;
@@ -120,14 +135,15 @@ v3i scale3i(v3i a, i32 factor)
     return result;
 }
 
-b32 equ4f(v4f a, v4f b)
+b32
+equ4f(v4f a, v4f b)
 {
     bool result = a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
     return result;
 }
 
-
-v2f lerp2f(v2f a, v2f b, f32 t)
+v2f
+lerp2f(v2f a, v2f b, f32 t)
 {
     return add2f(scale2f(b, t), scale2f(a, 1.0f-t));
 }

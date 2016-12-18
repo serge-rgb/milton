@@ -19,7 +19,8 @@ out vec4 out_color;
 
 // x,y  - closest point
 // z    - t in [0,1] interpolation value
-vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
+vec3
+closest_point_in_segment_gl(vec2 a, vec2 b,
                                  vec2 ab, float ab_magnitude_squared,
                                  vec2 point)
 {
@@ -36,7 +37,8 @@ vec3 closest_point_in_segment_gl(vec2 a, vec2 b,
     return result;
 }
 
-int sample_stroke(vec2 point, vec3 a, vec3 b)
+int
+sample_stroke(vec2 point, vec3 a, vec3 b)
 {
     int value = 0;
     // Check against a circle of pressure*brush_size at each point, which is cheap.
@@ -65,7 +67,8 @@ int sample_stroke(vec2 point, vec3 a, vec3 b)
     return value;
 }
 
-void main()
+void
+main()
 {
     vec2 offset = vec2(0.0);
 

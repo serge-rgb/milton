@@ -51,7 +51,8 @@ struct ClippedStroke
     ClippedStroke*  next;
 };
 
-static b32 clipped_stroke_is_layermark(ClippedStroke* clipped_stroke)
+static b32
+clipped_stroke_is_layermark(ClippedStroke* clipped_stroke)
 {
     b32 is_mark = false;
     if ( clipped_stroke )
@@ -62,8 +63,12 @@ static b32 clipped_stroke_is_layermark(ClippedStroke* clipped_stroke)
 }
 
 // Clipped stroke points are stored relative to the reference point.
-static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke,
-                                          Rect canvas_rect, i32 local_scale, v2i reference_point)
+static ClippedStroke*
+stroke_clip_to_rect(Arena*  render_arena,
+                    Stroke* in_stroke,
+                    Rect    canvas_rect,
+                    i32     local_scale,
+                    v2i     reference_point)
 {
     ClippedStroke* clipped_stroke = arena_alloc_elem_(render_arena, ClippedStroke, Arena_NOFAIL);
 
@@ -145,14 +150,15 @@ static ClippedStroke* stroke_clip_to_rect(Arena* render_arena, Stroke* in_stroke
 }
 
 // Returns a linked list of strokes that this block needs to render.
-static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
-                                            i32 worker_id,
-                                            Layer* root_layer,
-                                            Stroke* working_stroke,
-                                            Rect canvas_block,
-                                            i32 local_scale,
-                                            v2i reference_point,
-                                            b32* allocation_ok)
+static ClippedStroke*
+clip_strokes_to_block(Arena* render_arena,
+                      i32 worker_id,
+                      Layer* root_layer,
+                      Stroke* working_stroke,
+                      Rect canvas_block,
+                      i32 local_scale,
+                      v2i reference_point,
+                      b32* allocation_ok)
 {
     ClippedStroke* stroke_list = NULL;
     *allocation_ok = true;
@@ -240,13 +246,14 @@ static ClippedStroke* clip_strokes_to_block(Arena* render_arena,
 
 // Receives a stretchy array of strokes and rasterizes it to the specified block of pixels.
 // Returns false if allocation failed.
-static b32 rasterize_canvas_block_slow(Arena* render_arena,
-                                       i32 worker_id,
-                                       CanvasView* view,
-                                       Layer* root_layer,
-                                       Stroke* working_stroke,
-                                       u32* pixels,
-                                       Rect raster_block)
+static b32
+rasterize_canvas_block_slow(Arena* render_arena,
+                            i32 worker_id,
+                            CanvasView* view,
+                            Layer* root_layer,
+                            Stroke* working_stroke,
+                            u32* pixels,
+                            Rect raster_block)
 {
     Rect canvas_block;
     {
@@ -496,13 +503,14 @@ static b32 rasterize_canvas_block_slow(Arena* render_arena,
 
 
 // For a more readable implementation that does the same thing. See rasterize_canvas_block_slow.
-static b32 rasterize_canvas_block_sse2(Arena* render_arena,
-                                       i32 worker_id,
-                                       CanvasView* view,
-                                       Layer* root_layer,
-                                       Stroke* working_stroke,
-                                       u32* pixels,
-                                       Rect raster_block)
+static b32
+rasterize_canvas_block_sse2(Arena* render_arena,
+                            i32 worker_id,
+                            CanvasView* view,
+                            Layer* root_layer,
+                            Stroke* working_stroke,
+                            u32* pixels,
+                            Rect raster_block)
 {
     PROFILE_RASTER_BEGIN(sse2);
     PROFILE_RASTER_BEGIN(preamble);
@@ -969,11 +977,12 @@ static b32 rasterize_canvas_block_sse2(Arena* render_arena,
     return true;
 }
 
-static void draw_ring(u32* pixels,
-                      i32 width, i32 height,
-                      i32 center_x, i32 center_y,
-                      i32 ring_radius, i32 ring_girth,
-                      v4f color)
+static void
+draw_ring(u32* pixels,
+          i32 width, i32 height,
+          i32 center_x, i32 center_y,
+          i32 ring_radius, i32 ring_girth,
+          v4f color)
 {
 #define COMPARE(dist) \
     dist < SQUARE(ring_radius + ring_girth) && \
@@ -1025,11 +1034,12 @@ static void draw_ring(u32* pixels,
 #undef distance
 }
 
-static void draw_circle(u32* raster_buffer,
-                        i32 raster_buffer_width, i32 raster_buffer_height,
-                        i32 center_x, i32 center_y,
-                        i32 radius,
-                        v4f src_color)
+static void
+draw_circle(u32* raster_buffer,
+            i32 raster_buffer_width, i32 raster_buffer_height,
+            i32 center_x, i32 center_y,
+            i32 radius,
+            v4f src_color)
 {
     i32 left   = max(center_x - radius, 0);
     i32 right  = min(center_x + radius, raster_buffer_width);
@@ -1058,11 +1068,12 @@ static void draw_circle(u32* raster_buffer,
 }
 
 #if 0
-static void draw_rectangle(u32* raster_buffer,
-                           i32 raster_buffer_width, i32 raster_buffer_height,
-                           i32 center_x, i32 center_y,
-                           i32 rect_w, i32 rect_h,
-                           v4f src_color)
+static void
+draw_rectangle(u32* raster_buffer,
+               i32 raster_buffer_width, i32 raster_buffer_height,
+               i32 center_x, i32 center_y,
+               i32 rect_w, i32 rect_h,
+               v4f src_color)
 {
     i32 left = max(center_x - rect_w, 0);
     i32 right = min(center_x + rect_w, raster_buffer_width);
@@ -1089,11 +1100,12 @@ static void draw_rectangle(u32* raster_buffer,
 
 
 // 1-pixel margin
-static void fill_rectangle_with_margin(u32* raster_buffer,
-                                       i32 raster_buffer_width, i32 raster_buffer_height,
-                                       i32 x, i32 y,
-                                       i32 w, i32 h,
-                                       v4f rect_color, v4f margin_color)
+static void
+fill_rectangle_with_margin(u32* raster_buffer,
+                           i32 raster_buffer_width, i32 raster_buffer_height,
+                           i32 x, i32 y,
+                           i32 w, i32 h,
+                           v4f rect_color, v4f margin_color)
 {
     i32 left = max(x, 0);
     i32 right = min(x + w, raster_buffer_width);
@@ -1118,11 +1130,12 @@ static void fill_rectangle_with_margin(u32* raster_buffer,
     }
 }
 
-static void rectangle_margin(u32* raster_buffer,
-                             i32 raster_buffer_width, i32 raster_buffer_height,
-                             i32 x, i32 y,
-                             i32 w, i32 h,
-                             v4f margin_color, i32 margin_px)
+static void
+rectangle_margin(u32* raster_buffer,
+                 i32 raster_buffer_width, i32 raster_buffer_height,
+                 i32 x, i32 y,
+                 i32 w, i32 h,
+                 v4f margin_color, i32 margin_px)
 {
     i32 left = max(x, 0);
     i32 right = min(x + w, raster_buffer_width);
@@ -1158,7 +1171,8 @@ static void rectangle_margin(u32* raster_buffer,
 #undef BLEND_AT_INDEX
 }
 
-static b32 stroke_intersects_rect(Stroke* stroke, Rect rect)
+static b32
+stroke_intersects_rect(Stroke* stroke, Rect rect)
 {
     b32 intersects = rect_intersects_rect(stroke->bounding_rect, rect);
     if (intersects)
@@ -1196,7 +1210,8 @@ static b32 stroke_intersects_rect(Stroke* stroke, Rect rect)
     return intersects;
 }
 
-static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
+static void
+rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
 {
     v4f background_color =
     {
@@ -1338,7 +1353,8 @@ static void rasterize_color_picker(ColorPicker* picker, Rect draw_rect)
     }
 }
 
-static void fill_stroke_masks_for_worker(Layer* layer, Rect rect, i32 worker_id)
+static void
+fill_stroke_masks_for_worker(Layer* layer, Rect rect, i32 worker_id)
 {
     while ( layer ) {
         if (!( layer->flags & LayerFlags_VISIBLE )) {
@@ -1359,12 +1375,13 @@ static void fill_stroke_masks_for_worker(Layer* layer, Rect rect, i32 worker_id)
 
 
 // Returns false if there were allocation errors
-static b32 render_blockgroup(MiltonState* milton_state,
-                             i32 worker_id,
-                             Arena* blockgroup_arena,
-                             Rect* blocks,
-                             i32 block_start, i32 num_blocks,
-                             u32* raster_buffer)
+static b32
+render_blockgroup(MiltonState* milton_state,
+                  i32 worker_id,
+                  Arena* blockgroup_arena,
+                  Rect* blocks,
+                  i32 block_start, i32 num_blocks,
+                  u32* raster_buffer)
 {
     b32 allocation_ok = true;
 
@@ -1505,8 +1522,8 @@ renderer_worker_thread(void* data)
 }
 
 #if MILTON_MULTITHREADED
-static void produce_render_work(MiltonState* milton_state,
-                                BlockgroupRenderData blockgroup_render_data)
+static void
+produce_render_work(MiltonState* milton_state, BlockgroupRenderData blockgroup_render_data)
 {
     RenderStack* render_stack = milton_state->render_stack;
 
@@ -1524,7 +1541,8 @@ static void produce_render_work(MiltonState* milton_state,
 }
 #endif
 
-static void render_canvas(MiltonState* milton_state, Rect raster_limits)
+static void
+render_canvas(MiltonState* milton_state, Rect raster_limits)
 {
     PROFILE_RASTER_BEGIN(render_canvas);
 
@@ -1588,7 +1606,8 @@ static void render_canvas(MiltonState* milton_state, Rect raster_limits)
 }
 
 // Call render_canvas with increasing quality until it is too slow.
-static void render_canvas_iteratively(MiltonState* milton_state, Rect raster_limits)
+static void
+render_canvas_iteratively(MiltonState* milton_state, Rect raster_limits)
 {
     CanvasView* view = milton_state->view;
     i32 original_df = view->downsampling_factor;
@@ -1606,7 +1625,8 @@ static void render_canvas_iteratively(MiltonState* milton_state, Rect raster_lim
     view->downsampling_factor = original_df;
 }
 
-static void render_picker(int render_flags, ColorPicker* picker, u32* buffer_pixels, CanvasView* view)
+static void
+render_picker(int render_flags, ColorPicker* picker, u32* buffer_pixels, CanvasView* view)
 {
     Rect draw_rect = picker_get_bounds(picker);
 
@@ -1627,8 +1647,9 @@ static void render_picker(int render_flags, ColorPicker* picker, u32* buffer_pix
 
 // Commented out because it's not useless, but I don't think Milton will blit bitmaps
 #if 0
-static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_buffer_height,
-                        i32 x, i32 y, Bitmap* bitmap)
+static void
+blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_buffer_height,
+            i32 x, i32 y, Bitmap* bitmap)
 {
 
     if ( !bitmap->data )
@@ -1659,7 +1680,8 @@ static void blit_bitmap(u32* raster_buffer, i32 raster_buffer_width, i32 raster_
 }
 #endif
 
-static void copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
+static void
+copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
 {
     u32* raster_ptr = (u32*)milton_state->raster_buffer;
     u32* canvas_ptr = (u32*)milton_state->canvas_buffer;
@@ -1671,7 +1693,8 @@ static void copy_canvas_to_raster_buffer(MiltonState* milton_state, Rect rect)
     }
 }
 
-static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*MiltonRenderFlags*/ render_flags)
+static void
+render_gui(MiltonState* milton_state, Rect raster_limits, int/*MiltonRenderFlags*/ render_flags)
 {
     const b32 gui_visible = milton_state->gui->visible;  // Some elements are not affected by this, like the hover outline
     b32 redraw = false;
@@ -1753,8 +1776,7 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
     }
 
     // If the explorer is active, render regardless of UI being visible
-
-    if (  milton_state->current_mode == MiltonMode_EXPORTING   ) {
+    if (  milton_state->current_mode == MiltonMode_EXPORTING  ) {
         Exporter* exporter = &gui->exporter;
         if (  exporter->state == ExporterState_GROWING_RECT || exporter->state == ExporterState_SELECTED  ) {
             i32 x = min(exporter->pivot.x, exporter->needle.x);
@@ -1793,7 +1815,8 @@ static void render_gui(MiltonState* milton_state, Rect raster_limits, int/*Milto
     }
 }
 
-void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
+void
+milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
 {
     PROFILE_GRAPH_BEGIN(raster);
     b32 canvas_modified = false;    // Avoid needless work when program is idle by keeping track
@@ -1923,7 +1946,6 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
             pixels_dst += view->screen_size.w - size.w;
             pixels_src += view->screen_size.w - size.w;
         }
-
     }
 
     if ( (render_flags & MiltonRenderFlags_FULL_REDRAW) ) {
@@ -2030,10 +2052,11 @@ void milton_render(MiltonState* milton_state, int render_flags, v2i pan_delta)
     PROFILE_GRAPH_PUSH(raster);  // Raster includes rasterizing the GUI color picker.
 }
 
-void milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
-                             i32 x, i32 y,
-                             i32 w, i32 h,
-                             int scale)
+void
+milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
+                        i32 x, i32 y,
+                        i32 w, i32 h,
+                        int scale)
 {
     u8* saved_buffer = milton_state->canvas_buffer;
     CanvasView saved_view = *milton_state->view;

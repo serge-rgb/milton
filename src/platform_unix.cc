@@ -58,7 +58,8 @@
 #include "platform_OSX_SDL_hooks.h"
 #endif
 
-void milton_fatal(char* message)
+void
+milton_fatal(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");
     puts(message);
@@ -66,7 +67,8 @@ void milton_fatal(char* message)
 }
 
 // TODO: Show a message box, and then die
-void milton_die_gracefully(char* message)
+void
+milton_die_gracefully(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");
     milton_log(message);
@@ -84,7 +86,8 @@ typedef struct UnixMemoryHeader_s
     size_t size;
 } UnixMemoryHeader;
 
-void* platform_allocate(size_t size)
+void*
+platform_allocate(size_t size)
 {
     u8* ptr = (u8*)mmap(HEAP_BEGIN_ADDRESS, size + sizeof(UnixMemoryHeader),
                    PROT_WRITE | PROT_READ,
@@ -101,7 +104,8 @@ void* platform_allocate(size_t size)
     return ptr;
 }
 
-void platform_deallocate_internal(void* ptr)
+void
+platform_deallocate_internal(void* ptr)
 {
     mlt_assert(ptr);
     u8* begin = (u8*)ptr - sizeof(UnixMemoryHeader);
@@ -110,7 +114,8 @@ void platform_deallocate_internal(void* ptr)
 }
 
 // TODO: haven't checked if platform_cursor_hide or platform_cursor_show work.
-void platform_cursor_hide()
+void
+platform_cursor_hide()
 {
     int lvl = SDL_ShowCursor(-1);
     if ( lvl >= 0 )
@@ -124,7 +129,8 @@ void platform_cursor_hide()
     }
 }
 
-void platform_cursor_show()
+void
+platform_cursor_show()
 {
     int lvl = SDL_ShowCursor(-1);
     if ( lvl < 0 )
@@ -134,7 +140,8 @@ void platform_cursor_show()
     }
 }
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
 #ifdef __linux__
     gtk_init(&argc, &argv);

@@ -9,7 +9,8 @@ uniform sampler2D u_canvas;
 uniform vec2      u_screen_size;
 out vec4 out_color;
 
-void main()
+void
+main()
 {
     vec2 coord = gl_FragCoord.xy / u_screen_size;
 #if HAS_MULTISAMPLE

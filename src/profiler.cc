@@ -2,7 +2,8 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-void profiler_reset()
+void
+profiler_reset()
 {
 #if defined(PROFILER_IMPLEMENTATION)
     for ( i32 i = 0; i < PROF_COUNT; ++i ) {
@@ -12,7 +13,8 @@ void profiler_reset()
 }
 
 
-void profiler_init()
+void
+profiler_init()
 {
 #if defined(PROFILER_IMPLEMENTATION)
     for( i64 i=0; i<PROF_COUNT; ++i ) {
@@ -23,7 +25,8 @@ void profiler_init()
 #endif
 }
 
-void profiler_output()
+void
+profiler_output()
 {
 #if defined(PROFILER_IMPLEMENTATION) && MILTON_ENABLE_RASTER_PROFILING
     milton_log("===== Rasterizer profiler output ==========\n");

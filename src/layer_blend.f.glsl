@@ -9,7 +9,8 @@ uniform vec2      u_screen_size;
 
 out vec4 out_color;
 
-void main()
+void
+main()
 {
     vec4 g_eraser_magic = vec4(0,1,0,1);
 

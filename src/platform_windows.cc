@@ -81,7 +81,8 @@ HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt H
 static FILE* g_win32_logfile;
 static i32 g_cursor_count = 0;
 
-int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
+int
+_path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
 {
     va_list args;
     mlt_assert (format != NULL);
@@ -98,13 +99,15 @@ int _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...
 
 }
 
-FILE* platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
+FILE*
+platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
 {
     FILE* fd = _wfopen(fname, mode);
     return fd;
 }
 
-void* platform_allocate_bounded_memory(size_t size)
+void*
+platform_allocate_bounded_memory(size_t size)
 {
 #if MILTON_DEBUG
     static b32 once_check = false;
@@ -120,12 +123,14 @@ void* platform_allocate_bounded_memory(size_t size)
 
 }
 
-void platform_deallocate_internal(void* pointer)
+void
+platform_deallocate_internal(void* pointer)
 {
     VirtualFree(pointer, 0, MEM_RELEASE);
 }
 
-void win32_debug_output(char* str)
+void
+win32_debug_output(char* str)
 {
     if (g_win32_logfile)
     {
@@ -133,7 +138,8 @@ void win32_debug_output(char* str)
     }
 }
 
-void win32_log(char *format, ...)
+void
+win32_log(char *format, ...)
 {
     char message[ 4096 ];
 
@@ -158,14 +164,16 @@ void win32_log(char *format, ...)
     va_end( args );
 }
 
-void milton_fatal(char* message)
+void
+milton_fatal(char* message)
 {
     milton_log("*** [FATAL] ***: \n\t");
     milton_log(message);
     exit(EXIT_FAILURE);
 }
 
-void milton_die_gracefully(char* message)
+void
+milton_die_gracefully(char* message)
 {
     platform_dialog(message, "Fatal Error");
     mlt_assert(!"break here");
@@ -181,7 +189,8 @@ static PATH_CHAR* win32_filter_strings_milton =
     L"MLT file\0" L"*.mlt\0"
     L"\0";
 
-void win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)
+void
+win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)
 {
 #pragma warning(push)
 #pragma warning(disable:4061)
@@ -201,7 +210,8 @@ void win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)
 #pragma warning(pop)
 }
 
-PATH_CHAR* platform_save_dialog(FileKind kind)
+PATH_CHAR*
+platform_save_dialog(FileKind kind)
 {
     platform_cursor_show();
     PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR));
@@ -233,7 +243,8 @@ PATH_CHAR* platform_save_dialog(FileKind kind)
     return save_filename;
 }
 
-PATH_CHAR* platform_open_dialog(FileKind kind)
+PATH_CHAR*
+platform_open_dialog(FileKind kind)
 {
     platform_cursor_show();
     OPENFILENAMEW ofn = {0};
@@ -255,7 +266,8 @@ PATH_CHAR* platform_open_dialog(FileKind kind)
     return fname;
 }
 
-b32 platform_dialog_yesno(char* info, char* title)
+b32
+platform_dialog_yesno(char* info, char* title)
 {
     platform_cursor_show();
     i32 yes = MessageBoxA(NULL, //_In_opt_ HWND    hWnd,
@@ -266,7 +278,8 @@ b32 platform_dialog_yesno(char* info, char* title)
     return yes == IDYES;
 }
 
-void platform_dialog(char* info, char* title)
+void
+platform_dialog(char* info, char* title)
 {
     platform_cursor_show();
     MessageBoxA( NULL, //_In_opt_ HWND    hWnd,
@@ -276,7 +289,8 @@ void platform_dialog(char* info, char* title)
                );
 }
 
-void platform_fname_at_exe(PATH_CHAR* fname, size_t len)
+void
+platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 {
     PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len);  // store the fname here
     PATH_STRCPY(tmp, fname);
@@ -304,7 +318,8 @@ void platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 
 }
 
-b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
+b32
+platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
 {
     b32 ok = true;
     PATH_CHAR* full = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*full));
@@ -324,7 +339,8 @@ b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
     return ok;
 }
 
-void win32_print_error(int err)
+void
+win32_print_error(int err)
 {
 #pragma warning (push,0)
     LPTSTR error_text = NULL;
@@ -352,7 +368,8 @@ void win32_print_error(int err)
 #pragma warning (pop)
 }
 
-b32 platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
+b32
+platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 {
     b32 ok = MoveFileExW(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED);
     //b32 ok = MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH);
@@ -369,7 +386,8 @@ b32 platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
     return ok;
 }
 
-void platform_fname_at_config(PATH_CHAR* fname, size_t len)
+void
+platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
     //PATH_CHAR* base = SDL_GetPrefPath("MiltonPaint", "data");
     WCHAR path[MAX_PATH];
@@ -421,7 +439,8 @@ void platform_fname_at_config(PATH_CHAR* fname, size_t len)
 }
 
 // Delete old milton_tmp files from previous milton versions.
-void win32_cleanup_appdata()
+void
+win32_cleanup_appdata()
 {
     PATH_CHAR fname[MAX_PATH] = {};
     platform_fname_at_config(fname, MAX_PATH);
@@ -452,13 +471,14 @@ void win32_cleanup_appdata()
     }
 }
 
-
-void platform_open_link(char* link)
+void
+platform_open_link(char* link)
 {
     ShellExecute(NULL, "open", link, NULL, NULL, SW_SHOWNORMAL);
 }
 
-WallTime platform_get_walltime()
+WallTime
+platform_get_walltime()
 {
     WallTime wt = {0};
     {
@@ -472,7 +492,8 @@ WallTime platform_get_walltime()
     return wt;
 }
 
-u64 perf_counter()
+u64
+perf_counter()
 {
     u64 time = 0;
     LARGE_INTEGER li = {0};
@@ -484,7 +505,8 @@ u64 perf_counter()
     return time;
 }
 
-float perf_count_to_sec(u64 counter)
+float
+perf_count_to_sec(u64 counter)
 {
     LARGE_INTEGER freq;
     QueryPerformanceFrequency(&freq);
@@ -492,7 +514,8 @@ float perf_count_to_sec(u64 counter)
     return sec;
 }
 
-void platform_cursor_hide()
+void
+platform_cursor_hide()
 {
     while ( g_cursor_count >= 0 ) {
         ShowCursor(FALSE);
@@ -500,7 +523,8 @@ void platform_cursor_hide()
     }
 }
 
-void platform_cursor_show()
+void
+platform_cursor_show()
 {
     while ( g_cursor_count < 0 ) {
         ShowCursor(TRUE);
@@ -508,12 +532,11 @@ void platform_cursor_show()
     }
 }
 
-int CALLBACK WinMain(
-        HINSTANCE hInstance,
-        HINSTANCE hPrevInstance,
-        LPSTR lpCmdLine,
-        int nCmdShow
-        )
+int
+CALLBACK WinMain(HINSTANCE hInstance,
+                 HINSTANCE hPrevInstance,
+                 LPSTR lpCmdLine,
+                 int nCmdShow)
 {
     win32_cleanup_appdata();
     PATH_CHAR path[MAX_PATH] = TO_PATH_STR("milton.log");

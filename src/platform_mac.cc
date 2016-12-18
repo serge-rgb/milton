@@ -4,23 +4,27 @@
 #include <errno.h>
 
 // IMPLEMENT ====
-float perf_count_to_sec(u64 counter)
+float
+perf_count_to_sec(u64 counter)
 {
     IMPL_MISSING;
     return 0.0;
 }
-u64 perf_counter()
+u64
+perf_counter()
 {
     IMPL_MISSING;
     return 0;
 }
-void*   platform_allocate_bounded_memory(size_t size)
+void*
+platform_allocate_bounded_memory(size_t size)
 {
     // TODO: Syscall
     return calloc(size, 1);
 }
 
-b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
+b32
+platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
 {
     char fname_at_config[MAX_PATH];
     strncpy(fname_at_config, fname, MAX_PATH);
@@ -41,18 +45,22 @@ b32 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
     return result;
 }
 
-void platform_dialog(char* info, char* title)
+void
+platform_dialog(char* info, char* title)
 {
     IMPL_MISSING;
     return;
 }
-b32 platform_dialog_yesno(char* info, char* title)
+
+b32
+platform_dialog_yesno(char* info, char* title)
 {
     IMPL_MISSING;
     return false;
 }
 
-void platform_fname_at_config(PATH_CHAR* fname, size_t len)
+void
+platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
     char* string_copy = (char*)mlt_calloc(1, len);
     if (string_copy)
@@ -63,7 +71,8 @@ void platform_fname_at_config(PATH_CHAR* fname, size_t len)
     }
 }
 
-void platform_fname_at_exe(PATH_CHAR* fname, size_t len)
+void
+platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 {
     u32 bufsize = (u32)len;
     char buffer[MAX_PATH] = {0};
@@ -87,36 +96,42 @@ void platform_fname_at_exe(PATH_CHAR* fname, size_t len)
     return;
 }
 
-FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
+FILE*
+platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
 {
     FILE* fd = fopen_unix(fname, mode);
     return fd;
 }
 
-b32 platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
+b32
+platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 {
     int res = rename(src, dest);
 
     return res == 0;
 }
 
-PATH_CHAR* platform_open_dialog(FileKind kind)
+PATH_CHAR*
+platform_open_dialog(FileKind kind)
 {
     IMPL_MISSING;
     return NULL;
 }
-void platform_open_link(char* link)
+void
+platform_open_link(char* link)
 {
     return;
 }
-PATH_CHAR* platform_save_dialog(FileKind kind)
+PATH_CHAR*
+platform_save_dialog(FileKind kind)
 {
     IMPL_MISSING;
     return NULL;
 }
 //  ====
 
-WallTime platform_get_walltime()
+WallTime
+platform_get_walltime()
 {
     WallTime wt = {0};
     IMPL_MISSING;

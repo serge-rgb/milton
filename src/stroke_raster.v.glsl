@@ -14,7 +14,8 @@ out vec3 v_pointb;
 #define MAX_DEPTH_VALUE 1048576.0
 
 
-void main()
+void
+main()
 {
     v_pointa = a_pointa;
     v_pointb = a_pointb;

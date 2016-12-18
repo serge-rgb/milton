@@ -3,7 +3,8 @@
 
 
 
-static void cursor_set_and_show(SDL_Cursor* cursor)
+static void
+cursor_set_and_show(SDL_Cursor* cursor)
 {
     static SDL_Cursor* curr_cursor = NULL;
     if ( curr_cursor != cursor ) {
@@ -13,7 +14,8 @@ static void cursor_set_and_show(SDL_Cursor* cursor)
     }
 }
 
-LayoutType get_current_keyboard_layout()
+LayoutType
+get_current_keyboard_layout()
 {
     LayoutType layout = LayoutType_QWERTY;  // Default to QWERTY bindings.
 
@@ -43,7 +45,8 @@ LayoutType get_current_keyboard_layout()
     return layout;
 }
 
-void panning_update(PlatformState* platform_state)
+void
+panning_update(PlatformState* platform_state)
 {
     auto reset_pan_start = [platform_state]() {
         platform_state->pan_start = platform_state->pointer;
@@ -80,7 +83,8 @@ void panning_update(PlatformState* platform_state)
     }
 }
 
-MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
+MiltonInput
+sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 {
     MiltonInput milton_input = {};
 
@@ -481,7 +485,8 @@ MiltonInput sdl_event_loop(MiltonState* milton_state, PlatformState* platform_st
 
 // ---- milton_main
 
-int milton_main()
+int
+milton_main()
 {
     // TODO: windows scaling support
 #if defined(_WIN32)

@@ -7,7 +7,8 @@ uniform vec4 u_color;
 
 out vec4 out_color;
 
-void main()
+void
+main()
 {
     float r = length(v_sizes);
 

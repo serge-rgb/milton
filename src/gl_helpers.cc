@@ -2,7 +2,8 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-void gl_log(char* str)
+void
+gl_log(char* str)
 {
 #ifdef _WIN32
     OutputDebugStringA(str);
@@ -11,7 +12,8 @@ void gl_log(char* str)
 #endif
 }
 
-GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
+GLuint
+gl_compile_shader(const char* in_src, GLuint type, char* config)
 {
     const char* sources[] = {"#version 330 \n", config, in_src};
 
@@ -59,7 +61,8 @@ GLuint gl_compile_shader(const char* in_src, GLuint type, char* config)
 #define glUseProgramObjectARB glUseProgram
 #endif
 
-void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
+void
+gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
 {
     mlt_assert(glIsProgram (obj));
     for ( int i = 0; i < num_shaders; ++i ) {
@@ -95,7 +98,8 @@ void gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
 #undef glUseProgramObjectARB
 #endif
 
-void gl_query_error(const char* expr, const char* file, int line)
+void
+gl_query_error(const char* expr, const char* file, int line)
 {
     GLenum err = glGetError();
     const char* str = "";
@@ -149,7 +153,8 @@ void gl_query_error(const char* expr, const char* file, int line)
 }
 
 
-bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
+bool
+gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
 {
     bool ok = true;
     GLint loc = glGetAttribLocation(program, name);
@@ -161,7 +166,8 @@ bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t dat
     return ok;
 }
 
-bool gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
+bool
+gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -174,7 +180,8 @@ bool gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
     return ok;
 }
 
-bool gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
+bool
+gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -187,7 +194,8 @@ bool gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
     return ok;
 }
 
-bool gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
+bool
+gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -200,7 +208,8 @@ bool gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
     return ok;
 }
 
-bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
+bool
+gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -212,7 +221,8 @@ bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
     return ok;
 }
 
-bool gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
+bool
+gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
 {
     glUseProgram(program);
     bool ok = true;
@@ -224,7 +234,8 @@ bool gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
     return ok;
 }
 
-bool gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
+bool
+gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -236,7 +247,8 @@ bool gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
     return ok;
 }
 
-bool gl_set_uniform_f(GLuint program, char* name, float val)
+bool
+gl_set_uniform_f(GLuint program, char* name, float val)
 {
     glUseProgram(program);
     bool ok = true;
@@ -248,7 +260,8 @@ bool gl_set_uniform_f(GLuint program, char* name, float val)
     return ok;
 }
 
-bool gl_set_uniform_i(GLuint program, char* name, i32 val)
+bool
+gl_set_uniform_i(GLuint program, char* name, i32 val)
 {
     glUseProgram(program);
     bool ok = true;
@@ -260,7 +273,8 @@ bool gl_set_uniform_i(GLuint program, char* name, i32 val)
     return ok;
 }
 
-bool gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
+bool
+gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
 {
     glUseProgram(program);
     bool ok = true;

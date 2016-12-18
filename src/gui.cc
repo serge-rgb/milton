@@ -5,7 +5,8 @@
 #define NUM_BUTTONS 5
 #define BOUNDS_RADIUS_PX 100
 
-static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
+static void
+milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
@@ -673,7 +674,8 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
     ImGui::PopStyleColor(color_stack);
 }
 
-static Rect color_button_as_rect(const ColorButton* button)
+static Rect
+color_button_as_rect(const ColorButton* button)
 {
     Rect rect = {0};
     rect.left = button->x;
@@ -683,7 +685,8 @@ static Rect color_button_as_rect(const ColorButton* button)
     return rect;
 }
 
-static void picker_update_points(ColorPicker* picker, float angle)
+static void
+picker_update_points(ColorPicker* picker, float angle)
 {
     picker->data.hsv.h = radians_to_degrees(angle);
     // Update the triangle
@@ -707,29 +710,34 @@ static void picker_update_points(ColorPicker* picker, float angle)
 }
 
 
-static void picker_update_wheel(ColorPicker* picker, v2f polar_point)
+static void
+picker_update_wheel(ColorPicker* picker, v2f polar_point)
 {
     float angle = picker_wheel_get_angle(picker, polar_point);
     picker_update_points(picker, angle);
 }
 
-static b32 picker_hits_triangle(ColorPicker* picker, v2f fpoint)
+static b32
+picker_hits_triangle(ColorPicker* picker, v2f fpoint)
 {
     b32 result = is_inside_triangle(fpoint, picker->data.a, picker->data.b, picker->data.c);
     return result;
 }
 
-static void picker_deactivate(ColorPicker* picker)
+static void
+picker_deactivate(ColorPicker* picker)
 {
     picker->flags = ColorPickerFlags_NOTHING;
 }
 
-static b32 is_inside_picker_rect(ColorPicker* picker, v2i point)
+static b32
+is_inside_picker_rect(ColorPicker* picker, v2i point)
 {
     return is_inside_rect(picker->bounds, point);
 }
 
-static Rect picker_color_buttons_bounds(const ColorPicker* picker)
+static Rect
+picker_color_buttons_bounds(const ColorPicker* picker)
 {
     Rect bounds = {0};
     bounds.right = INT_MIN;
@@ -744,14 +752,16 @@ static Rect picker_color_buttons_bounds(const ColorPicker* picker)
     return bounds;
 }
 
-static b32 is_inside_picker_button_area(ColorPicker* picker, v2i point)
+static b32
+is_inside_picker_button_area(ColorPicker* picker, v2i point)
 {
     Rect button_rect = picker_color_buttons_bounds(picker);
     b32 is_inside = is_inside_rect(button_rect, point);
     return is_inside;
 }
 
-static b32 gui_point_hovers(MiltonGui* gui, v2i point)
+static b32
+gui_point_hovers(MiltonGui* gui, v2i point)
 {
     b32 hovers = gui->visible &&
                     (is_inside_picker_rect(&gui->picker, point) ||
@@ -759,7 +769,8 @@ static b32 gui_point_hovers(MiltonGui* gui, v2i point)
     return hovers;
 }
 
-static void picker_from_rgb(ColorPicker* picker, v3f rgb)
+static void
+picker_from_rgb(ColorPicker* picker, v3f rgb)
 {
     v3f hsv = rgb_to_hsv(rgb);
     picker->data.hsv = hsv;
@@ -767,7 +778,8 @@ static void picker_from_rgb(ColorPicker* picker, v3f rgb)
     picker_update_points(picker, angle);
 }
 
-static void update_button_bounds(ColorPicker* picker)
+static void
+update_button_bounds(ColorPicker* picker)
 {
     i32 bounds_radius_px = BOUNDS_RADIUS_PX;
 
@@ -789,7 +801,8 @@ static void update_button_bounds(ColorPicker* picker)
     }
 }
 
-static b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
+static b32
+picker_hit_history_buttons(ColorPicker* picker, v2i point)
 {
     b32 hits = false;
     ColorButton* first = picker->color_buttons;
@@ -819,7 +832,8 @@ static b32 picker_hit_history_buttons(ColorPicker* picker, v2i point)
     return hits;
 }
 
-static ColorPickResult picker_update(ColorPicker* picker, v2i point)
+static ColorPickResult
+picker_update(ColorPicker* picker, v2i point)
 {
     ColorPickResult result = ColorPickResult_NOTHING;
     v2f fpoint = v2i_to_v2f(point);
@@ -907,7 +921,8 @@ static ColorPickResult picker_update(ColorPicker* picker, v2i point)
 }
 
 
-b32 picker_hits_wheel(ColorPicker* picker, v2f point)
+b32
+picker_hits_wheel(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
     v2f arrow = sub2f(point, center);
@@ -919,14 +934,16 @@ b32 picker_hits_wheel(ColorPicker* picker, v2f point)
     return hits;
 }
 
-float picker_wheel_get_angle(ColorPicker* picker, v2f point)
+float
+picker_wheel_get_angle(ColorPicker* picker, v2f point)
 {
     v2f direction = sub2f(point, v2i_to_v2f(picker->center));
     f32 angle = atan2f(direction.y, -direction.x) + kPi;
     return angle;
 }
 
-void picker_init(ColorPicker* picker)
+void
+picker_init(ColorPicker* picker)
 {
     v2f fpoint = {
         (f32)picker->center.x + (int)(picker->wheel_radius),
@@ -936,7 +953,8 @@ void picker_init(ColorPicker* picker)
     picker->data.hsv = v3f{ 0, 1, 1 };
 }
 
-Rect picker_get_bounds(ColorPicker* picker)
+Rect
+picker_get_bounds(ColorPicker* picker)
 {
     Rect picker_rect;
     {
@@ -951,7 +969,8 @@ Rect picker_get_bounds(ColorPicker* picker)
     return picker_rect;
 }
 
-void eyedropper_input(MiltonGui* gui, u32* buffer, i32 w, i32 h, v2i point)
+void
+eyedropper_input(MiltonGui* gui, u32* buffer, i32 w, i32 h, v2i point)
 {
     if ( point.y > 0 && point.y <= h && point.x > 0 && point.x <= w ) {
         v4f color = color_u32_to_v4f(buffer[point.y * w + point.x]);
@@ -959,13 +978,15 @@ void eyedropper_input(MiltonGui* gui, u32* buffer, i32 w, i32 h, v2i point)
     }
 }
 
-void exporter_init(Exporter* exporter)
+void
+exporter_init(Exporter* exporter)
 {
     *exporter = Exporter{};
     exporter->scale = 1;
 }
 
-b32 exporter_input(Exporter* exporter, MiltonInput* input)
+b32
+exporter_input(Exporter* exporter, MiltonInput* input)
 {
     b32 changed = false;
     if ( input->input_count > 0 ) {
@@ -988,25 +1009,29 @@ b32 exporter_input(Exporter* exporter, MiltonInput* input)
     return changed;
 }
 
-void gui_imgui_set_ungrabbed(MiltonGui* gui)
+void
+gui_imgui_set_ungrabbed(MiltonGui* gui)
 {
     gui->flags &= ~MiltonGuiFlags_SHOWING_PREVIEW;
 }
 
-Rect get_bounds_for_picker_and_colors(ColorPicker* picker)
+Rect
+get_bounds_for_picker_and_colors(ColorPicker* picker)
 {
     Rect result = rect_union(picker_get_bounds(picker), picker_color_buttons_bounds(picker));
     return result;
 }
 
-static b32 picker_is_active(ColorPicker* picker)
+static b32
+picker_is_active(ColorPicker* picker)
 {
     b32 active = (picker->flags & ColorPickerFlags_TRIANGLE_ACTIVE) ||
             (picker->flags & ColorPickerFlags_WHEEL_ACTIVE);
     return active;
 }
 
-v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
+v3f
+picker_hsv_from_point(ColorPicker* picker, v2f point)
 {
     float area = orientation(picker->data.a, picker->data.b, picker->data.c);
     v3f hsv = {0};
@@ -1025,14 +1050,16 @@ v3f picker_hsv_from_point(ColorPicker* picker, v2f point)
     return hsv;
 }
 
-v3f gui_get_picker_rgb(MiltonGui* gui)
+v3f
+gui_get_picker_rgb(MiltonGui* gui)
 {
     v3f rgb = hsv_to_rgb(gui->picker.data.hsv);
     return rgb;
 }
 
 // Returns true if the Picker consumed input. False if the GUI wasn't affected
-b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
+b32
+gui_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     b32 accepts = false;
     v2i point = input->points[0];
@@ -1055,19 +1082,22 @@ b32 gui_consume_input(MiltonGui* gui, MiltonInput* input)
     return accepts;
 }
 
-void gui_toggle_visibility(MiltonState* milton_state)
+void
+gui_toggle_visibility(MiltonState* milton_state)
 {
     MiltonGui* gui = milton_state->gui;
     gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
     gui->visible = !gui->visible;
 }
 
-void gui_toggle_help(MiltonGui* gui)
+void
+gui_toggle_help(MiltonGui* gui)
 {
     gui->show_help_widget = !gui->show_help_widget;
 }
 
-void gui_init(Arena* root_arena, MiltonGui* gui)
+void
+gui_init(Arena* root_arena, MiltonGui* gui)
 {
     i32 bounds_radius_px = BOUNDS_RADIUS_PX;
     f32 wheel_half_width = 12;
@@ -1104,7 +1134,8 @@ void gui_init(Arena* root_arena, MiltonGui* gui)
 
 // When a selected color is used in a stroke, call this to update the color
 // button list.
-b32 gui_mark_color_used(MiltonGui* gui)
+b32
+gui_mark_color_used(MiltonGui* gui)
 {
     b32 changed = false;
     ColorButton* start = gui->picker.color_buttons;
@@ -1148,7 +1179,8 @@ b32 gui_mark_color_used(MiltonGui* gui)
     return changed;
 }
 
-void gui_deactivate(MiltonGui* gui)
+void
+gui_deactivate(MiltonGui* gui)
 {
     picker_deactivate(&gui->picker);
 
