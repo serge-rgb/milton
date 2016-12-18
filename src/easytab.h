@@ -658,13 +658,14 @@ typedef struct
     WTMGRCLOSE        WTMgrClose;
     WTMGRDEFCONTEXT   WTMgrDefContext;
     WTMGRDEFCONTEXTEX WTMgrDefContextEx;
-#endif // WIN32
 
     // The output region can be configured by the user.
     LONG    ScreenOriginX;
     LONG    ScreenOriginY;
     float   ScreenAreaRatioX;
     float   ScreenAreaRatioY;
+
+#endif // WIN32
 } EasyTabInfo;
 
 extern EasyTabInfo* EasyTab;
@@ -792,7 +793,7 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
     else                      { return EASYTAB_X11_ERROR; }
 }
 
-#if MILTON_EASYTAB
+#ifdef MILTON_EASYTAB
 EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 {
     EasyTab->NumPackets = 0;

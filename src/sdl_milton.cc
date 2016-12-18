@@ -539,15 +539,15 @@ int milton_main()
                                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
     if ( !window ) {
-        milton_log("[ERROR] -- Exiting. SDL could not create window\n");
-        exit(EXIT_FAILURE);
+        milton_log("SDL Error: %s\n", SDL_GetError());
+        milton_die_gracefully("SDL could not create window\n");
     }
 
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
     if ( !gl_context ) {
         milton_fatal("Could not create OpenGL context\n");
-    }
+    }    
 
     SDL_GL_SetSwapInterval(0);
 
@@ -555,8 +555,9 @@ int milton_main()
     int actual_minor = 0;
     glGetIntegerv(GL_MAJOR_VERSION, &actual_major);
     glGetIntegerv(GL_MINOR_VERSION, &actual_minor);
-    if ( actual_major < gl_version_major
-         || (actual_major == gl_version_major && actual_minor < gl_version_minor) ) {
+    if ( !(actual_major == 0 && actual_minor == 0)
+         && (actual_major < gl_version_major
+             || (actual_major == gl_version_major && actual_minor < gl_version_minor)) ) {
         milton_die_gracefully("This graphics driver does not support OpenGL 2.1+");
     }
     milton_log("Created OpenGL context with version %s\n", glGetString(GL_VERSION));
@@ -991,7 +992,7 @@ int milton_main()
         }
     }
 
-#if defined(_WIN32) || defined(__LINUX__)
+#if defined(_WIN32) 
     EasyTab_Unload();
 #endif
 
