@@ -346,6 +346,13 @@ typedef enum
         FIX32   axResolution;
     } AXIS, *PAXIS, NEAR *NPAXIS, FAR *LPAXIS;
 
+    typedef struct tagORIENTATION {
+        int   orAzimuth;
+        int   orAltitude;
+        int   orTwist;
+
+    } ORIENTATION;
+
     #define LCNAMELEN 40
     typedef struct tagLOGCONTEXTA {
         char    lcName[LCNAMELEN];
@@ -394,7 +401,7 @@ typedef enum
 #endif // wintab.h
 // -----------------------------------------------------------------------------
 
-#define PACKETDATA PK_X | PK_Y | PK_BUTTONS | PK_NORMAL_PRESSURE
+#define PACKETDATA PK_X | PK_Y | PK_BUTTONS | PK_NORMAL_PRESSURE | PK_ORIENTATION
 #define PACKETMODE 0
 
 // -----------------------------------------------------------------------------
@@ -586,6 +593,15 @@ enum EasyTab_Buttons_
     EasyTab_Buttons_Pen_Upper = 1 << 2, // Upper pen button is pressed
 };
 
+
+// Spherical coordinate system used by Wintab to store the orientation of the pen.
+typedef struct
+{
+    int32_t Azimuth;
+    int32_t Altitude;
+    int32_t Twist;
+} EasyTab_Orientation;
+
 // -----------------------------------------------------------------------------
 // Structs
 // -----------------------------------------------------------------------------
@@ -603,9 +619,10 @@ typedef struct
 #endif
     int32_t Buttons; // Bit field. Use with the EasyTab_Buttons_ enum.
 
-
     int32_t RangeX, RangeY;
     int32_t MaxPressure;
+
+    EasyTab_Orientation Orientation;
 
 #ifdef __linux__
     XDevice* Device;
@@ -1011,7 +1028,6 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
 
 #undef GETPROCADDRESS
 
-
 #ifdef MILTON_EASYTAB
 EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPARAM WParam)
 {
@@ -1040,6 +1056,11 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
             // Setting the Buttons variable if any of the packets had a button pushed
             EasyTab->Buttons |= PacketBuffer[i].pkButtons;
         }
+
+        // Fill the orientation of the last packet in the buffer.
+        EasyTab->Orientation.Azimuth = PacketBuffer[NumPackets - 1].pkOrientation.orAzimuth;
+        EasyTab->Orientation.Altitude = PacketBuffer[NumPackets - 1].pkOrientation.orAltitude;
+        EasyTab->Orientation.Twist = PacketBuffer[NumPackets - 1].pkOrientation.orTwist;
         EasyTab->NumPackets = NumPackets;
 
         result = EASYTAB_OK;
@@ -1059,6 +1080,8 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE+1, NULL);
         result = EASYTAB_OK;
     }
+
+
 
     return result;
 }

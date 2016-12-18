@@ -826,6 +826,20 @@ int milton_main()
 
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
 
+        // Handle pen orientation to switch to eraser or pen.
+        if ( EasyTab->PenInProximity ) {
+            if ( EasyTab->Orientation.Altitude < 0
+                  && milton_state->current_mode == MiltonMode_PEN ) {
+                milton_input.flags |= MiltonInputFlags_CHANGE_MODE;
+                milton_input.mode_to_set = MiltonMode_ERASER;
+            }
+            else if ( EasyTab->Orientation.Altitude > 0
+                      && milton_state->current_mode == MiltonMode_ERASER ) {
+                milton_input.flags |= MiltonInputFlags_CHANGE_MODE;
+                milton_input.mode_to_set = MiltonMode_PEN;
+            }
+        }
+
         panning_update(&platform_state);
 
         if ( !platform_state.is_panning ) {
