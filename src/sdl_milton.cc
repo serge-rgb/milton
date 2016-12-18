@@ -547,7 +547,7 @@ int milton_main()
 
     if ( !gl_context ) {
         milton_fatal("Could not create OpenGL context\n");
-    }    
+    }
 
     SDL_GL_SetSwapInterval(0);
 
@@ -828,7 +828,7 @@ int milton_main()
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
 
         // Handle pen orientation to switch to eraser or pen.
-        if ( EasyTab->PenInProximity ) {
+        if ( EasyTab!=NULL && EasyTab->PenInProximity ) {
             if ( EasyTab->Orientation.Altitude < 0
                   && milton_state->current_mode == MiltonMode_PEN ) {
                 milton_input.flags |= MiltonInputFlags_CHANGE_MODE;
@@ -992,7 +992,7 @@ int milton_main()
         }
     }
 
-#if defined(_WIN32) 
+#if defined(_WIN32)
     EasyTab_Unload();
 #endif
 

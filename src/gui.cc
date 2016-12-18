@@ -36,8 +36,7 @@ static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,
     char* default_will_be_lost = "The default canvas will be cleared. Save it?";
     if ( ImGui::BeginMainMenuBar() ) {
         if ( ImGui::BeginMenu(LOC(file)) ) {
-            if (ImGui::MenuItem(LOC(new_milton_canvas)))
-            {
+            if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
                 b32 save_file = false;
                 if ( count_strokes(milton_state->root_layer) > 0 ) {
                     if ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) {

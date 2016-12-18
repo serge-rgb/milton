@@ -1,7 +1,6 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-#pragma once
 
 #define MILTON_MAJOR_VERSION 1
 #define MILTON_MINOR_VERSION 2
