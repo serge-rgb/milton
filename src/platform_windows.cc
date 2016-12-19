@@ -156,9 +156,9 @@ win32_log(char *format, ...)
     if ( num_bytes_written > 0 ) {
         #if WIN32_DEBUGGER_OUTPUT
         OutputDebugStringA(message);
-        #else
-        win32_debug_output(message);
         #endif
+
+        win32_debug_output(message);
     }
 
     va_end( args );
@@ -176,7 +176,6 @@ void
 milton_die_gracefully(char* message)
 {
     platform_dialog(message, "Fatal Error");
-    mlt_assert(!"break here");
     exit(EXIT_FAILURE);
 }
 

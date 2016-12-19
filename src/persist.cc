@@ -10,10 +10,8 @@
 static void milton_validate(MiltonState* milton_state);
 static void milton_save_postlude(MiltonState* milton_state);
 
-
 // Forward decl.
-static b32
-fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
+static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
 
 // Will allocate memory so that if the read fails, we will restore what was
 // originally in there.
@@ -219,10 +217,9 @@ milton_load(MiltonState* milton_state)
 
             if (ok) { ok = fread_checked(&button_count, sizeof(i32), 1, fd); }
             if ( ok ) {
-                for (i32 i = 0;
-                     btn!=NULL && i < button_count;
-                     ++i, btn=btn->next)
-                {
+                for ( i32 i = 0;
+                      btn!=NULL && i < button_count;
+                      ++i, btn=btn->next ) {
                     fread_checked(&btn->rgba, sizeof(v4f), 1, fd);
                 }
             }

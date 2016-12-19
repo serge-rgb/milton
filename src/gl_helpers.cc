@@ -32,7 +32,7 @@ gl_compile_shader(const char* in_src, GLuint type, char* config)
         if ( !res ) {
             milton_log("SHADER SOURCE:\n%s\n", sources[2]);
         }
-        char* log = (char*)malloc((size_t)length);
+        char* log = (char*)mlt_calloc(1, (size_t)length);
         GLsizei written_len;
         // GLCHK ( glGetShaderInfoLog(obj, length, &written_len, log) );
         GLCHK ( glGetShaderInfoLog (obj, length, &written_len, log) );
@@ -80,7 +80,7 @@ gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
         GLint len;
         glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &len);
         GLsizei written_len;
-        char* log = (char*)malloc((size_t)len);
+        char* log = (char*)mlt_calloc(1, (size_t)len);
         glGetProgramInfoLog(obj, (GLsizei)len, &written_len, log);
         //glGetInfoLog(obj, (GLsizei)len, &written_len, log);
         gl_log(log);

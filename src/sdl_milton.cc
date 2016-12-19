@@ -488,21 +488,20 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 int
 milton_main()
 {
-    // TODO: windows scaling support
-#if defined(_WIN32)
-    // This function is only present in Windows versions higher than Vista.
-    if ( !SetProcessDPIAware() ) {
-        milton_log("Could not set this process as DPI aware.\n");
-    }
-#endif
+    milton_log("Running Milton\n");
+    // TODO: Set Milton to be DPI aware.
+
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
+    milton_log("Initializing SDL... ");
     SDL_Init(SDL_INIT_VIDEO);
+    milton_log("Done.\n");
 
     PlatformState platform_state = {};
 
     PlatformPrefs prefs = {};
 
+    milton_log("Loading preferences... ");
     milton_prefs_load(&prefs);
 
     if ( prefs.width == 0 || prefs.height == 0 ) {
@@ -513,6 +512,7 @@ milton_main()
         platform_state.width = prefs.width;
         platform_state.height = prefs.height;
     }
+    milton_log("Done.\n");
 
     platform_state.keyboard_layout = get_current_keyboard_layout();
 
@@ -538,6 +538,7 @@ milton_main()
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
     #endif
 
+    milton_log("Creating Milton Window\n");
     SDL_Window* window = SDL_CreateWindow("Milton",
                                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                           platform_state.width, platform_state.height,
@@ -550,8 +551,10 @@ milton_main()
 
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
+    gl_context = NULL;
+
     if ( !gl_context ) {
-        milton_fatal("Could not create OpenGL context\n");
+        milton_die_gracefully("Could not create OpenGL context\n");
     }
 
     SDL_GL_SetSwapInterval(0);
