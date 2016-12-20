@@ -551,8 +551,6 @@ milton_main()
 
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
-    gl_context = NULL;
-
     if ( !gl_context ) {
         milton_die_gracefully("Could not create OpenGL context\n");
     }

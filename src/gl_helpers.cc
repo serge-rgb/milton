@@ -15,7 +15,17 @@ gl_log(char* str)
 GLuint
 gl_compile_shader(const char* in_src, GLuint type, char* config)
 {
-    const char* sources[] = {"#version 330 \n", config, in_src};
+    const char* sources[] = {
+        #if USE_GL_3_2
+        "#version 330 \n",
+        #else
+        "#version 120\n",
+        (type == GL_VERTEX_SHADER) ? "#define in attribute \n#define out varying\n" :
+                                     "#define in varying   \n#define out\n#define out_color gl_FragColor\n",
+        "#define texture texture2D\n",
+        #endif
+        config,
+        in_src};
 
     GLuint obj = glCreateShader(type);
 
