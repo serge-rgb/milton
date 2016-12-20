@@ -157,7 +157,7 @@ gl_load()
     i64 num_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions);
 
-    if ( &glGetStringi ) {
+    if ( num_extensions > 0 ) {
         for ( i64 extension_i = 0; extension_i < num_extensions; ++extension_i ) {
             char* extension_string = (char*)glGetStringi(GL_EXTENSIONS, (GLuint)extension_i);
 
@@ -170,6 +170,37 @@ gl_load()
                 }
             #endif
         }
+    }
+    // glGetStringi probably does not handle GL_EXTENSIONS
+    else if ( num_extensions == 0 ) {
+        const char* extensions = (const char*)glGetString(GL_EXTENSIONS);
+        #define MAX_EXTENSION_LEN 256
+        char ext[MAX_EXTENSION_LEN] = {};
+        const char* begin = extensions;
+        for ( const char* end = extensions;
+              *end != '\0';
+              ++end ) {
+            if ( *end == ' ' ) {
+                size_t len = (size_t)end - (size_t)begin;
+
+                if ( len < MAX_EXTENSION_LEN ) {
+                    memcpy((void*)ext, (void*)begin, len);
+                    ext[len]='\0';
+                    #if MULTISAMPLING_ENABLED
+                        if ( strcmp(ext, "GL_ARB_sample_shading") == 0 ) {
+                            gl_helper_set_flags(GLHelperFlags_SAMPLE_SHADING);
+                        }
+                        if ( strcmp(ext, "GL_ARB_texture_multisample") == 0 ) {
+                            gl_helper_set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
+                        }
+                    #endif
+                    begin = end+1;
+                }
+                else {
+                    milton_log("WARNING: Extension too large (%d)\n", len);
+                }
+            }
+         }
     }
 
 #if defined(_WIN32)
