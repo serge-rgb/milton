@@ -165,7 +165,6 @@ output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
     }
 
     fprintf(of, "char %s[] = \n", varname);
-    fprintf(of, "\"#define HAS_MULTISAMPLE %d\\n\"\n", MULTISAMPLED_TEXTURES );
 
     for ( i64 i = 0; i < prelude_lines_count; ++i ) {
         prelude_lines[i][strlen(prelude_lines[i])-1]='\0';  // Strip newline
@@ -209,7 +208,6 @@ main(int argc, char** argv)
         handle_errno(error);
     }
 }
-
 
 void
 handle_errno(int error)

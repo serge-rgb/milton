@@ -78,7 +78,6 @@ enum RenderDataFlags
 
     RenderDataFlags_GUI_VISIBLE        = 1<<0,
     RenderDataFlags_EXPORTING          = 1<<1,
-    RenderDataFlags_HAS_SAMPLE_SHADING = 1<<2,
 };
 
 enum RenderElementFlags
@@ -296,15 +295,13 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
 
     // TODO: This has a different meaning from "Multisampled Textures"
-    #if MULTISAMPLED_TEXTURES
+    if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glEnable(GL_MULTISAMPLE);
-        // Using the & operator to silence clang warning on OSX.
-        // TODO: Check if this works on Windows.
-        if ( &glMinSampleShadingARB != NULL ) {
+        if ( gl_helper_check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
             glEnable(GL_SAMPLE_SHADING_ARB);
             GLCHK( glMinSampleShadingARB(1.0f) );
         }
-    #endif
+    }
 
     {
         GLfloat viewport_dims[2] = {};
@@ -378,7 +375,7 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
         render_data->vbo_screen_quad = vbo;
 
         GLuint objs[2] = {};
-         objs[0] = gl_compile_shader(g_quad_v, GL_VERTEX_SHADER);
+        objs[0] = gl_compile_shader(g_quad_v, GL_VERTEX_SHADER);
         objs[1] = gl_compile_shader(g_quad_f, GL_FRAGMENT_SHADER);
         render_data->quad_program = glCreateProgram();
         gl_link_program(render_data->quad_program, objs, array_count(objs));
@@ -388,7 +385,7 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
         GLuint objs[2];
 
         char* config_string = "";
-        if ( render_data->flags & RenderDataFlags_HAS_SAMPLE_SHADING ) {
+        if ( gl_helper_check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
             if ( vendor == GLVendor_NVIDIA ) {
                 config_string =
                         "#define HAS_SAMPLE_SHADING 1 \n"
@@ -398,7 +395,6 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
                         "#define HAS_SAMPLE_SHADING 1 \n";
             }
         }
-
 
         objs[0] = gl_compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
         objs[1] = gl_compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string);
@@ -472,75 +468,76 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
     {
         GLCHK (glGenTextures(1, &render_data->layer_texture));
 
-        #if MULTISAMPLED_TEXTURES
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
+        if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
 
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                GL_RGBA,
-                                view->screen_size.w, view->screen_size.h,
-                                GL_TRUE);
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
-        #else
-        glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
-        glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                     /*width, height = */ view->screen_size.w, view->screen_size.h,
-                     /*border = */ 0,
-                     /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                     /*data = */ NULL);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        #endif
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                    GL_RGBA,
+                                    view->screen_size.w, view->screen_size.h,
+                                    GL_TRUE);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+        }
+        else {
+            glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
+            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
+                         /*width, height = */ view->screen_size.w, view->screen_size.h,
+                         /*border = */ 0,
+                         /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
+                         /*data = */ NULL);
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
 
         GLCHK (glGenTextures(1, &render_data->eraser_texture));
-        #if MULTISAMPLED_TEXTURES
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture);
+        if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture);
 
-        GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                       GL_RGBA,
-                                       view->screen_size.w, view->screen_size.h,
-                                       GL_TRUE) );
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+            GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                           GL_RGBA,
+                                           view->screen_size.w, view->screen_size.h,
+                                           GL_TRUE) );
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+        }
+        else {
+            glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
+            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
+                         /*width, height = */ view->screen_size.w, view->screen_size.h,
+                         /*border = */ 0,
+                         /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
+                         /*data = */ NULL);
 
-        #else
-        glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
-        glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                     /*width, height = */ view->screen_size.w, view->screen_size.h,
-                     /*border = */ 0,
-                     /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                     /*data = */ NULL);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-        #endif
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
 
         glGenTextures(1, &render_data->stencil_texture);
 
-        #if MULTISAMPLED_TEXTURES
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture);
+        if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
 
-        GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                       /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
-                                       view->screen_size.w, view->screen_size.h,
-                                       GL_TRUE) );
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture);
+
+            GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                           /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
+                                           view->screen_size.w, view->screen_size.h,
+                                           GL_TRUE) );
 
 
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
-        #else
-        glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
-        GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
-        GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-        GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
-        GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
-        //GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY) );
-        // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-        // GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL) );
-        GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
-                             /*width, height = */ view->screen_size.w, view->screen_size.h,
-                             /*border = */ 0,
-                             /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
-                             /*data = */ NULL) );
-        glBindTexture(GL_TEXTURE_2D, 0);
-        #endif
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+        }
+        else {
+            glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
+            //GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY) );
+            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+            // GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL) );
+            GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
+                                 /*width, height = */ view->screen_size.w, view->screen_size.h,
+                                 /*border = */ 0,
+                                 /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
+                                 /*data = */ NULL) );
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
 
         // Create framebuffer object.
         {
@@ -548,11 +545,12 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
             GLCHK(glGenFramebuffersEXT(1, &fbo));
             GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, fbo));
             GLenum texture_target;
-            #if MULTISAMPLED_TEXTURES
-            texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-            #else
-            texture_target = GL_TEXTURE_2D;
-            #endif
+            if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+                texture_target = GL_TEXTURE_2D_MULTISAMPLE;
+            }
+            else{
+                texture_target = GL_TEXTURE_2D;
+            }
 
             GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                              render_data->layer_texture, 0) );
@@ -578,45 +576,46 @@ gpu_resize(RenderData* render_data, CanvasView* view)
     render_data->width = view->screen_size.w;
     render_data->height = view->screen_size.h;
 
-    #if MULTISAMPLED_TEXTURES
-    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture));
-    GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                   GL_RGBA,
-                                   render_data->width, render_data->height,
-                                   GL_TRUE));
+    if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture));
+        GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                       GL_RGBA,
+                                       render_data->width, render_data->height,
+                                       GL_TRUE));
 
-    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture));
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                            GL_RGBA,
-                            render_data->width, render_data->height,
-                            GL_TRUE);
+        GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture));
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                GL_RGBA,
+                                render_data->width, render_data->height,
+                                GL_TRUE);
 
-    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture));
-    GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                   GL_DEPTH24_STENCIL8,
-                                   render_data->width, render_data->height,
-                                   GL_TRUE) );
-    #else
-    glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
-    glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                 /*width, height = */ render_data->width, render_data->height,
-                 /*border = */ 0,
-                 /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                 /*data = */ NULL);
-    glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
-    glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                 /*width, height = */ render_data->width, render_data->height,
-                 /*border = */ 0,
-                 /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                 /*data = */ NULL);
-    glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
-
-    GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
+        GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture));
+        GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                       GL_DEPTH24_STENCIL8,
+                                       render_data->width, render_data->height,
+                                       GL_TRUE) );
+    }
+    else {
+        glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
+        glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
                      /*width, height = */ render_data->width, render_data->height,
                      /*border = */ 0,
-                     /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
-                     /*data = */ NULL) );
-    #endif
+                     /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
+                     /*data = */ NULL);
+        glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
+        glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
+                     /*width, height = */ render_data->width, render_data->height,
+                     /*border = */ 0,
+                     /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
+                     /*data = */ NULL);
+        glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
+
+        GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
+                         /*width, height = */ render_data->width, render_data->height,
+                         /*border = */ 0,
+                         /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
+                         /*data = */ NULL) );
+    }
 }
 
 void
@@ -1109,21 +1108,22 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_widt
 
     GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo));
 
-    #if MULTISAMPLED_TEXTURES
-    GLCHK(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture));
-    #else
-    glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
-    #endif
+    if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        GLCHK(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture));
+    }
+    else {
+        glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
+    }
 
     glClearColor(render_data->background_color.r, render_data->background_color.g,
                  render_data->background_color.b, 1.0f);
 
     GLenum texture_target;
-    #if MULTISAMPLED_TEXTURES
-    texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-    #else
-    texture_target = GL_TEXTURE_2D;
-    #endif
+    if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        texture_target = GL_TEXTURE_2D_MULTISAMPLE;
+    } else {
+        texture_target = GL_TEXTURE_2D;
+    }
     glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                            render_data->eraser_texture, 0);
 
@@ -1242,11 +1242,11 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
     // Fill screen with layer_texture
 
     GLenum texture_target;
-    #if MULTISAMPLED_TEXTURES
-    texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-    #else
-    texture_target = GL_TEXTURE_2D;
-    #endif
+    if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        texture_target = GL_TEXTURE_2D_MULTISAMPLE;
+    } else {
+        texture_target = GL_TEXTURE_2D;
+    }
 
     glBindTexture(texture_target, render_data->layer_texture);
     GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );

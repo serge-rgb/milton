@@ -528,14 +528,13 @@ milton_main()
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_version_major);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_version_minor);
-#if USE_GL_3_2
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-#endif
+    #if USE_GL_3_2
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    #endif
 
-    // TODO: This has a different meaning than "multisampled textures."
-    #if MULTISAMPLED_TEXTURES
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
+    #if MULTISAMPLING_ENABLED
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
     #endif
 
     milton_log("Creating Milton Window\n");
@@ -584,9 +583,7 @@ milton_main()
 
     MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
 
-    b32 has_sample_shading = false;
-
-    if ( !gl_load(&has_sample_shading) ) {
+    if ( !gl_load() ) {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
     }
 
@@ -595,9 +592,6 @@ milton_main()
         milton_state->root_arena = &root_arena;
 
         milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
-        if ( has_sample_shading ) {
-            milton_state->render_data->flags |= RenderDataFlags_HAS_SAMPLE_SHADING;
-        }
         milton_init(milton_state, platform_state.width, platform_state.height);
     }
 

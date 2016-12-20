@@ -6,7 +6,7 @@ in vec3 v_pointa;
 in vec3 v_pointb;
 
 
-#if HAS_MULTISAMPLE
+#if HAS_TEXTURE_MULTISAMPLE
 // TODO: Technically we can't specify this here since it is not the beginning of the shader.
 #extension GL_ARB_sample_shading : enable
 #extension GL_ARB_texture_multisample : enable
@@ -74,7 +74,7 @@ main()
 {
     vec2 offset = vec2(0.0);
 
-    #if HAS_MULTISAMPLE
+    #if HAS_TEXTURE_MULTISAMPLE
         #if defined(HAS_SAMPLE_SHADING)
             #if !defined(VENDOR_NVIDIA)
                 offset = gl_SamplePosition - vec2(0.5);
@@ -83,7 +83,7 @@ main()
     #endif
 
     vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
-#if HAS_MULTISAMPLE
+#if HAS_TEXTURE_MULTISAMPLE
     vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
 #else
     vec2 coord = screen_point / u_screen_size;

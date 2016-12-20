@@ -1,5 +1,5 @@
 
-#if HAS_MULTISAMPLE
+#if HAS_TEXTURE_MULTISAMPLE
 #extension GL_ARB_sample_shading : enable
 #extension GL_ARB_texture_multisample : enable
 uniform sampler2DMS u_canvas;
@@ -21,7 +21,7 @@ main()
     //vec2 coord = gl_FragCoord.xy/ u_screen_size;
     vec2 coord = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y) / u_screen_size;
 
-#if HAS_MULTISAMPLE
+#if HAS_TEXTURE_MULTISAMPLE
     vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
 #else
     vec4 color = texture(u_canvas, coord);

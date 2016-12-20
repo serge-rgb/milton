@@ -40,8 +40,6 @@
 #undef main // Defined by SDL
 
 //#include "darray_test.cc"
-
-#include "gl_func_loader.cc"
 #include "utils.cc"
 #include "localization.cc"
 #include "gl_helpers.h"
