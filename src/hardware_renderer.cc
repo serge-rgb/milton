@@ -317,8 +317,8 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
     render_data->current_color = {-1,-1,-1,-1};
     render_data->current_radius = -1;
 
-    glEnable(GL_SCISSOR_TEST);
-    glActiveTexture(GL_TEXTURE0);
+    GLCHK(glEnable(GL_SCISSOR_TEST));
+    GLCHK(glActiveTexture(GL_TEXTURE0));
     bool result = true;
 
     // Create a single VAO and bind it.

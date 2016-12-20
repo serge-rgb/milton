@@ -5,7 +5,9 @@ uniform int u_radius;
 uniform bool u_fill;
 uniform vec4 u_color;
 
+#if __VERSION__ > 120
 out vec4 out_color;
+#endif
 
 void
 main()

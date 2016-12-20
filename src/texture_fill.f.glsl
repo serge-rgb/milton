@@ -7,7 +7,9 @@ uniform sampler2DMS u_canvas;
 uniform sampler2D u_canvas;
 #endif
 uniform vec2 u_screen_size;
+#if __VERSION__ > 120
 out vec4 out_color;
+#endif
 
 void main()
 {
@@ -16,8 +18,8 @@ void main()
 #else
     vec2 screen_point = vec2(gl_FragCoord.x, gl_FragCoord.y);
     vec2 coord = screen_point / u_screen_size;
-    // vec4 color = texture(u_canvas, coord);
-    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
+    vec4 color = texture(u_canvas, coord);
+   // vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
 
 #endif
     out_color = color;

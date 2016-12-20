@@ -86,7 +86,7 @@ gl_load(b32* out_supports_sample_shading)
                                 milton_die_gracefully(msg); \
                             } \
                         }
-#else
+#elif defined(__linux__)
     #define GETADDRESS(f)
     // There is no function prototype for the EXT version of this function but there is for GL core one.
     #define glBlitFramebufferEXT glBlitFramebuffer
@@ -109,6 +109,13 @@ gl_load(b32* out_supports_sample_shading)
         return false;
     }
     #endif
+#elif defined(__MACH__)
+    #define GETADDRESS(f)
+
+    // ARB_vertex_array_object on macOS not available, but apple extension is.
+    #define glGenVertexArrays glGenVertexArraysAPPLE
+    #define glBindVertexArray glBindVertexArrayAPPLE
+
 #endif
 
     // Load
