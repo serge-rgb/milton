@@ -21,31 +21,6 @@ extern "C" {
 #pragma warning(pop)
 #endif
 
-#if 0
-#if defined(_WIN32)
-    // ShellScalingApi.h
-typedef enum _PROCESS_DPI_AWARENESS {
-  PROCESS_DPI_UNAWARE            = 0,
-  PROCESS_SYSTEM_DPI_AWARE       = 1,
-  PROCESS_PER_MONITOR_DPI_AWARE  = 2
-} PROCESS_DPI_AWARENESS;
-
-HRESULT WINAPI SetProcessDpiAwareness(
-  _In_ PROCESS_DPI_AWARENESS value
-);
-#endif
-// ----
-#endif
-
-// BIT_SCAN_REVERSE
-//
-//  - Find the index for the first 1 bit. Form MSB to LSB.
-//
-#if defined(_WIN32)
-#define BIT_SCAN_REVERSE(v, i) _BitScanReverse((DWORD*)&(i), (DWORD)(v))
-#else
-// TODO: Are we using this?
-#endif
 
 enum LayoutType
 {

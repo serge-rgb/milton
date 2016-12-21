@@ -19,6 +19,8 @@ struct Layer
 
 
 // IMPORTANT: CanvasView needs to be a flat structure.
+//            Changing it means changing the file format,
+//            because the whole struct is saved to the mlt file
 struct CanvasView
 {
     v2i screen_size;            // Size in pixels

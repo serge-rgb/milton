@@ -32,7 +32,6 @@ To-Do
         - pressure toggle
         - pressure response graph
         - unzoomable&unpannable layer ("pin layer" feature) ?
-        - zoom to cursor position instead of screen center.
         - zoom-out toggle for overview and for navigation
         - stroke masking?
         - Select strokes
@@ -47,6 +46,7 @@ To-Do
 - Polish and/or Debug layer
     - Memory allocation profiler.
     - Input recorder for bug replication
+    - linux - load dynamic libs at runtime
 
 - Milton Library
     - Refactor. Write sample program.

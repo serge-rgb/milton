@@ -109,7 +109,6 @@ milton_load(MiltonState* milton_state)
         if (ok) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
 
         // The screen size might hurt us.
-        // TODO: Maybe shouldn't save the whole CanvasView?
         milton_state->view->screen_size = saved_size;
 
         // The process of loading changes state. working_layer_id changes when creating layers.
@@ -403,8 +402,7 @@ milton_save(MiltonState* milton_state)
 
     }
     else {
-        // milton_die_gracefully("Could not create file for saving! ");
-        // TODO: Fix this!
+        milton_die_gracefully("Could not create file for saving! ");
         return;
     }
 }

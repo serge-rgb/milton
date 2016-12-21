@@ -25,7 +25,6 @@
     #endif
 #endif
 
-// TODO: Do this check at runtime, since GL 2.1 might not have multisampled textures.
 #define MULTISAMPLING_ENABLED 1
 
 #define MSAA_NUM_SAMPLES 4

@@ -151,7 +151,6 @@ gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     v2f a = picker->data.a;
     v2f b = picker->data.b;
     v2f c = picker->data.c;
-    // TODO include my own lambda impl.
     Rect bounds = picker_get_bounds(picker);
     int w = bounds.right-bounds.left;
     int h = bounds.bottom-bounds.top;
@@ -294,7 +293,6 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
 {
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
 
-    // TODO: This has a different meaning from "Multisampled Textures"
     if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glEnable(GL_MULTISAMPLE);
         if ( gl_helper_check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
@@ -1346,7 +1344,6 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
     GLCHK(glUseProgram(0));
 }
 
-// TODO: Different path for non-multisampled textures.
 void
 gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h)
 {

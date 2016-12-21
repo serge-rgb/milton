@@ -1,9 +1,6 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-// Note:
-//  TODO: write documentation here about float<->int regarding strokes and milton
-// TODO: use int?
 in vec3 a_position;
 in vec3 a_pointa;
 in vec3 a_pointb;

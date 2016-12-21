@@ -15,16 +15,3 @@ void    gl_query_error(const char* expr, const char* file, int line);
 GLuint  gl_compile_shader(const char* src, GLuint type, char* config = "");
 void    gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders);
 
-// TODO: When porting to OSX, check if this is still necessary.
-#if 0
-#if defined(__MACH__)
-#define glGetAttribLocationARB glGetAttribLocation
-#define glGetUniformLocationARB glGetUniformLocation
-#define glUseProgramObjectARB glUseProgram
-#define glCreateProgramObjectARB glCreateProgram
-#define glEnableVertexAttribArrayARB glEnableVertexAttribArray
-#define glVertexAttribPointerARB glVertexAttribPointer
-#define glGenVertexArrays glGenVertexArraysAPPLE
-#define glBindVertexArray glBindVertexArrayAPPLE
-#endif
-#endif
