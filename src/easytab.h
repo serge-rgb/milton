@@ -796,6 +796,7 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
 #ifdef MILTON_EASYTAB
 EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 {
+    EasyTab->Buttons = 0;
     EasyTab->NumPackets = 0;
     EasyTab->PenInProximity = EASYTAB_FALSE;
 
@@ -805,6 +806,11 @@ EasyTabResult EasyTab_HandleEvent(XEvent* Event)
     EasyTab->PosX[0]     = MotionEvent->x;
     EasyTab->PosY[0]     = MotionEvent->y;
     EasyTab->Pressure[0] = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
+
+    if (EasyTab->Pressure[0] > 0.0f)
+    {
+        EasyTab->Buttons |= EasyTab_Buttons_Pen_Touch;
+    }
 
     EasyTab->NumPackets = 1;
     EasyTab->PenInProximity = EASYTAB_TRUE;
