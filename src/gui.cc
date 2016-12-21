@@ -140,9 +140,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             if ( ImGui::MenuItem(LOC(zoom_in)) ) {
                 input->scale++;
+                milton_set_zoom_at_screen_center(milton_state);
             }
             if ( ImGui::MenuItem(LOC(zoom_out)) ) {
                 input->scale--;
+                milton_set_zoom_at_screen_center(milton_state);
             }
             ImGui::EndMenu();
         }
@@ -173,8 +175,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     char entry[128] = {0};
                     snprintf(entry, array_count(entry), "%s %d%% - [%d]",
                              LOC(set_opacity_to), (int)(100 * opacities[i]), i == 9 ? 0 : i+1);
-                    if (ImGui::MenuItem(entry))
-                    {
+                    if ( ImGui::MenuItem(entry) ) {
                         milton_set_pen_alpha(milton_state, opacities[i]);
                     }
                 }

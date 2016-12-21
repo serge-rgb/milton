@@ -7,7 +7,7 @@ uniform vec4 u_brush_color;
 
 // CanvasView elements:
 uniform ivec2 u_pan_vector;
-uniform ivec2 u_screen_center;
+uniform ivec2 u_zoom_center;
 uniform vec2  u_screen_size;
 uniform int   u_scale;
 uniform int   u_radius;
@@ -15,7 +15,7 @@ uniform int   u_radius;
 vec2
 canvas_to_raster_gl(vec2 cp)
 {
-    vec2 rp = ( ((u_pan_vector + cp) / u_scale) + u_screen_center ) / u_screen_size;
+    vec2 rp = ( ((u_pan_vector + cp) / u_scale) + u_zoom_center ) / u_screen_size;
     // rp in [0, W]x[0, H]
 
     //rp /= u_screen_size;
@@ -33,7 +33,7 @@ canvas_to_raster_gl(vec2 cp)
 vec2
 raster_to_canvas_gl(vec2 raster_point)
 {
-    vec2 canvas_point = ((raster_point - u_screen_center) * u_scale) - vec2(u_pan_vector);
+    vec2 canvas_point = ((raster_point - u_zoom_center) * u_scale) - vec2(u_pan_vector);
 
     return canvas_point;
 }

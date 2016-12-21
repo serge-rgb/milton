@@ -19,7 +19,7 @@ milton_set_default_view(MiltonState* milton_state)
     *view = CanvasView{};
 
     view->screen_size         = saved_size;
-    view->screen_center       = divide2i(saved_size, 2);
+    view->zoom_center         = divide2i(saved_size, 2);
     view->scale               = MILTON_DEFAULT_SCALE;
     view->downsampling_factor = 1;
     view->num_layers          = 1;
@@ -215,7 +215,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
                     auto* view = milton_state->view;
 
-                    auto canvas_center = raster_to_canvas(view, view->screen_center);
+                    auto canvas_center = raster_to_canvas(view, divide2i(view->screen_size, 2));
 
                     float f_average_x = average.x - canvas_center.x;
                     float f_average_y = average.y - canvas_center.y;
@@ -258,6 +258,23 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
             --ws->num_points;
         }
     }
+}
+
+void
+milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center)
+{
+    milton_state->view->pan_vector = sub2i(milton_state->view->pan_vector,
+                                           scale2i(sub2i(zoom_center, milton_state->view->zoom_center),
+                                                   milton_state->view->scale));
+
+    milton_state->view->zoom_center = zoom_center;
+    gpu_set_canvas(milton_state->render_data, milton_state->view);
+}
+
+void
+milton_set_zoom_at_screen_center(MiltonState* milton_state)
+{
+    milton_set_zoom_at_point(milton_state, divide2i(milton_state->view->screen_size, 2));
 }
 
 void
@@ -535,10 +552,10 @@ b32
 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
 {
     b32 pan_ok = true;
-    if ( (new_screen_size.w > 8000 ||
-          new_screen_size.h > 8000 ||
-          new_screen_size.w <= 0 ||
-          new_screen_size.h <= 0) ) {
+    if ( (new_screen_size.w > 8000
+          || new_screen_size.h > 8000
+          || new_screen_size.w <= 0
+          || new_screen_size.h <= 0) ) {
         return pan_ok;
     }
 
@@ -572,19 +589,18 @@ milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_s
 
     if ( new_screen_size.w < milton_state->max_width && new_screen_size.h < milton_state->max_height ) {
         milton_state->view->screen_size = new_screen_size;
-        milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
 
         // Add delta to pan vector
         v2i pan_vector = add2i(milton_state->view->pan_vector,
-                                (scale2i(pan_delta, milton_state->view->scale)));
+                               scale2i(pan_delta, milton_state->view->scale));
 
-        if ( pan_vector.x > milton_state->view->canvas_radius_limit ||
-             pan_vector.x <= -milton_state->view->canvas_radius_limit ) {
+        if ( pan_vector.x > milton_state->view->canvas_radius_limit
+             || pan_vector.x <= -milton_state->view->canvas_radius_limit ) {
             pan_vector.x = milton_state->view->pan_vector.x;
             pan_ok = false;
         }
-        if ( pan_vector.y > milton_state->view->canvas_radius_limit ||
-             pan_vector.y <= -milton_state->view->canvas_radius_limit ) {
+        if ( pan_vector.y > milton_state->view->canvas_radius_limit
+             || pan_vector.y <= -milton_state->view->canvas_radius_limit ) {
             pan_vector.y = milton_state->view->pan_vector.y;
             pan_ok = false;
         }

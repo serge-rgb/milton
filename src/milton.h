@@ -246,7 +246,10 @@ void milton_set_working_layer(MiltonState* milton_state, Layer* layer);
 void milton_delete_working_layer(MiltonState* milton_state);
 void milton_set_background_color(MiltonState* milton_state, v3f background_color);
 
+// Set the center of the zoom
+void milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center);
+void milton_set_zoom_at_screen_center(MiltonState* milton_state);
 
-static b32 milton_brush_smoothing_enabled(MiltonState* milton_state);
+static b32  milton_brush_smoothing_enabled(MiltonState* milton_state);
 static void milton_toggle_brush_smoothing(MiltonState* milton_state);
 

@@ -155,7 +155,7 @@ gl_load()
     bool ok = true;
     // Extension checking.
     i64 num_extensions = 0;
-    glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions);
+    GLCHK( glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions) );
 
     if ( num_extensions > 0 ) {
         for ( i64 extension_i = 0; extension_i < num_extensions; ++extension_i ) {

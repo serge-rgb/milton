@@ -325,7 +325,6 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
 
     GLVendor vendor = GLVendor_UNKNOWN;
     {
-
         char *vendor_string = (char *)glGetString(GL_VENDOR);
         if ( vendor_string ) {
             if ( strcmp("NVIDIA Corporation", vendor_string) == 0 ) {
@@ -716,10 +715,10 @@ gpu_set_canvas(RenderData* render_data, CanvasView* view)
 {
     glUseProgram(render_data->stroke_program);
 
-    auto center = view->screen_center;
+    auto center = view->zoom_center;
     auto pan = view->pan_vector;
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, pan.d);
-    gl_set_uniform_vec2i(render_data->stroke_program, "u_screen_center", 1, center.d);
+    gl_set_uniform_vec2i(render_data->stroke_program, "u_zoom_center", 1, center.d);
     gpu_update_scale(render_data, view->scale);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     set_screen_size(render_data, fscreen);
@@ -1372,7 +1371,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     render_data->width = buf_w;
     render_data->height = buf_h;
 
-    milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
+    milton_state->view->zoom_center = divide2i(milton_state->view->screen_size, 2);
     if ( scale > 1 ) {
         milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
     }

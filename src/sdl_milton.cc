@@ -201,12 +201,10 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                             platform_state->pointer = point;
                             platform_state->is_middle_button_down = (event.button.button == SDL_BUTTON_MIDDLE);
 
-                            if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS)
-                            {
+                            if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
                                 milton_input.points[platform_state->num_point_results++] = point;
                             }
-                            if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS)
-                            {
+                            if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS ) {
                                 milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
                             }
                         }
@@ -268,6 +266,8 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 }
                 if ( !ImGui::GetIO().WantCaptureMouse ) {
                     milton_input.scale += event.wheel.y;
+                    v2i zoom_center = platform_state->pointer;
+                     milton_set_zoom_at_point(milton_state, zoom_center);
                 }
 
                 break;
@@ -297,10 +297,12 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                              || (platform_state->keyboard_layout == LayoutType_QWERTY && (keycode == SDLK_EQUALS))
                              || keycode == SDLK_PLUS ) {
                             milton_input.scale++;
+                            milton_set_zoom_at_screen_center(milton_state);
                         }
-                        if ( (platform_state->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_6)) ||
-                             keycode == SDLK_MINUS ) {
+                        if ( (platform_state->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_6))
+                             || keycode == SDLK_MINUS ) {
                             milton_input.scale--;
+                            milton_set_zoom_at_screen_center(milton_state);
                         }
                         if ( keycode == SDLK_z ) {
                             if ( platform_state->is_shift_down ) {

@@ -2073,7 +2073,7 @@ milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
 
     milton_state->canvas_buffer = buffer;
     milton_state->view->screen_size = v2i{ buf_w, buf_h };
-    milton_state->view->screen_center = divide2i(milton_state->view->screen_size, 2);
+    milton_state->view->zoom_center = divide2i(milton_state->view->screen_size, 2);
     if ( scale > 1 ) {
         milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
     }

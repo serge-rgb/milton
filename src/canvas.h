@@ -8,14 +8,13 @@ struct Layer
 {
     i32 id;
 
-    // DArray<Stroke> strokes;
     StrokeList strokes;
     char*   name;
 
     i32     flags;
 
-    struct Layer* prev;
-    struct Layer* next;
+    Layer* prev;
+    Layer* next;
 };
 
 
@@ -24,7 +23,7 @@ struct CanvasView
 {
     v2i screen_size;            // Size in pixels
     i32 scale;                  // Zoom
-    v2i screen_center;          // In pixels
+    v2i zoom_center;            // In pixels
     v2i pan_vector;             // In canvas scale
     i32 downsampling_factor;
     i32 canvas_radius_limit;

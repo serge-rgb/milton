@@ -9,8 +9,8 @@ v2i
 canvas_to_raster(CanvasView* view, v2i canvas_point)
 {
     v2i raster_point = {
-        ((view->pan_vector.x + canvas_point.x) / view->scale) + view->screen_center.x,
-        ((view->pan_vector.y + canvas_point.y) / view->scale) + view->screen_center.y,
+        ((view->pan_vector.x + canvas_point.x) / view->scale) + view->zoom_center.x,
+        ((view->pan_vector.y + canvas_point.y) / view->scale) + view->zoom_center.y,
     };
     return raster_point;
 }
@@ -19,8 +19,8 @@ v2i
 raster_to_canvas(CanvasView* view, v2i raster_point)
 {
     v2i canvas_point = {
-        ((raster_point.x - view->screen_center.x) * view->scale) - view->pan_vector.x,
-        ((raster_point.y - view->screen_center.y) * view->scale) - view->pan_vector.y,
+        ((raster_point.x - view->zoom_center.x) * view->scale) - view->pan_vector.x,
+        ((raster_point.y - view->zoom_center.y) * view->scale) - view->pan_vector.y,
     };
 
     return canvas_point;
