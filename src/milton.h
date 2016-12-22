@@ -228,6 +228,7 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height);
 void milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname);
 void milton_set_default_canvas_file(MiltonState* milton_state);
 
+void milton_reset_canvas(MiltonState* milton_state);
 void milton_reset_canvas_and_set_default(MiltonState* milton_state);
 
 void milton_gl_backend_draw(MiltonState* milton_state);

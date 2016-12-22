@@ -82,6 +82,9 @@ milton_unset_last_canvas_fname()
 void
 milton_load(MiltonState* milton_state)
 {
+    // Reset the canvas.
+    milton_reset_canvas(milton_state);
+
     // Unload gpu data if the strokes have been cooked.
     gpu_free_strokes(milton_state);
     mlt_assert(milton_state->mlt_file_path);

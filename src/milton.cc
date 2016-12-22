@@ -614,7 +614,7 @@ milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_s
 }
 
 void
-milton_reset_canvas_and_set_default(MiltonState* milton_state)
+milton_reset_canvas(MiltonState* milton_state)
 {
     CanvasState* canvas = milton_state->canvas;
 
@@ -631,10 +631,6 @@ milton_reset_canvas_and_set_default(MiltonState* milton_state)
     }
     milton_state->last_save_time = {};
 
-    canvas->layer_guid = 0;
-    canvas->root_layer = NULL;
-    canvas->working_layer = NULL;
-
     // Clear history
     // TODO: These arrays should use the arena.
     reset(&canvas->history);
@@ -645,7 +641,13 @@ milton_reset_canvas_and_set_default(MiltonState* milton_state)
     arena_free(&canvas->arena);  // Note: This destroys the canvas
     milton_state->canvas = arena_bootstrap(CanvasState, arena, size);
 
-    // New values!
+    mlt_assert(milton_state->canvas->history.count == 0);
+}
+
+void
+milton_reset_canvas_and_set_default(MiltonState* milton_state)
+{
+    milton_reset_canvas(milton_state);
 
     // New Root
     milton_new_layer(milton_state);
@@ -865,6 +867,7 @@ milton_validate(MiltonState* milton_state)
     i32* layer_ids = (i32*)mlt_calloc((size_t)num_layers, sizeof(i32), "Validate");
     i64 i = 0;
     for ( Layer* l = milton_state->canvas->root_layer; l != NULL; l = l->next ) {
+        milton_log("DEBUG found id %d\n", l->id);
         layer_ids[i] = l->id;
         ++i;
     }
@@ -881,10 +884,11 @@ milton_validate(MiltonState* milton_state)
 
     i64 stroke_count = count_strokes(milton_state->canvas->root_layer);
     if ( history_count != stroke_count ) {
-        milton_log("Recreating history. File says History: %d(max %d) Actual strokes: %d\n",
+        milton_log("WARNING: Recreating history. File says History: %d(max %d) Actual strokes: %d\n",
                    history_count, milton_state->canvas->history.count,
                    stroke_count);
         reset(&milton_state->canvas->history);
+        i32 id = 0;
         for ( Layer *l = milton_state->canvas->root_layer;
               l != NULL;
               l = l->next ) {
