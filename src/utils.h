@@ -18,6 +18,10 @@
 #define max(a, b) (((a) < (b)) ? b : a)
 #endif
 
+#ifndef offsetof
+offsetof(object, member) ((size_t)&(((object *)0)->member))
+#endif
+
 // -----------
 // System stuf
 // -----------

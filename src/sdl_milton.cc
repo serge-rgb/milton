@@ -571,19 +571,8 @@ milton_main()
     milton_log("    and GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     // ==== Initialize milton
-    //  Total (static) memory requirement for Milton
-    size_t sz_root_arena = (size_t)10 * 1024 * 1024;
 
-    // Using platform_allocate because stdlib calloc will be really slow.
-    void* big_chunk_of_memory = platform_allocate_bounded_memory(sz_root_arena);
-
-    if ( !big_chunk_of_memory ) {
-        milton_fatal("Could not allocate bounded virtual memory for Milton.\n");
-    }
-
-    Arena root_arena = arena_init(big_chunk_of_memory, sz_root_arena);
-
-    MiltonState* milton_state = arena_alloc_elem(&root_arena, MiltonState);
+    MiltonState* milton_state = arena_bootstrap(MiltonState, root_arena, 1024);
 
     if ( !gl_load() ) {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
@@ -591,9 +580,7 @@ milton_main()
 
     // Initialize milton_state
     {
-        milton_state->root_arena = &root_arena;
-
-        milton_state->render_data = arena_alloc_elem(milton_state->root_arena, RenderData);
+        milton_state->render_data = arena_alloc_elem(&milton_state->root_arena, RenderData);
         milton_init(milton_state, platform_state.width, platform_state.height);
     }
 
@@ -998,9 +985,7 @@ milton_main()
     EasyTab_Unload();
 #endif
 
-    // Release pages. Not really necessary but we don't want to piss off leak
-    // detectors, do we?
-    platform_deallocate(big_chunk_of_memory);
+    arena_free(&milton_state->root_arena);
 
     bool save_prefs = prefs.width != platform_state.width || prefs.height != platform_state.height;
     if ( save_prefs ) {

@@ -7,6 +7,7 @@ To-Do
 - Bugs
     - MoveFileEx randomly fails with return code 5 - access denied
     - Undo leaves some pixels without redrawing.
+    - exporting has wrong panning. wrong screen center?
 
 - Application
     - Porting (dialogs and File I/O)
@@ -42,6 +43,7 @@ To-Do
         - lines
         - rectangles
         - circles / ellipses
+        - transparent window
 
 - Polish and/or Debug layer
     - Memory allocation profiler.

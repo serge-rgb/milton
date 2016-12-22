@@ -8,6 +8,7 @@
 static void
 milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
+    CanvasState* canvas = milton_state->canvas;
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
@@ -39,13 +40,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         if ( ImGui::BeginMenu(LOC(file)) ) {
             if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
                 b32 save_file = false;
-                if ( count_strokes(milton_state->root_layer) > 0 ) {
+                if ( count_strokes(milton_state->canvas->root_layer) > 0 ) {
                     if ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
                         save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                     }
                 }
                 if ( save_file ) {
-                    PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                    PATH_CHAR* name = platform_save_dialog(&canvas->arena, FileKind_MILTON_CANVAS);
                     if ( name ) {
                         milton_log("Saving to %s\n", name);
                         milton_set_canvas_file(milton_state, name);
@@ -68,11 +69,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 // If current canvas is MiltonPersist, then prompt to save
                 if ( ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
                     b32 save_file = false;
-                    if ( count_strokes(milton_state->root_layer) > 0 ) {
+                    if ( count_strokes(milton_state->canvas->root_layer) > 0 ) {
                         save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                     }
                     if ( save_file ) {
-                        PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                        PATH_CHAR* name = platform_save_dialog(&canvas->arena, FileKind_MILTON_CANVAS);
                         if ( name ) {
                             milton_log("Saving to %s\n", name);
                             milton_set_canvas_file(milton_state, name);
@@ -86,7 +87,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         }
                     }
                 }
-                PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+                PATH_CHAR* fname = platform_open_dialog(&canvas->arena, FileKind_MILTON_CANVAS);
                 if ( fname ) {
                     milton_set_canvas_file(milton_state, fname);
                     input->flags |= MiltonInputFlags_OPEN_FILE;
@@ -96,7 +97,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             if ( ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested ) {
                 // NOTE(possible refactor): There is a copy of this at milton.c end of file
-                PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                PATH_CHAR* name = platform_save_dialog(&canvas->arena, FileKind_MILTON_CANVAS);
                 if ( name ) {
                     milton_log("Saving to %s\n", name);
                     milton_set_canvas_file(milton_state, name);
@@ -332,7 +333,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             // left
             ImGui::BeginChild("left pane", ImVec2(150, 0), true);
 
-            Layer* layer = milton_state->root_layer;
+            Layer* layer = milton_state->canvas->root_layer;
             while ( layer->next ) { layer = layer->next; }  // Move to the top layer.
             while ( layer ) {
                 bool v = layer->flags & LayerFlags_VISIBLE;
@@ -344,7 +345,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 }
                 ImGui::PopID();
                 ImGui::SameLine();
-                if ( ImGui::Selectable(layer->name, milton_state->working_layer == layer) ) {
+                if ( ImGui::Selectable(layer->name, milton_state->canvas->working_layer == layer) ) {
                     milton_set_working_layer(milton_state, layer);
                 }
                 layer = layer->prev;
@@ -363,7 +364,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
             static b32 is_renaming = false;
             if ( is_renaming == false ) {
-                ImGui::Text(milton_state->working_layer->name);
+                ImGui::Text(milton_state->canvas->working_layer->name);
                 ImGui::Indent();
                 if ( ImGui::Button(LOC(rename)) )
                 {
@@ -373,7 +374,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             else if ( is_renaming ) {
                 if (ImGui::InputText("##rename",
-                                      milton_state->working_layer->name,
+                                      milton_state->canvas->working_layer->name,
                                       13,
                                       //MAX_LAYER_NAME_LEN,
                                       ImGuiInputTextFlags_EnterReturnsTrue
@@ -393,12 +394,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             Layer* a = NULL;
             Layer* b = NULL;
             if ( ImGui::Button(LOC(up)) ) {
-                b = milton_state->working_layer;
+                b = milton_state->canvas->working_layer;
                 a = b->next;
             }
             ImGui::SameLine();
             if ( ImGui::Button(LOC(down)) ) {
-                a = milton_state->working_layer;
+                a = milton_state->canvas->working_layer;
                 b = a->prev;
             }
             if ( a && b ) {
@@ -415,16 +416,16 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 b->prev = a;
 
                 // Make sure root is first
-                while ( milton_state->root_layer->prev )
+                while ( milton_state->canvas->root_layer->prev )
                 {
-                    milton_state->root_layer = milton_state->root_layer->prev;
+                    milton_state->canvas->root_layer = milton_state->canvas->root_layer->prev;
                 }
                 input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                 input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
             }
 
-            if ( milton_state->working_layer->next ||
-                 milton_state->working_layer->prev ) {
+            if ( milton_state->canvas->working_layer->next ||
+                 milton_state->canvas->working_layer->prev ) {
                 static bool deleting = false;
                 if ( deleting == false ) {
                     if ( ImGui::Button(LOC(delete)) )
@@ -501,9 +502,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         gpu_render_to_buffer(milton_state, buffer, exporter->scale,
                                              x,y, raster_w, raster_h);
                         //milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
-                        PATH_CHAR* fname = platform_save_dialog(FileKind_IMAGE);
-                        if (fname)
-                        {
+                        PATH_CHAR* fname = platform_save_dialog(&canvas->arena, FileKind_IMAGE);
+                        if ( fname ) {
                             milton_save_buffer_to_file(fname, buffer, w, h);
                         }
                         mlt_free (buffer, "Bitmap");

@@ -27,12 +27,6 @@ perf_counter()
 
     return tp.tv_nsec;
 }
-void*
-platform_allocate_bounded_memory(size_t size)
-{
-    // TODO: Syscall
-    return calloc(size, 1);
-}
 
 b32
 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
@@ -151,7 +145,7 @@ platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 }
 
 PATH_CHAR*
-platform_open_dialog(FileKind kind)
+platform_open_dialog(Arena* arena, FileKind kind)
 {
     platform_cursor_show();
     GtkWidget *dialog = gtk_file_chooser_dialog_new(
@@ -171,7 +165,7 @@ platform_open_dialog(FileKind kind)
         return NULL;
     }
     gchar *gtk_filename = gtk_file_chooser_get_filename(chooser);
-    PATH_CHAR* open_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
+    PATH_CHAR* open_filename = arena_alloc_array(arena, MAX_PATH, PATH_CHAR);
     PATH_STRNCPY(open_filename, gtk_filename, MAX_PATH);
     g_free(gtk_filename);
     gtk_widget_destroy(dialog);
@@ -186,7 +180,7 @@ platform_open_link(char* link)
 }
 
 PATH_CHAR*
-platform_save_dialog(FileKind kind)
+platform_save_dialog(Arena* arena, FileKind kind)
 {
     platform_cursor_show();
     GtkWidget *dialog = gtk_file_chooser_dialog_new(
@@ -208,7 +202,7 @@ platform_save_dialog(FileKind kind)
         return NULL;
     }
     gchar *gtk_filename = gtk_file_chooser_get_filename(chooser);
-    PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
+    PATH_CHAR* save_filename = arena_alloc_array(arena, MAX_PATH, PATH_CHAR);
     PATH_STRNCPY(save_filename, gtk_filename, MAX_PATH);
     g_free(gtk_filename);
     gtk_widget_destroy(dialog);

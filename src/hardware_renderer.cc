@@ -748,7 +748,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             // Create a 2-point stroke and recurse
             Stroke duplicate = *stroke;
             duplicate.num_points = 2;
-            Arena scratch_arena = arena_push(arena, arena_available_space(arena));
+            Arena scratch_arena = arena_push(arena);
             duplicate.points = arena_alloc_array(&scratch_arena, 2, v2i);
             duplicate.pressures = arena_alloc_array(&scratch_arena, 2, f32);
             duplicate.points[0] = stroke->points[0];
@@ -945,8 +945,8 @@ gpu_free_strokes(Stroke* strokes, i64 count)
 void
 gpu_free_strokes(MiltonState* milton_state)
 {
-    if ( milton_state->root_layer != NULL ) {
-        for ( Layer* l = milton_state->root_layer;
+    if ( milton_state->canvas->root_layer != NULL ) {
+        for ( Layer* l = milton_state->canvas->root_layer;
               l != NULL;
               l = l->next ) {
             StrokeList* sl = &l->strokes;
@@ -1412,7 +1412,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
     glViewport(0, 0, buf_w, buf_h);
     glScissor(0, 0, buf_w, buf_h);
-    gpu_clip_strokes_and_update(milton_state->root_arena, render_data, milton_state->view, milton_state->root_layer,
+    gpu_clip_strokes_and_update(&milton_state->root_arena, render_data, milton_state->view, milton_state->canvas->root_layer,
                                 &milton_state->working_stroke, 0, 0, buf_w, buf_h);
 
     GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo) );
@@ -1472,8 +1472,8 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     gpu_set_canvas(render_data, view);
 
     // Re-render
-    gpu_clip_strokes_and_update(milton_state->root_arena,
-                                render_data, milton_state->view, milton_state->root_layer,
+    gpu_clip_strokes_and_update(&milton_state->root_arena,
+                                render_data, milton_state->view, milton_state->canvas->root_layer,
                                 &milton_state->working_stroke, 0, 0, render_data->width,
                                 render_data->height);
     gpu_render(render_data, 0, 0, render_data->width, render_data->height);

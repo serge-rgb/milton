@@ -23,6 +23,7 @@ struct Arena
     // Memory:
     size_t  size;
     size_t  count;
+    size_t  min_block_size;
     u8*     ptr;
 
     // For pushing/popping
@@ -31,18 +32,27 @@ struct Arena
     int     num_children;
 };
 
+// Stored at the end of the arena.
+// If the arena expands, its memory block will point to previous memory blocks.
+struct ArenaFooter
+{
+    u8*     previous_block;
+    size_t  previous_size;
+};
+
 // Create a root arena from a memory block.
-Arena arena_init(void* base, size_t size);
+Arena arena_init(size_t min_block_size = 0, void* base = NULL);
 Arena arena_spawn(Arena* parent, size_t size);
 void  arena_reset(Arena* arena);
 void  arena_reset_noclear(Arena* arena);
+void  arena_free(Arena* arena);
 
 // ==== Temporary arenas.
 // Usage:
 //      child = arena_push(my_arena, some_size);
 //      use_temporary_arena(&child.arena);
 //      arena_pop(child);
-Arena  arena_push(Arena* parent, size_t size);
+Arena  arena_push(Arena* parent, size_t size = 0);
 void   arena_pop(Arena* child);
 void   arena_pop_noclear(Arena* child);
 
@@ -50,8 +60,8 @@ void   arena_pop_noclear(Arena* child);
 #define     arena_alloc_array_(arena, count, T, flags)  (T *)arena_alloc_bytes((arena), (count) * sizeof(T), flags)
 #define     arena_alloc_elem(arena, T)                  arena_alloc_elem_(arena, T, Arena_NONE)
 #define     arena_alloc_array(arena, count, T)          arena_alloc_array_(arena, count, T, Arena_NONE)
-#define     arena_available_space(arena)                ((arena)->size - (arena)->count)
 #define     ARENA_VALIDATE(arena)                       mlt_assert ((arena)->num_children == 0)
+#define     arena_bootstrap(Type, member, size)         (Type*)arena_bootstrap_(size, sizeof(Type), offsetof(Type, member))
 
 enum ArenaAllocOpts
 {
@@ -62,6 +72,10 @@ enum ArenaAllocOpts
 
 u8* arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags=Arena_NONE);
 
-void* calloc_with_debug(size_t n, size_t sz, char* category);
-void  free_with_debug(void* ptr, char* category);
-void* realloc_with_debug(void* ptr, size_t sz, char* category);
+void* arena_bootstrap_(size_t size, size_t obj_size, size_t offset);
+
+#if DEBUG_MEMORY_USAGE
+    void* calloc_with_debug(size_t n, size_t sz, char* category);
+    void  free_with_debug(void* ptr, char* category);
+    void* realloc_with_debug(void* ptr, size_t sz, char* category);
+#endif

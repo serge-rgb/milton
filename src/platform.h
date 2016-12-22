@@ -94,7 +94,7 @@ typedef struct TabletState_s TabletState;
 
 int milton_main();
 
-void*   platform_allocate_bounded_memory(size_t size);
+void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}
 void    platform_deallocate_internal(void* ptr);
 #define milton_log platform_milton_log
@@ -146,8 +146,8 @@ struct PlatformPrefs
 FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode);
 
 // Returns a 0-terminated string with the full path of the target file. NULL if error.
-PATH_CHAR*   platform_open_dialog(FileKind kind);
-PATH_CHAR*   platform_save_dialog(FileKind kind);
+PATH_CHAR*   platform_open_dialog(Arena* arena, FileKind kind);
+PATH_CHAR*   platform_save_dialog(Arena* arena, FileKind kind);
 
 void    platform_dialog(char* info, char* title);
 b32     platform_dialog_yesno(char* info, char* title);

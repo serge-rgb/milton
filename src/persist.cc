@@ -125,9 +125,6 @@ milton_load(MiltonState* milton_state)
         if (ok) { ok = fread_checked(&num_layers, sizeof(i32), 1, fd); }
         if (ok) { ok = fread_checked(&layer_guid, sizeof(i32), 1, fd); }
 
-        milton_state->root_layer = NULL;
-        milton_state->working_layer = NULL;
-
         for ( int layer_i = 0; ok && layer_i < num_layers; ++layer_i ) {
             i32 len = 0;
             if (ok) { ok = fread_checked(&len, sizeof(i32), 1, fd); }
@@ -139,7 +136,7 @@ milton_load(MiltonState* milton_state)
 
             if (ok) { milton_new_layer(milton_state); }
 
-            Layer* layer = milton_state->working_layer;
+            Layer* layer = milton_state->canvas->working_layer;
 
             if (ok) { ok = fread_checked(layer->name, sizeof(char), (size_t)len, fd); }
 
@@ -153,7 +150,7 @@ milton_load(MiltonState* milton_state)
                 for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
                     Stroke stroke = Stroke{};
 
-                    stroke.id = milton_state->stroke_id_count++;
+                    stroke.id = milton_state->canvas->stroke_id_count++;
 
                     if (ok) { ok = fread_checked(&stroke.brush, sizeof(Brush), 1, fd); }
                     if (ok) { ok = fread_checked(&stroke.num_points, sizeof(i32), 1, fd); }
@@ -178,7 +175,7 @@ milton_load(MiltonState* milton_state)
                         } else {
                             milton_log("ERROR: File has a stroke with %d points\n", stroke.num_points);
                             ok = false;
-                            reset(&milton_state->root_layer->strokes);
+                            reset(&milton_state->canvas->root_layer->strokes);
                             // Corrupt file. Avoid
                             break;
                         }
@@ -236,13 +233,13 @@ milton_load(MiltonState* milton_state)
             i32 history_count = 0;
             if ( ok ) { ok = fread_checked(&history_count, sizeof(history_count), 1, fd); }
             if ( ok ) {
-                reset(&milton_state->history);
-                reserve(&milton_state->history, history_count);
+                reset(&milton_state->canvas->history);
+                reserve(&milton_state->canvas->history, history_count);
             }
-            if ( ok ) { ok = fread_checked_nocopy(milton_state->history.data, sizeof(*milton_state->history.data),
+            if ( ok ) { ok = fread_checked_nocopy(milton_state->canvas->history.data, sizeof(*milton_state->canvas->history.data),
                                                 (size_t)history_count, fd); }
             if ( ok ) {
-                milton_state->history.count = history_count;
+                milton_state->canvas->history.count = history_count;
             }
         }
         int err = fclose(fd);
@@ -259,16 +256,16 @@ milton_load(MiltonState* milton_state)
         } else {
             i32 id = milton_state->view->working_layer_id;
             {  // Use working_layer_id to make working_layer point to the correct thing
-                Layer* layer = milton_state->root_layer;
+                Layer* layer = milton_state->canvas->root_layer;
                 while ( layer ) {
                     if ( layer->id == id ) {
-                        milton_state->working_layer = layer;
+                        milton_state->canvas->working_layer = layer;
                         break;
                     }
                     layer = layer->next;
                 }
             }
-            milton_state->layer_guid = layer_guid;
+            milton_state->canvas->layer_guid = layer_guid;
 
             // Update GPU
             milton_set_background_color(milton_state, milton_state->view->background_color);
@@ -305,12 +302,12 @@ milton_save(MiltonState* milton_state)
         if (ok) { ok = fwrite_checked(&milton_binary_version, sizeof(u32), 1, fd);   }
         if (ok) { ok = fwrite_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
 
-        i32 num_layers = number_of_layers(milton_state->root_layer);
+        i32 num_layers = number_of_layers(milton_state->canvas->root_layer);
         if (ok) { ok = fwrite_checked(&num_layers, sizeof(i32), 1, fd); }
-        if (ok) { ok = fwrite_checked(&milton_state->layer_guid, sizeof(i32), 1, fd); }
+        if (ok) { ok = fwrite_checked(&milton_state->canvas->layer_guid, sizeof(i32), 1, fd); }
 
         i32 test_count = 0;
-        for ( Layer* layer = milton_state->root_layer; layer; layer=layer->next  ) {
+        for ( Layer* layer = milton_state->canvas->root_layer; layer; layer=layer->next  ) {
             if ( layer->strokes.count > INT_MAX ) {
                 milton_die_gracefully("FATAL. Number of strokes in layer greater than can be stored in file format. ");
             }
@@ -371,12 +368,12 @@ milton_save(MiltonState* milton_state)
         }
 
 
-        i32 history_count = (i32)milton_state->history.count;
-        if ( milton_state->history.count > INT_MAX ) {
+        i32 history_count = (i32)milton_state->canvas->history.count;
+        if ( milton_state->canvas->history.count > INT_MAX ) {
             history_count = 0;
         }
         if (ok) { ok = fwrite_checked(&history_count, sizeof(history_count), 1, fd); }
-        if (ok) { ok = fwrite_checked(milton_state->history.data, sizeof(*milton_state->history.data), (size_t)history_count, fd); }
+        if (ok) { ok = fwrite_checked(milton_state->canvas->history.data, sizeof(*milton_state->canvas->history.data), (size_t)history_count, fd); }
 
         int file_error = ferror(fd);
         if ( file_error == 0 ) {
@@ -408,11 +405,11 @@ milton_save(MiltonState* milton_state)
 }
 
 PATH_CHAR*
-milton_get_last_canvas_fname()
+milton_get_last_canvas_fname(Arena* canvas_arena)
 {
-    PATH_CHAR* last_fname = (PATH_CHAR*)mlt_calloc(1, MAX_PATH, "Strings");
-    PATH_CHAR full[MAX_PATH] = {};
+    PATH_CHAR* last_fname = arena_alloc_array(canvas_arena, MAX_PATH, PATH_CHAR);
 
+    PATH_CHAR full[MAX_PATH] = {};
 
     PATH_STRCPY(full, TO_PATH_STR("saved_path"));
     platform_fname_at_config(full, MAX_PATH);
@@ -427,12 +424,6 @@ milton_get_last_canvas_fname()
             // will fail gracefully and load a default canvas.
             fclose(fd);
         }
-        else {
-            mlt_free(last_fname, "Strings");
-        }
-    }
-    else {
-        mlt_free(last_fname, "Strings");
     }
 
     return last_fname;

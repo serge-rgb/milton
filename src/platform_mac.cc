@@ -16,12 +16,6 @@ perf_counter()
     IMPL_MISSING;
     return 0;
 }
-void*
-platform_allocate_bounded_memory(size_t size)
-{
-    // TODO: Syscall
-    return calloc(size, 1);
-}
 
 b32
 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
@@ -112,7 +106,7 @@ platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 }
 
 PATH_CHAR*
-platform_open_dialog(FileKind kind)
+platform_open_dialog(Arena* arena, FileKind kind)
 {
     IMPL_MISSING;
     return NULL;

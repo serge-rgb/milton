@@ -107,7 +107,7 @@ platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
 }
 
 void*
-platform_allocate_bounded_memory(size_t size)
+platform_allocate(size_t size)
 {
 #if MILTON_DEBUG
     static b32 once_check = false;
@@ -210,10 +210,10 @@ win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)
 }
 
 PATH_CHAR*
-platform_save_dialog(FileKind kind)
+platform_save_dialog(Arena* arena, FileKind kind)
 {
     platform_cursor_show();
-    PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR));
+    PATH_CHAR* save_filename = arena_alloc_array(arena, PATH_CHAR, MAX_PATH);
 
     OPENFILENAMEW ofn = {0};
 
@@ -243,12 +243,12 @@ platform_save_dialog(FileKind kind)
 }
 
 PATH_CHAR*
-platform_open_dialog(FileKind kind)
+platform_open_dialog(Arena* arena, FileKind kind)
 {
     platform_cursor_show();
     OPENFILENAMEW ofn = {0};
 
-    PATH_CHAR* fname = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*fname));
+    PATH_CHAR* fname = arena_alloc_array(arena, PATH_CHAR, MAX_PATH);
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     win32_set_OFN_filter(&ofn, kind);

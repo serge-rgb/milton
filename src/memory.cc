@@ -2,16 +2,19 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-
 u8*
 arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags)
 {
     size_t total = arena->count + num_bytes;
     if ( total > arena->size ) {
-        if ( !(alloc_flags & Arena_NOFAIL)) {
-            mlt_assert(!"Out of memory!");
-        }
-        return NULL;
+        size_t new_size = MAX(num_bytes, arena->min_block_size);
+        ArenaFooter arena_footer = {};
+        arena_footer.previous_block = arena->ptr;
+        arena_footer.previous_size = arena->size;
+        arena->ptr = (u8*)platform_allocate(new_size + sizeof(ArenaFooter));
+        arena->size = new_size;
+        arena->count = 0;
+        *(ArenaFooter*)(arena->ptr + arena->size) = arena_footer;
     }
     u8* result = arena->ptr + arena->count;
     arena->count += num_bytes;
@@ -19,20 +22,58 @@ arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags)
 }
 
 Arena
-arena_init(void* base, size_t size)
+arena_init(size_t min_block_size, void* base)
 {
-    Arena arena = { 0 };
-    arena.ptr = (u8*)base;
-    if ( arena.ptr ) {
-        arena.size = size;
+    Arena arena = {};
+    if ( min_block_size ) {
+        arena.min_block_size = min_block_size;
     }
+    else {
+        arena.min_block_size = 1024;
+    }
+    if ( base ) {
+        arena.ptr = (u8*)base;
+    }
+    else {
+        arena.ptr = (u8*)platform_allocate(arena.min_block_size + sizeof(ArenaFooter));
+    }
+
+    if ( arena.ptr ) {
+        arena.size = arena.min_block_size;
+    }
+    else {
+        milton_die_gracefully("Could not allocate memory for arena.");
+    }
+
+    ArenaFooter footer = {};
+    *(ArenaFooter*)(arena.ptr + sizeof(ArenaFooter)) = footer;
     return arena;
+}
+
+void*
+arena_bootstrap_(size_t size, size_t obj_size, size_t offset)
+{
+    Arena arena = arena_init(size + obj_size);
+    *(Arena*)(arena.ptr + offset) = arena;
+    return arena_alloc_bytes((Arena*)(arena.ptr + offset), obj_size);
+}
+
+
+void
+arena_free(Arena* arena)
+{
+    while ( arena->ptr ) {
+        ArenaFooter footer = *(ArenaFooter*)(arena->ptr + arena->size);
+        platform_deallocate(arena->ptr);
+        arena->ptr = footer.previous_block;
+        arena->size = footer.previous_size;
+    }
 }
 
 Arena
 arena_spawn(Arena* parent, size_t size)
 {
-    u8* ptr = arena_alloc_bytes(parent, size);
+    u8* ptr = arena_alloc_bytes(parent, size + sizeof(ArenaFooter));
     mlt_assert(ptr);
 
     Arena child = { 0 };
@@ -45,14 +86,19 @@ arena_spawn(Arena* parent, size_t size)
 }
 
 Arena
-arena_push(Arena* parent, size_t size)
+arena_push(Arena* parent, size_t in_size)
 {
-    mlt_assert ( size <= arena_available_space(parent));
+    size_t size;
+    if ( in_size ) {
+        size = in_size;
+    } else {
+        size = parent->min_block_size;
+    }
     Arena child = { 0 };
     {
         child.parent = parent;
         child.id     = parent->num_children;
-        u8* ptr = arena_alloc_bytes(parent, size);
+        u8* ptr = arena_alloc_bytes(parent, size + sizeof(ArenaFooter));
         parent->num_children += 1;
         child.ptr = ptr;
         child.size = size;
@@ -68,7 +114,13 @@ arena_pop(Arena* child)
 
     // Assert that this child was the latest push.
     mlt_assert ((parent->num_children - 1) == child->id);
-
+    ArenaFooter* footer = (ArenaFooter*)(child->ptr + child->size);
+    while ( footer->previous_block ) {
+        platform_deallocate(child->ptr);
+        child->size = footer->previous_size;
+        child->ptr = footer->previous_block;
+        footer = (ArenaFooter*)(child->ptr + child->size);
+    }
     parent->count -= child->size;
     char* ptr = (char*)(parent->ptr) + parent->count;
     memset(ptr, 0, child->count);
@@ -139,7 +191,7 @@ find_bucket_for_size(size_t sz)
 void*
 calloc_with_debug(size_t n, size_t sz, char* category)
 {
-    if ( strcmp(category, "Bitmap") == 0 ) {
+    if ( strcmp(category, "Layer") == 0 ) {
         int breakhere=1;
     }
     u64 h = hash(category, strlen(category));

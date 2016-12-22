@@ -4,12 +4,14 @@
 
 #pragma once
 
+#define MAX_LAYER_NAME_LEN          64
+
 struct Layer
 {
     i32 id;
 
     StrokeList strokes;
-    char*   name;
+    char    name[MAX_LAYER_NAME_LEN];
 
     i32     flags;
 

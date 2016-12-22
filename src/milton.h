@@ -12,7 +12,6 @@
 #define MAX_INPUT_BUFFER_ELEMS      32
 #define MILTON_MINIMUM_SCALE        (1 << 4)
 #define QUALITY_REDRAW_TIMEOUT_MS   200
-#define MAX_LAYER_NAME_LEN          64
 #define MILTON_MAX_BRUSH_SIZE       80
 #define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
@@ -60,6 +59,24 @@ struct HistoryElement
 struct MiltonGui;
 struct RenderData;
 
+
+// Stuff than can be reset when unloading a canvas
+struct CanvasState
+{
+    Arena  arena;
+
+    i32         layer_guid;  // to create unique ids;
+    Layer*      root_layer;
+    Layer*      working_layer;
+
+    DArray<HistoryElement> history;
+    DArray<HistoryElement> redo_stack;
+    //Layer**         layer_graveyard;
+    DArray<Stroke>         stroke_graveyard;
+
+    i32         stroke_id_count;
+};
+
 struct MiltonState
 {
     u8  bytes_per_pixel;
@@ -68,8 +85,10 @@ struct MiltonState
 
     i32 max_width;
     i32 max_height;
+#if SOFTWARE_RENDERER_COMPILED
     u8* raster_buffer; // Final image goes here
     u8* canvas_buffer; // Rasterized canvas stored here
+#endif
     u8* eyedropper_buffer;  // Get pixels from OpenGL framebuffer and store them here for eydropper operations.
 
     // The screen is rendered in blockgroups
@@ -95,24 +114,14 @@ struct MiltonState
 #endif
 
     // ---- The Painting
+    CanvasState*    canvas;
+    CanvasView*     view;
+
     Brush       brushes[BrushEnum_COUNT];
     i32         brush_sizes[BrushEnum_COUNT];  // In screen pixels
 
-    i32         layer_guid;  // to create unique ids;
-    i32         stroke_id_count;
-    Layer*      root_layer;
-    Layer*      working_layer;
-
     Stroke      working_stroke;
-
-    CanvasView* view;
-
     // ----  // gui->picker.info also stored
-
-    DArray<HistoryElement> history;
-    DArray<HistoryElement> redo_stack;
-    //Layer**         layer_graveyard;
-    DArray<Stroke>         stroke_graveyard;
 
 
     v2i hover_point;  // Track the pointer when not stroking..
@@ -129,7 +138,8 @@ struct MiltonState
     RenderData* render_data;  // Hardware Renderer
 
     // Heap
-    Arena*      root_arena;         // Bounded allocations
+    Arena       root_arena;     // Lives forever
+    Arena       canvas_arena;   // Gets reset every canvas.
 
     // Software Rendering stuff
 #if SOFTWARE_RENDERER_COMPILED
