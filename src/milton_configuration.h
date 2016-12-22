@@ -36,10 +36,12 @@
 #define REDRAW_EVERY_FRAME 0
 
 #define USE_GL_3_2 0
-#if !MILTON_DEBUG  // Don't use 3.2 in release.
-    #undef USE_GL_3_2
-    #define USE_GL_3_2 0
-#endif
+    #if !MILTON_DEBUG  // Don't use 3.2 in release.
+        #undef USE_GL_3_2
+        #define USE_GL_3_2 0
+    #endif
+
+#define DEBUG_MEMORY_USAGE 0
 
 // -- Software renderer config..
     #define MAX_NUM_WORKERS 64

@@ -21,7 +21,7 @@ dynamic_array(i64 capacity)
     DArray<T> arr;
     arr.count = 0;
     arr.capacity = capacity;
-    arr.data = (T*)mlt_calloc(capacity, sizeof(T));
+    arr.data = (T*)mlt_calloc(capacity, sizeof(T), "DArray");
     return arr;
 }
 
@@ -37,13 +37,13 @@ grow(DArray<T>* arr)
         arr->capacity *= 2;
     }
     if ( arr->data ) {
-        arr->data = (T*)mlt_realloc(arr->data, (size_t)(arr->capacity*sizeof(T)));
+        arr->data = (T*)mlt_realloc(arr->data, (size_t)(arr->capacity*sizeof(T)), "DArray");
         if ( arr->data == NULL ) {
             milton_die_gracefully("Milton ran out of memory :(");
         }
     }
     else {
-        arr->data = (T*)mlt_calloc((size_t)arr->capacity, sizeof(T));
+        arr->data = (T*)mlt_calloc((size_t)arr->capacity, sizeof(T), "DArray");
     }
 }
 
@@ -128,7 +128,7 @@ void
 release(DArray<T>* arr)
 {
     if ( arr->data ) {
-        mlt_free(arr->data);
+        mlt_free(arr->data, "DArray");
     }
 }
 

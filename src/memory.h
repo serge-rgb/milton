@@ -4,13 +4,19 @@
 #pragma once
 
 
-
 // TODO: out of memory handler.
 
-#define mlt_malloc(sz) malloc(sz)
-#define mlt_calloc(n, sz) calloc(n, sz)
-#define mlt_free(ptr) do { if (ptr) { free(ptr); ptr = NULL; } else { mlt_assert(!"Freeing null"); } } while(0)
-#define mlt_realloc realloc
+#define mlt_malloc(sz) INVALID_CODE_PATH
+#if DEBUG_MEMORY_USAGE
+    #define mlt_calloc(n, sz, category) calloc_with_debug(n, sz, category)
+    #define mlt_free(ptr, category) free_with_debug(ptr, category)
+    #define mlt_realloc(ptr, sz, category) realloc_with_debug(ptr, sz, category)
+#else
+    #define mlt_calloc(n, sz, category) calloc(n, sz)
+    #define mlt_free(ptr, category) do { if (ptr) { free(ptr); ptr = NULL; } else { mlt_assert(!"Freeing null"); } } while(0)
+    #define mlt_realloc(ptr, sz, category) realloc(ptr, sz)
+#endif
+
 
 struct Arena
 {
@@ -56,3 +62,6 @@ enum ArenaAllocOpts
 
 u8* arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags=Arena_NONE);
 
+void* calloc_with_debug(size_t n, size_t sz, char* category);
+void  free_with_debug(void* ptr, char* category);
+void* realloc_with_debug(void* ptr, size_t sz, char* category);

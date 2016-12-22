@@ -22,7 +22,7 @@ struct StrokeList
 StrokeBucket*
 create_bucket()
 {
-    StrokeBucket* bucket = (StrokeBucket*)mlt_calloc(1, sizeof(*bucket));
+    StrokeBucket* bucket = (StrokeBucket*)mlt_calloc(1, sizeof(*bucket), "StrokeList");
     bucket->bounding_rect = rect_without_size();
     return bucket;
 }
@@ -98,7 +98,7 @@ release(StrokeList* list)
     while( bucket ) {
         StrokeBucket* next = bucket->next;
         if ( bucket != &list->root ) {
-            mlt_free(bucket);
+            mlt_free(bucket, "StrokeList");
         }
         else {
             *bucket = {};

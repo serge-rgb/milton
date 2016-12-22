@@ -166,7 +166,7 @@ number_of_layers(Layer* layer)
 void
 stroke_free(Stroke* stroke)
 {
-    mlt_free(stroke->points);
-    mlt_free(stroke->pressures);
+    mlt_free(stroke->points, "Stroke");
+    mlt_free(stroke->pressures, "Stroke");
 }
 

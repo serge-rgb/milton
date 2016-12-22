@@ -78,7 +78,7 @@ linux_set_GTK_filter(GtkFileChooser* chooser, GtkFileFilter* filter, FileKind ki
 void
 platform_dialog(char* info, char* title)
 {
-    IMPL_MISSING;
+    // IMPL_MISSING;
     return;
 }
 
@@ -92,7 +92,8 @@ platform_dialog_yesno(char* info, char* title)
 void
 platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
-    char *string_copy = (char*)mlt_calloc(1, len);
+    // TODO: remove this allocation
+    char *string_copy = (char*)mlt_calloc(1, len, "Strings");
     if ( string_copy ) {
         strncpy(string_copy, fname, len);
         char *folder;
@@ -107,7 +108,7 @@ platform_fname_at_config(PATH_CHAR* fname, size_t len)
         mkdir(fname, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
         strncat(fname, "/", len);
         strncat(fname, string_copy, len);
-        mlt_free(string_copy);
+        mlt_free(string_copy, "Strings");
     }
 }
 
@@ -170,7 +171,7 @@ platform_open_dialog(FileKind kind)
         return NULL;
     }
     gchar *gtk_filename = gtk_file_chooser_get_filename(chooser);
-    PATH_CHAR* open_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR));
+    PATH_CHAR* open_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
     PATH_STRNCPY(open_filename, gtk_filename, MAX_PATH);
     g_free(gtk_filename);
     gtk_widget_destroy(dialog);
@@ -207,7 +208,7 @@ platform_save_dialog(FileKind kind)
         return NULL;
     }
     gchar *gtk_filename = gtk_file_chooser_get_filename(chooser);
-    PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR));
+    PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
     PATH_STRNCPY(save_filename, gtk_filename, MAX_PATH);
     g_free(gtk_filename);
     gtk_widget_destroy(dialog);

@@ -34,7 +34,7 @@ fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy)
 
     char* raw_data = NULL;
     if ( copy ) {
-        raw_data = (char*)mlt_calloc(count, sz);
+        raw_data = (char*)mlt_calloc(count, sz, "Persist");
         memcpy(raw_data, dst, count*sz);
     }
 
@@ -49,7 +49,7 @@ fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy)
         if ( !ok ) {
             memcpy(dst, raw_data, count*sz);
         }
-        mlt_free(raw_data);
+        mlt_free(raw_data, "Persist");
     }
 
     return ok;
@@ -161,14 +161,14 @@ milton_load(MiltonState* milton_state)
                         if ( stroke.num_points == STROKE_MAX_POINTS ) {
                             // Fix the out of bounds bug.
                             if ( ok ) {
-                                stroke.points = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i));
+                                stroke.points = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i), "Stroke");
                                 ok = fread_checked_nocopy(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
-                                if ( !ok ) mlt_free(stroke.pressures);
+                                if ( !ok ) mlt_free(stroke.pressures, "Stroke");
                             }
                             if ( ok ) {
-                                stroke.pressures = (f32*)mlt_calloc((size_t)stroke.num_points, sizeof(f32));
+                                stroke.pressures = (f32*)mlt_calloc((size_t)stroke.num_points, sizeof(f32), "Stroke");
                                 ok = fread_checked_nocopy(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
-                                if ( !ok ) mlt_free (stroke.points);
+                                if ( !ok ) mlt_free (stroke.points, "Stroke");
                             }
 
                             if ( ok ) {
@@ -184,14 +184,14 @@ milton_load(MiltonState* milton_state)
                         }
                     } else {
                         if ( ok ) {
-                            stroke.points = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i));
+                            stroke.points = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i), "Stroke");
                             ok = fread_checked_nocopy(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
-                            if ( !ok ) mlt_free(stroke.pressures);
+                            if ( !ok ) mlt_free(stroke.pressures, "Stroke");
                         }
                         if ( ok ) {
-                            stroke.pressures = (f32*)mlt_calloc((size_t)stroke.num_points, sizeof(f32));
+                            stroke.pressures = (f32*)mlt_calloc((size_t)stroke.num_points, sizeof(f32), "Stroke");
                             ok = fread_checked_nocopy(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
-                            if ( !ok ) mlt_free (stroke.points);
+                            if ( !ok ) mlt_free (stroke.points, "Stroke");
                         }
                         if ( ok ) {
                             ok = fread_checked(&stroke.layer_id, sizeof(i32), 1, fd);
@@ -410,7 +410,7 @@ milton_save(MiltonState* milton_state)
 PATH_CHAR*
 milton_get_last_canvas_fname()
 {
-    PATH_CHAR* last_fname = (PATH_CHAR*)mlt_calloc(1, MAX_PATH);
+    PATH_CHAR* last_fname = (PATH_CHAR*)mlt_calloc(1, MAX_PATH, "Strings");
     PATH_CHAR full[MAX_PATH] = {};
 
 
@@ -428,11 +428,11 @@ milton_get_last_canvas_fname()
             fclose(fd);
         }
         else {
-            mlt_free(last_fname);
+            mlt_free(last_fname, "Strings");
         }
     }
     else {
-        mlt_free(last_fname);
+        mlt_free(last_fname, "Strings");
     }
 
     return last_fname;
@@ -482,7 +482,7 @@ milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
         len = (int)sz;
     }
     size_t ext_sz = ( len+1 ) * sizeof(PATH_CHAR);
-    PATH_CHAR* fname_copy = (PATH_CHAR*)mlt_calloc(ext_sz, 1);
+    PATH_CHAR* fname_copy = (PATH_CHAR*)mlt_calloc(ext_sz, 1, "Strings");
     fname_copy[0] = '\0';
     PATH_STRCPY(fname_copy, fname);
 
@@ -546,7 +546,7 @@ milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
     else {
         platform_dialog("File name missing extension!\n", "Error");
     }
-    mlt_free(fname_copy);
+    mlt_free(fname_copy, "Strings");
 }
 
 void

@@ -41,6 +41,7 @@
 
 //#include "darray_test.cc"
 #include "utils.cc"
+#include "hash.cc"
 #include "localization.cc"
 #include "gl_helpers.h"
 #include "gl_helpers.cc"

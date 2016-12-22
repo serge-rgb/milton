@@ -495,7 +495,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     i32 w = raster_w * exporter->scale;
                     i32 h = raster_h * exporter->scale;
                     size_t size = (size_t)w * h * bpp;
-                    u8* buffer = (u8*)mlt_malloc(size);
+                    u8* buffer = (u8*)mlt_calloc(1, size, "Bitmap");
                     if ( buffer ) {
                         opened = false;
                         gpu_render_to_buffer(milton_state, buffer, exporter->scale,
@@ -506,7 +506,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         {
                             milton_save_buffer_to_file(fname, buffer, w, h);
                         }
-                        mlt_free (buffer);
+                        mlt_free (buffer, "Bitmap");
                     } else {
                         platform_dialog(LOC(MSG_memerr_did_not_write), LOC(error));
                     }

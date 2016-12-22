@@ -166,7 +166,7 @@ get_localized_string(int id)
                 char* spacer = " - ";
 
                 size_t len = strlen(name) + strlen(spacer) + strlen(cmd) + 2 /*[]*/+ 1/*\n*/;
-                char* with_cmd = (char*)mlt_calloc(len, 1);
+                char* with_cmd = (char*)mlt_calloc(len, 1, "Strings");
 
                 strncat(with_cmd, name, strlen(name));
                 strncat(with_cmd, spacer, strlen(spacer));

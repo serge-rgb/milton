@@ -100,8 +100,8 @@ clear_stroke_redo(MiltonState* milton_state)
 {
     while ( milton_state->stroke_graveyard.count > 0 ) {
         Stroke s = pop(&milton_state->stroke_graveyard);
-        mlt_free(s.points);
-        mlt_free(s.pressures);
+        mlt_free(s.points, "Stroke");
+        mlt_free(s.pressures, "Stroke");
     }
     for ( i64 i = 0; i < milton_state->redo_stack.count; ++i ) {
         HistoryElement h = milton_state->redo_stack.data[i];
@@ -287,7 +287,7 @@ milton_set_canvas_file_(MiltonState* milton_state, PATH_CHAR* fname, b32 is_defa
     }
 
     if ( milton_state->mlt_file_path != NULL ) {
-        mlt_free(milton_state->mlt_file_path);
+        mlt_free(milton_state->mlt_file_path, "Strings");
     }
 
     u64 len = PATH_STRLEN(fname);
@@ -314,7 +314,7 @@ milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname)
 void
 milton_set_default_canvas_file(MiltonState* milton_state)
 {
-    PATH_CHAR* f = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*f));
+    PATH_CHAR* f = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*f), "Strings");
     PATH_STRNCPY(f, TO_PATH_STR("MiltonPersist.mlt"), MAX_PATH);
     platform_fname_at_config(f, MAX_PATH);
     milton_set_canvas_file_(milton_state, f, true);
@@ -574,10 +574,10 @@ milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_s
     if ( do_realloc ) {
         u8* raster_buffer = milton_state->raster_buffer;
         u8* canvas_buffer = milton_state->canvas_buffer;
-        if ( raster_buffer ) mlt_free(raster_buffer);
-        if ( canvas_buffer ) mlt_free(canvas_buffer);
-        milton_state->raster_buffer      = (u8*)mlt_calloc(1, buffer_size);
-        milton_state->canvas_buffer      = (u8*)mlt_calloc(1, buffer_size);
+        if ( raster_buffer ) mlt_free(raster_buffer, "Bitmap");
+        if ( canvas_buffer ) mlt_free(canvas_buffer, "Bitmap");
+        milton_state->raster_buffer      = (u8*)mlt_calloc(1, buffer_size, "Bitmap");
+        milton_state->canvas_buffer      = (u8*)mlt_calloc(1, buffer_size, "Bitmap");
 
         if ( milton_state->raster_buffer == NULL ) {
             milton_die_gracefully("Could not allocate enough memory for raster buffer.");
@@ -625,10 +625,10 @@ milton_reset_canvas_and_set_default(MiltonState* milton_state)
             stroke_free(get(&l->strokes, si));
         }
         release(&l->strokes);
-        mlt_free(l->name);
+        mlt_free(l->name, "Strings");
 
         Layer* next = l->next;
-        mlt_free(l);
+        mlt_free(l, "Layer");
         l = next;
     }
     milton_state->last_save_time = {};
@@ -684,7 +684,7 @@ milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
 
         if ( milton_state->last_mode == MiltonMode_EYEDROPPER &&
              milton_state->eyedropper_buffer != NULL ) {
-            mlt_free(milton_state->eyedropper_buffer);
+            mlt_free(milton_state->eyedropper_buffer, "Bitmap");
         }
 
         if ( mode == MiltonMode_EXPORTING && milton_state->gui->visible ) {
@@ -785,10 +785,10 @@ milton_new_layer(MiltonState* milton_state)
     i32 id = milton_state->layer_guid++;
     milton_log("Increased guid to %d\n", milton_state->layer_guid);
 
-    Layer* layer = (Layer*)mlt_calloc(1, sizeof(Layer));
+    Layer* layer = (Layer*)mlt_calloc(1, sizeof(Layer), "Layer");
     {
         layer->id = id;
-        layer->name = (char*)mlt_calloc(MAX_LAYER_NAME_LEN, sizeof(char));
+        layer->name = (char*)mlt_calloc(MAX_LAYER_NAME_LEN, sizeof(char), "Strings");
         layer->flags = LayerFlags_VISIBLE;
     }
     snprintf(layer->name, 1024, "Layer %d", layer->id);
@@ -826,7 +826,7 @@ milton_delete_working_layer(MiltonState* milton_state)
     }
     if ( layer == milton_state->root_layer )
         milton_state->root_layer = milton_state->working_layer;
-    mlt_free(layer);
+    mlt_free(layer, "Layer");
     milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
 }
 
@@ -855,7 +855,7 @@ milton_validate(MiltonState* milton_state)
     for ( Layer* l = milton_state->root_layer; l != NULL; l = l->next ) {
         ++num_layers;
     }
-    i32* layer_ids = (i32*)mlt_calloc((size_t)num_layers, sizeof(i32));
+    i32* layer_ids = (i32*)mlt_calloc((size_t)num_layers, sizeof(i32), "Validate");
     i64 i = 0;
     for ( Layer* l = milton_state->root_layer; l != NULL; l = l->next ) {
         layer_ids[i] = l->id;
@@ -889,7 +889,7 @@ milton_validate(MiltonState* milton_state)
         }
     }
 
-    mlt_free(layer_ids);
+    mlt_free(layer_ids, "Validate");
 }
 
 void
@@ -1199,7 +1199,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             size_t bpp = 4;
             i32 w = milton_state->view->screen_size.w;
             i32 h = milton_state->view->screen_size.h;
-            milton_state->eyedropper_buffer = (u8*)mlt_calloc(w*h*bpp, 1);
+            milton_state->eyedropper_buffer = (u8*)mlt_calloc(w*h*bpp, 1, "Bitmap");
             if ( milton_state->eyedropper_buffer ) {
                 gpu_render_to_buffer(milton_state, milton_state->eyedropper_buffer, 1,
                                      0,0,w,h);
@@ -1258,8 +1258,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 Stroke new_stroke = {};
                 {
                     new_stroke.brush = milton_state->working_stroke.brush;
-                    new_stroke.points = (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i));
-                    new_stroke.pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32));
+                    new_stroke.points = (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i), "Stroke");
+                    new_stroke.pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32), "Stroke");
                     new_stroke.num_points = num_points;
                     new_stroke.layer_id = milton_state->view->working_layer_id;
                     memcpy(new_stroke.points, milton_state->working_stroke.points,
@@ -1452,5 +1452,9 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     //milton_validate(milton_state);
     ARENA_VALIDATE(milton_state->root_arena);
+
+    #if DEBUG_MEMORY_USAGE
+        debug_memory_dump_allocations();
+    #endif
 }
 
