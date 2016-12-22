@@ -100,8 +100,6 @@ clear_stroke_redo(MiltonState* milton_state)
 {
     while ( milton_state->canvas->stroke_graveyard.count > 0 ) {
         Stroke s = pop(&milton_state->canvas->stroke_graveyard);
-        mlt_free(s.points, "Stroke");
-        mlt_free(s.pressures, "Stroke");
     }
     for ( i64 i = 0; i < milton_state->canvas->redo_stack.count; ++i ) {
         HistoryElement h = milton_state->canvas->redo_stack.data[i];
@@ -621,14 +619,6 @@ milton_reset_canvas(MiltonState* milton_state)
     gpu_free_strokes(milton_state);
     milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
     Layer* l = canvas->root_layer;
-    while ( l != NULL ) {
-        for ( i64 si = 0; si < l->strokes.count; ++si ) {
-            stroke_free(get(&l->strokes, si));
-        }
-        release(&l->strokes);
-
-        l = l->next;
-    }
     milton_state->last_save_time = {};
 
     // Clear history
@@ -799,6 +789,7 @@ milton_new_layer(MiltonState* milton_state)
     {
         layer->id = id;
         layer->flags = LayerFlags_VISIBLE;
+        layer->strokes.arena = &canvas->arena;
     }
     snprintf(layer->name, 1024, "Layer %d", layer->id);
 
@@ -1268,9 +1259,10 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 i32 num_points = milton_state->working_stroke.num_points;
                 Stroke new_stroke = {};
                 {
+                    CanvasState* canvas = milton_state->canvas;
                     new_stroke.brush = milton_state->working_stroke.brush;
-                    new_stroke.points = (v2i*)mlt_calloc((size_t)num_points, sizeof(v2i), "Stroke");
-                    new_stroke.pressures = (f32*)mlt_calloc((size_t)num_points, sizeof(f32), "Stroke");
+                    new_stroke.points = arena_alloc_array(&canvas->arena, num_points, v2i);
+                    new_stroke.pressures = arena_alloc_array(&canvas->arena, num_points, f32);
                     new_stroke.num_points = num_points;
                     new_stroke.layer_id = milton_state->view->working_layer_id;
                     memcpy(new_stroke.points, milton_state->working_stroke.points,

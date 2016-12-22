@@ -18,14 +18,9 @@ static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 
 static b32
 fread_checked(void* dst, size_t sz, size_t count, FILE* fd)
 {
-    return fread_checked_impl(dst, sz, count, fd, true);
-}
-
-static b32
-fread_checked_nocopy(void* dst, size_t sz, size_t count, FILE* fd)
-{
     return fread_checked_impl(dst, sz, count, fd, false);
 }
+
 
 static b32
 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy)
@@ -84,6 +79,8 @@ milton_load(MiltonState* milton_state)
 {
     // Reset the canvas.
     milton_reset_canvas(milton_state);
+
+    CanvasState* canvas = milton_state->canvas;
 
     // Unload gpu data if the strokes have been cooked.
     gpu_free_strokes(milton_state);
@@ -161,14 +158,12 @@ milton_load(MiltonState* milton_state)
                         if ( stroke.num_points == STROKE_MAX_POINTS ) {
                             // Fix the out of bounds bug.
                             if ( ok ) {
-                                stroke.points = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i), "Stroke");
-                                ok = fread_checked_nocopy(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
-                                if ( !ok ) mlt_free(stroke.pressures, "Stroke");
+                                stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2i);
+                                ok = fread_checked(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
                             }
                             if ( ok ) {
-                                stroke.pressures = (f32*)mlt_calloc((size_t)stroke.num_points, sizeof(f32), "Stroke");
-                                ok = fread_checked_nocopy(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
-                                if ( !ok ) mlt_free (stroke.points, "Stroke");
+                                stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
+                                ok = fread_checked(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
                             }
 
                             if ( ok ) {
@@ -184,14 +179,12 @@ milton_load(MiltonState* milton_state)
                         }
                     } else {
                         if ( ok ) {
-                            stroke.points = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i), "Stroke");
-                            ok = fread_checked_nocopy(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
-                            if ( !ok ) mlt_free(stroke.pressures, "Stroke");
+                            stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2i);
+                            ok = fread_checked(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
                         }
                         if ( ok ) {
-                            stroke.pressures = (f32*)mlt_calloc((size_t)stroke.num_points, sizeof(f32), "Stroke");
-                            ok = fread_checked_nocopy(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
-                            if ( !ok ) mlt_free (stroke.points, "Stroke");
+                            stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
+                            ok = fread_checked(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
                         }
                         if ( ok ) {
                             ok = fread_checked(&stroke.layer_id, sizeof(i32), 1, fd);
@@ -239,7 +232,7 @@ milton_load(MiltonState* milton_state)
                 reset(&milton_state->canvas->history);
                 reserve(&milton_state->canvas->history, history_count);
             }
-            if ( ok ) { ok = fread_checked_nocopy(milton_state->canvas->history.data, sizeof(*milton_state->canvas->history.data),
+            if ( ok ) { ok = fread_checked(milton_state->canvas->history.data, sizeof(*milton_state->canvas->history.data),
                                                 (size_t)history_count, fd); }
             if ( ok ) {
                 milton_state->canvas->history.count = history_count;

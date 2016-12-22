@@ -222,13 +222,15 @@ calloc_with_debug(size_t n, size_t sz, char* category)
 void
 free_with_debug(void* ptr, char* category)
 {
+    milton_log("Attempting to free in category %s\n", category);
     free(ptr);
 }
 
 void*
 realloc_with_debug(void* ptr, size_t sz, char* category)
 {
-    return realloc(ptr, sz);
+    free_with_debug(ptr, category);
+    return calloc_with_debug(1, sz, category);
 }
 
 void
@@ -239,7 +241,9 @@ debug_memory_dump_allocations()
             milton_log("For category %s...\n", g_allocation_categories[i]);
             for ( size_t b = 0; b < NUM_MEMORY_DEBUG_BUCKETS; ++b ) {
                 size_t num_allocs = g_allocation_debug_info.allocation_counts[b][i];
-                milton_log("    Number of allocations of %d bytes is %d\n", 1<<b, num_allocs);
+                if ( num_allocs > 0 ) {
+                    milton_log("    Number of allocations of %d bytes is %d\n", 1<<b, num_allocs);
+                }
             }
         }
     }

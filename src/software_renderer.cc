@@ -70,7 +70,7 @@ stroke_clip_to_rect(Arena*  render_arena,
                     i32     local_scale,
                     v2i     reference_point)
 {
-    ClippedStroke* clipped_stroke = arena_alloc_elem_(render_arena, ClippedStroke, Arena_NOFAIL);
+    ClippedStroke* clipped_stroke = arena_alloc_elem(render_arena, ClippedStroke);
 
     if ( !clipped_stroke ) {
         return NULL;
@@ -170,7 +170,7 @@ clip_strokes_to_block(Arena* render_arena,
         }
 
         if ( layer != root_layer && clipped_stroke_is_layermark(stroke_list) == false ) {
-            ClippedStroke* layer_mark = arena_alloc_elem_(render_arena, ClippedStroke, Arena_NOFAIL);
+            ClippedStroke* layer_mark = arena_alloc_elem(render_arena, ClippedStroke);
             if ( !layer_mark ) {
                 *allocation_ok = false;
             }

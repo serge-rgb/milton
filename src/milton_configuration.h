@@ -41,7 +41,7 @@
         #define USE_GL_3_2 0
     #endif
 
-#define DEBUG_MEMORY_USAGE 0
+#define DEBUG_MEMORY_USAGE 1
 
 // -- Software renderer config..
     #define MAX_NUM_WORKERS 64

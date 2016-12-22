@@ -17,12 +17,14 @@ struct StrokeList
     StrokeBucket    root;
     i64             count;
     Stroke*         operator[](i64 i);
+
+    Arena*          arena;
 };
 
 StrokeBucket*
-create_bucket()
+create_bucket(Arena* arena)
 {
-    StrokeBucket* bucket = (StrokeBucket*)mlt_calloc(1, sizeof(*bucket), "StrokeList");
+    StrokeBucket* bucket = arena_alloc_elem(arena, StrokeBucket);
     bucket->bounding_rect = rect_without_size();
     return bucket;
 }
@@ -36,7 +38,7 @@ push(StrokeList* list, const Stroke& element)
     StrokeBucket* bucket = &list->root;
     while ( bucket_i != 0 ) {
         if ( !bucket->next ) {
-            bucket->next = create_bucket();
+            bucket->next = create_bucket(list->arena);
         }
         bucket = bucket->next;
         bucket_i -= 1;
@@ -87,24 +89,6 @@ reset(StrokeList* list)
     while( bucket ) {
         bucket->bounding_rect = rect_without_size();
         bucket = bucket->next;
-    }
-}
-
-void
-release(StrokeList* list)
-{
-    list->count = 0;
-    StrokeBucket* bucket = &list->root;
-    while( bucket ) {
-        StrokeBucket* next = bucket->next;
-        if ( bucket != &list->root ) {
-            mlt_free(bucket, "StrokeList");
-        }
-        else {
-            *bucket = {};
-            bucket->bounding_rect = rect_without_size();
-        }
-        bucket = next;
     }
 }
 

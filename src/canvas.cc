@@ -162,11 +162,3 @@ number_of_layers(Layer* layer)
     }
     return n;
 }
-
-void
-stroke_free(Stroke* stroke)
-{
-    mlt_free(stroke->points, "Stroke");
-    mlt_free(stroke->pressures, "Stroke");
-}
-
