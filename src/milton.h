@@ -165,7 +165,6 @@ struct MiltonState
 enum MiltonStateFlags
 {
     MiltonStateFlags_RUNNING                = 1 << 0,
-    MiltonStateFlags_STROKE_IS_FROM_TABLET  = 1 << 1, // Quick and dirty way to count MOUSE_UP events as stroke points for mouse but discard them when using a tablet.
     MiltonStateFlags_REQUEST_QUALITY_REDRAW = 1 << 2,
     MiltonStateFlags_WORKER_NEEDS_MEMORY    = 1 << 3,
     MiltonStateFlags_NEW_CANVAS             = 1 << 4,

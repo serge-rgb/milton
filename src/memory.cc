@@ -254,7 +254,7 @@ free_with_debug(void* ptr, char* category)
     }
     else if ( header->prev ) header->prev->next = header->next;
     if ( header->next ) header->next->prev = header->prev;
-    milton_log("Freeing header with %d bytes of memory in \n", header->size, category);
+    milton_log("Freeing header with %d bytes of memory in %s\n", header->size, category);
 }
 
 void*
@@ -281,7 +281,7 @@ debug_memory_dump_allocations()
             for ( size_t b = 0; b < NUM_MEMORY_DEBUG_BUCKETS; ++b ) {
                 size_t num_allocs = g_allocation_debug_info.allocation_counts[b][i];
                 if ( num_allocs > 0 ) {
-                    milton_log("    Number of allocations of %d bytes is %d\n", 1<<b, num_allocs);
+                    milton_log("    Number of allocations <= %d bytes is %d\n", 1<<b, num_allocs);
                 }
             }
         }

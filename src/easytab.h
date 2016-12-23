@@ -627,6 +627,10 @@ typedef struct
 #ifdef __linux__
     XDevice* Device;
     uint32_t MotionType;
+    uint32_t ProximityTypeIn;
+    uint32_t ProximityTypeOut;
+    uint32_t ButtonTypePress;
+    uint32_t ButtonTypeRelease;
     XEventClass EventClasses[1024];
     uint32_t NumEventClasses;
 #endif // __linux__
@@ -771,13 +775,29 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
                         //printf("Max/min pressure values: %d, %d\n", min, EasyTab->MaxPressure);
                     }
 
-                    XEventClass EventClass;
-                    DeviceMotionNotify(EasyTab->Device, EasyTab->MotionType, EventClass);
-                    if (EventClass)
-                    {
-                        EasyTab->EventClasses[EasyTab->NumEventClasses] = EventClass;
-                        EasyTab->NumEventClasses++;
-                    }
+                    XEventClass EventClassMotion;
+                    XEventClass EventClassProximityIn;
+                    XEventClass EventClassProximityOut;
+                    XEventClass EventClassButtonPress;
+                    XEventClass EventClassButtonRelease;
+                    DeviceMotionNotify(EasyTab->Device, EasyTab->MotionType, EventClassMotion);
+                    ProximityIn(EasyTab->Device, EasyTab->ProximityTypeIn, EventClassProximityIn);
+                    ProximityOut(EasyTab->Device, EasyTab->ProximityTypeOut,EventClassProximityOut );
+                    DeviceButtonPress(EasyTab->Device, EasyTab->ButtonTypePress, EventClassButtonPress);
+                    DeviceButtonPress(EasyTab->Device, EasyTab->ButtonTypeRelease, EventClassButtonRelease);
+
+                    #define APPEND_EVENT_CLASS(EventClass) \
+                        if (EventClass)                                                     \
+                        {                                                                   \
+                            EasyTab->EventClasses[EasyTab->NumEventClasses] = EventClass;   \
+                            EasyTab->NumEventClasses++;                                     \
+                        }
+
+                    APPEND_EVENT_CLASS(EventClassMotion);
+                    APPEND_EVENT_CLASS(EventClassProximityIn);
+                    APPEND_EVENT_CLASS(EventClassProximityOut);
+
+                    #undef APPEND_EVENT_CLASS
                 } break;
             }
 
@@ -796,24 +816,47 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
 #ifdef MILTON_EASYTAB
 EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 {
-    EasyTab->Buttons = 0;
     EasyTab->NumPackets = 0;
-    EasyTab->PenInProximity = EASYTAB_FALSE;
 
-    if (Event->type != EasyTab->MotionType) { return EASYTAB_EVENT_NOT_HANDLED; }
-
-    XDeviceMotionEvent* MotionEvent = (XDeviceMotionEvent*)(Event);
-    EasyTab->PosX[0]     = MotionEvent->x;
-    EasyTab->PosY[0]     = MotionEvent->y;
-    EasyTab->Pressure[0] = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
-
-    if (EasyTab->Pressure[0] > 0.0f)
+    if (Event->type == EasyTab->MotionType)
     {
-        EasyTab->Buttons |= EasyTab_Buttons_Pen_Touch;
+        XDeviceMotionEvent* MotionEvent = (XDeviceMotionEvent*)(Event);
+        EasyTab->PosX[0]     = MotionEvent->x;
+        EasyTab->PosY[0]     = MotionEvent->y;
+        EasyTab->Pressure[0] = (float)MotionEvent->axis_data[2] / (float)EasyTab->MaxPressure;
+
+        if (EasyTab->Pressure[0] > 0.0f)
+        {
+            EasyTab->Buttons |= EasyTab_Buttons_Pen_Touch;
+        }
+        else
+        {
+            EasyTab->Buttons &= ~EasyTab_Buttons_Pen_Touch;
+        }
+
+        EasyTab->NumPackets = 1;
+    }
+    else if (Event->type == EasyTab->ProximityTypeIn)
+    {
+        EasyTab->PenInProximity = EASYTAB_TRUE;
+    }
+    else if (Event->type == EasyTab->ProximityTypeOut)
+    {
+        EasyTab->PenInProximity = EASYTAB_FALSE;
+    }
+    else if (Event->type == EasyTab->ButtonTypePress)
+    {
+        // TODO: Buttons
+    }
+    else if (Event->type == EasyTab->ButtonTypeRelease)
+    {
+
+    }
+    else
+    {
+        return EASYTAB_EVENT_NOT_HANDLED;
     }
 
-    EasyTab->NumPackets = 1;
-    EasyTab->PenInProximity = EASYTAB_TRUE;
     return EASYTAB_OK;
 }
 #else

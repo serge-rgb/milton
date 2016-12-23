@@ -136,12 +136,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         if ( input->pressures[input_i] != NO_PRESSURE_INFO ) {
             f32 pressure_min = 0.01f;
             pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
-            milton_state->flags |= MiltonStateFlags_STROKE_IS_FROM_TABLET;
-        }
-
-        // We haven't received pressure info, assume mouse input
-        if ( input->pressures[input_i] == NO_PRESSURE_INFO
-             && !(milton_state->flags & MiltonStateFlags_STROKE_IS_FROM_TABLET) ) {
+        } else {
             pressure = 1.0f;
         }
 
@@ -202,7 +197,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                 // Change canvas_point depending on the average of the last `N` points.
                 // The new point is a weighted sum of factor*average (1-factor)*canvas_point
                 i64 N = 2;
-                if (ws->num_points > N && ( milton_state->flags & MiltonStateFlags_STROKE_IS_FROM_TABLET )) {
+                if ( ws->num_points > N ) {
                     v2i average = {};
                     float factor = 0.55f;
 
@@ -1234,8 +1229,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     // ---- End stroke
     if ( (input->flags & MiltonInputFlags_END_STROKE) ) {
-        milton_state->flags &= ~MiltonStateFlags_STROKE_IS_FROM_TABLET;
-
         if ( milton_state->gui->owns_user_input ) {
             gui_deactivate(milton_state->gui);
             render_flags |= MiltonRenderFlags_UI_UPDATED;
