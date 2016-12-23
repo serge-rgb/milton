@@ -1216,6 +1216,9 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_widt
 
                     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
+                } else {
+                    static int n = 0;
+                    milton_log("Warning: Render element with count 0 [%d times]\n", ++  n);
                 }
             }
         }

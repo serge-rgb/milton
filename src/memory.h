@@ -8,9 +8,9 @@
 
 #define mlt_malloc(sz) INVALID_CODE_PATH
 #if DEBUG_MEMORY_USAGE
-    #define mlt_calloc(n, sz, category) calloc_with_debug(n, sz, category)
-    #define mlt_free(ptr, category) free_with_debug(ptr, category)
-    #define mlt_realloc(ptr, sz, category) realloc_with_debug(ptr, sz, category)
+    #define mlt_calloc(n, sz, category) calloc_with_debug(n, sz, category, __FILE__, __LINE__)
+    #define mlt_free(ptr, category) free_with_debug(ptr, category); ptr=NULL
+    #define mlt_realloc(ptr, sz, category) realloc_with_debug(ptr, sz, category, __FILE__, __LINE__)
 #else
     #define mlt_calloc(n, sz, category) calloc(n, sz)
     #define mlt_free(ptr, category) do { if (ptr) { free(ptr); ptr = NULL; } else { mlt_assert(!"Freeing null"); } } while(0)
@@ -75,7 +75,7 @@ u8* arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags=Arena_NONE
 void* arena_bootstrap_(size_t size, size_t obj_size, size_t offset);
 
 #if DEBUG_MEMORY_USAGE
-    void* calloc_with_debug(size_t n, size_t sz, char* category);
+    void* calloc_with_debug(size_t n, size_t sz, char* category, char* file, i64 line);
     void  free_with_debug(void* ptr, char* category);
-    void* realloc_with_debug(void* ptr, size_t sz, char* category);
+    void* realloc_with_debug(void* ptr, size_t sz, char* category, char* file, i64 line);
 #endif

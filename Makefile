@@ -34,8 +34,9 @@ MLT_CFLAGS = $(CFLAGS) \
              -fno-strict-aliasing \
              -fno-omit-frame-pointer \
              -ldl \
-             -fsanitize=address\
              -Werror
+
+             # -fsanitize=address\
 
 MLT_LDFLAGS = $(LDFLAGS) -lGL `pkg-config --libs sdl2 gtk+-2.0` -lXi
 

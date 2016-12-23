@@ -21,11 +21,17 @@ struct StrokeList
     Arena*          arena;
 };
 
+void
+strokelist_init_bucket(StrokeBucket* bucket)
+{
+    bucket->bounding_rect = rect_without_size();
+}
+
 StrokeBucket*
 create_bucket(Arena* arena)
 {
     StrokeBucket* bucket = arena_alloc_elem(arena, StrokeBucket);
-    bucket->bounding_rect = rect_without_size();
+    strokelist_init_bucket(bucket);
     return bucket;
 }
 

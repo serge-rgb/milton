@@ -155,7 +155,7 @@ arena_reset_noclear(Arena* arena)
 
 #if DEBUG_MEMORY_USAGE
 
-#define NUM_MEMORY_DEBUG_BUCKETS    32
+#define NUM_MEMORY_DEBUG_BUCKETS    20
 #define HASH_TABLE_SIZE             1023
 
 struct AllocationDebugInfo
@@ -188,12 +188,9 @@ find_bucket_for_size(size_t sz)
     return bucket;
 }
 
-void*
-calloc_with_debug(size_t n, size_t sz, char* category)
+static void
+mark_allocation(char* category, size_t size)
 {
-    if ( strcmp(category, "Layer") == 0 ) {
-        int breakhere=1;
-    }
     u64 h = hash(category, strlen(category));
 
     // Try and store the category if we haven't seen it before.
@@ -207,30 +204,72 @@ calloc_with_debug(size_t n, size_t sz, char* category)
         g_allocation_categories[index] = category;
     }
 
-    u64 b = find_bucket_for_size(n*sz);
+    u64 b = find_bucket_for_size(size);
 
-    milton_log("Received allocation with %d bytes in category %s\n", n*sz, category);
+    milton_log("Received allocation with %d bytes in category %s\n", size, category);
 
     // Register this allocation
     milton_log("Storing in bucket %d with hash %d\n", b, h%HASH_TABLE_SIZE);
     g_allocation_debug_info.allocation_counts[b][index] += 1;
-    g_allocation_debug_info.allocation_bytes[b][index] += n*sz;
+    g_allocation_debug_info.allocation_bytes[b][index] += size;
+}
 
-    return calloc(n, sz);
+
+struct MemDebugHeader
+{
+    size_t size;
+    char* file;
+    i64 line;
+
+    MemDebugHeader* next;
+    MemDebugHeader* prev;
+};
+
+static MemDebugHeader* g_mem_debug_root;
+
+void*
+calloc_with_debug(size_t n, size_t sz, char* category, char* file, i64 line)
+{
+    mark_allocation(category, n*sz);
+
+    MemDebugHeader* header = (MemDebugHeader*) calloc(1, n*sz + sizeof(*header));
+    header->size = n*sz;
+    header->file = file;
+    header->line = line;
+
+    header->next            = g_mem_debug_root;
+    if ( g_mem_debug_root ) { g_mem_debug_root->prev  = header; }
+
+    g_mem_debug_root = header;
+
+    return header+1;
 }
 
 void
 free_with_debug(void* ptr, char* category)
 {
-    milton_log("Attempting to free in category %s\n", category);
-    free(ptr);
+    MemDebugHeader* header = (MemDebugHeader*)ptr - 1;
+    if ( g_mem_debug_root == header ) {
+        g_mem_debug_root = header->next;
+    }
+    else if ( header->prev ) header->prev->next = header->next;
+    if ( header->next ) header->next->prev = header->prev;
+    milton_log("Freeing header with %d bytes of memory in \n", header->size, category);
 }
 
 void*
-realloc_with_debug(void* ptr, size_t sz, char* category)
+realloc_with_debug(void* ptr, size_t sz, char* category, char* file, i64 line)
 {
+    mark_allocation(category, sz);
+    MemDebugHeader* header = (MemDebugHeader*)ptr - 1;
+
+    MemDebugHeader* new_header =  (MemDebugHeader*) calloc_with_debug(1, sz, category, file, line) - 1;
+
+    memcpy(new_header+1, header+1, header->size);
+
     free_with_debug(ptr, category);
-    return calloc_with_debug(1, sz, category);
+
+    return new_header+1;
 }
 
 void
@@ -248,6 +287,13 @@ debug_memory_dump_allocations()
         }
     }
 
+    milton_log("Dumping reachable memory: --    \n");
+    for ( MemDebugHeader* h = g_mem_debug_root;
+          h != NULL;
+          h = h->next ) {
+        milton_log("    Reachable memory of size %d allocated in %s:%d\n", h->size, h->file, h->line);
+    }
+    milton_log("Done.                   ----\n");
 }
 
 #endif  // DEBUG_MEMORY_USAGE

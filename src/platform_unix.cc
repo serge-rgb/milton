@@ -19,6 +19,8 @@
 #include <X11/keysym.h>
 #endif
 
+#define BREAKHERE raise(SIGTRAP)
+
 #elif defined(__MACH__)
 #include <sys/mman.h>
 #include <unistd.h> // getpid

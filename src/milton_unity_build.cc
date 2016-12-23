@@ -22,7 +22,6 @@
 
 #include "platform.h"
 
-#include "DArray.h"
 
 #include "vector.cc"
 
@@ -36,6 +35,7 @@
 #include "platform_mac.cc"
 #endif
 
+#include "DArray.h"
 
 #undef main // Defined by SDL
 

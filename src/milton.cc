@@ -570,8 +570,8 @@ milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_s
     if ( do_realloc ) {
         u8* raster_buffer = milton_state->raster_buffer;
         u8* canvas_buffer = milton_state->canvas_buffer;
-        if ( raster_buffer ) mlt_free(raster_buffer, "Bitmap");
-        if ( canvas_buffer ) mlt_free(canvas_buffer, "Bitmap");
+        if ( raster_buffer ) { mlt_free(raster_buffer, "Bitmap"); milton_state->raster_buffer = NULL; }
+        if ( canvas_buffer ) { mlt_free(canvas_buffer, "Bitmap"); milton_state->canvas_buffer = NULL; }
         milton_state->raster_buffer      = (u8*)mlt_calloc(1, buffer_size, "Bitmap");
         milton_state->canvas_buffer      = (u8*)mlt_calloc(1, buffer_size, "Bitmap");
 
@@ -618,14 +618,13 @@ milton_reset_canvas(MiltonState* milton_state)
 
     gpu_free_strokes(milton_state);
     milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
-    Layer* l = canvas->root_layer;
     milton_state->last_save_time = {};
 
     // Clear history
     // TODO: These arrays should use the arena.
-    reset(&canvas->history);
-    reset(&canvas->redo_stack);
-    reset(&canvas->stroke_graveyard);
+    release(&canvas->history);
+    release(&canvas->redo_stack);
+    release(&canvas->stroke_graveyard);
 
     size_t size = canvas->arena.min_block_size;
     arena_free(&canvas->arena);  // Note: This destroys the canvas
@@ -684,6 +683,7 @@ milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
         if ( milton_state->last_mode == MiltonMode_EYEDROPPER &&
              milton_state->eyedropper_buffer != NULL ) {
             mlt_free(milton_state->eyedropper_buffer, "Bitmap");
+            milton_state->eyedropper_buffer = NULL;
         }
 
         if ( mode == MiltonMode_EXPORTING && milton_state->gui->visible ) {
@@ -790,6 +790,7 @@ milton_new_layer(MiltonState* milton_state)
         layer->id = id;
         layer->flags = LayerFlags_VISIBLE;
         layer->strokes.arena = &canvas->arena;
+        strokelist_init_bucket(&layer->strokes.root);
     }
     snprintf(layer->name, 1024, "Layer %d", layer->id);
 
@@ -858,7 +859,6 @@ milton_validate(MiltonState* milton_state)
     i32* layer_ids = (i32*)mlt_calloc((size_t)num_layers, sizeof(i32), "Validate");
     i64 i = 0;
     for ( Layer* l = milton_state->canvas->root_layer; l != NULL; l = l->next ) {
-        milton_log("DEBUG found id %d\n", l->id);
         layer_ids[i] = l->id;
         ++i;
     }
@@ -914,11 +914,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     //MiltonRenderFlags
     int render_flags = MiltonRenderFlags_NONE;
-
-    if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
-        // Someone tried to kill milton from outside the update. Make sure we save.
-        should_save = true;
-    }
 
     if ( input->flags & MiltonInputFlags_OPEN_FILE ) {
         milton_load(milton_state);
@@ -1353,9 +1348,14 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
         platform_cursor_show();
     }
+
+    if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
+        // Someone tried to kill milton from outside the update. Make sure we save.
+        should_save = true;
+    }
+
     if ( should_save ) {
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
-            // We want to block so that the main thread doesn't die before the async function finishes.
             milton_save(milton_state);
         } else {
 #if MILTON_SAVE_ASYNC
@@ -1365,7 +1365,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 #endif
         }
         // We're about to close and the last save failed and the drawing changed.
-        if (   !(milton_state->flags & MiltonStateFlags_RUNNING)
+        if (    !(milton_state->flags & MiltonStateFlags_RUNNING)
              && (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED)
              && (milton_state->flags & MiltonStateFlags_MOVE_FILE_FAILED)
              && milton_state->last_save_stroke_count != count_strokes(milton_state->canvas->root_layer) ) {
@@ -1403,7 +1403,19 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 }
             }
         }
+
+        // About to quit and just saved.
+        if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
+            // Release resources
+            milton_reset_canvas(milton_state);
+            release(&milton_state->render_data->clip_array);
+
+            #if DEBUG_MEMORY_USAGE
+                debug_memory_dump_allocations();
+            #endif
+        }
     }
+
     profiler_output();
 
     i32 view_x = 0;
@@ -1455,9 +1467,5 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     //milton_validate(milton_state);
     ARENA_VALIDATE(&milton_state->root_arena);
-
-    #if DEBUG_MEMORY_USAGE
-        debug_memory_dump_allocations();
-    #endif
 }
 
