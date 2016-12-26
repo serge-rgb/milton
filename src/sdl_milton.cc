@@ -666,8 +666,8 @@ milton_main()
 
         size_t arr_sz = (w*h+7) / 8;
 
-        char* andmask = arena_alloc_array(&root_arena, arr_sz, char);
-        char* xormask = arena_alloc_array(&root_arena, arr_sz, char);
+        char* andmask = arena_alloc_array(&milton_state->root_arena, arr_sz, char);
+        char* xormask = arena_alloc_array(&milton_state->root_arena, arr_sz, char);
 
         i32 counter = 0;
         {

@@ -7,7 +7,7 @@ arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags)
 {
     size_t total = arena->count + num_bytes;
     if ( total > arena->size ) {
-        size_t new_size = MAX(num_bytes, arena->min_block_size);
+        size_t new_size = max(num_bytes, arena->min_block_size);
         ArenaFooter arena_footer = {};
         arena_footer.previous_block = arena->ptr;
         arena_footer.previous_size = arena->size;
@@ -177,7 +177,7 @@ find_bucket_for_size(size_t sz)
     u64 bucket = NUM_MEMORY_DEBUG_BUCKETS;
     // There is probably a bit twiddling hack to compute this less stupidly
     for ( size_t b = 0; b < NUM_MEMORY_DEBUG_BUCKETS; ++b ) {
-        if ( sz <= 1<<b ) {
+        if ( sz <= (size_t)1<<b ) {
             bucket = b;
             break;
         }

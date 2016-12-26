@@ -62,12 +62,6 @@ HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt H
 #define snprintf sprintf_s
 #endif
 
-#if MILTON_DEBUG && 0  // Disabled. Milton 1.2.6 x86
-#define HEAP_BEGIN_ADDRESS ((LPVOID)(1<<18))  // Location to begin allocations
-#else
-#define HEAP_BEGIN_ADDRESS NULL
-#endif
-
 #define PATH_STRLEN wcslen
 #define PATH_TOLOWER towlower
 #define PATH_STRCMP wcscmp
@@ -109,14 +103,7 @@ platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
 void*
 platform_allocate(size_t size)
 {
-#if MILTON_DEBUG
-    static b32 once_check = false;
-    if ( once_check ) {
-        INVALID_CODE_PATH;
-    }
-    once_check = true;
-#endif
-    return VirtualAlloc(HEAP_BEGIN_ADDRESS,
+    return VirtualAlloc(NULL,
                         (size),
                         MEM_COMMIT | MEM_RESERVE,
                         PAGE_READWRITE);
@@ -213,7 +200,8 @@ PATH_CHAR*
 platform_save_dialog(Arena* arena, FileKind kind)
 {
     platform_cursor_show();
-    PATH_CHAR* save_filename = arena_alloc_array(arena, PATH_CHAR, MAX_PATH);
+    PATH_CHAR* save_filename = arena_alloc_array(arena, MAX_PATH, PATH_CHAR);
+
 
     OPENFILENAMEW ofn = {0};
 
@@ -236,7 +224,7 @@ platform_save_dialog(Arena* arena, FileKind kind)
     b32 ok = GetSaveFileNameW(&ofn);
 
     if ( !ok ) {
-        mlt_free(save_filename);
+        mlt_free(save_filename, "Strings");
         return NULL;
     }
     return save_filename;
@@ -248,7 +236,7 @@ platform_open_dialog(Arena* arena, FileKind kind)
     platform_cursor_show();
     OPENFILENAMEW ofn = {0};
 
-    PATH_CHAR* fname = arena_alloc_array(arena, PATH_CHAR, MAX_PATH);
+    PATH_CHAR* fname = arena_alloc_array(arena, MAX_PATH, PATH_CHAR);
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     win32_set_OFN_filter(&ofn, kind);
@@ -291,7 +279,7 @@ platform_dialog(char* info, char* title)
 void
 platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 {
-    PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len);  // store the fname here
+    PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len, "Strings");  // store the fname here
     PATH_STRCPY(tmp, fname);
 
     DWORD path_len = GetModuleFileNameW(NULL, fname, (DWORD)len);
@@ -313,7 +301,7 @@ platform_fname_at_exe(PATH_CHAR* fname, size_t len)
     }
 
     PATH_STRCAT(fname, tmp);
-    mlt_free(tmp);
+    mlt_free(tmp, "Strings");
 
 }
 
@@ -321,7 +309,7 @@ b32
 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
 {
     b32 ok = true;
-    PATH_CHAR* full = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*full));
+    PATH_CHAR* full = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(*full), "Strings");
     PATH_STRNCPY(full, fname, MAX_PATH);
     platform_fname_at_config(full, MAX_PATH);
     int r = DeleteFileW(full);
@@ -334,7 +322,7 @@ platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
             ok = true;
         }
     }
-    mlt_free(full);
+    mlt_free(full, "Strings");
     return ok;
 }
 
@@ -428,12 +416,12 @@ platform_fname_at_config(PATH_CHAR* fname, size_t len)
 
         lstrcatW(path, L"\\");
 
-        PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len*sizeof(PATH_CHAR));  // store the fname here
+        PATH_CHAR* tmp = (PATH_CHAR*)mlt_calloc(1, len*sizeof(PATH_CHAR), "Strings");  // store the fname here
         PATH_STRCPY(tmp, fname);
         fname[0] = '\0';
         wcsncat(fname, path, len);
         wcsncat(fname, tmp, len);
-        mlt_free(tmp);
+        mlt_free(tmp, "Strings");
     }
 }
 
