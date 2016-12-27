@@ -103,11 +103,11 @@ platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
 void*
 platform_allocate(size_t size)
 {
-    return VirtualAlloc(NULL,
-                        (size),
-                        MEM_COMMIT | MEM_RESERVE,
-                        PAGE_READWRITE);
-
+    void* result = VirtualAlloc(NULL,
+                                (size),
+                                MEM_COMMIT | MEM_RESERVE,
+                                PAGE_READWRITE);
+    return result;
 }
 
 void

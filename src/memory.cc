@@ -62,11 +62,16 @@ arena_bootstrap_(size_t size, size_t obj_size, size_t offset)
 void
 arena_free(Arena* arena)
 {
-    while ( arena->ptr ) {
-        ArenaFooter footer = *(ArenaFooter*)(arena->ptr + arena->size);
-        platform_deallocate(arena->ptr);
-        arena->ptr = footer.previous_block;
-        arena->size = footer.previous_size;
+    if ( arena ) {
+        u8* data = arena->ptr;
+        size_t size = arena->size;
+        while ( data ) {
+            ArenaFooter footer = *(ArenaFooter*)(data + size);
+            platform_deallocate(data);
+            // Note: If the arena was bootstrapped, it is no longer valid.
+            data = footer.previous_block;
+            size = footer.previous_size;
+        }
     }
 }
 
@@ -155,7 +160,7 @@ arena_reset_noclear(Arena* arena)
 
 #if DEBUG_MEMORY_USAGE
 
-#define NUM_MEMORY_DEBUG_BUCKETS    20
+#define NUM_MEMORY_DEBUG_BUCKETS    23
 #define HASH_TABLE_SIZE             1023
 
 struct AllocationDebugInfo

@@ -95,8 +95,7 @@ platform_allocate(size_t size)
                         PROT_WRITE | PROT_READ,
                         /*MAP_NORESERVE |*/ MAP_PRIVATE | MAP_ANONYMOUS,
                         -1, 0);
-    if (ptr)
-    {
+    if ( ptr ) {
         // NOTE: This should be a footer if we intend on returning aligned data.
         *((UnixMemoryHeader*)ptr) = (UnixMemoryHeader)
         {
