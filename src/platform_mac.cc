@@ -56,12 +56,12 @@ platform_dialog_yesno(char* info, char* title)
 void
 platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
-    char* string_copy = (char*)mlt_calloc(1, len);
+    char* string_copy = (char*)mlt_calloc(1, len, "Strings");
     if (string_copy)
     {
         strncpy(string_copy, fname, len);
         snprintf(fname, len,  "~/.milton/%s", string_copy);
-        mlt_free(string_copy);
+        mlt_free(string_copy, "Strings");
     }
 }
 
@@ -117,7 +117,7 @@ platform_open_link(char* link)
     return;
 }
 PATH_CHAR*
-platform_save_dialog(FileKind kind)
+platform_save_dialog(Arena* arena, FileKind kind)
 {
     IMPL_MISSING;
     return NULL;
