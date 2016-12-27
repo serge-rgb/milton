@@ -46,7 +46,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     }
                 }
                 if ( save_file ) {
-                    PATH_CHAR* name = platform_save_dialog(&canvas->arena, FileKind_MILTON_CANVAS);
+                    PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                     if ( name ) {
                         milton_log("Saving to %s\n", name);
                         milton_set_canvas_file(milton_state, name);
@@ -73,7 +73,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                     }
                     if ( save_file ) {
-                        PATH_CHAR* name = platform_save_dialog(&canvas->arena, FileKind_MILTON_CANVAS);
+                        PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                         if ( name ) {
                             milton_log("Saving to %s\n", name);
                             milton_set_canvas_file(milton_state, name);
@@ -87,7 +87,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         }
                     }
                 }
-                PATH_CHAR* fname = platform_open_dialog(&canvas->arena, FileKind_MILTON_CANVAS);
+                PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
                 if ( fname ) {
                     milton_set_canvas_file(milton_state, fname);
                     input->flags |= MiltonInputFlags_OPEN_FILE;
@@ -97,7 +97,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             if ( ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested ) {
                 // NOTE(possible refactor): There is a copy of this at milton.c end of file
-                PATH_CHAR* name = platform_save_dialog(&canvas->arena, FileKind_MILTON_CANVAS);
+                PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                 if ( name ) {
                     milton_log("Saving to %s\n", name);
                     milton_set_canvas_file(milton_state, name);
@@ -502,7 +502,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         gpu_render_to_buffer(milton_state, buffer, exporter->scale,
                                              x,y, raster_w, raster_h);
                         //milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
-                        PATH_CHAR* fname = platform_save_dialog(&canvas->arena, FileKind_IMAGE);
+                        PATH_CHAR* fname = platform_save_dialog(FileKind_IMAGE);
                         if ( fname ) {
                             milton_save_buffer_to_file(fname, buffer, w, h);
                         }

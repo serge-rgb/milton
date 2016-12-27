@@ -197,11 +197,10 @@ win32_set_OFN_filter(OPENFILENAMEW* ofn, FileKind kind)
 }
 
 PATH_CHAR*
-platform_save_dialog(Arena* arena, FileKind kind)
+platform_save_dialog(FileKind kind)
 {
     platform_cursor_show();
-    PATH_CHAR* save_filename = arena_alloc_array(arena, MAX_PATH, PATH_CHAR);
-
+    PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(1, MAX_PATH*sizeof(PATH_CHAR), "Strings");
 
     OPENFILENAMEW ofn = {0};
 
@@ -231,12 +230,12 @@ platform_save_dialog(Arena* arena, FileKind kind)
 }
 
 PATH_CHAR*
-platform_open_dialog(Arena* arena, FileKind kind)
+platform_open_dialog(FileKind kind)
 {
     platform_cursor_show();
     OPENFILENAMEW ofn = {0};
 
-    PATH_CHAR* fname = arena_alloc_array(arena, MAX_PATH, PATH_CHAR);
+    PATH_CHAR* fname = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     win32_set_OFN_filter(&ofn, kind);

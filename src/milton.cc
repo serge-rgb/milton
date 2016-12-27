@@ -303,7 +303,7 @@ milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname)
 void
 milton_set_default_canvas_file(MiltonState* milton_state)
 {
-    PATH_CHAR* f = arena_alloc_array(&milton_state->canvas->arena, MAX_PATH, PATH_CHAR);
+    PATH_CHAR* f = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
 
     PATH_STRNCPY(f, TO_PATH_STR("MiltonPersist.mlt"), MAX_PATH);
     platform_fname_at_config(f, MAX_PATH);
@@ -459,7 +459,7 @@ milton_init(MiltonState* milton_state, i32 width, i32 height)
     milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
 
     { // Get/Set Milton Canvas (.mlt) file
-        PATH_CHAR* last_fname = milton_get_last_canvas_fname(&milton_state->canvas_arena);
+        PATH_CHAR* last_fname = milton_get_last_canvas_fname();
 
         if ( last_fname != NULL ) {
             milton_set_canvas_file(milton_state, last_fname);
@@ -1377,7 +1377,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 b32 another = platform_dialog_yesno(msg, "Try another file?");
                 if ( another ) {
                     // NOTE(possible refactor): There is similar code. Guipp.cpp save_milton_canvas
-                    PATH_CHAR* name = platform_save_dialog(&milton_state->canvas->arena, FileKind_MILTON_CANVAS);
+                    PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                     if ( name ) {
                         milton_log("Saving to %s\n", name);
                         milton_set_canvas_file(milton_state, name);

@@ -106,7 +106,7 @@ platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 }
 
 PATH_CHAR*
-platform_open_dialog(Arena* arena, FileKind kind)
+platform_open_dialog(FileKind kind)
 {
     IMPL_MISSING;
     return NULL;
@@ -117,7 +117,7 @@ platform_open_link(char* link)
     return;
 }
 PATH_CHAR*
-platform_save_dialog(Arena* arena, FileKind kind)
+platform_save_dialog(FileKind kind)
 {
     IMPL_MISSING;
     return NULL;

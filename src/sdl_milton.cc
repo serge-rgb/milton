@@ -967,6 +967,7 @@ milton_main()
         ImGui::Render();
         PROFILE_GRAPH_PUSH(GL);
         PROFILE_GRAPH_BEGIN(system);
+        glFinish();
         SDL_GL_SwapWindow(window);
 
 #ifdef __linux__

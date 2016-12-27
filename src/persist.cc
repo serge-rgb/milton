@@ -402,9 +402,9 @@ milton_save(MiltonState* milton_state)
 }
 
 PATH_CHAR*
-milton_get_last_canvas_fname(Arena* canvas_arena)
+milton_get_last_canvas_fname()
 {
-    PATH_CHAR* last_fname = arena_alloc_array(canvas_arena, MAX_PATH, PATH_CHAR);
+    PATH_CHAR* last_fname = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
 
     PATH_CHAR full[MAX_PATH] = {};
 
@@ -421,6 +421,8 @@ milton_get_last_canvas_fname(Arena* canvas_arena)
             // will fail gracefully and load a default canvas.
             fclose(fd);
         }
+    } else {
+        mlt_free(last_fname, "Strings");
     }
 
     return last_fname;

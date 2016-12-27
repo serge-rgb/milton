@@ -145,7 +145,7 @@ platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 }
 
 PATH_CHAR*
-platform_open_dialog(Arena* arena, FileKind kind)
+platform_open_dialog(FileKind kind)
 {
     platform_cursor_show();
     GtkWidget *dialog = gtk_file_chooser_dialog_new(
@@ -165,7 +165,8 @@ platform_open_dialog(Arena* arena, FileKind kind)
         return NULL;
     }
     gchar *gtk_filename = gtk_file_chooser_get_filename(chooser);
-    PATH_CHAR* open_filename = arena_alloc_array(arena, MAX_PATH, PATH_CHAR);
+    PATH_CHAR* open_filename = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
+
     PATH_STRNCPY(open_filename, gtk_filename, MAX_PATH);
     g_free(gtk_filename);
     gtk_widget_destroy(dialog);
@@ -180,7 +181,7 @@ platform_open_link(char* link)
 }
 
 PATH_CHAR*
-platform_save_dialog(Arena* arena, FileKind kind)
+platform_save_dialog(FileKind kind)
 {
     platform_cursor_show();
     GtkWidget *dialog = gtk_file_chooser_dialog_new(
@@ -202,7 +203,8 @@ platform_save_dialog(Arena* arena, FileKind kind)
         return NULL;
     }
     gchar *gtk_filename = gtk_file_chooser_get_filename(chooser);
-    PATH_CHAR* save_filename = arena_alloc_array(arena, MAX_PATH, PATH_CHAR);
+    PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(1, MAX_PATH*sizeof(PATH_CHAR), "Strings");
+
     PATH_STRNCPY(save_filename, gtk_filename, MAX_PATH);
     g_free(gtk_filename);
     gtk_widget_destroy(dialog);
