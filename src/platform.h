@@ -21,7 +21,6 @@ extern "C" {
 #pragma warning(pop)
 #endif
 
-
 enum LayoutType
 {
     LayoutType_QWERTY,

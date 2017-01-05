@@ -53,7 +53,10 @@ typedef i32         b32;
 #error mlt_assert already defined
 #else
     #if defined(_WIN32)
-    #define mlt_assert(expr)  do { if (!(bool)(expr)) {  __debugbreak(); } } while(0)
+    #define mlt_assert(expr)  do { if (!(bool)(expr)) {  \
+                                    MessageBox(NULL,"Assertion: " #expr "-" __FILE__, "Assertion", MB_OK);\
+                                     __debugbreak(); \
+                                } } while(0)
     #elif defined(__MACH__)
     #define mlt_assert(expr)  do { if (!(bool)(expr)) {  __builtin_trap();  } } while(0)
     #else

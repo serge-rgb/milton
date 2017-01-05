@@ -245,7 +245,7 @@ platform_open_dialog(FileKind kind)
 
     b32 ok = GetOpenFileNameW(&ofn);
     if ( ok == false ) {
-        free(fname);
+        mlt_free(fname, "Strings");
         milton_log("[ERROR] could not open file! Error is %d\n", CommDlgExtendedError());
         return NULL;
     }

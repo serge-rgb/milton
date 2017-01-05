@@ -310,7 +310,7 @@ gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
         glGetProgramInfoLog(obj, (GLsizei)len, &written_len, log);
         //glGetInfoLog(obj, (GLsizei)len, &written_len, log);
         gl_log(log);
-        free(log);
+        mlt_free(log, "Strings");
         mlt_assert(!"program linking error");
     }
     GLCHK ( glValidateProgram(obj) );

@@ -27,7 +27,7 @@
 
 #define MULTISAMPLING_ENABLED 1
 
-#define MSAA_NUM_SAMPLES 4
+#define MSAA_NUM_SAMPLES 8
 
 #define MILTON_MULTITHREADED 1
 
@@ -55,7 +55,8 @@
 
 // Include the software renderer.
 #define SOFTWARE_RENDERER_COMPILED 0
-// TODO: Enable software renderer as a runtime option?
+// NOTE: software renderer has accumulated some bit rot..
+// TODO: Enable software renderer as a run  time option?
 
 
 // -- Esoteric and/or Stupid stuff.
