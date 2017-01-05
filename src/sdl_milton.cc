@@ -529,28 +529,24 @@ milton_main()
     SDL_Window* window = NULL;
     milton_log("Creating Milton Window\n");
 
-    for ( i32 num_samples = MSAA_NUM_SAMPLES; window == NULL; num_samples /= 2 ) {
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-        SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_version_major);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_version_minor);
-        // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, false);
-        #if USE_GL_3_2
-            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        #endif
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_version_major);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_version_minor);
+    // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, false);
+    #if USE_GL_3_2
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    #endif
 
-        #if MULTISAMPLING_ENABLED
-            if ( num_samples > 1 ) {
-                SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-                SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, num_samples);
-            }
-        #endif
+    #if MULTISAMPLING_ENABLED
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
+    #endif
 
-        window = SDL_CreateWindow("Milton",
-                                  SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                  platform_state.width, platform_state.height,
-                                  SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-    }
+    window = SDL_CreateWindow("Milton",
+                              SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                              platform_state.width, platform_state.height,
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
     if ( !window ) {
         milton_log("SDL Error: %s\n", SDL_GetError());
