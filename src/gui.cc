@@ -480,8 +480,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 if ( exporter->scale <= 0 ) {
                     exporter->scale = 1;
                 }
-                while ( exporter->scale*raster_w > milton_state->render_data->viewport_limits[0] ||
-                        exporter->scale*raster_h > milton_state->render_data->viewport_limits[1] ) {
+                while ( exporter->scale*raster_w > milton_state->render_data->viewport_limits[0]
+                        || exporter->scale*raster_h > milton_state->render_data->viewport_limits[1] ) {
                     --exporter->scale;
                 }
                 i32 max_scale = milton_state->view->scale / 2;
@@ -489,6 +489,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     exporter->scale = max_scale;
                 }
                 ImGui::Text("%s: %dx%d\n", LOC(final_image_size), raster_w*exporter->scale, raster_h*exporter->scale);
+
+                static bool transparent_background = false;
+                ImGui::Checkbox(LOC(transparent_background), &transparent_background);
 
                 if ( ImGui::Button(LOC(export_selection_to_image_DOTS)) ) {
                     // Render to buffer
@@ -500,7 +503,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     if ( buffer ) {
                         opened = false;
                         gpu_render_to_buffer(milton_state, buffer, exporter->scale,
-                                             x,y, raster_w, raster_h);
+                                             x,y, raster_w, raster_h, transparent_background ? 0.0f : 1.0f);
                         //milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
                         PATH_CHAR* fname = platform_save_dialog(FileKind_IMAGE);
                         if ( fname ) {

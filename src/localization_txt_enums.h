@@ -67,6 +67,7 @@ enum Texts
     TXT_website                    ,
     TXT_disable_stroke_smoothing   ,
     TXT_enable_stroke_smoothing    ,
+    TXT_transparent_background     ,
 
     TXT_Count,
 };

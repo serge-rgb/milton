@@ -1095,7 +1095,8 @@ gpu_clip_strokes_and_update(Arena* arena,
 }
 
 void
-gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_width, i32 view_height)
+gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
+                  i32 view_width, i32 view_height, float background_alpha=1.0f)
 {
     // FLip it. GL is bottom-left.
     i32 x = view_x;
@@ -1114,7 +1115,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_widt
     }
 
     glClearColor(render_data->background_color.r, render_data->background_color.g,
-                 render_data->background_color.b, 1.0f);
+                 render_data->background_color.b, background_alpha);
 
     GLenum texture_target;
     if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
@@ -1128,7 +1129,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y, i32 view_widt
     glClear(GL_COLOR_BUFFER_BIT);
 
     GLCHK(glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                                 render_data->layer_texture, 0));
+                                    render_data->layer_texture, 0));
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_DEPTH_TEST);
@@ -1349,7 +1350,8 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
 }
 
 void
-gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h)
+gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y,
+                     i32 w, i32 h, f32 background_alpha)
 {
     CanvasView saved_view = *milton_state->view;
     RenderData* render_data = milton_state->render_data;
@@ -1406,7 +1408,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
         glGenFramebuffersEXT(1, &export_fbo);
         glBindFramebufferEXT(GL_FRAMEBUFFER, export_fbo);
         GLCHK(glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                     GL_TEXTURE_2D, image_texture, 0));
+                                        GL_TEXTURE_2D, image_texture, 0));
 
         print_framebuffer_status();
     }
@@ -1423,7 +1425,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
     GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo) );
 
-    gpu_render_canvas(render_data, 0, 0, buf_w, buf_h);
+    gpu_render_canvas(render_data, 0, 0, buf_w, buf_h, background_alpha);
 
     // Resolve
 

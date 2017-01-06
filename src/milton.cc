@@ -1194,7 +1194,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             milton_state->eyedropper_buffer = (u8*)mlt_calloc(w*h*bpp, 1, "Bitmap");
             if ( milton_state->eyedropper_buffer ) {
                 gpu_render_to_buffer(milton_state, milton_state->eyedropper_buffer, 1,
-                                     0,0,w,h);
+                                     0,0,w,h, 1.0f);
             }
 
         }
