@@ -267,7 +267,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 if ( !ImGui::GetIO().WantCaptureMouse ) {
                     milton_input.scale += event.wheel.y;
                     v2i zoom_center = platform_state->pointer;
-                     milton_set_zoom_at_point(milton_state, zoom_center);
+                    milton_set_zoom_at_point(milton_state, zoom_center);
                 }
 
                 break;

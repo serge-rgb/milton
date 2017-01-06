@@ -729,7 +729,8 @@ enum CookStrokeOpt
     CookStroke_UPDATE_WORKING_STROKE = 1,
 };
 void
-gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrokeOpt cook_option = CookStroke_NEW)
+gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke,
+                CookStrokeOpt cook_option = CookStroke_NEW)
 {
     render_data->stroke_z = (render_data->stroke_z + 1) % (MAX_DEPTH_VALUE-1);
     const i32 stroke_z = render_data->stroke_z + 1;
@@ -1363,6 +1364,8 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
     v2i center = divide2i(milton_state->view->screen_size, 2);
     v2i pan_delta = sub2i(center, v2i{x + (w / 2), y + (h / 2)});
+
+    milton_set_zoom_at_point(milton_state, center);
 
     milton_state->view->pan_vector =
         add2i(milton_state->view->pan_vector, scale2i(pan_delta, milton_state->view->scale));

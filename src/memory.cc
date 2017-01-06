@@ -188,7 +188,7 @@ find_bucket_for_size(size_t sz)
         }
     }
     if ( bucket == NUM_MEMORY_DEBUG_BUCKETS ) {
-        milton_die_gracefully("Allocation too large.");
+        milton_die_gracefully("[Memory debugger] Allocation too large.");
     }
     return bucket;
 }
