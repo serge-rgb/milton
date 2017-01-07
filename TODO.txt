@@ -7,6 +7,8 @@ To-Do
 - Bugs
     - MoveFileEx randomly fails with return code 5 - access denied
     - Undo leaves some pixels without redrawing.
+    - Exporting to transparent BG: eraser shows as white
+    - Pan from menu doesn't work
 
 - Application
     - Porting (dialogs and File I/O)
@@ -17,7 +19,7 @@ To-Do
         - Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
     - Renderer
-        -
+        - only re-render areas entering the screen when panning
     - GUI
         - Image Button
         - Reduce or remove widget rounding
@@ -27,6 +29,7 @@ To-Do
         - Brush
             - Support for general, implicitly defined brushes
     - Features:
+        - alt eye dropper
         - eraser toggle
         - pressure toggle
         - pressure response graph
@@ -35,7 +38,6 @@ To-Do
         - stroke masking?
         - Select strokes
             - Scale, cut, copy, paste
-        - export with alpha background
         - select layer by stroke
         - merge layers
         - lines
@@ -47,6 +49,7 @@ To-Do
     - Memory allocation profiler.
     - Input recorder for bug replication
     - linux - load dynamic libs at runtime
+    - store font data in binary
 
 - Milton Library
     - Refactor. Write sample program.

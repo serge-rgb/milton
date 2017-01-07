@@ -44,9 +44,9 @@ stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
 }
 
 b32
-is_eraser(Brush* brush)
+is_eraser(v4f color)
 {
-    b32 result = (equ4f(brush->color, k_eraser_color));
+    b32 result = equ4f(color, k_eraser_color);
     return result;
 }
 

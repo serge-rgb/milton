@@ -688,8 +688,6 @@ gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
 static void
 gpu_set_background(RenderData* render_data, v3f background_color)
 {
-    gl_set_uniform_vec3(render_data->stroke_program, "u_background_color", 1, background_color.d);
-
     render_data->background_color = background_color;
 }
 
@@ -1124,7 +1122,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
         texture_target = GL_TEXTURE_2D;
     }
     glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                           render_data->eraser_texture, 0);
+                              render_data->eraser_texture, 0);
 
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -1156,7 +1154,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 // Copy layer_texture's contents to the eraser_texture.
 
                 glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                       texture_target, render_data->eraser_texture, 0);
+                                          texture_target, render_data->eraser_texture, 0);
                 glBindTexture(texture_target, render_data->layer_texture);
                 glClear(GL_COLOR_BUFFER_BIT);
                 glDisable(GL_DEPTH_TEST);
@@ -1175,7 +1173,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 }
 
                 glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                       texture_target, render_data->layer_texture, 0);
+                                          texture_target, render_data->layer_texture, 0);
                 glBindTexture(texture_target, render_data->eraser_texture);
                 glUseProgram(render_data->stroke_program);
                 glEnable(GL_DEPTH_TEST);
@@ -1217,7 +1215,18 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                                                 /*stride*/ 0, /*ptr*/ 0));
 
                     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
+
+                    // Disable blending if this element is an eraser brush stroke.
+                    if ( is_eraser(re->color) ) {
+                        glDisable(GL_BLEND);
+                    }
+
                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
+
+                    if ( is_eraser(re->color) ) {
+                        glEnable(GL_BLEND);
+                    }
+
                 } else {
                     static int n = 0;
                     milton_log("Warning: Render element with count 0 [%d times]\n", ++  n);

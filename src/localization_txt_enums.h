@@ -25,7 +25,7 @@ enum Texts
     TXT_MSG_click_and_drag_instruction ,
     TXT_current_selection              ,
     TXT_scale_up                       ,
-    TXT_final_image_size               ,
+    TXT_final_image_resolution         ,
     TXT_export_selection_to_image_DOTS ,
     TXT_MSG_memerr_did_not_write       ,
     TXT_error                          ,

@@ -9,13 +9,14 @@ static void
 milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
     CanvasState* canvas = milton_state->canvas;
+    MiltonGui* gui = milton_state->gui;
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
     const float pen_alpha = milton_get_pen_alpha(milton_state);
     mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
     // Spawn below the picker
-    Rect pbounds = get_bounds_for_picker_and_colors(&milton_state->gui->picker);
+    Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
 
     int color_stack = 0;
     ImGui::GetStyle().WindowFillAlphaDefault = 0.9f;  // Redundant for all calls but the first one...
@@ -65,7 +66,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
             }
             b32 save_requested = false;
-            if (  ImGui::MenuItem(LOC(open_milton_canvas))  ) {
+            if ( ImGui::MenuItem(LOC(open_milton_canvas)) ) {
                 // If current canvas is MiltonPersist, then prompt to save
                 if ( ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
                     b32 save_file = false;
@@ -92,7 +93,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     milton_set_canvas_file(milton_state, fname);
                     input->flags |= MiltonInputFlags_OPEN_FILE;
                     // TODO: Check if this line can be removed after switching to HW rendering.
-                    milton_state->gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
+                    gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
                 }
             }
             if ( ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested ) {
@@ -152,7 +153,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         if ( ImGui::BeginMenu(LOC(tools)) ) {
             // Brush
             if ( ImGui::MenuItem(LOC(brush)) ) {
-                input->flags |= MiltonInputFlags_CHANGE_MODE;
                 input->mode_to_set = MiltonMode_PEN;
             }
             if ( ImGui::BeginMenu(LOC(brush_options)) ) {
@@ -184,7 +184,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             // Eraser
             if ( ImGui::MenuItem(LOC(eraser)) ) {
-                input->flags |= MiltonInputFlags_CHANGE_MODE;
                 input->mode_to_set = MiltonMode_ERASER;
             }
             // Panning
@@ -195,9 +194,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             // Eye Dropper
             if ( ImGui::MenuItem(LOC(eye_dropper)) ) {
-                input->flags |= MiltonInputFlags_CHANGE_MODE;
                 input->mode_to_set = MiltonMode_EYEDROPPER;
                 milton_state->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;
+            }
+            // History
+            if ( ImGui::MenuItem("History") ) {
+                input->mode_to_set = MiltonMode_HISTORY;
             }
             ImGui::EndMenu();
         }
@@ -252,10 +254,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
     // GUI Windows ----
 
-    b32 should_show_windows = milton_state->current_mode != MiltonMode_EYEDROPPER &&
-                                milton_state->current_mode != MiltonMode_EXPORTING;
+    b32 should_show_windows = milton_state->current_mode != MiltonMode_EYEDROPPER
+                                && milton_state->current_mode != MiltonMode_EXPORTING
+                                && milton_state->current_mode != MiltonMode_HISTORY;
 
-    if ( milton_state->gui->visible && should_show_windows ) {
+    if ( gui->visible && should_show_windows ) {
 
         /* ImGuiSetCond_Always        = 1 << 0, // Set the variable */
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
@@ -278,7 +281,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     if (mut_alpha > 1.0f ) mut_alpha = 1.0f;
                     if ( mut_alpha != pen_alpha ) {
                         milton_set_pen_alpha(milton_state, mut_alpha);
-                        milton_state->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
+                        gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                     }
                 }
 
@@ -296,15 +299,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     if ( milton_state->current_mode != MiltonMode_PEN ) {
                         if ( ImGui::Button(LOC(switch_to_brush)) ) {
                             i32 f = input->flags;
-                            f |= MiltonInputFlags_CHANGE_MODE;
                             input->flags = (MiltonInputFlags)f;
                             input->mode_to_set = MiltonMode_PEN;
                         }
                     }
 
-                    if (  milton_state->current_mode != MiltonMode_ERASER  ) {
-                        if (  ImGui::Button(LOC(switch_to_eraser))  ) {
-                            input->flags |= MiltonInputFlags_CHANGE_MODE;
+                    if ( milton_state->current_mode != MiltonMode_ERASER ) {
+                        if ( ImGui::Button(LOC(switch_to_eraser)) ) {
                             input->mode_to_set = MiltonMode_ERASER;
                         }
                     }
@@ -379,8 +380,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                                       //MAX_LAYER_NAME_LEN,
                                       ImGuiInputTextFlags_EnterReturnsTrue
                                       //,ImGuiInputTextFlags flags = 0, ImGuiTextEditCallback callback = NULL, void* user_data = NULL
-                                     ))
-                {
+                                     )) {
                     is_renaming = false;
                 }
                 ImGui::SameLine();
@@ -424,26 +424,23 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
             }
 
-            if ( milton_state->canvas->working_layer->next ||
-                 milton_state->canvas->working_layer->prev ) {
+            if ( milton_state->canvas->working_layer->next
+                 || milton_state->canvas->working_layer->prev ) {
                 static bool deleting = false;
                 if ( deleting == false ) {
-                    if ( ImGui::Button(LOC(delete)) )
-                    {
+                    if ( ImGui::Button(LOC(delete)) ) {
                         deleting = true;
                     }
                 }
                 else if ( deleting ) {
                     ImGui::Text(LOC(are_you_sure));
                     ImGui::Text(LOC(cant_be_undone));
-                    if ( ImGui::Button(LOC(yes)) )
-                    {
+                    if ( ImGui::Button(LOC(yes)) ) {
                         milton_delete_working_layer(milton_state);
                         deleting = false;
                     }
                     ImGui::SameLine();
-                    if ( ImGui::Button(LOC(no)) )
-                    {
+                    if ( ImGui::Button(LOC(no)) ) {
                         deleting = false;
                     }
                 }
@@ -453,6 +450,22 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
         } ImGui::End();
     } // Visible
+
+
+    // History window
+    if ( milton_state->current_mode == MiltonMode_HISTORY ) {
+        {
+            Rect pb = picker_get_bounds(&gui->picker);
+            auto width = 20 + pb.right - pb.left;
+            ImGui::SetNextWindowPos(ImVec2(width, 30), ImGuiSetCond_FirstUseEver);
+        }
+        ImGui::SetNextWindowSize(ImVec2(500, 100), ImGuiSetCond_FirstUseEver);
+        if ( ImGui::Begin("History Slider") ) {
+            ImGui::SliderInt("History", &gui->history, 0,
+                             count_strokes(milton_state->canvas->root_layer));
+        } ImGui::End();
+
+    }
 
     // Note: The export window is drawn regardless of gui visibility.
     if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
@@ -488,10 +501,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 if ( exporter->scale > max_scale) {
                     exporter->scale = max_scale;
                 }
-                ImGui::Text("%s: %dx%d\n", LOC(final_image_size), raster_w*exporter->scale, raster_h*exporter->scale);
+                ImGui::Text("%s: %dx%d\n", LOC(final_image_resolution), raster_w*exporter->scale, raster_h*exporter->scale);
 
-                static bool transparent_background = false;
-                ImGui::Checkbox(LOC(transparent_background), &transparent_background);
+                ImGui::Text("Background:");
+                static int radio_v = 0;
+                ImGui::RadioButton("Background color", &radio_v, 0);
+                ImGui::RadioButton("Transparent background", &radio_v, 1);
+                bool transparent_background = radio_v == 1;
 
                 if ( ImGui::Button(LOC(export_selection_to_image_DOTS)) ) {
                     // Render to buffer
@@ -530,6 +546,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             exporter_init(&milton_state->gui->exporter);
         }
     }
+
 #if MILTON_ENABLE_PROFILING
     ImGui::SetNextWindowPos(ImVec2(300, 205), ImGuiSetCond_FirstUseEver);
     ImGui::SetNextWindowSize({350, 285}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
@@ -673,8 +690,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         } ImGui::End();
     }
 #endif
-
-    // Shortcut help. Also shown regardless of UI visibility.
     ImGui::PopStyleColor(color_stack);
 }
 

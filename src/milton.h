@@ -34,6 +34,7 @@ enum MiltonMode
     MiltonMode_PEN        = 1 << 1,
     MiltonMode_EXPORTING  = 1 << 2,
     MiltonMode_EYEDROPPER = 1 << 3,
+    MiltonMode_HISTORY    = 1 << 4,
 };
 
 enum
@@ -185,7 +186,7 @@ enum MiltonInputFlags
     MiltonInputFlags_END_STROKE          = 1 << 1,
     MiltonInputFlags_UNDO                = 1 << 2,
     MiltonInputFlags_REDO                = 1 << 3,
-    MiltonInputFlags_CHANGE_MODE         = 1 << 4,
+    // 1<<4 free to use
     MiltonInputFlags_FAST_DRAW           = 1 << 5,
     MiltonInputFlags_HOVERING            = 1 << 6,
     MiltonInputFlags_PANNING             = 1 << 7,

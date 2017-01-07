@@ -110,7 +110,6 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 #if 0
         if ( (keymod & KMOD_ALT) )
         {
-            input_flags |= MiltonInputFlags_CHANGE_MODE;
             milton_input.mode_to_set = MiltonMode_EYEDROPPER;
         }
 #endif
@@ -330,7 +329,6 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 // Ctrl-KEY with no key repeats.
                 if ( platform_state->is_ctrl_down ) {
                     if ( keycode == SDLK_e ) {
-                        input_flags |= MiltonInputFlags_CHANGE_MODE;
                         milton_input.mode_to_set = MiltonMode_EXPORTING;
                     }
                     if ( keycode == SDLK_q ) {
@@ -340,15 +338,12 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 else {
                     if ( !ImGui::GetIO().WantCaptureMouse  ) {
                         if ( keycode == SDLK_e ) {
-                            input_flags |= MiltonInputFlags_CHANGE_MODE;
                             milton_input.mode_to_set = MiltonMode_ERASER;
                         }
                         else if ( keycode == SDLK_b ) {
-                            input_flags |= MiltonInputFlags_CHANGE_MODE;
                             milton_input.mode_to_set = MiltonMode_PEN;
                         }
                         else if ( keycode == SDLK_i ) {
-                            input_flags |= MiltonInputFlags_CHANGE_MODE;
                             milton_input.mode_to_set = MiltonMode_EYEDROPPER;
                         }
                         else if ( keycode == SDLK_TAB ) {
@@ -820,18 +815,18 @@ milton_main()
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
 
         // Handle pen orientation to switch to eraser or pen.
+        #if 0
         if ( EasyTab!=NULL && EasyTab->PenInProximity ) {
             if ( EasyTab->Orientation.Altitude < 0
                   && milton_state->current_mode == MiltonMode_PEN ) {
-                milton_input.flags |= MiltonInputFlags_CHANGE_MODE;
                 milton_input.mode_to_set = MiltonMode_ERASER;
             }
             else if ( EasyTab->Orientation.Altitude > 0
                       && milton_state->current_mode == MiltonMode_ERASER ) {
-                milton_input.flags |= MiltonInputFlags_CHANGE_MODE;
                 milton_input.mode_to_set = MiltonMode_PEN;
             }
         }
+        #endif
 
         panning_update(&platform_state);
 
@@ -877,6 +872,9 @@ milton_main()
             }
             else if ( milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER ) {
                 cursor_set_and_show(platform_state.cursor_brush);
+            }
+            else if ( milton_state->current_mode == MiltonMode_HISTORY ) {
+                cursor_set_and_show(platform_state.cursor_default);
             }
             else if ( milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
                 platform_cursor_hide();

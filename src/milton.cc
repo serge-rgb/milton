@@ -1014,7 +1014,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    if ( (input->flags & MiltonInputFlags_CHANGE_MODE) ) {
+    if ( (input->mode_to_set != MiltonMode_NONE) ) {
         MiltonMode mode = milton_state->current_mode;
         if ( mode == input->mode_to_set ) {
             // Modes we can toggle

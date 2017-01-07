@@ -83,20 +83,23 @@ main()
     #endif
 
     vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
-#if HAS_TEXTURE_MULTISAMPLE
-    vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
-#else
-    vec2 coord = screen_point / u_screen_size;
-    vec4 color = texture(u_canvas, coord);
-
-    // vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), 0);
-#endif
 
     int sample = sample_stroke(raster_to_canvas_gl(screen_point), v_pointa, v_pointb);
 
     if ( sample > 0 ) {
         // TODO: is there a way to do front-to-back rendering with a working eraser?
-        out_color = brush_is_eraser() ? color : u_brush_color;
+        if ( brush_is_eraser() ) {
+            #if HAS_TEXTURE_MULTISAMPLE
+                vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
+            #else
+                vec2 coord = screen_point / u_screen_size;
+                vec4 color = texture(u_canvas, coord);
+            #endif
+            out_color = color;
+        }
+        else {
+            out_color = u_brush_color;
+        }
     } else {
         discard;
     }

@@ -45,7 +45,7 @@ init_localization()
         EN(TXT_MSG_click_and_drag_instruction, "Click and drag to select the area to export.");
         EN(TXT_current_selection, "Current selection");
         EN(TXT_scale_up, "Scale up");
-        EN(TXT_final_image_size, "Final image size");
+        EN(TXT_final_image_resolution, "Final image resolution");
         EN(TXT_export_selection_to_image_DOTS, "Export selection to image...");
         EN(TXT_MSG_memerr_did_not_write, "Did not write file. Not enough memory available for operation.");
         EN(TXT_error, "Error");
@@ -107,7 +107,7 @@ init_localization()
         ES(TXT_MSG_click_and_drag_instruction, "Haz click y Arrastra");
         ES(TXT_current_selection, "Selección actual");
         ES(TXT_scale_up, "Escalar");
-        ES(TXT_final_image_size, "Tamaño final");
+        ES(TXT_final_image_resolution, "Resolución final");
         ES(TXT_export_selection_to_image_DOTS, "Exportar Selección a Imagen...");
         ES(TXT_MSG_memerr_did_not_write, "No se escribió archivo. No hay suficiente memoria.");
         ES(TXT_error, "Error");

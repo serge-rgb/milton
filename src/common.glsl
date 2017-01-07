@@ -1,7 +1,3 @@
-
-// MiltonState elements
-uniform vec3 u_background_color;
-
 // Per-stroke uniforms
 uniform vec4 u_brush_color;
 

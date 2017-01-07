@@ -40,7 +40,7 @@ enum LayerFlags
 {
     LayerFlags_VISIBLE = (1<<0),
 };
-b32 is_eraser(Brush* brush);
+b32 is_eraser(v4f color);
 
 v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
 

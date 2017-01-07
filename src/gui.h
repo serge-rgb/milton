@@ -60,7 +60,6 @@ enum ColorPickResult
     ColorPickResult_CHANGE_COLOR,
 };
 
-
 struct GuiButton
 {
     Rect            rect;
@@ -103,6 +102,8 @@ struct MiltonGui
     b32 did_hit_button;  // Avoid multiple clicks.
 
     int flags;  // MiltonGuiFlags
+
+    i32 history;
 
     ColorPicker picker;
 
