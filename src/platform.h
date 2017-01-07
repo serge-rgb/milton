@@ -173,6 +173,8 @@ WallTime platform_get_walltime();
 void    platform_cursor_hide();
 void    platform_cursor_show();
 
+i32 platform_monitor_refresh_hz();
+
 // Microsecond (us) resolution timer.
 u64 perf_counter();
 float perf_count_to_sec(u64 counter);

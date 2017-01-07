@@ -518,6 +518,19 @@ platform_cursor_show()
     }
 }
 
+i32
+platform_monitor_refresh_hz()
+{
+    i32 hz = 60;
+    // Try and get the refresh rate from the main monitor.
+    DEVMODE dm = {};
+    if ( EnumDisplaySettings(/*deviceName*/NULL, ENUM_CURRENT_SETTINGS, &dm) != 0 ) {
+        hz = (i32)dm.dmDisplayFrequency;
+    }
+    return hz;
+}
+
+
 int
 CALLBACK WinMain(HINSTANCE hInstance,
                  HINSTANCE hPrevInstance,

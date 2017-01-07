@@ -142,6 +142,14 @@ platform_cursor_show()
     }
 }
 
+i32
+platform_monitor_refresh_hz()
+{
+    i32 hz = 60;
+    // TODO: Implement this on macOs and Linux.
+    return hz;
+}
+
 int
 main(int argc, char** argv)
 {

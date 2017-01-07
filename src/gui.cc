@@ -619,7 +619,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
             ImGui::Dummy({0,30});
 
-            i64 stroke_count = count_strokes(milton_state->root_layer);
+            i64 stroke_count = count_strokes(milton_state->canvas->root_layer);
 #if SOFTWARE_RENDERER_COMPILED
             snprintf(msg, array_count(msg),
                      "# of strokes: %d (clipped to screen: %d)\n",
@@ -671,7 +671,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             // Average stroke size.
             i64 avg = 0;
             {
-                for ( Layer* l = milton_state->root_layer;
+                for ( Layer* l = milton_state->canvas->root_layer;
                       l != NULL;
                       l = l->next ) {
                     for ( i64 i = 0; i < l->strokes.count; ++i ) {

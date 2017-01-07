@@ -646,6 +646,8 @@ milton_main()
     //ImGui_ImplSdl_Init(window);
     ImGui_ImplSdlGL3_Init(window);
 
+    i32 display_hz = platform_monitor_refresh_hz();
+
 #if defined(_WIN32)
     {  // Load icon (Win32)
         int si = sizeof(HICON);
@@ -809,6 +811,8 @@ milton_main()
     while ( !platform_state.should_quit ) {
         PROFILE_GRAPH_PUSH(system);
         PROFILE_GRAPH_BEGIN(polling);
+
+        u64 frame_start_us = perf_counter();
 
         ImGuiIO& imgui_io = ImGui::GetIO();
 
@@ -980,6 +984,16 @@ milton_main()
         }
         else {
             platform_state.force_next_frame = true;
+        }
+
+        // Sleep if the frame took less time than the refresh rate.
+        u64 frame_time_us = perf_counter() - frame_start_us;
+
+        f32 expected_us = (f32)1000000 / display_hz;
+
+        if ( frame_time_us < expected_us ) {
+            f32 to_sleep_us = expected_us - frame_time_us;
+            SDL_Delay(to_sleep_us/1000.0f);
         }
     }
 
