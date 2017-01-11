@@ -1062,6 +1062,14 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                         bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
                         bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
 
+                        // Enlarge rectangle by one pixel to counter a floating point precision
+                        // problem when canvas_to_raster_gl (in the shader) normalizes to [-1,1]^2
+                        auto* view = milton_state->view;
+                        bounds.top = max(0, bounds.top-1);
+                        bounds.left = max(0, bounds.left-1);
+                        bounds.right = min(view->screen_size.w, bounds.right+1);
+                        bounds.bottom = min(view->screen_size.h, bounds.bottom+1);
+
                         custom_rectangle = rect_union(custom_rectangle, bounds);
                     }
                     break;

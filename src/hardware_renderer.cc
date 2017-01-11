@@ -790,7 +790,6 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke,
             indices = arena_alloc_array(&scratch_arena, count_indices, u16);
 
             mlt_assert(render_data->scale > 0);
-            i32 scale = render_data->scale;
 
             size_t bounds_i = 0;
             size_t apoints_i = 0;
@@ -804,8 +803,8 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke,
                 float radius_i = stroke->pressures[i]*brush.radius;
                 float radius_j = stroke->pressures[i+1]*brush.radius;
 
-                i32 min_x = min(point_i.x-radius_i, point_j.x-radius_j) - 1*scale;
-                i32 min_y = min(point_i.y-radius_i, point_j.y-radius_j) - 1*scale;
+                i32 min_x = min(point_i.x-radius_i, point_j.x-radius_j);
+                i32 min_y = min(point_i.y-radius_i, point_j.y-radius_j);
 
                 i32 max_x = max(point_i.x+radius_i, point_j.x+radius_j);
                 i32 max_y = max(point_i.y+radius_i, point_j.y+radius_j);
