@@ -72,6 +72,10 @@ HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt H
 #define PATH_SNPRINTF _snwprintf
 #define PATH_FPUTS  fputws
 
+#if MILTON_DEBUG
+    #define BREAKHERE __debugbreak()
+#endif
+
 static FILE* g_win32_logfile;
 static i32 g_cursor_count = 0;
 

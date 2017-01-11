@@ -189,7 +189,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             // Panning
             char* move_str = platform_state->is_panning==false? LOC(move_canvas) : LOC(stop_moving_canvas);
             if ( ImGui::MenuItem(move_str) ) {
-                platform_state->is_panning = !platform_state->is_panning;
                 platform_state->waiting_for_pan_input = true;
             }
             // Eye Dropper

@@ -53,9 +53,11 @@ panning_update(PlatformState* platform_state)
         platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
     };
 
+    // Panning from GUI menu, waiting for input
     if ( platform_state->waiting_for_pan_input ) {
-        if ( platform_state->is_pointer_down || platform_state->is_middle_button_down ) {
+        if ( platform_state->is_pointer_down ) {
             platform_state->waiting_for_pan_input = false;
+            platform_state->is_panning = true;
             reset_pan_start();
         }
         // Space cancels waiting
@@ -852,7 +854,7 @@ milton_main()
             SDL_GetMouseState(&x, &y);
 
             // Handle system cursor and platform state related to current_mode
-            if ( platform_state.is_panning ) {
+            if ( platform_state.is_panning || platform_state.waiting_for_pan_input ) {
                 cursor_set_and_show(platform_state.cursor_sizeall);
             }
             else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {

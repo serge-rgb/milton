@@ -8,7 +8,6 @@ To-Do
     - MoveFileEx randomly fails with return code 5 - access denied
     - Undo leaves some pixels without redrawing.
     - Exporting to transparent BG: eraser shows as white
-    - Pan from menu doesn't work
 
 - Application
     - Porting (dialogs and File I/O)

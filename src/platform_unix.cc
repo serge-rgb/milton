@@ -120,12 +120,10 @@ void
 platform_cursor_hide()
 {
     int lvl = SDL_ShowCursor(-1);
-    if ( lvl >= 0 )
-    {
+    if ( lvl >= 0 ) {
         mlt_assert ( lvl == 1 );
         int res = SDL_ShowCursor(0);
-        if (res < 0)
-        {
+        if ( res < 0 ) {
             INVALID_CODE_PATH;
         }
     }
