@@ -1,17 +1,23 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+#include "persist.h"
+
+#include <stb_image_write.h>
+
+#include "common.h"
+#include "gui.h"
+#include "memory.h"
+#include "milton.h"
+#include "platform.h"
+#include "tiny_jpeg.h"
 
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
-// -- Circular dependencies --
-// milton.cc
-static void milton_validate(MiltonState* milton_state);
-static void milton_save_postlude(MiltonState* milton_state);
-
 // Forward decl.
 static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
+
 
 // Will allocate memory so that if the read fails, we will restore what was
 // originally in there.
@@ -65,7 +71,7 @@ fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
     return ok;
 }
 
-static void
+void
 milton_unset_last_canvas_fname()
 {
     b32 del = platform_delete_file_at_config(TO_PATH_STR("saved_path"), DeleteErrorTolerance_OK_NOT_EXIST);
@@ -270,7 +276,6 @@ milton_load(MiltonState* milton_state)
     } else {
         milton_reset_canvas_and_set_default(milton_state);
     }
-    milton_validate(milton_state);
 }
 
 void

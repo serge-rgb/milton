@@ -1,9 +1,11 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-#include "localization_txt_enums.h"
+#include "localization.h"
 
-#define LOC(str) get_localized_string(TXT_ ## str)
+#include "common.h"
+#include "memory.h"
+#include "utils.h"
 
 enum Languages
 {
@@ -22,7 +24,7 @@ static char* g_baked_strings_with_commands[TXT_Count];  // These get malloc'd on
 #define EN(N,S) g_localized_strings[Language_ENGLISH][N] = S
 #define ES(N,S) g_localized_strings[Language_SPANISH][N] = S
 
-static void
+void
 init_localization()
 {
     { // English

@@ -2,6 +2,9 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
+#include "common.h"
+#include "vector.h"
+
 b32
 equ2f(v2f a, v2f b)
 {

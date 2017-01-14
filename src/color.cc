@@ -2,7 +2,10 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-/* #include "color.h" */
+#include "color.h"
+
+#include "utils.h"
+
 
 u32
 color_v4f_to_u32(v4f c)

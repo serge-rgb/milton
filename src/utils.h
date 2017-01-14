@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include "vector.h"
+
+#include "system_includes.h"  // Including this because some system headers will redefine macros. (offsetof in stddef.h)
+
 #ifdef array_count
 #error "array_count is already defined"
 #else
@@ -19,7 +23,7 @@
 #endif
 
 #ifndef offsetof
-offsetof(object, member) ((size_t)&(((object *)0)->member))
+#define offsetof(object, member) ((size_t)&(((object *)0)->member))
 #endif
 
 // -----------
@@ -139,6 +143,11 @@ b32 is_rect_within_rect(Rect a, Rect b);
 
 Rect rect_from_xywh(i32 x, i32 y, i32 w, i32 h);
 
+wchar_t*    str_trim_to_last_slash(wchar_t* str);
+char*       str_trim_to_last_slash(char* str);
+void        utf16_to_utf8_simple(char* , char* );
+void        utf16_to_utf8_simple(wchar_t* utf16_name, char* utf8_name);
+
 struct Bitmap
 {
     i32 width;
@@ -146,7 +155,6 @@ struct Bitmap
     i32 num_components;
     u8* data;
 };
-
 
 // -----------
 // TIME

@@ -40,15 +40,33 @@ Build {
             Setup = function(env, data)
                 return {
                     InputFiles = { data.Input },
-                    OutputFiles = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)Milton.res" }
+                    OutputFiles = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)rc_dummy" }
                 }
             end,
         }
 
         local milton = Program {
             Name = "Milton",
-            Sources = { "src/milton_unity_build.cc",
-                ResourceFile { Input="Milton.rc" },
+            Sources = {
+                "src/milton.cc",
+                "src/memory.cc",
+                "src/gui.cc",
+                "src/persist.cc",
+                "src/color.cc",
+                "src/canvas.cc",
+                "src/profiler.cc",
+                "src/gl_helpers.cc",
+                "src/localization.cc",
+                "src/hardware_renderer.cc",
+                "src/utils.cc",
+                "src/hash.cc",
+                "src/vector.cc",
+                "src/sdl_milton.cc",
+                "src/StrokeList.cc",
+                "src/platform_windows.cc",
+                "src/third_party_libs.cc",
+
+                -- ResourceFile { Input="Milton.rc" },
                 ShaderGen { Input = "src/shadergen.cc" },
             },
             Libs = {

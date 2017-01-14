@@ -4,8 +4,8 @@
 
 #pragma once
 
-
-#include "utils.h"
+#include "common.h"
+#include "vector.h"
 
 
 extern v4f k_eraser_color; // unlikely vector to appear as an rgb [0,1]x3 value

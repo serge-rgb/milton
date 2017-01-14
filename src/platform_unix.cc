@@ -60,6 +60,13 @@
 #include "platform_OSX_SDL_hooks.h"
 #endif
 
+// Define this function before we substitute fopen in Milton with a macro.
+FILE* fopen_unix(const char* fname, const char* mode)
+{
+    FILE* fd = fopen(fname, mode);
+    return fd;
+}
+
 void
 milton_fatal(char* message)
 {

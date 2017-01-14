@@ -1,11 +1,22 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+#include <imgui.h>
+
+#include "gui.h"
+
+#include "localization.h"
+#include "color.h"
+#include "hardware_renderer.h"
+#include "milton.h"
+#include "persist.h"
+#include "platform.h"
+
 
 #define NUM_BUTTONS 5
 #define BOUNDS_RADIUS_PX 100
 
-static void
+void
 milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
 {
     CanvasState* canvas = milton_state->canvas;
@@ -492,8 +503,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 if ( exporter->scale <= 0 ) {
                     exporter->scale = 1;
                 }
-                while ( exporter->scale*raster_w > milton_state->render_data->viewport_limits[0]
-                        || exporter->scale*raster_h > milton_state->render_data->viewport_limits[1] ) {
+                float viewport_limits[2] = {};
+                gpu_get_viewport_limits(milton_state->render_data, viewport_limits);
+
+                while ( exporter->scale*raster_w > viewport_limits[0]
+                        || exporter->scale*raster_h > viewport_limits[1] ) {
                     --exporter->scale;
                 }
                 i32 max_scale = milton_state->view->scale / 2;
@@ -604,7 +618,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
             snprintf(msg, array_count(msg),
                      "Number of strokes in GPU memory: %d\n",
-                     milton_state->render_data->clipped_count);
+                     gpu_get_num_clipped_strokes(milton_state->render_data));
             ImGui::Text(msg);
 
             float hist[] = { poll, update, raster, GL, system };
@@ -778,7 +792,7 @@ is_inside_picker_button_area(ColorPicker* picker, v2i point)
     return is_inside;
 }
 
-static b32
+b32
 gui_point_hovers(MiltonGui* gui, v2i point)
 {
     b32 hovers = gui->visible &&

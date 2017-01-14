@@ -1,6 +1,23 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+#include "milton.h"
+
+#include "common.h"
+#include "color.h"
+#include "canvas.h"
+#include "gui.h"
+#include "render_common.h"
+#include "hardware_renderer.h"
+#include "localization.h"
+#include "milton_configuration.h"
+#include "persist.h"
+#include "platform.h"
+#include "vector.h"
+
+// Defined below.
+static void milton_validate(MiltonState* milton_state);
+
 
 void
 milton_set_background_color(MiltonState* milton_state, v3f background_color)
@@ -488,15 +505,14 @@ milton_init(MiltonState* milton_state, i32 width, i32 height)
     milton_state->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
     milton_load(milton_state);
+    milton_validate(milton_state);
+
 
     // Enable brush smoothing by default
     if ( !milton_brush_smoothing_enabled(milton_state) ) {
         milton_toggle_brush_smoothing(milton_state);
     }
 
-#if MILTON_DEBUG
-    milton_run_tests(milton_state);
-#endif
 #if MILTON_ENABLE_PROFILING
     milton_state->viz_window_visible = true;
 #endif
@@ -735,7 +751,7 @@ milton_expand_render_memory(MiltonState* milton_state)
 #endif  // SOFTWARE_RENDERER_COMPILED
 }
 
-static void
+void
 milton_save_postlude(MiltonState* milton_state)
 {
     milton_state->last_save_time = platform_get_walltime();
@@ -826,14 +842,14 @@ milton_delete_working_layer(MiltonState* milton_state)
     milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
 }
 
-static b32
+b32
 milton_brush_smoothing_enabled(MiltonState* milton_state)
 {
     b32 enabled = (milton_state->flags & MiltonStateFlags_BRUSH_SMOOTHING);
     return enabled;
 }
 
-static void
+void
 milton_toggle_brush_smoothing(MiltonState* milton_state)
 {
     if ( milton_brush_smoothing_enabled(milton_state) ) {
@@ -896,6 +912,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     b32 do_full_redraw = false;
     b32 brush_outline_should_draw = false;
+    int render_flags = RenderDataFlags_NONE;
 
     b32 draw_custom_rectangle = false;  // Custom rectangle used for new strokes, undo/redo.
     Rect custom_rectangle = rect_without_size();
@@ -907,34 +924,33 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             ((input->flags & MiltonInputFlags_UNDO)) ||
             ((input->flags & MiltonInputFlags_REDO));
 
-    //MiltonRenderFlags
-    int render_flags = MiltonRenderFlags_NONE;
+    // int render_flags = MiltonRenderFlags_NONE;
 
     if ( input->flags & MiltonInputFlags_OPEN_FILE ) {
         milton_load(milton_state);
         upload_gui(milton_state);
-        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         input->flags |= MiltonInputFlags_FAST_DRAW;
         do_full_redraw = true;
     }
 
     if ( milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY ) {
         milton_expand_render_memory(milton_state);
-        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_full_redraw = true;
     }
 
     if ( milton_state->flags & MiltonStateFlags_REQUEST_QUALITY_REDRAW ) {
         milton_state->view->downsampling_factor = 1;  // See how long it takes to redraw at full quality
         milton_state->flags &= ~MiltonStateFlags_REQUEST_QUALITY_REDRAW;
-        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_full_redraw = true;
     }
 
     i32 now = (i32)SDL_GetTicks();
 
     if ( (input->flags & MiltonInputFlags_FAST_DRAW) ) {
-        render_flags |= MiltonRenderFlags_DRAW_ITERATIVELY;
+        // render_flags |= MiltonRenderFlags_DRAW_ITERATIVELY;
         milton_state->quality_redraw_time = now;
     }
     else if ( milton_state->quality_redraw_time > 0 &&
@@ -944,12 +960,12 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( input->flags & MiltonInputFlags_FULL_REFRESH ) {
-        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_full_redraw = true;
     }
 
     if ( input->scale ) {
-        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_full_redraw = true;
 
 // Debug
@@ -1009,7 +1025,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
         if ( !equ2i(input->pan_delta, v2i{}) ) {
-            render_flags |= MiltonRenderFlags_PAN_COPY;
+            // render_flags |= MiltonRenderFlags_PAN_COPY;
             do_full_redraw = true;
         }
     }
@@ -1038,7 +1054,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             }
         }
 
-        render_flags |= MiltonRenderFlags_UI_UPDATED;
+        // render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
     { // Undo / Redo
@@ -1055,7 +1071,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                         push(&milton_state->canvas->stroke_graveyard, stroke);
                         push(&milton_state->canvas->redo_stack, h);
 
-                        render_flags |= MiltonRenderFlags_FULL_REDRAW;
+                        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
 
                         draw_custom_rectangle = true;
                         Rect bounds = stroke.bounding_rect;
@@ -1089,7 +1105,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                             push(&l->strokes, stroke);
                             push(&milton_state->canvas->history, h);
                             // TODO: FULL_REDRAW is overkill
-                            render_flags |= MiltonRenderFlags_FULL_REDRAW;
+                            // 4 |= MiltonRenderFlags_FULL_REDRAW;
 
                             draw_custom_rectangle = true;
                             Rect bounds = stroke.bounding_rect;
@@ -1113,7 +1129,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
     if ( milton_state->current_mode == MiltonMode_PEN ||
          milton_state->current_mode == MiltonMode_ERASER ) {
-        render_flags |= MiltonRenderFlags_BRUSH_HOVER;
+        // render_flags |= MiltonRenderFlags_BRUSH_HOVER;
         brush_outline_should_draw = true;
     }
 
@@ -1122,7 +1138,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( gui_point_hovers(milton_state->gui, milton_state->hover_point) ) {
-        render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
+        // render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
         brush_outline_should_draw = false;
     }
 
@@ -1152,33 +1168,33 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         Exporter* exporter = &milton_state->gui->exporter;
         b32 changed = exporter_input(exporter, input);
         if ( changed ) {
-            render_flags |= MiltonRenderFlags_UI_UPDATED;
+            // render_flags |= MiltonRenderFlags_UI_UPDATED;
             gpu_update_export_rect(milton_state->render_data, exporter);
         }
         if ( exporter->state != ExporterState_EMPTY ) {
-            milton_state->render_data->flags |= RenderDataFlags_EXPORTING;
+            // gpu_reset_render_flags |= RenderDataFlags_EXPORTING;
         }
     }
-    else if ( milton_state->render_data->flags & RenderDataFlags_EXPORTING ) {
-        milton_state->render_data->flags &= ~RenderDataFlags_EXPORTING;
-    }
+    // else if ( render_flags & RenderDataFlags_EXPORTING ) {
+    //     render_flags &= ~RenderDataFlags_EXPORTING;
+    // }
 
     if ( (input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
         // Start drawing the preview if we just grabbed a slider.
-        render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
+        // render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
         brush_outline_should_draw = false;
 
         if ( (milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW) ) {
             auto preview_pos = milton_state->gui->preview_pos;
             mlt_assert(preview_pos.x >= 0);
             mlt_assert(preview_pos.y >= 0);
-            render_flags |= MiltonRenderFlags_BRUSH_PREVIEW;
+            // render_flags |= MiltonRenderFlags_BRUSH_PREVIEW;
             v4f color = {};
             color.rgb = milton_state->view->background_color;
             color.a = 1;
             if ( milton_state->current_mode == MiltonMode_PEN ) {
                 color = to_premultiplied(hsv_to_rgb(milton_state->gui->picker.data.hsv),
-                                        milton_get_pen_alpha(milton_state));
+                                         milton_get_pen_alpha(milton_state));
             }
             gpu_update_brush_outline(milton_state->render_data,
                                      preview_pos.x, preview_pos.y,
@@ -1189,9 +1205,9 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( milton_state->gui->visible ) {
-        milton_state->render_data->flags |= RenderDataFlags_GUI_VISIBLE;
+        // render_flags |= RenderDataFlags_GUI_VISIBLE;
     } else {
-        milton_state->render_data->flags &= ~RenderDataFlags_GUI_VISIBLE;
+        render_flags &= ~RenderDataFlags_GUI_VISIBLE;
     }
 
     if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
@@ -1409,7 +1425,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
             // Release resources
             milton_reset_canvas(milton_state);
-            release(&milton_state->render_data->clip_array);
+            gpu_release_data(milton_state->render_data);
 
             #if DEBUG_MEMORY_USAGE
                 debug_memory_dump_allocations();
@@ -1423,6 +1439,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     i32 view_y = 0;
     i32 view_width = 0;
     i32 view_height = 0;
+
+    gpu_reset_render_flags(milton_state->render_data, render_flags);
 
     ClipFlags clip_flags = ClipFlags_JUST_CLIP;
 

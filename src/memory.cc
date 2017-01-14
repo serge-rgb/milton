@@ -2,6 +2,11 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
+#include "common.h"
+#include "memory.h"
+#include "utils.h"
+#include "platform.h"
+
 u8*
 arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags)
 {

@@ -5,6 +5,7 @@
 #include "system_includes.h"
 
 #include "common.h"
+#include "DArray.h"
 #include "memory.h"
 #include "utils.h"
 

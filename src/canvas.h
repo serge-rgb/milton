@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include "vector.h"
+#include "StrokeList.h"
+
 #define MAX_LAYER_NAME_LEN          64
 
 struct Layer

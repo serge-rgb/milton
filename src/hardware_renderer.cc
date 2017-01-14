@@ -3,6 +3,11 @@
 
 #include "shaders.gen.h"
 
+#include "color.h"
+#include "gl_helpers.h"
+#include "gui.h"
+#include "milton.h"
+#include "vector.h"
 
 #define PRESSURE_RESOLUTION (1<<20)
 
@@ -72,14 +77,6 @@ struct RenderData
 #endif
 };
 
-enum RenderDataFlags
-{
-    RenderDataFlags_NONE = 0,
-
-    RenderDataFlags_GUI_VISIBLE        = 1<<0,
-    RenderDataFlags_EXPORTING          = 1<<1,
-};
-
 enum RenderElementFlags
 {
     RenderElementFlags_NONE = 0,
@@ -140,6 +137,13 @@ print_framebuffer_status()
         snprintf(warning, 1024, "Framebuffer Error: %s", msg);
         milton_log("Warning %s\n", warning);
     }
+}
+
+RenderData*
+gpu_allocate_render_data(Arena* arena)
+{
+    RenderData* p = arena_alloc_elem(arena, RenderData);
+    return p;
 }
 
 // Send Color Picker data to OpenGL.
@@ -228,15 +232,9 @@ gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     }
 }
 
-enum BrushOutlineEnum
-{
-    BrushOutline_NO_FILL = 1<<0,
-    BrushOutline_FILL    = 1<<1,
-};
-
 void
 gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
-                         BrushOutlineEnum outline_enum = BrushOutline_NO_FILL, v4f color = {})
+                         BrushOutlineEnum outline_enum, v4f color)
 {
     if ( render_data->vbo_outline == 0 ) {
         mlt_assert(render_data->vbo_outline_sizes == 0);
@@ -616,6 +614,12 @@ gpu_resize(RenderData* render_data, CanvasView* view)
 }
 
 void
+gpu_reset_render_flags(RenderData* render_data, int flags)
+{
+    render_data->flags = flags;
+}
+
+void
 gpu_update_scale(RenderData* render_data, i32 scale)
 {
     render_data->scale = scale;
@@ -685,13 +689,28 @@ gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(left)*sizeof(*left), left, GL_DYNAMIC_DRAW) );
 }
 
-static void
+void
 gpu_set_background(RenderData* render_data, v3f background_color)
 {
     render_data->background_color = background_color;
 }
 
 void
+gpu_get_viewport_limits(RenderData* render_data, float* out_viewport_limits)
+{
+    if ( out_viewport_limits ) {
+        out_viewport_limits[0] = render_data->viewport_limits[0];
+        out_viewport_limits[1] = render_data->viewport_limits[1];
+    }
+}
+
+i32
+gpu_get_num_clipped_strokes(RenderData* render_data)
+{
+    return render_data->clipped_count;
+}
+
+static void
 set_screen_size(RenderData* render_data, float* fscreen)
 {
     GLuint programs[] = {
@@ -720,15 +739,8 @@ gpu_set_canvas(RenderData* render_data, CanvasView* view)
     set_screen_size(render_data, fscreen);
 }
 
-// TODO: Measure memory consumption of glBufferData and their ilk
-enum CookStrokeOpt
-{
-    CookStroke_NEW                   = 0,
-    CookStroke_UPDATE_WORKING_STROKE = 1,
-};
 void
-gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke,
-                CookStrokeOpt cook_option = CookStroke_NEW)
+gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrokeOpt cook_option)
 {
     render_data->stroke_z = (render_data->stroke_z + 1) % (MAX_DEPTH_VALUE-1);
     const i32 stroke_z = render_data->stroke_z + 1;
@@ -966,19 +978,12 @@ gpu_free_strokes(MiltonState* milton_state)
     }
 }
 
-enum ClipFlags
-{
-    ClipFlags_UPDATE_GPU_DATA   = 1<<0,  // Free all strokes that are far away.
-    ClipFlags_JUST_CLIP         = 1<<1,
-};
-// Creates OpenGL objects for strokes that are in view but are not loaded on the GPU. Deletes
-// content for strokes that are far away.
 void
 gpu_clip_strokes_and_update(Arena* arena,
                             RenderData* render_data,
                             CanvasView* view,
                             Layer* root_layer, Stroke* working_stroke,
-                            i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_JUST_CLIP)
+                            i32 x, i32 y, i32 w, i32 h, ClipFlags flags)
 {
     DArray<RenderElement>* clip_array = &render_data->clip_array;
 
@@ -1091,7 +1096,7 @@ gpu_clip_strokes_and_update(Arena* arena,
     }
 }
 
-void
+static void
 gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                   i32 view_width, i32 view_height, float background_alpha=1.0f)
 {
@@ -1493,4 +1498,9 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
                                 &milton_state->working_stroke, 0, 0, render_data->width,
                                 render_data->height);
     gpu_render(render_data, 0, 0, render_data->width, render_data->height);
+}
+void
+gpu_release_data(RenderData* render_data)
+{
+    release(&render_data->clip_array);
 }

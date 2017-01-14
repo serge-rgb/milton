@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include "utils.h"
+#include "vector.h"
 
-// milton.cc
+struct Arena;
 struct MiltonInput;
+struct MiltonState;
+struct PlatformState;
 
 enum ColorPickerFlags
 {
@@ -118,7 +122,7 @@ struct MiltonGui
 //
 // Call from the main loop before milton_update
 
-static void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state);
+void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state);
 
 
 
@@ -127,12 +131,16 @@ void                gui_init(Arena* root_arena, MiltonGui* gui);
 void                gui_toggle_visibility(MiltonState* milton_state);
 void                gui_toggle_help(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
+
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
 b32                 gui_consume_input(MiltonGui* gui, MiltonInput* input);
 void                gui_imgui_set_ungrabbed(MiltonGui* gui);
 
 void exporter_init(Exporter* exporter);
 b32 exporter_input(Exporter* exporter, MiltonInput* input);  // True if exporter changed
+
+// Returns true if point is over a GUI element
+b32 gui_point_hovers(MiltonGui* gui, v2i point);
 
 
 // Color Picker API

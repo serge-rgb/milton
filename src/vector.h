@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "common.h"
+
 template<typename T>
 struct Vector2
 {
@@ -340,7 +342,7 @@ struct Vector4
 
 /* op4(+) */
 
-
+#if 0
 // Types
 typedef Vector4<float>  vec4;
 typedef Vector4<int>    ivec4;
@@ -440,6 +442,7 @@ Vector2<T> _perpendicular (const Vector2<T>& a)
     };
     return result;
 }
+#endif
 
 typedef struct
 {
@@ -497,6 +500,12 @@ v2i scale2i(v2i a, i32 factor);
 v2i divide2i(v2i a, i32 factor);
 
 v2i perpendicular (v2i a);
+
+v2f perpendicular2f (v2f a);
+
+v2f lerp2f(v2f a, v2f b, f32 t);
+
+
 
 typedef struct
 {

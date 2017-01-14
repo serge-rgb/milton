@@ -2,6 +2,10 @@
 // License: https://github.com/serge-rgb/milton#license
 //
 
+#include "canvas.h"
+
+
+
 v4f k_eraser_color = {23,34,45,56};
 
 

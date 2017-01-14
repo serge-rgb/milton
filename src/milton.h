@@ -4,6 +4,11 @@
 
 #pragma once
 
+#include "memory.h"
+#include "system_includes.h"
+#include "canvas.h"
+#include "DArray.h"
+#include "profiler.h"
 
 #define MILTON_USE_VAO              0
 #define STROKE_MAX_POINTS           2048
@@ -59,7 +64,8 @@ struct HistoryElement
 
 struct MiltonGui;
 struct RenderData;
-
+struct CanvasView;
+struct Layer;
 
 // Stuff than can be reset when unloading a canvas
 struct CanvasState
@@ -186,7 +192,7 @@ enum MiltonInputFlags
     MiltonInputFlags_END_STROKE          = 1 << 1,
     MiltonInputFlags_UNDO                = 1 << 2,
     MiltonInputFlags_REDO                = 1 << 3,
-    // 1<<4 free to use
+                                        // 1 << 4 free to use
     MiltonInputFlags_FAST_DRAW           = 1 << 5,
     MiltonInputFlags_HOVERING            = 1 << 6,
     MiltonInputFlags_PANNING             = 1 << 7,
@@ -195,10 +201,7 @@ enum MiltonInputFlags
     MiltonInputFlags_OPEN_FILE           = 1 << 10,
     MiltonInputFlags_CLICK               = 1 << 11,
     MiltonInputFlags_CLICKUP             = 1 << 12,
-} MiltonInputFlags;
-#if defined(__cplusplus)
-#define MiltonInputFlags int
-#endif
+};
 
 struct MiltonInput
 {
@@ -227,6 +230,11 @@ void milton_init(MiltonState* milton_state, i32 width, i32 height);
 // Expects absolute path
 void milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname);
 void milton_set_default_canvas_file(MiltonState* milton_state);
+void milton_set_last_canvas_fname(PATH_CHAR* last_fname);
+void milton_unset_last_canvas_fname();
+
+void milton_save_postlude(MiltonState* milton_state);
+
 
 void milton_reset_canvas(MiltonState* milton_state);
 void milton_reset_canvas_and_set_default(MiltonState* milton_state);
@@ -240,6 +248,10 @@ void    milton_increase_brush_size(MiltonState* milton_state);
 void    milton_decrease_brush_size(MiltonState* milton_state);
 float   milton_get_pen_alpha(MiltonState* milton_state);
 void    milton_set_pen_alpha(MiltonState* milton_state, float alpha);
+
+// Returns false if the pan_delta moves the pan vector outside of the canvas.
+b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size);
+
 
 void milton_use_previous_mode(MiltonState* milton_state);
 void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
@@ -261,6 +273,6 @@ void milton_set_background_color(MiltonState* milton_state, v3f background_color
 void milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center);
 void milton_set_zoom_at_screen_center(MiltonState* milton_state);
 
-static b32  milton_brush_smoothing_enabled(MiltonState* milton_state);
-static void milton_toggle_brush_smoothing(MiltonState* milton_state);
+b32  milton_brush_smoothing_enabled(MiltonState* milton_state);
+void milton_toggle_brush_smoothing(MiltonState* milton_state);
 

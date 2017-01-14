@@ -3,8 +3,12 @@
 
 // Dynamic array template class
 
+#pragma once
 
 #include "common.h"
+
+#include "memory.h"
+#include "platform.h"
 
 template <typename T>
 struct DArray

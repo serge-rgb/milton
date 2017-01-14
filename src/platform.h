@@ -4,9 +4,15 @@
 
 #pragma once
 
+#include "common.h"
+#include "system_includes.h"
+#include "utils.h"
+#include "vector.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
 
 // EasyTab for drawing tablet support
 
@@ -114,20 +120,10 @@ enum FileKind
 };
 
 
-// Define this function before we substitute fopen in Mitlon with a macro.
-FILE* fopen_unix(const char* fname, const char* mode)
-{
-    FILE* fd = fopen(fname, mode);
-    return fd;
-}
 
 #define fopen fopen_error
-FILE*   fopen_error(const char* fname, const char* mode)
-{
-    INVALID_CODE_PATH;  // Use platform_fopen
-    return NULL;
-}
 
+FILE*   fopen_error(const char* fname, const char* mode);
 #if !defined(MAX_PATH) && defined(PATH_MAX)
     #define MAX_PATH PATH_MAX
 #endif
@@ -186,6 +182,19 @@ void win32_log(char *format, ...);
 #elif defined(__linux__) || defined(__MACH__)
 #define platform_milton_log printf
 #endif
+
+
+#if defined(_WIN32)
+#include "platform_windows.h"
+// TODO: Fix linux/mac compilation...
+#elif defined(__linux__)
+#include "platform_unix.cc"
+#include "platform_linux.cc"
+#elif defined(__MACH__)
+#include "platform_unix.cc"
+#include "platform_mac.cc"
+#endif
+
 
 #if defined(__cplusplus)
 }

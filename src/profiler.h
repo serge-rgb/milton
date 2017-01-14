@@ -54,7 +54,7 @@ struct GraphData
     u64 system;
 };
 
-GraphData g_graphframe;
+extern GraphData g_graphframe;
 
 static char* g_profiler_names[PROF_RASTER_COUNT] =
 {
@@ -77,9 +77,9 @@ void profiler_reset();
 
 #define PROFILER_IMPLEMENTATION
 
-u64 g_profiler_ticks[PROF_COUNT];     // Total cpu clocks
-u64 g_profiler_last[PROF_COUNT];
-u64 g_profiler_count[PROF_COUNT];     // How many calls
+extern u64 g_profiler_ticks[PROF_COUNT];     // Total cpu clocks
+extern u64 g_profiler_last[PROF_COUNT];
+extern u64 g_profiler_count[PROF_COUNT];     // How many calls
 
 
 static u32 TSC_AUX;

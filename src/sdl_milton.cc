@@ -1,7 +1,21 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+#include <imgui.h>
+#include <imgui_impl_sdl_gl3.h>
 
+#include "milton.h"
+#include "gl_helpers.h"
+#include "gui.h"
+#include "persist.h"
+
+
+FILE*
+fopen_error(const char* fname, const char* mode)
+{
+    INVALID_CODE_PATH;  // Use platform_fopen
+    return NULL;
+}
 
 static void
 cursor_set_and_show(SDL_Cursor* cursor)
@@ -477,7 +491,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
         platform_state->num_point_results = 0;
     }
 
-    milton_input.flags = (MiltonInputFlags)input_flags;
+    milton_input.flags = input_flags;
 
     return milton_input;
 }
@@ -580,7 +594,8 @@ milton_main()
 
     // Initialize milton_state
     {
-        milton_state->render_data = arena_alloc_elem(&milton_state->root_arena, RenderData);
+        milton_state->render_data = gpu_allocate_render_data(&milton_state->root_arena);
+
         milton_init(milton_state, platform_state.width, platform_state.height);
     }
 

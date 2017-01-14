@@ -1,3 +1,5 @@
+#include "common.h"
+
 u64
 hash(char* string, size_t len)
 {
