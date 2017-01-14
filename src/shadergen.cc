@@ -82,8 +82,8 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
                 }
             }
             // Copy a string from beginning
-            char* line = (char*)calloc(1, this_len+1);
-            memcpy(line, begin, this_len);
+            char* line = (char*)calloc(1, (size_t)this_len+1);
+            memcpy(line, begin, (size_t)this_len);
             lines[lines_i++] = line;
             begin = iter+1;
             this_len = 0;
@@ -181,32 +181,33 @@ output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
 int
 main(int argc, char** argv)
 {
+    fprintf(stderr, "Generating shader code...\n");
+
     char out[128] = {};
-    shadername("./../src/picker.v.glsl", out, 128);
-    shadername("./../src/picker.f.glsl", out, 128);
-	  shadername("../src/exporter_rect.f.glsl", out, 128);
-    FILE* outfd = fopen("./../src/shaders.gen.h", "w");
+    FILE* outfd = fopen("../../src/shaders.gen.h", "w");
     if ( outfd ) {
-        output_shader(outfd, "../src/picker.v.glsl");
-        output_shader(outfd, "../src/picker.f.glsl");
-        output_shader(outfd, "../src/layer_blend.v.glsl");
-        output_shader(outfd, "../src/layer_blend.f.glsl");
-        output_shader(outfd, "../src/simple.v.glsl");
-        output_shader(outfd, "../src/simple.f.glsl");
-        output_shader(outfd, "../src/outline.v.glsl");
-        output_shader(outfd, "../src/outline.f.glsl");
-        output_shader(outfd, "../src/stroke_raster.v.glsl", "../src/common.glsl");
-        output_shader(outfd, "../src/stroke_raster.f.glsl", "../src/common.glsl");
-        output_shader(outfd, "../src/exporter_rect.f.glsl");
-        output_shader(outfd, "../src/texture_fill.f.glsl");
-        output_shader(outfd, "../src/quad.v.glsl");
-        output_shader(outfd, "../src/quad.f.glsl");
+        output_shader(outfd, "../../src/picker.v.glsl");
+        output_shader(outfd, "../../src/picker.f.glsl");
+        output_shader(outfd, "../../src/layer_blend.v.glsl");
+        output_shader(outfd, "../../src/layer_blend.f.glsl");
+        output_shader(outfd, "../../src/simple.v.glsl");
+        output_shader(outfd, "../../src/simple.f.glsl");
+        output_shader(outfd, "../../src/outline.v.glsl");
+        output_shader(outfd, "../../src/outline.f.glsl");
+        output_shader(outfd, "../../src/stroke_raster.v.glsl", "../../src/common.glsl");
+        output_shader(outfd, "../../src/stroke_raster.f.glsl", "../../src/common.glsl");
+        output_shader(outfd, "../../src/exporter_rect.f.glsl");
+        output_shader(outfd, "../../src/texture_fill.f.glsl");
+        output_shader(outfd, "../../src/quad.v.glsl");
+        output_shader(outfd, "../../src/quad.f.glsl");
     }
     else {
         fprintf(stderr, "Could not open output file.\n");
         int error = errno;
         handle_errno(error);
     }
+    fprintf(stderr, "Shaders generated OK\n");
+    return EXIT_SUCCESS;
 }
 
 void
@@ -469,6 +470,6 @@ handle_errno(int error)
        // case EXFULL:          str = "Exchange full"; break;
    }
    if ( str ) {
-        fprintf(stderr, "Errno is set to \"%s\"", str);
+        fprintf(stderr, "Errno is set to \"%s\"\n", str);
    }
 }
