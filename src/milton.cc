@@ -1205,7 +1205,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( milton_state->gui->visible ) {
-        // render_flags |= RenderDataFlags_GUI_VISIBLE;
+        render_flags |= RenderDataFlags_GUI_VISIBLE;
     } else {
         render_flags &= ~RenderDataFlags_GUI_VISIBLE;
     }
