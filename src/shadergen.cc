@@ -184,22 +184,22 @@ main(int argc, char** argv)
     fprintf(stderr, "Generating shader code...\n");
 
     char out[128] = {};
-    FILE* outfd = fopen("../../src/shaders.gen.h", "w");
+    FILE* outfd = fopen("src/shaders.gen.h", "w");
     if ( outfd ) {
-        output_shader(outfd, "../../src/picker.v.glsl");
-        output_shader(outfd, "../../src/picker.f.glsl");
-        output_shader(outfd, "../../src/layer_blend.v.glsl");
-        output_shader(outfd, "../../src/layer_blend.f.glsl");
-        output_shader(outfd, "../../src/simple.v.glsl");
-        output_shader(outfd, "../../src/simple.f.glsl");
-        output_shader(outfd, "../../src/outline.v.glsl");
-        output_shader(outfd, "../../src/outline.f.glsl");
-        output_shader(outfd, "../../src/stroke_raster.v.glsl", "../../src/common.glsl");
-        output_shader(outfd, "../../src/stroke_raster.f.glsl", "../../src/common.glsl");
-        output_shader(outfd, "../../src/exporter_rect.f.glsl");
-        output_shader(outfd, "../../src/texture_fill.f.glsl");
-        output_shader(outfd, "../../src/quad.v.glsl");
-        output_shader(outfd, "../../src/quad.f.glsl");
+        output_shader(outfd, "src/picker.v.glsl");
+        output_shader(outfd, "src/picker.f.glsl");
+        output_shader(outfd, "src/layer_blend.v.glsl");
+        output_shader(outfd, "src/layer_blend.f.glsl");
+        output_shader(outfd, "src/simple.v.glsl");
+        output_shader(outfd, "src/simple.f.glsl");
+        output_shader(outfd, "src/outline.v.glsl");
+        output_shader(outfd, "src/outline.f.glsl");
+        output_shader(outfd, "src/stroke_raster.v.glsl", "src/common.glsl");
+        output_shader(outfd, "src/stroke_raster.f.glsl", "src/common.glsl");
+        output_shader(outfd, "src/exporter_rect.f.glsl");
+        output_shader(outfd, "src/texture_fill.f.glsl");
+        output_shader(outfd, "src/quad.v.glsl");
+        output_shader(outfd, "src/quad.f.glsl");
     }
     else {
         fprintf(stderr, "Could not open output file.\n");

@@ -22,8 +22,8 @@ Build {
             Name = "ShaderGen",
             -- Command = "pushd $(OBJECTROOT)$(SEP)$(BUILD_ID) && shadergen.exe",
             -- ImplicitInputs = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen.exe" },
-            Command = "cd $(OBJECTROOT)$(SEP)$(BUILD_ID) && ./shadergen",
-            ImplicitInputs = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen" },
+            Command = "$(SHADERGEN_BIN)",
+            ImplicitInputs = { "$(SHADERGEN_BIN)" },
 
             Pass = "CodeGeneration",
             Blueprint = {
@@ -47,10 +47,11 @@ Build {
             Setup = function(env, data)
                 return {
                     InputFiles = { data.Input },
-                    OutputFiles = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)rc_dummy" }
+                    OutputFiles = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)Milton.res" }
                 }
             end,
         }
+        local copyRC = CopyFile { Source="Milton.rc", Target="$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)/Milton.rc" }
 
         local milton = Program {
             Name = "Milton",
@@ -75,7 +76,7 @@ Build {
                 {"src/platform_linux.cc"; Config = { "linux-*" }},
                 "src/third_party_libs.cc",
 
-                -- ResourceFile { Input="Milton.rc" },
+                { ResourceFile { Input="Milton.rc" }; Config="win*" },
                 ShaderGen { Input = "src/shadergen.cc" },
             },
             Libs = {
@@ -95,9 +96,9 @@ Build {
                 { "Xi"; Config = "linux-*-*"},
                 { "stdc++"; Config = "linux-*-*"},
             },
+            Depends = { copyRC }
         }
 
-        local copyRC = CopyFile { Source="Milton.rc", Target="$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)/Milton.rc" }
         local copyIcon = CopyFile { Source="milton_icon.ico", Target="$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)/milton_icon.ico" }
         local copyFont = CopyFile { Source="third_party/Carlito.ttf", Target="$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)/Carlito.ttf" }
         local copyFontLicense= CopyFile { Source="third_party/Carlito.LICENSE", Target="$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)/Carlito.LICENSE" }
@@ -125,7 +126,8 @@ Build {
                     "/wd4100", "/wd4189", "/wd4800", "/wd4127", "/wd4239", "/wd4987",
                     -- Disabled warnings
                     "/wd4305", "/wd4820", "/wd4255", "/wd4710", "/wd4711", "/wd4201", "/wd4204", "/wd4191", "/wd5027", "/wd4514", "/wd4242", "/wd4244", "/wd4738", "/wd4619", "/wd4505",
-                }
+                },
+                SHADERGEN_BIN = "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen.exe",
             },
             ReplaceEnv = {
                 OBJECTROOT = "build",
@@ -156,6 +158,7 @@ Build {
                 PROGOPTS = {
                     "`pkg-config --libs sdl2 gtk+-2.0`",
                 },
+                SHADERGEN_BIN = "./$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen",
             },
             ReplaceEnv = {
                 OBJECTROOT = "build",
