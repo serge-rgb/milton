@@ -1,10 +1,10 @@
+#include "platform.h"
+
+#include "common.h"
+#include "memory.h"
+
 #define IMPL_MISSING mlt_assert(!"IMPLEMENT")
 
-// #define _GNU_SOURCE //temporarily targeting gcc for program_invocation_name
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <errno.h>
-#include <time.h>
 
 float
 perf_count_to_sec(u64 counter)

@@ -54,8 +54,6 @@ gl_load()
                         }
 #elif defined(__linux__)
     #define GETADDRESS(f, e)
-    // There is no function prototype for the EXT version of this function but there is for GL core one.
-    #define glBlitFramebufferEXT glBlitFramebuffer
 
     #if 0
     #define GETADDRESS(func) \

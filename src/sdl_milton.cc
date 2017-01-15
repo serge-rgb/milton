@@ -10,13 +10,6 @@
 #include "persist.h"
 
 
-FILE*
-fopen_error(const char* fname, const char* mode)
-{
-    INVALID_CODE_PATH;  // Use platform_fopen
-    return NULL;
-}
-
 static void
 cursor_set_and_show(SDL_Cursor* cursor)
 {

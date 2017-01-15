@@ -51,3 +51,8 @@ bool gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals);
 bool gl_set_uniform_f(GLuint program, char* name, float val);
 bool gl_set_uniform_i(GLuint program, char* name, i32 val);
 bool gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y);
+
+#if defined(__linux__)
+    // There is no function prototype for the EXT version of this function but there is for GL core one.
+    #define glBlitFramebufferEXT glBlitFramebuffer
+#endif

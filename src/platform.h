@@ -120,10 +120,6 @@ enum FileKind
 };
 
 
-
-#define fopen fopen_error
-
-FILE*   fopen_error(const char* fname, const char* mode);
 #if !defined(MAX_PATH) && defined(PATH_MAX)
     #define MAX_PATH PATH_MAX
 #endif
@@ -186,13 +182,8 @@ void win32_log(char *format, ...);
 
 #if defined(_WIN32)
 #include "platform_windows.h"
-// TODO: Fix linux/mac compilation...
-#elif defined(__linux__)
-#include "platform_unix.cc"
-#include "platform_linux.cc"
-#elif defined(__MACH__)
-#include "platform_unix.cc"
-#include "platform_mac.cc"
+#elif defined(__linux__) || defined(__MACH__)
+#include "platform_unix.h"
 #endif
 
 

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Stroke.h"
+#include "stroke.h"
 
 #include "memory.h"
 

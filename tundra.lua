@@ -2,7 +2,11 @@
 
 Build {
     Env = {
-        CPPPATH = { "third_party", "third_party/imgui", "third_party/SDL2-2.0.3/include" },
+        CPPPATH = { "third_party",
+            "third_party/imgui",
+            {"third_party/SDL2-2.0.3/include"; Config = "win*"},
+            "src"
+        },
         CXXOPTS = { }
     },
 
@@ -16,8 +20,11 @@ Build {
         },
         DefRule {
             Name = "ShaderGen",
-            Command = "pushd $(OBJECTROOT)$(SEP)$(BUILD_ID) && shadergen.exe",
-            ImplicitInputs = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen.exe" },
+            -- Command = "pushd $(OBJECTROOT)$(SEP)$(BUILD_ID) && shadergen.exe",
+            -- ImplicitInputs = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen.exe" },
+            Command = "cd $(OBJECTROOT)$(SEP)$(BUILD_ID) && ./shadergen",
+            ImplicitInputs = { "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen" },
+
             Pass = "CodeGeneration",
             Blueprint = {
                 Input = { Type = "string", Required = true },
@@ -63,7 +70,9 @@ Build {
                 "src/vector.cc",
                 "src/sdl_milton.cc",
                 "src/StrokeList.cc",
-                "src/platform_windows.cc",
+                {"src/platform_windows.cc"; Config = { "win*" }},
+                {"src/platform_unix.cc"; Config = { "linux-*" }},
+                {"src/platform_linux.cc"; Config = { "linux-*" }},
                 "src/third_party_libs.cc",
 
                 -- ResourceFile { Input="Milton.rc" },
@@ -79,6 +88,12 @@ Build {
                 { "ole32.lib"; Config = { "win*" } },
                 { "oleAut32.lib"; Config = { "win*" } },
                 { "third_party/bin/SDL2.lib"; Config = { "win*" } },
+
+                { "GL"; Config = "linux-*-*"},
+                --, "Xi", "m", "c"
+                { "m"; Config = "linux-*-*"},
+                { "Xi"; Config = "linux-*-*"},
+                { "stdc++"; Config = "linux-*-*"},
             },
         }
 
@@ -111,6 +126,36 @@ Build {
                     -- Disabled warnings
                     "/wd4305", "/wd4820", "/wd4255", "/wd4710", "/wd4711", "/wd4201", "/wd4204", "/wd4191", "/wd5027", "/wd4514", "/wd4242", "/wd4244", "/wd4738", "/wd4619", "/wd4505",
                 }
+            },
+            ReplaceEnv = {
+                OBJECTROOT = "build",
+            },
+        },
+        Config {
+            Name = "linux-clang",
+            DefaultOnHost = "linux",
+            Tools = { "clang" },
+            Env = {
+                CXXOPTS = {
+                    "-std=c++11",
+                    "`pkg-config --cflags sdl2 gtk+-2.0`",
+                    "-Wno-missing-braces",
+                    "-Wno-unused-function",
+                    "-Wno-unused-variable",
+                    "-Wno-unused-result",
+                    "-Wno-write-strings",
+                    "-Wno-c++11-compat-deprecated-writable-strings",
+                    "-Wno-null-dereference",
+                    "-Wno-format",
+                    "-fno-strict-aliasing",
+                    "-fno-omit-frame-pointer",
+                    "-Werror",
+                    "-O0",
+                    "-g",
+                },
+                PROGOPTS = {
+                    "`pkg-config --libs sdl2 gtk+-2.0`",
+                },
             },
             ReplaceEnv = {
                 OBJECTROOT = "build",
