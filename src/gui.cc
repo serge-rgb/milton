@@ -104,7 +104,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     milton_set_canvas_file(milton_state, fname);
                     input->flags |= MiltonInputFlags_OPEN_FILE;
                     // TODO: Check if this line can be removed after switching to HW rendering.
-                    gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
                 }
             }
             if ( ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested ) {
@@ -1118,7 +1117,6 @@ void
 gui_toggle_visibility(MiltonState* milton_state)
 {
     MiltonGui* gui = milton_state->gui;
-    gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
     gui->visible = !gui->visible;
 }
 

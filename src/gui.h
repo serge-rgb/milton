@@ -94,7 +94,6 @@ enum MiltonGuiFlags
     MiltonGuiFlags_NONE,
 
     MiltonGuiFlags_SHOWING_PREVIEW   = 1 << 0,
-    MiltonGuiFlags_NEEDS_REDRAW      = 1 << 1,
 };
 
 struct MiltonGui

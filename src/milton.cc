@@ -7,7 +7,6 @@
 #include "color.h"
 #include "canvas.h"
 #include "gui.h"
-#include "render_common.h"
 #include "hardware_renderer.h"
 #include "localization.h"
 #include "milton_configuration.h"
@@ -350,7 +349,6 @@ milton_set_brush_size(MiltonState* milton_state, i32 size)
             milton_update_brushes(milton_state);
         }
     }
-    milton_state->flags |= MiltonStateFlags_BRUSH_SIZE_CHANGED;
 }
 
 // For keyboard shortcut.
@@ -674,9 +672,6 @@ milton_reset_canvas_and_set_default(MiltonState* milton_state)
         gui->preview_pos_prev = v2i{-1, -1};
 
         exporter_init(&gui->exporter);
-
-        // TODO: Check if this line can be removed after the switch to HW rendering.
-        milton_state->gui->flags |= MiltonGuiFlags_NEEDS_REDRAW;
     }
     milton_update_brushes(milton_state);
 
@@ -1157,8 +1152,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 milton_update_brushes(milton_state);
                 gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
             }
-            else if ( !milton_state->gui->owns_user_input &&
-                      (milton_state->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
+            else if ( !milton_state->gui->owns_user_input
+                      && (milton_state->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
                 milton_stroke_input(milton_state, input);
             }
         }
@@ -1168,7 +1163,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         Exporter* exporter = &milton_state->gui->exporter;
         b32 changed = exporter_input(exporter, input);
         if ( changed ) {
-            render_flags |= MiltonRenderFlags_UI_UPDATED;
             gpu_update_export_rect(milton_state->render_data, exporter);
         }
         if ( exporter->state != ExporterState_EMPTY ) {
@@ -1238,7 +1232,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                              milton_state->view->screen_size.w,
                              milton_state->view->screen_size.h,
                              point);
-            render_flags |= MiltonRenderFlags_UI_UPDATED;
             gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
         }
         if( input->flags & MiltonInputFlags_CLICKUP ) {
@@ -1255,15 +1248,12 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     if ( (input->flags & MiltonInputFlags_END_STROKE) ) {
         if ( milton_state->gui->owns_user_input ) {
             gui_deactivate(milton_state->gui);
-            render_flags |= MiltonRenderFlags_UI_UPDATED;
-            render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
             brush_outline_should_draw = false;
         } else {
             if ( milton_state->working_stroke.num_points > 0 ) {
                 // We used the selected color to draw something. Push.
                 if ( milton_state->current_mode == MiltonMode_PEN
                      && gui_mark_color_used(milton_state->gui) ) {
-                    render_flags |= MiltonRenderFlags_UI_UPDATED;
                     // Tell the renderer to update the picker
                     gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
                 }
@@ -1305,8 +1295,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 }
 
                 clear_stroke_redo(milton_state);
-
-                render_flags |= MiltonRenderFlags_FINISHED_STROKE;
             }
         }
     }
@@ -1316,30 +1304,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     // Disable hover if panning.
     if ( input->flags & MiltonInputFlags_PANNING ) {
-        render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
         brush_outline_should_draw = false;
-    }
-
-    // If the brush size was changed, set up the renderer
-    if ( (milton_state->flags & MiltonStateFlags_BRUSH_SIZE_CHANGED) ) {
-        milton_state->flags &= ~MiltonStateFlags_BRUSH_SIZE_CHANGED;
-        render_flags |= MiltonRenderFlags_BRUSH_CHANGE;
-    }
-
-    // Send a UI_UPDATED event to clear the canvas of the hover when it stops flashing
-    if ( (milton_state->flags & MiltonStateFlags_BRUSH_HOVER_FLASHING) ) {
-        if ( (i32)SDL_GetTicks() - milton_state->hover_flash_ms > HOVER_FLASH_THRESHOLD_MS ) {
-            milton_state->flags &= ~MiltonStateFlags_BRUSH_HOVER_FLASHING;
-            render_flags |= MiltonRenderFlags_UI_UPDATED;
-        }
-    }
-
-    if ( (milton_state->gui->flags & MiltonGuiFlags_NEEDS_REDRAW) ) {
-        milton_state->gui->flags &= ~MiltonGuiFlags_NEEDS_REDRAW;
-        render_flags |= MiltonRenderFlags_UI_UPDATED;
-    }
-    if ( (milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW) ) {
-        render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
     if ( milton_get_brush_radius(milton_state) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ) {
