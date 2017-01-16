@@ -54,8 +54,8 @@ enum BrushOutlineEnum
     BrushOutline_FILL    = 1<<1,
 };
 void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
-                                BrushOutlineEnum outline_enum = BrushOutline_NO_FILL,
-                                v4f color = {});
+                              BrushOutlineEnum outline_enum = BrushOutline_NO_FILL,
+                              v4f color = {});
 void gpu_resize(RenderData* render_data, CanvasView* view);
 void gpu_update_scale(RenderData* render_data, i32 scale);
 void gpu_update_export_rect(RenderData* render_data, Exporter* exporter);

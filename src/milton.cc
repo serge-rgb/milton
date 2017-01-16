@@ -838,7 +838,7 @@ milton_delete_working_layer(MiltonState* milton_state)
     }
     if ( layer == milton_state->canvas->root_layer )
         milton_state->canvas->root_layer = milton_state->canvas->working_layer;
-    mlt_free(layer, "Layer");
+
     milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
 }
 
@@ -1168,16 +1168,16 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         Exporter* exporter = &milton_state->gui->exporter;
         b32 changed = exporter_input(exporter, input);
         if ( changed ) {
-            // render_flags |= MiltonRenderFlags_UI_UPDATED;
+            render_flags |= MiltonRenderFlags_UI_UPDATED;
             gpu_update_export_rect(milton_state->render_data, exporter);
         }
         if ( exporter->state != ExporterState_EMPTY ) {
-            // gpu_reset_render_flags |= RenderDataFlags_EXPORTING;
+             render_flags |= RenderDataFlags_EXPORTING;
         }
     }
-    // else if ( render_flags & RenderDataFlags_EXPORTING ) {
-    //     render_flags &= ~RenderDataFlags_EXPORTING;
-    // }
+    else if ( render_flags & RenderDataFlags_EXPORTING ) {
+        render_flags &= ~RenderDataFlags_EXPORTING;
+    }
 
     if ( (input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
         // Start drawing the preview if we just grabbed a slider.

@@ -55,8 +55,7 @@ platform_deallocate_internal(void* pointer)
 void
 win32_debug_output(char* str)
 {
-    if (g_win32_logfile)
-    {
+    if ( g_win32_logfile ) {
         fputs(str, g_win32_logfile);
     }
 }

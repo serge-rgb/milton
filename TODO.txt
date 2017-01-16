@@ -3,7 +3,6 @@ To-Do
 
 - Cleanup
     is hover still flashing?
-    figure out what goes into headers...
 - Bugs
     - MoveFileEx randomly fails with return code 5 - access denied
 

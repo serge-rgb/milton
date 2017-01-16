@@ -76,7 +76,6 @@ void    layer_toggle_visibility(Layer* layer);
 Stroke* layer_push_stroke(Layer* layer, Stroke stroke);
 
 typedef struct MiltonState MiltonState;
-void    layer_new(MiltonState* milton_state);
 
 i32     number_of_layers(Layer* root);
 
