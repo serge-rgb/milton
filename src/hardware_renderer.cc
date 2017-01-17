@@ -474,6 +474,10 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
         }
         else {
             glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
             glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
                          /*width, height = */ view->screen_size.w, view->screen_size.h,
                          /*border = */ 0,
@@ -494,6 +498,11 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
         }
         else {
             glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
+
             glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
                          /*width, height = */ view->screen_size.w, view->screen_size.h,
                          /*border = */ 0,
@@ -606,10 +615,10 @@ gpu_resize(RenderData* render_data, CanvasView* view)
         glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
 
         GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
-                         /*width, height = */ render_data->width, render_data->height,
-                         /*border = */ 0,
-                         /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
-                         /*data = */ NULL) );
+                            /*width, height = */ render_data->width, render_data->height,
+                            /*border = */ 0,
+                            /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
+                            /*data = */ NULL) );
     }
 }
 
@@ -1113,13 +1122,6 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
     GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo));
 
-    if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        GLCHK(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture));
-    }
-    else {
-        glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
-    }
-
     glClearColor(render_data->background_color.r, render_data->background_color.g,
                  render_data->background_color.b, background_alpha);
 
@@ -1129,6 +1131,9 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
     } else {
         texture_target = GL_TEXTURE_2D;
     }
+
+    GLCHK(glBindTexture(texture_target, render_data->eraser_texture));
+
     glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                               render_data->eraser_texture, 0);
 
@@ -1149,7 +1154,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glDepthFunc(GL_NOTEQUAL);
 
-    gl_set_uniform_i(render_data->picker_program, "u_canvas", 0);
+    // gl_set_uniform_i(render_data->picker_program, "u_canvas", 0);
 
     GLCHK(glUseProgram(render_data->stroke_program));
 
@@ -1163,6 +1168,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
             RenderElement* re = &clip_array->data[i];
 
             if ( clip_array->count == 1) {
+                // Breaking here on ATI...
                 break;
             }
 
@@ -1173,6 +1179,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
                 glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                           texture_target, render_data->eraser_texture, 0);
+                #if 1
                 glBindTexture(texture_target, render_data->layer_texture);
                 glClear(GL_COLOR_BUFFER_BIT);
                 glDisable(GL_DEPTH_TEST);
@@ -1195,6 +1202,14 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 glBindTexture(texture_target, render_data->eraser_texture);
                 glUseProgram(render_data->stroke_program);
                 glEnable(GL_DEPTH_TEST);
+                #else
+                GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, render_data->fbo) );
+                GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, 0) );
+                GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
+                                            0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                          texture_target, render_data->layer_texture, 0);
+                #endif
             }
             // If this element is not a layer, then it is a stroke.
             else {
@@ -1237,6 +1252,8 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     // Disable blending if this element is an eraser brush stroke.
                     if ( is_eraser(re->color) ) {
                         glDisable(GL_BLEND);
+                        GLCHK(glBindTexture(texture_target, render_data->eraser_texture));
+                        gl_set_uniform_i(render_data->stroke_program, "u_canvas", 0);
                     }
 
                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);

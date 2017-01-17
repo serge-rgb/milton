@@ -7,12 +7,12 @@ in vec3 v_pointb;
 
 
 #if HAS_TEXTURE_MULTISAMPLE
-// TODO: Technically we can't specify this here since it is not the beginning of the shader.
-#extension GL_ARB_sample_shading : enable
-#extension GL_ARB_texture_multisample : enable
-uniform sampler2DMS u_canvas;
+    // TODO: Technically we can't specify this here since it is not the beginning of the shader.
+    #extension GL_ARB_sample_shading : enable
+    #extension GL_ARB_texture_multisample : enable
+    uniform sampler2DMS u_canvas;
 #else
-uniform sampler2D u_canvas;
+    uniform sampler2D u_canvas;
 #endif
 
 #if __VERSION__ > 120
@@ -90,12 +90,12 @@ main()
         // TODO: is there a way to do front-to-back rendering with a working eraser?
         if ( brush_is_eraser() ) {
             #if HAS_TEXTURE_MULTISAMPLE
-                vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
+                vec4 eraser_color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);
             #else
-                vec2 coord = screen_point / u_screen_size;
-                vec4 color = texture(u_canvas, coord);
+                vec2 coord = gl_FragCoord.xy / u_screen_size;
+                vec4 eraser_color = texture(u_canvas, coord);
             #endif
-            out_color = color;
+            out_color = eraser_color;
         }
         else {
             out_color = u_brush_color;

@@ -17,7 +17,6 @@ main()
 {
     vec4 g_eraser_magic = vec4(0,1,0,1);
 
-
     //vec2 coord = gl_FragCoord.xy/ u_screen_size;
     vec2 coord = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y) / u_screen_size;
 
@@ -27,8 +26,7 @@ main()
     vec4 color = texture(u_canvas, coord);
 #endif
 
-    if (color == g_eraser_magic)
-    {
+    if ( color == g_eraser_magic ) {
         discard;
     }
     out_color = vec4(color);
