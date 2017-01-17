@@ -522,7 +522,7 @@ milton_main()
 
 #if USE_GL_3_2
     i32 gl_version_major = 3;
-    i32 gl_version_minor = 2;
+    i32 gl_version_minor = 3 ;
 #else
     i32 gl_version_major = 2;
     i32 gl_version_minor = 1;

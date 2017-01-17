@@ -25,15 +25,15 @@
     #endif
 #endif
 
-#define MULTISAMPLING_ENABLED 1
+#define MULTISAMPLING_ENABLED 0
 
-#define MSAA_NUM_SAMPLES 8
+#define MSAA_NUM_SAMPLES 2
 
 #define MILTON_MULTITHREADED 1
 
-#define MILTON_ENABLE_PROFILING 1
+#define MILTON_ENABLE_PROFILING 0
 
-#define REDRAW_EVERY_FRAME 0
+#define REDRAW_EVERY_FRAME 1
 
 #define USE_GL_3_2 0
     #if !MILTON_DEBUG  // Don't use 3.2 in release.

@@ -57,6 +57,7 @@ win32_debug_output(char* str)
 {
     if ( g_win32_logfile ) {
         fputs(str, g_win32_logfile);
+        fflush(g_win32_logfile);  // Make sure output is written in case of a crash.
     }
 }
 

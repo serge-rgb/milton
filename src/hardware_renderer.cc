@@ -707,7 +707,11 @@ gpu_get_viewport_limits(RenderData* render_data, float* out_viewport_limits)
 i32
 gpu_get_num_clipped_strokes(RenderData* render_data)
 {
+    #if MILTON_ENABLE_PROFILING
     return render_data->clipped_count;
+    #else
+    return 0;
+    #endif
 }
 
 static void
@@ -1132,7 +1136,13 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
     GLCHK(glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                     render_data->layer_texture, 0));
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Trying this out. See if it doesn't crash without clearing the depth buffer.
+    //  glClear(GL_COLOR_BUFFER_BIT);
+    //  Yup! It crashes!
+
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -1151,6 +1161,10 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
         for ( i64 i = 0; i < (i64)clip_array->count; i++ ) {
             RenderElement* re = &clip_array->data[i];
+
+            if ( clip_array->count == 1) {
+                break;
+            }
 
             if ( render_element_is_layer(re) ) {
                 // Layer render element.
@@ -1442,6 +1456,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
     // Resolve
 
+    // TODO: What if multisampling is not enabled in milton_configuration.h?
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
     GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, export_fbo) );
 

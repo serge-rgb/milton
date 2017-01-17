@@ -38,7 +38,6 @@ gl_helper_check_flags(int flags)
     return result;
 }
 
-
 bool
 gl_load()
 {
