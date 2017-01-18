@@ -492,8 +492,8 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
             glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
             GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
             GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
             glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
                          /*width, height = */ view->screen_size.w, view->screen_size.h,
                          /*border = */ 0,
@@ -516,8 +516,8 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
             glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
             GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
             GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
+            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
 
             glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
                          /*width, height = */ view->screen_size.w, view->screen_size.h,
@@ -748,6 +748,7 @@ set_screen_size(RenderData* render_data, float* fscreen)
         render_data->texture_fill_program,
         render_data->exporter_program,
         render_data->picker_program,
+        render_data->postproc_program,
     };
     for ( int pi = 0; pi < array_count(programs); ++pi ) {
         gl_set_uniform_vec2(programs[pi], "u_screen_size", 1, fscreen);
@@ -1289,6 +1290,9 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
     GLCHK(glScissor(0, 0, render_data->width, render_data->height));
 }
 
+// Temp
+bool g_draw_postproc = false;
+
 void
 gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
 {
@@ -1335,6 +1339,33 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
                                     0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
     }
     #endif
+
+    // Do post-processing of the rendered painting.
+    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE)
+         && g_draw_postproc ) {
+        GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
+
+        gl_set_uniform_i(render_data->postproc_program, "u_canvas", 0);
+        gl_set_uniform_i(render_data->postproc_program, "u_depth", 1);
+
+        glUseProgram(render_data->postproc_program);
+
+        GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
+        if ( loc >= 0 ) {
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
+            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray((GLuint)loc);
+
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+
+    }
 
     // Render Gui
 
@@ -1405,6 +1436,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
             }
         }
     }
+
 
     GLCHK(glUseProgram(0));
 }

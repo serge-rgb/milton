@@ -67,3 +67,6 @@ typedef i32         b32;
 
 #define INVALID_CODE_PATH mlt_assert(!"Invalid code path")
 
+
+extern bool g_draw_postproc;
+

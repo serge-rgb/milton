@@ -66,7 +66,7 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
 {
     i64 this_len = 0;
 
-    char** lines = (char**)calloc(1, MAX_LINES);
+    char** lines = (char**)calloc(1, sizeof(char**)*MAX_LINES);
     i64 lines_i = 0;
 
     char* begin = contents;
@@ -75,6 +75,7 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
           *iter!='\0';
           ++iter ) {
         ++this_len;
+
         if ( *iter == '\n' || *(iter+1) == '\0' ) {
             if ( max_line != NULL ) {
                 if ( this_len > *max_line ) {
@@ -82,11 +83,22 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
                 }
             }
             // Copy a string from beginning
-            char* line = (char*)calloc(1, (size_t)this_len+1);
+            char* line = (char*)malloc((size_t)this_len+2);
             memcpy(line, begin, (size_t)this_len);
+            // Dumb loop to get rid of quotes.
+            for ( int i = 0; i < this_len; ++i ) {
+                if ( line[i] == '\"' ) {
+                    line[i] = 'Q';
+                }
+            }
+            line[this_len++] = '\0';
             lines[lines_i++] = line;
             begin = iter+1;
             this_len = 0;
+            if (lines_i == 1260) {
+              int foo = 1;
+              foo=1;
+            }
         }
     }
     *out_count = lines_i;
@@ -167,7 +179,8 @@ output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
     fprintf(of, "char %s[] = \n", varname);
 
     for ( i64 i = 0; i < prelude_lines_count; ++i ) {
-        prelude_lines[i][strlen(prelude_lines[i])-1]='\0';  // Strip newline
+		size_t len = strlen(prelude_lines[i]);
+        prelude_lines[i][len-1]='\0';  // Strip newline
         fprintf(of, "\"%s\\n\"\n", prelude_lines[i]);
     }
     for ( i64 i = 0; i < count; ++i ) {
@@ -200,7 +213,7 @@ main(int argc, char** argv)
         output_shader(outfd, "src/texture_fill.f.glsl");
         output_shader(outfd, "src/quad.v.glsl");
         output_shader(outfd, "src/quad.f.glsl");
-        output_shader(outfd, "src/postproc.f.glsl");
+        output_shader(outfd, "src/postproc.f.glsl", "third_party/Fxaa3_11.glsl");
     }
     else {
         fprintf(stderr, "Could not open output file.\n");
