@@ -1290,9 +1290,6 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
     GLCHK(glScissor(0, 0, render_data->width, render_data->height));
 }
 
-// Temp
-bool g_draw_postproc = false;
-
 void
 gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
 {
@@ -1340,9 +1337,13 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
     }
     #endif
 
-    // Do post-processing of the rendered painting.
-    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE)
-         && g_draw_postproc ) {
+    // Render Gui
+
+    glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+
+    // Do post-processing of the rendered painting. Do it after rendering GUI elements
+    // gets anti-aliased too.
+    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
 
         glActiveTexture(GL_TEXTURE0);
@@ -1366,10 +1367,6 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         }
 
     }
-
-    // Render Gui
-
-    glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 
     // TODO: Only render if view rect intersects picker rect
     if ( render_data->flags & RenderDataFlags_GUI_VISIBLE ) {
@@ -1437,7 +1434,6 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         }
     }
 
-
     GLCHK(glUseProgram(0));
 }
 
@@ -1482,10 +1478,14 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
     glGenTextures(1, &export_texture);
 
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, export_texture);
+    glBindTexture(GL_TEXTURE_2D, export_texture);
 
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES, GL_RGBA,
-                            view->screen_size.w, view->screen_size.h, GL_TRUE);
+    glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
+                 /*width, height = */ buf_w, buf_h, /*border = */ 0,
+                 /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
+                 /*data = */ NULL);
+
+
 
     GLCHK(glGenTextures(1, &image_texture));
 
@@ -1519,17 +1519,21 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
     gpu_render_canvas(render_data, 0, 0, buf_w, buf_h, background_alpha);
 
-    // Resolve
 
-    // TODO: What if multisampling is not enabled in milton_configuration.h?
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->layer_texture);
+    // Post processing
+
     GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, export_fbo) );
 
-    {
-        GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, export_fbo) );
-        GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
-        GLCHK( glBlitFramebufferEXT(0, 0, buf_w, buf_h,
-                                    0, 0, buf_w, buf_h, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+    glUseProgram(render_data->postproc_program);
+    glBindTexture(GL_TEXTURE_2D, render_data->layer_texture);
+
+    GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
+    if ( loc >= 0 ) {
+        glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
+        glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray((GLuint)loc);
+
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
     glEnable(GL_DEPTH_TEST);

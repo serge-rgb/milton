@@ -273,4 +273,3 @@ void milton_set_zoom_at_screen_center(MiltonState* milton_state);
 
 b32  milton_brush_smoothing_enabled(MiltonState* milton_state);
 void milton_toggle_brush_smoothing(MiltonState* milton_state);
-

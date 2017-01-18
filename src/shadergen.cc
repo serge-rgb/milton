@@ -176,10 +176,9 @@ output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
         return;
     }
 
-    fprintf(of, "char %s[] = \n", varname);
-
+    fprintf(of, "static char %s[] = \n", varname);
     for ( i64 i = 0; i < prelude_lines_count; ++i ) {
-		size_t len = strlen(prelude_lines[i]);
+    size_t len = strlen(prelude_lines[i]);
         prelude_lines[i][len-1]='\0';  // Strip newline
         fprintf(of, "\"%s\\n\"\n", prelude_lines[i]);
     }
@@ -213,7 +212,9 @@ main(int argc, char** argv)
         output_shader(outfd, "src/texture_fill.f.glsl");
         output_shader(outfd, "src/quad.v.glsl");
         output_shader(outfd, "src/quad.f.glsl");
-        output_shader(outfd, "src/postproc.f.glsl", "third_party/Fxaa3_11.glsl");
+        output_shader(outfd, "src/postproc.f.glsl", "third_party/Fxaa3_11.f.glsl");
+
+        fclose(outfd);
     }
     else {
         fprintf(stderr, "Could not open output file.\n");
@@ -222,6 +223,7 @@ main(int argc, char** argv)
     }
     fprintf(stderr, "Shaders generated OK\n");
     return EXIT_SUCCESS;
+
 }
 
 void

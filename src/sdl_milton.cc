@@ -389,9 +389,6 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         else if ( keycode == SDLK_0 ) {
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
-                        else if ( keycode == SDLK_q ) {
-                            g_draw_postproc = !g_draw_postproc;
-                        }
                     }
 #if MILTON_DEBUG
                     if ( keycode == SDLK_F4 ) {

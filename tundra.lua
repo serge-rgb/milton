@@ -39,7 +39,7 @@ Build {
              "src/texture_fill.v.glsl" ,
              "src/texture_fill.f.glsl" ,
              "src/postproc.f.glsl" ,
-             "third_party/Fxaa3_11.glsl"
+             "third_party/Fxaa3_11.f.glsl"
              },
 
             Pass = "CodeGeneration",
