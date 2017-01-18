@@ -23,9 +23,6 @@ uniform vec2 u_screen_size;
 
 in vec2 v_norm;
 
-#if __VERSION__ > 120
-out vec4 out_color;
-#endif
 
 #define PI 3.14159
 

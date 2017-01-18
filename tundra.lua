@@ -38,6 +38,7 @@ Build {
              "src/stroke_raster.f.glsl",
              "src/texture_fill.v.glsl" ,
              "src/texture_fill.f.glsl" ,
+             "src/postproc.f.glsl" ,
              },
 
             Pass = "CodeGeneration",

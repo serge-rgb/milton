@@ -27,7 +27,7 @@
 
 #define MULTISAMPLING_ENABLED 0
 
-#define MSAA_NUM_SAMPLES 2
+#define MSAA_NUM_SAMPLES 4
 
 #define MILTON_MULTITHREADED 1
 
@@ -35,7 +35,7 @@
 
 #define REDRAW_EVERY_FRAME 1
 
-#define USE_GL_3_2 0
+#define USE_GL_3_2 1
     #if !MILTON_DEBUG  // Don't use 3.2 in release.
         #undef USE_GL_3_2
         #define USE_GL_3_2 0

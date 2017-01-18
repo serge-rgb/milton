@@ -165,6 +165,7 @@ gl_compile_shader(const char* in_src, GLuint type, char* config)
     const char* sources[] = {
         #if USE_GL_3_2
             "#version 330 \n",
+            (type == GL_FRAGMENT_SHADER) ? "out vec4 out_color; \n" : "\n",
         #else
             "#version 120\n",
             (type == GL_VERTEX_SHADER) ? "#define in attribute \n#define out varying\n"

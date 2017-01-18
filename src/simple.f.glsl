@@ -1,6 +1,3 @@
-#if __VERSION__ > 120
-out vec4 out_color;
-#endif
 
 void
 main()

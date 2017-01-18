@@ -30,6 +30,7 @@ struct RenderData
     GLuint outline_program;
     GLuint exporter_program;
     GLuint texture_fill_program;
+    GLuint postproc_program;
 #if MILTON_DEBUG
     GLuint simple_program;
 #endif
@@ -385,7 +386,13 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
                 config_string =
                         "#define HAS_SAMPLE_SHADING 1 \n"
                         "#define VENDOR_NVIDIA 1 \n";
-            } else {
+            }
+            else if ( vendor == GLVendor_INTEL ) {
+                config_string =
+                    "#define HAS_SAMPLE_SHADING 1 \n"
+                    "#define VENDOR_INTEL 1 \n";
+            }
+            else {
                 config_string =
                         "#define HAS_SAMPLE_SHADING 1 \n";
             }
@@ -446,6 +453,15 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
 
         gl_link_program(render_data->texture_fill_program, objs, array_count(objs));
         gl_set_uniform_i(render_data->texture_fill_program, "u_canvas", 0);
+    }
+    {
+        render_data->postproc_program = glCreateProgram();
+        GLuint objs[2] = {};
+        objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_postproc_f, GL_FRAGMENT_SHADER);
+
+        gl_link_program(render_data->postproc_program, objs, array_count(objs));
+        gl_set_uniform_i(render_data->postproc_program, "u_canvas", 0);
     }
 #if MILTON_DEBUG
     {  // Simple program

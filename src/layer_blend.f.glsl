@@ -8,9 +8,6 @@ uniform sampler2D u_canvas;
 #endif
 uniform vec2      u_screen_size;
 
-#if __VERSION__ > 120
-out vec4 out_color;
-#endif
 
 void
 main()

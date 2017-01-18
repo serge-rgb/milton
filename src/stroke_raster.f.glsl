@@ -5,7 +5,6 @@
 in vec3 v_pointa;
 in vec3 v_pointb;
 
-
 #if HAS_TEXTURE_MULTISAMPLE
     // TODO: Technically we can't specify this here since it is not the beginning of the shader.
     #extension GL_ARB_sample_shading : enable
@@ -13,10 +12,6 @@ in vec3 v_pointb;
     uniform sampler2DMS u_canvas;
 #else
     uniform sampler2D u_canvas;
-#endif
-
-#if __VERSION__ > 120
-out vec4 out_color;
 #endif
 
 // x,y  - closest point
@@ -76,8 +71,13 @@ main()
 
     #if HAS_TEXTURE_MULTISAMPLE
         #if defined(HAS_SAMPLE_SHADING)
-            #if !defined(VENDOR_NVIDIA)
+            #if defined(VENDOR_INTEL)
                 offset = gl_SamplePosition - vec2(0.5);
+            #elif !defined(VENDOR_NVIDIA)  // AMD/ATI
+                // offset = gl_SamplePosition - vec2(0.5);
+                // offset = vec2(0.5);
+            #else  // NVIDIA
+                // Nothing
             #endif
         #endif
     #endif

@@ -7,11 +7,9 @@
     uniform sampler2D u_canvas;
 #endif
 uniform vec2 u_screen_size;
-#if __VERSION__ > 120
-    out vec4 out_color;
-#endif
 
-void main()
+void
+main()
 {
 #if HAS_TEXTURE_MULTISAMPLE
     vec4 color = texelFetch(u_canvas, ivec2(gl_FragCoord.xy), gl_SampleID);

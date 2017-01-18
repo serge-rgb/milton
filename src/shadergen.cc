@@ -200,6 +200,7 @@ main(int argc, char** argv)
         output_shader(outfd, "src/texture_fill.f.glsl");
         output_shader(outfd, "src/quad.v.glsl");
         output_shader(outfd, "src/quad.f.glsl");
+        output_shader(outfd, "src/postproc.f.glsl");
     }
     else {
         fprintf(stderr, "Could not open output file.\n");
