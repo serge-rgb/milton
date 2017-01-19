@@ -9,7 +9,6 @@
 #include "gui.h"
 #include "hardware_renderer.h"
 #include "localization.h"
-#include "milton_configuration.h"
 #include "persist.h"
 #include "platform.h"
 #include "vector.h"
@@ -17,12 +16,11 @@
 // Defined below.
 static void milton_validate(MiltonState* milton_state);
 
-
 void
 milton_set_background_color(MiltonState* milton_state, v3f background_color)
 {
     milton_state->view->background_color = background_color;
-    gpu_set_background(milton_state->render_data, background_color);
+    gpu_update_background(milton_state->render_data, background_color);
 }
 
 static void
@@ -277,7 +275,7 @@ milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center)
                                                    milton_state->view->scale));
 
     milton_state->view->zoom_center = zoom_center;
-    gpu_set_canvas(milton_state->render_data, milton_state->view);
+    gpu_update_canvas(milton_state->render_data, milton_state->view);
 }
 
 void
@@ -546,7 +544,7 @@ milton_init(MiltonState* milton_state, i32 width, i32 height)
 void
 upload_gui(MiltonState* milton_state)
 {
-    gpu_set_canvas(milton_state->render_data, milton_state->view);
+    gpu_update_canvas(milton_state->render_data, milton_state->view);
     gpu_resize(milton_state->render_data, milton_state->view);
     gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
 }
@@ -653,7 +651,7 @@ milton_reset_canvas_and_set_default(MiltonState* milton_state)
     // New View
     milton_set_default_view(milton_state);
     milton_state->view->background_color = {1,1,1};
-    gpu_set_background(milton_state->render_data, milton_state->view->background_color);
+    gpu_update_background(milton_state->render_data, milton_state->view->background_color);
 
     // Reset color buttons
     for ( ColorButton* b = milton_state->gui->picker.color_buttons; b!=NULL; b=b->next ) {

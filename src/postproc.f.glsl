@@ -28,36 +28,23 @@ main()
     float pw = 1 / u_screen_size.x;
     float ph = 1 / u_screen_size.y;
     vec2 coord = gl_FragCoord.xy / u_screen_size;
-    #if 0
 
-    vec4 c = texture(u_depth, coord, 0);
-    vec4 se = texture(u_depth, coord + vec2(-pw, -ph), 0);
-    vec4 ne = texture(u_depth, coord + vec2(-pw, +ph), 0);
-    vec4 sw = texture(u_depth, coord + vec2(+pw, -ph), 0);
-    vec4 nw = texture(u_depth, coord + vec2(+pw, +ph), 0);
+    // Read neighboring pixels. If one of them is vec4(0), then do a different AA pass. Otherwise we
+    // would blend with a black background and we are exporting it as transparent.
+
+    int nz = 0;
+    nz += int(vec4(0) != texture(u_canvas, coord, 0));
+    nz += int(vec4(0) != texture(u_canvas, coord + vec2(0, ph), 0));
+    nz += int(vec4(0) != texture(u_canvas, coord + vec2(pw, 0), 0));
+    nz += int(vec4(0) != texture(u_canvas, coord + vec2(0, -ph), 0));
+    nz += int(vec4(0) != texture(u_canvas, coord + vec2(-pw, 0), 0));
 
     out_color = texture(u_canvas, coord, 0);
-    int n = 1;
-    if ( c != se ) {
-        out_color += texture(u_canvas, coord + vec2(-pw, -ph), 0);
-        ++n;
-    }
-    if (c != ne ) {
-        out_color += texture(u_canvas, coord + vec2(-pw, +ph), 0);
-        ++n;
-    }
-    if (c != sw ) {
-        out_color += texture(u_canvas, coord + vec2(+pw, -ph), 0);
-        ++n;
-    }
-    if (c != nw ) {
-        out_color += texture(u_canvas, coord + vec2(+pw, +ph), 0);
-        ++n;
-    }
-    out_color /= n;
-    #endif
-    out_color = texture(u_canvas, coord, 0);
 
+    if ( nz != 5) {
+        out_color.a = out_color.a * (nz / 5.0);
+    }
+    else
     out_color.rgb = FxaaPixelShader(
         // Use noperspective interpolation here (turn off perspective interpolation).
         // {xy} = center of pixel
@@ -215,5 +202,4 @@ main()
         // {xyzw} = float4(1.0, -1.0, 0.25, -0.25)
         vec4(0) // FxaaFloat4 fxaaConsole360ConstDir
     ).rgb;
-
 }

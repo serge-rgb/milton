@@ -4,7 +4,7 @@
 #pragma once
 
 #include "utils.h"
-#include "hardware_renderer.h"  // Really? Stroke.h includes hardware_renderer.h?
+#include "hardware_renderer.h"  // TODO: Really? Stroke.h includes hardware_renderer.h?
 
 struct Brush
 {

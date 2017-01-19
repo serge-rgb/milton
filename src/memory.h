@@ -4,7 +4,6 @@
 #pragma once
 
 #include "common.h"
-#include "milton_configuration.h"
 
 // TODO: out of memory handler.
 

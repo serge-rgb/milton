@@ -93,6 +93,36 @@ enum GLVendor
     GLVendor_UNKNOWN,
 };
 
+b32
+render_element_is_layer(RenderElement* render_element)
+{
+    b32 result = (render_element->flags & RenderElementFlags_LAYER);
+    return result;
+}
+
+char DEBUG_g_buffers[100000];
+
+static void
+DEBUG_gl_mark_buffer(GLuint buffer)
+{
+    mlt_assert(buffer < 100000);
+    DEBUG_g_buffers[buffer] = 1;
+}
+
+static void
+DEBUG_gl_unmark_buffer(GLuint buffer)
+{
+    mlt_assert(buffer < 100000);
+    DEBUG_g_buffers[buffer] = 0;
+}
+
+static void
+DEBUG_gl_validate_buffer(GLuint buffer)
+{
+    mlt_assert(buffer < 100000);
+    mlt_assert(DEBUG_g_buffers[buffer]);
+}
+
 static void
 print_framebuffer_status()
 {
@@ -226,9 +256,11 @@ gpu_update_picker(RenderData* render_data, ColorPicker* picker)
 
         // Create buffers and upload
         glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker);
+        DEBUG_gl_mark_buffer(render_data->vbo_picker);
         glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_STATIC_DRAW);
 
         glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker_norm);
+        DEBUG_gl_mark_buffer(render_data->vbo_picker_norm);
         glBufferData(GL_ARRAY_BUFFER, array_count(norm)*sizeof(*norm), norm, GL_STATIC_DRAW);
     }
 }
@@ -265,9 +297,11 @@ gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline_sizes);
+    DEBUG_gl_mark_buffer(render_data->vbo_outline_sizes);
     glBufferData(GL_ARRAY_BUFFER, array_count(sizes)*sizeof(*sizes), sizes, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline);
+    DEBUG_gl_mark_buffer(render_data->vbo_outline);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, array_count(data)*sizeof(*data), data, GL_DYNAMIC_DRAW) );
 
     gl_set_uniform_i(render_data->outline_program, "u_radius", radius);
@@ -278,13 +312,6 @@ gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
     else if ( outline_enum == BrushOutline_NO_FILL ) {
         gl_set_uniform_i(render_data->outline_program, "u_fill", false);
     }
-}
-
-b32
-render_element_is_layer(RenderElement* render_element)
-{
-    b32 result = (render_element->flags & RenderElementFlags_LAYER);
-    return result;
 }
 
 b32
@@ -354,6 +381,7 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
         GLuint vbo = 0;
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        DEBUG_gl_mark_buffer(vbo);
         glBufferData(GL_ARRAY_BUFFER, array_count(quad_data)*sizeof(*quad_data), quad_data, GL_STATIC_DRAW);
 
         float u = 1.0f;
@@ -366,6 +394,7 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
         GLuint vbo_uv = 0;
         glGenBuffers(1, &vbo_uv);
         glBindBuffer(GL_ARRAY_BUFFER, vbo_uv);
+        DEBUG_gl_mark_buffer(vbo_uv);
         glBufferData(GL_ARRAY_BUFFER, array_count(uv_data)*sizeof(*uv_data), uv_data, GL_STATIC_DRAW);
 
         render_data->vbo_screen_quad = vbo;
@@ -682,6 +711,7 @@ gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
         normalized_rect[6], normalized_rect[1],
     };
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[0]);
+    DEBUG_gl_mark_buffer(render_data->vbo_exporter[0]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(top)*sizeof(*top), top, GL_DYNAMIC_DRAW) );
 
     float bottom[] = {
@@ -691,6 +721,7 @@ gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
         normalized_rect[6], normalized_rect[3]-line_length,
     };
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[1]);
+    DEBUG_gl_mark_buffer(render_data->vbo_exporter[1]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(bottom)*sizeof(*bottom), bottom, GL_DYNAMIC_DRAW) );
 
     line_length = px / (render_data->width);
@@ -702,6 +733,7 @@ gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
         normalized_rect[4], normalized_rect[7],
     };
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[2]);
+    DEBUG_gl_mark_buffer(render_data->vbo_exporter[2]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(right)*sizeof(*right), right, GL_DYNAMIC_DRAW) );
 
     float left[] = {
@@ -711,11 +743,12 @@ gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
         normalized_rect[0]+line_length, normalized_rect[7],
     };
     glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[3]);
+    DEBUG_gl_mark_buffer(render_data->vbo_exporter[3]);
     GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(left)*sizeof(*left), left, GL_DYNAMIC_DRAW) );
 }
 
 void
-gpu_set_background(RenderData* render_data, v3f background_color)
+gpu_update_background(RenderData* render_data, v3f background_color)
 {
     render_data->background_color = background_color;
 }
@@ -730,13 +763,21 @@ gpu_get_viewport_limits(RenderData* render_data, float* out_viewport_limits)
 }
 
 i32
-gpu_get_num_clipped_strokes(RenderData* render_data)
+gpu_get_num_clipped_strokes(Layer* root_layer)
 {
+    i32 count = 0;
     #if MILTON_ENABLE_PROFILING
-    return render_data->clipped_count;
-    #else
-    return 0;
+    for ( Layer* l = root_layer; l != NULL; l = l->next ) {
+        StrokeList strokes = l->strokes;
+        for ( i64 si = 0; si < strokes.count; ++si ) {
+            Stroke* s = strokes[si];
+            if ( s->render_element.vbo_stroke != 0 ) {
+                ++count;
+            }
+        }
+    }
     #endif
+    return count;
 }
 
 static void
@@ -756,7 +797,7 @@ set_screen_size(RenderData* render_data, float* fscreen)
 }
 
 void
-gpu_set_canvas(RenderData* render_data, CanvasView* view)
+gpu_update_canvas(RenderData* render_data, CanvasView* view)
 {
     glUseProgram(render_data->stroke_program);
 
@@ -911,6 +952,11 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                 glGenBuffers(1, &vbo_pointb);
                 glGenBuffers(1, &indices_buffer);
 
+                DEBUG_gl_mark_buffer(vbo_stroke);
+                DEBUG_gl_mark_buffer(vbo_pointa);
+                DEBUG_gl_mark_buffer(vbo_pointb);
+                DEBUG_gl_mark_buffer(indices_buffer);
+
                 glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
                 GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), bounds, hint) );
                 glBindBuffer(GL_ARRAY_BUFFER, vbo_pointa);
@@ -961,8 +1007,10 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
 }
 
 void
-gpu_free_strokes(Stroke* strokes, i64 count)
+gpu_free_strokes(Stroke* strokes, i64 count, RenderData* render_data)
 {
+    glFlush();
+    glFinish();
     for ( i64 i = 0; i < count; ++i ) {
         Stroke* s = &strokes[i];
         RenderElement* re = &s->render_element;
@@ -970,16 +1018,36 @@ gpu_free_strokes(Stroke* strokes, i64 count)
             mlt_assert(re->vbo_pointa != 0);
             mlt_assert(re->vbo_pointb != 0);
             mlt_assert(re->indices != 0);
+
+            DEBUG_gl_validate_buffer(re->vbo_stroke);
+            DEBUG_gl_validate_buffer(re->vbo_pointa);
+            DEBUG_gl_validate_buffer(re->vbo_pointb);
+            DEBUG_gl_validate_buffer(re->indices);
+
+            mlt_assert(re->vbo_stroke != render_data->vbo_screen_quad);
+            mlt_assert(re->vbo_pointa != render_data->vbo_screen_quad);
+            mlt_assert(re->vbo_pointb != render_data->vbo_screen_quad);
+            mlt_assert(re->indices != render_data->vbo_screen_quad);
+
+
             glDeleteBuffers(1, &re->vbo_stroke);
             glDeleteBuffers(1, &re->vbo_pointa);
             glDeleteBuffers(1, &re->vbo_pointb);
             glDeleteBuffers(1, &re->indices);
+
+            DEBUG_gl_unmark_buffer(re->vbo_stroke);
+            DEBUG_gl_unmark_buffer(re->vbo_pointa);
+            DEBUG_gl_unmark_buffer(re->vbo_pointb);
+            DEBUG_gl_unmark_buffer(re->indices);
+
             re->vbo_stroke = 0;
             re->vbo_pointa = 0;
             re->vbo_pointb = 0;
             re->indices = 0;
         }
     }
+    glFlush();
+    glFinish();
 }
 
 void
@@ -1001,7 +1069,7 @@ gpu_free_strokes(MiltonState* milton_state)
                 } else {
                     bucketcount = count;
                 }
-                gpu_free_strokes(bucket->data, count);
+                gpu_free_strokes(bucket->data, count, milton_state->render_data);
                 bucket = bucket->next;
             }
         }
@@ -1089,14 +1157,14 @@ gpu_clip_strokes_and_update(Arena* arena,
                                  || bounds.bottom > y+h + min_number_of_screens*h
                                  || bounds.left   > x+w + min_number_of_screens*w
                                  || bounds.right  < x - min_number_of_screens*w ) {
-                                gpu_free_strokes(s, 1);
+                                gpu_free_strokes(s, 1, render_data);
                             }
                         }
                     }
                 }
             }
             else if ( flags & ClipFlags_UPDATE_GPU_DATA ) {
-                gpu_free_strokes(bucket->data, count);
+                gpu_free_strokes(bucket->data, count, render_data);
             }
             #if MILTON_ENABLE_PROFILING
             {
@@ -1139,8 +1207,13 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
     GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo));
 
-    glClearColor(render_data->background_color.r, render_data->background_color.g,
-                 render_data->background_color.b, background_alpha);
+    if ( background_alpha != 0.0f ) {
+        // Not sure if this works OK with background_alpha != 1.0f
+        glClearColor(render_data->background_color.r, render_data->background_color.g,
+                     render_data->background_color.b, background_alpha);
+    } else {
+        glClearColor(0,0,0,0);
+    }
 
     GLenum texture_target;
     if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
@@ -1161,14 +1234,10 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Trying this out. See if it doesn't crash without clearing the depth buffer.
-    //  glClear(GL_COLOR_BUFFER_BIT);
-    //  Yup! It crashes!
-
-
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthFunc(GL_NOTEQUAL);
 
     // gl_set_uniform_i(render_data->picker_program, "u_canvas", 0);
@@ -1242,6 +1311,11 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                         gl_set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
                         render_data->current_radius = re->radius;
                     }
+
+                    DEBUG_gl_validate_buffer(re->vbo_stroke);
+                    DEBUG_gl_validate_buffer(re->vbo_pointa);
+                    DEBUG_gl_validate_buffer(re->vbo_pointb);
+                    DEBUG_gl_validate_buffer(re->indices);
 
                     if ( loc_a >= 0 ) {
                         GLCHK(glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa));
@@ -1359,24 +1433,27 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
 
         GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
         if ( loc >= 0 ) {
+            DEBUG_gl_validate_buffer(render_data->vbo_screen_quad);
             glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
             glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray((GLuint)loc);
+            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
+                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                        /*stride*/ 0, /*ptr*/ 0));
 
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
-
     }
 
     // TODO: Only render if view rect intersects picker rect
     if ( render_data->flags & RenderDataFlags_GUI_VISIBLE ) {
         // Render picker
-
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glUseProgram(render_data->picker_program);
         GLint loc = glGetAttribLocation(render_data->picker_program, "a_position");
 
         if ( loc >= 0 ) {
+            DEBUG_gl_validate_buffer(render_data->vbo_picker);
             GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker) );
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
                                          /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
@@ -1384,6 +1461,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
             glEnableVertexAttribArray((GLuint)loc);
             GLint loc_norm = glGetAttribLocation(render_data->picker_program, "a_norm");
             if ( loc_norm >= 0 ) {
+                DEBUG_gl_validate_buffer(render_data->vbo_picker_norm);
                 GLCHK( glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker_norm) );
                 GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_norm,
                                              /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
@@ -1400,6 +1478,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         glUseProgram(render_data->outline_program);
         GLint loc = glGetAttribLocation(render_data->outline_program, "a_position");
         if ( loc >= 0 ) {
+            DEBUG_gl_validate_buffer(render_data->vbo_outline);
             glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline);
 
             GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc,
@@ -1408,6 +1487,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
             glEnableVertexAttribArray((GLuint)loc);
             GLint loc_s = glGetAttribLocation(render_data->outline_program, "a_sizes");
             if ( loc_s >= 0 ) {
+                DEBUG_gl_validate_buffer(render_data->vbo_outline_sizes);
                 glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_outline_sizes);
                 GLCHK( glVertexAttribPointer(/*attrib location*/(GLuint)loc_s,
                                              /*size*/2, GL_FLOAT, /*normalize*/GL_FALSE,
@@ -1425,6 +1505,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         GLint loc = glGetAttribLocation(render_data->exporter_program, "a_position");
         if ( loc>=0 && render_data->vbo_exporter>0 ) {
             for ( int vbo_i = 0; vbo_i < 4; ++vbo_i ) {
+                DEBUG_gl_validate_buffer(render_data->vbo_exporter[vbo_i]);
                 glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[vbo_i]);
                 glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0,0);
                 glEnableVertexAttribArray((GLuint)loc);
@@ -1470,7 +1551,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     }
 
     gpu_resize(render_data, view);
-    gpu_set_canvas(render_data, view);
+    gpu_update_canvas(render_data, view);
 
     GLuint export_fbo = 0;
     GLuint export_texture = 0;  // The resized canvas.
@@ -1529,6 +1610,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
     GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
     if ( loc >= 0 ) {
+        DEBUG_gl_validate_buffer(render_data->vbo_screen_quad);
         glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
         glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray((GLuint)loc);
@@ -1574,7 +1656,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo);
 
     gpu_resize(render_data, view);
-    gpu_set_canvas(render_data, view);
+    gpu_update_canvas(render_data, view);
 
     // Re-render
     gpu_clip_strokes_and_update(&milton_state->root_arena,

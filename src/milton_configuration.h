@@ -1,12 +1,14 @@
 // Copyright (c) 2015-2016 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+#pragma once
+
 
 #define MILTON_MAJOR_VERSION 1
 #define MILTON_MINOR_VERSION 2
 #define MILTON_MICRO_VERSION 8
 
-#define MILTON_DEBUG 1
+#define MILTON_DEBUG 0
 
 #define MILTON_ZOOM_DEBUG 0
     // If MILTON_DEBUG is 0, MILTON_ZOOM_DEBUG will be 0 too!
@@ -25,9 +27,8 @@
     #endif
 #endif
 
-#define MULTISAMPLING_ENABLED 0
-
-#define MSAA_NUM_SAMPLES 4
+#define MULTISAMPLING_ENABLED 0  // When disabled, the renderer uses FXAA for screen-space AA.
+    #define MSAA_NUM_SAMPLES 4
 
 #define MILTON_MULTITHREADED 1
 
@@ -35,7 +36,7 @@
 
 #define REDRAW_EVERY_FRAME 0
 
-#define USE_GL_3_2 1
+#define USE_GL_3_2 0
     #if !MILTON_DEBUG  // Don't use 3.2 in release.
         #undef USE_GL_3_2
         #define USE_GL_3_2 0

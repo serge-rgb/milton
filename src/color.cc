@@ -4,6 +4,7 @@
 
 #include "color.h"
 
+#include "common.h"
 #include "utils.h"
 
 
@@ -199,4 +200,44 @@ to_premultiplied(v3f rgb, f32 a)
         a
     };
     return rgba;
+}
+
+v4i color_u32_to_v4i(u32 color)
+{
+    v4i c = {};
+
+    c.r = (i32)(color >> 24);
+    c.g = (i32)(color >> 16) & 255;
+    c.b = (i32)(color >> 8) & 255;
+    c.a = (i32)(color) & 255;
+
+    return c;
+}
+
+u32 color_v4i_to_u32(v4i color)
+{
+    u32 c = 0;
+
+    // mlt_assert(color.r <= 255);
+    // mlt_assert(color.g <= 255);
+    // mlt_assert(color.b <= 255);
+    // mlt_assert(color.a <= 255);
+
+    c = ((u32)color.r<<24) | ((u32)color.g<<16) | ((u32)color.b<<8) | ((u32)color.a);
+
+    return c;
+}
+
+u32
+un_premultiply(u32 in_color)
+{
+    u32 out_color = 0;
+    v4i v = color_u32_to_v4i(in_color);
+    if ( v.a != 0 ) {
+        v.r = (int)(v.r / (v.a/255.0));
+        v.g = (int)(v.g / (v.a/255.0));
+        v.b = (int)(v.b / (v.a/255.0));
+    }
+    out_color = color_v4i_to_u32(v);
+    return out_color;
 }

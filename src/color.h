@@ -28,4 +28,10 @@ v3f clamp_255(v3f color);
 
 v3f clamp_01(v3f color);
 
+v4i color_u32_to_v4i(u32 color);
+
+u32 color_v4i_to_u32(v4i color);
+
+u32 un_premultiply(u32 in_color);
+
 

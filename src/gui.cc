@@ -617,7 +617,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
             snprintf(msg, array_count(msg),
                      "Number of strokes in GPU memory: %d\n",
-                     gpu_get_num_clipped_strokes(milton_state->render_data));
+                     gpu_get_num_clipped_strokes(milton_state->canvas->root_layer));
             ImGui::Text(msg);
 
             float hist[] = { poll, update, raster, GL, system };

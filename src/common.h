@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "milton_configuration.h"
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -69,3 +71,8 @@ typedef i32         b32;
 
 
 
+#if defined(MILTON_DEBUG)
+    #if defined(_WIN32)
+        #define BREAKHERE __debugbreak()
+    #endif
+#endif
