@@ -1,4 +1,6 @@
 
+uniform float u_alpha;
+
 #if HAS_TEXTURE_MULTISAMPLE
     #extension GL_ARB_texture_multisample : enable
     #extension GL_ARB_sample_shading : enable
@@ -19,4 +21,5 @@ main()
     vec4 color = texture(u_canvas, coord);
 #endif
     out_color = color;
+    out_color *= u_alpha;
 }

@@ -794,6 +794,7 @@ milton_new_layer(MiltonState* milton_state)
         layer->id = id;
         layer->flags = LayerFlags_VISIBLE;
         layer->strokes.arena = &canvas->arena;
+        layer->alpha = 1.0f;
         strokelist_init_bucket(&layer->strokes.root);
     }
     snprintf(layer->name, 1024, "Layer %d", layer->id);
@@ -1122,7 +1123,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
     if ( milton_state->current_mode == MiltonMode_PEN ||
          milton_state->current_mode == MiltonMode_ERASER ) {
-        // render_flags |= MiltonRenderFlags_BRUSH_HOVER;
         brush_outline_should_draw = true;
     }
 
@@ -1131,7 +1131,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( gui_point_hovers(milton_state->gui, milton_state->hover_point) ) {
-        // render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
         brush_outline_should_draw = false;
     }
 
@@ -1305,9 +1304,11 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         brush_outline_should_draw = false;
     }
 
-    if ( milton_get_brush_radius(milton_state) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ) {
-        brush_outline_should_draw = false;
-    }
+    #if MILTON_HARDWARE_BRUSH_CURSOR
+        if ( milton_get_brush_radius(milton_state) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ) {
+            brush_outline_should_draw = false;
+        }
+    #endif
 
     if ( !brush_outline_should_draw
          && (i32)SDL_GetTicks() - milton_state->hover_flash_ms < HOVER_FLASH_THRESHOLD_MS ) {

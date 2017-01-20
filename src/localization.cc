@@ -21,7 +21,7 @@ static char* g_localized_strings[Language_COUNT][TXT_Count];
 static char* g_command_abbreviations[TXT_Count];  // Exclusively NULL pointers except for translated strings which represent a command.
 static char* g_baked_strings_with_commands[TXT_Count];  // These get malloc'd once in case that the corresponding text includes a command shortcut (see g_command_abbreviations)
 
-#define EN(N,S) g_localized_strings[Language_ENGLISH][N] = S
+#define EN(N,S) mlt_assert(!g_localized_strings[Language_ENGLISH][N]); g_localized_strings[Language_ENGLISH][N] = S
 #define ES(N,S) g_localized_strings[Language_SPANISH][N] = S
 
 void

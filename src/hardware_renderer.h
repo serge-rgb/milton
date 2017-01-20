@@ -13,8 +13,15 @@ struct RenderElement
     GLuint  indices;
 
     i64     count;
-    v4f     color;
-    i32     radius;
+    union {
+        struct {  // For when element is a stroke.
+            v4f     color;
+            i32     radius;
+        };
+        struct {  // For when element is layer.
+            f32     layer_alpha;
+        };
+    };
 
     int     flags;  // RenderElementFlags enum;
 };

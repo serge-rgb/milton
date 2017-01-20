@@ -77,7 +77,7 @@ push(DArray<T>* arr, const T& elem)
         grow(arr);
     }
     arr->data[arr->count++] = elem;
-    return &arr->data[arr->count];
+    return &arr->data[arr->count-1];
 }
 
 template <typename T>

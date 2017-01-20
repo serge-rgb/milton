@@ -411,6 +411,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 a = milton_state->canvas->working_layer;
                 b = a->prev;
             }
+
+            if ( canvas ) {
+                ImGui::Text(LOC(opacity));
+                ImGui::SliderFloat("##opacity", &canvas->working_layer->alpha, 0.0f, 1.0f);
+                input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+            }
+
             if ( a && b ) {
                 // n <-> a <-> b <-> p
                 // n <-> b <-> a <-> p

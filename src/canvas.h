@@ -18,6 +18,8 @@ struct Layer
 
     i32     flags;
 
+    float alpha;
+
     Layer* prev;
     Layer* next;
 };

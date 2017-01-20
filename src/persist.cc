@@ -244,6 +244,22 @@ milton_load(MiltonState* milton_state)
                 milton_state->canvas->history.count = history_count;
             }
         }
+
+        // MLT 3
+        // Layer alpha
+        if ( milton_binary_version >= 3 ) {
+            Layer* l = milton_state->canvas->root_layer;
+            for ( i64 i = 0; ok && i < num_layers; ++i ) {
+                mlt_assert(l != NULL);
+                fread_checked(&l->alpha, sizeof(l->alpha), 1, fd);
+                l = l->next;
+            }
+        } else {
+            for ( Layer* l = milton_state->canvas->root_layer; l != NULL; l = l->next ) {
+                l->alpha = 1.0f;
+            }
+        }
+
         int err = fclose(fd);
         if ( err != 0 ) {
             ok = false;
@@ -375,6 +391,17 @@ milton_save(MiltonState* milton_state)
         }
         if (ok) { ok = fwrite_checked(&history_count, sizeof(history_count), 1, fd); }
         if (ok) { ok = fwrite_checked(milton_state->canvas->history.data, sizeof(*milton_state->canvas->history.data), (size_t)history_count, fd); }
+
+        // MLT 3
+        // Layer alpha
+        if ( milton_binary_version >= 3 ) {
+            Layer* l = milton_state->canvas->root_layer;
+            for ( i64 i = 0; ok && i < num_layers; ++i ) {
+                mlt_assert(l);
+                fwrite_checked(&l->alpha, sizeof(l->alpha), 1, fd);
+                l = l->next;
+            }
+        }
 
         int file_error = ferror(fd);
         if ( file_error == 0 ) {

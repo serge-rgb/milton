@@ -17,8 +17,8 @@ cursor_set_and_show(SDL_Cursor* cursor)
     if ( curr_cursor != cursor ) {
         curr_cursor = cursor;
         SDL_SetCursor(cursor);
-        platform_cursor_show();
     }
+    platform_cursor_show();
 }
 
 LayoutType
@@ -668,6 +668,7 @@ milton_main()
             SendMessage(platform_state.hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
         }
     }
+#if MILTON_HARDWARE_BRUSH_CURSOR
     {  // Set brush HW cursor
         size_t w = (size_t)GetSystemMetrics(SM_CXCURSOR);
         size_t h = (size_t)GetSystemMetrics(SM_CYCURSOR);
@@ -765,7 +766,8 @@ milton_main()
                                                        /*yHotSpot*/(int)(h/2));
 
     }
-#endif
+#endif // MILTON_HARDWARE_BRUSH_CURSOR
+#endif // WIN32
 
 
     // ImGui setup
@@ -858,10 +860,16 @@ milton_main()
             int y = 0;
             SDL_GetMouseState(&x, &y);
 
+            cursor_set_and_show(platform_state.cursor_default);
+
             // Handle system cursor and platform state related to current_mode
             if ( platform_state.is_panning || platform_state.waiting_for_pan_input ) {
                 cursor_set_and_show(platform_state.cursor_sizeall);
             }
+            else if ( ImGui::GetIO().WantCaptureMouse ) {
+                cursor_set_and_show(platform_state.cursor_default);
+            }
+
             else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
                 cursor_set_and_show(platform_state.cursor_crosshair);
                 platform_state.was_exporting = true;
@@ -878,11 +886,12 @@ milton_main()
                       && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
                 cursor_set_and_show(platform_state.cursor_default);
             }
-            else if ( ImGui::GetIO().WantCaptureMouse ) {
-                cursor_set_and_show(platform_state.cursor_default);
-            }
             else if ( milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER ) {
-                cursor_set_and_show(platform_state.cursor_brush);
+                #if MILTON_HARDWARE_BRUSH_CURSOR
+                    cursor_set_and_show(platform_state.cursor_brush);
+                #else
+                    platform_cursor_hide();
+                #endif
             }
             else if ( milton_state->current_mode == MiltonMode_HISTORY ) {
                 cursor_set_and_show(platform_state.cursor_default);
@@ -989,18 +998,15 @@ milton_main()
         if ( !platform_state.force_next_frame ) {
             SDL_WaitEvent(NULL);
         }
-        else {
-            platform_state.force_next_frame = true;
-        }
 
         // Sleep if the frame took less time than the refresh rate.
         u64 frame_time_us = perf_counter() - frame_start_us;
 
         f32 expected_us = (f32)1000000 / display_hz;
-
         if ( frame_time_us < expected_us ) {
             f32 to_sleep_us = expected_us - frame_time_us;
-            SDL_Delay(to_sleep_us/1000.0f);
+            if ( to_sleep_us > 1000 )
+                SDL_Delay(to_sleep_us/1000.0f);
         }
     }
 
