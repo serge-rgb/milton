@@ -38,6 +38,7 @@
 
 #define MILTON_HARDWARE_BRUSH_CURSOR 0
 
+// Uses GL 2.1 when 0
 #define USE_GL_3_2 0
     #if !MILTON_DEBUG  // Don't use 3.2 in release.
         #undef USE_GL_3_2

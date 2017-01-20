@@ -17,8 +17,8 @@ cursor_set_and_show(SDL_Cursor* cursor)
     if ( curr_cursor != cursor ) {
         curr_cursor = cursor;
         SDL_SetCursor(cursor);
+        platform_cursor_show();
     }
-    platform_cursor_show();
 }
 
 LayoutType
@@ -868,6 +868,8 @@ milton_main()
             }
             else if ( ImGui::GetIO().WantCaptureMouse ) {
                 cursor_set_and_show(platform_state.cursor_default);
+                platform_cursor_show();  // cursor_set_and_show might not call this.
+                                        //But SDL causes cursor flickering when we force it.
             }
 
             else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {

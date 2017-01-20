@@ -1304,6 +1304,9 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 // The current framebuffer's color attachment is layer_texture.
 
                 // Process this layer
+                {
+
+                }
 
                 // Blit layer_texture to canvas_texture
                 {
@@ -1340,7 +1343,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     glDisable(GL_DEPTH_TEST);
 
                     glUseProgram(render_data->texture_fill_program);
-                    gl_set_uniform_f(render_data->texture_fill_program, "u_alpha", 0.0f);
+                    gl_set_uniform_f(render_data->texture_fill_program, "u_alpha", 1.0f);
                     {
                         GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
                         if ( t_loc >= 0 ) {
@@ -1453,46 +1456,48 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         texture_target = GL_TEXTURE_2D;
     }
 
+    // Use helper_texture as a place to do AA.
+
+    // Blit the canvas to helper_texture
+    #if 1
+    // TODO: glCopyTexImage2D does not work with multisampling.
+    GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+                                     render_data->canvas_texture, 0) );
+    glBindTexture(texture_target, render_data->helper_texture);
+    glCopyTexImage2D(texture_target, 0, GL_RGBA8, 0,0, render_data->width, render_data->height, 0);
+
+    GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+                                     render_data->helper_texture, 0) );
     glBindTexture(texture_target, render_data->canvas_texture);
-    GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
     glDisable(GL_DEPTH_TEST);
 
+    #else
+    {
+        glDisable(GL_DEPTH_TEST);
+        // glDisable(GL_BLEND);
+        GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+                                         render_data->helper_texture, 0) );
 
-    GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
-    GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
-    GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
-                                0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
-
-    // Render Gui
-
-    glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
-
-    // Do post-processing of the rendered painting. Do it after rendering GUI elements
-    // gets anti-aliased too.
-    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
-
-        gl_set_uniform_i(render_data->postproc_program, "u_canvas", 0);
-
-        glUseProgram(render_data->postproc_program);
-
-        GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
-        if ( loc >= 0 ) {
-            DEBUG_gl_validate_buffer(render_data->vbo_screen_quad);
+        glBindTexture(texture_target, render_data->canvas_texture);
+        glUseProgram(render_data->texture_fill_program);
+        GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
+        if ( t_loc >= 0 ) {
             glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
-            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray((GLuint)loc);
-            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
+            glEnableVertexAttribArray((GLuint)t_loc);
+            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
                                         /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
                                         /*stride*/ 0, /*ptr*/ 0));
-
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
+    #endif
 
+    // Render on top.
+
+
+    // Render Gui
+
+    // Render color picker
     // TODO: Only render if view rect intersects picker rect
     if ( render_data->flags & RenderDataFlags_GUI_VISIBLE ) {
         // Render picker
@@ -1546,6 +1551,8 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         glDrawArrays(GL_TRIANGLE_FAN, 0,4);
     }
     glDisable(GL_BLEND);
+
+    // Exporter rect
     if ( render_data->flags & RenderDataFlags_EXPORTING ) {
         // Update data if rect is not degenerate.
         // Draw outline.
@@ -1560,6 +1567,38 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
 
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
+        }
+    }
+
+    // Blit to main framebuffer
+
+    GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
+    GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
+    GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
+                                0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+
+    // Do post-processing of the rendered painting. Do it after rendering GUI elements.
+    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, render_data->helper_texture);
+
+        gl_set_uniform_i(render_data->postproc_program, "u_canvas", 0);
+
+        glUseProgram(render_data->postproc_program);
+
+        GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
+        if ( loc >= 0 ) {
+            DEBUG_gl_validate_buffer(render_data->vbo_screen_quad);
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
+            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray((GLuint)loc);
+            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
+                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                        /*stride*/ 0, /*ptr*/ 0));
+
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
 
