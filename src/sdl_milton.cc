@@ -522,7 +522,7 @@ milton_main()
 
 #if USE_GL_3_2
     i32 gl_version_major = 3;
-    i32 gl_version_minor = 3 ;
+    i32 gl_version_minor = 2;
 #else
     i32 gl_version_major = 2;
     i32 gl_version_minor = 1;
@@ -955,7 +955,7 @@ milton_main()
         milton_input.input_count = platform_state.num_point_results;
 
         v2i pan_delta = sub2i(platform_state.pan_point, platform_state.pan_start);
-        if ( pan_delta.x != 0
+        if (    pan_delta.x != 0
              || pan_delta.y != 0
              || platform_state.width != milton_state->view->screen_size.x
              || platform_state.height != milton_state->view->screen_size.y ) {
@@ -994,20 +994,19 @@ milton_main()
 #ifdef __linux__
         gtk_main_iteration_do(FALSE);
 #endif
-        // IMGUI events might update until the frame after they are created.
-        if ( !platform_state.force_next_frame ) {
-            SDL_WaitEvent(NULL);
-        }
-
         // Sleep if the frame took less time than the refresh rate.
         u64 frame_time_us = perf_counter() - frame_start_us;
 
         f32 expected_us = (f32)1000000 / display_hz;
         if ( frame_time_us < expected_us ) {
             f32 to_sleep_us = expected_us - frame_time_us;
-            if ( to_sleep_us > 1000 )
-                SDL_Delay(to_sleep_us/1000.0f);
+            SDL_Delay(to_sleep_us/1000);
         }
+        // IMGUI events might update until the frame after they are created.
+        if ( !platform_state.force_next_frame ) {
+            SDL_WaitEvent(NULL);
+        }
+
     }
 
 #if defined(_WIN32)
