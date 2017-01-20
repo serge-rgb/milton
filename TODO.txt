@@ -1,11 +1,6 @@
 To-Do
 =====
 
-- Cleanup
-    is hover still flashing?
-- Bugs
-    - MoveFileEx randomly fails with return code 5 - access denied
-
 - Application
     - Porting (dialogs and File I/O)
         - Linux
