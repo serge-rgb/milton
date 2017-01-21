@@ -448,6 +448,145 @@ gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
     return ok;
 }
 
+GLuint
+gl_new_color_texture(int w, int h)
+{
+    GLuint t = 0;
+    glGenTextures(1, &t);
+    glBindTexture(GL_TEXTURE_2D, t);
+    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
+    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
+    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
+    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
+    glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
+                 /*width, height = */ w, h,
+                 /*border = */ 0,
+                 /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
+                 /*data = */ NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return t;
+}
+
+GLuint
+gl_new_depth_stencil_texture(int w, int h)
+{
+    GLuint t = 0;
+    glGenTextures(1, &t);
+    glBindTexture(GL_TEXTURE_2D, t);
+    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
+    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
+    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
+    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
+    //GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY) );
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+    // GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL) );
+    GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
+                         /*width, height = */ w,h,
+                         /*border = */ 0,
+                         /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
+                         /*data = */ NULL) );
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return t;
+}
+
+GLuint
+gl_new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment, GLenum texture_target)
+{
+    GLuint fbo = 0;
+    GLCHK(glGenFramebuffersEXT(1, &fbo));
+    GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, fbo));
+
+
+    GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+                                     color_attachment, 0) );
+    if ( depth_stencil_attachment ) {
+        GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture_target,
+                                         depth_stencil_attachment, 0) );
+    }
+
+    glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+    return fbo;
+}
+
+
+GLuint
+gl_new_color_texture_multisample(int w, int h)
+{
+    GLuint t = 0;
+    glGenTextures(1, &t);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
+
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                            GL_RGBA,
+                            w,h,
+                            GL_TRUE);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+
+    return t;
+}
+
+GLuint
+gl_new_depth_stencil_texture_multisample(int w, int h)
+{
+    GLuint t = 0;
+    glGenTextures(1, &t);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
+
+    GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                   /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
+                                   w,h,
+                                   GL_TRUE) );
+
+
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+
+    return t;
+}
+
+void
+gl_resize_color_texture(GLuint t, int w, int h)
+{
+    glBindTexture(GL_TEXTURE_2D, t);
+    glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
+                 /*width, height = */ w,h,
+                 /*border = */ 0,
+                 /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
+                 /*data = */ NULL);
+
+}
+
+void
+gl_resize_color_texture_multisample(GLuint t, int w, int h)
+{
+    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t));
+    GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                   GL_RGBA,
+                                   w,h,
+                                   GL_TRUE));
+}
+
+void
+gl_resize_depth_stencil_texture(GLuint t, int w, int h)
+{
+    glBindTexture(GL_TEXTURE_2D, t);
+    GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
+                        /*width, height = */ w,h,
+                        /*border = */ 0,
+                        /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
+                        /*data = */ NULL) );
+}
+
+void
+gl_resize_depth_stencil_texture_multisample(GLuint t, int w, int h)
+{
+    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t));
+    GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                                   GL_DEPTH24_STENCIL8,
+                                   w,h,
+                                   GL_TRUE) );
+
+}
+
 #ifdef _WIN32
 
 #endif  // _WIN32

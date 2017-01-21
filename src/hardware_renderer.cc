@@ -502,136 +502,47 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 ren
 
     // Framebuffer object for canvas. Layer buffer
     {
-        GLCHK (glGenTextures(1, &render_data->canvas_texture));
+        if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+            render_data->canvas_texture = gl_new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
+        } else {
+            render_data->canvas_texture = gl_new_color_texture(view->screen_size.w, view->screen_size.h);
+        }
 
         if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture);
-
-            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                    GL_RGBA,
-                                    view->screen_size.w, view->screen_size.h,
-                                    GL_TRUE);
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-        }
-        else {
-            glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
-            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                         /*width, height = */ view->screen_size.w, view->screen_size.h,
-                         /*border = */ 0,
-                         /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                         /*data = */ NULL);
-            glBindTexture(GL_TEXTURE_2D, 0);
-        }
-
-        GLCHK (glGenTextures(1, &render_data->eraser_texture));
-        if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture);
-
-            GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                           GL_RGBA,
-                                           view->screen_size.w, view->screen_size.h,
-                                           GL_TRUE) );
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-        }
-        else {
-            glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
-
-            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                         /*width, height = */ view->screen_size.w, view->screen_size.h,
-                         /*border = */ 0,
-                         /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                         /*data = */ NULL);
-
-            glBindTexture(GL_TEXTURE_2D, 0);
+            render_data->eraser_texture = gl_new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
+        } else {
+            render_data->eraser_texture = gl_new_color_texture(view->screen_size.w, view->screen_size.h);
         }
 
         GLCHK (glGenTextures(1, &render_data->helper_texture));
 
         if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->helper_texture);
-
-            GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                           GL_RGBA,
-                                           view->screen_size.w, view->screen_size.h,
-                                           GL_TRUE) );
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-        }
-        else {
-            glBindTexture(GL_TEXTURE_2D, render_data->helper_texture);
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
-
-            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                         /*width, height = */ view->screen_size.w, view->screen_size.h,
-                         /*border = */ 0,
-                         /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                         /*data = */ NULL);
-
-            glBindTexture(GL_TEXTURE_2D, 0);
+            render_data->helper_texture = gl_new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
+        } else {
+            render_data->helper_texture = gl_new_color_texture(view->screen_size.w, view->screen_size.h);
         }
 
 
         glGenTextures(1, &render_data->stencil_texture);
 
         if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture);
-
-            GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                           /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
-                                           view->screen_size.w, view->screen_size.h,
-                                           GL_TRUE) );
-
-
-            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+            render_data->stencil_texture = gl_new_depth_stencil_texture_multisample(view->screen_size.w, view->screen_size.h);
         }
         else {
-            glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
-            GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
-            //GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY) );
-            // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-            // GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL) );
-            GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
-                                 /*width, height = */ view->screen_size.w, view->screen_size.h,
-                                 /*border = */ 0,
-                                 /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
-                                 /*data = */ NULL) );
-            glBindTexture(GL_TEXTURE_2D, 0);
+            render_data->stencil_texture = gl_new_depth_stencil_texture(view->screen_size.w, view->screen_size.h);
         }
 
         // Create framebuffer object.
-        {
-            GLuint fbo = 0;
-            GLCHK(glGenFramebuffersEXT(1, &fbo));
-            GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, fbo));
-            GLenum texture_target;
-            if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-                texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-            }
-            else{
-                texture_target = GL_TEXTURE_2D;
-            }
-
-            GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                                             render_data->canvas_texture, 0) );
-            GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture_target,
-                                             render_data->stencil_texture, 0) );
-            render_data->fbo = fbo;
-            print_framebuffer_status();
+        GLenum texture_target;
+        if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+            texture_target = GL_TEXTURE_2D_MULTISAMPLE;
         }
+        else{
+            texture_target = GL_TEXTURE_2D;
+        }
+        render_data->fbo = gl_new_fbo(render_data->canvas_texture, render_data->stencil_texture, texture_target);
+        GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo) );
+        print_framebuffer_status();
         GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
     }
     // VBO for picker
@@ -650,59 +561,16 @@ gpu_resize(RenderData* render_data, CanvasView* view)
     render_data->height = view->screen_size.h;
 
     if ( gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->eraser_texture));
-        GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                       GL_RGBA,
-                                       render_data->width, render_data->height,
-                                       GL_TRUE));
-
-        GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->canvas_texture));
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                GL_RGBA,
-                                render_data->width, render_data->height,
-                                GL_TRUE);
-
-        GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->helper_texture));
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                GL_RGBA,
-                                render_data->width, render_data->height,
-                                GL_TRUE);
-
-
-        GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, render_data->stencil_texture));
-        GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                       GL_DEPTH24_STENCIL8,
-                                       render_data->width, render_data->height,
-                                       GL_TRUE) );
+        gl_resize_color_texture_multisample(render_data->eraser_texture, render_data->width, render_data->height);
+        gl_resize_color_texture_multisample(render_data->canvas_texture, render_data->width, render_data->height);
+        gl_resize_color_texture_multisample(render_data->helper_texture, render_data->width, render_data->height);
+        gl_resize_depth_stencil_texture_multisample(render_data->stencil_texture, render_data->width, render_data->height);
     }
     else {
-        glBindTexture(GL_TEXTURE_2D, render_data->eraser_texture);
-        glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                     /*width, height = */ render_data->width, render_data->height,
-                     /*border = */ 0,
-                     /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                     /*data = */ NULL);
-        glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
-        glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                     /*width, height = */ render_data->width, render_data->height,
-                     /*border = */ 0,
-                     /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                     /*data = */ NULL);
-        glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
-        glBindTexture(GL_TEXTURE_2D, render_data->helper_texture);
-        glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
-                     /*width, height = */ render_data->width, render_data->height,
-                     /*border = */ 0,
-                     /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
-                     /*data = */ NULL);
-        glBindTexture(GL_TEXTURE_2D, render_data->stencil_texture);
-
-
-        GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
-                            /*width, height = */ render_data->width, render_data->height,
-                            /*border = */ 0,
-                            /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
-                            /*data = */ NULL) );
+        gl_resize_color_texture(render_data->eraser_texture, render_data->width, render_data->height);
+        gl_resize_color_texture(render_data->canvas_texture, render_data->width, render_data->height);
+        gl_resize_color_texture(render_data->helper_texture, render_data->width, render_data->height);
+        gl_resize_depth_stencil_texture(render_data->stencil_texture, render_data->width, render_data->height);
     }
 }
 
@@ -1235,6 +1103,25 @@ gpu_clip_strokes_and_update(Arena* arena,
 }
 
 static void
+gpu_fill_with_texture(RenderData* render_data, float alpha = 1.0f)
+{
+    // Assumes that texture object is already bound.
+    glUseProgram(render_data->texture_fill_program);
+    gl_set_uniform_f(render_data->texture_fill_program, "u_alpha", alpha);
+    {
+        GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
+        if ( t_loc >= 0 ) {
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
+            glEnableVertexAttribArray((GLuint)t_loc);
+            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
+                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                        /*stride*/ 0, /*ptr*/ 0));
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+    }
+}
+
+static void
 gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                   i32 view_width, i32 view_height, float background_alpha=1.0f)
 {
@@ -1303,7 +1190,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 // Layer render element.
                 // The current framebuffer's color attachment is layer_texture.
 
-                // Process this layer
+                // Process layer effects
                 {
 
                 }
@@ -1316,19 +1203,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
                     glDisable(GL_DEPTH_TEST);
 
-                    glUseProgram(render_data->texture_fill_program);
-                    gl_set_uniform_f(render_data->texture_fill_program, "u_alpha", re->layer_alpha);
-                    {
-                        GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
-                        if ( t_loc >= 0 ) {
-                            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
-                            glEnableVertexAttribArray((GLuint)t_loc);
-                            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
-                                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
-                                                        /*stride*/ 0, /*ptr*/ 0));
-                            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-                        }
-                    }
+                    gpu_fill_with_texture(render_data, re->layer_alpha);
 
                     glEnable(GL_DEPTH_TEST);
                 }
@@ -1342,19 +1217,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     glDisable(GL_BLEND);
                     glDisable(GL_DEPTH_TEST);
 
-                    glUseProgram(render_data->texture_fill_program);
-                    gl_set_uniform_f(render_data->texture_fill_program, "u_alpha", 1.0f);
-                    {
-                        GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
-                        if ( t_loc >= 0 ) {
-                            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
-                            glEnableVertexAttribArray((GLuint)t_loc);
-                            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
-                                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
-                                                        /*stride*/ 0, /*ptr*/ 0));
-                            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-                        }
-                    }
+                    gpu_fill_with_texture(render_data);
 
                     // Clear the layer texture.
                     glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
@@ -1459,43 +1322,27 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
     // Use helper_texture as a place to do AA.
 
     // Blit the canvas to helper_texture
-    #if 1
-    // TODO: glCopyTexImage2D does not work with multisampling.
-    GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                                     render_data->canvas_texture, 0) );
-    glBindTexture(texture_target, render_data->helper_texture);
-    glCopyTexImage2D(texture_target, 0, GL_RGBA8, 0,0, render_data->width, render_data->height, 0);
 
-    GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                                     render_data->helper_texture, 0) );
-    glBindTexture(texture_target, render_data->canvas_texture);
     glDisable(GL_DEPTH_TEST);
 
-    #else
-    {
-        glDisable(GL_DEPTH_TEST);
-        // glDisable(GL_BLEND);
+    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+                                         render_data->canvas_texture, 0) );
+        glBindTexture(texture_target, render_data->helper_texture);
+        glCopyTexImage2D(texture_target, 0, GL_RGBA8, 0,0, render_data->width, render_data->height, 0);
+
         GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                          render_data->helper_texture, 0) );
-
         glBindTexture(texture_target, render_data->canvas_texture);
-        glUseProgram(render_data->texture_fill_program);
-        GLint t_loc = glGetAttribLocation(render_data->texture_fill_program, "a_position");
-        if ( t_loc >= 0 ) {
-            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
-            glEnableVertexAttribArray((GLuint)t_loc);
-            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
-                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
-                                        /*stride*/ 0, /*ptr*/ 0));
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
+    } else {
+        GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+                                         render_data->helper_texture, 0) );
+        glBindTexture(texture_target, render_data->canvas_texture);
+
+        gpu_fill_with_texture(render_data);
     }
-    #endif
 
-    // Render on top.
-
-
-    // Render Gui
+    // Render GUI on top of helper texture
 
     // Render color picker
     // TODO: Only render if view rect intersects picker rect
@@ -1570,14 +1417,8 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         }
     }
 
-    // Blit to main framebuffer
+    // Do post-processing on painting and on GUI elements. Draw to backbuffer
 
-    GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
-    GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
-    GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
-                                0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
-
-    // Do post-processing of the rendered painting. Do it after rendering GUI elements.
     if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
 
@@ -1601,6 +1442,13 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
+    else {  // Resolve
+        GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
+        GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
+        GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
+                                    0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+    }
+
 
     GLCHK(glUseProgram(0));
 }
@@ -1654,17 +1502,25 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
 
     // Post processing
-    glUseProgram(render_data->postproc_program);
-    glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
+    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        glUseProgram(render_data->postproc_program);
+        glBindTexture(GL_TEXTURE_2D, render_data->canvas_texture);
 
-    GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
-    if ( loc >= 0 ) {
-        DEBUG_gl_validate_buffer(render_data->vbo_screen_quad);
-        glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
-        glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray((GLuint)loc);
+        GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
+        if ( loc >= 0 ) {
+            DEBUG_gl_validate_buffer(render_data->vbo_screen_quad);
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
+            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray((GLuint)loc);
 
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+    } else {
+        GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
+        GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
+        GLCHK( glBlitFramebufferEXT(0, 0, buf_w, buf_h,
+                                    0, 0, buf_w, buf_h, GL_COLOR_BUFFER_BIT, GL_LINEAR) );
+        glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
     }
 
     glEnable(GL_DEPTH_TEST);

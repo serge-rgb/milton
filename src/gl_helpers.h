@@ -51,6 +51,19 @@ bool gl_set_uniform_f(GLuint program, char* name, float val);
 bool gl_set_uniform_i(GLuint program, char* name, i32 val);
 bool gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y);
 
+GLuint gl_new_color_texture(int w, int h);
+GLuint gl_new_color_texture_multisample(int w, int h);
+GLuint gl_new_depth_stencil_texture(int w, int h);
+GLuint gl_new_depth_stencil_texture_multisample(int w, int h);
+GLuint gl_new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment=0, GLenum texture_target=GL_TEXTURE_2D);
+
+void gl_resize_color_texture(GLuint t, int w, int h);
+void gl_resize_color_texture_multisample(GLuint t, int w, int h);
+void gl_resize_depth_stencil_texture(GLuint t, int w, int h);
+void gl_resize_depth_stencil_texture_multisample(GLuint t, int w, int h);
+
+
+
 #if defined(__linux__)
     // There is no function prototype for the EXT version of this function but there is for GL core one.
     #define glBlitFramebufferEXT glBlitFramebuffer
