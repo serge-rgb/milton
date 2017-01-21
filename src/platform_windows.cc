@@ -9,7 +9,6 @@
 extern "C" {
 
 static FILE* g_win32_logfile;
-static i32 g_cursor_count = 0;
 
 int
 _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
@@ -439,19 +438,20 @@ perf_count_to_sec(u64 counter)
 void
 platform_cursor_hide()
 {
-    while ( g_cursor_count >= 0 ) {
-        ShowCursor(FALSE);
-        g_cursor_count--;
+    while ( SDL_ShowCursor(-1) == SDL_ENABLE )  {
+        SDL_ShowCursor(SDL_DISABLE);
     }
+    while ( ShowCursor(FALSE) >=  0 );
 }
 
 void
 platform_cursor_show()
 {
-    while ( g_cursor_count < 0 ) {
-        ShowCursor(TRUE);
-        g_cursor_count++;
+    while ( SDL_ShowCursor(-1) == SDL_DISABLE )  {
+        SDL_ShowCursor(SDL_ENABLE);
     }
+
+    while ( ShowCursor(TRUE) < 0 );
 }
 
 i32

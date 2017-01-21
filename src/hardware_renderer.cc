@@ -1098,7 +1098,9 @@ gpu_clip_strokes_and_update(Arena* arena,
             }
         }
 
-        push(clip_array, layer_element)->layer_alpha = l->alpha;
+        auto* p = push(clip_array, layer_element);
+        p->layer_alpha = l->alpha;
+        p->effects = l->effects;
     }
 }
 
@@ -1191,8 +1193,10 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 // The current framebuffer's color attachment is layer_texture.
 
                 // Process layer effects
-                {
-
+                for (LayerEffect* e = re->effects; e != NULL; e = e->next ) {
+                    if ( e->type == LayerEffectType_BLUR ) {
+                        milton_log("FOund blur!\n");
+                    }
                 }
 
                 // Blit layer_texture to canvas_texture

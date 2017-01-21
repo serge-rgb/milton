@@ -4,6 +4,8 @@
 #pragma once
 
 
+struct LayerEffect;
+
 // Draw data for single stroke
 struct RenderElement
 {
@@ -19,7 +21,8 @@ struct RenderElement
             i32     radius;
         };
         struct {  // For when element is layer.
-            f32     layer_alpha;
+            f32          layer_alpha;
+            LayerEffect* effects;
         };
     };
 

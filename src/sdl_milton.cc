@@ -109,7 +109,6 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 
     SDL_Event event;
     while ( SDL_PollEvent(&event) ) {
-        //ImGui_ImplSdl_ProcessEvent(&event);
         ImGui_ImplSdlGL3_ProcessEvent(&event);
 
         SDL_Keymod keymod = SDL_GetModState();
@@ -829,18 +828,22 @@ milton_main()
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
 
         // Handle pen orientation to switch to eraser or pen.
-        #if 0
         if ( EasyTab!=NULL && EasyTab->PenInProximity ) {
-            if ( EasyTab->Orientation.Altitude < 0
-                  && milton_state->current_mode == MiltonMode_PEN ) {
+            static int previous_orientation = 0;
+
+            bool changed = false;
+            if ( EasyTab->Orientation.Altitude < 0 && previous_orientation >= 0 ) {
                 milton_input.mode_to_set = MiltonMode_ERASER;
+                changed = true;
             }
-            else if ( EasyTab->Orientation.Altitude > 0
-                      && milton_state->current_mode == MiltonMode_ERASER ) {
+            else if ( EasyTab->Orientation.Altitude > 0 && previous_orientation <= 0 ) {
                 milton_input.mode_to_set = MiltonMode_PEN;
+                changed = true;
+            }
+            if ( changed ) {
+                previous_orientation = EasyTab->Orientation.Altitude;
             }
         }
-        #endif
 
         panning_update(&platform_state);
 
@@ -869,9 +872,8 @@ milton_main()
             else if ( ImGui::GetIO().WantCaptureMouse ) {
                 cursor_set_and_show(platform_state.cursor_default);
                 platform_cursor_show();  // cursor_set_and_show might not call this.
-                                        //But SDL causes cursor flickering when we force it.
+                                         // But SDL causes cursor flickering when we force it.
             }
-
             else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
                 cursor_set_and_show(platform_state.cursor_crosshair);
                 platform_state.was_exporting = true;
@@ -887,6 +889,7 @@ milton_main()
             else if ( milton_state->gui->visible
                       && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
                 cursor_set_and_show(platform_state.cursor_default);
+                platform_cursor_show();  // See above on WantCaptureMouse check
             }
             else if ( milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER ) {
                 #if MILTON_HARDWARE_BRUSH_CURSOR
@@ -1002,7 +1005,8 @@ milton_main()
         f32 expected_us = (f32)1000000 / display_hz;
         if ( frame_time_us < expected_us ) {
             f32 to_sleep_us = expected_us - frame_time_us;
-            SDL_Delay(to_sleep_us/1000);
+            //  milton_log("Sleeping at least %d ms\n", (u32)(to_sleep_us/1000));
+            SDL_Delay((u32)(to_sleep_us/1000));
         }
         // IMGUI events might update until the frame after they are created.
         if ( !platform_state.force_next_frame ) {

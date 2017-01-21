@@ -9,6 +9,19 @@
 
 #define MAX_LAYER_NAME_LEN          64
 
+struct LayerEffect
+{
+    i32 type;  // LayerEffectType enum
+    union {
+        struct {  // Blur
+            i32 type;  // BlurType enum
+            i32 amount;
+        } blur;
+    };
+
+    LayerEffect* next;
+};
+
 struct Layer
 {
     i32 id;
@@ -20,10 +33,23 @@ struct Layer
 
     float alpha;
 
+    LayerEffect* effects;
+
     Layer* prev;
     Layer* next;
 };
 
+enum LayerEffectType
+{
+    LayerEffectType_NONE,
+
+    LayerEffectType_BLUR,
+};
+
+enum BlurType
+{
+    BlurType_AVERAGE,
+};
 
 // IMPORTANT: CanvasView needs to be a flat structure.
 //            Changing it means changing the file format,

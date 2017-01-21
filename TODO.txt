@@ -1,11 +1,21 @@
 To-Do
 =====
 
-- Application
-    - Porting (dialogs and File I/O)
-        - Linux
-        - OSX
+- Bugs
+    - Middle button bug when zooming with pen.
+    -
+- Platform
+    - Windows
+        - File association
+    - Linux
+        - Checkinstall? Manual dpkg?
+        - Ubuntu PPA
+        - Freedesktop entry, MIME type
+    - OSX
+        - Bundle
+        - dmg crap
         - Ctrl -> Cmd in OSX. Other cross platform binding issues?
+- Application
     - Tablet:
         - Port to Windows API (support non-Wacom devices)
         - Gestures (OSX, Windows)
@@ -36,22 +46,12 @@ To-Do
         - circles / ellipses
         - transparent window
         - layer color balance
-
+    - Settings file
+        - Default BG
+        - Key shortcuts
 - Polish and/or Debug layer
-    - Memory allocation profiler.
     - Input recorder for bug replication
     - linux - load dynamic libs at runtime
     - store font data in binary
-
 - Milton Library
     - Refactor. Write sample program.
-
-- Distribution
-    *- Linux
-        - Checkinstall? Manual dpkg?
-        - Ubuntu PPA
-        - Freedesktop entry, MIME type
-    *- OSX
-        - Bundle
-        - dmg crap
-

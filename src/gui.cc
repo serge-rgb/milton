@@ -334,7 +334,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
         }
 
-
         // Layer window
         ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(300, 220), ImGuiSetCond_FirstUseEver);
@@ -368,6 +367,54 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             if ( ImGui::Button(LOC(new_layer)) ) {
                 milton_new_layer(milton_state);
             }
+            ImGui::SameLine();
+
+            // Layer effects
+            if ( canvas ) {
+                Layer* working_layer = canvas->working_layer;
+                Arena* canvas_arena = &canvas->arena;
+
+                static b32 show_effects = true;
+                if ( ImGui::Button("Effects")) {
+                    show_effects = !show_effects;
+                }
+                if ( show_effects ) {
+                    ImGui::SetNextWindowPos(ImVec2(310+10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_FirstUseEver);
+                    ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiSetCond_FirstUseEver);
+
+                    if ( ImGui::Begin("Effects") ) {
+                        ImGui::Text(LOC(opacity));
+                        if (ImGui::SliderFloat("##opacity", &canvas->working_layer->alpha, 0.0f,
+                                               1.0f)) {
+                            // Used the slider. Ask if it's OK to convert the binary format.
+                            if ( milton_state->mlt_binary_version < 3 ) {
+                                milton_log("Modified milton file from %d to 3\n", milton_state->mlt_binary_version);
+                                milton_state->mlt_binary_version = 3;
+                            }
+                            input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+                        }
+
+                        static b32 selecting = false;
+                        if ( ImGui::Button("New effect") ) {
+                            LayerEffect* e = arena_alloc_elem(canvas_arena, LayerEffect);
+                            e->next = working_layer->effects;
+                            working_layer->effects = e;
+                        }
+
+                        for ( LayerEffect* e = working_layer->effects; e != NULL; e = e->next ) {
+                            static int item = 0;
+                            const char* items[] = { "One", "Two", "Three "};
+                            static bool v = 0;
+                            ImGui::Checkbox("Enabled", &v);
+                            ImGui::Combo("Select", &item, items, array_count(items));
+                            ImGui::Separator();
+                        }
+                        // ImGui::Slider
+                    } ImGui::End();
+
+                }
+            }
+
             ImGui::Separator();
             ImGui::EndChild();
             ImGui::BeginChild("buttons");
@@ -412,17 +459,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 b = a->prev;
             }
 
-            if ( canvas ) {
-                ImGui::Text(LOC(opacity));
-                if ( ImGui::SliderFloat("##opacity", &canvas->working_layer->alpha, 0.0f, 1.0f) ) {
-                    // Used the slider. Ask if it's OK to convert the binary format.
-                    if ( milton_state->mlt_binary_version < 3 ) {
-                        milton_log("Modified milton file from %d to 3\n", milton_state->mlt_binary_version);
-                        milton_state->mlt_binary_version = 3;
-                    }
-                }
-                input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-            }
 
             if ( a && b ) {
                 // n <-> a <-> b <-> p
