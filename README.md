@@ -105,28 +105,28 @@ Credits and Thanks
     * Milton's logo and artwork by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
 
 * Code
-    * [Apoorva Joshi](http://apoorvaj.io) - Author of [Papaya](https://github.com/ApoorvaJ/Papaya) for joining forces and creating [EasyTab](https://github.com/ApoorvaJ/EasyTab).
-    * [Charly Mourglia](http://github.com/Zouch) - Help with Linux.
+    * [Apoorva Joshi](http://apoorvaj.io) - [EasyTab](https://github.com/ApoorvaJ/EasyTab).
+    * [Mio Iwakura](http://miotatsu.github.io) - Linux version
+
+    * [Charly Mourglia](http://github.com/Zouch)
     * [Joshua Mendoza](https://github.com/jomendoz)
+    * [Kevin Wojniak](https://github.com/kainjow) - macOS tundra build
     * [Michael Freundorfer](https://github.com/mordecai154)
-    * [Mio Iwakura](http://miotatsu.github.io) - Original Linux platform layer.
-    * [Tilmann Rübbelke](https://github.com/TilmannR) - Color picker fixes & improvements.
+    * [Tilmann Rübbelke](https://github.com/TilmannR) - Color picker fixes & improvements
 
-* Rubber-ducking / Whiteboarding
-    * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)
-    * Luis Eduardo Pérez
-    * Mom
-
-* The "Jueves Sensual" team :)
-    * Axel Becerril
-    * Ruben Bañuelos
-    * Caro Barberena
-    * Carlos Chilazo
-    * Roberto Lapuente
-    * Joshua Mendoza
-    * Maximiliano Monterrubio
-    * Santiago Montesinos
+* Other
     * Aarón Reyes García
+    * Axel Becerril
+    * Carlos Chilazo
+    * Caro Barberena
+    * Joshua Mendoza
+    * Luis Eduardo Pérez
+    * Maximiliano Monterrubio
+    * Mom
+    * Roberto Lapuente
+    * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)
+    * Ruben Bañuelos
+    * Santiago Montesinos
     * Vane Ugalde
 
 * Inspiration / Education
