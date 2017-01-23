@@ -15,9 +15,8 @@ typedef int16_t     i16;
 typedef int32_t     i32;
 typedef int64_t     i64;
 
-// #if defined(__linux__) || defined(__MACH__)
 void handle_errno(int error);
-// #endif
+
 
 static size_t
 bytes_until_end(FILE* fd)
@@ -178,7 +177,7 @@ output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
 
     fprintf(of, "static char %s[] = \n", varname);
     for ( i64 i = 0; i < prelude_lines_count; ++i ) {
-    size_t len = strlen(prelude_lines[i]);
+        size_t len = strlen(prelude_lines[i]);
         prelude_lines[i][len-1]='\0';  // Strip newline
         fprintf(of, "\"%s\\n\"\n", prelude_lines[i]);
     }

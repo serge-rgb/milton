@@ -48,6 +48,8 @@ To-Do
         - layer color balance
     - Settings file
         - Default BG
+           or
+        - Template files - change the default canvas.
         - Key shortcuts
 - Polish and/or Debug layer
     - Input recorder for bug replication

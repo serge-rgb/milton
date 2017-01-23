@@ -379,7 +379,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     show_effects = !show_effects;
                 }
                 if ( show_effects ) {
-                    ImGui::SetNextWindowPos(ImVec2(310+10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_FirstUseEver);
+                    // ImGui::GetWindow(Pos|Size) works in here because we are inside Begin()/End() calls.
+                    i32 pos_x = (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + 10);
+                    i32 pos_y = (i32)(ImGui::GetWindowPos().y);
+
+                    ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiSetCond_FirstUseEver);
+                    // ImGui::SetNextWindowPos(ImVec2(pos_x, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_FirstUseEver);
                     ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiSetCond_FirstUseEver);
 
                     if ( ImGui::Begin("Effects") ) {
