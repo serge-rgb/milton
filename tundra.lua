@@ -4,7 +4,7 @@ Build {
     Env = {
         CPPPATH = { "third_party",
             "third_party/imgui",
-            {"third_party/SDL2-2.0.3/include"; Config = "win*"},
+            {"third_party/SDL2-2.0.3/include"; Config = { "win*", "macos" }},
             "src"
         },
         CXXOPTS = { }
@@ -89,8 +89,9 @@ Build {
                 "src/sdl_milton.cc",
                 "src/StrokeList.cc",
                 {"src/platform_windows.cc"; Config = { "win*" }},
-                {"src/platform_unix.cc"; Config = { "linux-*" }},
+                {"src/platform_unix.cc"; Config = { "linux-*", "macos" }},
                 {"src/platform_linux.cc"; Config = { "linux-*" }},
+                {"src/platform_mac.cc"; Config = { "macos" }},
                 "src/third_party_libs.cc",
 
                 { ResourceFile { Input="Milton.rc" }; Config="win*" },
@@ -106,12 +107,16 @@ Build {
                 { "ole32.lib"; Config = { "win*" } },
                 { "oleAut32.lib"; Config = { "win*" } },
                 { "third_party/bin/SDL2.lib"; Config = { "win*" } },
-
+                { "SDL2"; Config = "macos" },
                 { "GL"; Config = "linux-*-*"},
                 --, "Xi", "m", "c"
                 { "m"; Config = "linux-*-*"},
                 { "Xi"; Config = "linux-*-*"},
                 { "stdc++"; Config = "linux-*-*"},
+                { "c++"; Config = "macos"},
+            },
+            LibPaths = {
+                { "third_party/build"; Config = "macos" },
             },
             Depends = { copyRC }
         }
@@ -175,6 +180,41 @@ Build {
                 },
                 PROGOPTS = {
                     "`pkg-config --libs sdl2 gtk+-2.0`",
+                },
+                SHADERGEN_BIN = "./$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen",
+            },
+            ReplaceEnv = {
+                OBJECTROOT = "build",
+            },
+        },
+        Config {
+            Name = "macos-clang",
+            DefaultOnHost = "macosx",
+            Tools = { "clang" },
+            Env = {
+                CXXOPTS = {
+                    "-std=c++11",
+                    "-Wno-missing-braces",
+                    "-Wno-unused-function",
+                    "-Wno-unused-variable",
+                    "-Wno-unused-result",
+                    "-Wno-write-strings",
+                    "-Wno-c++11-compat-deprecated-writable-strings",
+                    "-Wno-null-dereference",
+                    "-Wno-format",
+                    "-fno-strict-aliasing",
+                    "-fno-omit-frame-pointer",
+                    "-Wno-extern-c-compat",
+                    "-Werror",
+                    "-O0",
+                    "-g",
+                },
+                PROGOPTS = {
+                    "-framework Carbon",
+                    "-framework Cocoa",
+                    "-framework ForceFeedback",
+                    "-framework IOKit",
+                    "-framework OpenGL",
                 },
                 SHADERGEN_BIN = "./$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen",
             },
