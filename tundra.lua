@@ -118,6 +118,13 @@ Build {
             LibPaths = {
                 { "third_party/build"; Config = "macos" },
             },
+            Frameworks = {
+                "Carbon",
+                "Cocoa",
+                "ForceFeedback",
+                "IOKit",
+                "OpenGL",
+            },
             Depends = { copyRC }
         }
 
@@ -190,7 +197,7 @@ Build {
         Config {
             Name = "macos-clang",
             DefaultOnHost = "macosx",
-            Tools = { "clang" },
+            Tools = { "clang-osx" },
             Env = {
                 CXXOPTS = {
                     "-std=c++11",
@@ -208,13 +215,6 @@ Build {
                     "-Werror",
                     "-O0",
                     "-g",
-                },
-                PROGOPTS = {
-                    "-framework Carbon",
-                    "-framework Cocoa",
-                    "-framework ForceFeedback",
-                    "-framework IOKit",
-                    "-framework OpenGL",
                 },
                 SHADERGEN_BIN = "./$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen",
             },
