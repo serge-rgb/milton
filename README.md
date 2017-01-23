@@ -104,10 +104,11 @@ Credits and Thanks
 * Art
     * Milton's logo and artwork by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
 
-* Code
+* Code - major changes
     * [Apoorva Joshi](http://apoorvaj.io) - [EasyTab](https://github.com/ApoorvaJ/EasyTab).
-    * [Mio Iwakura](http://miotatsu.github.io) - Linux version
-
+    * [Mio Iwakura](http://miotatsu.github.io) - Linux version. [RISCy Business](https://www.youtube.com/user/BathtubBlogger/videos)
+    
+* Code - fixes and improvements
     * [Charly Mourglia](http://github.com/Zouch)
     * [Joshua Mendoza](https://github.com/jomendoz)
     * [Kevin Wojniak](https://github.com/kainjow) - macOS tundra build
