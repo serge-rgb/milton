@@ -2,19 +2,36 @@
 
 #include <mach-o/dyld.h>
 #include <errno.h>
+#include <limits.h>
+#include <string.h>
+#include <time.h>
+#include <sys/time.h>
+#include "platform.h"
+#include "memory.h"
+
+#define MAX_PATH PATH_MAX
 
 // IMPLEMENT ====
 float
 perf_count_to_sec(u64 counter)
 {
-    IMPL_MISSING;
-    return 0.0;
+    // Input as nanoseconds
+    return (float)counter * 1e-9;
 }
 u64
 perf_counter()
 {
-    IMPL_MISSING;
-    return 0;
+    // clock_gettime() on macOS is only supported on macOS Sierra and later.
+    // For older macOS operating systems, mach_absolute_time() will be need to be used.
+    timespec tp;
+    int res = clock_gettime(CLOCK_REALTIME, &tp);
+
+    // TODO: Check errno and provide more informations
+    if ( res ) {
+        milton_log("Something went wrong with clock_gettime\n");
+    }
+
+    return tp.tv_nsec;
 }
 
 b32
@@ -128,6 +145,13 @@ WallTime
 platform_get_walltime()
 {
     WallTime wt = {0};
-    IMPL_MISSING;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct tm *time;
+    time = localtime(&tv.tv_sec);
+    wt.h = time->tm_hour;
+    wt.m = time->tm_min;
+    wt.s = time->tm_sec;
+    wt.ms = tv.tv_usec / 1000;
     return wt;
 }
