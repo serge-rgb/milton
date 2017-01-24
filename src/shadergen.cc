@@ -30,7 +30,7 @@ bytes_until_end(FILE* fd)
 }
 
 char*
-read_entire_file(char* fname)
+read_entire_file(const char* fname)
 {
     char* contents = NULL;
     FILE* fd = fopen(fname, "r");
@@ -107,12 +107,12 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
 // Computes the variable name of the form g_NAME_(v|f) for a given shader filename
 //    e.g. "../src/my_shader.v.glsl" -> g_my_shader_v
 int
-shadername(char* filename, char* out_varname, size_t sz_varname)
+shadername(const char* filename, char* out_varname, size_t sz_varname)
 {
     if ( filename && out_varname ) {
         // Skip filename until after all forward slashes.
-        char* last_forward_slash = NULL;
-        for ( char* c = filename; *c!='\0'; ++c ) {
+        const char* last_forward_slash = NULL;
+        for ( const char* c = filename; *c!='\0'; ++c ) {
             if ( *c == '/' ) {
                 last_forward_slash = c;
             }
@@ -131,7 +131,7 @@ shadername(char* filename, char* out_varname, size_t sz_varname)
                 out_varname[out_i++] = prefix[pi];
             }
             // Append name. Translate the first dot to _
-            for ( char* c = filename;
+            for ( const char* c = filename;
                   *c != '\0';
                   ++c ) {
                 if ( *c != '.' ) {
@@ -155,7 +155,7 @@ shadername(char* filename, char* out_varname, size_t sz_varname)
 #define VARNAME_MAX 128
 
 void
-output_shader(FILE* of, char* fname, char* fname_prelude = NULL)
+output_shader(FILE* of, const char* fname, const char* fname_prelude = NULL)
 {
     char* contents = read_entire_file(fname);
     char** prelude_lines = NULL;
@@ -194,7 +194,6 @@ main(int argc, char** argv)
 {
     fprintf(stderr, "Generating shader code...\n");
 
-    char out[128] = {};
     FILE* outfd = fopen("src/shaders.gen.h", "w");
     if ( outfd ) {
         output_shader(outfd, "src/picker.v.glsl");
@@ -228,7 +227,7 @@ main(int argc, char** argv)
 void
 handle_errno(int error)
 {
-    char* str = NULL;
+    const char* str = NULL;
     switch ( error ) {
        case E2BIG:           str = "Argument list too long (POSIX.1)"; break;
 
