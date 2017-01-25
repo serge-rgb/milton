@@ -92,6 +92,7 @@ Build {
                 {"src/platform_unix.cc"; Config = { "linux-*", "macos" }},
                 {"src/platform_linux.cc"; Config = { "linux-*" }},
                 {"src/platform_mac.cc"; Config = { "macos" }},
+                {"src/platform_mac_gui.mm"; Config = { "macos" }},
                 "src/third_party_libs.cc",
 
                 { ResourceFile { Input="Milton.rc" }; Config="win*" },
@@ -215,6 +216,7 @@ Build {
                     "-Werror",
                     "-O0",
                     "-g",
+                    "-fobjc-arc"
                 },
                 SHADERGEN_BIN = "./$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen",
             },

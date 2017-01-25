@@ -1,5 +1,3 @@
-#define IMPL_MISSING mlt_assert(!"IMPLEMENT")
-
 #include <mach-o/dyld.h>
 #include <errno.h>
 #include <limits.h>
@@ -59,14 +57,16 @@ platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
 void
 platform_dialog(char* info, char* title)
 {
-    IMPL_MISSING;
+    extern void platform_dialog_mac(char*, char*);
+    platform_dialog_mac(info, title);
     return;
 }
 
 b32
 platform_dialog_yesno(char* info, char* title)
 {
-    IMPL_MISSING;
+    extern b32 platform_dialog_yesno_mac(char*, char*);
+    platform_dialog_yesno_mac(info, title);
     return false;
 }
 
@@ -125,19 +125,20 @@ platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 PATH_CHAR*
 platform_open_dialog(FileKind kind)
 {
-    IMPL_MISSING;
-    return NULL;
+    extern PATH_CHAR* platform_open_dialog_mac(FileKind);
+    return platform_open_dialog_mac(kind);
 }
 void
 platform_open_link(char* link)
 {
-    return;
+    extern void platform_open_link_mac(char*);
+    platform_open_link_mac(link);
 }
 PATH_CHAR*
 platform_save_dialog(FileKind kind)
 {
-    IMPL_MISSING;
-    return NULL;
+    extern PATH_CHAR* platform_save_dialog_mac(FileKind);
+    return platform_save_dialog_mac(kind);
 }
 //  ====
 
