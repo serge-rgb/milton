@@ -1,11 +1,12 @@
 
 #if HAS_TEXTURE_MULTISAMPLE
-#extension GL_ARB_texture_multisample : enable
-#extension GL_ARB_sample_shading : enable
-uniform sampler2DMS u_canvas;
+    #extension GL_ARB_texture_multisample : enable
+    #extension GL_ARB_sample_shading : enable
+    uniform sampler2DMS u_canvas;
 #else
-uniform sampler2D u_canvas;
+    uniform sampler2D u_canvas;
 #endif
+
 uniform vec2      u_screen_size;
 
 void

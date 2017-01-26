@@ -938,6 +938,9 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         GETPROCADDRESS(WTMGRCLOSE        , WTMgrClose);
         GETPROCADDRESS(WTMGRDEFCONTEXT   , WTMgrDefContext);
         GETPROCADDRESS(WTMGRDEFCONTEXTEX , WTMgrDefContextEx);
+        #ifdef MILTON_EASYTAB
+            GETPROCADDRESS(WTQUEUESIZEGET    , WTQueueSizeGet);  // Note: In wintab samples this is done via #defines
+        #endif
     }
 
     if (!EasyTab->WTInfoA(0, 0, NULL))
@@ -954,7 +957,7 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         // Get maxiumum rate (DVX_PKTRATE)
         if (EasyTab->WTInfoA(WTI_DEVICES, DVC_PKTRATE, &MaxPktRate))
         {
-            DesiredPktRate = min(200, MaxPktRate);
+            DesiredPktRate = min(DesiredPktRate, MaxPktRate);
         }
     }
 #endif
@@ -1071,6 +1074,15 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
             EasyTab->RangeX      = RangeX.axMax;
             EasyTab->RangeY      = RangeY.axMax;
         }
+
+#ifdef MILTON_EASYTAB
+        // Try and set the queue size
+        int QueueSize = EasyTab->WTQueueSizeGet(EasyTab->Context);
+        if (!EasyTab->WTQueueSizeSet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE))
+        {
+            return EASYTAB_QUEUE_SIZE_ERROR;
+        }
+#endif
     }
 
     return EASYTAB_OK;
@@ -1086,8 +1098,12 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
     PACKET PacketBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };
 
     EasyTab->NumPackets = 0;
-    if (Message == WT_PACKET &&
-        (HCTX)LParam == EasyTab->Context)
+    #ifdef MILTON_EASYTAB
+        if (Message == WT_PACKET)
+    #else
+        if (Message == WT_PACKET &&
+            (HCTX)LParam == EasyTab->Context)
+    #endif
     {
         int NumPackets = EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE, PacketBuffer);
         POINT PointBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };
@@ -1127,8 +1143,9 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         {
             EasyTab->PenInProximity = EASYTAB_FALSE;
         }
-        EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE+1, NULL);
         result = EASYTAB_OK;
+        // Alway clear the queue.
+        EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE+1, NULL);
     }
 
 

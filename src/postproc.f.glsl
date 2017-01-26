@@ -119,7 +119,7 @@ main()
         //   0.50 - lower limit (sharper, less sub-pixel aliasing removal)
         //   0.25 - almost off
         //   0.00 - completely off
-        0.50, // FxaaFloat fxaaQualitySubpix,
+        1.00, // FxaaFloat fxaaQualitySubpix,
         //
         // Only used on FXAA Quality.
         // This used to be the FXAA_QUALITY__EDGE_THRESHOLD define.

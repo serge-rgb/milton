@@ -3,7 +3,8 @@ To-Do
 
 - Bugs
     - Middle button bug when zooming with pen.
-    -
+    - Cursor is hidden on title bar and edge of screen
+    - GUI opacity can take input greater than 1
 - Platform
     - Windows
         - File association

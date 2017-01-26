@@ -1,3 +1,8 @@
+#if HAS_TEXTURE_MULTISAMPLE
+    #extension GL_ARB_sample_shading : enable
+    #extension GL_ARB_texture_multisample : enable
+#endif
+
 // Per-stroke uniforms
 uniform vec4 u_brush_color;
 

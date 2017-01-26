@@ -158,6 +158,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     break;  // Are we in Wayland yet?
 
                 }
+
                 if ( er == EASYTAB_OK ) {
                     // Pen in use but not drawing
                     b32 taking_pen_input = EasyTab->PenInProximity
