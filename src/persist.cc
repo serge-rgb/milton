@@ -384,7 +384,6 @@ milton_save(MiltonState* milton_state)
             if (ok) { ok = fwrite_checked(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd); }
         }
 
-
         i32 history_count = (i32)milton_state->canvas->history.count;
         if ( milton_state->canvas->history.count > INT_MAX ) {
             history_count = 0;
