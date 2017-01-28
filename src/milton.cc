@@ -202,10 +202,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         // Cleared to be appended.
-        if ( passed_inspection && ws->num_points < STROKE_MAX_POINTS-1 ) {
-            // TODO: Add interpolation points here based on angle between consecutive points.
-            // Once that's added, enable mouse input smoothing.
-
+        if ( passed_inspection && ws->num_points < STROKE_MAX_POINTS ) {
             if ( milton_brush_smoothing_enabled(milton_state) ) {
                 // Stroke smoothing.
                 // Change canvas_point depending on the average of the last `N` points.
@@ -907,10 +904,11 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
 
     // At most we are adding twice as many points. This is wasteful but at the moment it looks like
     // a reasonable tradeoff vs the complexity/perf hit of using something smaller.
-    out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2i);
-    out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
 
-    if ( num_points >= 4 ) {
+    if ( num_points >= 4 && 2*num_points <= STROKE_MAX_POINTS ) {
+        out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2i);
+        out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
+
         // Push the first points.
         memcpy(out_stroke->points, in_stroke->points, 4 * sizeof(v2i));
         memcpy(out_stroke->pressures, in_stroke->pressures, 4 * sizeof(f32));
@@ -934,6 +932,10 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
                 b = c;
                 c = d;
                 d = v2i_to_v2f(sub2i(in_stroke->points[i], canvas_center));
+            }
+
+            if ( out_i >= STROKE_MAX_POINTS-1 ) {
+                break;  // Keep the stroke from becoming larger than we support.
             }
 
             float scale = 0.5f;
@@ -980,8 +982,11 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
 
         out_stroke->num_points = out_i;
     }
-    // Four or less points in stroke.
+    // Four or less points in stroke, or stroke is too large.
     else {
+        out_stroke->points    = arena_alloc_array(arena, num_points, v2i);
+        out_stroke->pressures = arena_alloc_array(arena, num_points, f32);
+
         memcpy(out_stroke->points, in_stroke->points, in_stroke->num_points * sizeof(v2i));
         memcpy(out_stroke->pressures, in_stroke->pressures, in_stroke->num_points * sizeof(f32));
         out_stroke->num_points = in_stroke->num_points;
@@ -1362,6 +1367,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                     custom_rectangle = rect_union(custom_rectangle, bounds);
                 }
 
+                mlt_assert(new_stroke.num_points > 0);
+                mlt_assert(new_stroke.num_points <= STROKE_MAX_POINTS);
                 auto* stroke = layer_push_stroke(milton_state->canvas->working_layer, new_stroke);
 
                 // Invalidate working stroke render element

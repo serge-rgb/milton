@@ -76,8 +76,6 @@ void gpu_get_viewport_limits(RenderData* render_data, float* out_viewport_limits
 i32  gpu_get_num_clipped_strokes(Layer* root_layer);
 
 
-
-// TODO: Measure memory consumption of glBufferData and their ilk
 enum CookStrokeOpt
 {
     CookStroke_NEW                   = 0,

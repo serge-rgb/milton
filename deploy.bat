@@ -1,15 +1,18 @@
 if exist OUTPUT goto OUTPUT_EXISTS
 
+set builddir=build\win64-msvc-debug-default
+set sdlbindir=third_party\bin
+
 mkdir OUTPUT
-copy build\Milton.exe OUTPUT\Milton.exe
-copy build\Milton.pdb OUTPUT\Milton.pdb
+copy %builddir%\Milton.exe OUTPUT\Milton.exe
+copy %builddir%\Milton.pdb OUTPUT\Milton.pdb
 copy Milton.iss OUTPUT\Milton.iss
-copy build\SDL2.lib OUTPUT\SDL2.lib
-copy build\SDL2.pdb OUTPUT\SDL2.pdb
+copy %sdlbindir%\SDL2.lib OUTPUT\SDL2.lib
+copy %sdlbindir%\SDL2.pdb OUTPUT\SDL2.pdb
 copy milton_icon.ico OUTPUT\milton_icon.ico
 copy LICENSE.txt OUTPUT\LICENSE.txt
-copy build\Carlito.LICENSE OUTPUT\Carlito.LICENSE
-copy build\Carlito.ttf OUTPUT\Carlito.ttf
+copy %builddir%\Carlito.LICENSE OUTPUT\Carlito.LICENSE
+copy %builddir%\Carlito.ttf OUTPUT\Carlito.ttf
 
 mkdir OUTPUT\Standalone
 copy OUTPUT\Milton.exe OUTPUT\Standalone\
