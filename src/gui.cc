@@ -370,7 +370,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             ImGui::SameLine();
 
             // Layer effects
-#if MILTON_UNFINISHED_FEATURES
             if ( canvas ) {
                 Layer* working_layer = canvas->working_layer;
                 Arena* canvas_arena = &canvas->arena;
@@ -419,7 +418,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
                 }
             }
-#endif
 
             ImGui::Separator();
             ImGui::EndChild();

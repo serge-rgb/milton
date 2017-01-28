@@ -5,11 +5,8 @@
 
 
 #define MILTON_MAJOR_VERSION 1
-#define MILTON_MINOR_VERSION 2
-#define MILTON_MICRO_VERSION 8
-
-// Don't compile features in development for version 1.2.8
-#define MILTON_UNFINISHED_FEATURES 0
+#define MILTON_MINOR_VERSION 3
+#define MILTON_MICRO_VERSION 0
 
 #define MILTON_DEBUG 1
 
