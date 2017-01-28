@@ -899,6 +899,95 @@ milton_validate(MiltonState* milton_state)
     mlt_free(layer_ids, "Validate");
 }
 
+// Copy points from in_stroke to out_stroke, but do interpolation to smooth it out.
+static void
+copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_stroke)
+{
+    i32 num_points = in_stroke->num_points;
+
+    // At most we are adding twice as many points. This is wasteful but at the moment it looks like
+    // a reasonable tradeoff vs the complexity/perf hit of using something smaller.
+    out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2i);
+    out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
+
+    if ( num_points >= 4 ) {
+        // Push the first points.
+        memcpy(out_stroke->points, in_stroke->points, 4 * sizeof(v2i));
+        memcpy(out_stroke->pressures, in_stroke->pressures, 4 * sizeof(f32));
+
+
+        i32 out_i = 4;
+
+        // Go through each four consecutive points in the stroke and copy them to new array, but do
+        // interpolation with a cubic Bezier.
+
+        // Relative to center to maintain precision.
+        v2i canvas_center = raster_to_canvas(view, divide2i(view->screen_size, 2));
+        v2f a = v2i_to_v2f(sub2i(in_stroke->points[0], canvas_center));
+        v2f b = v2i_to_v2f(sub2i(in_stroke->points[1], canvas_center));
+        v2f c = v2i_to_v2f(sub2i(in_stroke->points[2], canvas_center));
+        v2f d = v2i_to_v2f(sub2i(in_stroke->points[3], canvas_center));
+
+        for ( i32 i = 3; i < num_points; ++i ) {
+            if ( i >= 4 ) {
+                a = b;
+                b = c;
+                c = d;
+                d = v2i_to_v2f(sub2i(in_stroke->points[i], canvas_center));
+            }
+
+            float scale = 0.5f;
+            v2f p0 = a;
+            v2f p1 = sub2f(b, scale2f(sub2f(a, b), scale));
+            v2f p2 = sub2f(c, scale2f(sub2f(d, c), scale));
+            v2f p3 = d;
+
+            // Diffs to calculate angle
+            v2f d0 = sub2f(p0, p1);
+            v2f d1 = sub2f(p2, p1);
+            v2f d2 = sub2f(p1, p2);
+            v2f d3 = sub2f(p3, p2);
+
+            float n0 = fabs(DOT(d0, d1)) / (magnitude(d0) * magnitude(d1));
+            float n1 = fabs(DOT(d2, d3)) / (magnitude(d2) * magnitude(d3));
+
+            // If the sum of both angles is greater than this threshold, interpolate.
+            float cos_min_angle = 0.05f;
+            if ( 2 - n0 - n1 > cos_min_angle*2 ) {
+                v2f n = {};
+                n = add2f(n, scale2f(p0, 0.125));
+                n = add2f(n, scale2f(p1, 0.375));
+                n = add2f(n, scale2f(p2, 0.375));
+                n = add2f(n, scale2f(p3, 0.125));
+
+                out_stroke->pressures[out_i] = in_stroke->pressures[i - 2];
+                out_stroke->points[out_i++] = add2i(v2f_to_v2i(b), canvas_center);
+
+                out_stroke->pressures[out_i] = out_stroke->pressures[out_i-1]; // Use the same pressure value as last point.
+                out_stroke->points[out_i++] = add2i(v2f_to_v2i(n), canvas_center);
+            } else {
+                out_stroke->points[out_i] = in_stroke->points[i-2];
+                out_stroke->pressures[out_i++] = in_stroke->pressures[i-2];
+            }
+
+            // Always add the last point.
+            if ( i == num_points - 1 ) {
+                out_stroke->pressures[out_i] = in_stroke->pressures[i];
+                out_stroke->points[out_i++] = in_stroke->points[i];
+            }
+
+        }
+
+        out_stroke->num_points = out_i;
+    }
+    // Four or less points in stroke.
+    else {
+        memcpy(out_stroke->points, in_stroke->points, in_stroke->num_points * sizeof(v2i));
+        memcpy(out_stroke->pressures, in_stroke->pressures, in_stroke->num_points * sizeof(f32));
+        out_stroke->num_points = in_stroke->num_points;
+    }
+}
+
 void
 milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 {
@@ -1255,20 +1344,14 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                     gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
                 }
                 // Copy current stroke.
-                i32 num_points = milton_state->working_stroke.num_points;
                 Stroke new_stroke = {};
+                CanvasState* canvas = milton_state->canvas;
+                copy_with_smooth_interpolation(&canvas->arena, milton_state->view, &milton_state->working_stroke, &new_stroke);
                 {
-                    CanvasState* canvas = milton_state->canvas;
                     new_stroke.brush = milton_state->working_stroke.brush;
-                    new_stroke.points = arena_alloc_array(&canvas->arena, num_points, v2i);
-                    new_stroke.pressures = arena_alloc_array(&canvas->arena, num_points, f32);
-                    new_stroke.num_points = num_points;
                     new_stroke.layer_id = milton_state->view->working_layer_id;
-                    memcpy(new_stroke.points, milton_state->working_stroke.points,
-                           milton_state->working_stroke.num_points * sizeof(v2i));
-                    memcpy(new_stroke.pressures, milton_state->working_stroke.pressures,
-                           milton_state->working_stroke.num_points * sizeof(f32));
-                    new_stroke.bounding_rect = bounding_box_for_stroke(&new_stroke);
+                    new_stroke.bounding_rect = rect_union(bounding_box_for_stroke(&new_stroke),
+                                                        bounding_box_for_stroke(&new_stroke));
 
                     new_stroke.id = milton_state->canvas->stroke_id_count++;
 

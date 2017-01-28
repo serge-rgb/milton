@@ -1013,7 +1013,6 @@ milton_main()
         if ( !platform_state.force_next_frame ) {
             SDL_WaitEvent(NULL);
         }
-
     }
 
 #if defined(_WIN32)
