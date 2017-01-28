@@ -872,8 +872,9 @@ milton_main()
             }
             else if ( ImGui::GetIO().WantCaptureMouse ) {
                 cursor_set_and_show(platform_state.cursor_default);
-                platform_cursor_show();  // cursor_set_and_show might not call this.
-                                         // But SDL causes cursor flickering when we force it.
+                platform_cursor_show();  // cursor_set_and_show might not call platform_cursor_show
+                                         // SDL causes cursor flickering when we show the cursor every frame.
+                                         // The workaround is to explicitly call platform_cursor_show...
             }
             else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
                 cursor_set_and_show(platform_state.cursor_crosshair);
@@ -908,11 +909,12 @@ milton_main()
 
             // Show resize icon
             int pad = 20;
-            if ( x > milton_state->view->screen_size.w - pad
+            if (    x > milton_state->view->screen_size.w - pad
                  || x < pad
                  || y > milton_state->view->screen_size.h - pad
                  || y < pad ) {
                 cursor_set_and_show(platform_state.cursor_default);
+                platform_cursor_show();  // See note above about platform_cursor_show.
             }
         }
 
