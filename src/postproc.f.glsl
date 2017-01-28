@@ -28,22 +28,12 @@ main()
     float ph = 1 / u_screen_size.y;
     vec2 coord = gl_FragCoord.xy / u_screen_size;
 
-    // Read neighboring pixels. If one of them is vec4(0), then do a different AA pass. Otherwise we
-    // would blend with a black background when we are exporting it as transparent.
 
-    int nz = 0;
-    nz += int(vec4(0) != texture(u_canvas, coord, 0));
-    nz += int(vec4(0) != texture(u_canvas, coord + vec2(0, ph), 0));
-    nz += int(vec4(0) != texture(u_canvas, coord + vec2(pw, 0), 0));
-    nz += int(vec4(0) != texture(u_canvas, coord + vec2(0, -ph), 0));
-    nz += int(vec4(0) != texture(u_canvas, coord + vec2(-pw, 0), 0));
+    // TODO: When exporting to a transparent background, FXAA will blend-in the background color.
+    //      Find a fix
 
     out_color = texture(u_canvas, coord, 0);
 
-    if ( nz != 5) {
-        out_color.a = out_color.a * (nz / 5.0);
-    }
-    else
     out_color.rgb = FxaaPixelShader(
         // Use noperspective interpolation here (turn off perspective interpolation).
         // {xy} = center of pixel
