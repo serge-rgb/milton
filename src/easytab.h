@@ -1108,7 +1108,7 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         int NumPackets = EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE, PacketBuffer);
         POINT PointBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };
 
-        EasyTab->Buttons = 0;
+        if ( NumPackets ) { EasyTab->Buttons = 0; }
         for (int i = 0; i < NumPackets; ++i)
         {
             PointBuffer[i].x = EasyTab->ScreenOriginX + PacketBuffer[i].pkX / EasyTab->ScreenAreaRatioX;

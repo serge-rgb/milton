@@ -136,18 +136,24 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 f32 pressure = NO_PRESSURE_INFO;
                 SDL_SysWMEvent sysevent = event.syswm;
                 EasyTabResult er = EASYTAB_EVENT_NOT_HANDLED;
+                if (!EasyTab) { break; }
+
+                i32 bit_touch_old = (EasyTab->Buttons & EasyTab_Buttons_Pen_Touch);
+
                 switch( sysevent.msg->subsystem ) {
 #if defined(_WIN32)
-                case SDL_SYSWM_WINDOWS:
+                case SDL_SYSWM_WINDOWS: {
+
                     er = EasyTab_HandleEvent(sysevent.msg->msg.win.hwnd,
                                              sysevent.msg->msg.win.msg,
                                              sysevent.msg->msg.win.lParam,
                                              sysevent.msg->msg.win.wParam);
-                    break;
+
+                } break;
 #elif defined(__linux__)
-                case SDL_SYSWM_X11:
+                case SDL_SYSWM_X11:{
                     er = EasyTab_HandleEvent(&sysevent.msg->msg.x11.event);
-                    break;
+                } break;
 #elif defined(__MACH__)
                 case SDL_SYSWM_COCOA:
                     // SDL does not implement this in the version we're using.
@@ -160,11 +166,15 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 }
 
                 if ( er == EASYTAB_OK ) {
+                    i32 bit_touch = (EasyTab->Buttons & EasyTab_Buttons_Pen_Touch);
+                    i32 bit_lower = (EasyTab->Buttons & EasyTab_Buttons_Pen_Lower);
+                    i32 bit_upper = (EasyTab->Buttons & EasyTab_Buttons_Pen_Upper);
+
                     // Pen in use but not drawing
                     b32 taking_pen_input = EasyTab->PenInProximity
-                                           && (EasyTab->Buttons & EasyTab_Buttons_Pen_Touch)
-                                           && !(   (EasyTab->Buttons & EasyTab_Buttons_Pen_Lower)
-                                                || (EasyTab->Buttons & EasyTab_Buttons_Pen_Upper));
+                                           && bit_touch
+                                           && !( bit_upper || bit_lower );
+
                     if ( taking_pen_input ) {
                         platform_state->is_pointer_down = true;
 
@@ -180,6 +190,12 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                             }
                         }
                     }
+
+                    if ( !bit_touch && bit_touch_old ) {
+                        pointer_up = true;  // Wacom does not seem to send button-up messages after
+                                            // using stylus buttons while stroking.
+                    }
+
 
                     if ( EasyTab->NumPackets > 0 ) {
                         v2i point = { EasyTab->PosX[EasyTab->NumPackets-1], EasyTab->PosY[EasyTab->NumPackets-1] };
@@ -321,8 +337,8 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     }
 
                 }
-                if (event.key.repeat)
-                {
+
+                if ( event.key.repeat ) {
                     break;
                 }
 

@@ -390,8 +390,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
                     if ( ImGui::Begin("Effects") ) {
                         ImGui::Text(LOC(opacity));
-                        if (ImGui::SliderFloat("##opacity", &canvas->working_layer->alpha, 0.0f,
-                                               1.0f)) {
+                        if ( ImGui::SliderFloat("##opacity", &canvas->working_layer->alpha, 0.0f, 1.0f) ) {
                             // Used the slider. Ask if it's OK to convert the binary format.
                             if ( milton_state->mlt_binary_version < 3 ) {
                                 milton_log("Modified milton file from %d to 3\n", milton_state->mlt_binary_version);
@@ -481,8 +480,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 b->prev = a;
 
                 // Make sure root is first
-                while ( milton_state->canvas->root_layer->prev )
-                {
+                while ( milton_state->canvas->root_layer->prev ) {
                     milton_state->canvas->root_layer = milton_state->canvas->root_layer->prev;
                 }
                 input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;

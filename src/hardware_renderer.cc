@@ -1377,7 +1377,42 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         }
     }
 
-    // Render outline
+    // Do post-processing on painting and on GUI elements. Draw to backbuffer
+
+    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, render_data->helper_texture);
+
+        gl_set_uniform_i(render_data->postproc_program, "u_canvas", 0);
+
+        glUseProgram(render_data->postproc_program);
+
+        GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
+        if ( loc >= 0 ) {
+            DEBUG_gl_validate_buffer(render_data->vbo_screen_quad);
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
+            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray((GLuint)loc);
+            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
+                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                        /*stride*/ 0, /*ptr*/ 0));
+
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+    }
+    else {  // Resolve
+        GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
+        GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
+        GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
+                                    0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
+    }
+
+
+    // Render outlines after doing AA.
+
+    // Brush outline
     {
         glUseProgram(render_data->outline_program);
         GLint loc = glGetAttribLocation(render_data->outline_program, "a_position");
@@ -1419,38 +1454,6 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
                 glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
         }
-    }
-
-    // Do post-processing on painting and on GUI elements. Draw to backbuffer
-
-    if ( !gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        GLCHK( glBindFramebufferEXT(GL_FRAMEBUFFER, 0) );
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, render_data->helper_texture);
-
-        gl_set_uniform_i(render_data->postproc_program, "u_canvas", 0);
-
-        glUseProgram(render_data->postproc_program);
-
-        GLint loc = glGetAttribLocation(render_data->postproc_program, "a_position");
-        if ( loc >= 0 ) {
-            DEBUG_gl_validate_buffer(render_data->vbo_screen_quad);
-            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
-            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray((GLuint)loc);
-            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
-                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
-                                        /*stride*/ 0, /*ptr*/ 0));
-
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
-    }
-    else {  // Resolve
-        GLCHK( glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0) );
-        GLCHK( glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo) );
-        GLCHK( glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
-                                    0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
     }
 
 
