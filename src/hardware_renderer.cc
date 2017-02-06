@@ -1409,7 +1409,6 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
                                     0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST) );
     }
 
-
     // Render outlines after doing AA.
 
     // Brush outline

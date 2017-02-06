@@ -19,7 +19,7 @@
 
 // Windows Options
 #if defined(_WIN32)
-    // If 1, print to VS console. Else print to log file.
+    // If 1, print to VS console. Debug messages always print to log file.
     #define WIN32_DEBUGGER_OUTPUT 1
     #if !MILTON_DEBUG
         #undef WIN32_DEBUGGER_OUTPUT
@@ -36,7 +36,8 @@
 
 #define REDRAW_EVERY_FRAME 0
 
-#define MILTON_HARDWARE_BRUSH_CURSOR 0
+
+#define MILTON_HARDWARE_BRUSH_CURSOR 1
 
 // Uses GL 2.1 when 0
 #define USE_GL_3_2 0

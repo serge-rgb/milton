@@ -13,12 +13,8 @@
 static void
 cursor_set_and_show(SDL_Cursor* cursor)
 {
-    static SDL_Cursor* curr_cursor = NULL;
-    if ( curr_cursor != cursor ) {
-        curr_cursor = cursor;
-        SDL_SetCursor(cursor);
-        platform_cursor_show();
-    }
+    SDL_SetCursor(cursor);
+    platform_cursor_show();
 }
 
 LayoutType
@@ -880,17 +876,25 @@ milton_main()
             int y = 0;
             SDL_GetMouseState(&x, &y);
 
-            cursor_set_and_show(platform_state.cursor_default);
+            // NOTE: Calling SDL_SetCursor more than once seems to cause flickering.
 
             // Handle system cursor and platform state related to current_mode
             if ( platform_state.is_panning || platform_state.waiting_for_pan_input ) {
                 cursor_set_and_show(platform_state.cursor_sizeall);
             }
+            // Show resize icon
+            #if !MILTON_HARDWARE_BRUSH_CURSOR
+                #define PAD 20
+                else if (x > milton_state->view->screen_size.w - PAD
+                     || x < PAD
+                     || y > milton_state->view->screen_size.h - PAD
+                     || y < PAD ) {
+                    cursor_set_and_show(platform_state.cursor_default);
+                }
+                #undef PAD
+            #endif
             else if ( ImGui::GetIO().WantCaptureMouse ) {
                 cursor_set_and_show(platform_state.cursor_default);
-                platform_cursor_show();  // cursor_set_and_show might not call platform_cursor_show
-                                         // SDL causes cursor flickering when we show the cursor every frame.
-                                         // The workaround is to explicitly call platform_cursor_show...
             }
             else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
                 cursor_set_and_show(platform_state.cursor_crosshair);
@@ -907,7 +911,6 @@ milton_main()
             else if ( milton_state->gui->visible
                       && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
                 cursor_set_and_show(platform_state.cursor_default);
-                platform_cursor_show();  // See above on WantCaptureMouse check
             }
             else if ( milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER ) {
                 #if MILTON_HARDWARE_BRUSH_CURSOR
@@ -921,16 +924,6 @@ milton_main()
             }
             else if ( milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
                 platform_cursor_hide();
-            }
-
-            // Show resize icon
-            int pad = 20;
-            if (    x > milton_state->view->screen_size.w - pad
-                 || x < pad
-                 || y > milton_state->view->screen_size.h - pad
-                 || y < pad ) {
-                cursor_set_and_show(platform_state.cursor_default);
-                platform_cursor_show();  // See note above about platform_cursor_show.
             }
         }
 
