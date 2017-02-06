@@ -205,9 +205,8 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 if ( event.button.windowID != platform_state->window_id ) {
                     break;
                 }
-                if ( (   event.button.button == SDL_BUTTON_LEFT
+                if ( (   event.button.button == SDL_BUTTON_LEFT && ( EasyTab == NULL || !EasyTab->PenInProximity )
                       || event.button.button == SDL_BUTTON_MIDDLE)
-                     && ( EasyTab == NULL || !EasyTab->PenInProximity )
                      // Ignoring right click events for now
                      /*|| event.button.button == SDL_BUTTON_RIGHT*/ ) {
                     if ( !ImGui::GetIO().WantCaptureMouse ) {
