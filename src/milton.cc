@@ -921,18 +921,16 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
 
         // Relative to center to maintain precision.
         v2i canvas_center = raster_to_canvas(view, divide2i(view->screen_size, 2));
-        v2f a = v2i_to_v2f(sub2i(in_stroke->points[0], canvas_center));
-        v2f b = v2i_to_v2f(sub2i(in_stroke->points[1], canvas_center));
-        v2f c = v2i_to_v2f(sub2i(in_stroke->points[2], canvas_center));
-        v2f d = v2i_to_v2f(sub2i(in_stroke->points[3], canvas_center));
+        v2f a = {}; // Will get copied from b in the loop below.
+        v2f b = v2i_to_v2f(sub2i(in_stroke->points[0], canvas_center));
+        v2f c = v2i_to_v2f(sub2i(in_stroke->points[1], canvas_center));
+        v2f d = v2i_to_v2f(sub2i(in_stroke->points[2], canvas_center));
 
         for ( i32 i = 3; i < num_points; ++i ) {
-            if ( i >= 4 ) {
-                a = b;
-                b = c;
-                c = d;
-                d = v2i_to_v2f(sub2i(in_stroke->points[i], canvas_center));
-            }
+            a = b;
+            b = c;
+            c = d;
+            d = v2i_to_v2f(sub2i(in_stroke->points[i], canvas_center));
 
             if ( out_i >= STROKE_MAX_POINTS-1 ) {
                 break;  // Keep the stroke from becoming larger than we support.
@@ -1012,33 +1010,27 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             ((input->flags & MiltonInputFlags_UNDO)) ||
             ((input->flags & MiltonInputFlags_REDO));
 
-    // int render_flags = MiltonRenderFlags_NONE;
-
     if ( input->flags & MiltonInputFlags_OPEN_FILE ) {
         milton_load(milton_state);
         upload_gui(milton_state);
-        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         input->flags |= MiltonInputFlags_FAST_DRAW;
         do_full_redraw = true;
     }
 
     if ( milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY ) {
         milton_expand_render_memory(milton_state);
-        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_full_redraw = true;
     }
 
     if ( milton_state->flags & MiltonStateFlags_REQUEST_QUALITY_REDRAW ) {
         milton_state->view->downsampling_factor = 1;  // See how long it takes to redraw at full quality
         milton_state->flags &= ~MiltonStateFlags_REQUEST_QUALITY_REDRAW;
-        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_full_redraw = true;
     }
 
     i32 now = (i32)SDL_GetTicks();
 
     if ( (input->flags & MiltonInputFlags_FAST_DRAW) ) {
-        // render_flags |= MiltonRenderFlags_DRAW_ITERATIVELY;
         milton_state->quality_redraw_time = now;
     }
     else if ( milton_state->quality_redraw_time > 0 &&
@@ -1048,12 +1040,10 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( input->flags & MiltonInputFlags_FULL_REFRESH ) {
-        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_full_redraw = true;
     }
 
     if ( input->scale ) {
-        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
         do_full_redraw = true;
 
 // Debug
@@ -1113,7 +1103,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
         if ( !equ2i(input->pan_delta, v2i{}) ) {
-            // render_flags |= MiltonRenderFlags_PAN_COPY;
             do_full_redraw = true;
         }
     }
@@ -1142,7 +1131,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             }
         }
 
-        // render_flags |= MiltonRenderFlags_UI_UPDATED;
     }
 
     { // Undo / Redo
@@ -1159,7 +1147,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                         push(&milton_state->canvas->stroke_graveyard, stroke);
                         push(&milton_state->canvas->redo_stack, h);
 
-                        // render_flags |= MiltonRenderFlags_FULL_REDRAW;
 
                         draw_custom_rectangle = true;
                         Rect bounds = stroke.bounding_rect;
@@ -1192,8 +1179,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                         if ( stroke.layer_id == h.layer_id ) {
                             push(&l->strokes, stroke);
                             push(&milton_state->canvas->history, h);
-                            // TODO: FULL_REDRAW is overkill
-                            // 4 |= MiltonRenderFlags_FULL_REDRAW;
 
                             draw_custom_rectangle = true;
                             Rect bounds = stroke.bounding_rect;
@@ -1266,14 +1251,12 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     if ( (input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
         // Start drawing the preview if we just grabbed a slider.
-        // render_flags &= ~MiltonRenderFlags_BRUSH_HOVER;
         brush_outline_should_draw = false;
 
         if ( (milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW) ) {
             auto preview_pos = milton_state->gui->preview_pos;
             mlt_assert(preview_pos.x >= 0);
             mlt_assert(preview_pos.y >= 0);
-            // render_flags |= MiltonRenderFlags_BRUSH_PREVIEW;
             v4f color = {};
             color.rgb = milton_state->view->background_color;
             color.a = 1;
@@ -1414,7 +1397,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     PROFILE_GRAPH_PUSH(update);
-    // milton_render(milton_state, render_flags, input->pan_delta);
 
     if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
         platform_cursor_show();

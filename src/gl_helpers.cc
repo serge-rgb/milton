@@ -552,7 +552,6 @@ gl_resize_color_texture(GLuint t, int w, int h)
                  /*border = */ 0,
                  /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
                  /*data = */ NULL);
-
 }
 
 void
