@@ -73,6 +73,10 @@ struct RenderData
     // Cached values for stroke rendering uniforms.
     v4f current_color;
     float current_radius;
+
+#if MILTON_ENABLE_PROFILING
+    u64 clipped_count;
+#endif
 };
 
 enum RenderElementFlags
