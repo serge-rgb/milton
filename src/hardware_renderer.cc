@@ -73,10 +73,6 @@ struct RenderData
     // Cached values for stroke rendering uniforms.
     v4f current_color;
     float current_radius;
-
-#if MILTON_ENABLE_PROFILING
-    i32 clipped_count;  // Number of strokes in GPU memory.
-#endif
 };
 
 enum RenderElementFlags
@@ -309,7 +305,7 @@ gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
 }
 
 b32
-gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags)
+gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
 
@@ -609,7 +605,6 @@ gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
 
     float px = 2.0f;
     float line_length = px / render_data->height;
-    float aspect = render_data->width / (float)render_data->height;
 
     float top[] = {
         normalized_rect[0], normalized_rect[1],
@@ -698,7 +693,7 @@ set_screen_size(RenderData* render_data, float* fscreen)
         render_data->picker_program,
         render_data->postproc_program,
     };
-    for ( int pi = 0; pi < array_count(programs); ++pi ) {
+    for ( u64 pi = 0; pi < array_count(programs); ++pi ) {
         gl_set_uniform_vec2(programs[pi], "u_screen_size", 1, fscreen);
     }
 }
@@ -894,8 +889,6 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                 GLCHK( glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(indices_i*sizeof(decltype(*indices))), indices, hint) );
             }
 
-            GLuint ubo = 0;
-
             RenderElement re = stroke->render_element;
             re.vbo_stroke = vbo_stroke;
             re.vbo_pointa = vbo_pointa;
@@ -1087,7 +1080,6 @@ gpu_clip_strokes_and_update(Arena* arena,
             bucket = bucket->next;
             bucket_i += 1;
         }
-
 
         // Add the working stroke on the current layer.
         if ( working_stroke->layer_id == l->id ) {

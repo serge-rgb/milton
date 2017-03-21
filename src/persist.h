@@ -13,4 +13,3 @@ void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);
 void milton_prefs_load(PlatformPrefs* prefs);
 void milton_prefs_save(PlatformPrefs* prefs);
 
-

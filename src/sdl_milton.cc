@@ -503,6 +503,13 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 int
 milton_main()
 {
+#if defined(_WIN32)
+    if (!SetProcessDPIAware())  // This function is only present in Windows versions higher than Vista.
+    {
+        milton_log("Could not set this process as DPI aware.\n");
+    }
+#endif
+
     milton_log("Running Milton\n");
     // TODO: Set Milton to be DPI aware.
 

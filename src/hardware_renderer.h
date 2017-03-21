@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include "common.h"
+#include "system_includes.h"
+#include "vector.h"
 
 struct LayerEffect;
 
@@ -15,6 +18,7 @@ struct RenderElement
     GLuint  indices;
 
     i64     count;
+
     union {
         struct {  // For when element is a stroke.
             v4f     color;
@@ -49,7 +53,7 @@ struct MiltonState;
 
 RenderData* gpu_allocate_render_data(Arena* arena);
 
-b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker, i32 render_data_flags);
+b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker);
 
 
 enum BrushOutlineEnum

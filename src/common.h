@@ -2,7 +2,8 @@
 // License: https://github.com/serge-rgb/milton#license
 
 
-#pragma once
+#ifndef MLT_COMMON
+#define MLT_COMMON
 
 #include "milton_configuration.h"
 
@@ -31,23 +32,16 @@ typedef i32         b32;
 #define TO_PATH_STR(STR) STR
 #endif
 
-
-#ifdef UNUSED
-#error "Someone else defined UNUSED macro"
-#else
-#define UNUSED(x) (void*)(&x)
-#endif
-
 #ifdef ALIGN
-#error ALIGN macro already defined.
+    #error ALIGN macro already defined.
 #else
-#if defined(_MSC_VER)
-#define ALIGN(n) __declspec(align(n))
-#elif defined(__GNUC__)  // Clang defines this too
-#define ALIGN(n) __attribute__(( aligned (n) ))
-#else
-#error I don't know how to align stuff in this compiler
-#endif
+    #if defined(_MSC_VER)
+        #define ALIGN(n) __declspec(align(n))
+    #elif defined(__GNUC__)  // Clang defines this too
+        #define ALIGN(n) __attribute__(( aligned (n) ))
+    #else
+        #error I don't know how to align stuff in this compiler
+    #endif
 #endif // ALIGN
 
 // Assert implementation
@@ -69,10 +63,10 @@ typedef i32         b32;
 
 #define INVALID_CODE_PATH mlt_assert(!"Invalid code path")
 
-
-
 #if defined(MILTON_DEBUG)
     #if defined(_WIN32)
         #define BREAKHERE __debugbreak()
     #endif
 #endif
+
+#endif  // MLT_COMMON
