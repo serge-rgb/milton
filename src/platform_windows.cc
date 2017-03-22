@@ -467,6 +467,20 @@ platform_monitor_refresh_hz()
 }
 
 
+void
+str_to_path_char(char* str, PATH_CHAR* out, size_t out_sz)
+{
+    if ( out && str ) {
+        size_t num_chars_converted = 0;
+        mbstowcs_s(&num_chars_converted,
+                   out,
+                   out_sz / 4,
+                   str,
+                   out_sz / sizeof(PATH_CHAR));
+    }
+}
+
+
 int
 CALLBACK WinMain(HINSTANCE hInstance,
                  HINSTANCE hPrevInstance,
@@ -477,7 +491,14 @@ CALLBACK WinMain(HINSTANCE hInstance,
     PATH_CHAR path[MAX_PATH] = TO_PATH_STR("milton.log");
     platform_fname_at_config(path, MAX_PATH);
     g_win32_logfile = platform_fopen(path, TO_PATH_STR("w"));
-    milton_main();
+    lpCmdLine = "\"C:\\Users\\sglez\\Dropbox\\work\\Milton\\oldRainDude.mlt\"";
+    char* file_to_open = NULL;
+    milton_log("CommandLine is %s\n", lpCmdLine);
+    if ( strlen(lpCmdLine) !=
+        0 ) {
+        file_to_open = lpCmdLine;
+    }
+    milton_main(file_to_open);
 }
 
 } // extern "C"

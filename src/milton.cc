@@ -387,7 +387,7 @@ milton_get_pen_alpha(MiltonState* milton_state)
 }
 
 void
-milton_init(MiltonState* milton_state, i32 width, i32 height)
+milton_init(MiltonState* milton_state, i32 width, i32 height, PATH_CHAR* file_to_open)
 {
     init_localization();
 
@@ -463,12 +463,17 @@ milton_init(MiltonState* milton_state, i32 width, i32 height)
     milton_set_background_color(milton_state, v3f{ 1, 1, 1 });
 
     { // Get/Set Milton Canvas (.mlt) file
-        PATH_CHAR* last_fname = milton_get_last_canvas_fname();
+        if ( file_to_open == NULL ) {
+            PATH_CHAR* last_fname = milton_get_last_canvas_fname();
 
-        if ( last_fname != NULL ) {
-            milton_set_canvas_file(milton_state, last_fname);
-        } else {
-            milton_set_default_canvas_file(milton_state);
+            if ( last_fname != NULL ) {
+                milton_set_canvas_file(milton_state, last_fname);
+            } else {
+                milton_set_default_canvas_file(milton_state);
+            }
+        }
+        else {
+            milton_set_canvas_file(milton_state, file_to_open);
         }
     }
 
@@ -493,7 +498,6 @@ milton_init(MiltonState* milton_state, i32 width, i32 height)
     // Note: This will fill out uninitialized data like default layers.
     milton_load(milton_state);
     milton_validate(milton_state);
-
 
     // Enable brush smoothing by default
     if ( !milton_brush_smoothing_enabled(milton_state) ) {

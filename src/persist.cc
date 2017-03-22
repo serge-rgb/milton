@@ -83,6 +83,7 @@ milton_unset_last_canvas_fname()
 void
 milton_load(MiltonState* milton_state)
 {
+    milton_log("Milton: loading file\n");
     // Reset the canvas.
     milton_reset_canvas(milton_state);
 
@@ -290,6 +291,7 @@ milton_load(MiltonState* milton_state)
             gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
         }
     } else {
+        milton_log("Could not open file!");
         milton_reset_canvas_and_set_default(milton_state);
     }
 }

@@ -98,7 +98,7 @@ typedef struct MiltonStartupFlags
 
 typedef struct TabletState_s TabletState;
 
-int milton_main();
+int milton_main(char* file_to_open);
 
 void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}
@@ -148,6 +148,8 @@ void    platform_load_gl_func_pointers();
 
 void    platform_fname_at_exe(PATH_CHAR* fname, size_t len);
 b32     platform_move_file(PATH_CHAR* src, PATH_CHAR* dest);
+
+void str_to_path_char(char* str, PATH_CHAR* out, size_t out_sz);
 
 enum DeleteErrorTolerance
 {

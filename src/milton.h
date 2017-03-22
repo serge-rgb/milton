@@ -223,7 +223,7 @@ enum SaveEnum
     SaveEnum_GOOD_TO_GO,
 };
 
-void milton_init(MiltonState* milton_state, i32 width, i32 height);
+void milton_init(MiltonState* milton_state, i32 width, i32 height, PATH_CHAR* file_to_open);
 
 // Expects absolute path
 void milton_set_canvas_file(MiltonState* milton_state, PATH_CHAR* fname);

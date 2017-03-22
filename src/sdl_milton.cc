@@ -503,7 +503,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 // ---- milton_main
 
 int
-milton_main()
+milton_main(char* file_to_open)
 {
 #if defined(_WIN32)
     if (!SetProcessDPIAware())  // This function is only present in Windows versions higher than Vista.
@@ -607,7 +607,16 @@ milton_main()
     {
         milton_state->render_data = gpu_allocate_render_data(&milton_state->root_arena);
 
-        milton_init(milton_state, platform_state.width, platform_state.height);
+        PATH_CHAR* file_to_open_ = NULL;
+        PATH_CHAR buffer[MAX_PATH] = {};
+
+        if ( file_to_open ) {
+            file_to_open_ = (PATH_CHAR*)buffer;
+        }
+
+        str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
+
+        milton_init(milton_state, platform_state.width, platform_state.height, (PATH_CHAR*)file_to_open_);
     }
 
     // Ask for native events to poll tablet events.

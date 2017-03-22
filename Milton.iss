@@ -12,6 +12,7 @@ SolidCompression=yes
 OutputBaseFilename=MiltonSetup_1.2.8_x64
 ;ArchitecturesAllowed=x64
 ;ArchitecturesInstallIn64BitMode=x64
+ChangesAssociations=yes
 
 [Files]
 Source: "Milton.exe"; DestDir: "{app}"
@@ -22,3 +23,9 @@ Source: "milton_icon.ico"; DestDir: "{app}"
 
 [Icons]
 Name: "{group}\Milton"; Filename: "{app}\Milton.exe"
+
+[Registry]
+Root: HKCR; Subkey: ".mlt";                             ValueData: "Milton";          Flags: uninsdeletevalue; ValueType: string;  ValueName: ""
+Root: HKCR; Subkey: "Milton";                     ValueData: "Program Milton";  Flags: uninsdeletekey;   ValueType: string;  ValueName: ""
+Root: HKCR; Subkey: "Milton\DefaultIcon";             ValueData: "{app}\Milton.exe,0";               ValueType: string;  ValueName: ""
+Root: HKCR; Subkey: "Milton\shell\open\command";  ValueData: """{app}\Milton.exe"" ""%1""";  ValueType: string;  ValueName: ""
