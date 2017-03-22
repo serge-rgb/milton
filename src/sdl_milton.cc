@@ -124,11 +124,11 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 #pragma warning (disable : 4061)
 #endif
         switch ( event.type ) {
-        case SDL_QUIT:
+            case SDL_QUIT:
             platform_cursor_show();
             milton_try_quit(milton_state);
             break;
-        case SDL_SYSWMEVENT: {
+            case SDL_SYSWMEVENT: {
                 f32 pressure = NO_PRESSURE_INFO;
                 SDL_SysWMEvent sysevent = event.syswm;
                 EasyTabResult er = EASYTAB_EVENT_NOT_HANDLED;
@@ -201,7 +201,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     }
                 }
             } break;
-        case SDL_MOUSEBUTTONDOWN: {
+            case SDL_MOUSEBUTTONDOWN: {
                 if ( event.button.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -233,13 +233,13 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     }
                 }
             } break;
-        case SDL_MOUSEBUTTONUP: {
+            case SDL_MOUSEBUTTONUP: {
                 if ( event.button.windowID != platform_state->window_id ) {
                     break;
                 }
-                if ( event.button.button == SDL_BUTTON_LEFT ||
-                     event.button.button == SDL_BUTTON_MIDDLE ||
-                     event.button.button == SDL_BUTTON_RIGHT ) {
+                if ( event.button.button == SDL_BUTTON_LEFT
+                     || event.button.button == SDL_BUTTON_MIDDLE
+                     || event.button.button == SDL_BUTTON_RIGHT ) {
                     if ( event.button.button == SDL_BUTTON_MIDDLE ) {
                         platform_state->is_middle_button_down = false;
                     }
@@ -248,11 +248,11 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     input_flags |= MiltonInputFlags_END_STROKE;
                 }
             } break;
-        case SDL_MOUSEMOTION: {
-                if ( event.motion.windowID != platform_state->window_id ) {
+            case SDL_MOUSEMOTION: {
+                if (event.motion.windowID != platform_state->window_id) {
                     break;
                 }
-                input_point = { event.motion.x, event.motion.y };
+                input_point = {event.motion.x, event.motion.y};
 
                 platform_state->pointer = input_point;
 
@@ -260,26 +260,27 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 // overflowing ;)) then we default to receiving WM_MOUSEMOVE. If we catch a single
                 // point, then it's fine. It will get filtered out in milton_stroke_input
 
-                if ( EasyTab == NULL || !EasyTab->PenInProximity) {
-                    if ( platform_state->is_pointer_down ) {
-                        if ( !platform_state->is_panning
-                             && (input_point.x >= 0 && input_point.y >= 0)) {
-                            if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
-                                milton_input.points[platform_state->num_point_results++] = input_point;
+                if (EasyTab == NULL || !EasyTab->PenInProximity) {
+                    if (platform_state->is_pointer_down) {
+                        if (!platform_state->is_panning &&
+                            (input_point.x >= 0 && input_point.y >= 0)) {
+                            if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS) {
+                                milton_input.points[platform_state->num_point_results++] =
+                                    input_point;
                             }
-                            if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS ) {
-                                milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
+                            if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS) {
+                                milton_input.pressures[platform_state->num_pressure_results++] =
+                                    NO_PRESSURE_INFO;
                             }
                         }
                         input_flags &= ~MiltonInputFlags_HOVERING;
-                    }
-                    else {
+                    } else {
                         input_flags |= MiltonInputFlags_HOVERING;
                     }
                 }
                 break;
             }
-        case SDL_MOUSEWHEEL: {
+            case SDL_MOUSEWHEEL: {
                 if ( event.wheel.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -291,7 +292,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 
                 break;
             }
-        case SDL_KEYDOWN: {
+            case SDL_KEYDOWN: {
                 if ( event.wheel.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -418,7 +419,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 
                 break;
             }
-        case SDL_KEYUP: {
+            case SDL_KEYUP: {
                 if ( event.key.windowID != platform_state->window_id ) {
                     break;
                 }
@@ -429,7 +430,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     platform_state->is_space_down = false;
                 }
             } break;
-        case SDL_WINDOWEVENT: {
+            case SDL_WINDOWEVENT: {
                 if ( platform_state->window_id != event.window.windowID ) {
                     break;
                 }
@@ -465,8 +466,9 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     break;
                 }
             } break;
-        default:
-            break;
+            default: {
+                break;
+            }
         }
 #if defined(_MSC_VER)
 #pragma warning (pop)
