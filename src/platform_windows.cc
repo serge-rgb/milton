@@ -491,12 +491,20 @@ CALLBACK WinMain(HINSTANCE hInstance,
     PATH_CHAR path[MAX_PATH] = TO_PATH_STR("milton.log");
     platform_fname_at_config(path, MAX_PATH);
     g_win32_logfile = platform_fopen(path, TO_PATH_STR("w"));
-    lpCmdLine = "\"C:\\Users\\sglez\\Dropbox\\work\\Milton\\oldRainDude.mlt\"";
+    char cmd_line[MAX_PATH] = {};
+    strncpy(cmd_line, lpCmdLine, MAX_PATH);
+
+    if ( cmd_line[0] == '"' && cmd_line[strlen(cmd_line)-1] == '"' ) {
+        for ( size_t i = 0; cmd_line[i]; ++i ) {
+            cmd_line[i] = cmd_line[i+1];
+        }
+        size_t sz = strlen(cmd_line);
+        cmd_line[sz-1] = '\0';
+    }
     char* file_to_open = NULL;
-    milton_log("CommandLine is %s\n", lpCmdLine);
-    if ( strlen(lpCmdLine) !=
-        0 ) {
-        file_to_open = lpCmdLine;
+    milton_log("CommandLine is %s\n", cmd_line);
+    if ( strlen(cmd_line) != 0 ) {
+        file_to_open = cmd_line;
     }
     milton_main(file_to_open);
 }
