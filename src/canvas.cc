@@ -34,7 +34,7 @@ raster_to_canvas(CanvasView* view, v2i raster_point)
 b32
 stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
 {
-    v2i d = sub2i(p1, p0);
+    v2i d = p1 - p0;
     // using manhattan distance, less chance of overflow. Still works well enough for this case.
     u32 m = (u32)abs(d.x) + abs(d.y) + r1;
     //i32 m = magnitude_i(d) + r1;
@@ -50,7 +50,7 @@ stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
 b32
 is_eraser(v4f color)
 {
-    b32 result = equ4f(color, k_eraser_color);
+    b32 result = color == k_eraser_color;
     return result;
 }
 

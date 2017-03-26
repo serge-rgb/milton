@@ -783,17 +783,17 @@ picker_update_points(ColorPicker* picker, float angle)
     v2f center = v2i_to_v2f(picker->center);
     {
         v2f point = polar_to_cartesian(-angle, radius);
-        point = add2f(point, center);
+        point = point + center;
         picker->data.c = point;
     }
     {
         v2f point = polar_to_cartesian(-angle + 2 * kPi / 3.0f, radius);
-        point = add2f(point, center);
+        point = point + center;
         picker->data.b = point;
     }
     {
         v2f point = polar_to_cartesian(-angle + 4 * kPi / 3.0f, radius);
-        point = add2f(point, center);
+        point = point + center;
         picker->data.a = point;
     }
 }
@@ -981,8 +981,8 @@ picker_update(ColorPicker* picker, v2i point)
         // near an edge
         else {
 #define GET_T(A, B, C)                            \
-    v2f perp = perpendicular2f(sub2f(fpoint, C)); \
-    f32 t = DOT(sub2f(C, A), perp) / DOT(sub2f(B, A), perp);
+    v2f perp = perpendicular(fpoint - C); \
+    f32 t = DOT(C - A, perp) / DOT(B - A, perp);
             if (abp >= 0.0f)
             {
                 GET_T(d.b, d.a, d.c)
@@ -1014,7 +1014,7 @@ b32
 picker_hits_wheel(ColorPicker* picker, v2f point)
 {
     v2f center = v2i_to_v2f(picker->center);
-    v2f arrow = sub2f(point, center);
+    v2f arrow = point - center;
     float dist = magnitude(arrow);
 
     b32 hits = (dist <= picker->wheel_radius + picker->wheel_half_width ) &&
@@ -1026,7 +1026,7 @@ picker_hits_wheel(ColorPicker* picker, v2f point)
 float
 picker_wheel_get_angle(ColorPicker* picker, v2f point)
 {
-    v2f direction = sub2f(point, v2i_to_v2f(picker->center));
+    v2f direction = point - v2i_to_v2f(picker->center);
     f32 angle = atan2f(direction.y, -direction.x) + kPi;
     return angle;
 }

@@ -4,7 +4,6 @@ To-Do
 - Bugs
 - Platform
     - Windows
-        - File association
     - Linux
         - Checkinstall? Manual dpkg?
         - Ubuntu PPA
@@ -29,11 +28,11 @@ To-Do
             - Support for general, implicitly defined brushes
     - Features:
         - alt eye dropper
+        - unzoomable&unpannable layer ("pin layer" feature) ?
+        - zoom-out toggle for overview and for navigation
         - eraser toggle
         - pressure toggle
         - pressure response graph
-        - unzoomable&unpannable layer ("pin layer" feature) ?
-        - zoom-out toggle for overview and for navigation
         - stroke masking?
         - Select strokes
             - Scale, cut, copy, paste

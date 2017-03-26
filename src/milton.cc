@@ -33,7 +33,7 @@ milton_set_default_view(MiltonState* milton_state)
     *view = CanvasView{};
 
     view->screen_size         = saved_size;
-    view->zoom_center         = divide2i(saved_size, 2);
+    view->zoom_center         = saved_size / 2;
     view->scale               = MILTON_DEFAULT_SCALE;
     view->downsampling_factor = 1;
     view->num_layers          = 1;
@@ -219,7 +219,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
                     auto* view = milton_state->view;
 
-                    auto canvas_center = raster_to_canvas(view, divide2i(view->screen_size, 2));
+                    auto canvas_center = raster_to_canvas(view, view->screen_size / 2);
 
                     float f_average_x = average.x - canvas_center.x;
                     float f_average_y = average.y - canvas_center.y;
@@ -255,7 +255,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
     // Validate. remove points that are standing in the same place, even if they have different pressures.
     for ( i32 np = 0; np < ws->num_points-1; ++np ) {
-        if ( equ2i(ws->points[np], ws->points[np+1])) {
+        if ( ws->points[np] == ws->points[np+1] ) {
             for ( i32 new_i = np; new_i < ws->num_points-1; ++new_i ) {
                 ws->points[new_i] = ws->points[new_i+1];
             }
@@ -267,9 +267,8 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 void
 milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center)
 {
-    milton_state->view->pan_vector = sub2i(milton_state->view->pan_vector,
-                                           scale2i(sub2i(zoom_center, milton_state->view->zoom_center),
-                                                   milton_state->view->scale));
+    milton_state->view->pan_vector =
+        milton_state->view->pan_vector - (zoom_center - milton_state->view->zoom_center)*milton_state->view->scale;
 
     milton_state->view->zoom_center = zoom_center;
     gpu_update_canvas(milton_state->render_data, milton_state->view);
@@ -278,7 +277,7 @@ milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center)
 void
 milton_set_zoom_at_screen_center(MiltonState* milton_state)
 {
-    milton_set_zoom_at_point(milton_state, divide2i(milton_state->view->screen_size, 2));
+    milton_set_zoom_at_point(milton_state, milton_state->view->screen_size / 2);
 }
 
 void
@@ -590,8 +589,7 @@ milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_s
         milton_state->view->screen_size = new_screen_size;
 
         // Add delta to pan vector
-        v2i pan_vector = add2i(milton_state->view->pan_vector,
-                               scale2i(pan_delta, milton_state->view->scale));
+        v2i pan_vector = milton_state->view->pan_vector + (pan_delta * milton_state->view->scale);
 
         if ( pan_vector.x > milton_state->view->canvas_radius_limit
              || pan_vector.x <= -milton_state->view->canvas_radius_limit ) {
@@ -918,17 +916,17 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
         // interpolation with a cubic Bezier.
 
         // Relative to center to maintain precision.
-        v2i canvas_center = raster_to_canvas(view, divide2i(view->screen_size, 2));
+        v2i canvas_center = raster_to_canvas(view, view->screen_size/2);
         v2f a = {}; // Will get copied from b in the loop below.
-        v2f b = v2i_to_v2f(sub2i(in_stroke->points[0], canvas_center));
-        v2f c = v2i_to_v2f(sub2i(in_stroke->points[1], canvas_center));
-        v2f d = v2i_to_v2f(sub2i(in_stroke->points[2], canvas_center));
+        v2f b = v2i_to_v2f(in_stroke->points[0] - canvas_center);
+        v2f c = v2i_to_v2f(in_stroke->points[1] - canvas_center);
+        v2f d = v2i_to_v2f(in_stroke->points[2] - canvas_center);
 
         for ( i32 i = 3; i < num_points; ++i ) {
             a = b;
             b = c;
             c = d;
-            d = v2i_to_v2f(sub2i(in_stroke->points[i], canvas_center));
+            d = v2i_to_v2f(in_stroke->points[i] - canvas_center);
 
             if ( out_i >= STROKE_MAX_POINTS-1 ) {
                 break;  // Keep the stroke from becoming larger than we support.
@@ -936,15 +934,15 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
 
             float scale = 0.5f;
             v2f p0 = a;
-            v2f p1 = sub2f(b, scale2f(sub2f(a, b), scale));
-            v2f p2 = sub2f(c, scale2f(sub2f(d, c), scale));
+            v2f p1 = b - ((a - b) * scale);
+            v2f p2 = c - ((d - c) * scale);
             v2f p3 = d;
 
             // Diffs to calculate angle
-            v2f d0 = sub2f(p0, p1);
-            v2f d1 = sub2f(p2, p1);
-            v2f d2 = sub2f(p1, p2);
-            v2f d3 = sub2f(p3, p2);
+            v2f d0 = p0 - p1;
+            v2f d1 = p2 - p1;
+            v2f d2 = p1 - p2;
+            v2f d3 = p3 - p2;
 
             float n0 = fabs(DOT(d0, d1)) / (magnitude(d0) * magnitude(d1));
             float n1 = fabs(DOT(d2, d3)) / (magnitude(d2) * magnitude(d3));
@@ -953,16 +951,16 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
             float cos_min_angle = 0.05f;
             if ( 2 - n0 - n1 > cos_min_angle*2 ) {
                 v2f n = {};
-                n = add2f(n, scale2f(p0, 0.125));
-                n = add2f(n, scale2f(p1, 0.375));
-                n = add2f(n, scale2f(p2, 0.375));
-                n = add2f(n, scale2f(p3, 0.125));
+                n = n + p0 * 0.125f;
+                n = n + p1 * 0.375f;
+                n = n + p2 * 0.375f;
+                n = n + p3 * 0.125f;
 
                 out_stroke->pressures[out_i] = in_stroke->pressures[i - 2];
-                out_stroke->points[out_i++] = add2i(v2f_to_v2i(b), canvas_center);
+                out_stroke->points[out_i++] = v2f_to_v2i(b) + canvas_center;
 
                 out_stroke->pressures[out_i] = out_stroke->pressures[out_i-1]; // Use the same pressure value as last point.
-                out_stroke->points[out_i++] = add2i(v2f_to_v2i(n), canvas_center);
+                out_stroke->points[out_i++] = v2f_to_v2i(n) + canvas_center;
             } else {
                 out_stroke->points[out_i] = in_stroke->points[i-2];
                 out_stroke->pressures[out_i++] = in_stroke->pressures[i-2];
@@ -1101,7 +1099,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     else if ( (input->flags & MiltonInputFlags_PANNING) ) {
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
-        if ( !equ2i(input->pan_delta, v2i{}) ) {
+        if ( !(input->pan_delta == v2i{}) ) {
             do_full_redraw = true;
         }
     }

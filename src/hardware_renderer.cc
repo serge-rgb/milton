@@ -199,7 +199,7 @@ gpu_update_picker(RenderData* render_data, ColorPicker* picker)
 
     // Point within triangle
     {
-        v2f point = lerp2f(picker->data.b, lerp2f(picker->data.a, picker->data.c, hsv.s), hsv.v);
+        v2f point = lerp(picker->data.b, lerp(picker->data.a, picker->data.c, hsv.s), hsv.v);
         // Move to [-1,1]^2
         point = transform(point);
         gl_set_uniform_vec2(render_data->picker_program, "u_triangle_point", 1, point.d);
@@ -727,7 +727,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
         mlt_assert(stroke->render_element.vbo_pointa != 0);
         mlt_assert(stroke->render_element.vbo_pointb != 0);
     } else {
-        vec2 cp;
+        v2f cp;
         cp.x = stroke->points[stroke->num_points-1].x;
         cp.y = stroke->points[stroke->num_points-1].y;
 
@@ -1239,7 +1239,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 i64 count = re->count;
 
                 if ( count > 0 ) {
-                    if ( equ4f(render_data->current_color, re->color) == false ) {
+                    if ( !(render_data->current_color == re->color) ) {
                         gl_set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1,
                                             re->color.d);
                         render_data->current_color = re->color;
@@ -1470,19 +1470,19 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     i32 buf_w = w * scale;
     i32 buf_h = h * scale;
 
-    v2i center = divide2i(milton_state->view->screen_size, 2);
-    v2i pan_delta = sub2i(center, v2i{x + (w / 2), y + (h / 2)});
+    v2i center = milton_state->view->screen_size / 2;
+    v2i pan_delta = center - v2i{x + (w / 2), y + (h / 2)};
 
     milton_set_zoom_at_point(milton_state, center);
 
     milton_state->view->pan_vector =
-        add2i(milton_state->view->pan_vector, scale2i(pan_delta, milton_state->view->scale));
+        milton_state->view->pan_vector + pan_delta*milton_state->view->scale;
 
     milton_state->view->screen_size = v2i{buf_w, buf_h};
     render_data->width = buf_w;
     render_data->height = buf_h;
 
-    milton_state->view->zoom_center = divide2i(milton_state->view->screen_size, 2);
+    milton_state->view->zoom_center = milton_state->view->screen_size / 2;
     if ( scale > 1 ) {
         milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
     }

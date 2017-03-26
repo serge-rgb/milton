@@ -83,7 +83,8 @@ divide2i(v2i a, i32 factor)
     return result;
 }
 
-// NOTE(Tilmann): Rename to perpendicular2i?
+#if 0
+
 v2i
 perpendicular (v2i a)
 {
@@ -145,8 +146,11 @@ equ4f(v4f a, v4f b)
     return result;
 }
 
+
+#endif
+
 v2f
-lerp2f(v2f a, v2f b, f32 t)
+lerp(v2f a, v2f b, float t)
 {
-    return add2f(scale2f(b, t), scale2f(a, 1.0f-t));
+    return b*t + a*(1.0f-t);
 }

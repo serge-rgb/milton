@@ -42,7 +42,7 @@ magnitude(v2f a)
 f32
 distance(v2f a, v2f b)
 {
-    v2f diff = sub2f(a, b);
+    v2f diff = a - b;
 
     f32 dist = sqrtf(DOT(diff, diff));
 
@@ -158,10 +158,10 @@ intersect_line_segments(v2i a, v2i b,
                             v2f* out_intersection)
 {
     b32 hit = false;
-    v2i perp = perpendicular(sub2i(v, u));
-    i32 det = DOT(sub2i(b, a), perp);
+    v2i perp = perpendicular(v - u);
+    i32 det = DOT(b - a, perp);
     if ( det != 0 ) {
-        f32 t = (f32)DOT(sub2i(u, a), perp) / (f32)det;
+        f32 t = (f32)DOT(u - a, perp) / (f32)det;
         if (t > 1 && t < 1.001) t = 1;
         if (t < 0 && t > -0.001) t = 1;
 

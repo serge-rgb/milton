@@ -988,7 +988,7 @@ milton_main(char* file_to_open)
 
         milton_input.input_count = platform_state.num_point_results;
 
-        v2i pan_delta = sub2i(platform_state.pan_point, platform_state.pan_start);
+        v2i pan_delta = platform_state.pan_point - platform_state.pan_start;
         if (    pan_delta.x != 0
              || pan_delta.y != 0
              || platform_state.width != milton_state->view->screen_size.x
