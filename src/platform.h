@@ -55,8 +55,8 @@ struct PlatformState
     b32 waiting_for_pan_input; // Start panning from GUI menu.
 
     b32 was_exporting;
-    v2i pan_start;
-    v2i pan_point;
+    v2l pan_start;
+    v2l pan_point;
 
     b32 should_quit;
     u32 window_id;

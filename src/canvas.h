@@ -57,10 +57,11 @@ enum BlurType
 struct CanvasView
 {
     v2i screen_size;            // Size in pixels
-    i32 scale;                  // Zoom
+    i64 scale;                  // Zoom
     v2i zoom_center;            // In pixels
-    v2i pan_vector;             // In canvas scale
-    i32 downsampling_factor;
+    v2l pan_center;             // In canvas scale
+    v2i relative_center;
+    // i32 obsolete;
     i32 canvas_radius_limit;
     v3f background_color;
     i32 working_layer_id;
@@ -73,16 +74,16 @@ enum LayerFlags
 };
 b32 is_eraser(v4f color);
 
-v2i canvas_to_raster(CanvasView* view, v2i canvas_point);
+v2l canvas_to_raster(CanvasView* view, v2l canvas_point);
 
-v2i raster_to_canvas(CanvasView* view, v2i raster_point);
+v2l raster_to_canvas(CanvasView* view, v2l raster_point);
 
 // Thread-safe
 // Returns an array of `num_strokes` b32's, masking strokes to the rect.
 b32*    create_stroke_masks(Layer* root_layer, Rect rect);
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
-b32     stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1);
+b32     stroke_point_contains_point(v2l p0, i64 r0, v2l p1, i64 r1);
 
 Rect    bounding_box_for_stroke(Stroke* stroke);
 

@@ -37,10 +37,11 @@ size_t get_system_RAM();
 // Math functions.
 // ---------------
 
-v2i v2f_to_v2i(v2f p);
+v2l v2f_to_v2l(v2f p);
+
+v2f v2l_to_v2f(v2l p);
 
 v2f v2i_to_v2f(v2i p);
-
 
 #define kPi 3.14152654f
 
@@ -93,19 +94,16 @@ b32 intersect_line_segments(v2i a, v2i b,
 
 typedef struct
 {
-    union
-    {
-        struct
-        {
-            v2i top_left;
-            v2i bot_right;
+    union {
+        struct {
+            v2l top_left;
+            v2l bot_right;
         };
-        struct
-        {
-            i32 left;
-            i32 top;
-            i32 right;
-            i32 bottom;
+        struct {
+            i64 left;
+            i64 top;
+            i64 right;
+            i64 bottom;
         };
     };
 } Rect;
@@ -131,8 +129,7 @@ const Rect rect_enlarge(Rect src, i32 offset);
 
 b32 rect_is_valid(Rect rect);
 
-Rect bounding_rect_for_points(v2i points[], i32 num_points);
-Rect bounding_rect_for_points_scalar(i32 points_x[], i32 points_y[], i32 num_points);
+Rect bounding_rect_for_points(v2l points[], i32 num_points);
 
 i32 rect_area(Rect rect);
 

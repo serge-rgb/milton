@@ -52,7 +52,7 @@ void
 panning_update(PlatformState* platform_state)
 {
     auto reset_pan_start = [platform_state]() {
-        platform_state->pan_start = platform_state->pointer;
+        platform_state->pan_start = VEC2L(platform_state->pointer);
         platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
     };
 
@@ -75,7 +75,7 @@ panning_update(PlatformState* platform_state)
                 platform_state->is_panning = false;
             }
             else {
-                platform_state->pan_point = platform_state->pointer;
+                platform_state->pan_point = VEC2L(platform_state->pointer);
             }
         }
         else {
@@ -175,7 +175,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         platform_state->is_pointer_down = true;
 
                         for ( int pi = 0; pi < EasyTab->NumPackets; ++pi ) {
-                            v2i point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
+                            v2l point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
                             if ( point.x >= 0 && point.y >= 0 ) {
                                 if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
                                     milton_input.points[platform_state->num_point_results++] = point;
@@ -221,7 +221,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                             platform_state->is_middle_button_down = (event.button.button == SDL_BUTTON_MIDDLE);
 
                             if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
-                                milton_input.points[platform_state->num_point_results++] = point;
+                                milton_input.points[platform_state->num_point_results++] = VEC2L(point);
                             }
                             if ( platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS ) {
                                 milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
@@ -265,8 +265,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         if (!platform_state->is_panning &&
                             (input_point.x >= 0 && input_point.y >= 0)) {
                             if (platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS) {
-                                milton_input.points[platform_state->num_point_results++] =
-                                    input_point;
+                                milton_input.points[platform_state->num_point_results++] = VEC2L(input_point);
                             }
                             if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS) {
                                 milton_input.pressures[platform_state->num_pressure_results++] =
@@ -485,7 +484,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
             input_point = { event.button.x, event.button.y };
 
             if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
-                milton_input.points[platform_state->num_point_results++] = input_point;
+                milton_input.points[platform_state->num_point_results++] = VEC2L(input_point);
             }
             // Start drawing hover as soon as we stop the stroke.
             input_flags |= MiltonInputFlags_HOVERING;
@@ -988,7 +987,7 @@ milton_main(char* file_to_open)
 
         milton_input.input_count = platform_state.num_point_results;
 
-        v2i pan_delta = platform_state.pan_point - platform_state.pan_start;
+        v2l pan_delta = platform_state.pan_point - platform_state.pan_start;
         if (    pan_delta.x != 0
              || pan_delta.y != 0
              || platform_state.width != milton_state->view->screen_size.x

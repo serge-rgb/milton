@@ -313,13 +313,13 @@ rasterize_canvas_block_slow(Arena* render_arena,
 
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
-              view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
+              view->scale) - view->pan_center.y) * local_scale - reference_point.y;
 
     for ( i32 pixel_j = raster_block.top;
           pixel_j < raster_block.bottom;
           pixel_j += downsample_factor ) {
         i32 i =  (((raster_block.left - view->screen_center.x) *
-                    view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
+                    view->scale) - view->pan_center.x) * local_scale - reference_point.x;
 
         for ( i32 pixel_i = raster_block.left;
               pixel_i < raster_block.right;
@@ -591,14 +591,14 @@ rasterize_canvas_block_sse2(Arena* render_arena,
 
     // i and j are the canvas point
     i32 j = (((raster_block.top - view->screen_center.y) *
-              view->scale) - view->pan_vector.y) * local_scale - reference_point.y;
+              view->scale) - view->pan_center.y) * local_scale - reference_point.y;
 
     for ( i32 pixel_j = raster_block.top;
           pixel_j < raster_block.bottom;
           pixel_j += downsample_factor ) {
 
         i32 i = (((raster_block.left - view->screen_center.x) *
-                  view->scale) - view->pan_vector.x) * local_scale - reference_point.x;
+                  view->scale) - view->pan_center.x) * local_scale - reference_point.x;
 
         for ( i32 pixel_i = raster_block.left;
               pixel_i < raster_block.right;
@@ -2066,7 +2066,7 @@ milton_render_to_buffer(MiltonState* milton_state, u8* buffer,
     v2i center = divide2i(milton_state->view->screen_size, 2);
     v2i pan_delta = sub2i(center, v2i{x + (w/2), y + (h/2)}) ;
 
-    milton_state->view->pan_vector = add2i(milton_state->view->pan_vector, scale2i(pan_delta, milton_state->view->scale));
+    milton_state->view->pan_center = add2i(milton_state->view->pan_center, scale2i(pan_delta, milton_state->view->scale));
 
     i32 buf_w = w * scale;
     i32 buf_h = h * scale;

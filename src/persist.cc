@@ -90,7 +90,7 @@ milton_load(MiltonState* milton_state)
     CanvasState* canvas = milton_state->canvas;
 
     // Unload gpu data if the strokes have been cooked.
-    gpu_free_strokes(milton_state);
+    gpu_free_strokes(milton_state->render_data, milton_state->canvas);
     mlt_assert(milton_state->mlt_file_path);
     FILE* fd = platform_fopen(milton_state->mlt_file_path, TO_PATH_STR("rb"));
     b32 ok = true;  // fread check
@@ -165,7 +165,7 @@ milton_load(MiltonState* milton_state)
                         if ( stroke.num_points == STROKE_MAX_POINTS ) {
                             // Fix the out of bounds bug.
                             if ( ok ) {
-                                stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2i);
+                                stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
                                 ok = fread_checked(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
                             }
                             if ( ok ) {
@@ -186,8 +186,8 @@ milton_load(MiltonState* milton_state)
                         }
                     } else {
                         if ( ok ) {
-                            stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2i);
-                            ok = fread_checked(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
+                            stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
+                            ok = fread_checked(stroke.points, sizeof(v2l), (size_t)stroke.num_points, fd);
                         }
                         if ( ok ) {
                             stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
@@ -344,7 +344,7 @@ milton_save(MiltonState* milton_state)
                     mlt_assert(stroke->num_points > 0);
                     if ( ok ) { ok = fwrite_checked(&stroke->brush, sizeof(Brush), 1, fd); }
                     if ( ok ) { ok = fwrite_checked(&stroke->num_points, sizeof(i32), 1, fd); }
-                    if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2i), (size_t)stroke->num_points, fd); }
+                    if ( ok ) { ok = fwrite_checked(stroke->points, sizeof(v2l), (size_t)stroke->num_points, fd); }
                     if ( ok ) { ok = fwrite_checked(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd); }
                     if ( ok ) { ok = fwrite_checked(&stroke->layer_id, sizeof(i32), 1, fd); }
                     if ( !ok ) {

@@ -703,18 +703,18 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             int screen_width = view->screen_size.w * view->scale;
 
             if ( screen_height>0 && screen_height>0 ) {
-                v2i pan = view->pan_vector;
+                v2l pan = view->pan_center;
 
                 auto radius = view->canvas_radius_limit;
 
                 {
                     if ( pan.y < 0 ) {
-                        long n_screens_below = ((long)(radius) + (long)pan.y)/(long)screen_height;
+                        long n_screens_below = ((long)(radius) - (long)pan.y)/(long)screen_height;
                         snprintf(msg, array_count(msg),
                                  "Screens below: %ld\n", n_screens_below);
                         ImGui::Text(msg);
                     } else {
-                        long n_screens_above = ((long)(radius) - (long)pan.y)/(long)screen_height;
+                        long n_screens_above = ((long)(radius) + (long)pan.y)/(long)screen_height;
                         snprintf(msg, array_count(msg),
                                  "Screens above: %ld\n", n_screens_above);
                         ImGui::Text(msg);
@@ -722,12 +722,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 }
                 {
                     if ( pan.x < 0 ) {
-                        long n_screens_below = ((long)(radius) + (long)pan.x)/(long)screen_width;
+                        long n_screens_below = ((long)(radius) - (long)pan.x)/(long)screen_width;
                         snprintf(msg, array_count(msg),
                                  "Screens to the right: %ld\n", n_screens_below);
                         ImGui::Text(msg);
                     } else {
-                        long n_screens_above = ((long)(radius) - (long)pan.x)/(long)screen_width;
+                        long n_screens_above = ((long)(radius) + (long)pan.x)/(long)screen_width;
                         snprintf(msg, array_count(msg),
                                  "Screens to the left: %ld\n", n_screens_above);
                         ImGui::Text(msg);
@@ -735,7 +735,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 }
             }
             snprintf(msg, array_count(msg),
-                     "Scale: %d", view->scale);
+                     "Scale: %lld", view->scale);
             ImGui::Text(msg);
 
             // Average stroke size.
@@ -780,7 +780,7 @@ picker_update_points(ColorPicker* picker, float angle)
     picker->data.hsv.h = radians_to_degrees(angle);
     // Update the triangle
     float radius = 0.9f * (picker->wheel_radius - picker->wheel_half_width);
-    v2f center = v2i_to_v2f(picker->center);
+    v2f center = v2l_to_v2f(VEC2L(picker->center));
     {
         v2f point = polar_to_cartesian(-angle, radius);
         point = point + center;
@@ -1080,7 +1080,7 @@ exporter_input(Exporter* exporter, MiltonInput* input)
     b32 changed = false;
     if ( input->input_count > 0 ) {
         changed = true;
-        v2i point = input->points[input->input_count - 1];
+        v2i point = VEC2I(input->points[input->input_count - 1]);
         if ( exporter->state == ExporterState_EMPTY ||
              exporter->state == ExporterState_SELECTED ) {
             exporter->pivot = point;
@@ -1151,7 +1151,7 @@ b32
 gui_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     b32 accepts = false;
-    v2i point = input->points[0];
+    v2i point = VEC2I(input->points[0]);
     if ( gui->visible ) {
         accepts = gui_point_hovers(gui, point);
         if ( !picker_is_active(&gui->picker) &&

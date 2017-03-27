@@ -206,14 +206,14 @@ struct MiltonInput
     int flags;  // MiltonInputFlags
     MiltonMode mode_to_set;
 
-    v2i  points[MAX_INPUT_BUFFER_ELEMS];
+    v2l  points[MAX_INPUT_BUFFER_ELEMS];
     f32  pressures[MAX_INPUT_BUFFER_ELEMS];
     i32  input_count;
 
     v2i  click;
     v2i  hover_point;
     i32  scale;
-    v2i  pan_delta;
+    v2l  pan_delta;
 };
 
 
@@ -248,7 +248,7 @@ float   milton_get_pen_alpha(MiltonState* milton_state);
 void    milton_set_pen_alpha(MiltonState* milton_state, float alpha);
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
-b32 milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size);
+b32 milton_resize_and_pan(MiltonState* milton_state, v2l pan_delta, v2i new_screen_size);
 
 
 void milton_use_previous_mode(MiltonState* milton_state);

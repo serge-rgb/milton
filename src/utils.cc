@@ -17,10 +17,25 @@ get_system_RAM()
    return (size_t)SDL_GetSystemRAM() * 1024 * 1024;
 }
 
-v2i
-v2f_to_v2i(v2f p)
+v2l
+v2f_to_v2l(v2f p)
 {
-    return v2i{(i32)p.x, (i32)p.y};
+    return v2l{(i64)p.x, (i64)p.y};
+}
+
+v2f
+v2l_to_v2f(v2l p)
+{
+    #ifdef _WIN32
+    #pragma warning(push)
+    #pragma warning(disable: 4307)
+    #endif
+    mlt_assert(abs(p.x) < (1L<<31) - 1L);
+    mlt_assert(abs(p.y) < (1L<<31) - 1L);
+    #ifdef _WIN32
+    #pragma warning(pop)
+    #endif
+    return v2f{(f32)p.x, (f32)p.y};
 }
 
 v2f
@@ -28,6 +43,7 @@ v2i_to_v2f(v2i p)
 {
     return v2f{(f32)p.x, (f32)p.y};
 }
+
 
 // ---------------
 // Math functions.
@@ -292,15 +308,15 @@ rect_enlarge(Rect src, i32 offset)
 }
 
 Rect
-bounding_rect_for_points(v2i points[], i32 num_points)
+bounding_rect_for_points(v2l points[], i32 num_points)
 {
     mlt_assert (num_points > 0);
 
-    v2i top_left =  points[0];
-    v2i bot_right = points[0];
+    v2l top_left =  points[0];
+    v2l bot_right = points[0];
 
     for ( i32 i = 1; i < num_points; ++i ) {
-        v2i point = points[i];
+        v2l point = points[i];
         if (point.x < top_left.x)   top_left.x = point.x;
         if (point.x > bot_right.x)  bot_right.x = point.x;
 

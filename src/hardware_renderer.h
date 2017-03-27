@@ -50,6 +50,7 @@ struct Exporter;
 struct Stroke;
 struct Layer;
 struct MiltonState;
+struct CanvasState;
 
 RenderData* gpu_allocate_render_data(Arena* arena);
 
@@ -74,7 +75,7 @@ void gpu_update_picker(RenderData* render_data, ColorPicker* picker);
 void gpu_update_scale(RenderData* render_data, i32 scale);
 void gpu_update_export_rect(RenderData* render_data, Exporter* exporter);
 void gpu_update_background(RenderData* render_data, v3f background_color);
-void gpu_update_canvas(RenderData* render_data, CanvasView* view);
+void gpu_update_canvas(RenderData* render_data, CanvasState* canvas, CanvasView* view);
 
 void gpu_get_viewport_limits(RenderData* render_data, float* out_viewport_limits);
 i32  gpu_get_num_clipped_strokes(Layer* root_layer);
@@ -88,7 +89,8 @@ enum CookStrokeOpt
 void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke,
                      CookStrokeOpt cook_option = CookStroke_NEW);
 
-void gpu_free_strokes(MiltonState*);
+void gpu_free_strokes(RenderData* render_data, CanvasState* canvas);
+
 
 // Creates OpenGL objects for strokes that are in view but are not loaded on the GPU. Deletes
 // content for strokes that are far away.

@@ -23,9 +23,14 @@ struct Vector2
     };
 };
 
+
+Vector2<i32> VEC2I(Vector2<i64> o);
+
+Vector2<i64> VEC2L(Vector2<i32> o);
+
 // Types
 typedef Vector2<i32>     v2i;
-typedef Vector2<i64>     v2ii;
+typedef Vector2<i64>     v2l;
 typedef Vector2<float>   v2f;
 #define operator2_scalar(OP) \
         template<typename T> \
@@ -33,8 +38,8 @@ typedef Vector2<float>   v2f;
 {                       \
                         \
     Vector2<T> r = {    \
-        v.x * f,        \
-        v.y * f,        \
+        v.x OP f,       \
+        v.y OP f,       \
     };                  \
     return r;           \
 }
@@ -60,6 +65,13 @@ bool
 operator == (const Type& a, const Type& b)
 {
     return a.x == b.x && a.y == b.y;
+}
+
+template<typename Type>
+bool
+operator != (const Type& a, const Type& b)
+{
+    return !(a==b);
 }
 
 template<typename Type>

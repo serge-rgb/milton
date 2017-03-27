@@ -18,7 +18,7 @@ struct Stroke
     i32             id;
 
     Brush           brush;
-    v2i*            points;
+    v2l*            points;
     f32*            pressures;
     i32             num_points;
     i32             layer_id;

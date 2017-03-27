@@ -18,9 +18,24 @@
                                     //  There is a low probability that one stroke will cover another
                                     //  stroke with the same z value.
 
+
+// As of version 1.3.0, milton works with a 64-bit canvas, which means
+// that there can be points in the canvas which cannot be rendered by
+// the OpenGL renderer, which  works with 32-bit floats for performance
+// reasons. To solve this problem, we divide the canvas into chunks
+// which are smaller than 2^32. We keep track of a "render center",
+// which depends on the pan vector. The render center is the coordinate
+// of the chunk. Any point in the 64-bit canvas can be converted to
+// chunk coordinates by doing the subtraction
+// p - c * (1<<RENDER_CHUNK_SIZE_LOG2), where p is the point and c is
+// the render center.
+#define RENDER_CHUNK_SIZE_LOG2 16
+
 struct RenderData
 {
     f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
+
+    v2i render_center;
 
     // OpenGL programs.
     GLuint stroke_program;
@@ -702,14 +717,35 @@ set_screen_size(RenderData* render_data, float* fscreen)
     }
 }
 
+static
+v2i
+relative_to_render_center(RenderData* render_data, v2l point)
+{
+    v2i result = VEC2I(point - VEC2L(render_data->render_center*(1<<RENDER_CHUNK_SIZE_LOG2)));
+    #if 1
+    //v2i result = VEC2I(point - v2l{1000, 1000});
+    #else
+    v2i result = VEC2I(point);
+    #endif
+    return result;
+}
+
 void
-gpu_update_canvas(RenderData* render_data, CanvasView* view)
+gpu_update_canvas(RenderData* render_data, CanvasState* canvas, CanvasView* view)
 {
     glUseProgram(render_data->stroke_program);
 
-    auto center = view->zoom_center;
-    auto pan = view->pan_vector;
-    gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_vector", 1, pan.d);
+    v2i center = view->zoom_center;
+    v2l pan = view->pan_center;
+    v2i new_render_center = VEC2I(pan / (i64)(1<<RENDER_CHUNK_SIZE_LOG2))*-1;
+    //if ( new_render_center != render_data->render_center ) {
+    {
+        milton_log("Moving to new render center. %d, %d Clearing render data.\n", new_render_center.x, new_render_center.y);
+        render_data->render_center = new_render_center;
+        gpu_free_strokes(render_data, canvas);
+        //render_data->render_center = {0, 1};
+    }
+    gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_center", 1, relative_to_render_center(render_data, pan).d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_zoom_center", 1, center.d);
     gpu_update_scale(render_data, view->scale);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
@@ -727,19 +763,15 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
         mlt_assert(stroke->render_element.vbo_pointa != 0);
         mlt_assert(stroke->render_element.vbo_pointb != 0);
     } else {
-        v2f cp;
-        cp.x = stroke->points[stroke->num_points-1].x;
-        cp.y = stroke->points[stroke->num_points-1].y;
-
         auto npoints = stroke->num_points;
         if ( npoints == 1 ) {
             // Create a 2-point stroke and recurse
             Stroke duplicate = *stroke;
             duplicate.num_points = 2;
             Arena scratch_arena = arena_push(arena);
-            duplicate.points = arena_alloc_array(&scratch_arena, 2, v2i);
+            duplicate.points = arena_alloc_array(&scratch_arena, 2, v2l);
             duplicate.pressures = arena_alloc_array(&scratch_arena, 2, f32);
-            duplicate.points[0] = stroke->points[0];
+            duplicate.points[0] = stroke->points[0];  // It will be set relative to the center in the recursed call.
             duplicate.points[1] = stroke->points[0];
             duplicate.pressures[0] = stroke->pressures[0];
             duplicate.pressures[1] = stroke->pressures[0];
@@ -785,8 +817,8 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             size_t bpoints_i = 0;
             size_t indices_i = 0;
             for ( i64 i=0; i < npoints-1; ++i ) {
-                v2i point_i = stroke->points[i];
-                v2i point_j = stroke->points[i+1];
+                v2i point_i = relative_to_render_center(render_data, stroke->points[i]);
+                v2i point_j = relative_to_render_center(render_data, stroke->points[i+1]);
 
                 Brush brush = stroke->brush;
                 float radius_i = stroke->pressures[i]*brush.radius;
@@ -955,10 +987,10 @@ gpu_free_strokes(Stroke* strokes, i64 count, RenderData* render_data)
 }
 
 void
-gpu_free_strokes(MiltonState* milton_state)
+gpu_free_strokes(RenderData* render_data, CanvasState* canvas)
 {
-    if ( milton_state->canvas->root_layer != NULL ) {
-        for ( Layer* l = milton_state->canvas->root_layer;
+    if ( canvas->root_layer != NULL ) {
+        for ( Layer* l = canvas->root_layer;
               l != NULL;
               l = l->next ) {
             StrokeList* sl = &l->strokes;
@@ -973,7 +1005,7 @@ gpu_free_strokes(MiltonState* milton_state)
                 } else {
                     bucketcount = count;
                 }
-                gpu_free_strokes(bucket->data, count, milton_state->render_data);
+                gpu_free_strokes(bucket->data, count, render_data);
                 bucket = bucket->next;
             }
         }
@@ -1471,12 +1503,12 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     i32 buf_h = h * scale;
 
     v2i center = milton_state->view->screen_size / 2;
-    v2i pan_delta = center - v2i{x + (w / 2), y + (h / 2)};
+    v2i pan_delta = v2i{x + (w / 2), y + (h / 2)} - center;
 
     milton_set_zoom_at_point(milton_state, center);
 
-    milton_state->view->pan_vector =
-        milton_state->view->pan_vector + pan_delta*milton_state->view->scale;
+    milton_state->view->pan_center =
+        milton_state->view->pan_center + VEC2L(pan_delta)*milton_state->view->scale;
 
     milton_state->view->screen_size = v2i{buf_w, buf_h};
     render_data->width = buf_w;
@@ -1488,7 +1520,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     }
 
     gpu_resize(render_data, view);
-    gpu_update_canvas(render_data, view);
+    gpu_update_canvas(render_data, milton_state->canvas, view);
 
     // TODO: Check for out-of-memory errors.
 
@@ -1559,7 +1591,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo);
 
     gpu_resize(render_data, view);
-    gpu_update_canvas(render_data, view);
+    gpu_update_canvas(render_data, milton_state->canvas, view);
 
     // Re-render
     gpu_clip_strokes_and_update(&milton_state->root_arena,

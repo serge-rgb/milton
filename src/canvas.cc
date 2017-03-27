@@ -9,22 +9,22 @@
 v4f k_eraser_color = {23,34,45,56};
 
 
-v2i
-canvas_to_raster(CanvasView* view, v2i canvas_point)
+v2l
+canvas_to_raster(CanvasView* view, v2l canvas_point)
 {
-    v2i raster_point = {
-        ((view->pan_vector.x + canvas_point.x) / view->scale) + view->zoom_center.x,
-        ((view->pan_vector.y + canvas_point.y) / view->scale) + view->zoom_center.y,
+    v2l raster_point = {
+        ((canvas_point.x - view->pan_center.x) / view->scale) + view->zoom_center.x,
+        ((canvas_point.y - view->pan_center.y) / view->scale) + view->zoom_center.y,
     };
     return raster_point;
 }
 
-v2i
-raster_to_canvas(CanvasView* view, v2i raster_point)
+v2l
+raster_to_canvas(CanvasView* view, v2l raster_point)
 {
-    v2i canvas_point = {
-        ((raster_point.x - view->zoom_center.x) * view->scale) - view->pan_vector.x,
-        ((raster_point.y - view->zoom_center.y) * view->scale) - view->pan_vector.y,
+    v2l canvas_point = {
+        ((raster_point.x - view->zoom_center.x) * view->scale) + view->pan_center.x,
+        ((raster_point.y - view->zoom_center.y) * view->scale) + view->pan_center.y,
     };
 
     return canvas_point;
@@ -32,15 +32,15 @@ raster_to_canvas(CanvasView* view, v2i raster_point)
 
 // Does point p0 with radius r0 contain point p1 with radius r1?
 b32
-stroke_point_contains_point(v2i p0, i32 r0, v2i p1, i32 r1)
+stroke_point_contains_point(v2l p0, i64 r0, v2l p1, i64 r1)
 {
-    v2i d = p1 - p0;
+    v2l d = p1 - p0;
     // using manhattan distance, less chance of overflow. Still works well enough for this case.
-    u32 m = (u32)abs(d.x) + abs(d.y) + r1;
+    u64 m = (u64)abs(d.x) + abs(d.y) + r1;
     //i32 m = magnitude_i(d) + r1;
     b32 contained = false;
     if ( r0 >= 0 ) {
-        contained = (m < (u32)r0);
+        contained = (m < (u64)r0);
     } else {
         contained = true;
     }

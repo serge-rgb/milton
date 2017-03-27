@@ -35,7 +35,6 @@ milton_set_default_view(MiltonState* milton_state)
     view->screen_size         = saved_size;
     view->zoom_center         = saved_size / 2;
     view->scale               = MILTON_DEFAULT_SCALE;
-    view->downsampling_factor = 1;
     view->num_layers          = 1;
     view->canvas_radius_limit = 1 << 30;  // A higher limit and certain assumptions start to break
 }
@@ -141,9 +140,9 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
     ws->layer_id = milton_state->view->working_layer_id;
 
     for ( int input_i = 0; input_i < input->input_count; ++input_i ) {
-        v2i in_point = input->points[input_i];
+        v2l in_point = input->points[input_i];
 
-        v2i canvas_point = raster_to_canvas(milton_state->view, in_point);
+        v2l canvas_point = raster_to_canvas(milton_state->view, in_point);
 
         f32 pressure = NO_PRESSURE_INFO;
 
@@ -181,7 +180,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                 if ( ++count >= point_window ) {
                     break;
                 }
-                v2i this_point = ws->points[i];
+                v2l this_point = ws->points[i];
                 i32 this_radius = (i32)(ws->brush.radius * ws->pressures[i]);
 
                 if ( stroke_point_contains_point(canvas_point, in_radius, this_point, this_radius) ) {
@@ -219,7 +218,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 
                     auto* view = milton_state->view;
 
-                    auto canvas_center = raster_to_canvas(view, view->screen_size / 2);
+                    auto canvas_center = raster_to_canvas(view, VEC2L(view->screen_size) / (i64)2);
 
                     float f_average_x = average.x - canvas_center.x;
                     float f_average_y = average.y - canvas_center.y;
@@ -267,11 +266,11 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 void
 milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center)
 {
-    milton_state->view->pan_vector =
-        milton_state->view->pan_vector - (zoom_center - milton_state->view->zoom_center)*milton_state->view->scale;
+    milton_state->view->pan_center =
+        milton_state->view->pan_center - VEC2L(zoom_center - milton_state->view->zoom_center) * (i64)milton_state->view->scale;
 
     milton_state->view->zoom_center = zoom_center;
-    gpu_update_canvas(milton_state->render_data, milton_state->view);
+    gpu_update_canvas(milton_state->render_data, milton_state->canvas, milton_state->view);
 }
 
 void
@@ -391,7 +390,7 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, PATH_CHAR* file_to
     init_localization();
 
     milton_state->canvas = arena_bootstrap(CanvasState, arena, 1024*1024);
-    milton_state->working_stroke.points    = arena_alloc_array(&milton_state->root_arena, STROKE_MAX_POINTS, v2i);
+    milton_state->working_stroke.points    = arena_alloc_array(&milton_state->root_arena, STROKE_MAX_POINTS, v2l);
     milton_state->working_stroke.pressures = arena_alloc_array(&milton_state->root_arena, STROKE_MAX_POINTS, f32);
 
 #if SOFTWARE_RENDERER_COMPILED
@@ -538,14 +537,14 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, PATH_CHAR* file_to
 void
 upload_gui(MiltonState* milton_state)
 {
-    gpu_update_canvas(milton_state->render_data, milton_state->view);
+    gpu_update_canvas(milton_state->render_data, milton_state->canvas, milton_state->view);
     gpu_resize(milton_state->render_data, milton_state->view);
     gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
 }
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 b32
-milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_size)
+milton_resize_and_pan(MiltonState* milton_state, v2l pan_delta, v2i new_screen_size)
 {
     b32 pan_ok = true;
     if ( (new_screen_size.w > 8000
@@ -589,19 +588,19 @@ milton_resize_and_pan(MiltonState* milton_state, v2i pan_delta, v2i new_screen_s
         milton_state->view->screen_size = new_screen_size;
 
         // Add delta to pan vector
-        v2i pan_vector = milton_state->view->pan_vector + (pan_delta * milton_state->view->scale);
+        v2l pan_center = milton_state->view->pan_center - (pan_delta * milton_state->view->scale);
 
-        if ( pan_vector.x > milton_state->view->canvas_radius_limit
-             || pan_vector.x <= -milton_state->view->canvas_radius_limit ) {
-            pan_vector.x = milton_state->view->pan_vector.x;
+        if ( pan_center.x > milton_state->view->canvas_radius_limit
+             || pan_center.x <= -milton_state->view->canvas_radius_limit ) {
+            pan_center.x = milton_state->view->pan_center.x;
             pan_ok = false;
         }
-        if ( pan_vector.y > milton_state->view->canvas_radius_limit
-             || pan_vector.y <= -milton_state->view->canvas_radius_limit ) {
-            pan_vector.y = milton_state->view->pan_vector.y;
+        if ( pan_center.y > milton_state->view->canvas_radius_limit
+             || pan_center.y <= -milton_state->view->canvas_radius_limit ) {
+            pan_center.y = milton_state->view->pan_center.y;
             pan_ok = false;
         }
-        milton_state->view->pan_vector = pan_vector;
+        milton_state->view->pan_center = pan_center;
 
         upload_gui(milton_state);
     } else {
@@ -616,7 +615,7 @@ milton_reset_canvas(MiltonState* milton_state)
 {
     CanvasState* canvas = milton_state->canvas;
 
-    gpu_free_strokes(milton_state);
+    gpu_free_strokes(milton_state->render_data, milton_state->canvas);
     milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
     milton_state->last_save_time = {};
 
@@ -902,13 +901,12 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
     // a reasonable tradeoff vs the complexity/perf hit of using something smaller.
 
     if ( num_points >= 4 && 2*num_points <= STROKE_MAX_POINTS ) {
-        out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2i);
+        out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2l);
         out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
 
         // Push the first points.
-        memcpy(out_stroke->points, in_stroke->points, 4 * sizeof(v2i));
+        memcpy(out_stroke->points, in_stroke->points, 4 * sizeof(v2l));
         memcpy(out_stroke->pressures, in_stroke->pressures, 4 * sizeof(f32));
-
 
         i32 out_i = 4;
 
@@ -916,17 +914,17 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
         // interpolation with a cubic Bezier.
 
         // Relative to center to maintain precision.
-        v2i canvas_center = raster_to_canvas(view, view->screen_size/2);
+        v2l canvas_center = raster_to_canvas(view, VEC2L(view->screen_size/2));
         v2f a = {}; // Will get copied from b in the loop below.
-        v2f b = v2i_to_v2f(in_stroke->points[0] - canvas_center);
-        v2f c = v2i_to_v2f(in_stroke->points[1] - canvas_center);
-        v2f d = v2i_to_v2f(in_stroke->points[2] - canvas_center);
+        v2f b = v2l_to_v2f(in_stroke->points[0] - canvas_center);
+        v2f c = v2l_to_v2f(in_stroke->points[1] - canvas_center);
+        v2f d = v2l_to_v2f(in_stroke->points[2] - canvas_center);
 
         for ( i32 i = 3; i < num_points; ++i ) {
             a = b;
             b = c;
             c = d;
-            d = v2i_to_v2f(in_stroke->points[i] - canvas_center);
+            d = v2l_to_v2f(in_stroke->points[i] - canvas_center);
 
             if ( out_i >= STROKE_MAX_POINTS-1 ) {
                 break;  // Keep the stroke from becoming larger than we support.
@@ -957,10 +955,10 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
                 n = n + p3 * 0.125f;
 
                 out_stroke->pressures[out_i] = in_stroke->pressures[i - 2];
-                out_stroke->points[out_i++] = v2f_to_v2i(b) + canvas_center;
+                out_stroke->points[out_i++] = v2f_to_v2l(b) + canvas_center;
 
                 out_stroke->pressures[out_i] = out_stroke->pressures[out_i-1]; // Use the same pressure value as last point.
-                out_stroke->points[out_i++] = v2f_to_v2i(n) + canvas_center;
+                out_stroke->points[out_i++] = v2f_to_v2l(n) + canvas_center;
             } else {
                 out_stroke->points[out_i] = in_stroke->points[i-2];
                 out_stroke->pressures[out_i++] = in_stroke->pressures[i-2];
@@ -978,10 +976,10 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
     }
     // Four or less points in stroke, or stroke is too large.
     else {
-        out_stroke->points    = arena_alloc_array(arena, num_points, v2i);
+        out_stroke->points    = arena_alloc_array(arena, num_points, v2l);
         out_stroke->pressures = arena_alloc_array(arena, num_points, f32);
 
-        memcpy(out_stroke->points, in_stroke->points, in_stroke->num_points * sizeof(v2i));
+        memcpy(out_stroke->points, in_stroke->points, in_stroke->num_points * sizeof(v2l));
         memcpy(out_stroke->pressures, in_stroke->pressures, in_stroke->num_points * sizeof(f32));
         out_stroke->num_points = in_stroke->num_points;
     }
@@ -1020,7 +1018,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( milton_state->flags & MiltonStateFlags_REQUEST_QUALITY_REDRAW ) {
-        milton_state->view->downsampling_factor = 1;  // See how long it takes to redraw at full quality
         milton_state->flags &= ~MiltonStateFlags_REQUEST_QUALITY_REDRAW;
         do_full_redraw = true;
     }
@@ -1099,7 +1096,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     else if ( (input->flags & MiltonInputFlags_PANNING) ) {
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
-        if ( !(input->pan_delta == v2i{}) ) {
+        if ( !(input->pan_delta == v2l{}) ) {
             do_full_redraw = true;
         }
     }
@@ -1194,7 +1191,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     if ( is_user_drawing(milton_state) ) {
         i32 np = milton_state->working_stroke.num_points;
         if ( np > 0 ) {
-            milton_state->hover_point = canvas_to_raster(milton_state->view, milton_state->working_stroke.points[np-1]);
+            milton_state->hover_point = VEC2I(canvas_to_raster(milton_state->view, milton_state->working_stroke.points[np-1]));
         }
     }
 
@@ -1267,7 +1264,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             }
 
         }
-        v2i point = {0};
+        v2i point = {};
         b32 in = false;
         if ( (input->flags & MiltonInputFlags_CLICK) ) {
             point = input->click;
