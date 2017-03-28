@@ -133,6 +133,10 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         return;
     }
 
+    // Using the pan center to do a change of coordinates so that we
+    // don't lose precision when we convert to floating point
+    v2l pan_center = milton_state->view->pan_center;
+
     Stroke* ws = &milton_state->working_stroke;
 
     //milton_log("Stroke input with %d packets\n", input->input_count);
@@ -208,33 +212,26 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                 // The new point is a weighted sum of factor*average (1-factor)*canvas_point
                 i64 N = 2;
                 if ( ws->num_points > N ) {
-                    v2i average = {};
+                    v2l average = {};
                     float factor = 0.55f;
 
                     for ( i64 i = 0; i < N; ++i ) {
-                        average.x += ws->points[ws->num_points-1 - i].x / N;
-                        average.y += ws->points[ws->num_points-1 - i].y / N;
+                        average += (ws->points[ws->num_points-1 - i]) / N;
                     }
 
                     auto* view = milton_state->view;
 
-                    auto canvas_center = raster_to_canvas(view, VEC2L(view->screen_size) / (i64)2);
+                    float f_average_x = average.x - pan_center.x;
+                    float f_average_y = average.y - pan_center.y;
+                    float f_canvas_point_x = canvas_point.x - pan_center.x;
+                    float f_canvas_point_y = canvas_point.y - pan_center.y;
 
-                    float f_average_x = average.x - canvas_center.x;
-                    float f_average_y = average.y - canvas_center.y;
+                    canvas_point.x = (i64)roundf
+                            (f_average_x*factor + f_canvas_point_x*(1-factor));
+                    canvas_point.y = (i64)roundf
+                            (f_average_y*factor + f_canvas_point_y*(1-factor));
 
-                    float f_canvas_point_x = canvas_point.x - canvas_center.x;
-                    float f_canvas_point_y = canvas_point.y - canvas_center.y;
-
-                    canvas_point.x = (i32)roundf
-                            (f_average_x*factor +
-                             f_canvas_point_x*(1-factor));
-                    canvas_point.y = (i32)roundf
-                            (f_average_y*factor +
-                             f_canvas_point_y*(1-factor));
-
-                    canvas_point.x += canvas_center.x;
-                    canvas_point.y += canvas_center.y;
+                    canvas_point += pan_center;
                 }
             }
 
@@ -590,6 +587,7 @@ milton_resize_and_pan(MiltonState* milton_state, v2l pan_delta, v2i new_screen_s
         // Add delta to pan vector
         v2l pan_center = milton_state->view->pan_center - (pan_delta * milton_state->view->scale);
 
+/*
         if ( pan_center.x > milton_state->view->canvas_radius_limit
              || pan_center.x <= -milton_state->view->canvas_radius_limit ) {
             pan_center.x = milton_state->view->pan_center.x;
@@ -600,6 +598,7 @@ milton_resize_and_pan(MiltonState* milton_state, v2l pan_delta, v2i new_screen_s
             pan_center.y = milton_state->view->pan_center.y;
             pan_ok = false;
         }
+        */
         milton_state->view->pan_center = pan_center;
 
         upload_gui(milton_state);
@@ -900,7 +899,7 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
     // At most we are adding twice as many points. This is wasteful but at the moment it looks like
     // a reasonable tradeoff vs the complexity/perf hit of using something smaller.
 
-    if ( num_points >= 4 && 2*num_points <= STROKE_MAX_POINTS ) {
+    if ( false && num_points >= 4 && 2*num_points <= STROKE_MAX_POINTS ) {
         out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2l);
         out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
 

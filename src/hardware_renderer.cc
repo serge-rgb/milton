@@ -29,7 +29,7 @@
 // chunk coordinates by doing the subtraction
 // p - c * (1<<RENDER_CHUNK_SIZE_LOG2), where p is the point and c is
 // the render center.
-#define RENDER_CHUNK_SIZE_LOG2 16
+#define RENDER_CHUNK_SIZE_LOG2 25
 
 struct RenderData
 {
@@ -737,7 +737,7 @@ gpu_update_canvas(RenderData* render_data, CanvasState* canvas, CanvasView* view
 
     v2i center = view->zoom_center;
     v2l pan = view->pan_center;
-    v2i new_render_center = VEC2I(pan / (i64)(1<<RENDER_CHUNK_SIZE_LOG2))*-1;
+    v2i new_render_center = VEC2I(pan / (i64)(1<<RENDER_CHUNK_SIZE_LOG2));
     //if ( new_render_center != render_data->render_center ) {
     {
         milton_log("Moving to new render center. %d, %d Clearing render data.\n", new_render_center.x, new_render_center.y);
