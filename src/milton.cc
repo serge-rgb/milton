@@ -263,8 +263,8 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 void
 milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center)
 {
-    milton_state->view->pan_center =
-        milton_state->view->pan_center - VEC2L(zoom_center - milton_state->view->zoom_center) * (i64)milton_state->view->scale;
+    milton_state->view->pan_center +=
+           VEC2L(zoom_center - milton_state->view->zoom_center) * (i64)milton_state->view->scale;
 
     milton_state->view->zoom_center = zoom_center;
     gpu_update_canvas(milton_state->render_data, milton_state->canvas, milton_state->view);
@@ -899,7 +899,7 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
     // At most we are adding twice as many points. This is wasteful but at the moment it looks like
     // a reasonable tradeoff vs the complexity/perf hit of using something smaller.
 
-    if ( false && num_points >= 4 && 2*num_points <= STROKE_MAX_POINTS ) {
+    if ( num_points >= 4 && 2*num_points <= STROKE_MAX_POINTS ) {
         out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2l);
         out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
 
@@ -1046,7 +1046,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 // Sensible
 #else
         f32 scale_factor = 1.3f;
-        i32 view_scale_limit = (1 << 13);
+        i32 view_scale_limit = (1 << 16);
 #endif
 
         // Some info on the reasoning behind choosing the values for different

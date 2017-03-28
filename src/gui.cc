@@ -705,31 +705,31 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             if ( screen_height>0 && screen_height>0 ) {
                 v2l pan = view->pan_center;
 
-                auto radius = view->canvas_radius_limit;
+                i64 radius = ((i64)1<<63);
 
                 {
-                    if ( pan.y < 0 ) {
-                        long n_screens_below = ((long)(radius) - (long)pan.y)/(long)screen_height;
+                    if ( pan.y > 0 ) {
+                        i64 n_screens_below = ((i64)(radius) - (i64)pan.y)/(i64)screen_height;
                         snprintf(msg, array_count(msg),
-                                 "Screens below: %ld\n", n_screens_below);
+                                 "Screens below: %I64d\n", n_screens_below);
                         ImGui::Text(msg);
                     } else {
-                        long n_screens_above = ((long)(radius) + (long)pan.y)/(long)screen_height;
+                        i64 n_screens_above = ((i64)(radius) + (i64)pan.y)/(i64)screen_height;
                         snprintf(msg, array_count(msg),
-                                 "Screens above: %ld\n", n_screens_above);
+                                 "Screens above: %I64d\n", n_screens_above);
                         ImGui::Text(msg);
                     }
                 }
                 {
-                    if ( pan.x < 0 ) {
-                        long n_screens_below = ((long)(radius) - (long)pan.x)/(long)screen_width;
+                    if ( pan.x > 0 ) {
+                        i64 n_screens_right = ((i64)(radius) - (i64)pan.x)/(i64)screen_width;
                         snprintf(msg, array_count(msg),
-                                 "Screens to the right: %ld\n", n_screens_below);
+                                 "Screens to the right: %I64d\n", n_screens_right);
                         ImGui::Text(msg);
                     } else {
-                        long n_screens_above = ((long)(radius) + (long)pan.x)/(long)screen_width;
+                        i64 n_screens_left = ((i64)(radius) + (i64)pan.x)/(i64)screen_width;
                         snprintf(msg, array_count(msg),
-                                 "Screens to the left: %ld\n", n_screens_above);
+                                 "Screens to the left: %I64d\n", n_screens_left);
                         ImGui::Text(msg);
                     }
                 }
