@@ -36,7 +36,6 @@ milton_set_default_view(MiltonState* milton_state)
     view->zoom_center         = saved_size / 2;
     view->scale               = MILTON_DEFAULT_SCALE;
     view->num_layers          = 1;
-    view->canvas_radius_limit = 1 << 30;  // A higher limit and certain assumptions start to break
 }
 
 static void

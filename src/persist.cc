@@ -113,7 +113,19 @@ milton_load(MiltonState* milton_state)
         }
 
         auto saved_size = milton_state->view->screen_size;
-        if (ok) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
+        if ( milton_binary_version >= 4 ) {
+            if (ok) { ok = fread_checked(milton_state->view, sizeof(CanvasView), 1, fd); }
+        } else {
+            CanvasViewPreV4 legacy_view = {};
+            if (ok) { ok = fread_checked(&legacy_view, sizeof(CanvasViewPreV4), 1, fd); }
+            milton_state->view->screen_size = legacy_view.screen_size;
+            milton_state->view->scale = legacy_view.scale;
+            milton_state->view->zoom_center = legacy_view.zoom_center;
+            milton_state->view->pan_center = VEC2L(legacy_view.pan_center);
+            milton_state->view->background_color = legacy_view.background_color;
+            milton_state->view->working_layer_id = legacy_view.working_layer_id;
+            milton_state->view->num_layers = legacy_view.num_layers;
+        }
 
         // The screen size might hurt us.
         milton_state->view->screen_size = saved_size;
@@ -161,33 +173,32 @@ milton_load(MiltonState* milton_state)
 
                     if (ok) { ok = fread_checked(&stroke.brush, sizeof(Brush), 1, fd); }
                     if (ok) { ok = fread_checked(&stroke.num_points, sizeof(i32), 1, fd); }
-                    if ( stroke.num_points >= STROKE_MAX_POINTS || stroke.num_points <= 0 ) {
-                        if ( stroke.num_points == STROKE_MAX_POINTS ) {
-                            // Fix the out of bounds bug.
-                            if ( ok ) {
-                                stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
-                                ok = fread_checked(stroke.points, sizeof(v2i), (size_t)stroke.num_points, fd);
-                            }
-                            if ( ok ) {
-                                stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
-                                ok = fread_checked(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
-                            }
 
-                            if ( ok ) {
-                                ok = fread_checked(&stroke.layer_id, sizeof(i32), 1, fd);
-                            }
-                            pop(&layer->strokes);
-                        } else {
-                            milton_log("ERROR: File has a stroke with %d points\n", stroke.num_points);
-                            ok = false;
-                            reset(&milton_state->canvas->root_layer->strokes);
-                            // Corrupt file. Avoid
-                            break;
-                        }
+
+                    if ( stroke.num_points >= STROKE_MAX_POINTS || stroke.num_points <= 0 ) {
+                        milton_log("ERROR: File has a stroke with %d points\n",
+                                   stroke.num_points);
+                        ok = false;
+                        reset(&milton_state->canvas->root_layer->strokes);
+                        // Corrupt file. Avoid
+                        break;
                     } else {
                         if ( ok ) {
-                            stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
-                            ok = fread_checked(stroke.points, sizeof(v2l), (size_t)stroke.num_points, fd);
+                            if ( milton_binary_version >= 4 ) {
+                                stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
+                                ok = fread_checked(stroke.points, sizeof(v2l),
+                                                   (size_t)stroke.num_points, fd);
+                            } else {
+                                stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
+                                v2i* points_32bit = (v2i*)mlt_calloc((size_t)stroke.num_points, sizeof(v2i), "Persist");
+
+                                ok = fread_checked(points_32bit, sizeof(v2i), (size_t)stroke.num_points, fd);
+                                if ( ok ) {
+                                    for (int i = 0; i < stroke.num_points; ++i) {
+                                        stroke.points[i] = VEC2L(points_32bit[i]);
+                                    }
+                                }
+                            }
                         }
                         if ( ok ) {
                             stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
@@ -299,6 +310,9 @@ milton_load(MiltonState* milton_state)
 void
 milton_save(MiltonState* milton_state)
 {
+    // Not saving yet. We need to handle version mismatch.
+    if (milton_state) return;
+
     milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
     int pid = (int)getpid();

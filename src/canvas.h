@@ -60,13 +60,27 @@ struct CanvasView
     i64 scale;                  // Zoom
     v2i zoom_center;            // In pixels
     v2l pan_center;             // In canvas scale
-    v2i relative_center;
     // i32 obsolete;
+    //i32 canvas_radius_limit;
+    v3f background_color;
+    i32 working_layer_id;
+    i32 num_layers;
+};
+
+// Used to load older MLT files.
+struct CanvasViewPreV4
+{
+    v2i screen_size;            // Size in pixels
+    i32 scale;                  // Zoom
+    v2i zoom_center;            // In pixels
+    v2i pan_center;             // In canvas scale
+    i32 downsampling_factor;
     i32 canvas_radius_limit;
     v3f background_color;
     i32 working_layer_id;
     i32 num_layers;
 };
+
 
 enum LayerFlags
 {

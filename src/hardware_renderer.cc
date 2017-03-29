@@ -9,8 +9,6 @@
 #include "milton.h"
 #include "vector.h"
 
-#define PRESSURE_RESOLUTION (1<<20)
-
 #define MAX_DEPTH_VALUE (1<<20)     // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
                                     // Also defined in stroke_raster.v.glsl
                                     //

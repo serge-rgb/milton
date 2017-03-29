@@ -5,7 +5,7 @@
 
 
 #define MILTON_MAJOR_VERSION 1
-#define MILTON_MINOR_VERSION 3
+#define MILTON_MINOR_VERSION 4
 #define MILTON_MICRO_VERSION 0
 
 #define MILTON_DEBUG 1
@@ -13,7 +13,7 @@
 #define MILTON_ZOOM_DEBUG 0
     // If MILTON_DEBUG is 0, MILTON_ZOOM_DEBUG will be 0 too!
 #if !MILTON_DEBUG
-    #undef MILTON_ZOOM_DEBUG
+    #undef MILTON_ZOOM_DEBUG;
     #define MILTON_ZOOM_DEBUG 0
 #endif
 
