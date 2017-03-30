@@ -102,7 +102,19 @@ milton_load(MiltonState* milton_state)
         u32 milton_binary_version = (u32)-1;
         if (ok) { ok = fread_checked(&milton_binary_version, sizeof(u32), 1, fd); }
 
-        if (ok) { milton_state->mlt_binary_version = milton_binary_version; }
+        if (ok) {
+
+            if ( milton_binary_version < 4 ) {
+                if ( platform_dialog_yesno ("This file will be updated to the new version of Milton. Older versions won't be able to open it. Is this OK?", "File format change") ) {
+                    milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
+                } else {
+                    ok = false;
+                    handled = true;
+                }
+            } else {
+                milton_state->mlt_binary_version = milton_binary_version;
+            }
+        }
 
         if ( milton_binary_version > MILTON_MINOR_VERSION ) {
             platform_dialog("This file was created with a newer version of Milton.", "Could not open.");
@@ -310,9 +322,6 @@ milton_load(MiltonState* milton_state)
 void
 milton_save(MiltonState* milton_state)
 {
-    // Not saving yet. We need to handle version mismatch.
-    if (milton_state) return;
-
     milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
     int pid = (int)getpid();
