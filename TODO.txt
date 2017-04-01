@@ -23,10 +23,8 @@ To-Do
         - Reduce or remove widget rounding
         - Move color picker
         - Radial menu
-    - Future
-        - Brush
-            - Support for general, implicitly defined brushes
     - Features:
+        - general, implicitly defined brushes
         - alt eye dropper
         - unzoomable&unpannable layer ("pin layer" feature) ?
         - zoom-out toggle for overview and for navigation

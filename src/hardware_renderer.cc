@@ -20,14 +20,14 @@
 // As of version 1.3.0, milton works with a 64-bit canvas, which means
 // that there can be points in the canvas which cannot be rendered by
 // the OpenGL renderer, which  works with 32-bit floats for performance
-// reasons. To solve this problem, we divide the canvas into chunks
-// which are smaller than 2^32. We keep track of a "render center",
-// which depends on the pan vector. The render center is the coordinate
-// of the chunk. Any point in the 64-bit canvas can be converted to
-// chunk coordinates by doing the subtraction
-// p - c * (1<<RENDER_CHUNK_SIZE_LOG2), where p is the point and c is
-// the render center.
-#define RENDER_CHUNK_SIZE_LOG2 26
+// and compatibility reasons. To solve this problem, we divide the
+// canvas into chunks which are smaller than 2^32. We keep track of a
+// "render center", which depends on the pan vector. The render center
+// is the coordinate of the chunk. Any point in the 64-bit canvas can
+// be converted to chunk coordinates by doing the subtraction p - c *
+// (1<<RENDER_CHUNK_SIZE_LOG2), where p is the point and c is the
+// render center.
+#define RENDER_CHUNK_SIZE_LOG2 28
 
 struct RenderData
 {
@@ -720,6 +720,7 @@ v2i
 relative_to_render_center(RenderData* render_data, v2l point)
 {
     v2i result = VEC2I(point - VEC2L(render_data->render_center*(1<<RENDER_CHUNK_SIZE_LOG2)));
+    result = VEC2I(point);
     return result;
 }
 
@@ -735,7 +736,6 @@ gpu_update_canvas(RenderData* render_data, CanvasState* canvas, CanvasView* view
         milton_log("Moving to new render center. %d, %d Clearing render data.\n", new_render_center.x, new_render_center.y);
         render_data->render_center = new_render_center;
         gpu_free_strokes(render_data, canvas);
-        //render_data->render_center = {0, 1};
     }
     gl_set_uniform_vec2i(render_data->stroke_program, "u_pan_center", 1, relative_to_render_center(render_data, pan).d);
     gl_set_uniform_vec2i(render_data->stroke_program, "u_zoom_center", 1, center.d);

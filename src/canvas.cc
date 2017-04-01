@@ -8,7 +8,6 @@
 
 v4f k_eraser_color = {23,34,45,56};
 
-
 v2l
 canvas_to_raster(CanvasView* view, v2l canvas_point)
 {

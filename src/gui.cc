@@ -392,6 +392,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         f32 alpha = canvas->working_layer->alpha;
                         if ( ImGui::SliderFloat("##opacity", &alpha, 0.0f, 1.0f) ) {
                             // Used the slider. Ask if it's OK to convert the binary format.
+                            // TODO: If we are going with automatically
+                            // promoting files to version 4, then we
+                            // don't need to do this.
                             if ( milton_state->mlt_binary_version < 3 ) {
                                 milton_log("Modified milton file from %d to 3\n", milton_state->mlt_binary_version);
                                 milton_state->mlt_binary_version = 3;
@@ -411,13 +414,25 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                             working_layer->effects = e;
                         }
 
+                        LayerEffect* prev = NULL;
+                        int effect_id = 1;
                         for ( LayerEffect* e = working_layer->effects; e != NULL; e = e->next ) {
-                            static int item = 0;
-                            const char* items[] = { "One", "Two", "Three "};
                             static bool v = 0;
                             ImGui::Checkbox("Enabled", &v);
-                            ImGui::Combo("Select", &item, items, array_count(items));
+                            ImGui::PushID(effect_id);
+                            {
+                                if (ImGui::Button("Delete")) {
+                                    if (prev) {
+                                        prev->next = e->next;
+                                    } else {  // Was the first.
+                                        working_layer->effects = e->next;
+                                    }
+                                }
+                            }
+                            ImGui::PopID();
+                            prev = e;
                             ImGui::Separator();
+                            effect_id++;
                         }
                         // ImGui::Slider
                     } ImGui::End();
