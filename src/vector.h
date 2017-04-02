@@ -72,7 +72,7 @@ operator2_scalar(/)
 
 template<typename Type>
 bool
-operator == (const Type& a, const Type& b)
+operator == (const Vector2<Type>& a, const Vector2<Type>& b)
 {
     return a.x == b.x && a.y == b.y;
 }
@@ -136,6 +136,15 @@ struct Vector3
 #pragma warning(pop)
 #endif
 
+
+
+template<typename Type>
+bool
+operator == (const Vector3<Type>& a, const Vector3<Type>& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
 // Types
 typedef Vector3<int>     v3i;
 typedef Vector3<float>   v3f;
@@ -177,6 +186,15 @@ struct Vector4
         T rgba[4];
     };
 };
+
+
+template<typename Type>
+bool
+operator == (const Vector4<Type>& a, const Vector4<Type>& b)
+{
+    return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+}
+
 
 typedef Vector4<float>  v4f;
 typedef Vector4<i32>    v4i;

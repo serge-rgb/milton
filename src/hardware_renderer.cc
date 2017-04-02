@@ -720,7 +720,6 @@ v2i
 relative_to_render_center(RenderData* render_data, v2l point)
 {
     v2i result = VEC2I(point - VEC2L(render_data->render_center*(1<<RENDER_CHUNK_SIZE_LOG2)));
-    result = VEC2I(point);
     return result;
 }
 
