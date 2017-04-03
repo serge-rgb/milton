@@ -413,6 +413,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                             e->next = working_layer->effects;
                             working_layer->effects = e;
                             e->enabled = true;
+                            e->blur.original_scale = milton_state->view->scale;
                             input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                         }
 

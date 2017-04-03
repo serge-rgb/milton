@@ -1153,9 +1153,10 @@ gpu_fill_with_texture(RenderData* render_data, float alpha = 1.0f)
 }
 
 static void
-apply_blur_average(RenderData* render_data)
+apply_blur_average(RenderData* render_data, int kernel_size)
 {
     glUseProgram(render_data->blur_average_program);
+    gl_set_uniform_i(render_data->blur_average_program, "u_kernel_size", kernel_size);
     {
         GLint t_loc = glGetAttribLocation(render_data->blur_average_program, "a_position");
         if ( t_loc >= 0 ) {
@@ -1259,7 +1260,8 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                         if ( e->type == LayerEffectType_BLUR ) {
                             switch ( e->blur.type ) {
                                 case BlurType_AVERAGE: {
-                                    apply_blur_average(render_data);
+                                    int kernel_size = min(100, 8 * e->blur.original_scale / render_data->scale);
+                                    apply_blur_average(render_data, kernel_size);
                                 } break;
                                 default: {
                                     INVALID_CODE_PATH;
