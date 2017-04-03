@@ -1119,7 +1119,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                         push(&milton_state->canvas->stroke_graveyard, stroke);
                         push(&milton_state->canvas->redo_stack, h);
 
-
                         draw_custom_rectangle = true;
                         Rect bounds = stroke.bounding_rect;
                         bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);

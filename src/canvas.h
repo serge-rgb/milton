@@ -18,6 +18,7 @@ struct LayerEffect
             i32 amount;
         } blur;
     };
+    b32 enabled;
 
     LayerEffect* next;
 };
@@ -41,9 +42,9 @@ struct Layer
 
 enum LayerEffectType
 {
-    LayerEffectType_NONE,
-
     LayerEffectType_BLUR,
+
+    LayerEffectType_COUNT,
 };
 
 enum BlurType
@@ -60,8 +61,6 @@ struct CanvasView
     i64 scale;                  // Zoom
     v2i zoom_center;            // In pixels
     v2l pan_center;             // In canvas scale
-    // i32 obsolete;
-    //i32 canvas_radius_limit;
     v3f background_color;
     i32 working_layer_id;
     i32 num_layers;

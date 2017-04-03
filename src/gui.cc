@@ -412,6 +412,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                             LayerEffect* e = arena_alloc_elem(canvas_arena, LayerEffect);
                             e->next = working_layer->effects;
                             working_layer->effects = e;
+                            e->enabled = true;
+                            input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                         }
 
                         LayerEffect* prev = NULL;
@@ -427,6 +429,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                                     } else {  // Was the first.
                                         working_layer->effects = e->next;
                                     }
+                                    input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                                 }
                             }
                             ImGui::PopID();

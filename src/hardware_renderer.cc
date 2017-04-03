@@ -44,6 +44,7 @@ struct RenderData
     GLuint exporter_program;
     GLuint texture_fill_program;
     GLuint postproc_program;
+    GLuint blur_average_program;
 #if MILTON_DEBUG
     GLuint simple_program;
 #endif
@@ -501,6 +502,14 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         gl_link_program(render_data->postproc_program, objs, array_count(objs));
         gl_set_uniform_i(render_data->postproc_program, "u_canvas", 0);
     }
+    {
+        render_data->blur_average_program = glCreateProgram();
+        GLuint objs[2] = {};
+        objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
+        objs[1] = gl_compile_shader(g_blur_average_f, GL_FRAGMENT_SHADER);
+        gl_link_program(render_data->blur_average_program, objs, array_count(objs));
+        gl_set_uniform_i(render_data->blur_average_program, "u_canvas", 0);
+    }
 #if MILTON_DEBUG
     {  // Simple program
         render_data->simple_program = glCreateProgram();
@@ -709,6 +718,7 @@ set_screen_size(RenderData* render_data, float* fscreen)
         render_data->exporter_program,
         render_data->picker_program,
         render_data->postproc_program,
+        render_data->blur_average_program,
     };
     for ( u64 pi = 0; pi < array_count(programs); ++pi ) {
         gl_set_uniform_vec2(programs[pi], "u_screen_size", 1, fscreen);
@@ -1143,6 +1153,24 @@ gpu_fill_with_texture(RenderData* render_data, float alpha = 1.0f)
 }
 
 static void
+apply_blur_average(RenderData* render_data)
+{
+    glUseProgram(render_data->blur_average_program);
+    {
+        GLint t_loc = glGetAttribLocation(render_data->blur_average_program, "a_position");
+        if ( t_loc >= 0 ) {
+            glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
+            glEnableVertexAttribArray((GLuint)t_loc);
+            GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
+                                        /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                        /*stride*/ 0, /*ptr*/ 0));
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+    }
+
+}
+
+static void
 gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                   i32 view_width, i32 view_height, float background_alpha=1.0f)
 {
@@ -1211,18 +1239,51 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 // Layer render element.
                 // The current framebuffer's color attachment is layer_texture.
 
-                // Process layer effects
-                for (LayerEffect* e = re->effects; e != NULL; e = e->next ) {
-                    if ( e->type == LayerEffectType_BLUR ) {
-                        milton_log("FOund blur!\n");
+                // Before we fill canvas_texture with the contents of
+                // layer_texture, we apply all layer effects.
+
+                GLuint layer_post_effects = layer_texture;
+                {
+                    // eraser_texture will be rewritten below with the
+                    // contents of canvas_texture. We use it here for
+                    // the layer effects.
+                    GLuint out_texture = render_data->eraser_texture;
+                    GLuint in_texture  = layer_texture;
+                    glDisable(GL_BLEND);
+                    glDisable(GL_DEPTH_TEST);
+                    for (LayerEffect* e = re->effects; e != NULL; e = e->next ) {
+                        glBindTexture(texture_target, in_texture);
+                        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                                  texture_target, out_texture, 0);
+
+                        if ( e->type == LayerEffectType_BLUR ) {
+                            switch ( e->blur.type ) {
+                                case BlurType_AVERAGE: {
+                                    apply_blur_average(render_data);
+                                } break;
+                                default: {
+                                    INVALID_CODE_PATH;
+                                }
+                            }
+                        }
+
+                        layer_post_effects = out_texture;
+
+                        { // Swap
+                            auto tmp = out_texture;
+                            out_texture = in_texture;
+                            in_texture = tmp;
+                        }
                     }
+                    glEnable(GL_BLEND);
+                    glEnable(GL_DEPTH_TEST);
                 }
 
-                // Blit layer_texture to canvas_texture
+                // Blit layer contents to canvas_texture
                 {
                     glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                               texture_target, render_data->canvas_texture, 0);
-                    glBindTexture(texture_target, layer_texture);
+                    glBindTexture(texture_target, layer_post_effects);
 
                     glDisable(GL_DEPTH_TEST);
 
