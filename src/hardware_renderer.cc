@@ -9,7 +9,7 @@
 #include "milton.h"
 #include "vector.h"
 
-#define MAX_DEPTH_VALUE (1<<20)     // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [0, MAX_DEPTH_VALUE)
+#define MAX_DEPTH_VALUE (1<<20)     // Strokes have MAX_DEPTH_VALUE different z values. 1/i for each i in [1, MAX_DEPTH_VALUE)
                                     // Also defined in stroke_raster.v.glsl
                                     //
                                     // NOTE: Using this technique means that the algorithm is not correct.
@@ -998,15 +998,12 @@ gpu_free_strokes(RenderData* render_data, CanvasState* canvas)
             StrokeBucket* bucket = &sl->root;
             i64 count = sl->count;
             while ( bucket ) {
-                i64 bucketcount = 0;
                 if ( count >= STROKELIST_BUCKET_COUNT ) {
-                    bucketcount = STROKELIST_BUCKET_COUNT;
-                    count -= STROKELIST_BUCKET_COUNT * (count / STROKELIST_BUCKET_COUNT);
-                    // count -= STROKELIST_BUCKET_COUNT;
+                    count -= STROKELIST_BUCKET_COUNT;
+                    gpu_free_strokes(bucket->data, STROKELIST_BUCKET_COUNT, render_data);
                 } else {
-                    bucketcount = count;
+                    gpu_free_strokes(bucket->data, count, render_data);
                 }
-                gpu_free_strokes(bucket->data, count, render_data);
                 bucket = bucket->next;
             }
         }
