@@ -1079,7 +1079,8 @@ gpu_clip_strokes_and_update(Arena* arena,
                                 || bounds.top > (y+h) || bounds.bottom < y;
 
                         i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
-
+                        // Area might be 0 if the stroke is smaller than
+                        // a pixel. We don't draw it in that case.
                         if ( !is_outside && area!=0 ) {
                             gpu_cook_stroke(arena, render_data, s);
                             push(clip_array, s->render_element);
