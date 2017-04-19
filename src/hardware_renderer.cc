@@ -506,7 +506,7 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         render_data->blur_average_program = glCreateProgram();
         GLuint objs[2] = {};
         objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
-        objs[1] = gl_compile_shader(g_blur_average_f, GL_FRAGMENT_SHADER);
+        objs[1] = gl_compile_shader(g_blur_f, GL_FRAGMENT_SHADER);
         gl_link_program(render_data->blur_average_program, objs, array_count(objs));
         gl_set_uniform_i(render_data->blur_average_program, "u_canvas", 0);
     }
@@ -1151,13 +1151,14 @@ gpu_fill_with_texture(RenderData* render_data, float alpha = 1.0f)
 }
 
 static void
-apply_blur_average(RenderData* render_data, int kernel_size)
+apply_blur_average(RenderData* render_data, int kernel_size, int direction)
 {
     glUseProgram(render_data->blur_average_program);
     gl_set_uniform_i(render_data->blur_average_program, "u_kernel_size", kernel_size);
-    {
-        GLint t_loc = glGetAttribLocation(render_data->blur_average_program, "a_position");
-        if ( t_loc >= 0 ) {
+    GLint t_loc = glGetAttribLocation(render_data->blur_average_program, "a_position");
+    if ( t_loc >= 0 ) {
+        gl_set_uniform_i(render_data->blur_average_program, "u_direction", direction);
+        {
             glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
             glEnableVertexAttribArray((GLuint)t_loc);
             GLCHK(glVertexAttribPointer(/*attrib location*/ (GLuint)t_loc,
@@ -1166,7 +1167,6 @@ apply_blur_average(RenderData* render_data, int kernel_size)
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
-
 }
 
 static void
@@ -1250,7 +1250,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     GLuint in_texture  = layer_texture;
                     glDisable(GL_BLEND);
                     glDisable(GL_DEPTH_TEST);
-                    for (LayerEffect* e = re->effects; e != NULL; e = e->next ) {
+                    for ( LayerEffect* e = re->effects; e != NULL; e = e->next ) {
                         glBindTexture(texture_target, in_texture);
                         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                   texture_target, out_texture, 0);
@@ -1258,8 +1258,20 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                         if ( e->type == LayerEffectType_BLUR ) {
                             switch ( e->blur.type ) {
                                 case BlurType_AVERAGE: {
-                                    int kernel_size = min(100, 8 * e->blur.original_scale / render_data->scale);
-                                    apply_blur_average(render_data, kernel_size);
+                                    int kernel_size = 8 * e->blur.original_scale / render_data->scale;
+                                    kernel_size = min(200, kernel_size);
+                                    apply_blur_average(render_data, kernel_size, 0);
+                                    {  // Swap
+                                        auto tmp    = out_texture;
+                                        out_texture = in_texture;
+                                        in_texture  = tmp;
+                                    }
+                                    glBindTexture(texture_target, in_texture);
+                                    glFramebufferTexture2DEXT(GL_FRAMEBUFFER,
+                                                              GL_COLOR_ATTACHMENT0,
+                                                              texture_target, out_texture, 0);
+
+                                    apply_blur_average(render_data, kernel_size, 1);
                                 } break;
                                 default: {
                                     INVALID_CODE_PATH;
@@ -1269,11 +1281,6 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
                         layer_post_effects = out_texture;
 
-                        { // Swap
-                            auto tmp = out_texture;
-                            out_texture = in_texture;
-                            in_texture = tmp;
-                        }
                     }
                     glEnable(GL_BLEND);
                     glEnable(GL_DEPTH_TEST);

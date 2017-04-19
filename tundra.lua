@@ -39,7 +39,7 @@ Build {
                 "src/texture_fill.v.glsl" ,
                 "src/texture_fill.f.glsl" ,
                 "src/postproc.f.glsl" ,
-                "src/blur_average.f.glsl" ,
+                "src/blur.f.glsl" ,
                 "third_party/Fxaa3_11.f.glsl"
             },
 
