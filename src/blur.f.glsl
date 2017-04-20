@@ -9,6 +9,7 @@ float gauss(float v, float sigma_squared)
 }
 
 #define KERNEL_MULTIPLE 2
+#define GAUSSIAN 0
 
 void
 main()
@@ -19,6 +20,7 @@ main()
     vec2 screen_point = vec2(gl_FragCoord.x, gl_FragCoord.y);
     vec2 coord = screen_point / u_screen_size;
     vec4 color = texture(u_canvas, coord);
+    #if GAUSSIAN
     if ( u_kernel_size > 2 ) {
         if ( u_direction == 0 ) {
             for ( int y = -KERNEL_MULTIPLE*u_kernel_size; y < KERNEL_MULTIPLE*u_kernel_size; ++y ) {
@@ -39,6 +41,22 @@ main()
     } else {
         out_color = color;
     }
+    #else
+    // LINEAR
+    if ( u_kernel_size > 2 ) {
+        if ( u_direction == 0 ) {
+            for ( int y = -u_kernel_size; y < u_kernel_size; ++y ) {
+                color += texture(u_canvas, (screen_point+vec2(0,y)) / u_screen_size);
+            }
+        } else {
+            for ( int x = -u_kernel_size; x < u_kernel_size; ++x ) {
+                color += texture(u_canvas, (screen_point+vec2(x,0)) / u_screen_size);
+            }
+
+        }
+        color /= 2*u_kernel_size;
+    }
+    #endif
     out_color = color;
 #endif
 }

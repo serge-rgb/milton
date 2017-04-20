@@ -1258,9 +1258,31 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                         if ( e->type == LayerEffectType_BLUR ) {
                             switch ( e->blur.type ) {
                                 case BlurType_AVERAGE: {
-                                    int kernel_size = 8 * e->blur.original_scale / render_data->scale;
-                                    kernel_size = min(200, kernel_size);
-                                    apply_blur_average(render_data, kernel_size, 0);
+                                    for ( int blur_iter = 0; blur_iter < 3; ++blur_iter) {
+                                        int kernel_size = 8 * e->blur.original_scale / render_data->scale;
+                                        kernel_size = min(100, kernel_size);
+                                        apply_blur_average(render_data, kernel_size, 0);
+                                        {  // Swap
+                                            auto tmp    = out_texture;
+                                            out_texture = in_texture;
+                                            in_texture  = tmp;
+                                        }
+                                        glBindTexture(texture_target, in_texture);
+                                        glFramebufferTexture2DEXT(GL_FRAMEBUFFER,
+                                                                  GL_COLOR_ATTACHMENT0,
+                                                                  texture_target, out_texture, 0);
+
+                                        apply_blur_average(render_data, kernel_size, 1);
+                                        {  // Swap
+                                            auto tmp    = out_texture;
+                                            out_texture = in_texture;
+                                            in_texture  = tmp;
+                                        }
+                                        glBindTexture(texture_target, in_texture);
+                                        glFramebufferTexture2DEXT(GL_FRAMEBUFFER,
+                                                                  GL_COLOR_ATTACHMENT0,
+                                                                  texture_target, out_texture, 0);
+                                    }
                                     {  // Swap
                                         auto tmp    = out_texture;
                                         out_texture = in_texture;
@@ -1271,7 +1293,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                                                               GL_COLOR_ATTACHMENT0,
                                                               texture_target, out_texture, 0);
 
-                                    apply_blur_average(render_data, kernel_size, 1);
+
                                 } break;
                                 default: {
                                     INVALID_CODE_PATH;
