@@ -3,8 +3,7 @@
 //
 
 #include "canvas.h"
-
-
+#include "utils.h"
 
 v4f k_eraser_color = {23,34,45,56};
 
@@ -35,7 +34,7 @@ stroke_point_contains_point(v2l p0, i64 r0, v2l p1, i64 r1)
 {
     v2l d = p1 - p0;
     // using manhattan distance, less chance of overflow. Still works well enough for this case.
-    u64 m = (u64)abs(d.x) + abs(d.y) + r1;
+    u64 m = (u64)MLT_ABS(d.x) + MLT_ABS(d.y) + r1;
     //i32 m = magnitude_i(d) + r1;
     b32 contained = false;
     if ( r0 >= 0 ) {

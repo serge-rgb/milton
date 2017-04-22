@@ -83,6 +83,14 @@ platform_cursor_hide()
 }
 
 void
+str_to_path_char(char* str, PATH_CHAR* out, size_t out_sz)
+{
+    if ( out && str ) {
+        PATH_STRNCPY(out, str, out_sz);
+    }
+}
+
+void
 platform_cursor_show()
 {
     int lvl = SDL_ShowCursor(-1);
@@ -107,5 +115,9 @@ main(int argc, char** argv)
 #ifdef __linux__
     gtk_init(&argc, &argv);
 #endif
-    milton_main();
+    char* file_to_open = NULL;
+    if ( argc == 2 ) {
+	file_to_open = argv[1];
+    }
+    milton_main(file_to_open);
 }

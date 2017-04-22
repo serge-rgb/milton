@@ -618,8 +618,8 @@ gpu_update_export_rect(RenderData* render_data, Exporter* exporter)
 
     i32 x = min(exporter->pivot.x, exporter->needle.x);
     i32 y = min(exporter->pivot.y, exporter->needle.y);
-    i32 w = abs(exporter->pivot.x - exporter->needle.x);
-    i32 h = abs(exporter->pivot.y - exporter->needle.y);
+    i32 w = MLT_ABS(exporter->pivot.x - exporter->needle.x);
+    i32 h = MLT_ABS(exporter->pivot.y - exporter->needle.y);
 
     // Normalize to [-1,1]^2
     float normalized_rect[] = {
@@ -1087,7 +1087,7 @@ gpu_clip_strokes_and_update(Arena* arena,
                         }
                         else if ( is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
                             // If it is far away, delete.
-                            i32 distance = abs(bounds.left - x + bounds.top - y);
+                            i32 distance = MLT_ABS(bounds.left - x + bounds.top - y);
                             const i32 min_number_of_screens = 4;
                             if (    bounds.top    < y - min_number_of_screens*h
                                  || bounds.bottom > y+h + min_number_of_screens*h

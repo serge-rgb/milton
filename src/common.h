@@ -67,6 +67,11 @@ typedef i32         b32;
     #endif
 #endif
 
+#ifndef MLT_ABS
+    #define MLT_ABS(x) (((x) < 0) ? -(x) : (x))
+#endif
+
+
 #define INVALID_CODE_PATH mlt_assert(!"Invalid code path")
 
 #if defined(MILTON_DEBUG)

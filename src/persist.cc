@@ -83,7 +83,17 @@ milton_unset_last_canvas_fname()
 void
 milton_load(MiltonState* milton_state)
 {
+    // Declare variables here to silence compiler warnings about using GOTO.
+    i32 history_count = 0;
+    i32 num_layers = 0;
+    i32 saved_working_layer_id = 0;
+    int err = 0;
+
     i32 layer_guid = 0;
+    ColorButton* btn = NULL;
+    MiltonGui* gui = NULL;
+    auto saved_size = milton_state->view->screen_size;
+
     milton_log("Milton: loading file\n");
     // Reset the canvas.
     milton_reset_canvas(milton_state);
@@ -99,9 +109,10 @@ milton_load(MiltonState* milton_state)
     b32 handled = false;  // when ok==false but we don't need to prompt a scary message.
 
     if ( fd ) {
+        u32 milton_binary_version = (u32)-1;
+
         u32 milton_magic = (u32)-1;
         READ(&milton_magic, sizeof(u32), 1, fd);
-        u32 milton_binary_version = (u32)-1;
         READ(&milton_binary_version, sizeof(u32), 1, fd);
 
         if (ok) {
@@ -128,7 +139,6 @@ milton_load(MiltonState* milton_state)
             goto END;
         }
 
-        auto saved_size = milton_state->view->screen_size;
         if ( milton_binary_version >= 4 ) {
             READ(milton_state->view, sizeof(CanvasView), 1, fd);
         } else {
@@ -147,7 +157,7 @@ milton_load(MiltonState* milton_state)
         milton_state->view->screen_size = saved_size;
 
         // The process of loading changes state. working_layer_id changes when creating layers.
-        i32 saved_working_layer_id = milton_state->view->working_layer_id;
+        saved_working_layer_id = milton_state->view->working_layer_id;
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
             platform_dialog("MLT file could not be loaded. Possible endianness mismatch.", "Problem");
@@ -156,7 +166,7 @@ milton_load(MiltonState* milton_state)
             goto END;
         }
 
-        i32 num_layers = 0;
+        num_layers = 0;
         READ(&num_layers, sizeof(i32), 1, fd);
         READ(&layer_guid, sizeof(i32), 1, fd);
 
@@ -225,15 +235,17 @@ milton_load(MiltonState* milton_state)
         READ(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
 
         // Buttons
+	{
         i32 button_count = 0;
-        MiltonGui* gui = milton_state->gui;
-        ColorButton* btn = gui->picker.color_buttons;
+        gui = milton_state->gui;
+        btn = gui->picker.color_buttons;
 
         READ(&button_count, sizeof(i32), 1, fd);
         for ( i32 i = 0;
               btn!=NULL && i < button_count;
               ++i, btn=btn->next ) {
             READ(&btn->rgba, sizeof(v4f), 1, fd);
+        }
         }
 
         // Brush
@@ -244,7 +256,7 @@ milton_load(MiltonState* milton_state)
             READ(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd);
         }
 
-        i32 history_count = 0;
+        history_count = 0;
         READ(&history_count, sizeof(history_count), 1, fd);
         reset(&milton_state->canvas->history);
         reserve(&milton_state->canvas->history, history_count);
@@ -266,7 +278,7 @@ milton_load(MiltonState* milton_state)
             }
         }
 
-        int err = fclose(fd);
+        err = fclose(fd);
         if ( err != 0 ) {
             ok = false;
         }
@@ -306,6 +318,10 @@ END:
 void
 milton_save(MiltonState* milton_state)
 {
+    // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
+    i32 history_count = 0;
+    u32 milton_binary_version = 0;
+    i32 num_layers = 0;
     milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
     int pid = (int)getpid();
@@ -324,16 +340,15 @@ milton_save(MiltonState* milton_state)
 
         WRITE(&milton_magic, sizeof(u32), 1, fd);
 
-        u32 milton_binary_version = milton_state->mlt_binary_version;
+        milton_binary_version = milton_state->mlt_binary_version;
 
         WRITE(&milton_binary_version, sizeof(u32), 1, fd);
         WRITE(milton_state->view, sizeof(CanvasView), 1, fd);
 
-        i32 num_layers = number_of_layers(milton_state->canvas->root_layer);
+        num_layers = number_of_layers(milton_state->canvas->root_layer);
         WRITE(&num_layers, sizeof(i32), 1, fd);
         WRITE(&milton_state->canvas->layer_guid, sizeof(i32), 1, fd);
 
-        i32 test_count = 0;
         for ( Layer* layer = milton_state->canvas->root_layer; layer; layer=layer->next  ) {
             if ( layer->strokes.count > INT_MAX ) {
                 milton_die_gracefully("FATAL. Number of strokes in layer greater than can be stored in file format. ");
@@ -362,10 +377,7 @@ milton_save(MiltonState* milton_state)
             } else {
                 ok = false;
             }
-            //milton_log("Saving layer %d with %d strokes\n", test_count+1, num_strokes);
-            ++test_count;
         }
-        mlt_assert (test_count == num_layers);
 
         WRITE(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
 
@@ -394,7 +406,7 @@ milton_save(MiltonState* milton_state)
             WRITE(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd);
         }
 
-        i32 history_count = (i32)milton_state->canvas->history.count;
+        history_count = (i32)milton_state->canvas->history.count;
         if ( milton_state->canvas->history.count > INT_MAX ) {
             history_count = 0;
         }

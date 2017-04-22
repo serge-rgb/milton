@@ -55,18 +55,19 @@ typedef Vector2<float>   v2f;
     return r;               \
 }
 #define operator2_assign(OP) \
-        template<typename T> \
-        Vector2<T>& operator OP= (Vector2<T>& a, const Vector2<T>& b) \
+    template<typename T> \
+    Vector2<T>& \
+    operator OP (Vector2<T>& a, const Vector2<T>& b) \
 {                           \
-    a.x OP= b.x;            \
-    a.y OP= b.y;            \
+    a.x OP b.x;            \
+    a.y OP b.y;            \
     return a;               \
 }
 
 operator2_vector(+)
 operator2_vector(-)
-operator2_assign(+)
-operator2_assign(-)
+operator2_assign(+=)
+operator2_assign(-=)
 operator2_scalar(*)
 operator2_scalar(/)
 

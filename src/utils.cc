@@ -30,8 +30,8 @@ v2l_to_v2f(v2l p)
     #pragma warning(push)
     #pragma warning(disable: 4307)
     #endif
-    mlt_assert(abs(p.x) < (1L<<31) - 1L);
-    mlt_assert(abs(p.y) < (1L<<31) - 1L);
+    mlt_assert(MLT_ABS(p.x) < (1L<<31) - 1L);
+    mlt_assert(MLT_ABS(p.y) < (1L<<31) - 1L);
     #ifdef _WIN32
     #pragma warning(pop)
     #endif
@@ -68,7 +68,7 @@ distance(v2f a, v2f b)
 i32
 manhattan_distance(v2i a, v2i b)
 {
-   i32 dist = abs(a.x - b.x) + abs(a.y - b.y);
+   i32 dist = MLT_ABS(a.x - b.x) + MLT_ABS(a.y - b.y);
    return dist;
 }
 

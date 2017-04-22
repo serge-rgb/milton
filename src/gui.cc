@@ -569,8 +569,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             if ( exporter->state == ExporterState_SELECTED ) {
                 i32 x = min( exporter->needle.x, exporter->pivot.x );
                 i32 y = min( exporter->needle.y, exporter->pivot.y );
-                int raster_w = abs(exporter->needle.x - exporter->pivot.x);
-                int raster_h = abs(exporter->needle.y - exporter->pivot.y);
+                int raster_w = MLT_ABS(exporter->needle.x - exporter->pivot.x);
+                int raster_h = MLT_ABS(exporter->needle.y - exporter->pivot.y);
 
                 ImGui::Text("%s: %dx%d\n",
                             LOC(current_selection),
