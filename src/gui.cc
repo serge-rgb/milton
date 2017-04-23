@@ -409,7 +409,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 Layer* working_layer = canvas->working_layer;
                 Arena* canvas_arena = &canvas->arena;
 
-                static b32 show_effects = true;
+                static b32 show_effects = false;
                 if ( ImGui::Button("Effects")) {
                     show_effects = !show_effects;
                 }

@@ -12,9 +12,10 @@
 struct LayerEffect
 {
     i32 type;  // LayerEffectType enum
+    b32 enabled;
+
     union {
         struct {  // Blur
-            i32 amount;
             // In order for the blur to be resolution independent, we
             // save the zoom level at the time of creation and always
             // multiply the kernel size by original_scale / CURRENT_SCALE
@@ -22,7 +23,6 @@ struct LayerEffect
             i32 kernel_size;
         } blur;
     };
-    b32 enabled;
 
     LayerEffect* next;
 };

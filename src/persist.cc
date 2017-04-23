@@ -160,7 +160,7 @@ milton_load(MiltonState* milton_state)
         saved_working_layer_id = milton_state->view->working_layer_id;
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
-            platform_dialog("MLT file could not be loaded. Possible endianness mismatch.", "Problem");
+            platform_dialog("MLT file could not be loaded. Magic number mismatch.", "Problem");
             milton_unset_last_canvas_fname();
             ok = false;
             goto END;
@@ -230,12 +230,32 @@ milton_load(MiltonState* milton_state)
                     }
                 }
             }
+            if ( milton_binary_version >= 4 ) {
+                i64 num_effects = 0;
+                READ(&num_effects, sizeof(num_effects), 1, fd);
+                if ( num_effects > 0 ) {
+                    LayerEffect** e = &layer->effects;
+                    for ( i64 i = 0; i < num_effects; ++i ) {
+                        mlt_assert(*e == NULL);
+                        *e = arena_alloc_elem(&canvas->arena, LayerEffect);
+                        READ(&(*e)->type, sizeof((*e)->type), 1, fd);
+                        READ(&(*e)->enabled, sizeof((*e)->enabled), 1, fd);
+                        switch ((*e)->type) {
+                            case LayerEffectType_BLUR: {
+                                READ(&(*e)->blur.original_scale, sizeof((*e)->blur.original_scale), 1, fd);
+                                READ(&(*e)->blur.kernel_size, sizeof((*e)->blur.kernel_size), 1, fd);
+                            } break;
+                        }
+                        e = &(*e)->next;
+                    }
+                }
+            }
         }
         milton_state->view->working_layer_id = saved_working_layer_id;
         READ(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
 
         // Buttons
-	{
+    {
         i32 button_count = 0;
         gui = milton_state->gui;
         btn = gui->picker.color_buttons;
@@ -376,6 +396,23 @@ milton_save(MiltonState* milton_state)
                 }
             } else {
                 ok = false;
+            }
+            {
+                i64 num_effects = 0;
+                for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) {
+                    ++num_effects;
+                }
+                WRITE(&num_effects, sizeof(num_effects), 1, fd);
+                for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) {
+                    WRITE(&e->type, sizeof(e->type), 1, fd);
+                    WRITE(&e->enabled, sizeof(e->enabled), 1, fd);
+                    switch (e->type) {
+                        case LayerEffectType_BLUR: {
+                            WRITE(&e->blur.original_scale, sizeof(e->blur.original_scale), 1, fd);
+                            WRITE(&e->blur.kernel_size, sizeof(e->blur.kernel_size), 1, fd);
+                        } break;
+                    }
+                }
             }
         }
 
