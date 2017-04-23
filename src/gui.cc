@@ -408,21 +408,31 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         }
 
                         static b32 selecting = false;
-                        if ( ImGui::Button("New effect") ) {
+
+                        if ( ImGui::Button("Add Blur") ) {
                             LayerEffect* e = arena_alloc_elem(canvas_arena, LayerEffect);
                             e->next = working_layer->effects;
                             working_layer->effects = e;
                             e->enabled = true;
                             e->blur.original_scale = milton_state->view->scale;
+                            e->blur.kernel_size = 10;
                             input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                         }
 
                         LayerEffect* prev = NULL;
                         int effect_id = 1;
                         for ( LayerEffect* e = working_layer->effects; e != NULL; e = e->next ) {
-                            static bool v = 0;
-                            ImGui::Checkbox("Enabled", &v);
                             ImGui::PushID(effect_id);
+                            static bool v = 0;
+                            if ( ImGui::Checkbox("Enabled", (bool*)&e->enabled) ) {
+                                input->flags |= MiltonInputFlags_FULL_REFRESH;
+                            }
+                            if ( ImGui::SliderInt("Level", &e->blur.kernel_size, 2, 100, 0) ) {
+                                if (e->blur.kernel_size % 2 == 0) {
+                                    --e->blur.kernel_size;
+                                }
+                                input->flags |= MiltonInputFlags_FULL_REFRESH;
+                            }
                             {
                                 if (ImGui::Button("Delete")) {
                                     if (prev) {

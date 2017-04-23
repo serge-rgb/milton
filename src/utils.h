@@ -179,3 +179,12 @@ struct WallTime
 };
 // Use platform_get_walltime to fill struct.
 
+// Generic swap function
+template<typename T>
+void
+swap(T& a, T& b)
+{
+    T tmp = a;
+    a = b;
+    b = tmp;
+}

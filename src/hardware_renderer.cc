@@ -1150,8 +1150,14 @@ gpu_fill_with_texture(RenderData* render_data, float alpha = 1.0f)
     }
 }
 
+enum BoxFilterPass
+{
+    BoxFilterPass_VERTICAL = 0,
+    BoxFilterPass_HORIZONTAL = 1,
+};
+
 static void
-apply_blur_average(RenderData* render_data, int kernel_size, int direction)
+box_filter_pass(RenderData* render_data, int kernel_size, int direction)
 {
     glUseProgram(render_data->blur_average_program);
     gl_set_uniform_i(render_data->blur_average_program, "u_kernel_size", kernel_size);
@@ -1251,54 +1257,36 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     glDisable(GL_BLEND);
                     glDisable(GL_DEPTH_TEST);
                     for ( LayerEffect* e = re->effects; e != NULL; e = e->next ) {
+                        if ( e->enabled == false ) { continue; }
                         glBindTexture(texture_target, in_texture);
                         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                   texture_target, out_texture, 0);
 
                         if ( e->type == LayerEffectType_BLUR ) {
-                            switch ( e->blur.type ) {
-                                case BlurType_AVERAGE: {
-                                    for ( int blur_iter = 0; blur_iter < 3; ++blur_iter) {
-                                        int kernel_size = 8 * e->blur.original_scale / render_data->scale;
-                                        kernel_size = min(100, kernel_size);
-                                        apply_blur_average(render_data, kernel_size, 0);
-                                        {  // Swap
-                                            auto tmp    = out_texture;
-                                            out_texture = in_texture;
-                                            in_texture  = tmp;
-                                        }
-                                        glBindTexture(texture_target, in_texture);
-                                        glFramebufferTexture2DEXT(GL_FRAMEBUFFER,
-                                                                  GL_COLOR_ATTACHMENT0,
-                                                                  texture_target, out_texture, 0);
-
-                                        apply_blur_average(render_data, kernel_size, 1);
-                                        {  // Swap
-                                            auto tmp    = out_texture;
-                                            out_texture = in_texture;
-                                            in_texture  = tmp;
-                                        }
-                                        glBindTexture(texture_target, in_texture);
-                                        glFramebufferTexture2DEXT(GL_FRAMEBUFFER,
-                                                                  GL_COLOR_ATTACHMENT0,
-                                                                  texture_target, out_texture, 0);
-                                    }
-                                    {  // Swap
-                                        auto tmp    = out_texture;
-                                        out_texture = in_texture;
-                                        in_texture  = tmp;
-                                    }
-                                    glBindTexture(texture_target, in_texture);
-                                    glFramebufferTexture2DEXT(GL_FRAMEBUFFER,
-                                                              GL_COLOR_ATTACHMENT0,
-                                                              texture_target, out_texture, 0);
+                            // Three box filter iterations approximate a Gaussian blur
+                            for (int blur_iter = 0; blur_iter < 3; ++blur_iter) {
+                                // Box filter implementation uses the separable property.
+                                // Apply horizontal pass and then vertical pass.
+                                int kernel_size = e->blur.kernel_size * e->blur.original_scale / render_data->scale;
+                                kernel_size = min(200, kernel_size);
+                                box_filter_pass(render_data, kernel_size, BoxFilterPass_VERTICAL);
+                                swap(out_texture, in_texture);
+                                glBindTexture(texture_target, in_texture);
+                                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                                          texture_target, out_texture, 0);
 
 
-                                } break;
-                                default: {
-                                    INVALID_CODE_PATH;
-                                }
+                                box_filter_pass(render_data, kernel_size, BoxFilterPass_HORIZONTAL);
+                                swap(out_texture, in_texture);
+                                glBindTexture(texture_target, in_texture);
+                                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                                          texture_target, out_texture, 0);
+
                             }
+                            swap(out_texture, in_texture);
+                            glBindTexture(texture_target, in_texture);
+                            glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                                      texture_target, out_texture, 0);
                         }
 
                         layer_post_effects = out_texture;
