@@ -957,7 +957,7 @@ milton_main(char* file_to_open)
 
         i32 input_flags = (i32)milton_input.flags;
 
-        ImGui_ImplSdlGL3_NewFrame();
+        ImGui_ImplSdlGL3_NewFrame(window);
         // Clear our pointer input because we captured an ImGui widget!
         if ( ImGui::GetIO().WantCaptureMouse ) {
             platform_state.num_point_results = 0;

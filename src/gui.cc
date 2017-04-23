@@ -30,14 +30,53 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
 
     int color_stack = 0;
-    ImGui::GetStyle().WindowFillAlphaDefault = 0.9f;  // Redundant for all calls but the first one...
-    ImGui::PushStyleColor(ImGuiCol_WindowBg,        ImVec4{.5f,.5f,.5f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_TitleBg,         ImVec4{.3f,.3f,.3f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,   ImVec4{.4f,.4f,.4f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_Button,          ImVec4{.3f,.3f,.4f,1}); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_Text,            ImVec4{1, 1, 1, 1}); ++color_stack;
 
-    ImGui::PushStyleColor(ImGuiCol_MenuBarBg,   ImVec4{.3f,.3f,.3f,1}); ++color_stack;
+    static auto color_window_background = ImVec4{.929f, .949f, .957f, 1};
+    //static auto color_title_bg          = ImVec4{.957f,.353f, .286f,1};
+    static auto color_title_bg          = color_window_background;
+    static auto color_title_fg          = ImVec4{151/255.f, 184/255.f, 210/255.f, 1};
+    static auto color_buttons           = ImVec4{.686f, .796f, 1.0f, 1};
+    static auto color_menu_bg           = ImVec4{.784f, .392f, .784f, 1};
+    static auto color_text              = ImVec4{.2f,.2f,.2f,1};
+    static auto color_slider     = ImVec4{ 148/255.f, 182/255.f, 182/255.f,1};
+    static auto frame_background     = ImVec4{ 0.862745f, 0.862745f, 0.862745f,1};
+    static auto color_text_selected     = ImVec4{ 0.509804f, 0.627451f, 0.823529f,1};
+
+    // Helper Imgui code to select color scheme
+#if 0
+    ImGui::ColorEdit3("Window Background", (float*)&color_window_background);
+    ImGui::ColorEdit3("Title background", (float*)&color_title_bg);
+    ImGui::ColorEdit3("Title background active", (float*)&color_title_fg);
+
+    ImGui::ColorEdit3("Buttons", (float*)&color_buttons);
+    ImGui::ColorEdit3("Menu BG", (float*)&color_menu_bg);
+    ImGui::ColorEdit3("text", (float*)&color_text);
+    ImGui::ColorEdit3("frame background", (float*)&frame_background);
+    ImGui::ColorEdit3("selected", (float*)&color_text_selected);
+    if ( ImGui::Button("Print out") ) {
+        auto print_color = [&](char* label, ImVec4 c) {
+            milton_log("%s : %f, %f, %f \n", label, c.x, c.y, c.z);
+        };
+        print_color("window bg", color_window_background);
+        print_color("title bg", color_title_bg);
+        print_color("buttons", color_buttons);
+        print_color("menu bg", color_menu_bg);
+        print_color("text", color_text);
+        print_color("selected", frame_background);
+        print_color("selected", color_text_selected);
+    }
+#endif
+
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,        color_window_background); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_PopupBg,         color_window_background); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBg,         color_title_bg); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,   color_title_fg); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_Button,          color_buttons); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_Text,            color_text); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_MenuBarBg,       color_title_bg); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg,  color_buttons); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab,      color_slider); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,      frame_background); ++color_stack;
 
     //ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4{.1f,.1f,.1f,1}); ++color_stack;
 
@@ -248,10 +287,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         char msg[1024];
         WallTime lst = milton_state->last_save_time;
 
-        snprintf(msg, 1024, "\t%s -- Last saved: %.2d:%.2d:%.2d",
+        snprintf(msg, 1024, "\t%s -- Last saved: %.2d:%.2d:%.2d\t\tZoom level %f",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
                  file_name,
-                 lst.hours, lst.minutes, lst.seconds);
+                 lst.hours, lst.minutes, lst.seconds,
+                 log2(1 + milton_state->view->scale / (double)MILTON_DEFAULT_SCALE));
 
         if ( ImGui::BeginMenu(msg, /*bool enabled = */false) ) {
             ImGui::EndMenu();
@@ -304,24 +344,19 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     milton_state->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                 }
 
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1,1,1,1}); {
-                    if ( milton_state->current_mode != MiltonMode_PEN ) {
-                        if ( ImGui::Button(LOC(switch_to_brush)) ) {
-                            i32 f = input->flags;
-                            input->flags = (MiltonInputFlags)f;
-                            input->mode_to_set = MiltonMode_PEN;
-                        }
-                    }
-
-                    if ( milton_state->current_mode != MiltonMode_ERASER ) {
-                        if ( ImGui::Button(LOC(switch_to_eraser)) ) {
-                            input->mode_to_set = MiltonMode_ERASER;
-                        }
+                if ( milton_state->current_mode != MiltonMode_PEN ) {
+                    if ( ImGui::Button(LOC(switch_to_brush)) ) {
+                        i32 f = input->flags;
+                        input->flags = (MiltonInputFlags)f;
+                        input->mode_to_set = MiltonMode_PEN;
                     }
                 }
-                ImGui::PopStyleColor(1); // Pop white button text
 
-                // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+                if ( milton_state->current_mode != MiltonMode_ERASER ) {
+                    if ( ImGui::Button(LOC(switch_to_eraser)) ) {
+                        input->mode_to_set = MiltonMode_ERASER;
+                    }
+                }
             }
             // Important to place this before ImGui::End()
             const v2i pos = {
@@ -408,6 +443,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         }
 
                         static b32 selecting = false;
+
+                        ImGui::Separator();
 
                         if ( ImGui::Button("Add Blur") ) {
                             LayerEffect* e = arena_alloc_elem(canvas_arena, LayerEffect);
