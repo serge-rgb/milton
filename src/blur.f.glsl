@@ -14,6 +14,7 @@ main()
     // LINEAR
     vec2 half_pixel_size = 1 / (2*u_screen_size);
     int n_samples = 0;
+    out_color = vec4(0);
     if ( u_kernel_size > 1 ) {
         if ( u_direction == 0 ) {
             for ( int y = -u_kernel_size+1; y < u_kernel_size; y+=2 ) {
@@ -23,7 +24,6 @@ main()
             for ( int x = -u_kernel_size+1; x < u_kernel_size; x+=2 ) {
                 out_color += texture(u_canvas, (screen_point+vec2(x-0.5,0.0)) / u_screen_size);
             }
-
         }
         out_color /= u_kernel_size;
     } else {
