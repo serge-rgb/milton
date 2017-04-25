@@ -287,6 +287,9 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     milton_input.scale += event.wheel.y;
                     v2i zoom_center = platform_state->pointer;
                     milton_set_zoom_at_point(milton_state, zoom_center);
+                    // ImGui has a delay of 1 frame when displaying zoom info.
+                    // Force next frame to have the value up to date.
+                    platform_state->force_next_frame = true;
                 }
 
                 break;
@@ -1036,6 +1039,9 @@ milton_main(char* file_to_open)
             //  milton_log("Sleeping at least %d ms\n", (u32)(to_sleep_us/1000));
             SDL_Delay((u32)(to_sleep_us/1000));
         }
+        #if REDRAW_EVERY_FRAME
+        platform_state.force_next_frame = true;
+        #endif
         // IMGUI events might update until the frame after they are created.
         if ( !platform_state.force_next_frame ) {
             SDL_WaitEvent(NULL);
