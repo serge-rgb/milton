@@ -303,7 +303,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         char msg[1024];
         WallTime lst = milton_state->last_save_time;
 
-        snprintf(msg, 1024, "\t%s -- Last saved: %.2d:%.2d:%.2d\t\tZoom level %f",
+        snprintf(msg, 1024, "\t%s -- Last saved: %.2d:%.2d:%.2d\t\tZoom level %.2f",
                  (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
                  file_name,
                  lst.hours, lst.minutes, lst.seconds,

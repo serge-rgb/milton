@@ -1156,6 +1156,14 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                             bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
                             bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
                             custom_rectangle = rect_union(custom_rectangle, bounds);
+                            for ( LayerEffect* e = l->effects; e != NULL; e = e->next ) {
+                                CanvasView* view = milton_state->view;
+                                switch ( e->type ) {
+                                    case LayerEffectType_BLUR: {
+                                        custom_rectangle = rect_enlarge(custom_rectangle, 10*(i32)(e->blur.kernel_size*(double)e->blur.original_scale/(double)view->scale));
+                                    } break;
+                                }
+                            }
 
                             break;
                         }
@@ -1341,6 +1349,16 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
     else if ( is_user_drawing(milton_state) ) {
         milton_state->working_stroke.bounding_rect = bounding_box_for_stroke(&milton_state->working_stroke);
+        for ( LayerEffect* e = milton_state->canvas->working_layer->effects; e != NULL; e = e->next ) {
+            switch ( e->type ) {
+                case LayerEffectType_BLUR: {
+                    CanvasView* view = milton_state->view;
+                    milton_state->working_stroke.bounding_rect =
+                        rect_enlarge(milton_state->working_stroke.bounding_rect,
+                            2*(i32)(e->blur.kernel_size*(double)e->blur.original_scale/(double)view->scale));
+                } break;
+            }
+        }
     }
 
 
