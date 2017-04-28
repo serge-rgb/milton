@@ -114,6 +114,8 @@ Layer*  layer_get_by_id(Layer* root_layer, i32 id);
 
 void    layer_toggle_visibility(Layer* layer);
 
+b32     layer_has_blur_effect(Layer* layer);
+
 Stroke* layer_push_stroke(Layer* layer, Stroke stroke);
 
 typedef struct MiltonState MiltonState;
@@ -124,4 +126,3 @@ void    free_layers(Layer* root);
 
 i64     count_strokes(Layer* root);
 i64     count_clipped_strokes(Layer* root, i32 num_workers);
-

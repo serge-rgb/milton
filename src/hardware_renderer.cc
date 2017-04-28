@@ -44,7 +44,7 @@ struct RenderData
     GLuint exporter_program;
     GLuint texture_fill_program;
     GLuint postproc_program;
-    GLuint blur_average_program;
+    GLuint blur_program;
 #if MILTON_DEBUG
     GLuint simple_program;
 #endif
@@ -503,12 +503,12 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         gl_set_uniform_i(render_data->postproc_program, "u_canvas", 0);
     }
     {
-        render_data->blur_average_program = glCreateProgram();
+        render_data->blur_program = glCreateProgram();
         GLuint objs[2] = {};
         objs[0] = gl_compile_shader(g_simple_v, GL_VERTEX_SHADER);
         objs[1] = gl_compile_shader(g_blur_f, GL_FRAGMENT_SHADER);
-        gl_link_program(render_data->blur_average_program, objs, array_count(objs));
-        gl_set_uniform_i(render_data->blur_average_program, "u_canvas", 0);
+        gl_link_program(render_data->blur_program, objs, array_count(objs));
+        gl_set_uniform_i(render_data->blur_program, "u_canvas", 0);
     }
 #if MILTON_DEBUG
     {  // Simple program
@@ -718,7 +718,7 @@ set_screen_size(RenderData* render_data, float* fscreen)
         render_data->exporter_program,
         render_data->picker_program,
         render_data->postproc_program,
-        render_data->blur_average_program,
+        render_data->blur_program,
     };
     for ( u64 pi = 0; pi < array_count(programs); ++pi ) {
         gl_set_uniform_vec2(programs[pi], "u_screen_size", 1, fscreen);
@@ -1023,10 +1023,6 @@ gpu_clip_strokes_and_update(Arena* arena,
     layer_element.flags |= RenderElementFlags_LAYER;
 
     Rect screen_bounds;
-    screen_bounds.left = 0;
-    screen_bounds.right = render_data->width;
-    screen_bounds.top = render_data->height;
-    screen_bounds.bottom = 0;
 
     screen_bounds.left = x;
     screen_bounds.right = x + w;
@@ -1085,7 +1081,7 @@ gpu_clip_strokes_and_update(Arena* arena,
                             gpu_cook_stroke(arena, render_data, s);
                             push(clip_array, s->render_element);
                         }
-                        else if ( is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
+                        else if ( false && is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
                             // If it is far away, delete.
                             i32 distance = MLT_ABS(bounds.left - x + bounds.top - y);
                             const i32 min_number_of_screens = 4;
@@ -1159,11 +1155,11 @@ enum BoxFilterPass
 static void
 box_filter_pass(RenderData* render_data, int kernel_size, int direction)
 {
-    glUseProgram(render_data->blur_average_program);
-    gl_set_uniform_i(render_data->blur_average_program, "u_kernel_size", kernel_size);
-    GLint t_loc = glGetAttribLocation(render_data->blur_average_program, "a_position");
+    glUseProgram(render_data->blur_program);
+    gl_set_uniform_i(render_data->blur_program, "u_kernel_size", kernel_size);
+    GLint t_loc = glGetAttribLocation(render_data->blur_program, "a_position");
     if ( t_loc >= 0 ) {
-        gl_set_uniform_i(render_data->blur_average_program, "u_direction", direction);
+        gl_set_uniform_i(render_data->blur_program, "u_direction", direction);
         {
             glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_screen_quad);
             glEnableVertexAttribArray((GLuint)t_loc);
@@ -1185,6 +1181,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
     i32 w = view_width;
     i32 h = view_height;
     glScissor(x, y, w, h);
+
     glClearDepth(0.0f);
 
     GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo));
@@ -1241,6 +1238,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
             RenderElement* re = &clip_array->data[i];
 
             if ( re->flags & RenderElementFlags_LAYER ) {
+
                 // Layer render element.
                 // The current framebuffer's color attachment is layer_texture.
 
@@ -1333,6 +1331,8 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     glEnable(GL_DEPTH_TEST);
                     glEnable(GL_BLEND);
                 }
+
+                // glScissor(x, y, w, h);
 
             }
             // If this element is not a layer, then it is a stroke.

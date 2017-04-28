@@ -98,7 +98,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
     ImGui::PushStyleColor(ImGuiCol_CheckMark,      color_slider); ++color_stack;
 
-
     // Menu ----
     int menu_style_stack = 0;
     // TODO: translate

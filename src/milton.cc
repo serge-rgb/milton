@@ -1349,16 +1349,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
     else if ( is_user_drawing(milton_state) ) {
         milton_state->working_stroke.bounding_rect = bounding_box_for_stroke(&milton_state->working_stroke);
-        for ( LayerEffect* e = milton_state->canvas->working_layer->effects; e != NULL; e = e->next ) {
-            switch ( e->type ) {
-                case LayerEffectType_BLUR: {
-                    CanvasView* view = milton_state->view;
-                    milton_state->working_stroke.bounding_rect =
-                        rect_enlarge(milton_state->working_stroke.bounding_rect,
-                            2*(i32)(e->blur.kernel_size*(double)e->blur.original_scale/(double)view->scale));
-                } break;
-            }
-        }
     }
 
 
@@ -1385,7 +1375,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 milton_update_brushes(milton_state);
                 // If we are drawing, end the current stroke so that it
                 // doesn't change from eraser to brush or vice versa.
-
             }
         }
     }
@@ -1517,17 +1506,27 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         view_width = custom_rectangle.right - custom_rectangle.left;
         view_height = custom_rectangle.bottom - custom_rectangle.top;
         VALIDATE_RECT(custom_rectangle);
+
+        view_x = 0;
+        view_y = 0;
+        view_width = milton_state->view->screen_size.w;
+        view_height = milton_state->view->screen_size.h;
     }
     else if ( milton_state->working_stroke.num_points > 0 ) {
-        Rect bounds = milton_state->working_stroke.bounding_rect;
-        bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
+        Rect bounds      = milton_state->working_stroke.bounding_rect;
+        bounds.top_left  = canvas_to_raster(milton_state->view, bounds.top_left);
         bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
-        view_x = bounds.left;
-        view_y = bounds.top;
-        // view_y = milton_state->view->screen_size.h - bounds.bottom;
 
-        view_width = bounds.right - bounds.left;
+        view_x           = bounds.left;
+        view_y           = bounds.top;
+
+        view_width  = bounds.right - bounds.left;
         view_height = bounds.bottom - bounds.top;
+
+        view_x = 0;
+        view_y = 0;
+        view_width = milton_state->view->screen_size.w;
+        view_height = milton_state->view->screen_size.h;
     }
 
     PROFILE_GRAPH_BEGIN(clipping);

@@ -18,11 +18,13 @@ main()
     if ( u_kernel_size > 1 ) {
         if ( u_direction == 0 ) {
             for ( int y = -u_kernel_size+1; y < u_kernel_size; y+=2 ) {
-                out_color += texture(u_canvas, (screen_point+vec2(0.0,y-0.5)) / u_screen_size);
+                vec2 coord = (screen_point+vec2(0.0,y-0.5)) / u_screen_size;
+                out_color += texture(u_canvas, coord);
             }
         } else {
             for ( int x = -u_kernel_size+1; x < u_kernel_size; x+=2 ) {
-                out_color += texture(u_canvas, (screen_point+vec2(x-0.5,0.0)) / u_screen_size);
+                vec2 coord = (screen_point+vec2(x-0.5,0.0)) / u_screen_size;
+                out_color += texture(u_canvas, coord);
             }
         }
         out_color /= u_kernel_size;
