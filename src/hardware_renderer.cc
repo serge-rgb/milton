@@ -1256,11 +1256,12 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     glDisable(GL_DEPTH_TEST);
                     for ( LayerEffect* e = re->effects; e != NULL; e = e->next ) {
                         if ( e->enabled == false ) { continue; }
-                        glBindTexture(texture_target, in_texture);
-                        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                                  texture_target, out_texture, 0);
 
-                        if ( e->type == LayerEffectType_BLUR ) {
+                        if ( (render_data->flags & RenderDataFlags_WITH_BLUR) && e->type == LayerEffectType_BLUR ) {
+                            glBindTexture(texture_target, in_texture);
+                            glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                                      texture_target, out_texture, 0);
+
                             // Three box filter iterations approximate a Gaussian blur
                             for (int blur_iter = 0; blur_iter < 3; ++blur_iter) {
                                 // Box filter implementation uses the separable property.
@@ -1285,10 +1286,8 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                             glBindTexture(texture_target, in_texture);
                             glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                       texture_target, out_texture, 0);
+                            layer_post_effects = out_texture;
                         }
-
-                        layer_post_effects = out_texture;
-
                     }
                     glEnable(GL_BLEND);
                     glEnable(GL_DEPTH_TEST);

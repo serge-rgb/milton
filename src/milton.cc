@@ -539,17 +539,9 @@ upload_gui(MiltonState* milton_state)
 }
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
-b32
+void
 milton_resize_and_pan(MiltonState* milton_state, v2l pan_delta, v2i new_screen_size)
 {
-    b32 pan_ok = true;
-    if ( (new_screen_size.w > 8000
-          || new_screen_size.h > 8000
-          || new_screen_size.w <= 0
-          || new_screen_size.h <= 0) ) {
-        return pan_ok;
-    }
-
     b32 do_realloc = false;
     if ( milton_state->max_width <= new_screen_size.w ) {
         milton_state->max_width = new_screen_size.w + 256;
@@ -586,26 +578,12 @@ milton_resize_and_pan(MiltonState* milton_state, v2l pan_delta, v2i new_screen_s
         // Add delta to pan vector
         v2l pan_center = milton_state->view->pan_center - (pan_delta * milton_state->view->scale);
 
-/*
-        if ( pan_center.x > milton_state->view->canvas_radius_limit
-             || pan_center.x <= -milton_state->view->canvas_radius_limit ) {
-            pan_center.x = milton_state->view->pan_center.x;
-            pan_ok = false;
-        }
-        if ( pan_center.y > milton_state->view->canvas_radius_limit
-             || pan_center.y <= -milton_state->view->canvas_radius_limit ) {
-            pan_center.y = milton_state->view->pan_center.y;
-            pan_ok = false;
-        }
-        */
         milton_state->view->pan_center = pan_center;
 
         upload_gui(milton_state);
     } else {
         milton_die_gracefully("Fatal error. Screen size is more than Milton can handle.");
     }
-
-    return pan_ok;
 }
 
 void
@@ -1033,6 +1011,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     if ( input->flags & MiltonInputFlags_FULL_REFRESH ) {
         do_full_redraw = true;
+        // GUI might have changed layer effect parameters.
+        render_flags |= RenderDataFlags_WITH_BLUR;
     }
 
     if ( input->scale ) {
@@ -1119,20 +1099,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                         push(&milton_state->canvas->stroke_graveyard, stroke);
                         push(&milton_state->canvas->redo_stack, h);
 
-                        draw_custom_rectangle = true;
-                        Rect bounds = stroke.bounding_rect;
-                        bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
-                        bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
-
-                        // Enlarge rectangle by one pixel to counter a floating point precision
-                        // problem when canvas_to_raster_gl (in the shader) normalizes to [-1,1]^2
-                        auto* view = milton_state->view;
-                        bounds.top = max(0, bounds.top-1);
-                        bounds.left = max(0, bounds.left-1);
-                        bounds.right = min(view->screen_size.w, bounds.right+1);
-                        bounds.bottom = min(view->screen_size.h, bounds.bottom+1);
-
-                        custom_rectangle = rect_union(custom_rectangle, bounds);
+                        do_full_redraw = true;
+                        render_flags |= RenderDataFlags_WITH_BLUR;
                     }
                     break;
                 }
@@ -1151,19 +1119,9 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                             push(&l->strokes, stroke);
                             push(&milton_state->canvas->history, h);
 
-                            draw_custom_rectangle = true;
-                            Rect bounds = stroke.bounding_rect;
-                            bounds.top_left = canvas_to_raster(milton_state->view, bounds.top_left);
-                            bounds.bot_right = canvas_to_raster(milton_state->view, bounds.bot_right);
-                            custom_rectangle = rect_union(custom_rectangle, bounds);
-                            for ( LayerEffect* e = l->effects; e != NULL; e = e->next ) {
-                                CanvasView* view = milton_state->view;
-                                switch ( e->type ) {
-                                    case LayerEffectType_BLUR: {
-                                        custom_rectangle = rect_enlarge(custom_rectangle, 10*(i32)(e->blur.kernel_size*(double)e->blur.original_scale/(double)view->scale));
-                                    } break;
-                                }
-                            }
+                            do_full_redraw = true;
+                            render_flags |= RenderDataFlags_WITH_BLUR;
+
 
                             break;
                         }
@@ -1209,7 +1167,13 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             }
             else if ( !milton_state->gui->owns_user_input
                       && (milton_state->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
+                Stroke* ws = &milton_state->working_stroke;
+                auto prev_num_points = ws->num_points;
                 milton_stroke_input(milton_state, input);
+                if ( prev_num_points == 0 && ws->num_points > 0 ) {
+                    // New stroke. Clear screen without blur.
+                    do_full_redraw = true;
+                }
             }
         }
     }
@@ -1344,6 +1308,10 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 }
 
                 clear_stroke_redo(milton_state);
+
+                // Make sure we show blurred layers when finishing a stroke.
+                render_flags |= RenderDataFlags_WITH_BLUR;
+                do_full_redraw = true;
             }
         }
     }
@@ -1506,11 +1474,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         view_width = custom_rectangle.right - custom_rectangle.left;
         view_height = custom_rectangle.bottom - custom_rectangle.top;
         VALIDATE_RECT(custom_rectangle);
-
-        view_x = 0;
-        view_y = 0;
-        view_width = milton_state->view->screen_size.w;
-        view_height = milton_state->view->screen_size.h;
     }
     else if ( milton_state->working_stroke.num_points > 0 ) {
         Rect bounds      = milton_state->working_stroke.bounding_rect;
@@ -1522,14 +1485,10 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
         view_width  = bounds.right - bounds.left;
         view_height = bounds.bottom - bounds.top;
-
-        view_x = 0;
-        view_y = 0;
-        view_width = milton_state->view->screen_size.w;
-        view_height = milton_state->view->screen_size.h;
     }
 
     PROFILE_GRAPH_BEGIN(clipping);
+
     gpu_clip_strokes_and_update(&milton_state->root_arena, milton_state->render_data, milton_state->view,
                                 milton_state->canvas->root_layer, &milton_state->working_stroke,
                                 view_x, view_y, view_width, view_height, clip_flags);

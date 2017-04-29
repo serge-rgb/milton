@@ -39,6 +39,7 @@ enum RenderDataFlags
 
     RenderDataFlags_GUI_VISIBLE        = 1<<0,
     RenderDataFlags_EXPORTING          = 1<<1,
+    RenderDataFlags_WITH_BLUR          = 1<<2,
 };
 
 struct Arena;
@@ -106,7 +107,6 @@ void gpu_clip_strokes_and_update(Arena* arena,
                                  i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_JUST_CLIP);
 
 void gpu_reset_render_flags(RenderData* render_data, int flags);
-
 
 void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height);
 void gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha);

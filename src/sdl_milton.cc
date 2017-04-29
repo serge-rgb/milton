@@ -56,6 +56,8 @@ panning_update(PlatformState* platform_state)
         platform_state->pan_point = platform_state->pan_start;  // No huge pan_delta at beginning of pan.
     };
 
+    platform_state->was_panning = platform_state->is_panning;
+
     // Panning from GUI menu, waiting for input
     if ( platform_state->waiting_for_pan_input ) {
         if ( platform_state->is_pointer_down ) {
@@ -973,11 +975,15 @@ milton_main(char* file_to_open)
         // Clear pan delta if we are zooming
         if ( milton_input.scale != 0 ) {
             milton_input.pan_delta = {};
-            input_flags |= MiltonInputFlags_FAST_DRAW;
+            input_flags |= MiltonInputFlags_FULL_REFRESH;
         }
         else if ( platform_state.is_panning ) {
             input_flags |= MiltonInputFlags_PANNING;
             platform_state.num_point_results = 0;
+        }
+        else if ( platform_state.was_panning ) {
+            // Just finished panning. Refresh the screen.
+            input_flags |= MiltonInputFlags_FULL_REFRESH;
         }
 
         if ( platform_state.num_pressure_results < platform_state.num_point_results ) {
@@ -995,19 +1001,7 @@ milton_main(char* file_to_open)
              || pan_delta.y != 0
              || platform_state.width != milton_state->view->screen_size.x
              || platform_state.height != milton_state->view->screen_size.y ) {
-            b32 pan_ok = milton_resize_and_pan(milton_state, pan_delta, {platform_state.width, platform_state.height});
-            if ( !pan_ok ) {
-                // TODO: Turn panning off
-
-                // Force a full re-render.
-                // The hover point gets updated and the renderer does a memcpy on most of the screen.
-                // TODO: Remove use of MiltonInputFlags_FULL_REFRESH after switching to HW rendering...
-                input_flags |= MiltonInputFlags_FULL_REFRESH;
-                milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
-            }
-            else if ( !platform_state.is_panning && !pan_ok ) {
-                INVALID_CODE_PATH;
-            }
+            milton_resize_and_pan(milton_state, pan_delta, {platform_state.width, platform_state.height});
         }
         milton_input.pan_delta = pan_delta;
 
