@@ -509,6 +509,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 int
 milton_main(char* file_to_open)
 {
+
 #if defined(_WIN32)
     if (!SetProcessDPIAware())  // This function is only present in Windows versions higher than Vista.
     {
@@ -524,6 +525,10 @@ milton_main(char* file_to_open)
     milton_log("Initializing SDL... ");
     SDL_Init(SDL_INIT_VIDEO);
     milton_log("Done.\n");
+
+    #ifdef __linux__
+    gtk_init(NULL, NULL);
+    #endif
 
     PlatformState platform_state = {};
 
@@ -1059,5 +1064,3 @@ milton_main(char* file_to_open)
 
     return 0;
 }
-
-

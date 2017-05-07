@@ -112,9 +112,6 @@ platform_monitor_refresh_hz()
 int
 main(int argc, char** argv)
 {
-#ifdef __linux__
-    gtk_init(&argc, &argv);
-#endif
     char* file_to_open = NULL;
     if ( argc == 2 ) {
 	file_to_open = argv[1];
