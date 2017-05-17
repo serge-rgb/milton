@@ -204,7 +204,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
         }
 
         // Cleared to be appended.
-        if ( passed_inspection && ws->num_points < STROKE_MAX_POINTS ) {
+        if ( passed_inspection && ws->num_points < (STROKE_MAX_POINTS-1) ) {
             if ( milton_brush_smoothing_enabled(milton_state) ) {
                 // Stroke smoothing.
                 // Change canvas_point depending on the average of the last `N` points.

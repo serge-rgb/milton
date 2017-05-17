@@ -99,7 +99,7 @@ milton_load(MiltonState* milton_state)
     milton_reset_canvas(milton_state);
 
     CanvasState* canvas = milton_state->canvas;
-#define READ(address, size, num, fd) do { ok = fread_checked(address,size,num,fd); if (!ok){goto END;} } while(0)
+#define READ(address, size, num, fd) do { ok = fread_checked(address,size,num,fd); if (!ok){ goto END; } } while(0)
 
     // Unload gpu data if the strokes have been cooked.
     gpu_free_strokes(milton_state->render_data, milton_state->canvas);
@@ -110,7 +110,6 @@ milton_load(MiltonState* milton_state)
 
     if ( fd ) {
         u32 milton_binary_version = (u32)-1;
-
         u32 milton_magic = (u32)-1;
         READ(&milton_magic, sizeof(u32), 1, fd);
         READ(&milton_binary_version, sizeof(u32), 1, fd);
@@ -147,7 +146,7 @@ milton_load(MiltonState* milton_state)
             milton_state->view->screen_size = legacy_view.screen_size;
             milton_state->view->scale = legacy_view.scale;
             milton_state->view->zoom_center = legacy_view.zoom_center;
-            milton_state->view->pan_center = VEC2L(legacy_view.pan_center);
+            milton_state->view->pan_center = VEC2L(legacy_view.pan_center * -1);
             milton_state->view->background_color = legacy_view.background_color;
             milton_state->view->working_layer_id = legacy_view.working_layer_id;
             milton_state->view->num_layers = legacy_view.num_layers;
@@ -200,7 +199,6 @@ milton_load(MiltonState* milton_state)
 
                     READ(&stroke.brush, sizeof(Brush), 1, fd);
                     READ(&stroke.num_points, sizeof(i32), 1, fd);
-
 
                     if ( stroke.num_points >= STROKE_MAX_POINTS || stroke.num_points <= 0 ) {
                         milton_log("ERROR: File has a stroke with %d points\n",

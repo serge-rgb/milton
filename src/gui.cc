@@ -260,9 +260,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 milton_state->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;
             }
             // History
-            if ( ImGui::MenuItem("History") ) {
-                input->mode_to_set = MiltonMode_HISTORY;
-            }
+            // if ( ImGui::MenuItem("History") ) {
+            //     input->mode_to_set = MiltonMode_HISTORY;
+            // }
             ImGui::EndMenu();
         }
         if ( ImGui::BeginMenu(LOC(view)) ) {

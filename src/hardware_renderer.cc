@@ -1556,8 +1556,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
 }
 
 void
-gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y,
-                     i32 w, i32 h, f32 background_alpha)
+gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha)
 {
     CanvasView saved_view = *milton_state->view;
     RenderData* render_data = milton_state->render_data;
@@ -1600,6 +1599,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     gpu_clip_strokes_and_update(&milton_state->root_arena, render_data, milton_state->view, milton_state->canvas->root_layer,
                                 &milton_state->working_stroke, 0, 0, buf_w, buf_h);
 
+    render_data->flags |= RenderDataFlags_WITH_BLUR;
     gpu_render_canvas(render_data, 0, 0, buf_w, buf_h, background_alpha);
 
 
