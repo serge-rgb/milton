@@ -29,9 +29,6 @@ main()
     vec2 coord = gl_FragCoord.xy / u_screen_size;
 
 
-    // TODO: When exporting to a transparent background, FXAA will blend-in the background color.
-    //      Find a fix
-
     out_color = texture(u_canvas, coord, 0);
 
     out_color.rgb = FxaaPixelShader(

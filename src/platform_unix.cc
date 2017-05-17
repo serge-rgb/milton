@@ -68,7 +68,6 @@ platform_deallocate_internal(void* ptr)
     munmap(ptr, size);
 }
 
-// TODO: haven't checked if platform_cursor_hide or platform_cursor_show work.
 void
 platform_cursor_hide()
 {

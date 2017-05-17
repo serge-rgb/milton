@@ -116,10 +116,10 @@ milton_load(MiltonState* milton_state)
         READ(&milton_binary_version, sizeof(u32), 1, fd);
 
         if (ok) {
-
             if ( milton_binary_version < 4 ) {
                 if ( platform_dialog_yesno ("This file will be updated to the new version of Milton. Older versions won't be able to open it. Is this OK?", "File format change") ) {
                     milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
+                    milton_log("Updating this file to mlt version 4.\n");
                 } else {
                     ok = false;
                     handled = true;
@@ -486,7 +486,7 @@ END:
     }
     else {
         // TODO: Fix this on macos
-        // milton_die_gracefully("Could not create file for saving! ");
+        milton_die_gracefully("Could not create file for saving! ");
         return;
     }
 #undef WRITE

@@ -157,7 +157,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 if ( fname ) {
                     milton_set_canvas_file(milton_state, fname);
                     input->flags |= MiltonInputFlags_OPEN_FILE;
-                    // TODO: Check if this line can be removed after switching to HW rendering.
                 }
             }
             if ( ImGui::MenuItem(LOC(save_milton_canvas_as_DOTS)) || save_requested ) {
@@ -400,7 +399,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 if ( ImGui::Checkbox("##select", &v) ) {
                     layer_toggle_visibility(layer);
                     input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-                    input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
                 }
                 ImGui::PopID();
                 ImGui::SameLine();
@@ -442,9 +440,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         f32 alpha = canvas->working_layer->alpha;
                         if ( ImGui::SliderFloat("##opacity", &alpha, 0.0f, 1.0f) ) {
                             // Used the slider. Ask if it's OK to convert the binary format.
-                            // TODO: If we are going with automatically
-                            // promoting files to version 4, then we
-                            // don't need to do this.
                             if ( milton_state->mlt_binary_version < 3 ) {
                                 milton_log("Modified milton file from %d to 3\n", milton_state->mlt_binary_version);
                                 milton_state->mlt_binary_version = 3;
@@ -1357,4 +1352,3 @@ gui_deactivate(MiltonGui* gui)
     gui->owns_user_input = false;
     gui->did_hit_button = false;
 }
-

@@ -60,7 +60,7 @@
 // Include the software renderer.
 #define SOFTWARE_RENDERER_COMPILED 0
 // NOTE: software renderer has accumulated some bit rot..
-// TODO: Enable software renderer as a run  time option?
+// TODO: Remove software renderer from codebase.
 
 
 // -- Esoteric and/or Stupid stuff.

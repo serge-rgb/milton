@@ -518,8 +518,6 @@ milton_main(char* file_to_open)
 #endif
 
     milton_log("Running Milton\n");
-    // TODO: Set Milton to be DPI aware.
-
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
     milton_log("Initializing SDL... ");

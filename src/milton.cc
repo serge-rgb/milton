@@ -442,10 +442,8 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, PATH_CHAR* file_to
     milton_state->block_width = 32;
 #endif
 
-    // TODO: Do a bootstrap here.
     milton_state->gui = arena_alloc_elem(&milton_state->root_arena, MiltonGui);
     gui_init(&milton_state->root_arena, milton_state->gui);
-
 
     milton_state->view = arena_alloc_elem(&milton_state->root_arena, CanvasView);
     milton_set_default_view(milton_state);
@@ -596,7 +594,6 @@ milton_reset_canvas(MiltonState* milton_state)
     milton_state->last_save_time = {};
 
     // Clear history
-    // TODO: These arrays should use the arena.
     release(&canvas->history);
     release(&canvas->redo_stack);
     release(&canvas->stroke_graveyard);
@@ -984,8 +981,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     if ( input->flags & MiltonInputFlags_OPEN_FILE ) {
         milton_load(milton_state);
         upload_gui(milton_state);
-        input->flags |= MiltonInputFlags_FAST_DRAW;
         do_full_redraw = true;
+        render_flags |= RenderDataFlags_WITH_BLUR;
     }
 
     if ( milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY ) {
@@ -1499,4 +1496,3 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     //milton_validate(milton_state);
     ARENA_VALIDATE(&milton_state->root_arena);
 }
-

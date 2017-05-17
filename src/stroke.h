@@ -4,7 +4,10 @@
 #pragma once
 
 #include "utils.h"
-#include "hardware_renderer.h"  // TODO: Really? Stroke.h includes hardware_renderer.h?
+#include "hardware_renderer.h"  // TODO: Stroke has a RenderElement
+                                // member. Refactor to eliminate this
+                                // dependency
+
 
 struct Brush
 {
