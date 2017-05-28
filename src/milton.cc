@@ -423,6 +423,7 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, PATH_CHAR* file_to
 #if MILTON_SAVE_ASYNC
     milton_state->save_mutex = SDL_CreateMutex();
     milton_state->save_flag = SaveEnum_GOOD_TO_GO;
+    milton_state->save_cond = SDL_CreateCond();
 #endif
 
     milton_state->bytes_per_pixel = 4;
@@ -722,7 +723,7 @@ milton_save_postlude(MiltonState* milton_state)
 int  // Thread
 milton_save_async(void* state_)
 {
-    MiltonState* milton_state = state_;
+    MiltonState* milton_state = (MiltonState*)state_;
 
     SDL_LockMutex(milton_state->save_mutex);
     i64 flag = milton_state->save_flag;
@@ -733,10 +734,12 @@ milton_save_async(void* state_)
 
         milton_save(milton_state);
 
-        SDL_Delay(2000);  // Overkill to save more than every two seconds!.
-
         SDL_LockMutex(milton_state->save_mutex);
+
         milton_state->save_flag = SaveEnum_GOOD_TO_GO;
+
+        SDL_CondSignal(milton_state->save_cond);
+
         SDL_UnlockMutex(milton_state->save_mutex);
     }
     else if ( flag == SaveEnum_IN_USE ) {
@@ -1429,8 +1432,15 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             }
         }
 
-        // About to quit and just saved.
+        // About to quit.
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
+
+            // Make sure that async save threads have finished.
+            while ( milton_state->save_flag == SaveEnum_IN_USE ) {
+                SDL_CondWait(milton_state->save_cond, milton_state->save_mutex);
+                mlt_assert(milton_state->save_flag == SaveEnum_GOOD_TO_GO);
+            }
+
             // Release resources
             milton_reset_canvas(milton_state);
             gpu_release_data(milton_state->render_data);

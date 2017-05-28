@@ -39,7 +39,6 @@ push(StrokeList* list, const Stroke& element)
 Stroke*
 get(StrokeList* list, i64 idx)
 {
-    mlt_assert(idx < list->count);
     int bucket_i = idx / STROKELIST_BUCKET_COUNT;
     int i = idx % STROKELIST_BUCKET_COUNT;
     StrokeBucket* bucket = &list->root;

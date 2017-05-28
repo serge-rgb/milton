@@ -10,7 +10,7 @@
 
 #include "memory.h"
 
-#define STROKELIST_BUCKET_COUNT 500
+#define STROKELIST_BUCKET_COUNT 1024
 
 struct StrokeBucket
 {

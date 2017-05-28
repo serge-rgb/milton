@@ -118,6 +118,7 @@ struct MiltonState
 #if MILTON_SAVE_ASYNC
     SDL_mutex*  save_mutex;
     i64         save_flag;   // See SaveEnum
+    SDL_cond*   save_cond;
 #endif
 
     // ---- The Painting

@@ -15,42 +15,16 @@
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
-// Forward decl.
-static b32 fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy);
-
-
 // Will allocate memory so that if the read fails, we will restore what was
 // originally in there.
 static b32
 fread_checked(void* dst, size_t sz, size_t count, FILE* fd)
 {
-    return fread_checked_impl(dst, sz, count, fd, false);
-}
-
-
-static b32
-fread_checked_impl(void* dst, size_t sz, size_t count, FILE* fd, b32 copy)
-{
     b32 ok = false;
 
-    char* raw_data = NULL;
-    if ( copy ) {
-        raw_data = (char*)mlt_calloc(count, sz, "Persist");
-        memcpy(raw_data, dst, count*sz);
-    }
-
     size_t read = fread(dst, sz, count, fd);
-    if ( read == count ) {
-        if ( !ferror(fd) ) {
-            ok = true;
-        }
-    }
-
-    if ( copy ) {
-        if ( !ok ) {
-            memcpy(dst, raw_data, count*sz);
-        }
-        mlt_free(raw_data, "Persist");
+    if ( read == count && !ferror(fd)) {
+        ok = true;
     }
 
     return ok;
@@ -60,12 +34,9 @@ static b32
 fwrite_checked(void* data, size_t sz, size_t count, FILE* fd)
 {
     b32 ok = false;
-
     size_t written = fwrite(data, sz, count, fd);
     if ( written == count ) {
-        if ( !ferror(fd) ) {
-            ok = true;
-        }
+        ok = true;
     }
 
     return ok;

@@ -55,7 +55,7 @@
 // Large files get impractical to save in a blocking function.
 // Disabled for now. This was implemented when a bug was causing files to be huge.
 // Hopefully milton will never need this. Leaving it just in case.
-#define MILTON_SAVE_ASYNC 0
+#define MILTON_SAVE_ASYNC 1
 
 // Include the software renderer.
 #define SOFTWARE_RENDERER_COMPILED 0
