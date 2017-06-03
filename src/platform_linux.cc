@@ -20,7 +20,7 @@ perf_counter()
     timespec tp;
     int res = clock_gettime(CLOCK_REALTIME, &tp);
 
-    // TODO: Check errno and provide more informations
+    // TODO: Check errno and provide more information
     if ( res ) {
         milton_log("Something went wrong with clock_gettime\n");
     }

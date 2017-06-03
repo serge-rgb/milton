@@ -813,6 +813,7 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
     else                      { return EASYTAB_X11_ERROR; }
 }
 
+
 #ifdef MILTON_EASYTAB
 EasyTabResult EasyTab_HandleEvent(XEvent* Event)
 {
@@ -908,6 +909,7 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
 {
     EasyTab = (EasyTabInfo*)calloc(1, sizeof(EasyTabInfo)); // We want init to zero, hence calloc.
     if (!EasyTab) { return EASYTAB_MEMORY_ERROR; }
+
 
     // Load Wintab DLL and get function addresses
     {
@@ -1013,6 +1015,7 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         float SysExtX          = LogContext.lcSysExtX;
         float SysExtY          = LogContext.lcSysExtY;
 
+#if 0
         if (SysExtX != 0 && SysExtY != 0)
         {
             EasyTab->ScreenAreaRatioX = (float)CoordRangeX/SysExtX;
@@ -1020,9 +1023,13 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         }
         else
         {
-            EasyTab->ScreenAreaRatioX = 1;
-            EasyTab->ScreenAreaRatioY = 1;
+            EasyTab->ScreenAreaRatioX = 1 * scale;
+            EasyTab->ScreenAreaRatioY = 1 * scale;
         }
+#else
+        EasyTab->ScreenAreaRatioX = 1;
+        EasyTab->ScreenAreaRatioY = 1;
+#endif
 
         if (TrackingMode == EASYTAB_TRACKING_MODE_RELATIVE)
         {
