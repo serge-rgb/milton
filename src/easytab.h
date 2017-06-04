@@ -605,7 +605,7 @@ typedef struct
 // -----------------------------------------------------------------------------
 // Structs
 // -----------------------------------------------------------------------------
-typedef struct
+typedef struct EasyTab_s
 {
 #ifdef MILTON_EASYTAB
     int32_t PosX[EASYTAB_PACKETQUEUE_SIZE];
@@ -663,11 +663,17 @@ typedef struct
     WTMGRDEFCONTEXT   WTMgrDefContext;
     WTMGRDEFCONTEXTEX WTMgrDefContextEx;
 
-    // The output region can be configured by the user.
-    LONG    ScreenOriginX;
-    LONG    ScreenOriginY;
-    float   ScreenAreaRatioX;
-    float   ScreenAreaRatioY;
+
+    LONG InputOriginX;
+    LONG InputOriginY;
+
+    LONG InputExtentX;
+    LONG InputExtentY;
+
+    LONG ScreenOriginX;
+    LONG ScreenOriginY;
+    LONG ScreenExtentX;
+    LONG ScreenExtentY;
 
 #endif // WIN32
 } EasyTabInfo;
@@ -988,48 +994,21 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         LogContext.lcPktRate = DesiredPktRate;
         #endif
 
-        // Adjust for DPI scaling.
-        float scale = 1.0f;
+        LogContext.lcOutExtY = -LogContext.lcOutExtY;
 
-        HDC dc = GetDC(NULL);
-        DWORD dpi = GetDeviceCaps(dc, LOGPIXELSX);
-        ReleaseDC(NULL, dc);
+        EasyTab->InputOriginX = LogContext.lcInOrgX;
+        EasyTab->InputOriginY = LogContext.lcInOrgY;
+        EasyTab->InputExtentX = LogContext.lcInExtX;
+        EasyTab->InputExtentY = LogContext.lcInExtY;
 
-        DWORD CoordRangeX = GetSystemMetrics(SM_CXSCREEN);
-        DWORD CoordRangeY = GetSystemMetrics(SM_CYSCREEN);
+        EasyTab->ScreenOriginX = GetSystemMetrics(SM_XVIRTUALSCREEN);
+        EasyTab->ScreenOriginY = GetSystemMetrics(SM_YVIRTUALSCREEN);
 
-        if (dpi > 96)
-        {
-            scale = dpi / 96.0f;
-            CoordRangeX *= scale;
-            CoordRangeY *= scale;
-        }
+        EasyTab->ScreenExtentX = GetSystemMetrics( SM_CXVIRTUALSCREEN );
+        EasyTab->ScreenExtentY = GetSystemMetrics( SM_CYVIRTUALSCREEN );
 
-        LogContext.lcOutOrgX = 0;
-        LogContext.lcOutOrgY = 0;
-        LogContext.lcOutExtX = CoordRangeX;
-        LogContext.lcOutExtY = -CoordRangeY;
-
-        EasyTab->ScreenOriginX = LogContext.lcSysOrgX;
-        EasyTab->ScreenOriginY = LogContext.lcSysOrgY;
         float SysExtX          = LogContext.lcSysExtX;
         float SysExtY          = LogContext.lcSysExtY;
-
-#if 0
-        if (SysExtX != 0 && SysExtY != 0)
-        {
-            EasyTab->ScreenAreaRatioX = (float)CoordRangeX/SysExtX;
-            EasyTab->ScreenAreaRatioY = (float)CoordRangeY/SysExtY;
-        }
-        else
-        {
-            EasyTab->ScreenAreaRatioX = 1 * scale;
-            EasyTab->ScreenAreaRatioY = 1 * scale;
-        }
-#else
-        EasyTab->ScreenAreaRatioX = 1;
-        EasyTab->ScreenAreaRatioY = 1;
-#endif
 
         if (TrackingMode == EASYTAB_TRACKING_MODE_RELATIVE)
         {
@@ -1102,7 +1081,7 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 {
     EasyTabResult result = EASYTAB_EVENT_NOT_HANDLED;
 
-    PACKET PacketBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };
+    PACKET PacketBuffer[EASYTAB_PACKETQUEUE_SIZE] = {0};
 
     EasyTab->NumPackets = 0;
     #ifdef MILTON_EASYTAB
@@ -1118,8 +1097,14 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         if ( NumPackets ) { EasyTab->Buttons = 0; }
         for (int i = 0; i < NumPackets; ++i)
         {
-            PointBuffer[i].x = EasyTab->ScreenOriginX + PacketBuffer[i].pkX / EasyTab->ScreenAreaRatioX;
-            PointBuffer[i].y = EasyTab->ScreenOriginY + PacketBuffer[i].pkY / EasyTab->ScreenAreaRatioY;
+            float x = (PacketBuffer[i].pkX - EasyTab->InputOriginX) / (float)EasyTab->InputExtentX;
+            float y = (PacketBuffer[i].pkY - EasyTab->InputOriginY) / (float)EasyTab->InputExtentY;
+
+            PointBuffer[i].x = EasyTab->ScreenOriginX + x * EasyTab->ScreenExtentX;
+            PointBuffer[i].y = EasyTab->ScreenOriginY + y * EasyTab->ScreenExtentY;
+
+            RECT ClientRect = {0};
+            GetClientRect(Window, &ClientRect);
             ScreenToClient(Window, &PointBuffer[i]);
             EasyTab->PosX[i] = PointBuffer[i].x;
             EasyTab->PosY[i] = PointBuffer[i].y;
