@@ -327,9 +327,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
         /* ImGuiSetCond_FirstUseEver */
 
-        const f32 brush_windwow_height = 109;
+        const f32 brush_window_height = 109;
         ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize({271, brush_windwow_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+        ImGui::SetNextWindowSize({271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
         b32 show_brush_window = (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER);
 
@@ -384,7 +384,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         }
 
         // Layer window
-        ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(300, 220), ImGuiSetCond_FirstUseEver);
         if ( ImGui::Begin(LOC(layers)) ) {
             CanvasView* view = milton_state->view;
@@ -432,7 +432,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     i32 pos_y = (i32)(ImGui::GetWindowPos().y);
 
                     ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiSetCond_FirstUseEver);
-                    // ImGui::SetNextWindowPos(ImVec2(pos_x, 20 + (float)pbounds.bottom + brush_windwow_height ), ImGuiSetCond_FirstUseEver);
+                    // ImGui::SetNextWindowPos(ImVec2(pos_x, 20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
                     ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiSetCond_FirstUseEver);
 
                     if ( ImGui::Begin("Effects") ) {

@@ -333,7 +333,7 @@ void
 milton_set_brush_size(MiltonState* milton_state, i32 size)
 {
     if ( current_mode_is_for_painting(milton_state) ) {
-        if ( size < MILTON_MAX_BRUSH_SIZE && size > 0 ) {
+        if ( size <= MILTON_MAX_BRUSH_SIZE && size > 0 ) {
             (*pointer_to_brush_size(milton_state)) = size;
             milton_update_brushes(milton_state);
         }
@@ -867,6 +867,7 @@ milton_validate(MiltonState* milton_state)
     mlt_free(layer_ids, "Validate");
 }
 
+
 // Copy points from in_stroke to out_stroke, but do interpolation to smooth it out.
 static void
 copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_stroke)
@@ -1110,8 +1111,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             if ( milton_state->canvas->redo_stack.count > 0 ) {
                 HistoryElement h = pop(&milton_state->canvas->redo_stack);
                 switch ( h.type ) {
-                case HistoryElement_STROKE_ADD:
-                    {
+                case HistoryElement_STROKE_ADD: {
                     Layer* l = layer_get_by_id(milton_state->canvas->root_layer, h.layer_id);
                     if ( l && count(&milton_state->canvas->stroke_graveyard) > 0 ) {
                         Stroke stroke = pop(&milton_state->canvas->stroke_graveyard);
@@ -1128,7 +1128,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                         stroke = pop(&milton_state->canvas->stroke_graveyard);  // Keep popping in case the graveyard has info from deleted layers
                     }
 
-                    } break;
+                } break;
                 /* case HistoryElement_LAYER_DELETE: { */
                 /* } break; */
                 }
