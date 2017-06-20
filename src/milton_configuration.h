@@ -37,6 +37,10 @@
 #define REDRAW_EVERY_FRAME 0
 
 #define MILTON_HARDWARE_BRUSH_CURSOR 1
+#if defined(__linux__)  // No support for system cursor on linux.
+#undef MILTON_HARDWARE_BRUSH_CURSOR
+#define MILTON_HARDWARE_BRUSH_CURSOR 0
+#endif
 
 // Uses GL 2.1 when 0
 #define USE_GL_3_2 0

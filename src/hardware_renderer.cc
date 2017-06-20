@@ -1539,7 +1539,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         // Draw outline.
         glUseProgram(render_data->exporter_program);
         GLint loc = glGetAttribLocation(render_data->exporter_program, "a_position");
-        if ( loc>=0 && render_data->vbo_exporter>0 ) {
+        if ( loc>=0 && render_data->vbo_exporter[0] > 0 ) {
             for ( int vbo_i = 0; vbo_i < 4; ++vbo_i ) {
                 DEBUG_gl_validate_buffer(render_data->vbo_exporter[vbo_i]);
                 glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_exporter[vbo_i]);
