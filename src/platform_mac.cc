@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <string.h>
 #include <time.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include "platform.h"
 #include "memory.h"
@@ -77,7 +78,10 @@ platform_fname_at_config(PATH_CHAR* fname, size_t len)
     if (string_copy)
     {
         strncpy(string_copy, fname, len);
-        snprintf(fname, len,  "~/.milton/%s", string_copy);
+        char* home = getenv("HOME");
+        snprintf(fname, len,  "%s/.milton", home);
+        mkdir(fname, S_IRWXU);
+        snprintf(fname, len,  "%s/%s", fname, string_copy);
         mlt_free(string_copy, "Strings");
     }
 }
