@@ -174,9 +174,22 @@ milton_load(MiltonState* milton_state)
                     if ( stroke.num_points >= STROKE_MAX_POINTS || stroke.num_points <= 0 ) {
                         milton_log("ERROR: File has a stroke with %d points\n",
                                    stroke.num_points);
-                        reset(&milton_state->canvas->root_layer->strokes);
-                        ok = false;
-                        goto END;
+                        // Older versions have a possible off-by-one bug here.
+                        if (stroke.num_points < STROKE_MAX_POINTS)  {
+                            stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
+                            READ(stroke.points, sizeof(v2l), (size_t)stroke.num_points, fd);
+                            stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
+                            READ(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
+                            READ(&stroke.layer_id, sizeof(i32), 1, fd);
+                            stroke.num_points = STROKE_MAX_POINTS - 1;
+
+                            stroke.bounding_rect = bounding_box_for_stroke(&stroke);
+
+                            layer_push_stroke(layer, stroke);
+                        } else {
+                            ok = false;
+                            goto END;
+                        }
                     } else {
                         if ( milton_binary_version >= 4 ) {
                             stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
@@ -199,6 +212,7 @@ milton_load(MiltonState* milton_state)
                     }
                 }
             }
+
             if ( milton_binary_version >= 4 ) {
                 i64 num_effects = 0;
                 READ(&num_effects, sizeof(num_effects), 1, fd);
@@ -224,17 +238,17 @@ milton_load(MiltonState* milton_state)
         READ(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
 
         // Buttons
-    {
-        i32 button_count = 0;
-        gui = milton_state->gui;
-        btn = gui->picker.color_buttons;
+        {
+           i32 button_count = 0;
+           gui = milton_state->gui;
+           btn = gui->picker.color_buttons;
 
-        READ(&button_count, sizeof(i32), 1, fd);
-        for ( i32 i = 0;
-              btn!=NULL && i < button_count;
-              ++i, btn=btn->next ) {
-            READ(&btn->rgba, sizeof(v4f), 1, fd);
-        }
+           READ(&button_count, sizeof(i32), 1, fd);
+           for ( i32 i = 0;
+                 btn!=NULL && i < button_count;
+                 ++i, btn=btn->next ) {
+              READ(&btn->rgba, sizeof(v4f), 1, fd);
+           }
         }
 
         // Brush
@@ -354,14 +368,19 @@ milton_save(MiltonState* milton_state)
                 for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
                     Stroke* stroke = get(&layer->strokes, stroke_i);
                     mlt_assert(stroke->num_points > 0);
-                    WRITE(&stroke->brush, sizeof(Brush), 1, fd);
-                    WRITE(&stroke->num_points, sizeof(i32), 1, fd);
-                    WRITE(stroke->points, sizeof(v2l), (size_t)stroke->num_points, fd);
-                    WRITE(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
-                    WRITE(&stroke->layer_id, sizeof(i32), 1, fd);
-                    if ( !ok ) {
-                        break;
+                    if (stroke->num_points > 0 && stroke->num_points < STROKE_MAX_POINTS) {
+                        WRITE(&stroke->brush, sizeof(Brush), 1, fd);
+                        WRITE(&stroke->num_points, sizeof(i32), 1, fd);
+                        WRITE(stroke->points, sizeof(v2l), (size_t)stroke->num_points, fd);
+                        WRITE(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd);
+                        WRITE(&stroke->layer_id, sizeof(i32), 1, fd);
+                        if ( !ok ) {
+                            break;
+                        }
+                    } else {
+                        milton_log("WARNING: Trying to write a stroke of size %d\n", stroke->num_points);
                     }
+
                 }
             } else {
                 ok = false;

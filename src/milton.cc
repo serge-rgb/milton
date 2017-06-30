@@ -1436,10 +1436,12 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
 
             // Make sure that async save threads have finished.
+#if MILTON_SAVE_ASYNC
             while ( milton_state->save_flag == SaveEnum_IN_USE ) {
                 SDL_CondWait(milton_state->save_cond, milton_state->save_mutex);
                 mlt_assert(milton_state->save_flag == SaveEnum_GOOD_TO_GO);
             }
+#endif
 
             // Release resources
             milton_reset_canvas(milton_state);
