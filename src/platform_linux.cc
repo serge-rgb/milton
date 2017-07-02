@@ -79,8 +79,22 @@ platform_dialog(char* info, char* title)
 b32
 platform_dialog_yesno(char* info, char* title)
 {
-    // IMPL_MISSING;
-    return false;
+    platform_cursor_show();
+    GtkWidget *dialog = gtk_message_dialog_new(
+            NULL,
+            (GtkDialogFlags)0,
+            GTK_MESSAGE_QUESTION,
+            GTK_BUTTONS_YES_NO,
+            "%s",
+            info
+            );
+    gtk_window_set_title(GTK_WINDOW(dialog), title);
+    if ( gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES ) {
+        gtk_widget_destroy(dialog);
+        return false;
+    }
+    gtk_widget_destroy(dialog);
+    return true;
 }
 
 void
