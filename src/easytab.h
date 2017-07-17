@@ -1134,13 +1134,27 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         else
         {
             EasyTab->PenInProximity = EASYTAB_FALSE;
+
         }
         result = EASYTAB_OK;
         // Alway clear the queue.
         EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE+1, NULL);
     }
+    else if (Message == WM_ACTIVATE && EasyTab->Context)
+    {
+        // Extract the low word of WParam, which specifies whether the window became active or not
+        // see https://msdn.microsoft.com/en-us/library/windows/desktop/ms646274.aspx
+        BOOL Active = (WParam & 0xFFFF) != 0;
 
-
+        // Enable / Disable the context when focus changes (e.g. our window is minimized)
+        // and move our context to the top with WTOverlap when we gain focus.
+        // see http://www.wacomeng.com/windows/docs/NotesForTabletAwarePCDevelopers.html#_Toc274818945
+        EasyTab->WTEnable(EasyTab->Context, Active);
+        if (Active)
+        {
+            EasyTab->WTOverlap(EasyTab->Context, TRUE);
+        }
+    }
 
     return result;
 }
