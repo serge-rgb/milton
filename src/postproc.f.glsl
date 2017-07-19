@@ -1,3 +1,6 @@
+// Copyright (c) 2015-2017 Sergio Gonzalez. All rights reserved.
+// License: https://github.com/serge-rgb/milton#license
+
 uniform sampler2D u_canvas;
 uniform vec2 u_screen_size;
 

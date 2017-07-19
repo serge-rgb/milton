@@ -1,3 +1,5 @@
+// Copyright (c) 2015-2017 Sergio Gonzalez. All rights reserved.
+// License: https://github.com/serge-rgb/milton#license
 
 #if HAS_TEXTURE_MULTISAMPLE
     #extension GL_ARB_sample_shading : enable

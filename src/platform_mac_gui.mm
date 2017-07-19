@@ -1,3 +1,6 @@
+// Copyright (c) 2015-2017 Sergio Gonzalez. All rights reserved.
+// License: https://github.com/serge-rgb/milton#license
+
 #include <AppKit/AppKit.h>
 
 // FileKind is temporarily redefined because when SDL is included in an Objective-C file
@@ -6,7 +9,7 @@ enum FileKind
 {
     FileKind_IMAGE,
     FileKind_MILTON_CANVAS,
-    
+
     FileKind_COUNT,
 };
 
@@ -28,7 +31,7 @@ namespace {
         }
         return strdup(panel.URL.path.fileSystemRepresentation);
     }
-    
+
     NSAlert* alertWithInfoTitle(const char* info, const char* title) {
         NSAlert *alert = [[NSAlert alloc] init];
         alert.messageText = [NSString stringWithUTF8String:title ? title : ""];

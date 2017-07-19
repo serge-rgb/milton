@@ -54,7 +54,6 @@ To build:
 Run `cmd.exe` and type the following
 
 ```
-scripts\vcvars.bat
 build.bat
 ```
 
@@ -78,67 +77,27 @@ _No OSX support at the moment._
 License
 =======
 
-    Copyright (c) 2015-2016 Sergio Gonzalez
+    Milton
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy of
-    this software and associated documentation files (the "Software"), to deal in
-    the Software without restriction, including without limitation the rights to
-    use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-    of the Software, and to permit persons to whom the Software is furnished to do
-    so, subject to the following conditions:
+    Copyright (C) 2015 - 2017 Sergio Gonzalez
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-Credits and Thanks
-==================
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-* Art
-    * Milton's logo and artwork by the very talented [Perla Fierro](http://portafolio.eclat-studio.com/)
+Thanks
+======
 
-* Code - major changes
-    * [Apoorva Joshi](http://apoorvaj.io) - [EasyTab](https://github.com/ApoorvaJ/EasyTab).
-    * [Mio Iwakura](http://miotatsu.github.io) - Linux version. [RISCy Business](https://www.youtube.com/user/BathtubBlogger/videos)
-    
-* Code - fixes and improvements
-    * [Charly Mourglia](http://github.com/Zouch)
-    * [Joshua Mendoza](https://github.com/jomendoz)
-    * [Kevin Wojniak](https://github.com/kainjow) - macOS tundra build
-    * [Michael Freundorfer](https://github.com/mordecai154)
-    * [Tilmann Rübbelke](https://github.com/TilmannR) - Color picker fixes & improvements
+Milton is made with love by Sergio Gonzalez with the help of [awesome
+people](https://github.com/serge-rgb/milton/CREDITS.md).
 
-* Other
-    * Aarón Reyes García
-    * Axel Becerril
-    * Carlos Chilazo
-    * Caro Barberena
-    * Joshua Mendoza
-    * Luis Eduardo Pérez
-    * Maximiliano Monterrubio
-    * Mom
-    * Roberto Lapuente
-    * Rodrigo Gonzalez del Cueto [@rdelcueto](https://twitter.com/rdelcueto)
-    * Ruben Bañuelos
-    * Santiago Montesinos
-    * Vane Ugalde
 
-* Inspiration / Education
-    * Casey Muratori for Handmade Hero
-
-Glorious Patrons of the Coding Craft
-------------------------------------
-
-Thank you so much for supporting Milton on [Patreon](https://www.patreon.com/serge_rgb?ty=h):
-
-* [Neil Blakey-Milner](https://www.patreon.com/nxsy)
-* [Pau Fernández](https://twitter.com/pauek)
-* [Maria Lopez-Lacroix](https://amacasera.com/)
-* [Jeroen van Rijn](https://twitter.com/J_vanRijn)

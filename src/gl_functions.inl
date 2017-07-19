@@ -1,3 +1,5 @@
+// Copyright (c) 2015-2017 Sergio Gonzalez. All rights reserved.
+// License: https://github.com/serge-rgb/milton#license
 
 #define GL_FUNCTIONS \
     X(GLint,    glGetAttribLocation,      GLuint program, const GLchar* name)                     \

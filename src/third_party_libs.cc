@@ -1,3 +1,6 @@
+// Copyright (c) 2015-2017 Sergio Gonzalez. All rights reserved.
+// License: https://github.com/serge-rgb/milton#license
+
 #if defined(_WIN32)
 #pragma warning(push,0)
 #endif
