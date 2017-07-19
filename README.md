@@ -98,6 +98,6 @@ Thanks
 ======
 
 Milton is made with love by Sergio Gonzalez with the help of [awesome
-people](https://github.com/serge-rgb/milton/CREDITS.md).
+people](https://github.com/serge-rgb/milton/blob/master/CREDITS.md).
 
 
