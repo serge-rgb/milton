@@ -733,7 +733,11 @@ milton_main(char* file_to_open)
                         radius *= 2;
                     }
                     else {
-                        INVALID_CODE_PATH;
+                        milton_log("WARNING: Got an unexpected cursor size of %dx%d. Using 32x32 and hoping for the best.\n", w, h);
+                        w = 32;
+                        h = 32;
+                        cx = 16;
+                        cy = 16;
                     }
                     i64 diff        = (i64)(dist - SQUARE(radius));
                     b32 in_white = diff < SQUARE(girth-0.5f) && diff > -SQUARE(girth-0.5f);

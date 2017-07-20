@@ -57,7 +57,7 @@ Run `cmd.exe` and type the following
 build.bat
 ```
 
-Milton will be compiled to `build\Milton.exe`
+Milton will be compiled to `build\win64-msvc-debug-default\Milton.exe`
 
 
 Linux
