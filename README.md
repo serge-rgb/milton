@@ -1,4 +1,4 @@
-![MiltonLogo](http://i.imgur.com/CBD7RPa.png)
+![MiltonLogo](http://i.imgur.com/ADgRZUB.png)
 
 [Milton](https://github.com/serge-rgb/milton) is an open source application that lets you Just Paint.
 
