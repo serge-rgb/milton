@@ -63,7 +63,7 @@ HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt H
 
 // The returns value mean different things, but other than that, we're ok
 #ifdef _MSC_VER
-#define snprintf sprintf_s
+//#define snprintf sprintf_s
 #endif
 
 #define PATH_STRLEN wcslen

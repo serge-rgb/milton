@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <imgui.h>
+
 
 #if defined(_WIN32) && defined(_MSC_VER)
 #pragma warning(push, 0)
@@ -12,6 +14,8 @@
 #if defined(__clang__)
 #pragma clang system_header
 #endif
+
+#define GetWindowFont _GetWindowFont
 
 #ifdef _WIN32
 /* #define VC_EXTRALEAN */

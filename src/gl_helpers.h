@@ -10,7 +10,7 @@
 
 #if defined(_WIN32)
     // OpenGL function prototypes.
-    #define X(ret, name, ...) typedef ret WINAPI name##Proc(__VA_ARGS__); extern name##Proc * name##;
+    #define X(ret, name, ...) typedef ret WINAPI name ## Proc(__VA_ARGS__); extern name##Proc * name ;
         GL_FUNCTIONS
     #undef X
 
