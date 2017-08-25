@@ -510,13 +510,6 @@ int
 milton_main(char* file_to_open)
 {
 
-#if defined(_WIN32)
-    if (!SetProcessDPIAware())  // This function is only present in Windows versions higher than Vista.
-    {
-        milton_log("Could not set this process as DPI aware.\n");
-    }
-#endif
-
     milton_log("Running Milton\n");
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
@@ -543,7 +536,17 @@ milton_main(char* file_to_open)
         platform_state.width = prefs.width;
         platform_state.height = prefs.height;
     }
+
+#if defined(_WIN32)
+    platform_state.win_dpi_api = (WinDpiApi*)mlt_calloc(1, sizeof(WinDpiApi), "Setup");
+    win_load_dpi_api(platform_state.win_dpi_api);
+
+    platform_state.win_dpi_api->SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+#endif
+
     milton_log("Done.\n");
+
+    platform_state.ui_scale = 1.0f;
 
     platform_state.keyboard_layout = get_current_keyboard_layout();
 
@@ -610,22 +613,6 @@ milton_main(char* file_to_open)
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
     }
 
-    // Initialize milton_state
-    {
-        milton_state->render_data = gpu_allocate_render_data(&milton_state->root_arena);
-
-        PATH_CHAR* file_to_open_ = NULL;
-        PATH_CHAR buffer[MAX_PATH] = {};
-
-        if ( file_to_open ) {
-            file_to_open_ = (PATH_CHAR*)buffer;
-        }
-
-        str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
-
-        milton_init(milton_state, platform_state.width, platform_state.height, (PATH_CHAR*)file_to_open_);
-    }
-
     // Ask for native events to poll tablet events.
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
 
@@ -654,25 +641,28 @@ milton_main(char* file_to_open)
                          || win_rect.bottom != platform_state.height
                          // Also maximize if the size is large enough to "snap"
                          || (win_rect.right + snap_threshold >= res_rect.right
-                             && win_rect.left + snap_threshold >= res_rect.left) ) {
+                             && win_rect.left + snap_threshold >= res_rect.left)
+                         || win_rect.left < 0
+                         || win_rect.top < 0) {
                         // Our prefs weren't right. Let's maximize.
                         SetWindowPos(hwnd, HWND_TOP, 20,20, win_rect.right-20, win_rect.bottom -20, SWP_SHOWWINDOW);
                         platform_state.width = win_rect.right - 20;
                         platform_state.height = win_rect.bottom - 20;
                         ShowWindow(hwnd, SW_MAXIMIZE);
                     }
+
                 }
                 // Load EasyTab
                 EasyTab_Load(platform_state.hwnd);
                 break;
             }
 #elif defined(__linux__)
-        case SDL_SYSWM_X11:
-            EasyTab_Load(sysinfo.info.x11.display, sysinfo.info.x11.window);
-            break;
+            case SDL_SYSWM_X11:
+                EasyTab_Load(sysinfo.info.x11.display, sysinfo.info.x11.window);
+                break;
 #endif
-        default:
-            break;
+            default:
+                break;
         }
     }
     else {
@@ -682,6 +672,22 @@ milton_main(char* file_to_open)
 #pragma warning (pop)
 #endif
 
+    platform_state.ui_scale = platform_ui_scale(&platform_state);
+    // Initialize milton_state
+    {
+        milton_state->render_data = gpu_allocate_render_data(&milton_state->root_arena);
+
+        PATH_CHAR* file_to_open_ = NULL;
+        PATH_CHAR buffer[MAX_PATH] = {};
+
+        if ( file_to_open ) {
+            file_to_open_ = (PATH_CHAR*)buffer;
+        }
+
+        str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
+
+        milton_init(milton_state, platform_state.width, platform_state.height, platform_state.ui_scale, (PATH_CHAR*)file_to_open_);
+    }
     milton_resize_and_pan(milton_state, {}, {platform_state.width, platform_state.height});
 
     platform_state.window_id = SDL_GetWindowID(window);
@@ -831,7 +837,7 @@ milton_main(char* file_to_open)
                         ttf_data = ImGui::MemAlloc(ttf_sz);
                         if ( ttf_data ) {
                             if ( fread(ttf_data, 1, ttf_sz, fd) == ttf_sz ) {
-                                ImFont* im_font = io.Fonts->ImFontAtlas::AddFontFromMemoryTTF(ttf_data, (int)ttf_sz, 14);
+                                ImFont* im_font = io.Fonts->ImFontAtlas::AddFontFromMemoryTTF(ttf_data, (int)ttf_sz, int(14*platform_state.ui_scale));
                             }
                             else {
                                 milton_log("WARNING: Error reading TTF file");

@@ -79,7 +79,7 @@ struct RenderData
     i32 height;
 
     v3f background_color;
-    i32 scale;
+    i32 scale;  // zoom
 
     // See MAX_DEPTH_VALUE
     i32 stroke_z;
@@ -197,9 +197,9 @@ gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     Rect bounds = picker_get_bounds(picker);
     int w = bounds.right-bounds.left;
     int h = bounds.bottom-bounds.top;
-    // The center of the picker has an offset of (20,30)
+    // The center of the picker has an offset of (25,30)
     // and the bounds radius is 100 px
-    auto transform = [&](v2f p) { return v2f{2*p.x/w-1 - 0.20f, 2*p.y/h-1 -0.30f}; };
+    auto transform = [&](v2f p) { return v2f{2*p.x/w-1 - .25, 2*p.y/h-1 -0.3f}; };
     a = transform(a);
     b = transform(b);
     c = transform(c);

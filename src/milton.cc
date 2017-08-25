@@ -381,7 +381,7 @@ milton_get_pen_alpha(MiltonState* milton_state)
 }
 
 void
-milton_init(MiltonState* milton_state, i32 width, i32 height, PATH_CHAR* file_to_open)
+milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open)
 {
     init_localization();
 
@@ -444,7 +444,7 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, PATH_CHAR* file_to
 #endif
 
     milton_state->gui = arena_alloc_elem(&milton_state->root_arena, MiltonGui);
-    gui_init(&milton_state->root_arena, milton_state->gui);
+    gui_init(&milton_state->root_arena, milton_state->gui, ui_scale);
 
     milton_state->view = arena_alloc_elem(&milton_state->root_arena, CanvasView);
     milton_set_default_view(milton_state);

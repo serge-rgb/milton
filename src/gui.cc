@@ -13,7 +13,7 @@
 
 
 #define NUM_BUTTONS 5
-#define BOUNDS_RADIUS_PX 100
+#define BOUNDS_RADIUS_PX 80
 
 void
 milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
@@ -314,6 +314,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     ImGui::PopStyleColor(menu_style_stack);
 
 
+    float ui_scale = milton_state->gui->scale;
+
     // GUI Windows ----
 
     b32 should_show_windows = milton_state->current_mode != MiltonMode_EYEDROPPER
@@ -326,9 +328,10 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
         /* ImGuiSetCond_FirstUseEver */
 
-        const f32 brush_window_height = 109;
-        ImGui::SetNextWindowPos(ImVec2(10, 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize({271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+        const f32 brush_window_height = ui_scale*109;
+        ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize({ui_scale*271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+
 
         b32 show_brush_window = (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER);
 
@@ -383,8 +386,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         }
 
         // Layer window
-        ImGui::SetNextWindowPos(ImVec2(10, 20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(300, 220), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*220), ImGuiSetCond_FirstUseEver);
         if ( ImGui::Begin(LOC(layers)) ) {
             CanvasView* view = milton_state->view;
             // left
@@ -432,7 +435,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
                     ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiSetCond_FirstUseEver);
                     // ImGui::SetNextWindowPos(ImVec2(pos_x, 20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
-                    ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiSetCond_FirstUseEver);
+                    ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*500), ImGuiSetCond_FirstUseEver);
 
                     if ( ImGui::Begin("Effects") ) {
                         ImGui::Text(LOC(opacity));
@@ -601,7 +604,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             auto width = 20 + pb.right - pb.left;
             ImGui::SetNextWindowPos(ImVec2(width, 30), ImGuiSetCond_FirstUseEver);
         }
-        ImGui::SetNextWindowSize(ImVec2(500, 100), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(ui_scale*500, ui_scale*100), ImGuiSetCond_FirstUseEver);
         if ( ImGui::Begin("History Slider") ) {
             ImGui::SliderInt("History", &gui->history, 0,
                              count_strokes(milton_state->canvas->root_layer));
@@ -615,7 +618,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         b32 reset = false;
 
         ImGui::SetNextWindowPos(ImVec2(100, 30), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize({350, 235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+        ImGui::SetNextWindowSize({ui_scale*350, ui_scale*235}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
         // Export window
         if ( ImGui::Begin(LOC(export_DOTS), &opened, ImGuiWindowFlags_NoCollapse) ) {
@@ -693,8 +696,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     }
 
 #if MILTON_ENABLE_PROFILING
-    ImGui::SetNextWindowPos(ImVec2(300, 205), ImGuiSetCond_FirstUseEver);
-    ImGui::SetNextWindowSize({350, 285}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+    ImGui::SetNextWindowPos(ImVec2(ui_scale*300, ui_scale*205), ImGuiSetCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ui_scale*350, ui_scale*285}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
     if ( milton_state->viz_window_visible ) {
         bool opened = true;
         if ( ImGui::Begin("Debug Data ([BACKQUOTE] to toggle)", &opened, ImGuiWindowFlags_NoCollapse) ) {
@@ -933,8 +936,8 @@ gui_point_hovers(MiltonGui* gui, v2i point)
     return hovers;
 }
 
-static void
-picker_from_rgb(ColorPicker* picker, v3f rgb)
+void
+gui_picker_from_rgb(ColorPicker* picker, v3f rgb)
 {
     v3f hsv = rgb_to_hsv(rgb);
     picker->data.hsv = hsv;
@@ -943,15 +946,15 @@ picker_from_rgb(ColorPicker* picker, v3f rgb)
 }
 
 static void
-update_button_bounds(ColorPicker* picker)
+update_button_bounds(ColorPicker* picker, f32 ui_scale)
 {
-    i32 bounds_radius_px = BOUNDS_RADIUS_PX;
+    i32 bounds_radius_px = ui_scale*BOUNDS_RADIUS_PX;
 
-    i32 spacing = 4;
+    i32 spacing = 4*ui_scale;
     i32 num_buttons = NUM_BUTTONS;
 
     i32 button_size = (2*bounds_radius_px - (num_buttons - 1) * spacing) / num_buttons;
-    i32 current_x = 40 - button_size / 2;
+    i32 current_x = ui_scale*40 - button_size / 2;
 
     for ( ColorButton* cur_button = picker->color_buttons;
           cur_button != NULL;
@@ -966,7 +969,7 @@ update_button_bounds(ColorPicker* picker)
 }
 
 static b32
-picker_hit_history_buttons(ColorPicker* picker, v2i point)
+picker_hit_history_buttons(ColorPicker* picker, f32 ui_scale, v2i point)
 {
     b32 hits = false;
     ColorButton* first = picker->color_buttons;
@@ -977,7 +980,7 @@ picker_hit_history_buttons(ColorPicker* picker, v2i point)
              is_inside_rect(color_button_as_rect(button), point) ) {
             hits = true;
 
-            picker_from_rgb(picker, button->rgba.rgb);
+            gui_picker_from_rgb(picker, button->rgba.rgb);
 
             if ( prev ) {
                 prev->next = button->next;
@@ -987,7 +990,7 @@ picker_hit_history_buttons(ColorPicker* picker, v2i point)
             }
             picker->color_buttons = button;
 
-            update_button_bounds(picker);
+            update_button_bounds(picker, ui_scale);
             break;
         }
         prev = button;
@@ -1037,18 +1040,15 @@ picker_update(ColorPicker* picker, v2i point)
         }
         // near a corner
         else if ( insideness < 2 ) {
-            if (abp < 0.0f)
-            {
+            if (abp < 0.0f) {
                 d.hsv.s = 1.0f;
                 d.hsv.v = 1.0f;
             }
-            else if (bcp < 0.0f)
-            {
+            else if (bcp < 0.0f) {
                 d.hsv.s = 0.0f;
                 d.hsv.v = 1.0f;
             }
-            else
-            {
+            else {
                 d.hsv.s = 0.5f;
                 d.hsv.v = 0.0f;
             }
@@ -1058,20 +1058,17 @@ picker_update(ColorPicker* picker, v2i point)
 #define GET_T(A, B, C)                            \
     v2f perp = perpendicular(fpoint - C); \
     f32 t = DOT(C - A, perp) / DOT(B - A, perp);
-            if (abp >= 0.0f)
-            {
+            if (abp >= 0.0f) {
                 GET_T(d.b, d.a, d.c)
                 d.hsv.s = 0.0f;
                 d.hsv.v = t;
             }
-            else if (bcp >= 0.0f)
-            {
+            else if (bcp >= 0.0f) {
                 GET_T(d.b, d.c, d.a)
                 d.hsv.s = 1.0f;
                 d.hsv.v = t;
             }
-            else
-            {
+            else {
                 GET_T(d.a, d.c, d.b)
                 d.hsv.s = t;
                 d.hsv.v = 1.0f;
@@ -1138,7 +1135,7 @@ eyedropper_input(MiltonGui* gui, u32* buffer, i32 w, i32 h, v2i point)
 {
     if ( point.y > 0 && point.y <= h && point.x > 0 && point.x <= w ) {
         v4f color = color_u32_to_v4f(buffer[point.y * w + point.x]);
-        picker_from_rgb(&gui->picker, color.rgb);
+        gui_picker_from_rgb(&gui->picker, color.rgb);
     }
 }
 
@@ -1231,7 +1228,7 @@ gui_consume_input(MiltonGui* gui, MiltonInput* input)
         accepts = gui_point_hovers(gui, point);
         if ( !picker_is_active(&gui->picker) &&
              !gui->did_hit_button &&
-             picker_hit_history_buttons(&gui->picker, point) ) {
+             picker_hit_history_buttons(&gui->picker, gui->scale, point) ) {
             accepts = true;
             gui->did_hit_button = true;
             gui->owns_user_input = true;
@@ -1260,14 +1257,15 @@ gui_toggle_help(MiltonGui* gui)
 }
 
 void
-gui_init(Arena* root_arena, MiltonGui* gui)
+gui_init(Arena* root_arena, MiltonGui* gui, f32 ui_scale)
 {
-    i32 bounds_radius_px = BOUNDS_RADIUS_PX;
-    f32 wheel_half_width = 12;
-    gui->picker.center = v2i{ bounds_radius_px + 20, bounds_radius_px + 30 };
+    gui->scale = ui_scale;
+    i32 bounds_radius_px = ui_scale*BOUNDS_RADIUS_PX;
+    f32 wheel_half_width = ui_scale*12;
+    gui->picker.center = v2i{ bounds_radius_px + ui_scale*20, bounds_radius_px + ui_scale*30 };
     gui->picker.bounds_radius_px = bounds_radius_px;
     gui->picker.wheel_half_width = wheel_half_width;
-    gui->picker.wheel_radius = (f32)bounds_radius_px - 5.0f - wheel_half_width;
+    gui->picker.wheel_radius = (f32)bounds_radius_px - ui_scale*5.0f - wheel_half_width;
     gui->picker.data.hsv = v3f{ 0.0f, 1.0f, 0.7f };
     Rect bounds;
     bounds.left = gui->picker.center.x - bounds_radius_px;
@@ -1287,10 +1285,11 @@ gui_init(Arena* root_arena, MiltonGui* gui)
         cur_button->next = arena_alloc_elem(root_arena, ColorButton);
         cur_button = cur_button->next;
     }
-    update_button_bounds(&gui->picker);
+    update_button_bounds(&gui->picker, gui->scale);
 
     gui->preview_pos      = v2i{-1, -1};
     gui->preview_pos_prev = v2i{-1, -1};
+
 
     exporter_init(&gui->exporter);
 }

@@ -235,7 +235,15 @@ milton_load(MiltonState* milton_state)
             }
         }
         milton_state->view->working_layer_id = saved_working_layer_id;
-        READ(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
+
+        if ( milton_binary_version >= 5 ) {
+           v3f rgb;
+           READ(&rgb, sizeof(v3f), 1, fd);
+           gui_picker_from_rgb(&milton_state->gui->picker, rgb);
+        } else {
+           READ(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
+        }
+
 
         // Buttons
         {
@@ -404,7 +412,13 @@ milton_save(MiltonState* milton_state)
             }
         }
 
-        WRITE(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
+        if ( milton_binary_version >= 5 ) {
+           v3f rgb = gui_get_picker_rgb(milton_state->gui);
+           WRITE(&rgb, sizeof(rgb), 1, fd);
+        }
+        else {
+           WRITE(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
+        }
 
         // Buttons
         if ( ok ) {

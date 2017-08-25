@@ -38,6 +38,8 @@ enum LayoutType
 };
 
 struct SDL_Cursor;
+struct WinDpiApi;
+
 struct PlatformState
 {
     i32 width;
@@ -81,7 +83,9 @@ struct PlatformState
     // Windows hardware cursor
 #if defined(_WIN32)
     HWND    hwnd;
+    WinDpiApi* win_dpi_api;
 #endif
+    float ui_scale;
 };
 
 typedef enum HistoryDebug
@@ -104,6 +108,7 @@ int milton_main(char* file_to_open);
 void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}
 void    platform_deallocate_internal(void* ptr);
+float   platform_ui_scale(PlatformState* p);
 #define milton_log platform_milton_log
 void    milton_fatal(char* message);
 void    milton_die_gracefully(char* message);

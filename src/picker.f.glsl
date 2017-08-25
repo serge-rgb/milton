@@ -122,15 +122,15 @@ main()
 {
     // NOTE:
     //  These constants gotten from gui.cc in gui_init. From bounds_radius_px, wheel_half_width, and so on.
+    float u_ui_scale = 1.75;
     float half_width = 12.0 / 100.0;
-    float radius = 1.0 - (12.0 + 5) / 100.0;
-
+    float radius = (1.0 - (12.0 + 5) / 100.0);
 
     /* vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y-gl_FragCoord.y); */
     /* vec2 coord = screen_point / u_screen_size; */
     /* coord.y = 1-coord.y; */
     /* vec4 color = texture(u_canvas, coord); */
-    vec4 color = vec4(0.5,0.5,0.55,0.4);
+    vec4 color = vec4(0.5, 0.5, 0.55, 0.4);
 
     float dist = distance(vec2(0), v_norm);
     // Wheel and triangle
@@ -146,6 +146,10 @@ main()
             color = vec4(u_color, 1);
         }
     }
+    // else if ( dist < radius + half_width ) {
+    //    color = vec4(0,0,0,1);
+    // }
+#if 1
     else if ( dist < radius+half_width ) {
         // Wheel
         if ( dist > radius-half_width ) {
@@ -162,15 +166,14 @@ main()
         }
         // Triangle
         else if ( is_inside_triangle(v_norm) ) {
-            // NOTE(Tilmann): Instead of doing this you could just have OpenGL draw a triangle with linearly interpolated vertex colors.
             float area = orientation(u_pointa, u_pointb, u_pointc);
-            float inv_area = 1.0f / area;
-            float v = 1 - (orientation(v_norm, u_pointc, u_pointa) * inv_area);
-            float s = orientation(u_pointb, v_norm, u_pointa) * inv_area / v;
+            float v = 1 - (orientation(v_norm, u_pointc, u_pointa) / area);
+            float s = orientation(u_pointb, v_norm, u_pointa) * v / area;
             vec3 pure_color = hsv_to_rgb(vec3(u_angle,1.0,1.0));
             color = vec4((1.0-(1.0-pure_color)*s)*v,1.0);
         }
     }
+#endif
     // Render buttons
     else if ( v_norm.y >= 1 ) {
         // Get the color for the rects

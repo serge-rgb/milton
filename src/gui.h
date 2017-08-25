@@ -114,6 +114,8 @@ struct MiltonGui
 
     v2i preview_pos;  // If rendering brush preview, this is where to do it.
     v2i preview_pos_prev;  // Keep the previous position to clear the canvas.
+
+    f32 scale;
 };
 
 //
@@ -126,7 +128,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
 
 
 //
-void                gui_init(Arena* root_arena, MiltonGui* gui);
+void                gui_init(Arena* root_arena, MiltonGui* gui, f32 scale);
 void                gui_toggle_visibility(MiltonState* milton_state);
 void                gui_toggle_help(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
@@ -134,6 +136,7 @@ v3f                 gui_get_picker_rgb(MiltonGui* gui);
 // Returns true if the GUI consumed input. False if the GUI wasn't affected
 b32                 gui_consume_input(MiltonGui* gui, MiltonInput* input);
 void                gui_imgui_set_ungrabbed(MiltonGui* gui);
+void                gui_picker_from_rgb(ColorPicker* picker, v3f rgb);
 
 void exporter_init(Exporter* exporter);
 b32 exporter_input(Exporter* exporter, MiltonInput* input);  // True if exporter changed

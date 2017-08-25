@@ -10,6 +10,77 @@ extern "C" {
 
 static FILE* g_win32_logfile;
 
+// Shcore.dll
+
+typedef enum _MONITOR_DPI_TYPE {
+  MDT_EFFECTIVE_DPI  = 0,
+  MDT_ANGULAR_DPI    = 1,
+  MDT_RAW_DPI        = 2,
+  MDT_DEFAULT        = MDT_EFFECTIVE_DPI
+} MONITOR_DPI_TYPE;
+
+
+typedef enum _PROCESS_DPI_AWARENESS {
+  PROCESS_DPI_UNAWARE            = 0,
+  PROCESS_SYSTEM_DPI_AWARE       = 1,
+  PROCESS_PER_MONITOR_DPI_AWARE  = 2
+} PROCESS_DPI_AWARENESS;
+
+#define GET_DPI_FOR_MONITOR_PROC(func) \
+    HRESULT WINAPI func (_In_  HMONITOR         hmonitor, \
+                         _In_  MONITOR_DPI_TYPE dpiType, \
+                         _Out_ UINT             *dpiX, \
+                         _Out_ UINT             *dpiY \
+                        )
+
+
+
+#define SET_PROCESS_DPI_AWARENESS_PROC(name) \
+        HRESULT WINAPI name(_In_ PROCESS_DPI_AWARENESS value \
+                                             )
+
+
+#define LOAD_DLL_PROC(dll, name) name##Proc* name = (name##Proc*)GetProcAddress(dll, #name);
+
+typedef GET_DPI_FOR_MONITOR_PROC(GetDpiForMonitorProc);
+typedef SET_PROCESS_DPI_AWARENESS_PROC (SetProcessDpiAwarenessProc);
+
+
+// Stub functions
+SET_PROCESS_DPI_AWARENESS_PROC(  SetProcessDpiAwarenessStub  )
+{
+    return 0;
+}
+GET_DPI_FOR_MONITOR_PROC( GetDpiForMonitorStub )
+{
+    *dpiX = 96;
+    *dpiY = 96;
+    return 0;
+}
+
+struct WinDpiApi {
+    SetProcessDpiAwarenessProc*  SetProcessDpiAwareness;
+    GetDpiForMonitorProc*        GetDpiForMonitor;
+};
+
+void
+win_load_dpi_api(WinDpiApi* api) {
+    HMODULE shcore = LoadLibrary("Shcore.dll");
+    api->GetDpiForMonitor = GetDpiForMonitorStub;
+    api->SetProcessDpiAwareness = SetProcessDpiAwarenessStub;
+    if (shcore) {
+        LOAD_DLL_PROC(shcore, GetDpiForMonitor);
+        LOAD_DLL_PROC(shcore, SetProcessDpiAwareness);
+
+        if (GetDpiForMonitor) {
+            api->GetDpiForMonitor = GetDpiForMonitor;
+        }
+        if (SetProcessDpiAwareness) {
+            api->SetProcessDpiAwareness = SetProcessDpiAwareness;
+        }
+    }
+}
+
 int
 _path_snprintf(PATH_CHAR* buffer, size_t count, const PATH_CHAR* format, ...)
 {
@@ -58,6 +129,19 @@ win32_debug_output(char* str)
         fputs(str, g_win32_logfile);
         fflush(g_win32_logfile);  // Make sure output is written in case of a crash.
     }
+}
+
+float
+platform_ui_scale(PlatformState* p)
+{
+    WinDpiApi* api = p->win_dpi_api;
+    HMONITOR hmon = MonitorFromWindow(p->hwnd, MONITOR_DEFAULTTONEAREST);
+    UINT dpix = 96;
+    UINT dpiy = dpix;
+    api->GetDpiForMonitor(hmon, MDT_EFFECTIVE_DPI, &dpix, &dpiy);
+
+    float scale = dpix / 96.0;
+    return scale;
 }
 
 void
