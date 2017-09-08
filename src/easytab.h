@@ -1083,6 +1083,9 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 
     PACKET PacketBuffer[EASYTAB_PACKETQUEUE_SIZE] = {0};
 
+    // Bring our context to the top.
+    EasyTab->WTOverlap(EasyTab->Context, TRUE);
+
     EasyTab->NumPackets = 0;
     #ifdef MILTON_EASYTAB
         if (Message == WT_PACKET)
@@ -1147,12 +1150,12 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         BOOL Active = (WParam & 0xFFFF) != 0;
 
         // Enable / Disable the context when focus changes (e.g. our window is minimized)
-        // and move our context to the top with WTOverlap when we gain focus.
+        // and move our context to the bottom with WTOverlap when we lose focus.
         // see http://www.wacomeng.com/windows/docs/NotesForTabletAwarePCDevelopers.html#_Toc274818945
         EasyTab->WTEnable(EasyTab->Context, Active);
-        if (Active)
+        if (!Active)
         {
-            EasyTab->WTOverlap(EasyTab->Context, TRUE);
+            EasyTab->WTOverlap(EasyTab->Context, FALSE);
         }
     }
 

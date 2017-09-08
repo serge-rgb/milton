@@ -9,7 +9,6 @@
 #include "gui.h"
 #include "persist.h"
 
-
 static void
 cursor_set_and_show(SDL_Cursor* cursor)
 {
@@ -207,6 +206,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 if ( event.button.windowID != platform_state->window_id ) {
                     break;
                 }
+
                 if (   (event.button.button == SDL_BUTTON_LEFT && ( EasyTab == NULL || !EasyTab->PenInProximity))
                      || event.button.button == SDL_BUTTON_MIDDLE
                      // Ignoring right click events for now
@@ -270,8 +270,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                                 milton_input.points[platform_state->num_point_results++] = VEC2L(input_point);
                             }
                             if (platform_state->num_pressure_results < MAX_INPUT_BUFFER_ELEMS) {
-                                milton_input.pressures[platform_state->num_pressure_results++] =
-                                    NO_PRESSURE_INFO;
+                                milton_input.pressures[platform_state->num_pressure_results++] = NO_PRESSURE_INFO;
                             }
                         }
                         input_flags &= ~MiltonInputFlags_HOVERING;
@@ -875,7 +874,7 @@ milton_main(char* file_to_open)
         MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
 
         // Handle pen orientation to switch to eraser or pen.
-        if ( EasyTab!=NULL && EasyTab->PenInProximity ) {
+        if ( EasyTab != NULL && EasyTab->PenInProximity ) {
             static int previous_orientation = 0;
 
             bool changed = false;
