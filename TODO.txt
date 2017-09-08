@@ -2,20 +2,8 @@ To-Do
 =====
 
 - Bugs
-- Platform
-    - Windows
-    - Linux
-        - Checkinstall? Manual dpkg?
-        - Ubuntu PPA
-        - Freedesktop entry, MIME type
-    - OSX
-        - Bundle
-        - dmg crap
-        - Ctrl -> Cmd in OSX. Other cross platform binding issues?
 - Application
     - Tablet:
-        - Port to Windows API (support non-Wacom devices)
-        - Gestures (OSX, Windows)
     - Renderer
         - only re-render areas entering the screen when panning
     - GUI

@@ -1262,7 +1262,7 @@ gui_init(Arena* root_arena, MiltonGui* gui, f32 ui_scale)
     gui->scale = ui_scale;
     i32 bounds_radius_px = ui_scale*BOUNDS_RADIUS_PX;
     f32 wheel_half_width = ui_scale*12;
-    gui->picker.center = v2i{ bounds_radius_px + ui_scale*20, bounds_radius_px + ui_scale*30 };
+    gui->picker.center = v2i{ bounds_radius_px + int(ui_scale*20), bounds_radius_px + (int)(ui_scale*30) };
     gui->picker.bounds_radius_px = bounds_radius_px;
     gui->picker.wheel_half_width = wheel_half_width;
     gui->picker.wheel_radius = (f32)bounds_radius_px - ui_scale*5.0f - wheel_half_width;

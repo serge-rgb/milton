@@ -62,9 +62,46 @@ HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt H
 
 
 // The returns value mean different things, but other than that, we're ok
-#ifdef _MSC_VER
-//#define snprintf sprintf_s
-#endif
+
+
+// Shcore.dll
+
+typedef enum _MONITOR_DPI_TYPE {
+  MDT_EFFECTIVE_DPI  = 0,
+  MDT_ANGULAR_DPI    = 1,
+  MDT_RAW_DPI        = 2,
+  MDT_DEFAULT        = MDT_EFFECTIVE_DPI
+} MONITOR_DPI_TYPE;
+
+
+typedef enum _PROCESS_DPI_AWARENESS {
+  PROCESS_DPI_UNAWARE            = 0,
+  PROCESS_SYSTEM_DPI_AWARE       = 1,
+  PROCESS_PER_MONITOR_DPI_AWARE  = 2
+} PROCESS_DPI_AWARENESS;
+#define GET_DPI_FOR_MONITOR_PROC(func) \
+    HRESULT WINAPI func (_In_  HMONITOR         hmonitor, \
+                         _In_  MONITOR_DPI_TYPE dpiType, \
+                         _Out_ UINT             *dpiX, \
+                         _Out_ UINT             *dpiY \
+                        )
+
+
+
+#define SET_PROCESS_DPI_AWARENESS_PROC(name) \
+        HRESULT WINAPI name(_In_ PROCESS_DPI_AWARENESS value \
+                                             )
+
+typedef GET_DPI_FOR_MONITOR_PROC(GetDpiForMonitorProc);
+typedef SET_PROCESS_DPI_AWARENESS_PROC (SetProcessDpiAwarenessProc);
+
+struct WinDpiApi {
+    SetProcessDpiAwarenessProc*  SetProcessDpiAwareness;
+    GetDpiForMonitorProc*        GetDpiForMonitor;
+};
+
+void win_load_dpi_api(WinDpiApi* api);
+float platform_ui_scale(PlatformState* p);
 
 #define PATH_STRLEN wcslen
 #define PATH_TOLOWER towlower

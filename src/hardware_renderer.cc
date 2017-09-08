@@ -197,9 +197,9 @@ gpu_update_picker(RenderData* render_data, ColorPicker* picker)
     Rect bounds = picker_get_bounds(picker);
     int w = bounds.right-bounds.left;
     int h = bounds.bottom-bounds.top;
-    // The center of the picker has an offset of (25,30)
+    // The center of the picker has an offset of (25,35)
     // and the bounds radius is 100 px
-    auto transform = [&](v2f p) { return v2f{2*p.x/w-1 - .25, 2*p.y/h-1 -0.3f}; };
+    auto transform = [&](v2f p) { return v2f{2*p.x/w-1 - .25f, 2*p.y/h-1 -0.35f}; };
     a = transform(a);
     b = transform(b);
     c = transform(c);
