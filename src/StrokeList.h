@@ -13,7 +13,7 @@
 
 #include "memory.h"
 
-#define STROKELIST_BUCKET_COUNT 1024
+#define STROKELIST_BUCKET_COUNT 4196
 
 struct StrokeBucket
 {

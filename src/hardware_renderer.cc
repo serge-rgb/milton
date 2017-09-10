@@ -1048,6 +1048,11 @@ gpu_clip_strokes_and_update(Arena* arena,
 
         while ( bucket ) {
             i64 count = 0;
+            if ( l->strokes.count < bucket_i * STROKELIST_BUCKET_COUNT ) {
+               // There is an allocated bucket but we have already iterated
+               // through all the actual strokes.
+               break;
+            }
             if ( l->strokes.count - bucket_i*STROKELIST_BUCKET_COUNT >= STROKELIST_BUCKET_COUNT ) {
                 count = STROKELIST_BUCKET_COUNT;
             } else {

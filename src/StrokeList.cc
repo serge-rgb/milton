@@ -55,6 +55,7 @@ get(StrokeList* list, i64 idx)
 Stroke
 pop(StrokeList* list)
 {
+    mlt_assert(list->count > 0);
     Stroke result = *get(list, list->count-1);
     list->count--;
     return result;
