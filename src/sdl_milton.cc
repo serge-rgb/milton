@@ -584,6 +584,17 @@ milton_main(char* file_to_open)
         milton_die_gracefully("SDL could not create window\n");
     }
 
+    // Sometimes SDL sets the window position such that it's impossible to move
+    // without using Windows shortcuts that not everyone knows. Check if this
+    // is the case and set a good default.
+    {
+       int x = 0, y = 0;
+       SDL_GetWindowPosition(window, &x, &y);
+       if ( x < 0 && y < 0 ) {
+          SDL_SetWindowPosition(window, 100, 100);
+       }
+    }
+
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
     if ( !gl_context ) {
