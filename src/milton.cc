@@ -486,7 +486,6 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
     }
     milton_set_pen_alpha(milton_state, 1.0f);
 
-    milton_state->mlt_binary_version = 2;
     milton_state->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
     milton_load(milton_state);

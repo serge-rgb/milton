@@ -89,7 +89,7 @@ milton_load(MiltonState* milton_state)
             if ( milton_binary_version < 4 ) {
                 if ( platform_dialog_yesno ("This file will be updated to the new version of Milton. Older versions won't be able to open it. Is this OK?", "File format change") ) {
                     milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
-                    milton_log("Updating this file to mlt version 4.\n");
+                    milton_log("Updating this file to latest mlt version.\n");
                 } else {
                     ok = false;
                     handled = true;
