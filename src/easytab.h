@@ -923,6 +923,8 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         if (!EasyTab->Dll)
         {
             OutputDebugStringA("Wintab32.dll not found.\n");
+            free(EasyTab);
+            EasyTab = NULL;
             return EASYTAB_DLL_LOAD_ERROR;
         }
 
@@ -1084,7 +1086,10 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
     PACKET PacketBuffer[EASYTAB_PACKETQUEUE_SIZE] = {0};
 
     // Bring our context to the top.
-    EasyTab->WTOverlap(EasyTab->Context, TRUE);
+    if (EasyTab && EasyTab->WTOverlap)
+    {
+       EasyTab->WTOverlap(EasyTab->Context, TRUE);
+    }
 
     EasyTab->NumPackets = 0;
     #ifdef MILTON_EASYTAB
