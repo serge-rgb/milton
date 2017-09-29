@@ -663,7 +663,9 @@ milton_main(char* file_to_open)
 
                 }
                 // Load EasyTab
-                EasyTab_Load(platform_state.hwnd);
+                if (EasyTab_Load(platform_state.hwnd) != EASYTAB_OK) {
+                   milton_die_gracefully("Easy Tab Failed to load");
+                }
                 break;
             }
 #elif defined(__linux__)
