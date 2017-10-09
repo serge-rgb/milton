@@ -15,7 +15,7 @@
     #undef X
 
     // Declaring glMinSampleShadingARB because we have a different path for loading it.
-    typedef void glMinSampleShadingARBProc(GLclampf value); extern glMinSampleShadingARBProc* glMinSampleShadingARB;
+    typedef void glMinSampleShadingARBProc (GLclampf value); extern glMinSampleShadingARBProc* glMinSampleShadingARB;
 #endif  //_WIN32
 
 
@@ -25,38 +25,39 @@ enum GLHelperFlags
     GLHelperFlags_TEXTURE_MULTISAMPLE   = 1<<1,
 };
 
-bool gl_helper_check_flags(int flags);
+namespace gl {
 
-bool    gl_load();
-void    gl_log(char* str);
-void    gl_query_error(const char* expr, const char* file, int line);
-GLuint  gl_compile_shader(const char* src, GLuint type, char* config = "");
-void    gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders);
+bool    check_flags (int flags);
 
-bool gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz);
-bool gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals);
-bool gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals);
-bool gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals);
-bool gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals);
-bool gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals);
-bool gl_set_uniform_vec2(GLuint program, char* name, float x, float y);
-bool gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals);
-bool gl_set_uniform_f(GLuint program, char* name, float val);
-bool gl_set_uniform_i(GLuint program, char* name, i32 val);
-bool gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y);
+bool    load ();
+void    log (char* str);
+GLuint  compile_shader (const char* src, GLuint type, char* config = "");
+void    link_program (GLuint obj, GLuint shaders[], int64_t num_shaders);
 
-GLuint gl_new_color_texture(int w, int h);
-GLuint gl_new_color_texture_multisample(int w, int h);
-GLuint gl_new_depth_stencil_texture(int w, int h);
-GLuint gl_new_depth_stencil_texture_multisample(int w, int h);
-GLuint gl_new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment=0, GLenum texture_target=GL_TEXTURE_2D);
+bool    set_attribute_vec2 (GLuint program, char* name, GLfloat* data, size_t data_sz);
+bool    set_uniform_vec4 (GLuint program, char* name, size_t count, float* vals);
+bool    set_uniform_vec4 (GLuint program, char* name, size_t count, float* vals);
+bool    set_uniform_vec3i (GLuint program, char* name, size_t count, i32* vals);
+bool    set_uniform_vec3 (GLuint program, char* name, size_t count, float* vals);
+bool    set_uniform_vec2 (GLuint program, char* name, size_t count, float* vals);
+bool    set_uniform_vec2 (GLuint program, char* name, float x, float y);
+bool    set_uniform_vec2i (GLuint program, char* name, size_t count, i32* vals);
+bool    set_uniform_f (GLuint program, char* name, float val);
+bool    set_uniform_i (GLuint program, char* name, i32 val);
+bool    set_uniform_vec2i (GLuint program, char* name, i32 x, i32 y);
 
-void gl_resize_color_texture(GLuint t, int w, int h);
-void gl_resize_color_texture_multisample(GLuint t, int w, int h);
-void gl_resize_depth_stencil_texture(GLuint t, int w, int h);
-void gl_resize_depth_stencil_texture_multisample(GLuint t, int w, int h);
+GLuint  new_color_texture (int w, int h);
+GLuint  new_color_texture_multisample (int w, int h);
+GLuint  new_depth_stencil_texture (int w, int h);
+GLuint  new_depth_stencil_texture_multisample (int w, int h);
+GLuint  new_fbo (GLuint color_attachment, GLuint depth_stencil_attachment=0, GLenum texture_target=GL_TEXTURE_2D);
 
+void    resize_color_texture (GLuint t, int w, int h);
+void    resize_color_texture_multisample (GLuint t, int w, int h);
+void    resize_depth_stencil_texture (GLuint t, int w, int h);
+void    resize_depth_stencil_texture_multisample (GLuint t, int w, int h);
 
+}  // namespace gl
 
 #if defined(__linux__)
     // There is no function prototype for the EXT version of this function but there is for GL core one.

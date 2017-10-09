@@ -19,23 +19,82 @@
     typedef void glMinSampleShadingARBProc(GLclampf value); glMinSampleShadingARBProc* glMinSampleShadingARB;
 #endif  //_WIN32
 
+
+// Global variable that keeps track of Milton's GL configuration. See GLHelperFlags.
 static int g_gl_helper_flags;
 
+namespace gl {
+
+// Static helpers
 static void
-gl_helper_set_flags(int flags)
+query_error (const char* expr, const char* file, int line)
+{
+    GLenum err = glGetError();
+    const char* str = "";
+    if ( err != GL_NO_ERROR ) {
+        char buffer[256];
+        switch( err ) {
+#ifdef GL_INVALID_ENUM
+        case GL_INVALID_ENUM:
+            str = "GL_INVALID_ENUM";
+            break;
+#endif
+#ifdef GL_INVALID_VALUE
+        case GL_INVALID_VALUE:
+            str = "GL_INVALID_VALUE";
+            break;
+#endif
+#ifdef GL_INVALID_OPERATION
+        case GL_INVALID_OPERATION:
+            str = "GL_INVALID_OPERATION";
+            break;
+#endif
+#ifdef GL_INVALID_FRAMEBUFFER_OPERATION
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            str = "GL_INVALID_FRAMEBUFFER_OPERATION";
+            break;
+#endif
+#ifdef GL_OUT_OF_MEMORY
+        case GL_OUT_OF_MEMORY:
+            str = "GL_OUT_OF_MEMORY";
+            break;
+#endif
+#ifdef GL_STACK_OVERFLOW
+        case GL_STACK_OVERFLOW:
+            str = "GL_STACK_OVERFLOW";
+            break;
+#endif
+#ifdef GL_STACK_UNDERFLOW
+        case GL_STACK_UNDERFLOW:
+            str = "GL_STACK_UNDERFLOW";
+            break;
+#endif
+        default:
+            str = "SOME GL ERROR";
+            break;
+        }
+        snprintf(buffer, 256, "%s in: %s:%d\n", str, file, line);
+        gl::log(buffer);
+        snprintf(buffer, 256, "   ---- Expression: %s\n", expr);
+        gl::log(buffer);
+    }
+}
+
+static void
+set_flags (int flags)
 {
     g_gl_helper_flags |= flags;
 }
 
 bool
-gl_helper_check_flags(int flags)
+check_flags (int flags)
 {
     bool result = g_gl_helper_flags & flags;
     return result;
 }
 
 bool
-gl_load()
+load ()
 {
 #if defined(_WIN32)
 #define GETADDRESS(func, fatal_on_fail) \
@@ -94,10 +153,10 @@ gl_load()
 
             #if MULTISAMPLING_ENABLED
                 if ( strcmp(extension_string, "GL_ARB_sample_shading") == 0 ) {
-                    gl_helper_set_flags(GLHelperFlags_SAMPLE_SHADING);
+                    gl::set_flags(GLHelperFlags_SAMPLE_SHADING);
                 }
                 if ( strcmp(extension_string, "GL_ARB_texture_multisample") == 0 ) {
-                    gl_helper_set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
+                    gl::set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
                 }
             #endif
         }
@@ -119,10 +178,10 @@ gl_load()
                     ext[len]='\0';
                     #if MULTISAMPLING_ENABLED
                         if ( strcmp(ext, "GL_ARB_sample_shading") == 0 ) {
-                            gl_helper_set_flags(GLHelperFlags_SAMPLE_SHADING);
+                            gl::set_flags(GLHelperFlags_SAMPLE_SHADING);
                         }
                         if ( strcmp(ext, "GL_ARB_texture_multisample") == 0 ) {
-                            gl_helper_set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
+                            gl::set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
                         }
                     #endif
                     begin = end+1;
@@ -136,7 +195,7 @@ gl_load()
 
 #if defined(_WIN32)
 #pragma warning(push, 0)
-    if ( !gl_helper_check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
+    if ( !gl_check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
         glMinSampleShadingARB = NULL;
     }
 #pragma warning(pop)
@@ -146,7 +205,7 @@ gl_load()
 }
 
 void
-gl_log(char* str)
+log (char* str)
 {
 #ifdef _WIN32
     OutputDebugStringA(str);
@@ -156,7 +215,7 @@ gl_log(char* str)
 }
 
 GLuint
-gl_compile_shader(const char* in_src, GLuint type, char* config)
+compile_shader (const char* in_src, GLuint type, char* config)
 {
     const char* sources[] = {
         #if USE_GL_3_2
@@ -170,7 +229,7 @@ gl_compile_shader(const char* in_src, GLuint type, char* config)
                                        : "#define in varying   \n#define out\n#define out_color gl_FragColor\n",
             "#define texture texture2D\n",
         #endif
-        (gl_helper_check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE)) ? "#define HAS_TEXTURE_MULTISAMPLE 1\n"
+        (check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE)) ? "#define HAS_TEXTURE_MULTISAMPLE 1\n"
                                                                    : "#define HAS_TEXTURE_MULTISAMPLE 0\n",
 
         config,
@@ -196,8 +255,8 @@ gl_compile_shader(const char* in_src, GLuint type, char* config)
         GLsizei written_len;
         // glGetShaderInfoLog(obj, length, &written_len, log);
         glGetShaderInfoLog (obj, length, &written_len, log);
-        gl_log("Shader compilation info. \n    ---- Info log:\n");
-        gl_log(log);
+        gl::log("Shader compilation info. \n    ---- Info log:\n");
+        gl::log(log);
 
         if ( !res ) {
             milton_die_gracefully("Shader compilation error\n");
@@ -222,7 +281,7 @@ gl_compile_shader(const char* in_src, GLuint type, char* config)
 #endif
 
 void
-gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
+link_program (GLuint obj, GLuint shaders[], int64_t num_shaders)
 {
     mlt_assert(glIsProgram (obj));
     for ( int i = 0; i < num_shaders; ++i ) {
@@ -236,14 +295,14 @@ gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
     int res = 0;
     glGetProgramiv(obj, GL_LINK_STATUS, &res);
     if ( !res ) {
-        gl_log("ERROR: program did not link.\n");
+        gl::log("ERROR: program did not link.\n");
         GLint len;
         glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &len);
         GLsizei written_len;
         char* log = (char*)mlt_calloc(1, (size_t)len, "Strings");
         glGetProgramInfoLog(obj, (GLsizei)len, &written_len, log);
         //glGetInfoLog(obj, (GLsizei)len, &written_len, log);
-        gl_log(log);
+        gl::log(log);
         mlt_free(log, "Strings");
         mlt_assert(!"program linking error");
     }
@@ -258,63 +317,8 @@ gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
 #undef glUseProgramObjectARB
 #endif
 
-void
-gl_query_error(const char* expr, const char* file, int line)
-{
-    GLenum err = glGetError();
-    const char* str = "";
-    if ( err != GL_NO_ERROR ) {
-        char buffer[256];
-        switch( err ) {
-#ifdef GL_INVALID_ENUM
-        case GL_INVALID_ENUM:
-            str = "GL_INVALID_ENUM";
-            break;
-#endif
-#ifdef GL_INVALID_VALUE
-        case GL_INVALID_VALUE:
-            str = "GL_INVALID_VALUE";
-            break;
-#endif
-#ifdef GL_INVALID_OPERATION
-        case GL_INVALID_OPERATION:
-            str = "GL_INVALID_OPERATION";
-            break;
-#endif
-#ifdef GL_INVALID_FRAMEBUFFER_OPERATION
-        case GL_INVALID_FRAMEBUFFER_OPERATION:
-            str = "GL_INVALID_FRAMEBUFFER_OPERATION";
-            break;
-#endif
-#ifdef GL_OUT_OF_MEMORY
-        case GL_OUT_OF_MEMORY:
-            str = "GL_OUT_OF_MEMORY";
-            break;
-#endif
-#ifdef GL_STACK_OVERFLOW
-        case GL_STACK_OVERFLOW:
-            str = "GL_STACK_OVERFLOW";
-            break;
-#endif
-#ifdef GL_STACK_UNDERFLOW
-        case GL_STACK_UNDERFLOW:
-            str = "GL_STACK_UNDERFLOW";
-            break;
-#endif
-        default:
-            str = "SOME GL ERROR";
-            break;
-        }
-        snprintf(buffer, 256, "%s in: %s:%d\n", str, file, line);
-        gl_log(buffer);
-        snprintf(buffer, 256, "   ---- Expression: %s\n", expr);
-        gl_log(buffer);
-    }
-}
-
-
 bool
-gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
+set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
 {
     bool ok = true;
     GLint loc = glGetAttribLocation(program, name);
@@ -327,7 +331,7 @@ gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
 }
 
 bool
-gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
+set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -341,7 +345,7 @@ gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
 }
 
 bool
-gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
+set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -355,7 +359,7 @@ gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
 }
 
 bool
-gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
+set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -369,7 +373,7 @@ gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
 }
 
 bool
-gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
+set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -382,7 +386,7 @@ gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
 }
 
 bool
-gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
+set_uniform_vec2(GLuint program, char* name, float x, float y)
 {
     glUseProgram(program);
     bool ok = true;
@@ -395,7 +399,7 @@ gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
 }
 
 bool
-gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
+set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
 {
     glUseProgram(program);
     bool ok = true;
@@ -408,7 +412,7 @@ gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
 }
 
 bool
-gl_set_uniform_f(GLuint program, char* name, float val)
+set_uniform_f(GLuint program, char* name, float val)
 {
     glUseProgram(program);
     bool ok = true;
@@ -421,7 +425,7 @@ gl_set_uniform_f(GLuint program, char* name, float val)
 }
 
 bool
-gl_set_uniform_i(GLuint program, char* name, i32 val)
+set_uniform_i(GLuint program, char* name, i32 val)
 {
     glUseProgram(program);
     bool ok = true;
@@ -434,7 +438,7 @@ gl_set_uniform_i(GLuint program, char* name, i32 val)
 }
 
 bool
-gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
+set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
 {
     glUseProgram(program);
     bool ok = true;
@@ -447,7 +451,7 @@ gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
 }
 
 GLuint
-gl_new_color_texture(int w, int h)
+new_color_texture(int w, int h)
 {
     GLuint t = 0;
     glGenTextures(1, &t);
@@ -466,7 +470,7 @@ gl_new_color_texture(int w, int h)
 }
 
 GLuint
-gl_new_depth_stencil_texture(int w, int h)
+new_depth_stencil_texture(int w, int h)
 {
     GLuint t = 0;
     glGenTextures(1, &t);
@@ -488,7 +492,7 @@ gl_new_depth_stencil_texture(int w, int h)
 }
 
 GLuint
-gl_new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment, GLenum texture_target)
+new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment, GLenum texture_target)
 {
     GLuint fbo = 0;
     glGenFramebuffersEXT(1, &fbo);
@@ -508,7 +512,7 @@ gl_new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment, GLenum text
 
 
 GLuint
-gl_new_color_texture_multisample(int w, int h)
+new_color_texture_multisample(int w, int h)
 {
     GLuint t = 0;
     glGenTextures(1, &t);
@@ -524,7 +528,7 @@ gl_new_color_texture_multisample(int w, int h)
 }
 
 GLuint
-gl_new_depth_stencil_texture_multisample(int w, int h)
+new_depth_stencil_texture_multisample(int w, int h)
 {
     GLuint t = 0;
     glGenTextures(1, &t);
@@ -542,7 +546,7 @@ gl_new_depth_stencil_texture_multisample(int w, int h)
 }
 
 void
-gl_resize_color_texture(GLuint t, int w, int h)
+resize_color_texture(GLuint t, int w, int h)
 {
     glBindTexture(GL_TEXTURE_2D, t);
     glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
@@ -553,7 +557,7 @@ gl_resize_color_texture(GLuint t, int w, int h)
 }
 
 void
-gl_resize_color_texture_multisample(GLuint t, int w, int h)
+resize_color_texture_multisample(GLuint t, int w, int h)
 {
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
@@ -563,7 +567,7 @@ gl_resize_color_texture_multisample(GLuint t, int w, int h)
 }
 
 void
-gl_resize_depth_stencil_texture(GLuint t, int w, int h)
+resize_depth_stencil_texture(GLuint t, int w, int h)
 {
     glBindTexture(GL_TEXTURE_2D, t);
     glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
@@ -574,7 +578,7 @@ gl_resize_depth_stencil_texture(GLuint t, int w, int h)
 }
 
 void
-gl_resize_depth_stencil_texture_multisample(GLuint t, int w, int h)
+resize_depth_stencil_texture_multisample(GLuint t, int w, int h)
 {
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
@@ -583,6 +587,8 @@ gl_resize_depth_stencil_texture_multisample(GLuint t, int w, int h)
                             GL_TRUE);
 
 }
+
+}  // namespace gl
 
 #ifdef _WIN32
 

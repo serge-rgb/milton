@@ -619,7 +619,7 @@ milton_main(char* file_to_open)
 
     MiltonState* milton_state = arena_bootstrap(MiltonState, root_arena, 1024);
 
-    if ( !gl_load() ) {
+    if ( !gl::load() ) {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
     }
 
