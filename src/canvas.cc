@@ -78,6 +78,9 @@ canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
     return raster_rect;
 }
 
+
+namespace layer {
+
 i64
 count_strokes(Layer* root)
 {
@@ -114,7 +117,7 @@ count_clipped_strokes(Layer* root, i32 num_workers)
 #endif
 
 Layer*
-layer_get_topmost(Layer* root)
+get_topmost(Layer* root)
 {
     Layer* layer = root;
     while ( layer->next ) {
@@ -123,7 +126,7 @@ layer_get_topmost(Layer* root)
     return layer;
 }
 Layer*
-layer_get_by_id(Layer* root_layer, i32 id)
+get_by_id(Layer* root_layer, i32 id)
 {
     Layer* l = NULL;
     for ( Layer* layer = root_layer; layer; layer = layer->next ) {
@@ -177,3 +180,5 @@ number_of_layers(Layer* layer)
     }
     return n;
 }
+
+}  // namespace layer

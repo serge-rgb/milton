@@ -185,7 +185,7 @@ milton_load(MiltonState* milton_state)
 
                             stroke.bounding_rect = bounding_box_for_stroke(&stroke);
 
-                            layer_push_stroke(layer, stroke);
+                            layer::layer_push_stroke(layer, stroke);
                         } else {
                             ok = false;
                             goto END;
@@ -208,7 +208,7 @@ milton_load(MiltonState* milton_state)
                         READ(&stroke.layer_id, sizeof(i32), 1, fd);
                         stroke.bounding_rect = bounding_box_for_stroke(&stroke);
 
-                        layer_push_stroke(layer, stroke);
+                        layer::layer_push_stroke(layer, stroke);
                     }
                 }
             }
@@ -356,7 +356,7 @@ milton_save(MiltonState* milton_state)
         WRITE(&milton_binary_version, sizeof(u32), 1, fd);
         WRITE(milton_state->view, sizeof(CanvasView), 1, fd);
 
-        num_layers = number_of_layers(milton_state->canvas->root_layer);
+        num_layers = layer::number_of_layers(milton_state->canvas->root_layer);
         WRITE(&num_layers, sizeof(i32), 1, fd);
         WRITE(&milton_state->canvas->layer_guid, sizeof(i32), 1, fd);
 

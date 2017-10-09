@@ -105,7 +105,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         if ( ImGui::BeginMenu(LOC(file)) ) {
             if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
                 b32 save_file = false;
-                if ( count_strokes(milton_state->canvas->root_layer) > 0 ) {
+                if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
                     if ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
                         save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                     }
@@ -134,7 +134,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 // If current canvas is MiltonPersist, then prompt to save
                 if ( ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
                     b32 save_file = false;
-                    if ( count_strokes(milton_state->canvas->root_layer) > 0 ) {
+                    if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
                         save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                     }
                     if ( save_file ) {
@@ -399,7 +399,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 bool v = layer->flags & LayerFlags_VISIBLE;
                 ImGui::PushID(layer->id);
                 if ( ImGui::Checkbox("##select", &v) ) {
-                    layer_toggle_visibility(layer);
+                    layer::layer_toggle_visibility(layer);
                     input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                 }
                 ImGui::PopID();
@@ -607,7 +607,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         ImGui::SetNextWindowSize(ImVec2(ui_scale*500, ui_scale*100), ImGuiSetCond_FirstUseEver);
         if ( ImGui::Begin("History Slider") ) {
             ImGui::SliderInt("History", &gui->history, 0,
-                             count_strokes(milton_state->canvas->root_layer));
+                             layer::count_strokes(milton_state->canvas->root_layer));
         } ImGui::End();
 
     }

@@ -713,7 +713,7 @@ void
 milton_save_postlude(MiltonState* milton_state)
 {
     milton_state->last_save_time = platform_get_walltime();
-    milton_state->last_save_stroke_count = count_strokes(milton_state->canvas->root_layer);
+    milton_state->last_save_stroke_count = layer::count_strokes(milton_state->canvas->root_layer);
 
     milton_state->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
 }
@@ -767,7 +767,7 @@ milton_new_layer(MiltonState* milton_state)
     snprintf(layer->name, 1024, "Layer %d", layer->id);
 
     if ( canvas->root_layer != NULL ) {
-        Layer* top = layer_get_topmost(canvas->root_layer);
+        Layer* top = layer::get_topmost(canvas->root_layer);
         top->next = layer;
         layer->prev = top;
         milton_set_working_layer(milton_state, top->next);
@@ -845,7 +845,7 @@ milton_validate(MiltonState* milton_state)
         }
     }
 
-    i64 stroke_count = count_strokes(milton_state->canvas->root_layer);
+    i64 stroke_count = layer::count_strokes(milton_state->canvas->root_layer);
     if ( history_count != stroke_count ) {
         milton_log("WARNING: Recreating history. File says History: %d(max %d) Actual strokes: %d\n",
                    history_count, milton_state->canvas->history.count,
@@ -1090,7 +1090,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             // Grab undo elements. They might be from deleted layers, so discard dead results.
             while ( milton_state->canvas->history.count > 0 ) {
                 HistoryElement h = pop(&milton_state->canvas->history);
-                Layer* l = layer_get_by_id(milton_state->canvas->root_layer, h.layer_id);
+                Layer* l = layer::get_by_id(milton_state->canvas->root_layer, h.layer_id);
                 // found a thing to undo.
                 if ( l ) {
                     if ( l->strokes.count > 0 ) {
@@ -1111,7 +1111,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                 HistoryElement h = pop(&milton_state->canvas->redo_stack);
                 switch ( h.type ) {
                 case HistoryElement_STROKE_ADD: {
-                    Layer* l = layer_get_by_id(milton_state->canvas->root_layer, h.layer_id);
+                    Layer* l = layer::get_by_id(milton_state->canvas->root_layer, h.layer_id);
                     if ( l && count(&milton_state->canvas->stroke_graveyard) > 0 ) {
                         Stroke stroke = pop(&milton_state->canvas->stroke_graveyard);
                         if ( stroke.layer_id == h.layer_id ) {
@@ -1294,7 +1294,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
                 mlt_assert(new_stroke.num_points > 0);
                 mlt_assert(new_stroke.num_points <= STROKE_MAX_POINTS);
-                auto* stroke = layer_push_stroke(milton_state->canvas->working_layer, new_stroke);
+                auto* stroke = layer::layer_push_stroke(milton_state->canvas->working_layer, new_stroke);
 
                 // Invalidate working stroke render element
 
@@ -1395,7 +1395,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         if (    !(milton_state->flags & MiltonStateFlags_RUNNING)
              && (milton_state->flags & MiltonStateFlags_LAST_SAVE_FAILED)
              && (milton_state->flags & MiltonStateFlags_MOVE_FILE_FAILED)
-             && milton_state->last_save_stroke_count != count_strokes(milton_state->canvas->root_layer) ) {
+             && milton_state->last_save_stroke_count != layer::count_strokes(milton_state->canvas->root_layer) ) {
             // TODO: Stop using MoveFileEx?
             //  Why does MoveFileEx fail? Ask someone who knows this stuff.
             // Wait a moment and try again. If this fails, prompt to save somewhere else.
