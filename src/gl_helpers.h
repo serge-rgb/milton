@@ -27,12 +27,6 @@ enum GLHelperFlags
 
 bool gl_helper_check_flags(int flags);
 
-#if MILTON_DEBUG
-#define GLCHK(stmt) stmt; gl_query_error(#stmt, __FILE__, __LINE__)
-#else
-#define GLCHK(stmt) stmt;
-#endif
-
 bool    gl_load();
 void    gl_log(char* str);
 void    gl_query_error(const char* expr, const char* file, int line);

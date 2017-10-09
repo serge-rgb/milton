@@ -86,7 +86,7 @@ gl_load()
     bool ok = true;
     // Extension checking.
     i64 num_extensions = 0;
-    GLCHK( glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions) );
+    glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions);
 
     if ( num_extensions > 0 ) {
         for ( i64 extension_i = 0; extension_i < num_extensions; ++extension_i ) {
@@ -179,23 +179,23 @@ gl_compile_shader(const char* in_src, GLuint type, char* config)
 
     GLuint obj = glCreateShader(type);
 
-    GLCHK ( glShaderSource(obj, array_count(sources), sources, NULL) );
-    GLCHK ( glCompileShader(obj) );
+    glShaderSource(obj, array_count(sources), sources, NULL);
+    glCompileShader(obj);
     // ERROR CHECKING
     int res = 0;
-    //GLCHK ( glGetObjectParameteriv(obj, GL_COMPILE_STATUS, &res) );
-    GLCHK ( glGetShaderiv(obj, GL_COMPILE_STATUS, &res) );
+    //glGetObjectParameteriv(obj, GL_COMPILE_STATUS, &res);
+    glGetShaderiv(obj, GL_COMPILE_STATUS, &res);
 
     GLint length;
-    GLCHK ( glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length) );
+    glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &length);
     if ( !res && length > 0 ) {
         if ( !res ) {
             milton_log("SHADER SOURCE:\n%s\n", sources[2]);
         }
         char* log = (char*)mlt_calloc(1, (size_t)length, "Strings");
         GLsizei written_len;
-        // GLCHK ( glGetShaderInfoLog(obj, length, &written_len, log) );
-        GLCHK ( glGetShaderInfoLog (obj, length, &written_len, log) );
+        // glGetShaderInfoLog(obj, length, &written_len, log);
+        glGetShaderInfoLog (obj, length, &written_len, log);
         gl_log("Shader compilation info. \n    ---- Info log:\n");
         gl_log(log);
 
@@ -228,13 +228,13 @@ gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
     for ( int i = 0; i < num_shaders; ++i ) {
         mlt_assert(glIsShader(shaders[i]));
 
-        GLCHK ( glAttachShader(obj, shaders[i]) );
+        glAttachShader(obj, shaders[i]);
     }
-    GLCHK ( glLinkProgram(obj) );
+    glLinkProgram(obj);
 
     // ERROR CHECKING
     int res = 0;
-    GLCHK ( glGetProgramiv(obj, GL_LINK_STATUS, &res) );
+    glGetProgramiv(obj, GL_LINK_STATUS, &res);
     if ( !res ) {
         gl_log("ERROR: program did not link.\n");
         GLint len;
@@ -247,7 +247,7 @@ gl_link_program(GLuint obj, GLuint shaders[], int64_t num_shaders)
         mlt_free(log, "Strings");
         mlt_assert(!"program linking error");
     }
-    GLCHK ( glValidateProgram(obj) );
+    glValidateProgram(obj);
 }
 #if defined(__MACH__)
 #undef glGetObjectParameterivARB
@@ -320,7 +320,7 @@ gl_set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
     GLint loc = glGetAttribLocation(program, name);
     ok = loc >= 0;
     if ( ok ) {
-        GLCHK( glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)data_sz, data, GL_STATIC_DRAW) );
+        glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)data_sz, data, GL_STATIC_DRAW);
     }
 
     return ok;
@@ -335,7 +335,7 @@ gl_set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
     ok = loc >= 0;
 
     if ( ok ) {
-        GLCHK( glUniform4fv(loc, (GLsizei)count, vals) );
+        glUniform4fv(loc, (GLsizei)count, vals);
     }
     return ok;
 }
@@ -349,7 +349,7 @@ gl_set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
     ok = loc >= 0;
 
     if ( ok ) {
-        GLCHK( glUniform3iv(loc, (GLsizei)count, vals) );
+        glUniform3iv(loc, (GLsizei)count, vals);
     }
     return ok;
 }
@@ -363,7 +363,7 @@ gl_set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
     ok = loc >= 0;
 
     if ( ok ) {
-        GLCHK( glUniform3fv(loc, (GLsizei)count, vals) );
+        glUniform3fv(loc, (GLsizei)count, vals);
     }
     return ok;
 }
@@ -376,7 +376,7 @@ gl_set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
     if ( ok ) {
-        GLCHK( glUniform2fv(loc, (GLsizei)count, vals) );
+        glUniform2fv(loc, (GLsizei)count, vals);
     }
     return ok;
 }
@@ -389,7 +389,7 @@ gl_set_uniform_vec2(GLuint program, char* name, float x, float y)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
     if ( ok ) {
-        GLCHK( glUniform2f(loc, x, y) );
+        glUniform2f(loc, x, y);
     }
     return ok;
 }
@@ -402,7 +402,7 @@ gl_set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
     if ( ok ) {
-        GLCHK( glUniform2iv(loc, (GLsizei)count, vals) );
+        glUniform2iv(loc, (GLsizei)count, vals);
     }
     return ok;
 }
@@ -415,7 +415,7 @@ gl_set_uniform_f(GLuint program, char* name, float val)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
     if ( ok ) {
-        GLCHK( glUniform1f(loc, val) );
+        glUniform1f(loc, val);
     }
     return ok;
 }
@@ -428,7 +428,7 @@ gl_set_uniform_i(GLuint program, char* name, i32 val)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
     if ( ok ) {
-        GLCHK( glUniform1i(loc, val) );
+        glUniform1i(loc, val);
     }
     return ok;
 }
@@ -441,7 +441,7 @@ gl_set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
     GLint loc = glGetUniformLocation(program, name);
     ok = loc >= 0;
     if ( ok ) {
-        GLCHK( glUniform2i(loc, x, y) );
+        glUniform2i(loc, x, y);
     }
     return ok;
 }
@@ -452,10 +452,10 @@ gl_new_color_texture(int w, int h)
     GLuint t = 0;
     glGenTextures(1, &t);
     glBindTexture(GL_TEXTURE_2D, t);
-    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
-    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR) );
-    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR) );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
                  /*width, height = */ w, h,
                  /*border = */ 0,
@@ -471,18 +471,18 @@ gl_new_depth_stencil_texture(int w, int h)
     GLuint t = 0;
     glGenTextures(1, &t);
     glBindTexture(GL_TEXTURE_2D, t);
-    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE) );
-    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE) );
-    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST) );
-    GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST) );
-    //GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY) );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
     // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-    // GLCHK( glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL) );
-    GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
-                         /*width, height = */ w,h,
-                         /*border = */ 0,
-                         /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
-                         /*data = */ NULL) );
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
+                 /*width, height = */ w,h,
+                 /*border = */ 0,
+                 /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
+                 /*data = */ NULL);
     glBindTexture(GL_TEXTURE_2D, 0);
     return t;
 }
@@ -491,15 +491,15 @@ GLuint
 gl_new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment, GLenum texture_target)
 {
     GLuint fbo = 0;
-    GLCHK(glGenFramebuffersEXT(1, &fbo));
-    GLCHK(glBindFramebufferEXT(GL_FRAMEBUFFER, fbo));
+    glGenFramebuffersEXT(1, &fbo);
+    glBindFramebufferEXT(GL_FRAMEBUFFER, fbo);
 
 
-    GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                                     color_attachment, 0) );
+    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+                              color_attachment, 0);
     if ( depth_stencil_attachment ) {
-        GLCHK( glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture_target,
-                                         depth_stencil_attachment, 0) );
+        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture_target,
+                                  depth_stencil_attachment, 0);
     }
 
     glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
@@ -530,10 +530,10 @@ gl_new_depth_stencil_texture_multisample(int w, int h)
     glGenTextures(1, &t);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
 
-    GLCHK( glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                   /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
-                                   w,h,
-                                   GL_TRUE) );
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                            /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
+                            w,h,
+                            GL_TRUE);
 
 
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
@@ -555,32 +555,32 @@ gl_resize_color_texture(GLuint t, int w, int h)
 void
 gl_resize_color_texture_multisample(GLuint t, int w, int h)
 {
-    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t));
-    GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                   GL_RGBA,
-                                   w,h,
-                                   GL_TRUE));
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                            GL_RGBA,
+                            w,h,
+                            GL_TRUE);
 }
 
 void
 gl_resize_depth_stencil_texture(GLuint t, int w, int h)
 {
     glBindTexture(GL_TEXTURE_2D, t);
-    GLCHK( glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
-                        /*width, height = */ w,h,
-                        /*border = */ 0,
-                        /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
-                        /*data = */ NULL) );
+    glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_DEPTH24_STENCIL8,
+                 /*width, height = */ w,h,
+                 /*border = */ 0,
+                 /*format = */ GL_DEPTH_STENCIL, /*type = */ GL_UNSIGNED_INT_24_8,
+                 /*data = */ NULL);
 }
 
 void
 gl_resize_depth_stencil_texture_multisample(GLuint t, int w, int h)
 {
-    GLCHK (glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t));
-    GLCHK (glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                                   GL_DEPTH24_STENCIL8,
-                                   w,h,
-                                   GL_TRUE) );
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                            GL_DEPTH24_STENCIL8,
+                            w,h,
+                            GL_TRUE);
 
 }
 
