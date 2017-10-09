@@ -5,6 +5,7 @@
 #define FXAA_GLSL_120 1
 #define FXAA_PC 1
 #define FXAA_QUALITY__PRESET 10
+#define FXAA_GATHER4_ALPHA 0
 
 #define texture2DLod(s,v,f) texture(s,v)
 

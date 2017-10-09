@@ -195,7 +195,7 @@ load ()
 
 #if defined(_WIN32)
 #pragma warning(push, 0)
-    if ( !gl_check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
+    if ( !check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
         glMinSampleShadingARB = NULL;
     }
 #pragma warning(pop)
@@ -220,11 +220,11 @@ compile_shader (const char* in_src, GLuint type, char* config)
     const char* sources[] = {
         #if USE_GL_3_2
             "#version 330 \n",
-            // "#extension GL_ARB_gpu_shader5 : disable \n",
-            // "#extension GL_ARB_gpu_shader4 : enable\n",
             (type == GL_FRAGMENT_SHADER) ? "out vec4 out_color; \n" : "\n",
         #else
             "#version 120\n",
+            //"#extension GL_ARB_gpu_shader5 : disable \n",
+            // "#extension GL_ARB_gpu_shader4 : enable \n",
             (type == GL_VERTEX_SHADER) ? "#define in attribute \n#define out varying\n"
                                        : "#define in varying   \n#define out\n#define out_color gl_FragColor\n",
             "#define texture texture2D\n",
