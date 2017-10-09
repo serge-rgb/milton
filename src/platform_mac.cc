@@ -129,6 +129,12 @@ platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
     return res == 0;
 }
 
+float
+platform_ui_scale(PlatformState* p)
+{
+    return 1.0f;  // TODO: implement.
+}
+
 PATH_CHAR*
 platform_open_dialog(FileKind kind)
 {

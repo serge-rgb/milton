@@ -1,14 +1,13 @@
 
+//
 
 #define FXAA_GREEN_AS_LUMA 1  // TODO: pack luma into alpha
 #define FXAA_GLSL_120 1
 #define FXAA_PC 1
-#define FXAA_QUALITY__PRESET 39
+#define FXAA_QUALITY__PRESET 10
 
 #define texture2DLod(s,v,f) texture(s,v)
 
-#extension GL_ARB_gpu_shader4 : enable
-#extension GL_ARB_gpu_shader5 : enable
 #define FXAA_FAST_PIXEL_OFFSET 0
     // At least one Intel GPU on Linux does not define texture2DLodOffset when GL_ARB_gpu_shader5 is
     // enabled. FXAA checks for GL_*_gpu_shader5 to use texture2DLodOffset but it seems like it's

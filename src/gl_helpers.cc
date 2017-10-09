@@ -161,6 +161,8 @@ gl_compile_shader(const char* in_src, GLuint type, char* config)
     const char* sources[] = {
         #if USE_GL_3_2
             "#version 330 \n",
+            // "#extension GL_ARB_gpu_shader5 : disable \n",
+            // "#extension GL_ARB_gpu_shader4 : enable\n",
             (type == GL_FRAGMENT_SHADER) ? "out vec4 out_color; \n" : "\n",
         #else
             "#version 120\n",

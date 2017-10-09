@@ -1,2 +1,2 @@
 all:
-	tundra/bin/tundra2
+	pushd build && make -j ; popd
