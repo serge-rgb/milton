@@ -21,7 +21,7 @@ add_executable(Milton WIN32 MACOSX_BUNDLE
   src/profiler.cc
   src/gl_helpers.cc
   src/localization.cc
-  src/hardware_renderer.cc
+  src/renderer.cc
   src/utils.cc
   src/hash.cc
   src/vector.cc

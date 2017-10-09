@@ -7,7 +7,7 @@
 #include "color.h"
 #include "canvas.h"
 #include "gui.h"
-#include "hardware_renderer.h"
+#include "renderer.h"
 #include "localization.h"
 #include "persist.h"
 #include "platform.h"

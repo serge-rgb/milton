@@ -4,9 +4,9 @@
 #pragma once
 
 #include "utils.h"
-#include "hardware_renderer.h"  // TODO: Stroke has a RenderElement
-                                // member. Refactor to eliminate this
-                                // dependency
+#include "renderer.h"  // TODO: Stroke has a RenderElement
+                       // member. Refactor to eliminate this
+                       // dependency
 
 
 struct Brush

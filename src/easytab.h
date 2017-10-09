@@ -1092,12 +1092,7 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
     }
 
     EasyTab->NumPackets = 0;
-    #ifdef MILTON_EASYTAB
-        if (Message == WT_PACKET)
-    #else
-        if (Message == WT_PACKET &&
-            (HCTX)LParam == EasyTab->Context)
-    #endif
+    if (Message == WT_PACKET)
     {
         int NumPackets = EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE, PacketBuffer);
         POINT PointBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };

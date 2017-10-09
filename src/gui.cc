@@ -6,7 +6,7 @@
 
 #include "localization.h"
 #include "color.h"
-#include "hardware_renderer.h"
+#include "renderer.h"
 #include "milton.h"
 #include "persist.h"
 #include "platform.h"
