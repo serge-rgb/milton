@@ -23,7 +23,6 @@ add_executable(Milton WIN32 MACOSX_BUNDLE
   src/localization.cc
   src/renderer.cc
   src/utils.cc
-  src/hash.cc
   src/vector.cc
   src/sdl_milton.cc
   src/StrokeList.cc
@@ -46,6 +45,7 @@ endif()
 
 if(UNIX)
   set(UnixCFlags
+    -g
     -std=c++11
     -Wno-missing-braces
     -Wno-unused-function

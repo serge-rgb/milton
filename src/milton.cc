@@ -430,7 +430,7 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
 
 
     milton_state->current_mode = MiltonMode::PEN;
-    milton_state->last_mode = MiltonMode::NONE;
+    milton_state->last_mode = MiltonMode::PEN;
 
 
     milton_state->gl = arena_alloc_elem(&milton_state->root_arena, MiltonGLState);
@@ -667,11 +667,7 @@ milton_switch_mode(MiltonState* milton_state, MiltonMode mode)
 void
 milton_use_previous_mode(MiltonState* milton_state)
 {
-    if ( milton_state->last_mode != MiltonMode::NONE ) {
-        milton_switch_mode(milton_state, milton_state->last_mode);
-    } else {
-        INVALID_CODE_PATH;
-    }
+    milton_switch_mode(milton_state, milton_state->last_mode);
 }
 
 void
@@ -1318,31 +1314,28 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         milton_state->working_stroke.bounding_rect = bounding_box_for_stroke(&milton_state->working_stroke);
     }
 
-
-    if ( (input->mode_to_set != MiltonMode::NONE) ) {
-        MiltonMode mode = milton_state->current_mode;
-        if ( mode == input->mode_to_set ) {
-            // Modes we can toggle
-            if ( mode == MiltonMode::EYEDROPPER ) {
-                if ( milton_state->last_mode != MiltonMode::EYEDROPPER ) {
-                    milton_use_previous_mode(milton_state);
-                }
-                else {
-                    // This is not supposed to happen but if we get here we won't crash and burn.
-                    milton_switch_mode(milton_state, MiltonMode::PEN);
-                    milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
-                }
+    MiltonMode mode = milton_state->current_mode;
+    if ( mode == input->mode_to_set ) {
+        // Modes we can toggle
+        if ( mode == MiltonMode::EYEDROPPER ) {
+            if ( milton_state->last_mode != MiltonMode::EYEDROPPER ) {
+                milton_use_previous_mode(milton_state);
+            }
+            else {
+                // This is not supposed to happen but if we get here we won't crash and burn.
+                milton_switch_mode(milton_state, MiltonMode::PEN);
+                milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
             }
         }
-        // Change the current mode if it's different from the current mode.
-        else {
-            milton_switch_mode(milton_state, input->mode_to_set);
-            if (    input->mode_to_set == MiltonMode::PEN
-                 || input->mode_to_set == MiltonMode::ERASER ) {
-                milton_update_brushes(milton_state);
-                // If we are drawing, end the current stroke so that it
-                // doesn't change from eraser to brush or vice versa.
-            }
+    }
+    // Change the current mode if it's different from the current mode.
+    else {
+        milton_switch_mode(milton_state, input->mode_to_set);
+        if (    input->mode_to_set == MiltonMode::PEN
+             || input->mode_to_set == MiltonMode::ERASER ) {
+            milton_update_brushes(milton_state);
+            // If we are drawing, end the current stroke so that it
+            // doesn't change from eraser to brush or vice versa.
         }
     }
 

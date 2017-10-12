@@ -114,7 +114,6 @@ typedef struct
 // Returns the number of rectangles into which src_rect was split.
 i32 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height);
 
-
 // Returns a rectangle R such that for any other rectangle B , R union B = B
 Rect rect_without_size();
 
@@ -188,3 +187,9 @@ swap(T& a, T& b)
     a = b;
     b = tmp;
 }
+
+
+// Hash function
+
+u64 hash(char* string, size_t len);
+

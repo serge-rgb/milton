@@ -34,7 +34,6 @@ struct MiltonGLState
 
 enum class MiltonMode
 {
-    NONE = 0,
     ERASER,
     PEN,
     EXPORTING,
