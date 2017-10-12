@@ -93,7 +93,7 @@ void
 platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 {
     u32 bufsize = (u32)len;
-    char buffer[MAX_PATH] = {0};
+    char buffer[MAX_PATH] = {};
     strncpy(buffer, fname, MAX_PATH);
     _NSGetExecutablePath(fname, &bufsize);
     {  // Remove the executable name
@@ -158,7 +158,7 @@ platform_save_dialog(FileKind kind)
 WallTime
 platform_get_walltime()
 {
-    WallTime wt = {0};
+    WallTime wt = {};
     struct timeval tv;
     gettimeofday(&tv, NULL);
     struct tm *time;

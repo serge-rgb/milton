@@ -174,7 +174,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 }
             }
             if ( ImGui::MenuItem(LOC(export_to_image_DOTS)) ) {
-                milton_switch_mode(milton_state, MiltonMode_EXPORTING);
+                milton_switch_mode(milton_state, MiltonMode::EXPORTING);
             }
             if ( ImGui::MenuItem(LOC(quit)) ) {
                 milton_try_quit(milton_state);
@@ -215,7 +215,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         if ( ImGui::BeginMenu(LOC(tools)) ) {
             // Brush
             if ( ImGui::MenuItem(LOC(brush)) ) {
-                input->mode_to_set = MiltonMode_PEN;
+                input->mode_to_set = MiltonMode::PEN;
             }
             if ( ImGui::BeginMenu(LOC(brush_options)) ) {
                 b32 smoothing_enabled = milton_brush_smoothing_enabled(milton_state);
@@ -235,7 +235,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
                 f32 opacities[] = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f };
                 for ( i32 i = 0; i < array_count(opacities); ++i ) {
-                    char entry[128] = {0};
+                    char entry[128] = {};
                     snprintf(entry, array_count(entry), "%s %d%% - [%d]",
                              LOC(set_opacity_to), (int)(100 * opacities[i]), i == 9 ? 0 : i+1);
                     if ( ImGui::MenuItem(entry) ) {
@@ -246,7 +246,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             // Eraser
             if ( ImGui::MenuItem(LOC(eraser)) ) {
-                input->mode_to_set = MiltonMode_ERASER;
+                input->mode_to_set = MiltonMode::ERASER;
             }
             // Panning
             char* move_str = platform_state->is_panning==false? LOC(move_canvas) : LOC(stop_moving_canvas);
@@ -255,7 +255,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             // Eye Dropper
             if ( ImGui::MenuItem(LOC(eye_dropper)) ) {
-                input->mode_to_set = MiltonMode_EYEDROPPER;
+                input->mode_to_set = MiltonMode::EYEDROPPER;
                 milton_state->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;
             }
             // History
@@ -318,9 +318,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
     // GUI Windows ----
 
-    b32 should_show_windows = milton_state->current_mode != MiltonMode_EYEDROPPER
-                                && milton_state->current_mode != MiltonMode_EXPORTING
-                                && milton_state->current_mode != MiltonMode_HISTORY;
+    b32 should_show_windows = milton_state->current_mode != MiltonMode::EYEDROPPER
+                                && milton_state->current_mode != MiltonMode::EXPORTING
+                                && milton_state->current_mode != MiltonMode::HISTORY;
 
     if ( gui->visible && should_show_windows ) {
 
@@ -333,12 +333,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         ImGui::SetNextWindowSize({ui_scale*271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
 
-        b32 show_brush_window = (milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER);
+        b32 show_brush_window = (milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER);
 
         // Brush Window
         if ( show_brush_window ) {
             if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
-                if ( milton_state->current_mode == MiltonMode_PEN ) {
+                if ( milton_state->current_mode == MiltonMode::PEN ) {
                     float mut_alpha = pen_alpha*100;
                     ImGui::SliderFloat(LOC(opacity), &mut_alpha, 1, 100, "%.0f%%");
 
@@ -360,17 +360,17 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     milton_state->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                 }
 
-                if ( milton_state->current_mode != MiltonMode_PEN ) {
+                if ( milton_state->current_mode != MiltonMode::PEN ) {
                     if ( ImGui::Button(LOC(switch_to_brush)) ) {
                         i32 f = input->flags;
                         input->flags = (MiltonInputFlags)f;
-                        input->mode_to_set = MiltonMode_PEN;
+                        input->mode_to_set = MiltonMode::PEN;
                     }
                 }
 
-                if ( milton_state->current_mode != MiltonMode_ERASER ) {
+                if ( milton_state->current_mode != MiltonMode::ERASER ) {
                     if ( ImGui::Button(LOC(switch_to_eraser)) ) {
-                        input->mode_to_set = MiltonMode_ERASER;
+                        input->mode_to_set = MiltonMode::ERASER;
                     }
                 }
             }
@@ -598,7 +598,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
 
     // History window
-    if ( milton_state->current_mode == MiltonMode_HISTORY ) {
+    if ( milton_state->current_mode == MiltonMode::HISTORY ) {
         {
             Rect pb = picker_get_bounds(&gui->picker);
             auto width = 20 + pb.right - pb.left;
@@ -613,7 +613,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     }
 
     // Note: The export window is drawn regardless of gui visibility.
-    if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
+    if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
         bool opened = true;
         b32 reset = false;
 
@@ -844,7 +844,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 static Rect
 color_button_as_rect(const ColorButton* button)
 {
-    Rect rect = {0};
+    Rect rect = {};
     rect.left = button->x;
     rect.right = button->x + button->w;
     rect.top = button->y;
@@ -906,7 +906,7 @@ is_inside_picker_rect(ColorPicker* picker, v2i point)
 static Rect
 picker_color_buttons_bounds(const ColorPicker* picker)
 {
-    Rect bounds = {0};
+    Rect bounds = {};
     bounds.right = INT_MIN;
     bounds.left = INT_MAX;
     bounds.top = INT_MAX;
@@ -1195,7 +1195,7 @@ v3f
 picker_hsv_from_point(ColorPicker* picker, v2f point)
 {
     float area = orientation(picker->data.a, picker->data.b, picker->data.c);
-    v3f hsv = {0};
+    v3f hsv = {};
     if ( area != 0 ) {
         float inv_area = 1.0f / area;
         float v = 1 - (orientation(point, picker->data.c, picker->data.a) * inv_area);

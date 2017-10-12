@@ -351,7 +351,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 // Ctrl-KEY with no key repeats.
                 if ( platform_state->is_ctrl_down ) {
                     if ( keycode == SDLK_e ) {
-                        milton_input.mode_to_set = MiltonMode_EXPORTING;
+                        milton_input.mode_to_set = MiltonMode::EXPORTING;
                     }
                     if ( keycode == SDLK_q ) {
                         milton_try_quit(milton_state);
@@ -360,13 +360,13 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 else {
                     if ( !ImGui::GetIO().WantCaptureMouse  ) {
                         if ( keycode == SDLK_e ) {
-                            milton_input.mode_to_set = MiltonMode_ERASER;
+                            milton_input.mode_to_set = MiltonMode::ERASER;
                         }
                         else if ( keycode == SDLK_b ) {
-                            milton_input.mode_to_set = MiltonMode_PEN;
+                            milton_input.mode_to_set = MiltonMode::PEN;
                         }
                         else if ( keycode == SDLK_i ) {
-                            milton_input.mode_to_set = MiltonMode_EYEDROPPER;
+                            milton_input.mode_to_set = MiltonMode::EYEDROPPER;
                         }
                         else if ( keycode == SDLK_TAB ) {
                             gui_toggle_visibility(milton_state);
@@ -893,11 +893,11 @@ milton_main(char* file_to_open)
 
             bool changed = false;
             if ( EasyTab->Orientation.Altitude < 0 && previous_orientation >= 0 ) {
-                milton_input.mode_to_set = MiltonMode_ERASER;
+                milton_input.mode_to_set = MiltonMode::ERASER;
                 changed = true;
             }
             else if ( EasyTab->Orientation.Altitude > 0 && previous_orientation <= 0 ) {
-                milton_input.mode_to_set = MiltonMode_PEN;
+                milton_input.mode_to_set = MiltonMode::PEN;
                 changed = true;
             }
             if ( changed ) {
@@ -943,7 +943,7 @@ milton_main(char* file_to_open)
             else if ( ImGui::GetIO().WantCaptureMouse ) {
                 cursor_set_and_show(platform_state.cursor_default);
             }
-            else if ( milton_state->current_mode == MiltonMode_EXPORTING ) {
+            else if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
                 cursor_set_and_show(platform_state.cursor_crosshair);
                 platform_state.was_exporting = true;
             }
@@ -951,7 +951,7 @@ milton_main(char* file_to_open)
                 cursor_set_and_show(platform_state.cursor_default);
                 platform_state.was_exporting = false;
             }
-            else if ( milton_state->current_mode == MiltonMode_EYEDROPPER ) {
+            else if ( milton_state->current_mode == MiltonMode::EYEDROPPER ) {
                 cursor_set_and_show(platform_state.cursor_crosshair);
                 platform_state.is_pointer_down = false;
             }
@@ -959,17 +959,17 @@ milton_main(char* file_to_open)
                       && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
                 cursor_set_and_show(platform_state.cursor_default);
             }
-            else if ( milton_state->current_mode == MiltonMode_PEN || milton_state->current_mode == MiltonMode_ERASER ) {
+            else if ( milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER ) {
                 #if MILTON_HARDWARE_BRUSH_CURSOR
                     cursor_set_and_show(platform_state.cursor_brush);
                 #else
                     platform_cursor_hide();
                 #endif
             }
-            else if ( milton_state->current_mode == MiltonMode_HISTORY ) {
+            else if ( milton_state->current_mode == MiltonMode::HISTORY ) {
                 cursor_set_and_show(platform_state.cursor_default);
             }
-            else if ( milton_state->current_mode != MiltonMode_PEN || milton_state->current_mode != MiltonMode_ERASER ) {
+            else if ( milton_state->current_mode != MiltonMode::PEN || milton_state->current_mode != MiltonMode::ERASER ) {
                 platform_cursor_hide();
             }
         }

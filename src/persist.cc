@@ -336,7 +336,7 @@ milton_save(MiltonState* milton_state)
     milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
     int pid = (int)getpid();
-    PATH_CHAR tmp_fname[MAX_PATH] = {0};
+    PATH_CHAR tmp_fname[MAX_PATH] = {};
     PATH_SNPRINTF(tmp_fname, MAX_PATH, TO_PATH_STR("milton_tmp.%d.mlt"), pid);
 
     platform_fname_at_config(tmp_fname, MAX_PATH);

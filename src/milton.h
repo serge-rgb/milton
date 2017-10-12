@@ -32,14 +32,14 @@ struct MiltonGLState
 #endif
 };
 
-enum MiltonMode
+enum class MiltonMode
 {
-    MiltonMode_NONE       = 0,
-    MiltonMode_ERASER     = 1 << 0,
-    MiltonMode_PEN        = 1 << 1,
-    MiltonMode_EXPORTING  = 1 << 2,
-    MiltonMode_EYEDROPPER = 1 << 3,
-    MiltonMode_HISTORY    = 1 << 4,
+    NONE = 0,
+    ERASER,
+    PEN,
+    EXPORTING,
+    EYEDROPPER,
+    HISTORY,
 };
 
 enum

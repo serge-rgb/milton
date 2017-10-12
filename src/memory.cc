@@ -86,7 +86,7 @@ arena_spawn(Arena* parent, size_t size)
     u8* ptr = arena_alloc_bytes(parent, size + sizeof(ArenaFooter));
     mlt_assert(ptr);
 
-    Arena child = { 0 };
+    Arena child = {};
     {
         child.ptr    = ptr;
         child.size   = size;
@@ -104,7 +104,7 @@ arena_push(Arena* parent, size_t in_size)
     } else {
         size = parent->min_block_size;
     }
-    Arena child = { 0 };
+    Arena child = {};
     {
         child.parent = parent;
         child.id     = parent->num_children;

@@ -184,7 +184,7 @@ platform_save_dialog(FileKind kind)
     platform_cursor_show();
     PATH_CHAR* save_filename = (PATH_CHAR*)mlt_calloc(1, MAX_PATH*sizeof(PATH_CHAR), "Strings");
 
-    OPENFILENAMEW ofn = {0};
+    OPENFILENAMEW ofn = {};
 
     ofn.lStructSize = sizeof(OPENFILENAME);
     //ofn.hInstance;
@@ -215,7 +215,7 @@ PATH_CHAR*
 platform_open_dialog(FileKind kind)
 {
     platform_cursor_show();
-    OPENFILENAMEW ofn = {0};
+    OPENFILENAMEW ofn = {};
 
     PATH_CHAR* fname = (PATH_CHAR*)mlt_calloc(MAX_PATH, sizeof(PATH_CHAR), "Strings");
 
@@ -448,7 +448,7 @@ platform_open_link(char* link)
 WallTime
 platform_get_walltime()
 {
-    WallTime wt = {0};
+    WallTime wt = {};
     {
         SYSTEMTIME ST;
         GetLocalTime(&ST);
@@ -464,7 +464,7 @@ u64
 perf_counter()
 {
     u64 time = 0;
-    LARGE_INTEGER li = {0};
+    LARGE_INTEGER li = {};
     // On XP and higher, this function always succeeds.
     QueryPerformanceCounter(&li);
 

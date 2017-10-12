@@ -94,7 +94,7 @@ clamp_255(v3f color)
 v3f
 rgb_to_hsv(v3f rgb)
 {
-    v3f hsv = {0};
+    v3f hsv = {};
     float fmin = min( rgb.r, min(rgb.g, rgb.b) );
     float fmax = max( rgb.r, max(rgb.g, rgb.b) );
     hsv.v = fmax;
@@ -133,7 +133,7 @@ rgb_to_hsv(v3f rgb)
 v3f
 hsv_to_rgb(v3f hsv)
 {
-    v3f rgb = { 0 };
+    v3f rgb = {};
 
     float h = hsv.x;
     float s = hsv.y;
