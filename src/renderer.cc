@@ -1480,7 +1480,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
 
     // Do post-processing on painting and on GUI elements. Draw to backbuffer
 
-    if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+    if ( false && !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 
         glActiveTexture(GL_TEXTURE0);

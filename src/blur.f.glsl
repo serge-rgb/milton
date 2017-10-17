@@ -8,7 +8,8 @@ void
 main()
 {
 #if HAS_TEXTURE_MULTISAMPLE
-    #error "Not implemented"
+    vec2 screen_point = vec2(gl_FragCoord.x, gl_FragCoord.y);
+   out_color = texture(u_canvas, screen_point / u_screen_size);
 #else
     vec2 screen_point = vec2(gl_FragCoord.x, gl_FragCoord.y);
     // LINEAR

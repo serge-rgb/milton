@@ -31,13 +31,15 @@ closest_point_in_segment_gl(vec2 a, vec2 b,
     return result;
 }
 
-int
+// Returns the distance in canvas pixels
+float
 sample_stroke(vec2 point, vec3 a, vec3 b)
 {
-    int value = 0;
+    float dist = float(1<<20);
+#if 0
     // Check against a circle of pressure*brush_size at each point, which is cheap.
-    float dist_a = distance(point, a.xy);
-    float dist_b = distance(point, b.xy);
+    float dist_a = dist(point, a.xy);
+    float dist_b = dist(point, b.xy);
     float radius_a = float(a.z*u_radius);
     float radius_b = float(b.z*u_radius);
     if ( dist_a < radius_a || dist_b < radius_b ) {
@@ -45,6 +47,9 @@ sample_stroke(vec2 point, vec3 a, vec3 b)
     }
     // If it's not inside the circle, it might be somewhere else in the stroke.
     else {
+#else
+       {
+#endif
         vec2 ab = b.xy - a.xy;
         float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
 
@@ -53,12 +58,11 @@ sample_stroke(vec2 point, vec3 a, vec3 b)
             // z coordinate of a and b has pressure values.
             // z coordinate of stroke_point has interpolation between them for closes point.
             float pressure = mix(a.z, b.z, stroke_point.z);
-            if ( distance(stroke_point.xy, point) < u_radius*pressure ) {
-                value = 1;
-            }
+
+            dist = distance(stroke_point.xy, point) - u_radius*pressure;
         }
     }
-    return value;
+    return dist;
 }
 
 void
@@ -81,9 +85,9 @@ main()
 
     vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y) + offset;
 
-    int sample = sample_stroke(raster_to_canvas_gl(screen_point), v_pointa, v_pointb);
+    float dist = sample_stroke(raster_to_canvas_gl(screen_point), v_pointa, v_pointb);
 
-    if ( sample > 0 ) {
+    if ( dist < 0 ) {
         // TODO: is there a way to do front-to-back rendering with a working eraser?
         if ( brush_is_eraser() ) {
             #if HAS_TEXTURE_MULTISAMPLE
@@ -97,6 +101,10 @@ main()
         else {
             out_color = u_brush_color;
         }
+
+    // } else if (dist/u_scale < 1.0 ){
+    //    out_color = u_brush_color;
+    //    out_color.a = 1.0 - dist/u_scale;
     } else {
         discard;
     }

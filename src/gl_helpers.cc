@@ -192,6 +192,10 @@ load ()
             }
          }
     }
+    // Assume that macos has what we need
+#if defined(__MACH__)
+    gl::set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
+#endif
 
 #if defined(_WIN32)
 #pragma warning(push, 0)
@@ -220,7 +224,6 @@ compile_shader (const char* in_src, GLuint type, char* config)
     const char* sources[] = {
         #if USE_GL_3_2
             "#version 330 \n",
-            (type == GL_FRAGMENT_SHADER) ? "out vec4 out_color; \n" : "\n",
         #else
             "#version 120\n",
             //"#extension GL_ARB_gpu_shader5 : disable \n",
@@ -231,6 +234,13 @@ compile_shader (const char* in_src, GLuint type, char* config)
         #endif
         (check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE)) ? "#define HAS_TEXTURE_MULTISAMPLE 1\n"
                                                                    : "#define HAS_TEXTURE_MULTISAMPLE 0\n",
+       "#if HAS_TEXTURE_MULTISAMPLE\n",
+       "#extension GL_ARB_sample_shading : enable\n",
+       //" #extension GL_ARB_texture_multisample : enable\n",
+       "#endif\n",
+#if USE_GL_3_2
+       (type == GL_FRAGMENT_SHADER) ? "out vec4 out_color; \n" : "\n",
+#endif
 
         config,
         in_src
