@@ -93,6 +93,7 @@ MiltonInput
 sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 {
     MiltonInput milton_input = {};
+    milton_input.mode_to_set = milton_state->current_mode;
 
     b32 pointer_up = false;
 
@@ -976,8 +977,9 @@ milton_main(char* file_to_open)
 
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
 #if defined(__MACH__)
-        //mlt_assert( platform_state.num_pressure_results == 0 );
+        platform_state.num_pressure_results = 0;
         int num_polled_pressures = 0;
+
         float* polled_pressures = milton_osx_poll_pressures(&num_polled_pressures);
         if ( num_polled_pressures ) {
             for ( int i = num_polled_pressures - 1; i >= 0; --i ) {
