@@ -27,7 +27,7 @@
     #endif
 #endif
 
-#define MULTISAMPLING_ENABLED 1  // When disabled, the renderer uses FXAA for screen-space AA.
+#define MULTISAMPLING_ENABLED 0  // When disabled, the renderer uses FXAA for screen-space AA.
     #define MSAA_NUM_SAMPLES 4
 
 #define MILTON_MULTITHREADED 1

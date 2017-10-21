@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.1)
 project(Milton)
 
-if(APPLE)
-  add_subdirectory(third_party/SDL2-2.0.3)
+if(WIN32)
+  set(DIRECTX 0)
 endif()
+# if(APPLE)
+  add_subdirectory(third_party/SDL2-2.0.3)
+  # endif()
 
 add_executable(shadergen
   src/shadergen.cc
@@ -81,10 +84,11 @@ if(APPLE)
     src/platform_mac_gui.mm
   )
   target_link_libraries(Milton
-    SDL2-static
     "-framework OpenGL"
   )
 endif()
+target_link_libraries(Milton SDL2-static)
+
 
 if(WIN32 OR APPLE)
   target_include_directories(Milton PRIVATE

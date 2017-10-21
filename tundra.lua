@@ -85,7 +85,6 @@ Build {
                 "src/localization.cc",
                 "src/renderer.cc",
                 "src/utils.cc",
-                "src/hash.cc",
                 "src/vector.cc",
                 "src/sdl_milton.cc",
                 "src/StrokeList.cc",

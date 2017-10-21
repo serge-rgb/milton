@@ -102,9 +102,9 @@ main()
             out_color = u_brush_color;
         }
 
-    // } else if (dist/u_scale < 1.0 ){
-    //    out_color = u_brush_color;
-    //    out_color.a = 1.0 - dist/u_scale;
+    } else if (dist/u_scale < 1.0 ){
+       out_color = u_brush_color;
+       out_color.a = 1.0 - dist/u_scale;
     } else {
         discard;
     }
