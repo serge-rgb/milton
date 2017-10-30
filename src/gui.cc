@@ -126,6 +126,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
                 // New Canvas
                 milton_reset_canvas_and_set_default(milton_state);
+                canvas = milton_state->canvas;
                 input->flags |= MiltonInputFlags_FULL_REFRESH;
                 milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
             }
