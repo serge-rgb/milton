@@ -10,6 +10,7 @@
     * [Michael Freundorfer](https://github.com/mordecai154)
     * [Tilmann Rübbelke](https://github.com/TilmannR)
     * [Kevin Wojniak](https://github.com/kainjow)
+    * [Gian Sass](https://github.com/Nuke928)
 
 * Other
     * Aarón Reyes García
