@@ -103,7 +103,7 @@ typedef struct MiltonStartupFlags
 
 typedef struct TabletState_s TabletState;
 
-int milton_main(char* file_to_open);
+int milton_main(bool is_fullscreen, char* file_to_open);
 
 void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}

@@ -527,6 +527,26 @@ str_to_path_char(char* str, PATH_CHAR* out, size_t out_sz)
     }
 }
 
+void consume_spaces(char *s)
+{
+    for ( size_t j = 0; s[j]; ++j ) {
+        bool found = false;
+        if ( s[j] == ' ' ) {
+            found = true;
+            for ( size_t i = j; s[i]; ++i ) {
+                if ( s[i + 1] == '\0' ) {
+                    s[i] = '\0';
+                    break;
+                }
+                else {
+                    s[i] = s[i + 1];
+                }
+            }
+        }
+        if ( found )
+            j--;
+    }
+}
 
 int
 CALLBACK WinMain(HINSTANCE hInstance,
@@ -541,6 +561,33 @@ CALLBACK WinMain(HINSTANCE hInstance,
     char cmd_line[MAX_PATH] = {};
     strncpy(cmd_line, lpCmdLine, MAX_PATH);
 
+    bool is_fullscreen = false;
+    if ( cmd_line[0] == '-' && cmd_line[1] == 'F' && cmd_line[2] == ' ' ) {
+        is_fullscreen = true;
+        milton_log("Fullscreen is set.");
+        for ( size_t i = 0; cmd_line[i]; ++i) {
+            if ( cmd_line[i + 3] == '\0') {
+                cmd_line[i] = '\0';
+                break;
+            }
+            else {
+                cmd_line[i] = cmd_line[i + 3];
+            }
+        }
+    }
+    else if ( cmd_line[0] == '-' && cmd_line[1] == 'F' ) {
+        is_fullscreen = true;
+        milton_log("Fullscreen is set.");
+        for ( size_t i = 0; cmd_line[i]; ++i) {
+            if ( cmd_line[i + 2] == '\0') {
+                cmd_line[i] = '\0';
+            }
+            else {
+                cmd_line[i] = cmd_line[i + 2];
+            }
+        }
+    }
+
     if ( cmd_line[0] == '"' && cmd_line[strlen(cmd_line)-1] == '"' ) {
         for ( size_t i = 0; cmd_line[i]; ++i ) {
             cmd_line[i] = cmd_line[i+1];
@@ -548,12 +595,13 @@ CALLBACK WinMain(HINSTANCE hInstance,
         size_t sz = strlen(cmd_line);
         cmd_line[sz-1] = '\0';
     }
+
     char* file_to_open = NULL;
     milton_log("CommandLine is %s\n", cmd_line);
     if ( strlen(cmd_line) != 0 ) {
         file_to_open = cmd_line;
     }
-    milton_main(file_to_open);
+    milton_main(is_fullscreen, file_to_open);
 }
 
 } // extern "C"
