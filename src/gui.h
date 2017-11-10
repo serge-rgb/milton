@@ -98,6 +98,7 @@ enum MiltonGuiFlags
 
 struct MiltonGui
 {
+    b32 menu_visible;
     b32 visible;
     b32 show_help_widget;
 

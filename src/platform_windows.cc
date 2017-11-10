@@ -527,27 +527,6 @@ str_to_path_char(char* str, PATH_CHAR* out, size_t out_sz)
     }
 }
 
-void consume_spaces(char *s)
-{
-    for ( size_t j = 0; s[j]; ++j ) {
-        bool found = false;
-        if ( s[j] == ' ' ) {
-            found = true;
-            for ( size_t i = j; s[i]; ++i ) {
-                if ( s[i + 1] == '\0' ) {
-                    s[i] = '\0';
-                    break;
-                }
-                else {
-                    s[i] = s[i + 1];
-                }
-            }
-        }
-        if ( found )
-            j--;
-    }
-}
-
 int
 CALLBACK WinMain(HINSTANCE hInstance,
                  HINSTANCE hPrevInstance,

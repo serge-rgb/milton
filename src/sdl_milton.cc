@@ -357,6 +357,79 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     if ( keycode == SDLK_q ) {
                         milton_try_quit(milton_state);
                     }
+                    char* default_will_be_lost = "The default canvas will be cleared. Save it?";
+                    if ( keycode == SDLK_n ) {
+                        b32 save_file = false;
+                        if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
+                            if ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
+                                save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                            }
+                        }
+                        if ( save_file ) {
+                            PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                            if ( name ) {
+                                milton_log("Saving to %s\n", name);
+                                milton_set_canvas_file(milton_state, name);
+                                milton_save(milton_state);
+                                b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
+                                if ( del == false ) {
+                                    platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
+                                                    "Info");
+                                }
+                            }
+                        }
+
+                        // New Canvas
+                        milton_reset_canvas_and_set_default(milton_state);
+                        //canvas = milton_state->canvas;
+                        input_flags |= MiltonInputFlags_FULL_REFRESH;
+                        milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+                        
+                    }
+                    if ( keycode == SDLK_o ) {
+                        b32 save_requested = false;
+                        // If current canvas is MiltonPersist, then prompt to save
+                        if ( ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
+                            b32 save_file = false;
+                            if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
+                                save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                            }
+                            if ( save_file ) {
+                                PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                                if ( name ) {
+                                    milton_log("Saving to %s\n", name);
+                                    milton_set_canvas_file(milton_state, name);
+                                    milton_save(milton_state);
+                                    b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                                                                             DeleteErrorTolerance_OK_NOT_EXIST);
+                                    if ( del == false ) {
+                                        platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                                                        "Info");
+                                    }
+                                }
+                            }
+                        }
+                        PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+                        if ( fname ) {
+                            milton_set_canvas_file(milton_state, fname);
+                            input_flags |= MiltonInputFlags_OPEN_FILE;
+                        }
+                    }
+                    if ( keycode == SDLK_a ) {
+                        // NOTE(possible refactor): There is a copy of this at milton.c end of file
+                        PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                        if ( name ) {
+                            milton_log("Saving to %s\n", name);
+                            milton_set_canvas_file(milton_state, name);
+                            input_flags |= MiltonInputFlags_SAVE_FILE;
+                            b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                                                                     DeleteErrorTolerance_OK_NOT_EXIST);
+                            if ( del == false ) {
+                                platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                                                "Info");
+                            }
+                        }
+                    }
                 }
                 else {
                     if ( !ImGui::GetIO().WantCaptureMouse  ) {
@@ -594,7 +667,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
         window = SDL_CreateWindow("Milton",
                                   SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   platform_state.width, platform_state.height,
-                                  SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+                                  SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS);
     }
 
     if ( !window ) {
@@ -684,23 +757,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
 					}
                 }
                 else {
-                    // Raymond Chen's fullscreen
-                    /*
-                    WINDOWPLACEMENT g_wp_prev = { sizeof(g_wp_prev) };
-                    DWORD dw_style = GetWindowLong(hwnd, GWL_STYLE);
-                    if (dw_style & WS_OVERLAPPEDWINDOW) {
-                        MONITORINFO monitor_info = { sizeof(monitor_info) };
-                        if (GetWindowPlacement(hwnd, &g_wp_prev) &&
-                            GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &monitor_info)) {
-                                SetWindowLong(hwnd, GWL_STYLE,
-                                dw_style & ~WS_OVERLAPPEDWINDOW);
-                                SetWindowPos(hwnd, HWND_TOP, monitor_info.rcMonitor.left, monitor_info.rcMonitor.top,
-                                            monitor_info.rcMonitor.right - monitor_info.rcMonitor.left,
-                                            monitor_info.rcMonitor.bottom - monitor_info.rcMonitor.top,
-                                            SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
-
-                    }
-                }*/
                 }
                 }
                 // Load EasyTab
@@ -741,6 +797,10 @@ milton_main(bool is_fullscreen, char* file_to_open)
         str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
 
         milton_init(milton_state, platform_state.width, platform_state.height, platform_state.ui_scale, (PATH_CHAR*)file_to_open_);
+        milton_state->gui->menu_visible = true;
+        if ( is_fullscreen ) {
+            milton_state->gui->menu_visible = false;
+        }
     }
     milton_resize_and_pan(milton_state, {}, {platform_state.width, platform_state.height});
 
