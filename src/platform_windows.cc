@@ -541,6 +541,7 @@ CALLBACK WinMain(HINSTANCE hInstance,
     strncpy(cmd_line, lpCmdLine, MAX_PATH);
 
     bool is_fullscreen = false;
+    //TODO: proper cmd parsing
     if ( cmd_line[0] == '-' && cmd_line[1] == 'F' && cmd_line[2] == ' ' ) {
         is_fullscreen = true;
         milton_log("Fullscreen is set.");
@@ -575,6 +576,7 @@ CALLBACK WinMain(HINSTANCE hInstance,
         cmd_line[sz-1] = '\0';
     }
 
+    // TODO: eat spaces
     char* file_to_open = NULL;
     milton_log("CommandLine is %s\n", cmd_line);
     if ( strlen(cmd_line) != 0 ) {

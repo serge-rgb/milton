@@ -381,7 +381,6 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 
                         // New Canvas
                         milton_reset_canvas_and_set_default(milton_state);
-                        //canvas = milton_state->canvas;
                         input_flags |= MiltonInputFlags_FULL_REFRESH;
                         milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
                         
@@ -433,7 +432,10 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 }
                 else {
                     if ( !ImGui::GetIO().WantCaptureMouse  ) {
-                        if ( keycode == SDLK_e ) {
+                        if ( keycode == SDLK_m ) {
+                            gui_toggle_menu_visibility(milton_state->gui);
+                        }
+                        else if ( keycode == SDLK_e ) {
                             milton_input.mode_to_set = MiltonMode::ERASER;
                         }
                         else if ( keycode == SDLK_b ) {
@@ -667,7 +669,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
         window = SDL_CreateWindow("Milton",
                                   SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                   platform_state.width, platform_state.height,
-                                  SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS);
+                                  SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
     }
 
     if ( !window ) {

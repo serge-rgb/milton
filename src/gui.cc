@@ -1253,6 +1253,12 @@ gui_toggle_visibility(MiltonState* milton_state)
 }
 
 void
+gui_toggle_menu_visibility(MiltonGui* gui)
+{
+    gui->menu_visible = !gui->menu_visible;
+}
+
+void
 gui_toggle_help(MiltonGui* gui)
 {
     gui->show_help_widget = !gui->show_help_widget;
