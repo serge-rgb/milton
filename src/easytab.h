@@ -1188,14 +1188,17 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 
 void EasyTab_Unload()
 {
-    if (EasyTab->Context) { EasyTab->WTClose(EasyTab->Context); }
-    #ifndef MILTON_EASYTAB
-    // Note(sergio): Wacom DLL has a memory leak, AppVerifier nags about it
-    #else
-    if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); }
-    #endif
-    free(EasyTab);
-    EasyTab = NULL;
+    if (EasyTab)
+    {
+        if (EasyTab->Context && EasyTab->WTClose) { EasyTab->WTClose(EasyTab->Context); }
+        #ifndef MILTON_EASYTAB
+        // NOTE(Sergio): Wacom DLL has a memory leak, AppVerifier nags about it
+        #else
+        if (EasyTab->Dll)     { FreeLibrary(EasyTab->Dll); }
+        #endif
+        free(EasyTab);
+        EasyTab = NULL;
+    }
 }
 
 #endif // WIN32

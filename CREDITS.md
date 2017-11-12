@@ -5,12 +5,12 @@
 
 * Code - fixes / improvements
     * [Charly Mourglia](http://github.com/Zouch)
+    * [Gian Sass](https://github.com/Nuke928)
     * [Joshua Mendoza](https://github.com/jomendoz)
     * [Kevin Wojniak](https://github.com/kainjow)
+    * [mcmihai](https://github.com/mcmihai)
     * [Michael Freundorfer](https://github.com/mordecai154)
     * [Tilmann Rübbelke](https://github.com/TilmannR)
-    * [Kevin Wojniak](https://github.com/kainjow)
-    * [Gian Sass](https://github.com/Nuke928)
 
 * Other
     * Aarón Reyes García

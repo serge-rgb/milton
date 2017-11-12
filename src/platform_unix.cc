@@ -115,5 +115,5 @@ main(int argc, char** argv)
     if ( argc == 2 ) {
         file_to_open = argv[1];
     }
-    milton_main(file_to_open);
+    milton_main(false, file_to_open);
 }

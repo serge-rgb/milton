@@ -383,7 +383,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         milton_reset_canvas_and_set_default(milton_state);
                         input_flags |= MiltonInputFlags_FULL_REFRESH;
                         milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
-                        
+
                     }
                     if ( keycode == SDLK_o ) {
                         b32 save_requested = false;
@@ -764,9 +764,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
                 // Load EasyTab
                 EasyTabResult easytab_res = EasyTab_Load(platform_state.hwnd);
                 if (easytab_res != EASYTAB_OK) {
-                    milton_log("Easy Tab Failed to load. Code %d", easytab_res);
+                    milton_log("EasyTab failed to load. Code %d\n", easytab_res);
                 }
-                    break;
+                break;
             }
 #elif defined(__linux__)
             case SDL_SYSWM_X11:
