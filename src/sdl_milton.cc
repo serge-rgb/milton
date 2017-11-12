@@ -357,10 +357,85 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     if ( keycode == SDLK_q ) {
                         milton_try_quit(milton_state);
                     }
+                    char* default_will_be_lost = "The default canvas will be cleared. Save it?";
+                    if ( keycode == SDLK_n ) {
+                        b32 save_file = false;
+                        if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
+                            if ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
+                                save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                            }
+                        }
+                        if ( save_file ) {
+                            PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                            if ( name ) {
+                                milton_log("Saving to %s\n", name);
+                                milton_set_canvas_file(milton_state, name);
+                                milton_save(milton_state);
+                                b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
+                                if ( del == false ) {
+                                    platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
+                                                    "Info");
+                                }
+                            }
+                        }
+
+                        // New Canvas
+                        milton_reset_canvas_and_set_default(milton_state);
+                        input_flags |= MiltonInputFlags_FULL_REFRESH;
+                        milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+                        
+                    }
+                    if ( keycode == SDLK_o ) {
+                        b32 save_requested = false;
+                        // If current canvas is MiltonPersist, then prompt to save
+                        if ( ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
+                            b32 save_file = false;
+                            if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
+                                save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                            }
+                            if ( save_file ) {
+                                PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                                if ( name ) {
+                                    milton_log("Saving to %s\n", name);
+                                    milton_set_canvas_file(milton_state, name);
+                                    milton_save(milton_state);
+                                    b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                                                                             DeleteErrorTolerance_OK_NOT_EXIST);
+                                    if ( del == false ) {
+                                        platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                                                        "Info");
+                                    }
+                                }
+                            }
+                        }
+                        PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+                        if ( fname ) {
+                            milton_set_canvas_file(milton_state, fname);
+                            input_flags |= MiltonInputFlags_OPEN_FILE;
+                        }
+                    }
+                    if ( keycode == SDLK_a ) {
+                        // NOTE(possible refactor): There is a copy of this at milton.c end of file
+                        PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                        if ( name ) {
+                            milton_log("Saving to %s\n", name);
+                            milton_set_canvas_file(milton_state, name);
+                            input_flags |= MiltonInputFlags_SAVE_FILE;
+                            b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                                                                     DeleteErrorTolerance_OK_NOT_EXIST);
+                            if ( del == false ) {
+                                platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                                                "Info");
+                            }
+                        }
+                    }
                 }
                 else {
                     if ( !ImGui::GetIO().WantCaptureMouse  ) {
-                        if ( keycode == SDLK_e ) {
+                        if ( keycode == SDLK_m ) {
+                            gui_toggle_menu_visibility(milton_state->gui);
+                        }
+                        else if ( keycode == SDLK_e ) {
                             milton_input.mode_to_set = MiltonMode::ERASER;
                         }
                         else if ( keycode == SDLK_b ) {
@@ -507,7 +582,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 // ---- milton_main
 
 int
-milton_main(char* file_to_open)
+milton_main(bool is_fullscreen, char* file_to_open)
 {
 
     milton_log("Running Milton\n");
@@ -533,9 +608,18 @@ milton_main(char* file_to_open)
         platform_state.height = 800;
     }
     else {
-        platform_state.width = prefs.width;
-        platform_state.height = prefs.height;
+        if (!is_fullscreen) {
+            platform_state.width = prefs.width;
+            platform_state.height = prefs.height;
+        }
+        else
+        {
+            SDL_DisplayMode dm;
+            SDL_GetDesktopDisplayMode(0, &dm);
+            platform_state.width = dm.w;
+            platform_state.height = dm.h;
     }
+}
 
 #if defined(_WIN32)
     platform_state.win_dpi_api = (WinDpiApi*)mlt_calloc(1, sizeof(WinDpiApi), "Setup");
@@ -575,10 +659,18 @@ milton_main(char* file_to_open)
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
     #endif
 
-    window = SDL_CreateWindow("Milton",
-                              SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                              platform_state.width, platform_state.height,
-                              SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    if (!is_fullscreen) {
+        window = SDL_CreateWindow("Milton",
+                                  SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                  platform_state.width, platform_state.height,
+                                  SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    }
+    else {
+        window = SDL_CreateWindow("Milton",
+                                  SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                  platform_state.width, platform_state.height,
+                                  SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+    }
 
     if ( !window ) {
         milton_log("SDL Error: %s\n", SDL_GetError());
@@ -589,11 +681,13 @@ milton_main(char* file_to_open)
     // without using Windows shortcuts that not everyone knows. Check if this
     // is the case and set a good default.
     {
-       int x = 0, y = 0;
-       SDL_GetWindowPosition(window, &x, &y);
-       if ( x < 0 && y < 0 ) {
-          SDL_SetWindowPosition(window, 100, 100);
-       }
+        if (!is_fullscreen) {
+            int x = 0, y = 0;
+            SDL_GetWindowPosition(window, &x, &y);
+            if ( x < 0 && y < 0 ) {
+                SDL_SetWindowPosition(window, 100, 100);
+            }
+        }
     }
 
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
@@ -637,38 +731,42 @@ milton_main(char* file_to_open)
         switch( sysinfo.subsystem ) {
 #if defined(_WIN32)
             case SDL_SYSWM_WINDOWS: {
-                { // Handle the case where the window was too big for the screen.
-                    HWND hwnd = sysinfo.info.win.window;
-                    RECT res_rect;
-                    RECT win_rect;
-                    HWND dhwnd = GetDesktopWindow();
-                    GetWindowRect(dhwnd, &res_rect);
-                    GetClientRect(hwnd, &win_rect);
+				{ // Handle the case where the window was too big for the screen.
+					HWND hwnd = sysinfo.info.win.window;
+                    if (!is_fullscreen) {
+                        RECT res_rect;
+                        RECT win_rect;
+                        HWND dhwnd = GetDesktopWindow();
+                        GetWindowRect(dhwnd, &res_rect);
+                        GetClientRect(hwnd, &win_rect);
 
-                    platform_state.hwnd = hwnd;
+                        platform_state.hwnd = hwnd;
 
-                    i32 snap_threshold = 300;
-                    if ( win_rect.right  != platform_state.width
-                         || win_rect.bottom != platform_state.height
-                         // Also maximize if the size is large enough to "snap"
-                         || (win_rect.right + snap_threshold >= res_rect.right
-                             && win_rect.left + snap_threshold >= res_rect.left)
-                         || win_rect.left < 0
-                         || win_rect.top < 0) {
+                        i32 snap_threshold = 300;
+                        if (win_rect.right != platform_state.width
+                        || win_rect.bottom != platform_state.height
+                        // Also maximize if the size is large enough to "snap"
+                        || (win_rect.right + snap_threshold >= res_rect.right
+                        && win_rect.left + snap_threshold >= res_rect.left)
+                        || win_rect.left < 0
+                        || win_rect.top < 0) {
                         // Our prefs weren't right. Let's maximize.
-                        SetWindowPos(hwnd, HWND_TOP, 20,20, win_rect.right-20, win_rect.bottom -20, SWP_SHOWWINDOW);
+
+                        SetWindowPos(hwnd, HWND_TOP, 20, 20, win_rect.right - 20, win_rect.bottom - 20, SWP_SHOWWINDOW);
                         platform_state.width = win_rect.right - 20;
                         platform_state.height = win_rect.bottom - 20;
                         ShowWindow(hwnd, SW_MAXIMIZE);
-                    }
-
+					}
+                }
+                else {
+                }
                 }
                 // Load EasyTab
                 EasyTabResult easytab_res = EasyTab_Load(platform_state.hwnd);
                 if (easytab_res != EASYTAB_OK) {
-                   milton_log("Easy Tab Failed to load. Code %d", easytab_res);
+                    milton_log("Easy Tab Failed to load. Code %d", easytab_res);
                 }
-                break;
+                    break;
             }
 #elif defined(__linux__)
             case SDL_SYSWM_X11:
@@ -701,6 +799,10 @@ milton_main(char* file_to_open)
         str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
 
         milton_init(milton_state, platform_state.width, platform_state.height, platform_state.ui_scale, (PATH_CHAR*)file_to_open_);
+        milton_state->gui->menu_visible = true;
+        if ( is_fullscreen ) {
+            milton_state->gui->menu_visible = false;
+        }
     }
     milton_resize_and_pan(milton_state, {}, {platform_state.width, platform_state.height});
 
@@ -1076,11 +1178,13 @@ milton_main(char* file_to_open)
 
     arena_free(&milton_state->root_arena);
 
-    bool save_prefs = prefs.width != platform_state.width || prefs.height != platform_state.height;
-    if ( save_prefs ) {
-        prefs.width  = platform_state.width;
-        prefs.height = platform_state.height;
-        milton_prefs_save(&prefs);
+    if(!is_fullscreen) {
+        bool save_prefs = prefs.width != platform_state.width || prefs.height != platform_state.height;
+        if ( save_prefs ) {
+            prefs.width  = platform_state.width;
+            prefs.height = platform_state.height;
+            milton_prefs_save(&prefs);
+        }
     }
 
     SDL_Quit();

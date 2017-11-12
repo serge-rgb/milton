@@ -101,6 +101,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     int menu_style_stack = 0;
     // TODO: translate
     char* default_will_be_lost = "The default canvas will be cleared. Save it?";
+    if ( gui->menu_visible ) {
     if ( ImGui::BeginMainMenuBar() ) {
         if ( ImGui::BeginMenu(LOC(file)) ) {
             if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
@@ -313,7 +314,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         ImGui::EndMainMenuBar();
     }
     ImGui::PopStyleColor(menu_style_stack);
-
+}
 
     float ui_scale = milton_state->gui->scale;
 
@@ -1249,6 +1250,12 @@ gui_toggle_visibility(MiltonState* milton_state)
 {
     MiltonGui* gui = milton_state->gui;
     gui->visible = !gui->visible;
+}
+
+void
+gui_toggle_menu_visibility(MiltonGui* gui)
+{
+    gui->menu_visible = !gui->menu_visible;
 }
 
 void
