@@ -3,32 +3,30 @@ To-Do
 
 - Bugs
 - Application
-    - Tablet:
-    - Renderer
-        - only re-render areas entering the screen when panning
     - GUI
         - Image Button
         - Reduce or remove widget rounding
         - Move color picker
         - Radial menu
     - Features:
-        - general, implicitly defined brushes
+        - lines
+        - full-screen option
         - alt eye dropper
-        - unzoomable&unpannable layer ("pin layer" feature) ?
         - zoom-out toggle for overview and for navigation
-        - eraser toggle
-        - pressure toggle
-        - pressure response graph
-        - stroke masking?
+        - general, implicitly defined brushes
+        - transparent window
         - Select strokes
             - Scale, cut, copy, paste
-        - select layer by stroke
-        - merge layers
-        - lines
         - rectangles
         - circles / ellipses
-        - transparent window
+        - merge layers
         - layer color balance
+        - select layer by stroke
+        - pressure response graph
+        - stroke masking?
+        - unzoomable&unpannable layer ("pin layer" feature) ?
+        - eraser toggle
+        - pressure toggle
     - Settings file
         - Default BG
            or
