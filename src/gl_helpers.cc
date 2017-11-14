@@ -192,10 +192,6 @@ load ()
             }
          }
     }
-    // Assume that macos has what we need
-#if defined(__MACH__)
-    gl::set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
-#endif
 
 #if defined(_WIN32)
 #pragma warning(push, 0)

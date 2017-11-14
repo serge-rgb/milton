@@ -48,7 +48,7 @@ sample_stroke(vec2 point, vec3 a, vec3 b)
     // If it's not inside the circle, it might be somewhere else in the stroke.
     else {
 #else
-       {
+   {
 #endif
         vec2 ab = b.xy - a.xy;
         float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
@@ -101,10 +101,11 @@ main()
         else {
             out_color = u_brush_color;
         }
-
+#if 0
     } else if (dist/u_scale < 1.0 ){
        out_color = u_brush_color;
        out_color.a = 1.0 - dist/u_scale;
+#endif
     } else {
         discard;
     }

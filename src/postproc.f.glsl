@@ -31,9 +31,7 @@ main()
     float ph = 1 / u_screen_size.y;
     vec2 coord = gl_FragCoord.xy / u_screen_size;
 
-
     out_color = texture(u_canvas, coord, 0);
-
     out_color.rgb = FxaaPixelShader(
         // Use noperspective interpolation here (turn off perspective interpolation).
         // {xy} = center of pixel
