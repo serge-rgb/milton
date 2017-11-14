@@ -769,7 +769,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
             ImGui::Dummy({0,30});
 
-            i64 stroke_count = count_strokes(milton_state->canvas->root_layer);
+            i64 stroke_count = layer::count_strokes(milton_state->canvas->root_layer);
 #if SOFTWARE_RENDERER_COMPILED
             snprintf(msg, array_count(msg),
                      "# of strokes: %d (clipped to screen: %d)\n",

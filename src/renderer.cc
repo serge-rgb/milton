@@ -946,8 +946,6 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
 void
 gpu_free_strokes(Stroke* strokes, i64 count, RenderData* render_data)
 {
-    glFlush();
-    glFinish();
     for ( i64 i = 0; i < count; ++i ) {
         Stroke* s = &strokes[i];
         RenderElement* re = &s->render_element;
@@ -983,8 +981,6 @@ gpu_free_strokes(Stroke* strokes, i64 count, RenderData* render_data)
             re->indices = 0;
         }
     }
-    glFlush();
-    glFinish();
 }
 
 void
@@ -1086,7 +1082,7 @@ gpu_clip_strokes_and_update(Arena* arena,
                             gpu_cook_stroke(arena, render_data, s);
                             push(clip_array, s->render_element);
                         }
-                        else if ( false && is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
+                        else if ( is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
                             // If it is far away, delete.
                             i32 distance = MLT_ABS(bounds.left - x + bounds.top - y);
                             const i32 min_number_of_screens = 4;

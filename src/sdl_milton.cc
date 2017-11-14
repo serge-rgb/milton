@@ -659,18 +659,19 @@ milton_main(bool is_fullscreen, char* file_to_open)
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
     #endif
 
-    if (!is_fullscreen) {
-        window = SDL_CreateWindow("Milton",
-                                  SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                  platform_state.width, platform_state.height,
-                                  SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    Uint32 sdl_window_flags = SDL_WINDOW_OPENGL;
+
+    if (is_fullscreen) {
+        sdl_window_flags |= SDL_WINDOW_FULLSCREEN;
     }
     else {
-        window = SDL_CreateWindow("Milton",
-                                  SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                  platform_state.width, platform_state.height,
-                                  SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+        sdl_window_flags |= SDL_WINDOW_RESIZABLE;
     }
+
+    window = SDL_CreateWindow("Milton",
+                              SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                              platform_state.width, platform_state.height,
+                              sdl_window_flags);
 
     if ( !window ) {
         milton_log("SDL Error: %s\n", SDL_GetError());
