@@ -78,6 +78,9 @@ typedef i32         b32;
     #if defined(_WIN32)
         #define BREAKHERE __debugbreak()
     #endif
+    #if defined(__MACH__)
+        #define BREAKHERE asm ("int $3")
+    #endif
 #endif
 
 #endif  // MLT_COMMON

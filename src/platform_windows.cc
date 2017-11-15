@@ -108,6 +108,13 @@ platform_ui_scale(PlatformState* p)
 }
 
 void
+platform_point_to_pixel(v2i*)
+{
+
+}
+
+
+void
 win32_log(char *format, ...)
 {
     char message[ 4096 ];

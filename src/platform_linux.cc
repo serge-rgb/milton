@@ -31,6 +31,19 @@ perf_counter()
     return tp.tv_nsec;
 }
 
+void
+platform_point_to_pixel(PlatformState*, v2l*)
+{
+
+}
+
+void
+platform_point_to_pixel_i(PlatformState*, v2i*)
+{
+
+}
+
+
 b32
 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
 {

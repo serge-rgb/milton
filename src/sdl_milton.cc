@@ -9,6 +9,11 @@
 #include "gui.h"
 #include "persist.h"
 
+
+
+// TODO: Remove this include for non-mac platforms
+// #include "cocoa_helpers.h"
+
 static void
 cursor_set_and_show(SDL_Cursor* cursor)
 {
@@ -178,6 +183,9 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 
                         for ( int pi = 0; pi < EasyTab->NumPackets; ++pi ) {
                             v2l point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
+
+                            platform_point_to_pixel(platform_state, &point);
+
                             if ( point.x >= 0 && point.y >= 0 ) {
                                 if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
                                     milton_input.points[platform_state->num_point_results++] = point;
@@ -197,6 +205,9 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 
                     if ( EasyTab->NumPackets > 0 ) {
                         v2i point = { EasyTab->PosX[EasyTab->NumPackets-1], EasyTab->PosY[EasyTab->NumPackets-1] };
+
+                        platform_point_to_pixel_i(platform_state, &point);
+
                         input_flags |= MiltonInputFlags_HOVERING;
 
                         platform_state->pointer = point;
@@ -213,7 +224,11 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                      // Ignoring right click events for now
                      /*|| event.button.button == SDL_BUTTON_RIGHT*/ ) {
                     if ( !ImGui::GetIO().WantCaptureMouse ) {
-                        v2i point = { event.button.x, event.button.y };
+                        v2l long_point = { event.button.x, event.button.y };
+
+                        platform_point_to_pixel(platform_state, &long_point);
+
+                        v2i point = v2i{(int)long_point.x, (int)long_point.y};
 
                         if ( !platform_state->is_panning && point.x >= 0 && point.y > 0 ) {
                             input_flags |= MiltonInputFlags_CLICK;
@@ -257,6 +272,8 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 }
                 input_point = {event.motion.x, event.motion.y};
 
+                platform_point_to_pixel_i(platform_state, &input_point);
+
                 platform_state->pointer = input_point;
 
                 // In case the wacom driver craps out, or anything goes wrong (like the event queue
@@ -288,7 +305,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 if ( !ImGui::GetIO().WantCaptureMouse ) {
                     milton_input.scale += event.wheel.y;
                     v2i zoom_center = platform_state->pointer;
-                    milton_set_zoom_at_point(milton_state, zoom_center);
+
                     // ImGui has a delay of 1 frame when displaying zoom info.
                     // Force next frame to have the value up to date.
                     platform_state->force_next_frame = true;
@@ -521,12 +538,19 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     platform_state->is_pointer_down = false;
                     break;
                 case SDL_WINDOWEVENT_RESIZED:
-                case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    platform_state->width = event.window.data1;
-                    platform_state->height = event.window.data2;
+                case SDL_WINDOWEVENT_SIZE_CHANGED: {
+
+                    v2i size = { event.window.data1, event.window.data2 };
+                    platform_point_to_pixel_i(platform_state, &size);
+
+                    platform_state->width = size.w;
+                    platform_state->height = size.h;
+
+
                     input_flags |= MiltonInputFlags_FULL_REFRESH;
                     glViewport(0, 0, platform_state->width, platform_state->height);
                     break;
+                }
                 case SDL_WINDOWEVENT_LEAVE:
                     if ( event.window.windowID != platform_state->window_id )
                     {
@@ -562,6 +586,8 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
         if ( !platform_state->is_panning && platform_state->is_pointer_down ) {
             input_flags |= MiltonInputFlags_END_STROKE;
             input_point = { event.button.x, event.button.y };
+
+            platform_point_to_pixel_i(platform_state, &input_point);
 
             if ( platform_state->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
                 milton_input.points[platform_state->num_point_results++] = VEC2L(input_point);
@@ -603,23 +629,25 @@ milton_main(bool is_fullscreen, char* file_to_open)
     milton_log("Loading preferences... ");
     milton_prefs_load(&prefs);
 
-    if ( prefs.width == 0 || prefs.height == 0 ) {
-        platform_state.width = 1280;
-        platform_state.height = 800;
-    }
-    else {
-        if (!is_fullscreen) {
-            platform_state.width = prefs.width;
-            platform_state.height = prefs.height;
+
+    i32 window_width = 1280;
+    i32 window_height = 800;
+    {
+        if (prefs.width > 0 && prefs.height > 0) {
+            if ( !is_fullscreen ) {
+                window_width = prefs.width;
+                window_height = prefs.height;
+            }
+            else {
+                // TODO: Does this work on retina mac?
+                SDL_DisplayMode dm;
+                SDL_GetDesktopDisplayMode(0, &dm);
+
+                window_width = dm.w;
+                window_height = dm.h;
+            }
         }
-        else
-        {
-            SDL_DisplayMode dm;
-            SDL_GetDesktopDisplayMode(0, &dm);
-            platform_state.width = dm.w;
-            platform_state.height = dm.h;
     }
-}
 
 #if defined(_WIN32)
     platform_state.win_dpi_api = (WinDpiApi*)mlt_calloc(1, sizeof(WinDpiApi), "Setup");
@@ -659,7 +687,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MSAA_NUM_SAMPLES);
     #endif
 
-    Uint32 sdl_window_flags = SDL_WINDOW_OPENGL;
+    Uint32 sdl_window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
 
     if (is_fullscreen) {
         sdl_window_flags |= SDL_WINDOW_FULLSCREEN;
@@ -670,13 +698,26 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     window = SDL_CreateWindow("Milton",
                               SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                              platform_state.width, platform_state.height,
+                              window_width, window_height,
                               sdl_window_flags);
 
     if ( !window ) {
         milton_log("SDL Error: %s\n", SDL_GetError());
         milton_die_gracefully("SDL could not create window\n");
     }
+
+    platform_state.window = window;
+
+    // Milton works in pixels, but macOS works distinguishing "points" and
+    // "pixels", with most APIs working in points.
+
+    v2l size_px = { window_width, window_height };
+    platform_point_to_pixel(&platform_state, &size_px);
+
+    platform_state.width = size_px.w;
+    platform_state.height = size_px.h;
+
+
 
     // Sometimes SDL sets the window position such that it's impossible to move
     // without using Windows shortcuts that not everyone knows. Check if this
@@ -1182,8 +1223,11 @@ milton_main(bool is_fullscreen, char* file_to_open)
     if(!is_fullscreen) {
         bool save_prefs = prefs.width != platform_state.width || prefs.height != platform_state.height;
         if ( save_prefs ) {
-            prefs.width  = platform_state.width;
-            prefs.height = platform_state.height;
+            v2l size =  { platform_state.width,platform_state.height };
+            platform_pixel_to_point(&platform_state, &size);
+
+            prefs.width  = size.w;
+            prefs.height = size.h;
             milton_prefs_save(&prefs);
         }
     }

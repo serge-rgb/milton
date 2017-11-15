@@ -1,7 +1,15 @@
+
 // Copyright (c) 2015-2017 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
 #include <mach-o/dyld.h>
+
+#define Rect MacRect
+#define ALIGN MacALIGN
+#include <Cocoa/Cocoa.h>
+#undef Rect
+#undef ALIGN
+
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
@@ -11,7 +19,138 @@
 #include "platform.h"
 #include "memory.h"
 
+
 #define MAX_PATH PATH_MAX
+
+
+#include <AppKit/AppKit.h>
+
+
+namespace {
+    template <typename T>
+    char* runPanel(T *panel, FileKind kind) {
+        switch (kind) {
+            case FileKind_IMAGE:
+                panel.allowedFileTypes = @[(NSString*)kUTTypeJPEG];
+                break;
+            case FileKind_MILTON_CANVAS:
+                panel.allowedFileTypes = @[@"mlt"];
+                break;
+            default:
+                break;
+        }
+        if ([panel runModal] != NSModalResponseOK) {
+            return nullptr;
+        }
+        return strdup(panel.URL.path.fileSystemRepresentation);
+    }
+
+    NSAlert* alertWithInfoTitle(const char* info, const char* title) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = [NSString stringWithUTF8String:title ? title : ""];
+        alert.informativeText = [NSString stringWithUTF8String:info ? info : ""];
+        return alert;
+    }
+}
+
+void
+platform_dialog_mac(char* info, char* title)
+{
+    @autoreleasepool {
+        [alertWithInfoTitle(info, title) runModal];
+    }
+}
+
+int32_t
+platform_dialog_yesno_mac(char* info, char* title)
+{
+    @autoreleasepool {
+        NSAlert *alert = alertWithInfoTitle(info, title);
+        [alert addButtonWithTitle:NSLocalizedString(@"Yes", nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"No", nil)];
+        return [alert runModal] == NSAlertFirstButtonReturn;
+    }
+}
+
+char*
+platform_open_dialog_mac(FileKind kind)
+{
+    @autoreleasepool {
+        return runPanel([NSOpenPanel openPanel], kind);
+    }
+}
+
+char*
+platform_save_dialog_mac(FileKind kind)
+{
+    @autoreleasepool {
+        return runPanel([NSSavePanel savePanel], kind);
+    }
+}
+
+void
+platform_open_link_mac(char* link)
+{
+    @autoreleasepool {
+        NSURL *url = [NSURL URLWithString:[NSString stringWithUTF8String:link]];
+        [[NSWorkspace sharedWorkspace] openURL:url];
+    }
+}
+
+NSWindow*
+macos_get_window(PlatformState* ps)
+{
+    NSWindow* result = NULL;
+    SDL_Window* window = ps->window;
+    if (window) {
+        SDL_SysWMinfo info = {};
+        if (SDL_GetWindowWMInfo(window, &info)) {
+            if (info.subsystem == SDL_SYSWM_COCOA) {
+                NSWindow* nsw = info.info.cocoa.window;
+                result = nsw;
+            }
+        }
+    }
+    return result;
+
+}
+
+void
+platform_point_to_pixel(PlatformState* ps, v2l* inout)
+{
+    NSRect rect;
+    rect.origin = {};
+    rect.size.width = inout->w;
+    rect.size.height = inout->h;
+    auto* window = macos_get_window(ps);
+    NSRect backing = [window convertRectToBacking:rect];
+
+    inout->x = backing.size.width;
+    inout->y = backing.size.height;
+}
+
+void
+platform_point_to_pixel_i(PlatformState* ps, v2i* inout)
+{
+    v2l long_inout = { inout->x, inout->y };
+    platform_point_to_pixel(ps, &long_inout);
+    *inout = (v2i){(int)long_inout.x, (int)long_inout.y};
+}
+
+void
+platform_pixel_to_point(PlatformState* ps, v2l* inout)
+{
+    NSRect rect;
+    rect.origin = {};
+    rect.size.width = inout->w;
+    rect.size.height = inout->h;
+    auto* window = macos_get_window(ps);
+    NSRect pointrect = [window convertRectFromBacking:rect];
+
+    inout->x = pointrect.size.width;
+    inout->y = pointrect.size.height;
+
+}
 
 // IMPLEMENT ====
 float
@@ -132,7 +271,17 @@ platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
 float
 platform_ui_scale(PlatformState* p)
 {
-    return 1.0f;  // TODO: implement.
+    int foo = 0;
+
+    int display_w = 0;
+    int framebuffer_w = 0;
+
+    SDL_GetWindowSize(p->window, &display_w, &foo);
+    SDL_GL_GetDrawableSize(p->window, &framebuffer_w, &foo);
+
+    float scale = display_w > 0 ? framebuffer_w / display_w : 1;
+
+    return scale;
 }
 
 PATH_CHAR*

@@ -356,8 +356,13 @@ void ImGui_ImplSdlGL3_NewFrame(SDL_Window* window)
     int display_w, display_h;
     SDL_GetWindowSize(window, &w, &h);
     SDL_GL_GetDrawableSize(window, &display_w, &display_h);
-    io.DisplaySize = ImVec2((float)w, (float)h);
-    io.DisplayFramebufferScale = ImVec2(w > 0 ? ((float)display_w / w) : 0, h > 0 ? ((float)display_h / h) : 0);
+    // io.DisplaySize = ImVec2((float)w, (float)h);
+    io.DisplaySize = ImVec2((float)display_w, (float)display_h);
+    // io.DisplayFramebufferScale = ImVec2(w > 0 ? ((float)display_w / w) : 0, h > 0 ? ((float)display_h / h) : 0);
+    io.DisplayFramebufferScale = ImVec2(1,1);
+
+    float mouse_scale_w = w > 0 ? display_w / w : 0;
+    float mouse_scale_h = h > 0 ? display_h / h : 0;
 
     // Setup time step
     Uint32	time = SDL_GetTicks();
@@ -370,7 +375,7 @@ void ImGui_ImplSdlGL3_NewFrame(SDL_Window* window)
     int mx, my;
     Uint32 mouseMask = SDL_GetMouseState(&mx, &my);
     if (SDL_GetWindowFlags(window) & SDL_WINDOW_MOUSE_FOCUS)
-        io.MousePos = ImVec2((float)mx, (float)my);   // Mouse position, in pixels (set to -1,-1 if no mouse / on another screen, etc.)
+        io.MousePos = ImVec2((float)mx * mouse_scale_w, (float)my * mouse_scale_h);   // Mouse position, in pixels (set to -1,-1 if no mouse / on another screen, etc.)
     else
         io.MousePos = ImVec2(-1, -1);
 
@@ -383,7 +388,7 @@ void ImGui_ImplSdlGL3_NewFrame(SDL_Window* window)
     g_MouseWheel = 0.0f;
 
     // Hide OS mouse cursor if ImGui is drawing it
-    SDL_ShowCursor(io.MouseDrawCursor ? 0 : 1);
+    // SDL_ShowCursor(io.MouseDrawCursor ? 0 : 1);
 
     // Start the frame
     ImGui::NewFrame();

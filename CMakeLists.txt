@@ -4,9 +4,8 @@ project(Milton)
 if(WIN32)
   set(DIRECTX 0)
 endif()
-# if(APPLE)
-  add_subdirectory(third_party/SDL2-2.0.3)
-  # endif()
+
+add_subdirectory(third_party/SDL2-2.0.3)
 
 add_executable(shadergen
   src/shadergen.cc
@@ -14,7 +13,7 @@ add_executable(shadergen
 
 FILE (GLOB ShaderSources src/*.glsl third_party/*.glsl)
 
-add_executable(Milton WIN32 MACOSX_BUNDLE
+add_executable(Milton WIN32 #MACOSX_BUNDLE
   src/milton.cc
   src/memory.cc
   src/gui.cc
@@ -80,8 +79,7 @@ endif()
 
 if(APPLE)
   target_sources(Milton PRIVATE
-    src/platform_mac.cc
-    src/platform_mac_gui.mm
+    src/platform_mac.mm
   )
   target_link_libraries(Milton
     "-framework OpenGL"

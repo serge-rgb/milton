@@ -80,6 +80,8 @@ struct PlatformState
     // Current keyboard layout.
     LayoutType keyboard_layout;
 
+    SDL_Window* window;
+
     // Windows hardware cursor
 #if defined(_WIN32)
     HWND    hwnd;
@@ -109,6 +111,10 @@ void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}
 void    platform_deallocate_internal(void* ptr);
 float   platform_ui_scale(PlatformState* p);
+void    platform_point_to_pixel(PlatformState* ps, v2l* inout);
+void    platform_point_to_pixel_i(PlatformState* ps, v2i* inout);
+void    platform_pixel_to_point(PlatformState* ps, v2l* inout);
+
 #define milton_log platform_milton_log
 void    milton_fatal(char* message);
 void    milton_die_gracefully(char* message);

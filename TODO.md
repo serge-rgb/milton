@@ -2,6 +2,7 @@ To-Do
 =====
 
 - Bugs
+    - color picker transparency weirdness on startup
 - Application
     - GUI
         - Image Button
