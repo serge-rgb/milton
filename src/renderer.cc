@@ -1152,7 +1152,6 @@ enum BoxFilterPass
     BoxFilterPass_VERTICAL = 0,
     BoxFilterPass_HORIZONTAL = 1,
 };
-
 static void
 box_filter_pass(RenderData* render_data, int kernel_size, int direction)
 {
@@ -1331,18 +1330,14 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     glEnable(GL_DEPTH_TEST);
                     glEnable(GL_BLEND);
                 }
-
-                // glScissor(x, y, w, h);
-
             }
-            // If this element is not a layer, then it is a stroke.
+            // If this render element is not a layer, then it is a stroke.
             else {
                 i64 count = re->count;
 
                 if ( count > 0 ) {
                     if ( !(render_data->current_color == re->color) ) {
-                        gl::set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1,
-                                            re->color.d);
+                        gl::set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re->color.d);
                         render_data->current_color = re->color;
                     }
                     if ( render_data->current_radius != re->radius ) {

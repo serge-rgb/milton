@@ -50,9 +50,9 @@ if(UNIX)
     -g
     -std=c++11
     -Wno-missing-braces
-    -Wno-unused-function
-    -Wno-unused-variable
-    -Wno-unused-result
+    #-Wno-unused-function
+    #-Wno-unused-variable
+    #-Wno-unused-result
     -Wno-write-strings
     -Wno-c++11-compat-deprecated-writable-strings
     -Wno-null-dereference

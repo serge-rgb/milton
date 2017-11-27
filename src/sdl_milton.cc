@@ -98,7 +98,7 @@ MiltonInput
 sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 {
     MiltonInput milton_input = {};
-    milton_input.mode_to_set = milton_state->current_mode;
+    milton_input.mode_to_set = MiltonMode::NONE;
 
     b32 pointer_up = false;
 
@@ -677,7 +677,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_version_major);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_version_minor);
-    // SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, false);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
     #if USE_GL_3_2
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     #endif
@@ -717,8 +717,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
     platform_state.width = size_px.w;
     platform_state.height = size_px.h;
 
-
-
     // Sometimes SDL sets the window position such that it's impossible to move
     // without using Windows shortcuts that not everyone knows. Check if this
     // is the case and set a good default.
@@ -754,7 +752,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     // ==== Initialize milton
 
-    MiltonState* milton_state = arena_bootstrap(MiltonState, root_arena, 1024);
+    MiltonState* milton_state = arena_bootstrap(MiltonState, root_arena, 1024*1024);
 
     if ( !gl::load() ) {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
@@ -766,6 +764,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     SDL_SysWMinfo sysinfo;
     SDL_VERSION(&sysinfo.version);
 
+    // Platform-specific setup
 #if defined(_MSC_VER)
 #pragma warning (push, 0)
 #endif
@@ -868,6 +867,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
             SendMessage(platform_state.hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
         }
     }
+
+    // Setup hardware cursor.
+
 #if MILTON_HARDWARE_BRUSH_CURSOR
     {  // Set brush HW cursor
         size_t w = (size_t)GetSystemMetrics(SM_CXCURSOR);
@@ -970,9 +972,14 @@ milton_main(bool is_fullscreen, char* file_to_open)
                                                        /*yHotSpot*/(int)(h/2));
 
     }
+
+
 #endif // MILTON_HARDWARE_BRUSH_CURSOR
 #endif // WIN32
 
+    #if MILTON_HARDWARE_BRUSH_CURSOR
+        mlt_assert(platform_state.cursor_brush != NULL);
+    #endif
 
     // ImGui setup
     {
@@ -1071,54 +1078,60 @@ milton_main(bool is_fullscreen, char* file_to_open)
             // NOTE: Calling SDL_SetCursor more than once seems to cause flickering.
 
             // Handle system cursor and platform state related to current_mode
-            if ( platform_state.is_panning || platform_state.waiting_for_pan_input ) {
-                cursor_set_and_show(platform_state.cursor_sizeall);
-            }
-            // Show resize icon
-            #if !MILTON_HARDWARE_BRUSH_CURSOR
-                #define PAD 20
-                else if (x > milton_state->view->screen_size.w - PAD
-                     || x < PAD
-                     || y > milton_state->view->screen_size.h - PAD
-                     || y < PAD ) {
-                    cursor_set_and_show(platform_state.cursor_default);
-                }
-                #undef PAD
-            #endif
-            else if ( ImGui::GetIO().WantCaptureMouse ) {
-                cursor_set_and_show(platform_state.cursor_default);
-            }
-            else if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
-                cursor_set_and_show(platform_state.cursor_crosshair);
-                platform_state.was_exporting = true;
-            }
-            else if ( platform_state.was_exporting ) {
-                cursor_set_and_show(platform_state.cursor_default);
-                platform_state.was_exporting = false;
-            }
-            else if ( milton_state->current_mode == MiltonMode::EYEDROPPER ) {
-                cursor_set_and_show(platform_state.cursor_crosshair);
-                platform_state.is_pointer_down = false;
-            }
-            else if ( milton_state->gui->visible
-                      && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
-                cursor_set_and_show(platform_state.cursor_default);
-            }
-            else if ( milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER ) {
-                #if MILTON_HARDWARE_BRUSH_CURSOR
-                    cursor_set_and_show(platform_state.cursor_brush);
-                #else
-                    platform_cursor_hide();
-                #endif
-            }
-            else if ( milton_state->current_mode == MiltonMode::HISTORY ) {
-                cursor_set_and_show(platform_state.cursor_default);
-            }
-            else if ( milton_state->current_mode != MiltonMode::PEN || milton_state->current_mode != MiltonMode::ERASER ) {
-                platform_cursor_hide();
-            }
-        }
+            {
+                    static b32 was_exporting = false;
 
+                    if ( platform_state.is_panning || platform_state.waiting_for_pan_input ) {
+                        cursor_set_and_show(platform_state.cursor_sizeall);
+                    }
+                    // Show resize icon
+                    #if !MILTON_HARDWARE_BRUSH_CURSOR
+                        #define PAD 20
+                        else if (x > milton_state->view->screen_size.w - PAD
+                             || x < PAD
+                             || y > milton_state->view->screen_size.h - PAD
+                             || y < PAD ) {
+                            cursor_set_and_show(platform_state.cursor_default);
+                        }
+                        #undef PAD
+                    #endif
+                    else if ( ImGui::GetIO().WantCaptureMouse ) {
+                        cursor_set_and_show(platform_state.cursor_default);
+                    }
+                    else if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
+                        cursor_set_and_show(platform_state.cursor_crosshair);
+                        was_exporting = true;
+                    }
+                    else if ( was_exporting ) {
+                        cursor_set_and_show(platform_state.cursor_default);
+                        was_exporting = false;
+                    }
+                    else if ( milton_state->current_mode == MiltonMode::EYEDROPPER ) {
+                        cursor_set_and_show(platform_state.cursor_crosshair);
+                        platform_state.is_pointer_down = false;
+                    }
+                    else if ( milton_state->gui->visible
+                              && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
+                        cursor_set_and_show(platform_state.cursor_default);
+                    }
+                    else if ( milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER ) {
+                        #if MILTON_HARDWARE_BRUSH_CURSOR
+                            if (g_debug_was_cross)
+                                BREAKHERE;
+                            g_debug_was_cross = false;
+                            cursor_set_and_show(platform_state.cursor_brush);
+                        #else
+                            platform_cursor_hide();
+                        #endif
+                    }
+                    else if ( milton_state->current_mode == MiltonMode::HISTORY ) {
+                        cursor_set_and_show(platform_state.cursor_default);
+                    }
+                    else if ( milton_state->current_mode != MiltonMode::PEN || milton_state->current_mode != MiltonMode::ERASER ) {
+                        platform_cursor_hide();
+                    }
+                }
+        }
         // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
 #if defined(__MACH__)
         platform_state.num_pressure_results = 0;
@@ -1182,11 +1195,11 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         // ==== Update and render
         PROFILE_GRAPH_PUSH(polling);
+        PROFILE_GRAPH_BEGIN(GL);
         milton_update_and_render(milton_state, &milton_input);
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
             platform_state.should_quit = true;
         }
-        PROFILE_GRAPH_BEGIN(GL);
         ImGui::Render();
         PROFILE_GRAPH_PUSH(GL);
         PROFILE_GRAPH_BEGIN(system);

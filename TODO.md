@@ -2,16 +2,21 @@ To-Do
 =====
 
 - Bugs
+    - cursor visibility hit box for color picker is wrong
     - color picker transparency weirdness on startup
+- macOS port
+    - Use bundle dir for config files.
+    - Replace Dear Imgui's menu with Cocoa menu.
 - Application
     - GUI
+        - Color picker inside ImGui window.
         - Image Button
         - Reduce or remove widget rounding
-        - Move color picker
         - Radial menu
     - Features:
         - lines
         - full-screen option
+        - front-to-back rendering
         - alt eye dropper
         - zoom-out toggle for overview and for navigation
         - general, implicitly defined brushes

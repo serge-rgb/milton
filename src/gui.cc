@@ -200,7 +200,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 {
                     milton_set_background_color(milton_state, clamp_01(bg));
                     input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-                    input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
                 }
                 ImGui::EndMenu();
             }
@@ -568,7 +567,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     milton_state->canvas->root_layer = milton_state->canvas->root_layer->prev;
                 }
                 input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-                input->flags |= (i32)MiltonInputFlags_FAST_DRAW;
             }
 
             if ( milton_state->canvas->working_layer->next
@@ -709,12 +707,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             float poll     = perf_count_to_sec(milton_state->graph_frame.polling) * 1000.0f;
             float update   = perf_count_to_sec(milton_state->graph_frame.update) * 1000.0f;
             float clipping = perf_count_to_sec(milton_state->graph_frame.clipping) * 1000.0f;
-
-#if SOFTWARE_RENDERER_COMPILED
-            {
-                clipping /= milton_state->num_render_workers;
-            }
-#endif
             float raster   = perf_count_to_sec(milton_state->graph_frame.raster) * 1000.0f;
             float GL       = perf_count_to_sec(milton_state->graph_frame.GL) * 1000.0f;
             float system   = perf_count_to_sec(milton_state->graph_frame.system) * 1000.0f;
@@ -731,13 +723,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                      update);
             ImGui::Text(msg);
 
-#if SOFTWARE_RENDERER_COMPILED
-            snprintf(msg, array_count(msg),
-                     "Raster %f ms\n",
-                     raster);
-            ImGui::Text(msg);
-            ImGui::SameLine();
-#endif
             snprintf(msg, array_count(msg),
                      "Clipping & Update %f ms\n",
                      clipping);
@@ -770,13 +755,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             ImGui::Dummy({0,30});
 
             i64 stroke_count = layer::count_strokes(milton_state->canvas->root_layer);
-#if SOFTWARE_RENDERER_COMPILED
-            snprintf(msg, array_count(msg),
-                     "# of strokes: %d (clipped to screen: %d)\n",
-                     (int)stroke_count,
-                     (int)count_clipped_strokes(milton_state->root_layer, milton_state->num_render_workers));
-            ImGui::Text(msg);
-#endif
 
             auto* view = milton_state->view;
             int screen_height = view->screen_size.h * view->scale;

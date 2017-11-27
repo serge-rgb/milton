@@ -37,16 +37,23 @@
 #define REDRAW_EVERY_FRAME 0
 
 #define MILTON_HARDWARE_BRUSH_CURSOR 1
-#if defined(__linux__)  // No support for system cursor on linux.
+ // No support for system cursor on linux or macos for now
+#if defined(__linux__) || defined(__MACH__)
 #undef MILTON_HARDWARE_BRUSH_CURSOR
 #define MILTON_HARDWARE_BRUSH_CURSOR 0
 #endif
 
 // Uses GL 2.1 when 0
-#define USE_GL_3_2 1
+#define USE_GL_3_2 0
     #if !MILTON_DEBUG  // Don't use 3.2 in release.
         #undef USE_GL_3_2
         #define USE_GL_3_2 0
+    #endif
+
+    // Force 3.2 on macos
+    #if defined(__MACH__)
+        #undef USE_GL_3_2
+        #define USE_GL_3_2 1
     #endif
 
 #define DEBUG_MEMORY_USAGE 0
@@ -60,11 +67,6 @@
 // Disabled for now. This was implemented when a bug was causing files to be huge.
 // Hopefully milton will never need this. Leaving it just in case.
 #define MILTON_SAVE_ASYNC 1
-
-// Include the software renderer.
-#define SOFTWARE_RENDERER_COMPILED 0
-// NOTE: software renderer has accumulated some bit rot..
-// TODO: Remove software renderer from codebase.
 
 
 // -- Esoteric and/or Stupid stuff.

@@ -389,37 +389,6 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
     milton_state->working_stroke.points    = arena_alloc_array(&milton_state->root_arena, STROKE_MAX_POINTS, v2l);
     milton_state->working_stroke.pressures = arena_alloc_array(&milton_state->root_arena, STROKE_MAX_POINTS, f32);
 
-#if SOFTWARE_RENDERER_COMPILED
-    // Initialize render queue
-    milton_state->render_stack = arena_alloc_elem(milton_state->root_arena, RenderStack);
-    {
-        milton_state->render_stack->work_available      = SDL_CreateSemaphore(0);
-        milton_state->render_stack->completed_semaphore = SDL_CreateSemaphore(0);
-        milton_state->render_stack->mutex               = SDL_CreateMutex();
-        milton_state->num_render_workers = min(SDL_GetCPUCount(), MAX_NUM_WORKERS);
-    }
-
-#if RESTRICT_NUM_WORKERS_TO_2
-    milton_state->num_render_workers = min(2, SDL_GetCPUCount());
-#endif
-
-    milton_log("[DEBUG]: Creating %d render workers.\n", milton_state->num_render_workers);
-
-    milton_state->render_worker_arenas = arena_alloc_array(milton_state->root_arena,
-                                                           milton_state->num_render_workers,
-                                                           Arena);
-    milton_state->worker_memory_size = 65536;
-
-
-    mlt_assert (milton_state->num_render_workers);
-    // Make the working stroke visible
-    for ( int wi=0; wi< milton_state->num_render_workers; ++wi ) {
-        milton_state->working_stroke.visibility[wi] = true;
-    }
-
-
-#endif //SOFTWARE_RENDERER_COMPILED
-
 #if MILTON_SAVE_ASYNC
     milton_state->save_mutex = SDL_CreateMutex();
     milton_state->save_flag = SaveEnum_GOOD_TO_GO;
@@ -500,25 +469,6 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
     milton_state->viz_window_visible = true;
 #endif
 
-#if SOFTWARE_RENDERER_COMPILED
-    for ( i32 i = 0; i < milton_state->num_render_workers; ++i ) {
-        WorkerParams* params = arena_alloc_elem(milton_state->root_arena, WorkerParams);
-        {
-            params->milton_state = milton_state;
-            params->worker_id = i;
-        }
-        mlt_assert (milton_state->render_worker_arenas[i].ptr == NULL);
-        u8* worker_memory = (u8*)mlt_calloc(1, milton_state->worker_memory_size);
-        if ( !worker_memory ) {
-            milton_die_gracefully("Platform allocation failed");
-        }
-        milton_state->render_worker_arenas[i] = arena_init(worker_memory,
-                                                           milton_state->worker_memory_size);
-
-        SDL_CreateThread(renderer_worker_thread, "Milton Render Worker", (void*)params);
-    }
-#endif
-
     milton_state->flags |= MiltonStateFlags_RUNNING;
 
 #if MILTON_ENABLE_PROFILING
@@ -549,26 +499,6 @@ milton_resize_and_pan(MiltonState* milton_state, v2l pan_delta, v2i new_screen_s
         milton_state->max_height = new_screen_size.h + 256;
         do_realloc = true;
     }
-
-    size_t buffer_size = (size_t) milton_state->max_width * milton_state->max_height * milton_state->bytes_per_pixel;
-
-    #if SOFTWARE_RENDERER_COMPILED
-    if ( do_realloc ) {
-        u8* raster_buffer = milton_state->raster_buffer;
-        u8* canvas_buffer = milton_state->canvas_buffer;
-        if ( raster_buffer ) { mlt_free(raster_buffer, "Bitmap"); milton_state->raster_buffer = NULL; }
-        if ( canvas_buffer ) { mlt_free(canvas_buffer, "Bitmap"); milton_state->canvas_buffer = NULL; }
-        milton_state->raster_buffer      = (u8*)mlt_calloc(1, buffer_size, "Bitmap");
-        milton_state->canvas_buffer      = (u8*)mlt_calloc(1, buffer_size, "Bitmap");
-
-        if ( milton_state->raster_buffer == NULL ) {
-            milton_die_gracefully("Could not allocate enough memory for raster buffer.");
-        }
-        if ( milton_state->canvas_buffer == NULL ) {
-            milton_die_gracefully("Could not allocate enough memory for canvas buffer.");
-        }
-    }
-    #endif
 
     if ( new_screen_size.w < milton_state->max_width && new_screen_size.h < milton_state->max_height ) {
         milton_state->view->screen_size = new_screen_size;
@@ -677,35 +607,6 @@ milton_try_quit(MiltonState* milton_state)
 }
 
 void
-milton_expand_render_memory(MiltonState* milton_state)
-{
-#if SOFTWARE_RENDERER_COMPILED
-    if ( milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY ) {
-        size_t prev_memory_value = milton_state->worker_memory_size;
-        milton_state->worker_memory_size *= 2;
-        size_t needed_size = milton_state->worker_memory_size;
-
-        for ( int i = 0; i < milton_state->num_render_workers; ++i ) {
-            if ( milton_state->render_worker_arenas[i].ptr != NULL ) {
-                mlt_free(milton_state->render_worker_arenas[i].ptr);
-            }
-            u8* new_memory = (u8*)mlt_calloc(1, needed_size);
-            milton_state->render_worker_arenas[i] = arena_init(new_memory, needed_size);
-            if ( milton_state->render_worker_arenas[i].ptr == NULL ) {
-                milton_die_gracefully("Failed to realloc worker arena\n");
-            }
-        }
-
-        milton_log("[DEBUG] Assigning more memory per worker. From %lu to %lu\n",
-                   prev_memory_value,
-                   milton_state->worker_memory_size);
-
-        milton_state->flags &= ~MiltonStateFlags_WORKER_NEEDS_MEMORY;
-    }
-#endif  // SOFTWARE_RENDERER_COMPILED
-}
-
-void
 milton_save_postlude(MiltonState* milton_state)
 {
     milton_state->last_save_time = platform_get_walltime();
@@ -796,7 +697,7 @@ milton_delete_working_layer(MiltonState* milton_state)
     if ( layer == milton_state->canvas->root_layer )
         milton_state->canvas->root_layer = milton_state->canvas->working_layer;
 
-    milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+    // milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
 }
 
 b32
@@ -984,26 +885,12 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         render_flags |= RenderDataFlags_WITH_BLUR;
     }
 
-    if ( milton_state->flags & MiltonStateFlags_WORKER_NEEDS_MEMORY ) {
-        milton_expand_render_memory(milton_state);
-        do_full_redraw = true;
-    }
-
     if ( milton_state->flags & MiltonStateFlags_REQUEST_QUALITY_REDRAW ) {
         milton_state->flags &= ~MiltonStateFlags_REQUEST_QUALITY_REDRAW;
         do_full_redraw = true;
     }
 
     i32 now = (i32)SDL_GetTicks();
-
-    if ( (input->flags & MiltonInputFlags_FAST_DRAW) ) {
-        milton_state->quality_redraw_time = now;
-    }
-    else if ( milton_state->quality_redraw_time > 0 &&
-              (now - milton_state->quality_redraw_time) > QUALITY_REDRAW_TIMEOUT_MS ) {
-        milton_state->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;  // Next update loop.
-        milton_state->quality_redraw_time = 0;
-    }
 
     if ( input->flags & MiltonInputFlags_FULL_REFRESH ) {
         do_full_redraw = true;
@@ -1076,8 +963,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( input->mode_to_set != milton_state->current_mode
-         && (   input->mode_to_set == MiltonMode::PEN
-             || input->mode_to_set == MiltonMode::ERASER)) {
+         && (input->mode_to_set == MiltonMode::PEN || input->mode_to_set == MiltonMode::ERASER)) {
         end_stroke = true;
     }
 
@@ -1314,28 +1200,30 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         milton_state->working_stroke.bounding_rect = bounding_box_for_stroke(&milton_state->working_stroke);
     }
 
-    MiltonMode mode = milton_state->current_mode;
-    if ( mode == input->mode_to_set ) {
-        // Modes we can toggle
-        if ( mode == MiltonMode::EYEDROPPER ) {
-            if ( milton_state->last_mode != MiltonMode::EYEDROPPER ) {
-                milton_use_previous_mode(milton_state);
-            }
-            else {
-                // This is not supposed to happen but if we get here we won't crash and burn.
-                milton_switch_mode(milton_state, MiltonMode::PEN);
-                milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
+    MiltonMode current_mode = milton_state->current_mode;
+    if (input->mode_to_set != MiltonMode::NONE) {
+        if ( current_mode == input->mode_to_set ) {
+            // Modes we can toggle
+            if ( current_mode == MiltonMode::EYEDROPPER ) {
+                if ( milton_state->last_mode != MiltonMode::EYEDROPPER ) {
+                    milton_use_previous_mode(milton_state);
+                }
+                else {
+                    // This is not supposed to happen but if we get here we won't crash and burn.
+                    milton_switch_mode(milton_state, MiltonMode::PEN);
+                    milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
+                }
             }
         }
-    }
-    // Change the current mode if it's different from the current mode.
-    else {
-        milton_switch_mode(milton_state, input->mode_to_set);
-        if (    input->mode_to_set == MiltonMode::PEN
-             || input->mode_to_set == MiltonMode::ERASER ) {
-            milton_update_brushes(milton_state);
-            // If we are drawing, end the current stroke so that it
-            // doesn't change from eraser to brush or vice versa.
+        // Change the current mode if it's different from the mode to set
+        else {
+            milton_switch_mode(milton_state, input->mode_to_set);
+            if (    input->mode_to_set == MiltonMode::PEN
+                 || input->mode_to_set == MiltonMode::ERASER ) {
+                milton_update_brushes(milton_state);
+                // If we are drawing, end the current stroke so that it
+                // doesn't change from eraser to brush or vice versa.
+            }
         }
     }
 
@@ -1366,16 +1254,15 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     PROFILE_GRAPH_PUSH(update);
 
     if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
-        platform_cursor_show();
-    }
-
-    if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
         // Someone tried to kill milton from outside the update. Make sure we save.
         should_save = true;
+        // Don't want to leave the system with the cursor hidden.
+        platform_cursor_show();
     }
 
     if ( should_save ) {
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
+            // Always save synchronously when exiting.
             milton_save(milton_state);
         } else {
 #if MILTON_SAVE_ASYNC
@@ -1497,6 +1384,5 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
     gpu_render(milton_state->render_data, view_x, view_y, view_width, view_height);
 
-    //milton_validate(milton_state);
     ARENA_VALIDATE(&milton_state->root_arena);
 }

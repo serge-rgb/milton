@@ -15,8 +15,8 @@ in vec3 v_pointb;
 // z    - t in [0,1] interpolation value
 vec3
 closest_point_in_segment_gl(vec2 a, vec2 b,
-                                 vec2 ab, float ab_magnitude_squared,
-                                 vec2 point)
+                             vec2 ab, float ab_magnitude_squared,
+                             vec2 point)
 {
     vec3 result;
     float mag_ab = sqrt(ab_magnitude_squared);
@@ -35,15 +35,16 @@ closest_point_in_segment_gl(vec2 a, vec2 b,
 float
 sample_stroke(vec2 point, vec3 a, vec3 b)
 {
-    float dist = float(1<<20);
-#if 0
+    //float dist = float(1<<20);
+    float dist = 1048576;
+#if 1
     // Check against a circle of pressure*brush_size at each point, which is cheap.
-    float dist_a = dist(point, a.xy);
-    float dist_b = dist(point, b.xy);
+    float dist_a = distance(point, a.xy);
+    float dist_b = distance(point, b.xy);
     float radius_a = float(a.z*u_radius);
     float radius_b = float(b.z*u_radius);
     if ( dist_a < radius_a || dist_b < radius_b ) {
-        value = 1;
+        dist = min(dist_a - radius_a, dist_b - radius_b);
     }
     // If it's not inside the circle, it might be somewhere else in the stroke.
     else {
@@ -53,7 +54,7 @@ sample_stroke(vec2 point, vec3 a, vec3 b)
         vec2 ab = b.xy - a.xy;
         float ab_magnitude_squared = ab.x*ab.x + ab.y*ab.y;
 
-        if ( ab_magnitude_squared > 0 ) {
+        if ( ab_magnitude_squared > 0.0 ) {
             vec3 stroke_point = closest_point_in_segment_gl(a.xy, b.xy, ab, ab_magnitude_squared, point);
             // z coordinate of a and b has pressure values.
             // z coordinate of stroke_point has interpolation between them for closes point.

@@ -16,7 +16,6 @@
 #define NO_PRESSURE_INFO            -1.0f
 #define MAX_INPUT_BUFFER_ELEMS      32
 #define MILTON_MINIMUM_SCALE        (1 << 4)
-#define QUALITY_REDRAW_TIMEOUT_MS   200
 #define MILTON_MAX_BRUSH_SIZE       80
 #define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
@@ -34,6 +33,8 @@ struct MiltonGLState
 
 enum class MiltonMode
 {
+    NONE,
+
     ERASER,
     PEN,
     EXPORTING,
@@ -91,10 +92,7 @@ struct MiltonState
 
     i32 max_width;
     i32 max_height;
-#if SOFTWARE_RENDERER_COMPILED
-    u8* raster_buffer; // Final image goes here
-    u8* canvas_buffer; // Rasterized canvas stored here
-#endif
+
     u8* eyedropper_buffer;  // Get pixels from OpenGL framebuffer and store them here for eydropper operations.
 
     // The screen is rendered in blockgroups
@@ -148,14 +146,6 @@ struct MiltonState
     Arena       root_arena;     // Lives forever
     Arena       canvas_arena;   // Gets reset every canvas.
 
-    // Software Rendering stuff
-#if SOFTWARE_RENDERER_COMPILED
-    i32             num_render_workers;
-    RenderStack*    render_stack;
-    size_t      worker_memory_size;
-    Arena*      render_worker_arenas;
-#endif
-
     // ====
     // Debug helpers
     // ====
@@ -172,11 +162,14 @@ struct MiltonState
 enum MiltonStateFlags
 {
     MiltonStateFlags_RUNNING                = 1 << 0,
+                                           // 1 << 1 unused
     MiltonStateFlags_REQUEST_QUALITY_REDRAW = 1 << 2,
-    MiltonStateFlags_WORKER_NEEDS_MEMORY    = 1 << 3,
+                                           // 1 << 3 unused
     MiltonStateFlags_NEW_CANVAS             = 1 << 4,
     MiltonStateFlags_DEFAULT_CANVAS         = 1 << 5,
     MiltonStateFlags_IGNORE_NEXT_CLICKUP    = 1 << 6,  // When selecting eyedropper from menu, avoid the click from selecting the color...
+                                           // 1 << 7 unused
+                                           // 1 << 8 unused
     MiltonStateFlags_LAST_SAVE_FAILED       = 1 << 9,
     MiltonStateFlags_MOVE_FILE_FAILED       = 1 << 10,
     MiltonStateFlags_BRUSH_SMOOTHING        = 1 << 11,
@@ -191,7 +184,7 @@ enum MiltonInputFlags
     MiltonInputFlags_UNDO                = 1 << 2,
     MiltonInputFlags_REDO                = 1 << 3,
                                         // 1 << 4 free to use
-    MiltonInputFlags_FAST_DRAW           = 1 << 5,
+                                        // 1 << 5 free to use
     MiltonInputFlags_HOVERING            = 1 << 6,
     MiltonInputFlags_PANNING             = 1 << 7,
     MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 8,
@@ -256,9 +249,6 @@ void milton_switch_mode(MiltonState* milton_state, MiltonMode mode);
 
 // Our "game loop" inner function.
 void milton_update_and_render(MiltonState* milton_state, MiltonInput* input);
-
-// If memory has been requested after rendering failed, this function will realloc.
-void milton_expand_render_memory(MiltonState* milton_state);
 
 void milton_try_quit(MiltonState* milton_state);
 

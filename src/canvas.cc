@@ -93,29 +93,6 @@ count_strokes(Layer* root)
     return count;
 }
 
-#if SOFTWARE_RENDERER_COMPILED
-i64
-count_clipped_strokes(Layer* root, i32 num_workers)
-{
-    i64 count = 0;
-    for ( Layer *layer = root;
-          layer != NULL;
-          layer = layer->next ) {
-        u64 num_strokes = layer->strokes.count;
-        for ( u64 i = 0; i < num_strokes; ++i ) {
-            Stroke* s = layer->strokes.data + i;
-            for ( i32 wi = 0; wi < num_workers; ++wi ) {
-                if ( s->visibility[wi] ) {
-                    ++count;
-                    break;
-                }
-            }
-        }
-    }
-    return count;
-}
-#endif
-
 Layer*
 get_topmost(Layer* root)
 {
