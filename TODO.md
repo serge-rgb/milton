@@ -2,7 +2,6 @@ To-Do
 =====
 
 - Bugs
-    - cursor visibility hit box for color picker is wrong
     - color picker transparency weirdness on startup
 - macOS port
     - Use bundle dir for config files.

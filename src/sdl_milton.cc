@@ -1075,6 +1075,14 @@ milton_main(bool is_fullscreen, char* file_to_open)
             int y = 0;
             SDL_GetMouseState(&x, &y);
 
+            // Convert x,y to pixels
+            {
+               v2l v = { (long)x, (long)y };
+               platform_point_to_pixel(&platform_state, &v);
+               x = v.x;
+               y = v.y;
+            }
+
             // NOTE: Calling SDL_SetCursor more than once seems to cause flickering.
 
             // Handle system cursor and platform state related to current_mode
