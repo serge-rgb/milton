@@ -1318,7 +1318,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                               texture_target, render_data->eraser_texture, 0);
                     glBindTexture(texture_target, render_data->canvas_texture);
-                    glClear(GL_COLOR_BUFFER_BIT);
+
                     glDisable(GL_BLEND);
                     glDisable(GL_DEPTH_TEST);
 
@@ -1332,7 +1332,6 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
                     glBindTexture(texture_target, render_data->eraser_texture);
                     glUseProgram(render_data->stroke_program);
-                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
                     glEnable(GL_DEPTH_TEST);
                     glEnable(GL_BLEND);
@@ -1451,7 +1450,6 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
     // TODO: Only render if view rect intersects picker rect
     if ( render_data->flags & RenderDataFlags_GUI_VISIBLE ) {
         // Render picker
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glUseProgram(render_data->picker_program);
         GLint loc = glGetAttribLocation(render_data->picker_program, "a_position");
 
