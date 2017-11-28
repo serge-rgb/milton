@@ -681,7 +681,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
     #if USE_GL_3_2
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     #endif
-     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+    #if MILTON_DEBUG
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+    #endif
 
     #if MULTISAMPLING_ENABLED
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);

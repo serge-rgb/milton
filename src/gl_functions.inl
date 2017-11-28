@@ -61,5 +61,6 @@
     X(void,     glBlitFramebufferEXT,     GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) \
     /*ARB_texture_multisample*/\
     X(void,     glTexImage2DMultisample,  GLenum target, GLsizei samples, GLint internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations) \
+    X(void,     glDebugMessageCallback, GlDebugCallback callback, void* userparam ) \
     /* glMinSampleShadingARB gets treated separately because Milton can handle it missing. */ \
     /*X(void,     glMinSampleShadingARB,    GLclampf value)*/

@@ -8,6 +8,15 @@
 
 #include "gl_functions.inl"
 
+// GL_DEBUG_OUTPUT defines
+#define GL_DEBUG_OUTPUT                   0x92E0
+
+#define GL_DEBUG_CALLBACK(name)  void name(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+
+typedef GL_DEBUG_CALLBACK(GlDebugCallback);
+
+GL_DEBUG_CALLBACK(milton_gl_debug_callback);
+
 #if defined(_WIN32)
     // OpenGL function prototypes.
     #define X(ret, name, ...) typedef ret WINAPI name ## Proc(__VA_ARGS__); extern name##Proc * name ;

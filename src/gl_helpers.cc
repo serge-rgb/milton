@@ -9,6 +9,12 @@
 
 #include "gl_functions.inl"
 
+GL_DEBUG_CALLBACK(milton_gl_debug_callback)
+{
+    milton_log("OpenGL debug message: [%s]\n", message);
+}
+
+
 #if defined(_WIN32)
     // OpenGL function prototypes.
     #define X(ret, name, ...) typedef ret WINAPI name##Proc(__VA_ARGS__); name##Proc * name ;

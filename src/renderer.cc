@@ -325,9 +325,13 @@ gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
 b32
 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
+#if MILTON_DEBUG
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(milton_gl_debug_callback, NULL);
+#endif
     // Send an incorrect command to OpenGL to see if the debug context is working.
     // TODO: SDL does not seem to pass GL context flags on macOS
-    glEnable(GL_COLOR_BUFFER_BIT);
+    // glEnable(29384723);
 
     render_data->stroke_z = MAX_DEPTH_VALUE - 20;
 
