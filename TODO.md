@@ -3,7 +3,6 @@ To-Do
 
 - Bugs
     - color picker transparency weirdness on startup
-    - macos zoom center is incorrect
 - macOS port
     - Use bundle dir for config files.
     - Replace Dear Imgui's menu with Cocoa menu.

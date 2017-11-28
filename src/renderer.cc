@@ -1554,7 +1554,6 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         }
     }
 
-
     glUseProgram(0);
 }
 

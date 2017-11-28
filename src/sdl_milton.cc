@@ -306,6 +306,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     milton_input.scale += event.wheel.y;
                     v2i zoom_center = platform_state->pointer;
 
+                    milton_set_zoom_at_point(milton_state, zoom_center);
                     // ImGui has a delay of 1 frame when displaying zoom info.
                     // Force next frame to have the value up to date.
                     platform_state->force_next_frame = true;

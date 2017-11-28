@@ -262,8 +262,7 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
 void
 milton_set_zoom_at_point(MiltonState* milton_state, v2i zoom_center)
 {
-    milton_state->view->pan_center +=
-           VEC2L(zoom_center - milton_state->view->zoom_center) * (i64)milton_state->view->scale;
+    milton_state->view->pan_center += VEC2L(zoom_center - milton_state->view->zoom_center) * (i64)milton_state->view->scale;
 
     milton_state->view->zoom_center = zoom_center;
     gpu_update_canvas(milton_state->render_data, milton_state->canvas, milton_state->view);
