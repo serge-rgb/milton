@@ -11,7 +11,7 @@
 #define MILTON_DEBUG 1
 
 #define MILTON_ZOOM_DEBUG 0
-    // If MILTON_DEBUG is 0, MILTON_ZOOM_DEBUG will be 0 too!
+    // Force MILTON_ZOOM_DEBUG to 0 if MILTON_DEBUG is 0.
 #if !MILTON_DEBUG
     #undef MILTON_ZOOM_DEBUG;
     #define MILTON_ZOOM_DEBUG 0

@@ -43,6 +43,8 @@ void    log (char* str);
 GLuint  compile_shader (const char* src, GLuint type, char* config = "");
 void    link_program (GLuint obj, GLuint shaders[], int64_t num_shaders);
 
+void    enable_debug(GlDebugCallback callback);
+
 bool    set_attribute_vec2 (GLuint program, char* name, GLfloat* data, size_t data_sz);
 bool    set_uniform_vec4 (GLuint program, char* name, size_t count, float* vals);
 bool    set_uniform_vec4 (GLuint program, char* name, size_t count, float* vals);

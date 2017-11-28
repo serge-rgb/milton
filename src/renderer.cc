@@ -326,8 +326,7 @@ b32
 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 {
 #if MILTON_DEBUG
-    glEnable(GL_DEBUG_OUTPUT);
-    glDebugMessageCallback(milton_gl_debug_callback, NULL);
+    gl::enable_debug(milton_gl_debug_callback);
 #endif
     // Send an incorrect command to OpenGL to see if the debug context is working.
     // TODO: SDL does not seem to pass GL context flags on macOS
