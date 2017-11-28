@@ -25,21 +25,4 @@ profiler_init()
 #endif
 }
 
-void
-profiler_output()
-{
-#if defined(PROFILER_IMPLEMENTATION) && MILTON_ENABLE_RASTER_PROFILING
-    milton_log("===== Rasterizer profiler output ==========\n");
-    for ( i32 i = 0; i < PROF_RASTER_COUNT; ++i ) {
-        if ( g_profiler_count[i] ) {
-            milton_log("%15s: %15s %15lu, %15s %15lu\n\t%15s %15lu\n",
-                       g_profiler_names[i],
-                       "ncalls:", g_profiler_count[i],
-                       "clocks_per_call:", g_profiler_ticks[i] / g_profiler_count[i],
-                       "last call", g_profiler_last[i]);
-        }
-    }
-    milton_log("================================\n");
-#endif
-}
 

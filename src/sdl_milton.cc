@@ -681,6 +681,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     #if USE_GL_3_2
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     #endif
+     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
     #if MULTISAMPLING_ENABLED
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
@@ -772,36 +773,35 @@ milton_main(bool is_fullscreen, char* file_to_open)
         switch( sysinfo.subsystem ) {
 #if defined(_WIN32)
             case SDL_SYSWM_WINDOWS: {
-				{ // Handle the case where the window was too big for the screen.
-					HWND hwnd = sysinfo.info.win.window;
-                    if (!is_fullscreen) {
-                        RECT res_rect;
-                        RECT win_rect;
-                        HWND dhwnd = GetDesktopWindow();
-                        GetWindowRect(dhwnd, &res_rect);
-                        GetClientRect(hwnd, &win_rect);
+               { // Handle the case where the window was too big for the screen.
+                  HWND hwnd = sysinfo.info.win.window;
+                  if (!is_fullscreen) {
+                     RECT res_rect;
+                     RECT win_rect;
+                     HWND dhwnd = GetDesktopWindow();
+                     GetWindowRect(dhwnd, &res_rect);
+                     GetClientRect(hwnd, &win_rect);
 
-                        platform_state.hwnd = hwnd;
+                     platform_state.hwnd = hwnd;
 
-                        i32 snap_threshold = 300;
-                        if (win_rect.right != platform_state.width
-                        || win_rect.bottom != platform_state.height
-                        // Also maximize if the size is large enough to "snap"
-                        || (win_rect.right + snap_threshold >= res_rect.right
-                        && win_rect.left + snap_threshold >= res_rect.left)
-                        || win_rect.left < 0
-                        || win_rect.top < 0) {
+                     i32 snap_threshold = 300;
+                     if (win_rect.right != platform_state.width
+                         || win_rect.bottom != platform_state.height
+                         // Also maximize if the size is large enough to "snap"
+                         || (win_rect.right + snap_threshold >= res_rect.right
+                             && win_rect.left + snap_threshold >= res_rect.left)
+                         || win_rect.left < 0
+                         || win_rect.top < 0) {
                         // Our prefs weren't right. Let's maximize.
 
                         SetWindowPos(hwnd, HWND_TOP, 20, 20, win_rect.right - 20, win_rect.bottom - 20, SWP_SHOWWINDOW);
                         platform_state.width = win_rect.right - 20;
                         platform_state.height = win_rect.bottom - 20;
                         ShowWindow(hwnd, SW_MAXIMIZE);
-					}
-                }
-                else {
-                }
-                }
+                     }
+                  }
+                  }
+               }
                 // Load EasyTab
                 EasyTabResult easytab_res = EasyTab_Load(platform_state.hwnd);
                 if (easytab_res != EASYTAB_OK) {
@@ -1030,7 +1030,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     // ---- Main loop ----
 
     while ( !platform_state.should_quit ) {
-        PROFILE_GRAPH_PUSH(system);
+        PROFILE_GRAPH_END(system);
         PROFILE_GRAPH_BEGIN(polling);
 
         u64 frame_start_us = perf_counter();
@@ -1202,14 +1202,14 @@ milton_main(bool is_fullscreen, char* file_to_open)
         platform_state.pan_start = platform_state.pan_point;
 
         // ==== Update and render
-        PROFILE_GRAPH_PUSH(polling);
+        PROFILE_GRAPH_END(polling);
         PROFILE_GRAPH_BEGIN(GL);
         milton_update_and_render(milton_state, &milton_input);
         if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
             platform_state.should_quit = true;
         }
         ImGui::Render();
-        PROFILE_GRAPH_PUSH(GL);
+        PROFILE_GRAPH_END(GL);
         PROFILE_GRAPH_BEGIN(system);
         glFinish();
         SDL_GL_SwapWindow(window);

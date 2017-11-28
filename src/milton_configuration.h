@@ -50,7 +50,8 @@
         #define USE_GL_3_2 0
     #endif
 
-    // Force 3.2 on macos
+    // Use 3.2 on macos. OpenGL 3.2 is supported by all mac computers since macOS 10.8.5
+    // https://developer.apple.com/opengl/OpenGL-Capabilities-Tables.pdf
     #if defined(__MACH__)
         #undef USE_GL_3_2
         #define USE_GL_3_2 1
@@ -58,32 +59,6 @@
 
 #define DEBUG_MEMORY_USAGE 0
 
-// -- Software renderer config..
-    #define MAX_NUM_WORKERS 64
-    // Force things to be a bit slower
-    #define RESTRICT_NUM_WORKERS_TO_2 0
-
-// Large files get impractical to save in a blocking function.
-// Disabled for now. This was implemented when a bug was causing files to be huge.
-// Hopefully milton will never need this. Leaving it just in case.
+// Spawn threads to save the canvas.
 #define MILTON_SAVE_ASYNC 1
 
-
-// -- Esoteric and/or Stupid stuff.
-
-
-// Rasterizer profiling -
-// Self-profiling counters. Currently only active on Windows. Should be used
-// for micro-tweaks. Use a sampling profiler for higher-level performance info.
-// Dumps information out to Windows console.
-#define MILTON_ENABLE_RASTER_PROFILING 0
-
-// Every render_canvas call will re-draw using all renderers (for sampling profilers)
-#define MILTON_USE_ALL_RENDERERS 0
-
-#if MILTON_ENABLE_RASTER_PROFILING
-    #if MILTON_MULTITHREADED
-        #undef MILTON_MULTITHREADED
-        #define MILTON_MULTITHREADED 0
-    #endif  // MILTON_MULTITHREADED != 0
-#endif  // MILTON_ENABLE_PROFILING

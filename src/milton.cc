@@ -1251,7 +1251,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                                 radius);
     }
 
-    PROFILE_GRAPH_PUSH(update);
+    PROFILE_GRAPH_END(update);
 
     if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
         // Someone tried to kill milton from outside the update. Make sure we save.
@@ -1332,8 +1332,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         }
     }
 
-    profiler_output();
-
     i32 view_x = 0;
     i32 view_y = 0;
     i32 view_width = 0;
@@ -1380,7 +1378,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     gpu_clip_strokes_and_update(&milton_state->root_arena, milton_state->render_data, milton_state->view,
                                 milton_state->canvas->root_layer, &milton_state->working_stroke,
                                 view_x, view_y, view_width, view_height, clip_flags);
-    PROFILE_GRAPH_PUSH(clipping);
+    PROFILE_GRAPH_END(clipping);
 
     gpu_render(milton_state->render_data, view_x, view_y, view_width, view_height);
 
