@@ -40,7 +40,7 @@ typedef i32         b32;
     #elif defined(__GNUC__)  // Clang defines this too
         #define ALIGN(n) __attribute__(( aligned (n) ))
     #else
-        #error I don't know how to align stuff in this compiler
+        #error I dont know how to align stuff in this compiler
     #endif
 #endif // ALIGN
 
