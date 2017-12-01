@@ -32,17 +32,27 @@ perf_counter()
 }
 
 void
-platform_point_to_pixel(PlatformState*, v2l*)
+platform_point_to_pixel(PlatformState* ps, v2l* inout)
 {
 
 }
 
 void
-platform_point_to_pixel_i(PlatformState*, v2i*)
+platform_point_to_pixel_i(PlatformState* ps, v2i* inout)
 {
 
 }
 
+float
+platform_ui_scale(PlatformState* p)
+{
+    return 1.0f;
+}
+
+void 
+platform_pixel_to_point(PlatformState* ps, v2l* inout)
+{
+}
 
 b32
 platform_delete_file_at_config(PATH_CHAR* fname, int error_tolerance)
