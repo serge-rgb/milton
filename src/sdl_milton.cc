@@ -1209,7 +1209,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
         ImGui::Render();
         PROFILE_GRAPH_END(GL);
         PROFILE_GRAPH_BEGIN(system);
-        glFinish();
         SDL_GL_SwapWindow(window);
 
 #ifdef __linux__

@@ -31,19 +31,19 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     int color_stack = 0;
 
     static auto color_window_background = ImVec4{.929f, .949f, .957f, 1};
-    //static auto color_title_bg          = ImVec4{.957f,.353f, .286f,1};
+    //static auto color_title_bg        = ImVec4{.957f,.353f, .286f,1};
     static auto color_title_bg          = color_window_background;
     static auto color_title_fg          = ImVec4{151/255.f, 184/255.f, 210/255.f, 1};
 
-    static auto color_buttons           = ImVec4{.686f, .796f, 1.0f, 1};
-    static auto color_buttons_active           = ImVec4{.886f, .796f, 1.0f, 1};
-    static auto color_buttons_hovered   = ImVec4{.706f, .816f, 1.0f, 1};
+    static auto color_buttons         = ImVec4{.686f, .796f, 1.0f, 1};
+    static auto color_buttons_active  = ImVec4{.886f, .796f, 1.0f, 1};
+    static auto color_buttons_hovered = ImVec4{.706f, .816f, 1.0f, 1};
 
-    static auto color_menu_bg           = ImVec4{.784f, .392f, .784f, 1};
-    static auto color_text              = ImVec4{.2f,.2f,.2f,1};
-    static auto color_slider     = ImVec4{ 148/255.f, 182/255.f, 182/255.f,1};
+    static auto color_menu_bg        = ImVec4{.784f, .392f, .784f, 1};
+    static auto color_text           = ImVec4{.2f,.2f,.2f,1};
+    static auto color_slider         = ImVec4{ 148/255.f, 182/255.f, 182/255.f,1};
     static auto frame_background     = ImVec4{ 0.862745f, 0.862745f, 0.862745f,1};
-    static auto color_text_selected     = ImVec4{ 0.509804f, 0.627451f, 0.823529f,1};
+    static auto color_text_selected  = ImVec4{ 0.509804f, 0.627451f, 0.823529f,1};
     static auto color_header_hovered = color_buttons;
 
     // Helper Imgui code to select color scheme
@@ -329,9 +329,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
         /* ImGuiSetCond_FirstUseEver */
 
-        const f32 brush_window_height = ui_scale*109;
-        ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize({ui_scale*271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+        const f32 brush_window_height = ui_scale * 109;
+        ImGui::SetNextWindowPos(ImVec2(ui_scale * 10, ui_scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize({ui_scale * 271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
 
         b32 show_brush_window = (milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER);

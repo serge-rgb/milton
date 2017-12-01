@@ -1444,7 +1444,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         gpu_fill_with_texture(render_data);
     }
 
-    // Render GUI on top of helper texture
+    // Render GUI on top of helper_texture
 
     // Render color picker
     // TODO: Only render if view rect intersects picker rect

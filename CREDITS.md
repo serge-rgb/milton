@@ -7,10 +7,11 @@
     * [Charly Mourglia](http://github.com/Zouch)
     * [Gian Sass](https://github.com/Nuke928)
     * [Joshua Mendoza](https://github.com/jomendoz)
+    * [Justas Dabrila](https://github.com/SSStormy)
     * [Kevin Wojniak](https://github.com/kainjow)
-    * [mcmihai](https://github.com/mcmihai)
     * [Michael Freundorfer](https://github.com/mordecai154)
     * [Tilmann Rübbelke](https://github.com/TilmannR)
+    * [mcmihai](https://github.com/mcmihai)
 
 * Other
     * Aarón Reyes García
