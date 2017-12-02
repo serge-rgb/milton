@@ -8,12 +8,14 @@
 #define MILTON_MINOR_VERSION 5
 #define MILTON_MICRO_VERSION 2
 
-#define MILTON_DEBUG 1
+#if !defined(IS_USING_CMAKE)
+    #define MILTON_DEBUG 1
+#endif
 
 #define MILTON_ZOOM_DEBUG 0
     // Force MILTON_ZOOM_DEBUG to 0 if MILTON_DEBUG is 0.
 #if !MILTON_DEBUG
-    #undef MILTON_ZOOM_DEBUG;
+    #undef MILTON_ZOOM_DEBUG
     #define MILTON_ZOOM_DEBUG 0
 #endif
 
@@ -62,3 +64,12 @@
 // Spawn threads to save the canvas.
 #define MILTON_SAVE_ASYNC 1
 
+#ifdef CMAKE_TRY_GL2
+    #undef USE_GL_3_2
+    #define USE_GL_3_2 0
+#endif
+
+#ifdef CMAKE_TRY_GL3
+    #undef USE_GL_3_2
+    #define USE_GL_3_2 1
+#endif
