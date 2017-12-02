@@ -126,8 +126,10 @@ platform_dialog_yesno(char* info, char* title)
 void
 platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
-    // TODO: remove this allocation
+    // we'll copy fname to file_name so that we can edit fname to our liking then later append fname to it.
     char *string_copy = (char*)mlt_calloc(1, len, "Strings");
+    size_t copy_length = strlen(fname);
+    
     if ( string_copy ) {
         strncpy(string_copy, fname, len);
         char *folder;
@@ -138,10 +140,17 @@ platform_fname_at_config(PATH_CHAR* fname, size_t len)
         } else {
             folder = "milton";
         }
-        snprintf(fname, len, "%s/%s", home, folder);
-        mkdir(fname, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-        strncat(fname, "/", len);
-        strncat(fname, string_copy, len);
+        size_t final_length = strlen(home) + strlen(folder) + copy_length + 3; // +2 for the separators /, +1 for extra null terminator
+        if( final_length > len ) {
+            // building a path will lead to overflow. return string_copy as it can be used as a relative path
+            strncpy(fname, string_copy, len);
+        } else {
+            snprintf(fname, len, "%s/%s", home, folder);
+            mkdir(fname, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+            strcat(fname, "/");
+            strcat(fname, string_copy);
+        }
+        
         mlt_free(string_copy, "Strings");
     }
 }
