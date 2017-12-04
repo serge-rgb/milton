@@ -45,10 +45,10 @@ add_definitions(-DIS_USING_CMAKE=1)
 
 if(TRY_GL2)
   message(STATUS "Compiling for OpenGL2.1")
-  add_definitions(-DCMAKE_FORCE_GL2=1)
+  add_definitions(-DCMAKE_TRY_GL2=1)
 elseif(TRY_GL3)
   message(STATUS "Compiling for OpenGL3.2")
-  add_definitions(-DCMAKE_FORCE_GL3=1)
+  add_definitions(-DCMAKE_TRY_GL3=1)
 endif()
 
 ## Default build type to Release
