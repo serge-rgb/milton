@@ -64,6 +64,9 @@ else()
   message(FATAL_ERROR "Unknown build type: ${CMAKE_BUILD_TYPE}. Supported build types: Release, Debug.")
 endif()
 
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 # Platform specific stuff
@@ -75,7 +78,6 @@ endif()
 
 if(UNIX)
   set(UnixCFlags
-    -g
     -std=c++11
     -Wno-missing-braces
     -Wno-unused-function
