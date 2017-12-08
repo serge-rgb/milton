@@ -570,9 +570,9 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
             texture_target = GL_TEXTURE_2D;
         }
         render_data->fbo = gl::new_fbo(render_data->canvas_texture, render_data->stencil_texture, texture_target);
-        glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
         print_framebuffer_status();
-        glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     // VBO for picker
     glGenBuffers(1, &render_data->vbo_picker);
@@ -1191,7 +1191,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
     glClearDepth(0.0f);
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
 
     GLenum texture_target;
     if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
@@ -1212,17 +1212,17 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
     glBindTexture(texture_target, render_data->eraser_texture);
 
-    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                               render_data->eraser_texture, 0);
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                               render_data->canvas_texture, 0);
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                               layer_texture, 0);
     glClearColor(0,0,0,0);
 
@@ -1266,7 +1266,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
                         if ( (render_data->flags & RenderDataFlags_WITH_BLUR) && e->type == LayerEffectType_BLUR ) {
                             glBindTexture(texture_target, in_texture);
-                            glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                       texture_target, out_texture, 0);
 
                             // Three box filter iterations approximate a Gaussian blur
@@ -1278,20 +1278,20 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                                 box_filter_pass(render_data, kernel_size, BoxFilterPass_VERTICAL);
                                 swap(out_texture, in_texture);
                                 glBindTexture(texture_target, in_texture);
-                                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                           texture_target, out_texture, 0);
 
 
                                 box_filter_pass(render_data, kernel_size, BoxFilterPass_HORIZONTAL);
                                 swap(out_texture, in_texture);
                                 glBindTexture(texture_target, in_texture);
-                                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                           texture_target, out_texture, 0);
 
                             }
                             swap(out_texture, in_texture);
                             glBindTexture(texture_target, in_texture);
-                            glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                       texture_target, out_texture, 0);
                             layer_post_effects = out_texture;
                         }
@@ -1302,7 +1302,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
                 // Blit layer contents to canvas_texture
                 {
-                    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                               texture_target, render_data->canvas_texture, 0);
                     glBindTexture(texture_target, layer_post_effects);
 
@@ -1315,7 +1315,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
                 // Copy canvas_texture's contents to the eraser_texture.
                 {
-                    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                               texture_target, render_data->eraser_texture, 0);
                     glBindTexture(texture_target, render_data->canvas_texture);
 
@@ -1325,7 +1325,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     gpu_fill_with_texture(render_data);
 
                     // Clear the layer texture.
-                    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                               texture_target, layer_texture, 0);
                     glClearColor(0,0,0,0);
                     glClear(GL_COLOR_BUFFER_BIT);
@@ -1428,16 +1428,16 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
     glDisable(GL_DEPTH_TEST);
 
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                   render_data->canvas_texture, 0);
         glBindTexture(texture_target, render_data->helper_texture);
         glCopyTexImage2D(texture_target, 0, GL_RGBA8, 0,0, render_data->width, render_data->height, 0);
 
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                   render_data->helper_texture, 0);
         glBindTexture(texture_target, render_data->canvas_texture);
     } else {
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                   render_data->helper_texture, 0);
         glBindTexture(texture_target, render_data->canvas_texture);
 
@@ -1477,7 +1477,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
     // Do post-processing on painting and on GUI elements. Draw to backbuffer
 
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, render_data->helper_texture);
@@ -1500,8 +1500,8 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
         }
     }
     else {  // Resolve
-        glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
         glBlitFramebufferEXT(0, 0, render_data->width, render_data->height,
                              0, 0, render_data->width, render_data->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
@@ -1618,11 +1618,11 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     } else {
-        glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebufferEXT(GL_READ_FRAMEBUFFER, render_data->fbo);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, render_data->fbo);
         glBlitFramebufferEXT(0, 0, buf_w, buf_h,
                              0, 0, buf_w, buf_h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-        glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -1656,7 +1656,7 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     render_data->width = saved_width;
     render_data->height = saved_height;
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, render_data->fbo);
 
     gpu_resize(render_data, view);
     gpu_update_canvas(render_data, milton_state->canvas, view);

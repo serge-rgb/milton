@@ -517,18 +517,18 @@ GLuint
 new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment, GLenum texture_target)
 {
     GLuint fbo = 0;
-    glGenFramebuffersEXT(1, &fbo);
-    glBindFramebufferEXT(GL_FRAMEBUFFER, fbo);
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 
-    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                               color_attachment, 0);
     if ( depth_stencil_attachment ) {
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture_target,
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, texture_target,
                                   depth_stencil_attachment, 0);
     }
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     return fbo;
 }
 

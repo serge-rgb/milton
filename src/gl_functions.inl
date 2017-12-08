@@ -51,12 +51,12 @@
     X(void,     glGenVertexArrays,        GLsizei n, GLuint* arrays)                              \
     X(void,     glDeleteVertexArrays,     GLsizei n, const GLuint* arrays)                        \
     X(void,     glBindVertexArray,        GLuint array)                                           \
-    /*EXT_framebuffer_object*/\
-    X(void,     glGenFramebuffersEXT,     GLsizei n, GLuint* framebuffers)                        \
-    X(void,     glBindFramebufferEXT,     GLenum target, GLuint framebuffer)                      \
-    X(GLenum,   glCheckFramebufferStatusEXT, GLenum target)                                       \
-    X(void,     glDeleteFramebuffersEXT,  GLsizei n, const GLuint *framebuffers)                  \
-    X(void,     glFramebufferTexture2DEXT, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) \
+    /*ARB_framebuffer_object*/\
+    X(void,     glGenFramebuffers,     GLsizei n, GLuint* framebuffers)                        \
+    X(void,     glBindFramebuffer,     GLenum target, GLuint framebuffer)                      \
+    X(GLenum,   glCheckFramebufferStatus, GLenum target)                                       \
+    X(void,     glDeleteFramebuffers,  GLsizei n, const GLuint *framebuffers)                  \
+    X(void,     glFramebufferTexture2D, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) \
     /*EXT_framebuffer_blit*/\
     X(void,     glBlitFramebufferEXT,     GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter) \
     /*ARB_texture_multisample*/\
