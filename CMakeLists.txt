@@ -38,6 +38,38 @@ target_include_directories(Milton PRIVATE
   third_party/imgui
 )
 
+# Handle various switches, build types etc.
+
+## Helps to know that we're compiling using cmake in milton_configuration.h
+add_definitions(-DIS_USING_CMAKE=1)
+
+if(TRY_GL2)
+  message(STATUS "Compiling for OpenGL2.1")
+  add_definitions(-DCMAKE_TRY_GL2=1)
+elseif(TRY_GL3)
+  message(STATUS "Compiling for OpenGL3.2")
+  add_definitions(-DCMAKE_TRY_GL3=1)
+endif()
+
+## Default build type to Release
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_definitions(-DMILTON_DEBUG=1)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+  add_definitions(-DMILTON_DEBUG=0)
+else()
+  message(FATAL_ERROR "Unknown build type: ${CMAKE_BUILD_TYPE}. Supported build types: Release, Debug.")
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+message(STATUS "Building ${CMAKE_BUILD_TYPE}")
+
+# Platform specific stuff
 if(WIN32)
   target_sources(Milton PRIVATE
     src/platform_windows.cc
@@ -46,7 +78,6 @@ endif()
 
 if(UNIX)
   set(UnixCFlags
-    -g
     -std=c++11
     -Wno-missing-braces
     -Wno-unused-function

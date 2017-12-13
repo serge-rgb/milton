@@ -68,8 +68,33 @@ Linux
 
 Porting in progress.
 
-Build it with `make` and run it with `build/milton`. You need to install the SDL libraries (`libsdl2-dev` on Ubuntu).
+### Building
 
+Library and header dependencies:
+* X11
+* SDL2
+* OpenGL
+* XInput
+* GTK2
+
+Release build using CMake:
+```sh
+mkdir build
+cmake ..
+make
+./Milton
+```
+
+There are some CMake options you might care about:
+
+| flag | type | does |
+| ---- | ---- | ---- |
+| `TRY_GL2` | `bool` | Tells Milton to target OpenGL2.1. Does not guarantee that such a context will be created. This is the default Release target. |
+| `TRY_GL3` | `bool` | Tells Milton to target OpenGL3.2. Does not guarantee that such a context will be created. This is the default Debug target. |
+| `CMAKE_BUILD_TYPE` | `string` | Configures the build type. Defaults to `Release`. Available build types are: `Release` and `Debug`. |
+
+Example debug build using GL2.1:
+`cmake -DCMAKE_BUILD_TYPE=Debug -DTRY_GL2=1 ..`
 
 OSX
 ---

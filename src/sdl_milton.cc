@@ -666,9 +666,11 @@ milton_main(bool is_fullscreen, char* file_to_open)
 #if USE_GL_3_2
     i32 gl_version_major = 3;
     i32 gl_version_minor = 2;
+    milton_log("Requesting OpenGL 3.2 context.\n");
 #else
     i32 gl_version_major = 2;
     i32 gl_version_minor = 1;
+    milton_log("Requesting OpenGL 2.1 context.\n");
 #endif
 
     SDL_Window* window = NULL;
