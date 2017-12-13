@@ -133,6 +133,11 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     message(FATAL_ERROR "Could not find SDL2 libraries")
   endif()
 
+  # on ubuntu 16.04 LTS CMake complains about the -lSDL2 link switch
+  # having trailing/leading spaces.
+  # string(STRIP a b) will remove those spaces.
+  string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
+
   target_include_directories(Milton PRIVATE
     ${GTK2_INCLUDE_DIRS}
     ${X11_INCLUDE_DIR}
@@ -146,7 +151,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     ${SDL2_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${XINPUT_LIBRARY})
-  
+
 else()
   add_subdirectory(third_party/SDL2-2.0.3)
   target_link_libraries(Milton SDL2-static)
