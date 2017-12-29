@@ -65,7 +65,7 @@ milton_load(MiltonState* milton_state)
     MiltonGui* gui = NULL;
     auto saved_size = milton_state->view->screen_size;
 
-    milton_log("Milton: loading file\n");
+    milton_log("Loading file %s\n", milton_state->mlt_file_path);
     // Reset the canvas.
     milton_reset_canvas(milton_state);
 
@@ -631,17 +631,22 @@ milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
     mlt_free(fname_copy, "Strings");
 }
 
-void
+b32
 milton_prefs_load(PlatformPrefs* prefs)
 {
+    b32 loaded = false;
     PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
     platform_fname_at_config(fname, MAX_PATH);
 
+    milton_log("Prefs file: %s\n", fname);
+
     FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
+
     if ( fd ) {
         if ( !ferror(fd) ) {
             fread(&prefs->width, sizeof(i32), 1, fd);
             fread(&prefs->height, sizeof(i32), 1, fd);
+            loaded = true;
         }
         else {
             milton_log("Error writing to prefs file...\n");
@@ -651,6 +656,8 @@ milton_prefs_load(PlatformPrefs* prefs)
     else {
         milton_log("Could not open file for writing prefs\n");
     }
+
+    return loaded;
 }
 
 void

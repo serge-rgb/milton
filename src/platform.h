@@ -185,14 +185,6 @@ i32 platform_monitor_refresh_hz();
 u64 perf_counter();
 float perf_count_to_sec(u64 counter);
 
-#if defined(_WIN32)
-#define platform_milton_log win32_log
-void win32_log(char *format, ...);
-#define getpid _getpid
-#elif defined(__linux__) || defined(__MACH__)
-#define platform_milton_log printf
-#endif
-
 
 #if defined(_WIN32)
 #include "platform_windows.h"

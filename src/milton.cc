@@ -26,14 +26,15 @@ milton_set_background_color(MiltonState* milton_state, v3f background_color)
 static void
 milton_set_default_view(MiltonState* milton_state)
 {
+    milton_log("Setting default view\n");
     CanvasView* view = milton_state->view;
 
-    auto saved_size = view->screen_size;
+    auto size = view->screen_size;
 
     *view = CanvasView{};
 
-    view->screen_size         = saved_size;
-    view->zoom_center         = saved_size / 2;
+    view->screen_size         = size;
+    view->zoom_center         = size / 2;
     view->scale               = MILTON_DEFAULT_SCALE;
     view->num_layers          = 1;
 }
@@ -277,6 +278,7 @@ milton_set_zoom_at_screen_center(MiltonState* milton_state)
 void
 milton_set_canvas_file_(MiltonState* milton_state, PATH_CHAR* fname, b32 is_default)
 {
+    milton_log("Set milton file: %s\n", fname);
     if ( is_default ) {
         milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
     } else {
@@ -396,20 +398,10 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
 
     milton_state->bytes_per_pixel = 4;
 
-
     milton_state->current_mode = MiltonMode::PEN;
     milton_state->last_mode = MiltonMode::PEN;
 
-
     milton_state->gl = arena_alloc_elem(&milton_state->root_arena, MiltonGLState);
-
-#if 1
-    milton_state->blocks_per_blockgroup = 16;
-    milton_state->block_width = 32;
-#else
-    milton_state->blocks_per_blockgroup = 4;
-    milton_state->block_width = 32;
-#endif
 
     milton_state->gui = arena_alloc_elem(&milton_state->root_arena, MiltonGui);
     gui_init(&milton_state->root_arena, milton_state->gui, ui_scale);
@@ -473,8 +465,6 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
 #if MILTON_ENABLE_PROFILING
     profiler_init();
 #endif
-
-
 }
 
 void

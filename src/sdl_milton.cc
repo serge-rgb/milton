@@ -10,10 +10,6 @@
 #include "persist.h"
 
 
-
-// TODO: Remove this include for non-mac platforms
-// #include "cocoa_helpers.h"
-
 static void
 cursor_set_and_show(SDL_Cursor* cursor)
 {
@@ -499,14 +495,6 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                             milton_set_pen_alpha(milton_state, 1.0f);
                         }
                     }
-#if MILTON_DEBUG
-                    if ( keycode == SDLK_F4 ) {
-                        milton_log("[DEBUG]: Switching to %s renderer.\n",
-                                   milton_state->DEBUG_sse2_switch ? "SSE" : "slow");
-                        profiler_reset();
-                        milton_state->DEBUG_sse2_switch = !milton_state->DEBUG_sse2_switch;
-                    }
-#endif
 #if MILTON_ENABLE_PROFILING
                     if ( keycode == SDLK_BACKQUOTE ) {
                         milton_state->viz_window_visible = !milton_state->viz_window_visible;
@@ -611,8 +599,16 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
 int
 milton_main(bool is_fullscreen, char* file_to_open)
 {
+    {
+        static char* release_string
+#if MILTON_DEBUG
+                = "Debug";
+#else
+                = "Release";
+#endif
 
-    milton_log("Running Milton\n");
+        milton_log("Running Milton %d.%d.%d (%s) \n", MILTON_MAJOR_VERSION, MILTON_MINOR_VERSION, MILTON_MICRO_VERSION, release_string);
+    }
     // Note: Possible crash regarding SDL_main entry point.
     // Note: Event handling, File I/O and Threading are initialized by default
     milton_log("Initializing SDL... ");
@@ -627,9 +623,10 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     PlatformPrefs prefs = {};
 
-    milton_log("Loading preferences... ");
-    milton_prefs_load(&prefs);
-
+    milton_log("Loading preferences...\n");
+    if ( milton_prefs_load(&prefs) ) {
+        milton_log("Prefs file window size: %dx%d\n", prefs.width, prefs.height);
+    }
 
     i32 window_width = 1280;
     i32 window_height = 800;
@@ -641,6 +638,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
             }
             else {
                 // TODO: Does this work on retina mac?
+                milton_log("Running fullscreen\n");
                 SDL_DisplayMode dm;
                 SDL_GetDesktopDisplayMode(0, &dm);
 
@@ -650,6 +648,8 @@ milton_main(bool is_fullscreen, char* file_to_open)
         }
     }
 
+    milton_log("Window dimensions: %dx%d \n", window_width, window_height);
+
 #if defined(_WIN32)
     platform_state.win_dpi_api = (WinDpiApi*)mlt_calloc(1, sizeof(WinDpiApi), "Setup");
     win_load_dpi_api(platform_state.win_dpi_api);
@@ -657,7 +657,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
     platform_state.win_dpi_api->SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 #endif
 
-    milton_log("Done.\n");
 
     platform_state.ui_scale = 1.0f;
 
@@ -731,6 +730,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
             int x = 0, y = 0;
             SDL_GetWindowPosition(window, &x, &y);
             if ( x < 0 && y < 0 ) {
+                milton_log("Negative coordinates for window position. Setting it to 100,100. \n");
                 SDL_SetWindowPosition(window, 100, 100);
             }
         }
@@ -829,6 +829,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 #endif
 
     platform_state.ui_scale = platform_ui_scale(&platform_state);
+    milton_log("UI scale is %f\n", platform_state.ui_scale);
     // Initialize milton_state
     {
         milton_state->render_data = gpu_allocate_render_data(&milton_state->root_arena);
@@ -875,6 +876,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
 #if MILTON_HARDWARE_BRUSH_CURSOR
     {  // Set brush HW cursor
+        milton_log("Setting up hardware cursor.\n");
         size_t w = (size_t)GetSystemMetrics(SM_CXCURSOR);
         size_t h = (size_t)GetSystemMetrics(SM_CYCURSOR);
 
@@ -976,7 +978,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     }
 
-
 #endif // MILTON_HARDWARE_BRUSH_CURSOR
 #endif // WIN32
 
@@ -986,6 +987,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     // ImGui setup
     {
+        milton_log("ImGUI setup\n");
         ImGuiIO& io = ImGui::GetIO();
         io.IniFilename = NULL;  // Don't save any imgui.ini file
         PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("Carlito.ttf");

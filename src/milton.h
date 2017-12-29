@@ -95,11 +95,6 @@ struct MiltonState
 
     u8* eyedropper_buffer;  // Get pixels from OpenGL framebuffer and store them here for eydropper operations.
 
-    // The screen is rendered in blockgroups
-    // Each blockgroup is rendered in blocks of size (block_width*block_width).
-    i32 blocks_per_blockgroup;
-    i32 block_width;
-
     MiltonGLState* gl;
 
     struct MiltonGui* gui;

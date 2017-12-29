@@ -52,7 +52,9 @@
 //#define PATH_STRCAT strcat
 #define PATH_STRNCAT strncat
 #define PATH_SNPRINTF snprintf
-#define platform_milton_log printf
+#define platform_milton_log unix_log
+
+void unix_log(char* format, ...);
 
 #if defined(__MACH__)
 // Include header for our SDL hook.

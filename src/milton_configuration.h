@@ -8,9 +8,10 @@
 #define MILTON_MINOR_VERSION 5
 #define MILTON_MICRO_VERSION 2
 
-#if !defined(IS_USING_CMAKE)
+#if !defined(MILTON_DEBUG)
     #define MILTON_DEBUG 1
 #endif
+
 
 #define MILTON_ZOOM_DEBUG 0
     // Force MILTON_ZOOM_DEBUG to 0 if MILTON_DEBUG is 0.

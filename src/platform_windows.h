@@ -5,6 +5,10 @@
 
 #include "milton_configuration.h"
 
+#define getpid _getpid
+#define platform_milton_log win32_log
+void win32_log(char *format, ...);
+
 extern "C"
 {
 

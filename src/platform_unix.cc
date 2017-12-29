@@ -5,12 +5,39 @@
 #include "platform.h"
 #include "platform_unix.h"
 
-// Define this function before we substitute fopen in Milton with a macro.
-FILE*
-fopen_unix(const char* fname, const char* mode)
+static FILE* g_unix_logfile;
+
+void
+unix_log(char* format, ...)
 {
-    FILE* fd = fopen(fname, mode);
-    return fd;
+    char message[ 4096 ];
+
+    int num_bytes_written = 0;
+
+    va_list args;
+
+    mlt_assert (format != NULL);
+
+    va_start(args, format);
+
+    num_bytes_written = vsnprintf(message, sizeof( message ) - 1, format, args);
+
+    if ( num_bytes_written > 0 ) {
+        printf("%s", message);
+        if (!g_unix_logfile) {
+            char fname[MAX_PATH] = TO_PATH_STR("milton.log");
+            platform_fname_at_config(fname, MAX_PATH);
+            g_unix_logfile = platform_fopen(fname, "wb");
+            if (!g_unix_logfile) {
+                fprintf(stderr, "ERROR: Can't open log file %s\n", fname);
+            }
+        }
+        if (g_unix_logfile) {
+            fwrite(message, 1, num_bytes_written, g_unix_logfile);
+        }
+    }
+
+    va_end( args );
 }
 
 void
