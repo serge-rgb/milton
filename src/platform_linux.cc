@@ -181,7 +181,7 @@ platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 FILE*
 platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
 {
-    FILE* fd = fopen_unix(fname, mode);
+    FILE *fd = fopen(fname, mode);
     return fd;
 }
 
