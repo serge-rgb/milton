@@ -12,7 +12,7 @@ add_executable(shadergen
 
 FILE (GLOB ShaderSources src/*.glsl third_party/*.glsl)
 
-add_executable(Milton WIN32 #MACOSX_BUNDLE
+add_executable(Milton WIN32 MACOSX_BUNDLE
   src/milton.cc
   src/memory.cc
   src/gui.cc
@@ -145,7 +145,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     ${OPENGL_INCLUDE_DIR}
   )
 
-  target_link_libraries(Milton 
+  target_link_libraries(Milton
     ${GTK2_LIBRARIES}
     ${X11_LIBRARIES}
     ${SDL2_LIBRARIES}

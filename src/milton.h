@@ -37,6 +37,7 @@ enum class MiltonMode
 
     ERASER,
     PEN,
+    PRIMITIVE, // Lines, circles, etc.
     EXPORTING,
     EYEDROPPER,
     HISTORY,
@@ -46,6 +47,7 @@ enum
 {
     BrushEnum_PEN,
     BrushEnum_ERASER,
+    BrushEnum_PRIMITIVE,
 
     BrushEnum_COUNT,
 };

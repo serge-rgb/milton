@@ -37,7 +37,7 @@ typedef i32         b32;
 #else
     #if defined(_MSC_VER)
         #define ALIGN(n) __declspec(align(n))
-    #elif defined(__GNUC__)  // Clang defines this too
+    #elif defined(__GNUC__)  // Clang defines __GNUC__ too
         #define ALIGN(n) __attribute__(( aligned (n) ))
     #else
         #error I dont know how to align stuff in this compiler

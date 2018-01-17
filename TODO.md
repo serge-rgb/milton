@@ -19,7 +19,7 @@ To-Do
         - alt eye dropper
         - zoom-out toggle for overview and for navigation
         - general, implicitly defined brushes
-        - transparent window
+        - transparent window / background.
         - Select strokes
             - Scale, cut, copy, paste
         - rectangles

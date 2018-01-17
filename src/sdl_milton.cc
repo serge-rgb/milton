@@ -458,6 +458,9 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         else if ( keycode == SDLK_i ) {
                             milton_input.mode_to_set = MiltonMode::EYEDROPPER;
                         }
+                        else if ( keycode == SDLK_l ) {
+                            milton_input.mode_to_set = MiltonMode::PRIMITIVE;
+                        }
                         else if ( keycode == SDLK_TAB ) {
                             gui_toggle_visibility(milton_state);
                         }
@@ -1048,6 +1051,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
         if ( EasyTab != NULL && EasyTab->PenInProximity ) {
             static int previous_orientation = 0;
 
+            // TODO: This logic needs to handle primitives, not just eraser/pen
             bool changed = false;
             if ( EasyTab->Orientation.Altitude < 0 && previous_orientation >= 0 ) {
                 milton_input.mode_to_set = MiltonMode::ERASER;
@@ -1127,7 +1131,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
                               && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
                         cursor_set_and_show(platform_state.cursor_default);
                     }
-                    else if ( milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER ) {
+                    else if ( milton_state->current_mode == MiltonMode::PEN ||
+                              milton_state->current_mode == MiltonMode::ERASER ||
+                              milton_state->current_mode == MiltonMode::PRIMITIVE ) {
                         #if MILTON_HARDWARE_BRUSH_CURSOR
                             cursor_set_and_show(platform_state.cursor_brush);
                         #else

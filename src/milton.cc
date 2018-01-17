@@ -62,6 +62,9 @@ milton_update_brushes(MiltonState* milton_state)
         else if ( i == BrushEnum_ERASER ) {
             brush->color = k_eraser_color;
         }
+        else if ( i == BrushEnum_PRIMITIVE ) {
+            brush->color = to_premultiplied(gui_get_picker_rgb(milton_state->gui), brush->alpha);
+        }
     }
 
     milton_state->working_stroke.brush = milton_state->brushes[BrushEnum_PEN];
@@ -102,9 +105,11 @@ is_user_drawing(MiltonState* milton_state)
 }
 
 static b32
-current_mode_is_for_painting(MiltonState* milton_state)
+current_mode_is_for_drawing(MiltonState* milton_state)
 {
-    b32 result = milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER;
+    b32 result = milton_state->current_mode == MiltonMode::PEN ||
+            milton_state->current_mode == MiltonMode::ERASER ||
+            milton_state->current_mode == MiltonMode::PRIMITIVE;
     return result;
 }
 
@@ -122,6 +127,14 @@ clear_stroke_redo(MiltonState* milton_state)
             }
             pop(&milton_state->canvas->redo_stack);
         }
+    }
+}
+
+static void
+milton_primitive_input(MiltonState* milton_state, MiltonInput* input)
+{
+    if (input->input_count > 0) {
+        milton_log("Taking input for line\n");
     }
 }
 
@@ -333,7 +346,7 @@ milton_get_brush_radius(MiltonState* milton_state)
 void
 milton_set_brush_size(MiltonState* milton_state, i32 size)
 {
-    if ( current_mode_is_for_painting(milton_state) ) {
+    if ( current_mode_is_for_drawing(milton_state) ) {
         if ( size <= MILTON_MAX_BRUSH_SIZE && size > 0 ) {
             (*pointer_to_brush_size(milton_state)) = size;
             milton_update_brushes(milton_state);
@@ -345,7 +358,7 @@ milton_set_brush_size(MiltonState* milton_state, i32 size)
 void
 milton_increase_brush_size(MiltonState* milton_state)
 {
-    if ( current_mode_is_for_painting(milton_state) ) {
+    if ( current_mode_is_for_drawing(milton_state) ) {
         i32 brush_size = milton_get_brush_radius(milton_state);
         if ( brush_size < MILTON_MAX_BRUSH_SIZE && brush_size > 0 ) {
             milton_set_brush_size(milton_state, brush_size + 1);
@@ -358,7 +371,7 @@ milton_increase_brush_size(MiltonState* milton_state)
 void
 milton_decrease_brush_size(MiltonState* milton_state)
 {
-    if ( current_mode_is_for_painting(milton_state) ) {
+    if ( current_mode_is_for_drawing(milton_state) ) {
         i32 brush_size = milton_get_brush_radius(milton_state);
         if ( brush_size > 1 ) {
             milton_set_brush_size(milton_state, brush_size - 1);
@@ -438,6 +451,9 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
             break;
         case BrushEnum_ERASER:
             milton_state->brush_sizes[i] = 40;
+            break;
+        case BrushEnum_PRIMITIVE:
+            milton_state->brush_sizes[i] = 100;
             break;
         default:
             INVALID_CODE_PATH;
@@ -1007,8 +1023,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
-    if ( milton_state->current_mode == MiltonMode::PEN ||
-         milton_state->current_mode == MiltonMode::ERASER ) {
+    if ( current_mode_is_for_drawing(milton_state) ) {
         brush_outline_should_draw = true;
     }
 
@@ -1029,7 +1044,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK) ) {
-        if ( current_mode_is_for_painting(milton_state) ) {
+        if ( current_mode_is_for_drawing(milton_state) ) {
             if ( !is_user_drawing(milton_state)
                  && gui_consume_input(milton_state->gui, input) ) {
                 milton_update_brushes(milton_state);
@@ -1037,12 +1052,18 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             }
             else if ( !milton_state->gui->owns_user_input
                       && (milton_state->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
-                Stroke* ws = &milton_state->working_stroke;
-                auto prev_num_points = ws->num_points;
-                milton_stroke_input(milton_state, input);
-                if ( prev_num_points == 0 && ws->num_points > 0 ) {
-                    // New stroke. Clear screen without blur.
-                    do_full_redraw = true;
+                if ( milton_state->current_mode == MiltonMode::PRIMITIVE ) {
+                    // Input for primitive.
+                    milton_primitive_input(milton_state, input);
+                }
+                else {  // Input for eraser and pen
+                    Stroke* ws = &milton_state->working_stroke;
+                    auto prev_num_points = ws->num_points;
+                    milton_stroke_input(milton_state, input);
+                    if ( prev_num_points == 0 && ws->num_points > 0 ) {
+                        // New stroke. Clear screen without blur.
+                        do_full_redraw = true;
+                    }
                 }
             }
         }
@@ -1190,17 +1211,25 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     MiltonMode current_mode = milton_state->current_mode;
-    if (input->mode_to_set != MiltonMode::NONE) {
+    if ( input->mode_to_set != MiltonMode::NONE ) {
         if ( current_mode == input->mode_to_set ) {
             // Modes we can toggle
-            if ( current_mode == MiltonMode::EYEDROPPER ) {
-                if ( milton_state->last_mode != MiltonMode::EYEDROPPER ) {
-                    milton_use_previous_mode(milton_state);
-                }
-                else {
-                    // This is not supposed to happen but if we get here we won't crash and burn.
-                    milton_switch_mode(milton_state, MiltonMode::PEN);
-                    milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
+            MiltonMode toggleable_modes[] = {
+                MiltonMode::EYEDROPPER,
+                MiltonMode::PRIMITIVE,
+            };
+
+            for ( size_t i = 0; i < array_count(toggleable_modes); ++i ) {
+                MiltonMode toggle = toggleable_modes[i];
+                if ( current_mode == toggle ) {
+                    if ( milton_state->last_mode != toggle ) {
+                        milton_use_previous_mode(milton_state);
+                    }
+                    else {
+                        // This is not supposed to happen but if we get here we won't crash and burn.
+                        milton_switch_mode(milton_state, MiltonMode::PEN);
+                        milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
+                    }
                 }
             }
         }
@@ -1208,7 +1237,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         else {
             milton_switch_mode(milton_state, input->mode_to_set);
             if (    input->mode_to_set == MiltonMode::PEN
-                 || input->mode_to_set == MiltonMode::ERASER ) {
+                 || input->mode_to_set == MiltonMode::ERASER
+                 || input->mode_to_set == MiltonMode::PRIMITIVE ) {
                 milton_update_brushes(milton_state);
                 // If we are drawing, end the current stroke so that it
                 // doesn't change from eraser to brush or vice versa.
