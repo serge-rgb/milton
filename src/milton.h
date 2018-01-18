@@ -86,6 +86,12 @@ struct CanvasState
     i32         stroke_id_count;
 };
 
+enum PrimitiveFSM {
+    Primitive_WAITING,
+    Primitive_DRAWING,
+    Primitive_DONE,
+};
+
 struct MiltonState
 {
     u8  bytes_per_pixel;
@@ -135,7 +141,7 @@ struct MiltonState
     MiltonMode current_mode;
     MiltonMode last_mode;
 
-    i32 quality_redraw_time;
+    PrimitiveFSM primitive_fsm;
 
     RenderData* render_data;  // Hardware Renderer
 

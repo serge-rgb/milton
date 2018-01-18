@@ -63,6 +63,7 @@ milton_update_brushes(MiltonState* milton_state)
             brush->color = k_eraser_color;
         }
         else if ( i == BrushEnum_PRIMITIVE ) {
+            brush->alpha = milton_get_pen_alpha(milton_state);
             brush->color = to_premultiplied(gui_get_picker_rgb(milton_state->gui), brush->alpha);
         }
     }
@@ -74,11 +75,23 @@ static Brush
 milton_get_brush(MiltonState* milton_state)
 {
     Brush brush = {};
-    if ( milton_state->current_mode == MiltonMode::PEN ) {
-        brush = milton_state->brushes[BrushEnum_PEN];
-    }
-    else if ( milton_state->current_mode == MiltonMode::ERASER ) {
-        brush = milton_state->brushes[BrushEnum_ERASER];
+    switch ( milton_state->current_mode ) {
+       case MiltonMode::PEN: {
+          brush = milton_state->brushes[BrushEnum_PEN];
+       } break;
+       case MiltonMode::ERASER: {
+          brush = milton_state->brushes[BrushEnum_ERASER];
+       } break;
+       case MiltonMode::PRIMITIVE: {
+          brush = milton_state->brushes[BrushEnum_PRIMITIVE];
+       } break;
+       case MiltonMode::EXPORTING:
+       case MiltonMode::EYEDROPPER:
+       case MiltonMode::HISTORY:
+       case MiltonMode::NONE: {
+          INVALID_CODE_PATH;
+          break;
+       }
     }
     return brush;
 }
@@ -131,10 +144,25 @@ clear_stroke_redo(MiltonState* milton_state)
 }
 
 static void
-milton_primitive_input(MiltonState* milton_state, MiltonInput* input)
+milton_primitive_input(MiltonState* milton, MiltonInput* input, b32 end_stroke)
 {
-    if (input->input_count > 0) {
-        milton_log("Taking input for line\n");
+    if (input->input_count > 0 || end_stroke) {
+        v2l point = raster_to_canvas(milton->view, input->points[input->input_count - 1]);
+        Stroke* ws = &milton->working_stroke;
+        if ( milton->primitive_fsm == Primitive_WAITING ) {
+            milton->primitive_fsm             = Primitive_DRAWING;
+            ws->points[0]  = ws->points[1] = point;
+            ws->pressures[0] = ws->pressures[1] = 1.0f;
+            milton->working_stroke.num_points = 2;
+            ws->brush                         = milton_get_brush(milton);
+            ws->layer_id                      = milton->view->working_layer_id;
+        }
+        else if ( milton->primitive_fsm == Primitive_DRAWING ) {
+            milton->working_stroke.points[1] = point;
+            if ( end_stroke ) {
+                milton->primitive_fsm = Primitive_WAITING;
+            }
+        }
     }
 }
 
@@ -239,10 +267,8 @@ milton_stroke_input(MiltonState* milton_state, MiltonInput* input)
                     float f_canvas_point_x = canvas_point.x - pan_center.x;
                     float f_canvas_point_y = canvas_point.y - pan_center.y;
 
-                    canvas_point.x = (i64)roundf
-                            (f_average_x*factor + f_canvas_point_x*(1-factor));
-                    canvas_point.y = (i64)roundf
-                            (f_average_y*factor + f_canvas_point_y*(1-factor));
+                    canvas_point.x = (i64)roundf (f_average_x*factor + f_canvas_point_x*(1-factor));
+                    canvas_point.y = (i64)roundf (f_average_y*factor + f_canvas_point_y*(1-factor));
 
                     canvas_point += pan_center;
                 }
@@ -334,11 +360,25 @@ i32
 milton_get_brush_radius(MiltonState* milton_state)
 {
     i32 brush_size = 0;
-    if ( milton_state->current_mode == MiltonMode::PEN ) {
-        brush_size = milton_state->brush_sizes[BrushEnum_PEN];
-    }
-    else if ( milton_state->current_mode == MiltonMode::ERASER ) {
-        brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
+    switch ( milton_state->current_mode ) {
+       case MiltonMode::PEN:{
+          brush_size = milton_state->brush_sizes[BrushEnum_PEN];
+       } break;
+
+       case MiltonMode::ERASER: {
+          brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
+       } break;
+
+       case MiltonMode::PRIMITIVE: {
+          brush_size = milton_state->brush_sizes[BrushEnum_PRIMITIVE];
+       } break;
+       case MiltonMode::EXPORTING:
+       case MiltonMode::EYEDROPPER:
+       case MiltonMode::HISTORY:
+       case MiltonMode::NONE: {
+          INVALID_CODE_PATH;
+          break;
+       }
     }
     return brush_size;
 }
@@ -1054,7 +1094,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                       && (milton_state->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
                 if ( milton_state->current_mode == MiltonMode::PRIMITIVE ) {
                     // Input for primitive.
-                    milton_primitive_input(milton_state, input);
+                    milton_primitive_input(milton_state, input, end_stroke);
                 }
                 else {  // Input for eraser and pen
                     Stroke* ws = &milton_state->working_stroke;
