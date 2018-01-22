@@ -166,9 +166,26 @@ panning_update(PlatformState* platform)
     };
 
     platform->was_panning = platform->is_panning;
+    platform->was_zooming = platform->is_zooming;
 
     // Panning from GUI menu, waiting for input
-    if ( platform->waiting_for_pan_input ) {
+    if (platform->waiting_for_zoom_input)
+    {
+        if ( platform->is_pointer_down ) {
+            platform->waiting_for_zoom_input = false;
+            platform->waiting_for_pan_input = false;
+            platform->is_zooming = true;
+            platform->is_panning = false;
+
+            reset_zoom_start();
+        }
+
+        if ( platform->is_space_down &&
+            platform->is_ctrl_down) {
+            platform->waiting_for_zoom_input = false;
+        }
+    }
+    else if ( platform->waiting_for_pan_input ) {
         if ( platform->is_pointer_down ) {
             platform->waiting_for_pan_input = false;
             platform->is_panning = true;
@@ -180,7 +197,17 @@ panning_update(PlatformState* platform)
         }
     }
     else {
-        if ( platform->is_panning ) {
+        if (platform->is_zooming )
+        {
+            if ( (!platform->is_pointer_down && !platform->is_space_down && !platform->is_ctrl_down)
+                 || !platform->is_pointer_down ) {
+                platform->is_zooming = false;
+            }
+            else {
+                platform->zoom_point = VEC2L(platform->pointer);
+            }
+        }
+        else if ( platform->is_panning ) {
             if ( (!platform->is_pointer_down && !platform->is_space_down)
                  || !platform->is_pointer_down ) {
                 platform->is_panning = false;
@@ -190,7 +217,12 @@ panning_update(PlatformState* platform)
             }
         }
         else {
-            if ( (platform->is_space_down && platform->is_pointer_down)
+            if (platform->is_space_down && platform->is_pointer_down && platform->is_ctrl_down) {
+                platform->is_zooming = true;
+                platform->is_panning = false;
+                reset_zoom_start();
+            }
+            else if ( (platform->is_space_down && platform->is_pointer_down)
                  || platform->is_middle_button_down ) {
                 platform->is_panning = true;
                 reset_pan_start();
@@ -314,7 +346,10 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
                         v2i point = v2i{(int)long_point.x, (int)long_point.y};
 
-                        if ( !platform->is_panning && point.x >= 0 && point.y > 0 ) {
+                        if ( !platform->is_panning &&
+                             !platform->is_zooming &&
+                             point.x >= 0 && point.y > 0 ) {
+                            input_flags |= MiltonInputFlags_CLICK;
                             milton_input.click = point;
 
                             platform->is_pointer_down = true;
@@ -368,6 +403,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                 if (EasyTab == NULL || !EasyTab->PenInProximity) {
                     if (platform->is_pointer_down) {
                         if (!platform->is_panning &&
+                            !platform->is_zooming &&
                             (input_point.x >= 0 && input_point.y >= 0)) {
                             if (platform->num_point_results < MAX_INPUT_BUFFER_ELEMS) {
                                 milton_input.points[platform->num_point_results++] = VEC2L(input_point);
@@ -469,8 +505,8 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
     if ( pointer_up ) {
         // Add final point
-        if ( !platform->is_panning && platform->is_pointer_down ) {
-            milton_input.flags |= MiltonInputFlags_END_STROKE;
+        if ( !platform->is_panning && !platform->is_zooming &&platform->is_pointer_down ) {
+            input_flags |= MiltonInputFlags_END_STROKE;
             input_point = { event.button.x, event.button.y };
 
             platform_point_to_pixel_i(platform, &input_point);
@@ -781,6 +817,14 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         panning_update(&platform);
 
+        // TODO(pmongeau) is this needed?
+        // update curor
+        if ( !platform.is_panning &&
+             !platform.is_zooming) {
+            milton_input.flags |= MiltonInputFlags_HOVERING;
+            milton_input.hover_point = platform.pointer;
+        }
+
         static b32 first_run = true;
         if ( first_run ) {
             first_run = false;
@@ -806,7 +850,8 @@ milton_main(bool is_fullscreen, char* file_to_open)
             {
                     static b32 was_exporting = false;
 
-                    if ( platform.is_panning || platform.waiting_for_pan_input ) {
+                    if ( platform.is_panning || platform.waiting_for_pan_input 
+                         || platform.is_zooming || platform.waiting_for_zoom_input) {
                         cursor_set_and_show(platform.cursor_sizeall);
                     }
                     // Show resize icon
@@ -888,6 +933,12 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         milton_imgui_tick(&milton_input, &platform, milton, &prefs);
 
+        if (platform.is_zooming) {
+            platform.num_point_results = 0;
+            // THIS IS A LIE
+            input_flags |= MiltonInputFlags_PANNING;
+        }
+
         // Clear pan delta if we are zooming
         if ( milton_input.scale != 0 ) {
             milton_input.pan_delta = {};
@@ -922,6 +973,24 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         // Reset pan_start. Delta is not cumulative.
         platform.pan_start = platform.pan_point;
+
+
+        /* f32 zoom_delta_x = 0.5f * (platform.zoom_point.x - platform.zoom_start.x); */
+        f32 zoom_delta_y = -(platform.zoom_point.y - platform.zoom_start.y);
+        /* v2i zoom_vec = platform.zoom_point - platform.zoom_start; */
+        /* f32 zoom_delta = SQUARE(zoom_vec.x * zoom_vec.x + zoom_vec.y * zoom_vec.y); */
+        if (zoom_delta_y != 0)
+        {
+            v2i zoom_center = {(i32)platform.zoom_start.x,
+                               (i32)platform.zoom_start.y};
+
+            milton_input.scale = zoom_delta_y > 0 ? 1: -1;;
+            milton_set_zoom_at_point(milton_state, zoom_center);
+            milton_input.zoom_delta = zoom_delta_y;
+
+            // Reset zoom_start. Delta is not cumulative.
+            platform.zoom_start = platform.zoom_point;
+        }
 
         // ==== Update and render
         PROFILE_GRAPH_END(polling);

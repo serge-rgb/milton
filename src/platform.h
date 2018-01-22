@@ -60,6 +60,13 @@ struct PlatformState
     v2l pan_start;
     v2l pan_point;
 
+    b32 is_zooming;
+    b32 was_zooming;
+    b32 waiting_for_zoom_input; // Start zoom from GUI menu.
+
+    v2l zoom_start;
+    v2l zoom_point;
+
     b32 should_quit;
     u32 window_id;
 

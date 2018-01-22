@@ -280,6 +280,7 @@ struct MiltonInput
     v2i  click;
     i32  scale;
     v2l  pan_delta;
+    i64  zoom_delta;
 };
 
 
