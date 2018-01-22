@@ -23,7 +23,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
-    const float pen_alpha = milton_get_pen_alpha(milton_state);
+    const float pen_alpha = milton_get_brush_alpha(milton_state);
     mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
     // Spawn below the picker
     Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
@@ -240,7 +240,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     snprintf(entry, array_count(entry), "%s %d%% - [%d]",
                              LOC(set_opacity_to), (int)(100 * opacities[i]), i == 9 ? 0 : i+1);
                     if ( ImGui::MenuItem(entry) ) {
-                        milton_set_pen_alpha(milton_state, opacities[i]);
+                        milton_set_brush_alpha(milton_state, opacities[i]);
                     }
                 }
                 ImGui::EndMenu();
@@ -329,24 +329,25 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
         /* ImGuiSetCond_FirstUseEver */
 
-        const f32 brush_window_height = ui_scale * 109;
+        const f32 brush_window_height = ui_scale * 140;
         ImGui::SetNextWindowPos(ImVec2(ui_scale * 10, ui_scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowSize({ui_scale * 271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
 
-        b32 show_brush_window = (milton_state->current_mode == MiltonMode::PEN || milton_state->current_mode == MiltonMode::ERASER);
+        b32 show_brush_window = (milton_current_mode_is_for_drawing(milton_state));
 
         // Brush Window
         if ( show_brush_window ) {
             if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
-                if ( milton_state->current_mode == MiltonMode::PEN ) {
+                if ( milton_state->current_mode == MiltonMode::PEN ||
+                     milton_state->current_mode == MiltonMode::PRIMITIVE ) {
                     float mut_alpha = pen_alpha*100;
                     ImGui::SliderFloat(LOC(opacity), &mut_alpha, 1, 100, "%.0f%%");
 
                     mut_alpha /= 100.0f;
                     if (mut_alpha > 1.0f ) mut_alpha = 1.0f;
                     if ( mut_alpha != pen_alpha ) {
-                        milton_set_pen_alpha(milton_state, mut_alpha);
+                        milton_set_brush_alpha(milton_state, mut_alpha);
                         gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                     }
                 }
@@ -366,6 +367,14 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         i32 f = input->flags;
                         input->flags = (MiltonInputFlags)f;
                         input->mode_to_set = MiltonMode::PEN;
+                    }
+                }
+
+                if ( milton_state->current_mode != MiltonMode::PRIMITIVE ) {
+                    if ( ImGui::Button(LOC(switch_to_primitive)) ) {
+                        i32 f = input->flags;
+                        input->flags = (MiltonInputFlags)f;
+                        input->mode_to_set = MiltonMode::PRIMITIVE;
                     }
                 }
 

@@ -39,8 +39,9 @@ init_localization()
         EN(TXT_brushes, "Brushes");
         EN(TXT_opacity, "Opacity");
         EN(TXT_brush_size, "Brush size");
-        EN(TXT_switch_to_brush, "Switch to brush");
-        EN(TXT_switch_to_eraser, "Switch to eraser");
+        EN(TXT_switch_to_brush, "Brush");
+        EN(TXT_switch_to_eraser, "Eraser");
+        EN(TXT_switch_to_primitive, "Lines");
         EN(TXT_choose_background_color, "Choose background color");
         EN(TXT_color, "Color");
         EN(TXT_export_DOTS, "Export...");
@@ -101,8 +102,8 @@ init_localization()
         ES(TXT_brushes, "Brochas");
         ES(TXT_opacity, "Opacidad");
         ES(TXT_brush_size, "Tamaño");
-        ES(TXT_switch_to_brush, "Usar brocha");
-        ES(TXT_switch_to_eraser, "Usar goma");
+        ES(TXT_switch_to_brush, "Brocha");
+        ES(TXT_switch_to_eraser, "Goma");
         ES(TXT_choose_background_color, "Escoger color de fondo");
         ES(TXT_color, "Color");
         ES(TXT_export_DOTS, "Exportar...");
@@ -143,6 +144,7 @@ init_localization()
         g_command_abbreviations [TXT_increase_brush_size]   = " ] ";
         g_command_abbreviations [TXT_eye_dropper]           = "i";
         g_command_abbreviations [TXT_switch_to_brush]       = "B";
+        g_command_abbreviations [TXT_switch_to_primitive]   = "L";
         g_command_abbreviations [TXT_switch_to_eraser]      = "E";
     }
 #undef C

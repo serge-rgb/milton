@@ -63,7 +63,7 @@ milton_update_brushes(MiltonState* milton_state)
             brush->color = k_eraser_color;
         }
         else if ( i == BrushEnum_PRIMITIVE ) {
-            brush->alpha = milton_get_pen_alpha(milton_state);
+            brush->alpha = milton_get_brush_alpha(milton_state);
             brush->color = to_premultiplied(gui_get_picker_rgb(milton_state->gui), brush->alpha);
         }
     }
@@ -71,42 +71,43 @@ milton_update_brushes(MiltonState* milton_state)
     milton_state->working_stroke.brush = milton_state->brushes[BrushEnum_PEN];
 }
 
+int
+milton_get_brush_enum(MiltonState* milton)
+{
+    int brush_enum;
+    switch ( milton->current_mode ) {
+        case MiltonMode::PEN: {
+            brush_enum = BrushEnum_PEN;
+        } break;
+        case MiltonMode::ERASER: {
+            brush_enum = BrushEnum_ERASER;
+        } break;
+        case MiltonMode::PRIMITIVE: {
+            brush_enum = BrushEnum_PRIMITIVE;
+        } break;
+        default: {
+            brush_enum = BrushEnum_COUNT;
+            INVALID_CODE_PATH;
+        } break;
+    }
+    return brush_enum;
+}
+
 static Brush
 milton_get_brush(MiltonState* milton_state)
 {
-    Brush brush = {};
-    switch ( milton_state->current_mode ) {
-       case MiltonMode::PEN: {
-          brush = milton_state->brushes[BrushEnum_PEN];
-       } break;
-       case MiltonMode::ERASER: {
-          brush = milton_state->brushes[BrushEnum_ERASER];
-       } break;
-       case MiltonMode::PRIMITIVE: {
-          brush = milton_state->brushes[BrushEnum_PRIMITIVE];
-       } break;
-       case MiltonMode::EXPORTING:
-       case MiltonMode::EYEDROPPER:
-       case MiltonMode::HISTORY:
-       case MiltonMode::NONE: {
-          INVALID_CODE_PATH;
-          break;
-       }
-    }
+    int brush_enum = milton_get_brush_enum(milton_state);
+
+    Brush brush = milton_state->brushes[brush_enum];
+
     return brush;
 }
 
 static i32*
 pointer_to_brush_size(MiltonState* milton_state)
 {
-    i32* ptr = NULL;
-
-    if ( milton_state->current_mode == MiltonMode::PEN ) {
-        ptr = &milton_state->brush_sizes[BrushEnum_PEN];
-    }
-    else if ( milton_state->current_mode == MiltonMode::ERASER ) {
-        ptr = &milton_state->brush_sizes[BrushEnum_ERASER];
-    }
+    int brush_enum = milton_get_brush_enum(milton_state);
+    i32* ptr = &milton_state->brush_sizes[brush_enum];
     return ptr;
 }
 
@@ -117,8 +118,8 @@ is_user_drawing(MiltonState* milton_state)
     return result;
 }
 
-static b32
-current_mode_is_for_drawing(MiltonState* milton_state)
+b32
+milton_current_mode_is_for_drawing(MiltonState* milton_state)
 {
     b32 result = milton_state->current_mode == MiltonMode::PEN ||
             milton_state->current_mode == MiltonMode::ERASER ||
@@ -146,7 +147,10 @@ clear_stroke_redo(MiltonState* milton_state)
 static void
 milton_primitive_input(MiltonState* milton, MiltonInput* input, b32 end_stroke)
 {
-    if (input->input_count > 0 || end_stroke) {
+    if ( end_stroke && milton->primitive_fsm == Primitive_DRAWING) {
+       milton->primitive_fsm = Primitive_WAITING;
+    }
+    else if (input->input_count > 0) {
         v2l point = raster_to_canvas(milton->view, input->points[input->input_count - 1]);
         Stroke* ws = &milton->working_stroke;
         if ( milton->primitive_fsm == Primitive_WAITING ) {
@@ -158,10 +162,7 @@ milton_primitive_input(MiltonState* milton, MiltonInput* input, b32 end_stroke)
             ws->layer_id                      = milton->view->working_layer_id;
         }
         else if ( milton->primitive_fsm == Primitive_DRAWING ) {
-            milton->working_stroke.points[1] = point;
-            if ( end_stroke ) {
-                milton->primitive_fsm = Primitive_WAITING;
-            }
+           milton->working_stroke.points[1] = point;
         }
     }
 }
@@ -359,34 +360,15 @@ milton_set_default_canvas_file(MiltonState* milton_state)
 i32
 milton_get_brush_radius(MiltonState* milton_state)
 {
-    i32 brush_size = 0;
-    switch ( milton_state->current_mode ) {
-       case MiltonMode::PEN:{
-          brush_size = milton_state->brush_sizes[BrushEnum_PEN];
-       } break;
-
-       case MiltonMode::ERASER: {
-          brush_size = milton_state->brush_sizes[BrushEnum_ERASER];
-       } break;
-
-       case MiltonMode::PRIMITIVE: {
-          brush_size = milton_state->brush_sizes[BrushEnum_PRIMITIVE];
-       } break;
-       case MiltonMode::EXPORTING:
-       case MiltonMode::EYEDROPPER:
-       case MiltonMode::HISTORY:
-       case MiltonMode::NONE: {
-          INVALID_CODE_PATH;
-          break;
-       }
-    }
+    int brush_enum = milton_get_brush_enum(milton_state);
+    i32 brush_size = milton_state->brush_sizes[brush_enum];
     return brush_size;
 }
 
 void
 milton_set_brush_size(MiltonState* milton_state, i32 size)
 {
-    if ( current_mode_is_for_drawing(milton_state) ) {
+    if ( milton_current_mode_is_for_drawing(milton_state) ) {
         if ( size <= MILTON_MAX_BRUSH_SIZE && size > 0 ) {
             (*pointer_to_brush_size(milton_state)) = size;
             milton_update_brushes(milton_state);
@@ -398,7 +380,7 @@ milton_set_brush_size(MiltonState* milton_state, i32 size)
 void
 milton_increase_brush_size(MiltonState* milton_state)
 {
-    if ( current_mode_is_for_drawing(milton_state) ) {
+    if ( milton_current_mode_is_for_drawing(milton_state) ) {
         i32 brush_size = milton_get_brush_radius(milton_state);
         if ( brush_size < MILTON_MAX_BRUSH_SIZE && brush_size > 0 ) {
             milton_set_brush_size(milton_state, brush_size + 1);
@@ -411,7 +393,7 @@ milton_increase_brush_size(MiltonState* milton_state)
 void
 milton_decrease_brush_size(MiltonState* milton_state)
 {
-    if ( current_mode_is_for_drawing(milton_state) ) {
+    if ( milton_current_mode_is_for_drawing(milton_state) ) {
         i32 brush_size = milton_get_brush_radius(milton_state);
         if ( brush_size > 1 ) {
             milton_set_brush_size(milton_state, brush_size - 1);
@@ -421,16 +403,19 @@ milton_decrease_brush_size(MiltonState* milton_state)
 }
 
 void
-milton_set_pen_alpha(MiltonState* milton_state, float alpha)
+milton_set_brush_alpha(MiltonState* milton_state, float alpha)
 {
-    milton_state->brushes[BrushEnum_PEN].alpha = alpha;
+    int brush_enum = milton_get_brush_enum(milton_state);
+
+    milton_state->brushes[brush_enum].alpha = alpha;
     milton_update_brushes(milton_state);
 }
 
 float
-milton_get_pen_alpha(MiltonState* milton_state)
+milton_get_brush_alpha(MiltonState* milton_state)
 {
-    const float alpha = milton_state->brushes[BrushEnum_PEN].alpha;
+    int brush_enum = milton_get_brush_enum(milton_state);
+    const float alpha = milton_state->brushes[brush_enum].alpha;
     return alpha;
 }
 
@@ -500,7 +485,7 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
             break;
         }
     }
-    milton_set_pen_alpha(milton_state, 1.0f);
+    milton_set_brush_alpha(milton_state, 1.0f);
 
     milton_state->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
@@ -1063,7 +1048,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
-    if ( current_mode_is_for_drawing(milton_state) ) {
+    if ( milton_current_mode_is_for_drawing(milton_state) ) {
         brush_outline_should_draw = true;
     }
 
@@ -1084,7 +1069,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
     }
 
     if ( input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK) ) {
-        if ( current_mode_is_for_drawing(milton_state) ) {
+        if ( milton_current_mode_is_for_drawing(milton_state) ) {
             if ( !is_user_drawing(milton_state)
                  && gui_consume_input(milton_state->gui, input) ) {
                 milton_update_brushes(milton_state);
@@ -1136,7 +1121,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
             color.a = 1;
             if ( milton_state->current_mode == MiltonMode::PEN ) {
                 color = to_premultiplied(hsv_to_rgb(milton_state->gui->picker.data.hsv),
-                                         milton_get_pen_alpha(milton_state));
+                                         milton_get_brush_alpha(milton_state));
             }
             gpu_update_brush_outline(milton_state->render_data,
                                      preview_pos.x, preview_pos.y,
@@ -1200,7 +1185,8 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         } else {
             if ( milton_state->working_stroke.num_points > 0 ) {
                 // We used the selected color to draw something. Push.
-                if ( milton_state->current_mode == MiltonMode::PEN
+                if (  (milton_state->current_mode == MiltonMode::PEN ||
+                       milton_state->current_mode == MiltonMode::PRIMITIVE)
                      && gui_mark_color_used(milton_state->gui) ) {
                     // Tell the renderer to update the picker
                     gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
@@ -1247,7 +1233,15 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         }
     }
     else if ( is_user_drawing(milton_state) ) {
-        milton_state->working_stroke.bounding_rect = bounding_box_for_stroke(&milton_state->working_stroke);
+        Rect previous_bounds = milton_state->working_stroke.bounding_rect;
+        Rect new_bounds = bounding_box_for_stroke(&milton_state->working_stroke);
+
+        new_bounds.left = min(new_bounds.left, previous_bounds.left);
+        new_bounds.top = min(new_bounds.top, previous_bounds.top);
+        new_bounds.right = max(new_bounds.right, previous_bounds.right);
+        new_bounds.bottom = max(new_bounds.bottom, previous_bounds.bottom);
+
+        milton_state->working_stroke.bounding_rect  = new_bounds;
     }
 
     MiltonMode current_mode = milton_state->current_mode;

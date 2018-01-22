@@ -34,6 +34,7 @@ enum Texts
     TXT_toggle_gui_visibility          ,
     TXT_layers                         ,
     // ==== TRANSLATION COMPLETED UNTIL THIS POINT .
+    TXT_switch_to_primitive        ,
     TXT_help_me                    ,
     TXT_new_layer                  ,
     TXT_rename                     ,
