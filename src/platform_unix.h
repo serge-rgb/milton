@@ -60,5 +60,3 @@ void unix_log(char* format, ...);
 // Include header for our SDL hook.
 #include "platform_OSX_SDL_hooks.h"
 #endif
-
-FILE* fopen_unix(const char* fname, const char* mode);
