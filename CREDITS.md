@@ -10,6 +10,9 @@
     * [Justas Dabrila](https://github.com/SSStormy)
     * [Kevin Wojniak](https://github.com/kainjow)
     * [Michael Freundorfer](https://github.com/mordecai154)
+    * [MonokelPinguin](https://github.com/MonokelPinguin)
+    * [Pavel Ivashkov](https://paiv.github.io/blog/)
+    * [Philippe Mongeau](http://phmongeau.com/)
     * [Tilmann Rübbelke](https://github.com/TilmannR)
     * [mcmihai](https://github.com/mcmihai)
 
