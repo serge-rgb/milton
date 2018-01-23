@@ -1013,11 +1013,11 @@ milton_main(bool is_fullscreen, char* file_to_open)
                                 ImFont* im_font = io.Fonts->ImFontAtlas::AddFontFromMemoryTTF(ttf_data, (int)ttf_sz, int(14*platform_state.ui_scale));
                             }
                             else {
-                                milton_log("WARNING: Error reading TTF file");
+                                milton_log("WARNING: Error reading TTF file\n");
                             }
                         }
                         else {
-                            milton_log("WARNING: could not allocate data for font!");
+                            milton_log("WARNING: could not allocate data for font!\n");
                         }
                     }
                 }

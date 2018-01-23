@@ -320,7 +320,7 @@ END:
             gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
         }
     } else {
-        milton_log("Could not open file!");
+        milton_log("milton_load: Could not open file!\n");
         milton_reset_canvas_and_set_default(milton_state);
     }
 #undef READ

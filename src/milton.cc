@@ -1262,7 +1262,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
                     else {
                         // This is not supposed to happen but if we get here we won't crash and burn.
                         milton_switch_mode(milton_state, MiltonMode::PEN);
-                        milton_log("Warning: Unexpected code path: Toggling modes. Eye dropper was set *twice*. Switching to pen.");
+                        milton_log("Warning: Unexpected code path: Toggling modes. Toggleabel mode was set twice. Switching to pen.\n");
                     }
                 }
             }

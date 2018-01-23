@@ -3,7 +3,6 @@ To-Do
 
 - Bugs
 - macOS port
-    - Use bundle dir for config files.
     - Replace Dear Imgui's menu with Cocoa menu.
     - Keyboard bindings
 - Application
@@ -13,7 +12,6 @@ To-Do
         - Reduce or remove widget rounding
         - Radial menu
     - Features:
-        - lines
         - full-screen option
         - front-to-back rendering
         - alt eye dropper

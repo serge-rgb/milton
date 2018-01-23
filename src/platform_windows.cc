@@ -559,7 +559,7 @@ CALLBACK WinMain(HINSTANCE hInstance,
     //TODO: proper cmd parsing
     if ( cmd_line[0] == '-' && cmd_line[1] == 'F' && cmd_line[2] == ' ' ) {
         is_fullscreen = true;
-        milton_log("Fullscreen is set.");
+        milton_log("Fullscreen is set.\n");
         for ( size_t i = 0; cmd_line[i]; ++i) {
             if ( cmd_line[i + 3] == '\0') {
                 cmd_line[i] = '\0';
@@ -572,7 +572,7 @@ CALLBACK WinMain(HINSTANCE hInstance,
     }
     else if ( cmd_line[0] == '-' && cmd_line[1] == 'F' ) {
         is_fullscreen = true;
-        milton_log("Fullscreen is set.");
+        milton_log("Fullscreen is set.\n");
         for ( size_t i = 0; cmd_line[i]; ++i) {
             if ( cmd_line[i + 2] == '\0') {
                 cmd_line[i] = '\0';

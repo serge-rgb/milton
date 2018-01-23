@@ -215,18 +215,38 @@ platform_dialog_yesno(char* info, char* title)
 void
 platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
-    //BREAKHERE;
     NSBundle* bundle = [NSBundle mainBundle];
-    //NSString* nsfname = [[NSString stringWithUTF8String:fname]];
+    const char* respath = [[bundle resourcePath] UTF8String];
 
-    //NSString* respath = [bundle pathForResource:nsfname ofType:@""];
     char* string_copy = (char*)mlt_calloc(1, len, "Strings");
-    if (string_copy) {
+    if ( string_copy ) {
         strncpy(string_copy, fname, len);
-        char* home = getenv("HOME");
-        snprintf(fname, len,  "%s/.milton", home);
-        mkdir(fname, S_IRWXU);
-        snprintf(fname, len,  "%s/%s", fname, string_copy);
+
+        b32 respath_failed = false;
+        if (respath) {
+            // Create the Resources directory if it doesn't exist.
+            int mkerr = mkdir(respath, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+            if (mkerr == 0) {
+                milton_log("Created Resources path.\n");
+            }
+            else if (mkerr == -1) {
+                int err = errno;
+                if (err != EEXIST) {
+                    milton_log("mkdir failed with unexpected error %d\n", mkerr);
+                    respath_failed = true;
+                }
+            }
+        }
+        if (!respath || respath_failed) {
+            char* home = getenv("HOME");
+            snprintf(fname, len,  "%s/.milton", home);
+            mkdir(fname, S_IRWXU);
+            snprintf(fname, len,  "%s/%s", fname, string_copy);
+        }
+        else {
+            snprintf(fname, len, "%s/%s", respath, string_copy);
+        }
+
         mlt_free(string_copy, "Strings");
     }
 }
