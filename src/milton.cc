@@ -39,6 +39,28 @@ milton_set_default_view(MiltonState* milton_state)
     view->num_layers          = 1;
 }
 
+int
+milton_get_brush_enum(MiltonState* milton)
+{
+    int brush_enum;
+    switch ( milton->current_mode ) {
+        case MiltonMode::PEN: {
+            brush_enum = BrushEnum_PEN;
+        } break;
+        case MiltonMode::ERASER: {
+            brush_enum = BrushEnum_ERASER;
+        } break;
+        case MiltonMode::PRIMITIVE: {
+            brush_enum = BrushEnum_PRIMITIVE;
+        } break;
+        default: {
+            brush_enum = BrushEnum_COUNT;
+            INVALID_CODE_PATH;
+        } break;
+    }
+    return brush_enum;
+}
+
 static void
 milton_update_brushes(MiltonState* milton_state)
 {
@@ -68,29 +90,8 @@ milton_update_brushes(MiltonState* milton_state)
         }
     }
 
-    milton_state->working_stroke.brush = milton_state->brushes[BrushEnum_PEN];
-}
-
-int
-milton_get_brush_enum(MiltonState* milton)
-{
-    int brush_enum;
-    switch ( milton->current_mode ) {
-        case MiltonMode::PEN: {
-            brush_enum = BrushEnum_PEN;
-        } break;
-        case MiltonMode::ERASER: {
-            brush_enum = BrushEnum_ERASER;
-        } break;
-        case MiltonMode::PRIMITIVE: {
-            brush_enum = BrushEnum_PRIMITIVE;
-        } break;
-        default: {
-            brush_enum = BrushEnum_COUNT;
-            INVALID_CODE_PATH;
-        } break;
-    }
-    return brush_enum;
+    int brush_enum = milton_get_brush_enum(milton_state);
+    milton_state->working_stroke.brush = milton_state->brushes[brush_enum];
 }
 
 static Brush
@@ -484,6 +485,7 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
             INVALID_CODE_PATH;
             break;
         }
+        mlt_assert(milton_state->brush_sizes[i] > 0 && milton_state->brush_sizes[i] <= MILTON_MAX_BRUSH_SIZE);
     }
     milton_set_brush_alpha(milton_state, 1.0f);
 
@@ -1103,6 +1105,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
         if ( exporter->state != ExporterState_EMPTY ) {
              render_flags |= RenderDataFlags_EXPORTING;
         }
+        milton_state->gui->flags &= ~(MiltonGuiFlags_SHOWING_PREVIEW);
     }
     else if ( render_flags & RenderDataFlags_EXPORTING ) {
         render_flags &= ~RenderDataFlags_EXPORTING;
@@ -1298,7 +1301,7 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 
 
     if ( !(milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW) ) {
-        float radius = brush_outline_should_draw ? (float)milton_get_brush_radius(milton_state) : -1;
+        float radius = (brush_outline_should_draw && milton_current_mode_is_for_drawing(milton_state)) ? (float)milton_get_brush_radius(milton_state) : -1;
         gpu_update_brush_outline(milton_state->render_data,
                                 milton_state->hover_point.x, milton_state->hover_point.y,
                                 radius);

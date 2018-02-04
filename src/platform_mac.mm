@@ -27,10 +27,11 @@
 
 
 char*
-mac_panel(NSSavePanel *panel, FileKind kind) {
+mac_panel(NSSavePanel *panel, FileKind kind)
+{
     switch (kind) {
         case FileKind_IMAGE:
-            panel.allowedFileTypes = @[(NSString*)kUTTypeJPEG];
+            panel.allowedFileTypes = @[(NSString*)kUTTypeJPEG, (NSString*)kUTTypePNG];
             break;
         case FileKind_MILTON_CANVAS:
             panel.allowedFileTypes = @[@"mlt"];
@@ -45,7 +46,8 @@ mac_panel(NSSavePanel *panel, FileKind kind) {
 }
 
 NSAlert*
-mac_alert(const char* info, const char* title) {
+mac_alert(const char* info, const char* title)
+{
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = [NSString stringWithUTF8String:title ? title : ""];
     alert.informativeText = [NSString stringWithUTF8String:info ? info : ""];

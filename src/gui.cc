@@ -23,8 +23,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
-    const float pen_alpha = milton_get_brush_alpha(milton_state);
-    mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
     // Spawn below the picker
     Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
 
@@ -341,6 +339,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
                 if ( milton_state->current_mode == MiltonMode::PEN ||
                      milton_state->current_mode == MiltonMode::PRIMITIVE ) {
+                    const float pen_alpha = milton_get_brush_alpha(milton_state);
+                    mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
                     float mut_alpha = pen_alpha*100;
                     ImGui::SliderFloat(LOC(opacity), &mut_alpha, 1, 100, "%.0f%%");
 
