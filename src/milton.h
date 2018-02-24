@@ -49,6 +49,8 @@ enum
     BrushEnum_ERASER,
     BrushEnum_PRIMITIVE,
 
+    BrushEnum_NOBRUSH,  // Non-painting modes
+
     BrushEnum_COUNT,
 };
 

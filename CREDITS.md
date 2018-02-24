@@ -6,6 +6,7 @@
 * Code - fixes / improvements
     * [Charly Mourglia](http://github.com/Zouch)
     * [Gian Sass](https://github.com/Nuke928)
+    * [James Payne](https://github.com/jamoflaw)
     * [Joshua Mendoza](https://github.com/jomendoz)
     * [Justas Dabrila](https://github.com/SSStormy)
     * [Kevin Wojniak](https://github.com/kainjow)
@@ -15,6 +16,7 @@
     * [Philippe Mongeau](http://phmongeau.com/)
     * [Tilmann Rübbelke](https://github.com/TilmannR)
     * [mcmihai](https://github.com/mcmihai)
+    * If your name should be on this list but isn't, or if you want to change or remove something, let me know!
 
 * Other
     * Aarón Reyes García

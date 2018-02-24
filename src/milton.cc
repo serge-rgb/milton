@@ -42,7 +42,7 @@ milton_set_default_view(MiltonState* milton_state)
 int
 milton_get_brush_enum(MiltonState* milton)
 {
-    int brush_enum;
+    int brush_enum = BrushEnum_NOBRUSH;
     switch ( milton->current_mode ) {
         case MiltonMode::PEN: {
             brush_enum = BrushEnum_PEN;
@@ -58,8 +58,6 @@ milton_get_brush_enum(MiltonState* milton)
         case MiltonMode::HISTORY:
         case MiltonMode::NONE:
         default: {
-            brush_enum = BrushEnum_COUNT;
-            INVALID_CODE_PATH;
         } break;
     }
     return brush_enum;
@@ -479,18 +477,21 @@ milton_init(MiltonState* milton_state, i32 width, i32 height, f32 ui_scale, PATH
     // Set default brush sizes.
     for ( int i = 0; i < BrushEnum_COUNT; ++i ) {
         switch ( i ) {
-        case BrushEnum_PEN:
-            milton_state->brush_sizes[i] = 10;
-            break;
-        case BrushEnum_ERASER:
-            milton_state->brush_sizes[i] = 40;
-            break;
-        case BrushEnum_PRIMITIVE:
-            milton_state->brush_sizes[i] = 100;
-            break;
-        default:
-            INVALID_CODE_PATH;
-            break;
+        case BrushEnum_PEN: {
+           milton_state->brush_sizes[i] = 10;
+        } break;
+        case BrushEnum_ERASER: {
+           milton_state->brush_sizes[i] = 40;
+        } break;
+        case BrushEnum_PRIMITIVE: {
+           milton_state->brush_sizes[i] = 100;
+        } break;
+        case BrushEnum_NOBRUSH: { {
+           milton_state->brush_sizes[i] = 1;
+        } } break;
+        default: {
+           INVALID_CODE_PATH;
+        } break;
         }
         mlt_assert(milton_state->brush_sizes[i] > 0 && milton_state->brush_sizes[i] <= MILTON_MAX_BRUSH_SIZE);
     }
