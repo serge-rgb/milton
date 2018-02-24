@@ -367,6 +367,9 @@ milton_get_brush_radius(MiltonState* milton_state)
 {
     int brush_enum = milton_get_brush_enum(milton_state);
     i32 brush_size = milton_state->brush_sizes[brush_enum];
+    if ( brush_size <= 0 ) {
+       brush_size = 1;
+    }
     return brush_size;
 }
 
