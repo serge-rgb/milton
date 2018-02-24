@@ -7,6 +7,7 @@
     * [Charly Mourglia](http://github.com/Zouch)
     * [Gian Sass](https://github.com/Nuke928)
     * [James Payne](https://github.com/jamoflaw)
+    * [Jean-David Moisan](https://github.com/Apostolique)
     * [Joshua Mendoza](https://github.com/jomendoz)
     * [Justas Dabrila](https://github.com/SSStormy)
     * [Kevin Wojniak](https://github.com/kainjow)
