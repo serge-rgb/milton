@@ -53,6 +53,10 @@ milton_get_brush_enum(MiltonState* milton)
         case MiltonMode::PRIMITIVE: {
             brush_enum = BrushEnum_PRIMITIVE;
         } break;
+        case MiltonMode::EXPORTING:
+        case MiltonMode::EYEDROPPER:
+        case MiltonMode::HISTORY:
+        case MiltonMode::NONE:
         default: {
             brush_enum = BrushEnum_COUNT;
             INVALID_CODE_PATH;
@@ -941,37 +945,6 @@ milton_update_and_render(MiltonState* milton_state, MiltonInput* input)
 #else
         f32 scale_factor = 1.3f;
         i32 view_scale_limit = (1 << 16);
-#endif
-
-        // Some info on the reasoning behind choosing the values for different
-        // knobs regarding scales.  We use the whole 32 bit address space for
-        // integer coordinates, but there are tricky trade-offs between zoom
-        // level and canvas length.  When fully zoomed-out, the canvas might be
-        // too small in area available to pan. When fully zoomed-in, we run
-        // into problems with the "arbitrary size" exporting. The latter
-        // problem is trickier, but it is easy to see when imagining that at
-        // full zoom-in, each screen pixel corresponds to a canvas unit. When
-        // exporting at this scale, we can't stretch the canvas anymore! A
-        // possible solution to this is to scale-up the strokes relative to the
-        // center of the exporting rectangle. Another "solution" is to set a
-        // maximum exporting scale coefficient, and set the minimum zoom to be
-        // that as well.  The former solution is the more flexible. Taken to
-        // its fullest potential it would allow a greater level of zoom-in. It
-        // introduces more complexity, though.
-        //
-        // The current strategy is to enforece a min_scale
-#if 0
-        {
-            int w = 2560;
-            f32 ns = (f32)(1u << 31) / (w * view_scale_limit);
-            f32 ms = (f32)(1u << 31) / (w * milton_state->view->scale);
-
-            milton_log("With a screen width of %d, At this zoomout we would have %f horizontal screens. \n"
-                       "At max zoomout we would have %f horizontal screens of movement.\n", w, ms, ns);
-
-            i64 maxr = (1u << 31) - k_max_brush_size * view_scale_limit;
-            milton_log ("max canvas radius is %ld\n", maxr);
-        }
 #endif
 
         i32 min_scale = MILTON_MINIMUM_SCALE;
