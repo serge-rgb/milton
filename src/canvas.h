@@ -27,6 +27,11 @@ struct LayerEffect
     LayerEffect* next;
 };
 
+enum LayerFlags
+{
+    LayerFlags_VISIBLE = (1<<0),
+};
+
 struct Layer
 {
     i32 id;
@@ -34,7 +39,7 @@ struct Layer
     StrokeList strokes;
     char    name[MAX_LAYER_NAME_LEN];
 
-    i32     flags;
+    i32     flags;  // LayerFlags[
 
     float alpha;
 
@@ -79,11 +84,6 @@ struct CanvasViewPreV4
     i32 num_layers;
 };
 
-
-enum LayerFlags
-{
-    LayerFlags_VISIBLE = (1<<0),
-};
 
 b32     is_eraser(v4f color);
 

@@ -207,7 +207,6 @@ milton_load(MiltonState* milton_state)
                         READ(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
                         READ(&stroke.layer_id, sizeof(i32), 1, fd);
                         stroke.bounding_rect = bounding_box_for_stroke(&stroke);
-
                         layer::layer_push_stroke(layer, stroke);
                     }
                 }
@@ -260,11 +259,20 @@ milton_load(MiltonState* milton_state)
         }
 
         // Brush
-        if ( milton_binary_version >= 2 ) {
+        if ( milton_binary_version >= 2 && milton_binary_version <= 5  ) {
             // PEN, ERASER
-            READ(&milton_state->brushes, sizeof(Brush), BrushEnum_COUNT, fd);
+            READ(&milton_state->brushes, sizeof(Brush), 2, fd);
             // Sizes
-            READ(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd);
+            READ(&milton_state->brush_sizes, sizeof(i32), 2, fd);
+        }
+        else if ( milton_binary_version > 5 ) {
+            u16 num_brushes = 0;
+            READ(&num_brushes, sizeof(u16), 1, fd);
+            if ( num_brushes > BrushEnum_COUNT ) {
+                milton_log("Error loading file: too many brushes: %d\n", num_brushes);
+            }
+            READ(&milton_state->brushes, sizeof(Brush), num_brushes, fd);
+            READ(&milton_state->brush_sizes, sizeof(i32), num_brushes, fd);
         }
 
         history_count = 0;
@@ -438,11 +446,17 @@ milton_save(MiltonState* milton_state)
         }
 
         // Brush
-        if ( milton_binary_version >= 2 ) {
+        if ( milton_binary_version >= 2 && milton_binary_version <= 5 ) {
             // PEN, ERASER
-            WRITE(&milton_state->brushes, sizeof(Brush), BrushEnum_COUNT, fd);
+            WRITE(&milton_state->brushes, sizeof(Brush), 2, fd);
             // Sizes
-            WRITE(&milton_state->brush_sizes, sizeof(i32), BrushEnum_COUNT, fd);
+            WRITE(&milton_state->brush_sizes, sizeof(i32), 2, fd);
+        }
+        else if ( milton_binary_version > 5 ) {
+            u16 num_brushes = 3;  // Brush, eraser, primitive.
+            WRITE(&num_brushes, sizeof(num_brushes), 1, fd);
+            WRITE(&milton_state->brushes, sizeof(Brush), num_brushes, fd);
+            WRITE(&milton_state->brush_sizes, sizeof(i32), num_brushes, fd);
         }
 
         history_count = (i32)milton_state->canvas->history.count;
