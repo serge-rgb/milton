@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2017 Sergio Gonzalez. All rights reserved.
+// Copyright (c) 2015 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
-//
+
 
 // Per-stroke uniforms
 uniform vec4 u_brush_color;

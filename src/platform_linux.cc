@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017 Sergio Gonzalez. All rights reserved.
+// Copyright (c) 2015 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
 #include "platform.h"
@@ -49,7 +49,7 @@ platform_ui_scale(PlatformState* p)
     return 1.0f;
 }
 
-void 
+void
 platform_pixel_to_point(PlatformState* ps, v2l* inout)
 {
 }
@@ -129,7 +129,7 @@ platform_fname_at_config(PATH_CHAR* fname, size_t len)
     // we'll copy fname to file_name so that we can edit fname to our liking then later append fname to it.
     char *string_copy = (char*)mlt_calloc(1, len, "Strings");
     size_t copy_length = strlen(fname);
-    
+
     if ( string_copy ) {
         strncpy(string_copy, fname, len);
         char *folder;
@@ -150,7 +150,7 @@ platform_fname_at_config(PATH_CHAR* fname, size_t len)
             strcat(fname, "/");
             strcat(fname, string_copy);
         }
-        
+
         mlt_free(string_copy, "Strings");
     }
 }
