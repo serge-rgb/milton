@@ -37,7 +37,7 @@ To-Do
         - Template files - change the default canvas.
         - Key shortcuts
 - Polish and/or Debug layer
-    - Input recorder for bug replication
+    - Input recorder for reproducing bugs
     - linux - load dynamic libs at runtime
     - store font data in binary
 - Milton Library

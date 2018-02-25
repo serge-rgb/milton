@@ -1553,11 +1553,11 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
 }
 
 void
-gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha)
+gpu_render_to_buffer(MiltonState* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha)
 {
-    CanvasView saved_view = *milton_state->view;
-    RenderData* render_data = milton_state->render_data;
-    CanvasView* view = milton_state->view;
+    CanvasView saved_view = *milton->view;
+    RenderData* render_data = milton->render_data;
+    CanvasView* view = milton->view;
 
     i32 saved_width = render_data->width;
     i32 saved_height = render_data->height;
@@ -1566,25 +1566,25 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     i32 buf_w = w * scale;
     i32 buf_h = h * scale;
 
-    v2i center = milton_state->view->screen_size / 2;
+    v2i center = milton->view->screen_size / 2;
     v2i pan_delta = v2i{x + (w / 2), y + (h / 2)} - center;
 
-    milton_set_zoom_at_point(milton_state, center);
+    milton_set_zoom_at_point(milton, center);
 
-    milton_state->view->pan_center =
-        milton_state->view->pan_center + VEC2L(pan_delta)*milton_state->view->scale;
+    milton->view->pan_center =
+        milton->view->pan_center + VEC2L(pan_delta)*milton->view->scale;
 
-    milton_state->view->screen_size = v2i{buf_w, buf_h};
+    milton->view->screen_size = v2i{buf_w, buf_h};
     render_data->width = buf_w;
     render_data->height = buf_h;
 
-    milton_state->view->zoom_center = milton_state->view->screen_size / 2;
+    milton->view->zoom_center = milton->view->screen_size / 2;
     if ( scale > 1 ) {
-        milton_state->view->scale = (i32)ceill(((f32)milton_state->view->scale / (f32)scale));
+        milton->view->scale = (i32)ceill(((f32)milton->view->scale / (f32)scale));
     }
 
     gpu_resize(render_data, view);
-    gpu_update_canvas(render_data, milton_state->canvas, view);
+    gpu_update_canvas(render_data, milton->canvas, view);
 
     // TODO: Check for out-of-memory errors.
 
@@ -1593,8 +1593,8 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
 
     glViewport(0, 0, buf_w, buf_h);
     glScissor(0, 0, buf_w, buf_h);
-    gpu_clip_strokes_and_update(&milton_state->root_arena, render_data, milton_state->view, milton_state->canvas->root_layer,
-                                &milton_state->working_stroke, 0, 0, buf_w, buf_h);
+    gpu_clip_strokes_and_update(&milton->root_arena, render_data, milton->view, milton->canvas->root_layer,
+                                &milton->working_stroke, 0, 0, buf_w, buf_h);
 
     render_data->flags |= RenderDataFlags_WITH_BLUR;
     gpu_render_canvas(render_data, 0, 0, buf_w, buf_h, background_alpha);
@@ -1649,19 +1649,19 @@ gpu_render_to_buffer(MiltonState* milton_state, u8* buffer, i32 scale, i32 x, i3
     // Cleanup.
 
     render_data->fbo = saved_fbo;
-    *milton_state->view = saved_view;
+    *milton->view = saved_view;
     render_data->width = saved_width;
     render_data->height = saved_height;
 
     glBindFramebufferEXT(GL_FRAMEBUFFER, render_data->fbo);
 
     gpu_resize(render_data, view);
-    gpu_update_canvas(render_data, milton_state->canvas, view);
+    gpu_update_canvas(render_data, milton->canvas, view);
 
     // Re-render
-    gpu_clip_strokes_and_update(&milton_state->root_arena,
-                                render_data, milton_state->view, milton_state->canvas->root_layer,
-                                &milton_state->working_stroke, 0, 0, render_data->width,
+    gpu_clip_strokes_and_update(&milton->root_arena,
+                                render_data, milton->view, milton->canvas->root_layer,
+                                &milton->working_stroke, 0, 0, render_data->width,
                                 render_data->height);
     gpu_render(render_data, 0, 0, render_data->width, render_data->height);
 }

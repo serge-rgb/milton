@@ -16,10 +16,10 @@
 #define BOUNDS_RADIUS_PX 80
 
 void
-milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state)
+milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton)
 {
-    CanvasState* canvas = milton_state->canvas;
-    MiltonGui* gui = milton_state->gui;
+    CanvasState* canvas = milton->canvas;
+    MiltonGui* gui = milton->gui;
     // ImGui Section
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
@@ -104,8 +104,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         if ( ImGui::BeginMenu(LOC(file)) ) {
             if ( ImGui::MenuItem(LOC(new_milton_canvas)) ) {
                 b32 save_file = false;
-                if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
-                    if ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
+                if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
+                    if ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
                         save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                     }
                 }
@@ -113,8 +113,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                     if ( name ) {
                         milton_log("Saving to %s\n", name);
-                        milton_set_canvas_file(milton_state, name);
-                        milton_save(milton_state);
+                        milton_set_canvas_file(milton, name);
+                        milton_save(milton);
                         b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
                         if ( del == false ) {
                             platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
@@ -124,25 +124,25 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 }
 
                 // New Canvas
-                milton_reset_canvas_and_set_default(milton_state);
-                canvas = milton_state->canvas;
+                milton_reset_canvas_and_set_default(milton);
+                canvas = milton->canvas;
                 input->flags |= MiltonInputFlags_FULL_REFRESH;
-                milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+                milton->flags |= MiltonStateFlags_DEFAULT_CANVAS;
             }
             b32 save_requested = false;
             if ( ImGui::MenuItem(LOC(open_milton_canvas)) ) {
                 // If current canvas is MiltonPersist, then prompt to save
-                if ( ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
+                if ( ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
                     b32 save_file = false;
-                    if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
+                    if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
                         save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                     }
                     if ( save_file ) {
                         PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                         if ( name ) {
                             milton_log("Saving to %s\n", name);
-                            milton_set_canvas_file(milton_state, name);
-                            milton_save(milton_state);
+                            milton_set_canvas_file(milton, name);
+                            milton_save(milton);
                             b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
                                                                      DeleteErrorTolerance_OK_NOT_EXIST);
                             if ( del == false ) {
@@ -154,7 +154,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 }
                 PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
                 if ( fname ) {
-                    milton_set_canvas_file(milton_state, fname);
+                    milton_set_canvas_file(milton, fname);
                     input->flags |= MiltonInputFlags_OPEN_FILE;
                 }
             }
@@ -163,7 +163,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                 if ( name ) {
                     milton_log("Saving to %s\n", name);
-                    milton_set_canvas_file(milton_state, name);
+                    milton_set_canvas_file(milton, name);
                     input->flags |= MiltonInputFlags_SAVE_FILE;
                     b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
                                                              DeleteErrorTolerance_OK_NOT_EXIST);
@@ -174,10 +174,10 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 }
             }
             if ( ImGui::MenuItem(LOC(export_to_image_DOTS)) ) {
-                milton_switch_mode(milton_state, MiltonMode::EXPORTING);
+                milton_switch_mode(milton, MiltonMode::EXPORTING);
             }
             if ( ImGui::MenuItem(LOC(quit)) ) {
-                milton_try_quit(milton_state);
+                milton_try_quit(milton);
             }
             ImGui::EndMenu();
         }
@@ -193,21 +193,21 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
         if ( ImGui::BeginMenu(LOC(canvas), /*enabled=*/true) ) {
             if ( ImGui::BeginMenu(LOC(set_background_color)) ) {
-                v3f bg = milton_state->view->background_color;
+                v3f bg = milton->view->background_color;
                 if (ImGui::ColorEdit3(LOC(color), bg.d))
                 {
-                    milton_set_background_color(milton_state, clamp_01(bg));
+                    milton_set_background_color(milton, clamp_01(bg));
                     input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                 }
                 ImGui::EndMenu();
             }
             if ( ImGui::MenuItem(LOC(zoom_in)) ) {
                 input->scale++;
-                milton_set_zoom_at_screen_center(milton_state);
+                milton_set_zoom_at_screen_center(milton);
             }
             if ( ImGui::MenuItem(LOC(zoom_out)) ) {
                 input->scale--;
-                milton_set_zoom_at_screen_center(milton_state);
+                milton_set_zoom_at_screen_center(milton);
             }
             ImGui::EndMenu();
         }
@@ -217,18 +217,18 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 input->mode_to_set = MiltonMode::PEN;
             }
             if ( ImGui::BeginMenu(LOC(brush_options)) ) {
-                b32 smoothing_enabled = milton_brush_smoothing_enabled(milton_state);
+                b32 smoothing_enabled = milton_brush_smoothing_enabled(milton);
                 char* entry_str = smoothing_enabled? LOC(disable_stroke_smoothing) : LOC(enable_stroke_smoothing);
 
                 if ( ImGui::MenuItem(entry_str) ) {
-                    milton_toggle_brush_smoothing(milton_state);
+                    milton_toggle_brush_smoothing(milton);
                 }
                 // Decrease / increase brush size
                 if ( ImGui::MenuItem(LOC(decrease_brush_size)) ) {
-                    for (int i=0;i<5;++i) milton_decrease_brush_size(milton_state);
+                    for (int i=0;i<5;++i) milton_decrease_brush_size(milton);
                 }
                 if ( ImGui::MenuItem(LOC(increase_brush_size)) ) {
-                    for (int i=0;i<5;++i) milton_increase_brush_size(milton_state);
+                    for (int i=0;i<5;++i) milton_increase_brush_size(milton);
                 }
                 // Opacity shortcuts
 
@@ -238,7 +238,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     snprintf(entry, array_count(entry), "%s %d%% - [%d]",
                              LOC(set_opacity_to), (int)(100 * opacities[i]), i == 9 ? 0 : i+1);
                     if ( ImGui::MenuItem(entry) ) {
-                        milton_set_brush_alpha(milton_state, opacities[i]);
+                        milton_set_brush_alpha(milton, opacities[i]);
                     }
                 }
                 ImGui::EndMenu();
@@ -255,7 +255,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             // Eye Dropper
             if ( ImGui::MenuItem(LOC(eye_dropper)) ) {
                 input->mode_to_set = MiltonMode::EYEDROPPER;
-                milton_state->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;
+                milton->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;
             }
             // History
             // if ( ImGui::MenuItem("History") ) {
@@ -265,11 +265,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         }
         if ( ImGui::BeginMenu(LOC(view)) ) {
             if ( ImGui::MenuItem(LOC(toggle_gui_visibility)) ) {
-                gui_toggle_visibility(milton_state);
+                gui_toggle_visibility(milton);
             }
 #if MILTON_ENABLE_PROFILING
             if ( ImGui::MenuItem("Toggle Debug Data [BACKQUOTE]") ) {
-                milton_state->viz_window_visible = !milton_state->viz_window_visible;
+                milton->viz_window_visible = !milton->viz_window_visible;
             }
 #endif
             ImGui::EndMenu();
@@ -291,19 +291,19 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             ImGui::EndMenu();
         }
-        PATH_CHAR* utf16_name = str_trim_to_last_slash(milton_state->mlt_file_path);
+        PATH_CHAR* utf16_name = str_trim_to_last_slash(milton->mlt_file_path);
 
         char file_name[MAX_PATH] = {};
         utf16_to_utf8_simple(utf16_name, file_name);
 
         char msg[1024];
-        WallTime lst = milton_state->last_save_time;
+        WallTime lst = milton->last_save_time;
 
         snprintf(msg, 1024, "\t%s -- Last saved: %.2d:%.2d:%.2d\t\tZoom level %.2f",
-                 (milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
+                 (milton->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
                  file_name,
                  lst.hours, lst.minutes, lst.seconds,
-                 log2(1 + milton_state->view->scale / (double)MILTON_DEFAULT_SCALE));
+                 log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE));
 
         if ( ImGui::BeginMenu(msg, /*bool enabled = */false) ) {
             ImGui::EndMenu();
@@ -313,13 +313,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
     ImGui::PopStyleColor(menu_style_stack);
 }
 
-    float ui_scale = milton_state->gui->scale;
+    float ui_scale = milton->gui->scale;
 
     // GUI Windows ----
 
-    b32 should_show_windows = milton_state->current_mode != MiltonMode::EYEDROPPER
-                                && milton_state->current_mode != MiltonMode::EXPORTING
-                                && milton_state->current_mode != MiltonMode::HISTORY;
+    b32 should_show_windows = milton->current_mode != MiltonMode::EYEDROPPER
+                                && milton->current_mode != MiltonMode::EXPORTING
+                                && milton->current_mode != MiltonMode::HISTORY;
 
     if ( gui->visible && should_show_windows ) {
 
@@ -332,14 +332,14 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         ImGui::SetNextWindowSize({ui_scale * 271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
 
-        b32 show_brush_window = (milton_current_mode_is_for_drawing(milton_state));
+        b32 show_brush_window = (milton_current_mode_is_for_drawing(milton));
 
         // Brush Window
         if ( show_brush_window ) {
             if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
-                if ( milton_state->current_mode == MiltonMode::PEN ||
-                     milton_state->current_mode == MiltonMode::PRIMITIVE ) {
-                    const float pen_alpha = milton_get_brush_alpha(milton_state);
+                if ( milton->current_mode == MiltonMode::PEN ||
+                     milton->current_mode == MiltonMode::PRIMITIVE ) {
+                    const float pen_alpha = milton_get_brush_alpha(milton);
                     mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
                     float mut_alpha = pen_alpha*100;
                     ImGui::SliderFloat(LOC(opacity), &mut_alpha, 1, 100, "%.0f%%");
@@ -347,22 +347,22 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     mut_alpha /= 100.0f;
                     if (mut_alpha > 1.0f ) mut_alpha = 1.0f;
                     if ( mut_alpha != pen_alpha ) {
-                        milton_set_brush_alpha(milton_state, mut_alpha);
+                        milton_set_brush_alpha(milton, mut_alpha);
                         gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                     }
                 }
 
-                const auto size = milton_get_brush_radius(milton_state);
+                const auto size = milton_get_brush_radius(milton);
                 auto mut_size = size;
 
                 ImGui::SliderInt(LOC(brush_size), &mut_size, 1, MILTON_MAX_BRUSH_SIZE);
 
                 if ( mut_size != size ) {
-                    milton_set_brush_size(milton_state, mut_size);
-                    milton_state->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
+                    milton_set_brush_size(milton, mut_size);
+                    milton->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                 }
 
-                if ( milton_state->current_mode != MiltonMode::PEN ) {
+                if ( milton->current_mode != MiltonMode::PEN ) {
                     if ( ImGui::Button(LOC(switch_to_brush)) ) {
                         i32 f = input->flags;
                         input->flags = (MiltonInputFlags)f;
@@ -370,7 +370,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     }
                 }
 
-                if ( milton_state->current_mode != MiltonMode::PRIMITIVE ) {
+                if ( milton->current_mode != MiltonMode::PRIMITIVE ) {
                     if ( ImGui::Button(LOC(switch_to_primitive)) ) {
                         i32 f = input->flags;
                         input->flags = (MiltonInputFlags)f;
@@ -378,7 +378,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     }
                 }
 
-                if ( milton_state->current_mode != MiltonMode::ERASER ) {
+                if ( milton->current_mode != MiltonMode::ERASER ) {
                     if ( ImGui::Button(LOC(switch_to_eraser)) ) {
                         input->mode_to_set = MiltonMode::ERASER;
                     }
@@ -386,12 +386,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             // Important to place this before ImGui::End()
             const v2i pos = {
-                (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_radius(milton_state)),
+                (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_radius(milton)),
                 (i32)(ImGui::GetWindowPos().y),
             };
             ImGui::End();  // Brushes
-            if (( milton_state->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW )) {
-                milton_state->gui->preview_pos = pos;
+            if (( milton->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW )) {
+                milton->gui->preview_pos = pos;
             }
         }
 
@@ -399,11 +399,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*220), ImGuiSetCond_FirstUseEver);
         if ( ImGui::Begin(LOC(layers)) ) {
-            CanvasView* view = milton_state->view;
+            CanvasView* view = milton->view;
             // left
             ImGui::BeginChild("left pane", ImVec2(150, 0), true);
 
-            Layer* layer = milton_state->canvas->root_layer;
+            Layer* layer = milton->canvas->root_layer;
             while ( layer->next ) { layer = layer->next; }  // Move to the top layer.
             while ( layer ) {
                 bool v = layer->flags & LayerFlags_VISIBLE;
@@ -414,8 +414,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 }
                 ImGui::PopID();
                 ImGui::SameLine();
-                if ( ImGui::Selectable(layer->name, milton_state->canvas->working_layer == layer) ) {
-                    milton_set_working_layer(milton_state, layer);
+                if ( ImGui::Selectable(layer->name, milton->canvas->working_layer == layer) ) {
+                    milton_set_working_layer(milton, layer);
                 }
                 layer = layer->prev;
             }
@@ -425,7 +425,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             ImGui::BeginGroup();
             ImGui::BeginChild("item view", ImVec2(0, 25));
             if ( ImGui::Button(LOC(new_layer)) ) {
-                milton_new_layer(milton_state);
+                milton_new_layer(milton);
             }
             ImGui::SameLine();
 
@@ -452,9 +452,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                         f32 alpha = canvas->working_layer->alpha;
                         if ( ImGui::SliderFloat("##opacity", &alpha, 0.0f, 1.0f) ) {
                             // Used the slider. Ask if it's OK to convert the binary format.
-                            if ( milton_state->mlt_binary_version < 3 ) {
-                                milton_log("Modified milton file from %d to 3\n", milton_state->mlt_binary_version);
-                                milton_state->mlt_binary_version = 3;
+                            if ( milton->mlt_binary_version < 3 ) {
+                                milton_log("Modified milton file from %d to 3\n", milton->mlt_binary_version);
+                                milton->mlt_binary_version = 3;
                             }
                             input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
 
@@ -473,7 +473,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                             e->next = working_layer->effects;
                             working_layer->effects = e;
                             e->enabled = true;
-                            e->blur.original_scale = milton_state->view->scale;
+                            e->blur.original_scale = milton->view->scale;
                             e->blur.kernel_size = 10;
                             input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
                         }
@@ -519,7 +519,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
             static b32 is_renaming = false;
             if ( is_renaming == false ) {
-                ImGui::Text(milton_state->canvas->working_layer->name);
+                ImGui::Text(milton->canvas->working_layer->name);
                 ImGui::Indent();
                 if ( ImGui::Button(LOC(rename)) )
                 {
@@ -529,7 +529,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             }
             else if ( is_renaming ) {
                 if (ImGui::InputText("##rename",
-                                      milton_state->canvas->working_layer->name,
+                                      milton->canvas->working_layer->name,
                                       13,
                                       //MAX_LAYER_NAME_LEN,
                                       ImGuiInputTextFlags_EnterReturnsTrue
@@ -548,12 +548,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             Layer* a = NULL;
             Layer* b = NULL;
             if ( ImGui::Button(LOC(up)) ) {
-                b = milton_state->canvas->working_layer;
+                b = milton->canvas->working_layer;
                 a = b->next;
             }
             ImGui::SameLine();
             if ( ImGui::Button(LOC(down)) ) {
-                a = milton_state->canvas->working_layer;
+                a = milton->canvas->working_layer;
                 b = a->prev;
             }
 
@@ -572,14 +572,14 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                 b->prev = a;
 
                 // Make sure root is first
-                while ( milton_state->canvas->root_layer->prev ) {
-                    milton_state->canvas->root_layer = milton_state->canvas->root_layer->prev;
+                while ( milton->canvas->root_layer->prev ) {
+                    milton->canvas->root_layer = milton->canvas->root_layer->prev;
                 }
                 input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
             }
 
-            if ( milton_state->canvas->working_layer->next
-                 || milton_state->canvas->working_layer->prev ) {
+            if ( milton->canvas->working_layer->next
+                 || milton->canvas->working_layer->prev ) {
                 static bool deleting = false;
                 if ( deleting == false ) {
                     if ( ImGui::Button(LOC(delete)) ) {
@@ -590,7 +590,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     ImGui::Text(LOC(are_you_sure));
                     ImGui::Text(LOC(cant_be_undone));
                     if ( ImGui::Button(LOC(yes)) ) {
-                        milton_delete_working_layer(milton_state);
+                        milton_delete_working_layer(milton);
                         deleting = false;
                     }
                     ImGui::SameLine();
@@ -607,7 +607,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
 
     // History window
-    if ( milton_state->current_mode == MiltonMode::HISTORY ) {
+    if ( milton->current_mode == MiltonMode::HISTORY ) {
         {
             Rect pb = picker_get_bounds(&gui->picker);
             auto width = 20 + pb.right - pb.left;
@@ -616,13 +616,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         ImGui::SetNextWindowSize(ImVec2(ui_scale*500, ui_scale*100), ImGuiSetCond_FirstUseEver);
         if ( ImGui::Begin("History Slider") ) {
             ImGui::SliderInt("History", &gui->history, 0,
-                             layer::count_strokes(milton_state->canvas->root_layer));
+                             layer::count_strokes(milton->canvas->root_layer));
         } ImGui::End();
 
     }
 
     // Note: The export window is drawn regardless of gui visibility.
-    if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
+    if ( milton->current_mode == MiltonMode::EXPORTING ) {
         bool opened = true;
         b32 reset = false;
 
@@ -633,7 +633,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
         if ( ImGui::Begin(LOC(export_DOTS), &opened, ImGuiWindowFlags_NoCollapse) ) {
             ImGui::Text(LOC(MSG_click_and_drag_instruction));
 
-            Exporter* exporter = &milton_state->gui->exporter;
+            Exporter* exporter = &milton->gui->exporter;
             if ( exporter->state == ExporterState_SELECTED ) {
                 i32 x = min( exporter->needle.x, exporter->pivot.x );
                 i32 y = min( exporter->needle.y, exporter->pivot.y );
@@ -648,13 +648,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     exporter->scale = 1;
                 }
                 float viewport_limits[2] = {};
-                gpu_get_viewport_limits(milton_state->render_data, viewport_limits);
+                gpu_get_viewport_limits(milton->render_data, viewport_limits);
 
                 while ( exporter->scale*raster_w > viewport_limits[0]
                         || exporter->scale*raster_h > viewport_limits[1] ) {
                     --exporter->scale;
                 }
-                i32 max_scale = milton_state->view->scale / 2;
+                i32 max_scale = milton->view->scale / 2;
                 if ( exporter->scale > max_scale) {
                     exporter->scale = max_scale;
                 }
@@ -675,9 +675,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
                     u8* buffer = (u8*)mlt_calloc(1, size, "Bitmap");
                     if ( buffer ) {
                         opened = false;
-                        gpu_render_to_buffer(milton_state, buffer, exporter->scale,
+                        gpu_render_to_buffer(milton, buffer, exporter->scale,
                                              x,y, raster_w, raster_h, transparent_background ? 0.0f : 1.0f);
-                        //milton_render_to_buffer(milton_state, buffer, x,y, raster_w, raster_h, exporter->scale);
+                        //milton_render_to_buffer(milton, buffer, x,y, raster_w, raster_h, exporter->scale);
                         PATH_CHAR* fname = platform_save_dialog(FileKind_IMAGE);
                         if ( fname ) {
                             milton_save_buffer_to_file(fname, buffer, w, h);
@@ -692,33 +692,33 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
         if ( ImGui::Button(LOC(cancel)) ) {
             reset = true;
-            milton_use_previous_mode(milton_state);
+            milton_use_previous_mode(milton);
         }
         ImGui::End(); // Export...
         if ( !opened ) {
             reset = true;
-            milton_use_previous_mode(milton_state);
+            milton_use_previous_mode(milton);
         }
         if ( reset ) {
-            exporter_init(&milton_state->gui->exporter);
+            exporter_init(&milton->gui->exporter);
         }
     }
 
 #if MILTON_ENABLE_PROFILING
     ImGui::SetNextWindowPos(ImVec2(ui_scale*300, ui_scale*205), ImGuiSetCond_FirstUseEver);
     ImGui::SetNextWindowSize({ui_scale*350, ui_scale*285}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
-    if ( milton_state->viz_window_visible ) {
+    if ( milton->viz_window_visible ) {
         bool opened = true;
         if ( ImGui::Begin("Debug Data ([BACKQUOTE] to toggle)", &opened, ImGuiWindowFlags_NoCollapse) ) {
             float graph_height = 20;
             char msg[512] = {};
 
-            float poll     = perf_count_to_sec(milton_state->graph_frame.polling) * 1000.0f;
-            float update   = perf_count_to_sec(milton_state->graph_frame.update) * 1000.0f;
-            float clipping = perf_count_to_sec(milton_state->graph_frame.clipping) * 1000.0f;
-            float raster   = perf_count_to_sec(milton_state->graph_frame.raster) * 1000.0f;
-            float GL       = perf_count_to_sec(milton_state->graph_frame.GL) * 1000.0f;
-            float system   = perf_count_to_sec(milton_state->graph_frame.system) * 1000.0f;
+            float poll     = perf_count_to_sec(milton->graph_frame.polling) * 1000.0f;
+            float update   = perf_count_to_sec(milton->graph_frame.update) * 1000.0f;
+            float clipping = perf_count_to_sec(milton->graph_frame.clipping) * 1000.0f;
+            float raster   = perf_count_to_sec(milton->graph_frame.raster) * 1000.0f;
+            float GL       = perf_count_to_sec(milton->graph_frame.GL) * 1000.0f;
+            float system   = perf_count_to_sec(milton->graph_frame.system) * 1000.0f;
 
             float sum = poll + update + raster + GL + system;
 
@@ -749,7 +749,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
             snprintf(msg, array_count(msg),
                      "Number of strokes in GPU memory: %d\n",
-                     gpu_get_num_clipped_strokes(milton_state->canvas->root_layer));
+                     gpu_get_num_clipped_strokes(milton->canvas->root_layer));
             ImGui::Text(msg);
 
             float hist[] = { poll, update, raster, GL, system };
@@ -763,9 +763,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
 
             ImGui::Dummy({0,30});
 
-            i64 stroke_count = layer::count_strokes(milton_state->canvas->root_layer);
+            i64 stroke_count = layer::count_strokes(milton->canvas->root_layer);
 
-            auto* view = milton_state->view;
+            auto* view = milton->view;
             int screen_height = view->screen_size.h * view->scale;
             int screen_width = view->screen_size.w * view->scale;
 
@@ -808,7 +808,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonStat
             // Average stroke size.
             i64 avg = 0;
             {
-                for ( Layer* l = milton_state->canvas->root_layer;
+                for ( Layer* l = milton->canvas->root_layer;
                       l != NULL;
                       l = l->next ) {
                     for ( i64 i = 0; i < l->strokes.count; ++i ) {
@@ -1233,9 +1233,9 @@ gui_consume_input(MiltonGui* gui, MiltonInput* input)
 }
 
 void
-gui_toggle_visibility(MiltonState* milton_state)
+gui_toggle_visibility(MiltonState* milton)
 {
-    MiltonGui* gui = milton_state->gui;
+    MiltonGui* gui = milton->gui;
     gui->visible = !gui->visible;
 }
 

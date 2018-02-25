@@ -88,18 +88,18 @@ void profiler_reset();
 
     /////////
     #define PROFILE_GRAPH_BEGIN(name) \
-            milton_state->graph_frame.start = perf_counter();
+            milton->graph_frame.start = perf_counter();
 
     #define PROFILE_GRAPH_END(name)  \
-            milton_state->graph_frame.##name = perf_counter() - milton_state->graph_frame.start
+            milton->graph_frame.##name = perf_counter() - milton->graph_frame.start
 
 #elif defined(__linux__) && MILTON_ENABLE_PROFILING
 
     #define PROFILE_GRAPH_BEGIN(name) \
-            milton_state->graph_frame.start = perf_counter();
+            milton->graph_frame.start = perf_counter();
 
     #define PROFILE_GRAPH_END(name)  \
-            milton_state->graph_frame.name = perf_counter() - milton_state->graph_frame.start
+            milton->graph_frame.name = perf_counter() - milton->graph_frame.start
 
 #else
 

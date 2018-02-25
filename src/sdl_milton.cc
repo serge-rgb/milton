@@ -91,7 +91,7 @@ panning_update(PlatformState* platform_state)
 }
 
 MiltonInput
-sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
+sdl_event_loop(MiltonState* milton, PlatformState* platform_state)
 {
     MiltonInput milton_input = {};
     milton_input.mode_to_set = MiltonMode::NONE;
@@ -129,7 +129,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
         switch ( event.type ) {
             case SDL_QUIT:
             platform_cursor_show();
-            milton_try_quit(milton_state);
+            milton_try_quit(milton);
             break;
             case SDL_SYSWMEVENT: {
                 f32 pressure = NO_PRESSURE_INFO;
@@ -302,7 +302,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                     milton_input.scale += event.wheel.y;
                     v2i zoom_center = platform_state->pointer;
 
-                    milton_set_zoom_at_point(milton_state, zoom_center);
+                    milton_set_zoom_at_point(milton, zoom_center);
                     // ImGui has a delay of 1 frame when displaying zoom info.
                     // Force next frame to have the value up to date.
                     platform_state->force_next_frame = true;
@@ -320,12 +320,12 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 // Actions accepting key repeats.
                 {
                     if ( keycode == SDLK_LEFTBRACKET ) {
-                        milton_decrease_brush_size(milton_state);
-                        milton_state->hover_flash_ms = (i32)SDL_GetTicks();
+                        milton_decrease_brush_size(milton);
+                        milton->hover_flash_ms = (i32)SDL_GetTicks();
                     }
                     else if ( keycode == SDLK_RIGHTBRACKET ) {
-                        milton_increase_brush_size(milton_state);
-                        milton_state->hover_flash_ms = (i32)SDL_GetTicks();
+                        milton_increase_brush_size(milton);
+                        milton->hover_flash_ms = (i32)SDL_GetTicks();
                     }
                     if ( platform_state->is_ctrl_down ) {
                         if ( (platform_state->keyboard_layout == LayoutType_QWERTZ && (keycode == SDLK_ASTERISK))
@@ -333,12 +333,12 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                              || (platform_state->keyboard_layout == LayoutType_QWERTY && (keycode == SDLK_EQUALS))
                              || keycode == SDLK_PLUS ) {
                             milton_input.scale++;
-                            milton_set_zoom_at_screen_center(milton_state);
+                            milton_set_zoom_at_screen_center(milton);
                         }
                         if ( (platform_state->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_6))
                              || keycode == SDLK_MINUS ) {
                             milton_input.scale--;
-                            milton_set_zoom_at_screen_center(milton_state);
+                            milton_set_zoom_at_screen_center(milton);
                         }
                         if ( keycode == SDLK_z ) {
                             if ( platform_state->is_shift_down ) {
@@ -369,13 +369,13 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         milton_input.mode_to_set = MiltonMode::EXPORTING;
                     }
                     if ( keycode == SDLK_q ) {
-                        milton_try_quit(milton_state);
+                        milton_try_quit(milton);
                     }
                     char* default_will_be_lost = "The default canvas will be cleared. Save it?";
                     if ( keycode == SDLK_n ) {
                         b32 save_file = false;
-                        if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
-                            if ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
+                        if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
+                            if ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
                                 save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                             }
                         }
@@ -383,8 +383,8 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                             PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                             if ( name ) {
                                 milton_log("Saving to %s\n", name);
-                                milton_set_canvas_file(milton_state, name);
-                                milton_save(milton_state);
+                                milton_set_canvas_file(milton, name);
+                                milton_save(milton);
                                 b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
                                 if ( del == false ) {
                                     platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
@@ -394,25 +394,25 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         }
 
                         // New Canvas
-                        milton_reset_canvas_and_set_default(milton_state);
+                        milton_reset_canvas_and_set_default(milton);
                         input_flags |= MiltonInputFlags_FULL_REFRESH;
-                        milton_state->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+                        milton->flags |= MiltonStateFlags_DEFAULT_CANVAS;
 
                     }
                     if ( keycode == SDLK_o ) {
                         b32 save_requested = false;
                         // If current canvas is MiltonPersist, then prompt to save
-                        if ( ( milton_state->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
+                        if ( ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
                             b32 save_file = false;
-                            if ( layer::count_strokes(milton_state->canvas->root_layer) > 0 ) {
+                            if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
                                 save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
                             }
                             if ( save_file ) {
                                 PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                                 if ( name ) {
                                     milton_log("Saving to %s\n", name);
-                                    milton_set_canvas_file(milton_state, name);
-                                    milton_save(milton_state);
+                                    milton_set_canvas_file(milton, name);
+                                    milton_save(milton);
                                     b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
                                                                              DeleteErrorTolerance_OK_NOT_EXIST);
                                     if ( del == false ) {
@@ -424,7 +424,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         }
                         PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
                         if ( fname ) {
-                            milton_set_canvas_file(milton_state, fname);
+                            milton_set_canvas_file(milton, fname);
                             input_flags |= MiltonInputFlags_OPEN_FILE;
                         }
                     }
@@ -433,7 +433,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                         PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                         if ( name ) {
                             milton_log("Saving to %s\n", name);
-                            milton_set_canvas_file(milton_state, name);
+                            milton_set_canvas_file(milton, name);
                             input_flags |= MiltonInputFlags_SAVE_FILE;
                             b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
                                                                      DeleteErrorTolerance_OK_NOT_EXIST);
@@ -447,7 +447,7 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                 else {
                     if ( !ImGui::GetIO().WantCaptureMouse  ) {
                         if ( keycode == SDLK_m ) {
-                            gui_toggle_menu_visibility(milton_state->gui);
+                            gui_toggle_menu_visibility(milton->gui);
                         }
                         else if ( keycode == SDLK_e ) {
                             milton_input.mode_to_set = MiltonMode::ERASER;
@@ -462,45 +462,45 @@ sdl_event_loop(MiltonState* milton_state, PlatformState* platform_state)
                             milton_input.mode_to_set = MiltonMode::PRIMITIVE;
                         }
                         else if ( keycode == SDLK_TAB ) {
-                            gui_toggle_visibility(milton_state);
+                            gui_toggle_visibility(milton);
                         }
                         else if ( keycode == SDLK_F1 ) {
-                            gui_toggle_help(milton_state->gui);
+                            gui_toggle_help(milton->gui);
                         }
                         else if ( keycode == SDLK_1 ) {
-                            milton_set_brush_alpha(milton_state, 0.1f);
+                            milton_set_brush_alpha(milton, 0.1f);
                         }
                         else if ( keycode == SDLK_2 ) {
-                            milton_set_brush_alpha(milton_state, 0.2f);
+                            milton_set_brush_alpha(milton, 0.2f);
                         }
                         else if ( keycode == SDLK_3 ) {
-                            milton_set_brush_alpha(milton_state, 0.3f);
+                            milton_set_brush_alpha(milton, 0.3f);
                         }
                         else if ( keycode == SDLK_4 ) {
-                            milton_set_brush_alpha(milton_state, 0.4f);
+                            milton_set_brush_alpha(milton, 0.4f);
                         }
                         else if ( keycode == SDLK_5 ) {
-                            milton_set_brush_alpha(milton_state, 0.5f);
+                            milton_set_brush_alpha(milton, 0.5f);
                         }
                         else if ( keycode == SDLK_6 ) {
-                            milton_set_brush_alpha(milton_state, 0.6f);
+                            milton_set_brush_alpha(milton, 0.6f);
                         }
                         else if ( keycode == SDLK_7 ) {
-                            milton_set_brush_alpha(milton_state, 0.7f);
+                            milton_set_brush_alpha(milton, 0.7f);
                         }
                         else if ( keycode == SDLK_8 ) {
-                            milton_set_brush_alpha(milton_state, 0.8f);
+                            milton_set_brush_alpha(milton, 0.8f);
                         }
                         else if ( keycode == SDLK_9 ) {
-                            milton_set_brush_alpha(milton_state, 0.9f);
+                            milton_set_brush_alpha(milton, 0.9f);
                         }
                         else if ( keycode == SDLK_0 ) {
-                            milton_set_brush_alpha(milton_state, 1.0f);
+                            milton_set_brush_alpha(milton, 1.0f);
                         }
                     }
 #if MILTON_ENABLE_PROFILING
                     if ( keycode == SDLK_BACKQUOTE ) {
-                        milton_state->viz_window_visible = !milton_state->viz_window_visible;
+                        milton->viz_window_visible = !milton->viz_window_visible;
                     }
 #endif
                 }
@@ -761,7 +761,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     // ==== Initialize milton
 
-    MiltonState* milton_state = arena_bootstrap(MiltonState, root_arena, 1024*1024);
+    MiltonState* milton = arena_bootstrap(MiltonState, root_arena, 1024*1024);
 
     if ( !gl::load() ) {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
@@ -833,9 +833,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     platform_state.ui_scale = platform_ui_scale(&platform_state);
     milton_log("UI scale is %f\n", platform_state.ui_scale);
-    // Initialize milton_state
+    // Initialize milton
     {
-        milton_state->render_data = gpu_allocate_render_data(&milton_state->root_arena);
+        milton->render_data = gpu_allocate_render_data(&milton->root_arena);
 
         PATH_CHAR* file_to_open_ = NULL;
         PATH_CHAR buffer[MAX_PATH] = {};
@@ -846,13 +846,13 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
 
-        milton_init(milton_state, platform_state.width, platform_state.height, platform_state.ui_scale, (PATH_CHAR*)file_to_open_);
-        milton_state->gui->menu_visible = true;
+        milton_init(milton, platform_state.width, platform_state.height, platform_state.ui_scale, (PATH_CHAR*)file_to_open_);
+        milton->gui->menu_visible = true;
         if ( is_fullscreen ) {
-            milton_state->gui->menu_visible = false;
+            milton->gui->menu_visible = false;
         }
     }
-    milton_resize_and_pan(milton_state, {}, {platform_state.width, platform_state.height});
+    milton_resize_and_pan(milton, {}, {platform_state.width, platform_state.height});
 
     platform_state.window_id = SDL_GetWindowID(window);
 
@@ -885,8 +885,8 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         size_t arr_sz = (w*h+7) / 8;
 
-        char* andmask = arena_alloc_array(&milton_state->root_arena, arr_sz, char);
-        char* xormask = arena_alloc_array(&milton_state->root_arena, arr_sz, char);
+        char* andmask = arena_alloc_array(&milton->root_arena, arr_sz, char);
+        char* xormask = arena_alloc_array(&milton->root_arena, arr_sz, char);
 
         i32 counter = 0;
         {
@@ -1045,7 +1045,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         ImGuiIO& imgui_io = ImGui::GetIO();
 
-        MiltonInput milton_input = sdl_event_loop(milton_state, &platform_state);
+        MiltonInput milton_input = sdl_event_loop(milton, &platform_state);
 
         // Handle pen orientation to switch to eraser or pen.
         if ( EasyTab != NULL && EasyTab->PenInProximity ) {
@@ -1104,9 +1104,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
                     // Show resize icon
                     #if !MILTON_HARDWARE_BRUSH_CURSOR
                         #define PAD 20
-                        else if (x > milton_state->view->screen_size.w - PAD
+                        else if (x > milton->view->screen_size.w - PAD
                              || x < PAD
-                             || y > milton_state->view->screen_size.h - PAD
+                             || y > milton->view->screen_size.h - PAD
                              || y < PAD ) {
                             cursor_set_and_show(platform_state.cursor_default);
                         }
@@ -1115,7 +1115,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
                     else if ( ImGui::GetIO().WantCaptureMouse ) {
                         cursor_set_and_show(platform_state.cursor_default);
                     }
-                    else if ( milton_state->current_mode == MiltonMode::EXPORTING ) {
+                    else if ( milton->current_mode == MiltonMode::EXPORTING ) {
                         cursor_set_and_show(platform_state.cursor_crosshair);
                         was_exporting = true;
                     }
@@ -1123,27 +1123,27 @@ milton_main(bool is_fullscreen, char* file_to_open)
                         cursor_set_and_show(platform_state.cursor_default);
                         was_exporting = false;
                     }
-                    else if ( milton_state->current_mode == MiltonMode::EYEDROPPER ) {
+                    else if ( milton->current_mode == MiltonMode::EYEDROPPER ) {
                         cursor_set_and_show(platform_state.cursor_crosshair);
                         platform_state.is_pointer_down = false;
                     }
-                    else if ( milton_state->gui->visible
-                              && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton_state->gui->picker), x,y) ) {
+                    else if ( milton->gui->visible
+                              && is_inside_rect_scalar(get_bounds_for_picker_and_colors(&milton->gui->picker), x,y) ) {
                         cursor_set_and_show(platform_state.cursor_default);
                     }
-                    else if ( milton_state->current_mode == MiltonMode::PEN ||
-                              milton_state->current_mode == MiltonMode::ERASER ||
-                              milton_state->current_mode == MiltonMode::PRIMITIVE ) {
+                    else if ( milton->current_mode == MiltonMode::PEN ||
+                              milton->current_mode == MiltonMode::ERASER ||
+                              milton->current_mode == MiltonMode::PRIMITIVE ) {
                         #if MILTON_HARDWARE_BRUSH_CURSOR
                             cursor_set_and_show(platform_state.cursor_brush);
                         #else
                             platform_cursor_hide();
                         #endif
                     }
-                    else if ( milton_state->current_mode == MiltonMode::HISTORY ) {
+                    else if ( milton->current_mode == MiltonMode::HISTORY ) {
                         cursor_set_and_show(platform_state.cursor_default);
                     }
-                    else if ( milton_state->current_mode != MiltonMode::PEN || milton_state->current_mode != MiltonMode::ERASER ) {
+                    else if ( milton->current_mode != MiltonMode::PEN || milton->current_mode != MiltonMode::ERASER ) {
                         platform_cursor_hide();
                     }
                 }
@@ -1171,7 +1171,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
             input_flags |= MiltonInputFlags_IMGUI_GRABBED_INPUT;
         }
 
-        milton_imgui_tick(&milton_input, &platform_state, milton_state);
+        milton_imgui_tick(&milton_input, &platform_state, milton);
 
         // Clear pan delta if we are zooming
         if ( milton_input.scale != 0 ) {
@@ -1200,9 +1200,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
         v2l pan_delta = platform_state.pan_point - platform_state.pan_start;
         if (    pan_delta.x != 0
              || pan_delta.y != 0
-             || platform_state.width != milton_state->view->screen_size.x
-             || platform_state.height != milton_state->view->screen_size.y ) {
-            milton_resize_and_pan(milton_state, pan_delta, {platform_state.width, platform_state.height});
+             || platform_state.width != milton->view->screen_size.x
+             || platform_state.height != milton->view->screen_size.y ) {
+            milton_resize_and_pan(milton, pan_delta, {platform_state.width, platform_state.height});
         }
         milton_input.pan_delta = pan_delta;
 
@@ -1212,8 +1212,8 @@ milton_main(bool is_fullscreen, char* file_to_open)
         // ==== Update and render
         PROFILE_GRAPH_END(polling);
         PROFILE_GRAPH_BEGIN(GL);
-        milton_update_and_render(milton_state, &milton_input);
-        if ( !(milton_state->flags & MiltonStateFlags_RUNNING) ) {
+        milton_update_and_render(milton, &milton_input);
+        if ( !(milton->flags & MiltonStateFlags_RUNNING) ) {
             platform_state.should_quit = true;
         }
         ImGui::Render();
@@ -1246,7 +1246,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     EasyTab_Unload();
 #endif
 
-    arena_free(&milton_state->root_arena);
+    arena_free(&milton->root_arena);
 
     if(!is_fullscreen) {
         bool save_prefs = prefs.width != platform_state.width || prefs.height != platform_state.height;

@@ -52,7 +52,7 @@ milton_unset_last_canvas_fname()
 }
 
 void
-milton_load(MiltonState* milton_state)
+milton_load(MiltonState* milton)
 {
     // Declare variables here to silence compiler warnings about using GOTO.
     i32 history_count = 0;
@@ -63,19 +63,19 @@ milton_load(MiltonState* milton_state)
     i32 layer_guid = 0;
     ColorButton* btn = NULL;
     MiltonGui* gui = NULL;
-    auto saved_size = milton_state->view->screen_size;
+    auto saved_size = milton->view->screen_size;
 
-    milton_log("Loading file %s\n", milton_state->mlt_file_path);
+    milton_log("Loading file %s\n", milton->mlt_file_path);
     // Reset the canvas.
-    milton_reset_canvas(milton_state);
+    milton_reset_canvas(milton);
 
-    CanvasState* canvas = milton_state->canvas;
+    CanvasState* canvas = milton->canvas;
 #define READ(address, size, num, fd) do { ok = fread_checked(address,size,num,fd); if (!ok){ goto END; } } while(0)
 
     // Unload gpu data if the strokes have been cooked.
-    gpu_free_strokes(milton_state->render_data, milton_state->canvas);
-    mlt_assert(milton_state->mlt_file_path);
-    FILE* fd = platform_fopen(milton_state->mlt_file_path, TO_PATH_STR("rb"));
+    gpu_free_strokes(milton->render_data, milton->canvas);
+    mlt_assert(milton->mlt_file_path);
+    FILE* fd = platform_fopen(milton->mlt_file_path, TO_PATH_STR("rb"));
     b32 ok = true;  // fread check
     b32 handled = false;  // when ok==false but we don't need to prompt a scary message.
 
@@ -88,7 +88,7 @@ milton_load(MiltonState* milton_state)
         if (ok) {
             if ( milton_binary_version < 4 ) {
                 if ( platform_dialog_yesno ("This file will be updated to the new version of Milton. Older versions won't be able to open it. Is this OK?", "File format change") ) {
-                    milton_state->mlt_binary_version = MILTON_MINOR_VERSION;
+                    milton->mlt_binary_version = MILTON_MINOR_VERSION;
                     milton_log("Updating this file to latest mlt version.\n");
                 } else {
                     ok = false;
@@ -96,7 +96,7 @@ milton_load(MiltonState* milton_state)
                     goto END;
                 }
             } else {
-                milton_state->mlt_binary_version = milton_binary_version;
+                milton->mlt_binary_version = milton_binary_version;
             }
         }
 
@@ -110,24 +110,24 @@ milton_load(MiltonState* milton_state)
         }
 
         if ( milton_binary_version >= 4 ) {
-            READ(milton_state->view, sizeof(CanvasView), 1, fd);
+            READ(milton->view, sizeof(CanvasView), 1, fd);
         } else {
             CanvasViewPreV4 legacy_view = {};
             READ(&legacy_view, sizeof(CanvasViewPreV4), 1, fd);
-            milton_state->view->screen_size = legacy_view.screen_size;
-            milton_state->view->scale = legacy_view.scale;
-            milton_state->view->zoom_center = legacy_view.zoom_center;
-            milton_state->view->pan_center = VEC2L(legacy_view.pan_center * -1);
-            milton_state->view->background_color = legacy_view.background_color;
-            milton_state->view->working_layer_id = legacy_view.working_layer_id;
-            milton_state->view->num_layers = legacy_view.num_layers;
+            milton->view->screen_size = legacy_view.screen_size;
+            milton->view->scale = legacy_view.scale;
+            milton->view->zoom_center = legacy_view.zoom_center;
+            milton->view->pan_center = VEC2L(legacy_view.pan_center * -1);
+            milton->view->background_color = legacy_view.background_color;
+            milton->view->working_layer_id = legacy_view.working_layer_id;
+            milton->view->num_layers = legacy_view.num_layers;
         }
 
         // The screen size might hurt us.
-        milton_state->view->screen_size = saved_size;
+        milton->view->screen_size = saved_size;
 
         // The process of loading changes state. working_layer_id changes when creating layers.
-        saved_working_layer_id = milton_state->view->working_layer_id;
+        saved_working_layer_id = milton->view->working_layer_id;
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
             platform_dialog("MLT file could not be loaded. Magic number mismatch.", "Problem");
@@ -150,9 +150,9 @@ milton_load(MiltonState* milton_state)
                 goto END;
             }
 
-            if (ok) { milton_new_layer(milton_state); }
+            if (ok) { milton_new_layer(milton); }
 
-            Layer* layer = milton_state->canvas->working_layer;
+            Layer* layer = milton->canvas->working_layer;
 
             READ(layer->name, sizeof(char), (size_t)len, fd);
 
@@ -166,7 +166,7 @@ milton_load(MiltonState* milton_state)
                 for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
                     Stroke stroke = Stroke{};
 
-                    stroke.id = milton_state->canvas->stroke_id_count++;
+                    stroke.id = milton->canvas->stroke_id_count++;
 
                     READ(&stroke.brush, sizeof(Brush), 1, fd);
                     READ(&stroke.num_points, sizeof(i32), 1, fd);
@@ -233,21 +233,21 @@ milton_load(MiltonState* milton_state)
                 }
             }
         }
-        milton_state->view->working_layer_id = saved_working_layer_id;
+        milton->view->working_layer_id = saved_working_layer_id;
 
         if ( milton_binary_version >= 5 ) {
            v3f rgb;
            READ(&rgb, sizeof(v3f), 1, fd);
-           gui_picker_from_rgb(&milton_state->gui->picker, rgb);
+           gui_picker_from_rgb(&milton->gui->picker, rgb);
         } else {
-           READ(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
+           READ(&milton->gui->picker.data, sizeof(PickerData), 1, fd);
         }
 
 
         // Buttons
         {
            i32 button_count = 0;
-           gui = milton_state->gui;
+           gui = milton->gui;
            btn = gui->picker.color_buttons;
 
            READ(&button_count, sizeof(i32), 1, fd);
@@ -261,9 +261,9 @@ milton_load(MiltonState* milton_state)
         // Brush
         if ( milton_binary_version >= 2 && milton_binary_version <= 5  ) {
             // PEN, ERASER
-            READ(&milton_state->brushes, sizeof(Brush), 2, fd);
+            READ(&milton->brushes, sizeof(Brush), 2, fd);
             // Sizes
-            READ(&milton_state->brush_sizes, sizeof(i32), 2, fd);
+            READ(&milton->brush_sizes, sizeof(i32), 2, fd);
         }
         else if ( milton_binary_version > 5 ) {
             u16 num_brushes = 0;
@@ -271,28 +271,28 @@ milton_load(MiltonState* milton_state)
             if ( num_brushes > BrushEnum_COUNT ) {
                 milton_log("Error loading file: too many brushes: %d\n", num_brushes);
             }
-            READ(&milton_state->brushes, sizeof(Brush), num_brushes, fd);
-            READ(&milton_state->brush_sizes, sizeof(i32), num_brushes, fd);
+            READ(&milton->brushes, sizeof(Brush), num_brushes, fd);
+            READ(&milton->brush_sizes, sizeof(i32), num_brushes, fd);
         }
 
         history_count = 0;
         READ(&history_count, sizeof(history_count), 1, fd);
-        reset(&milton_state->canvas->history);
-        reserve(&milton_state->canvas->history, history_count);
-        READ(milton_state->canvas->history.data, sizeof(*milton_state->canvas->history.data), (size_t)history_count, fd);
-        milton_state->canvas->history.count = history_count;
+        reset(&milton->canvas->history);
+        reserve(&milton->canvas->history, history_count);
+        READ(milton->canvas->history.data, sizeof(*milton->canvas->history.data), (size_t)history_count, fd);
+        milton->canvas->history.count = history_count;
 
         // MLT 3
         // Layer alpha
         if ( milton_binary_version >= 3 ) {
-            Layer* l = milton_state->canvas->root_layer;
+            Layer* l = milton->canvas->root_layer;
             for ( i64 i = 0; ok && i < num_layers; ++i ) {
                 mlt_assert(l != NULL);
                 READ(&l->alpha, sizeof(l->alpha), 1, fd);
                 l = l->next;
             }
         } else {
-            for ( Layer* l = milton_state->canvas->root_layer; l != NULL; l = l->next ) {
+            for ( Layer* l = milton->canvas->root_layer; l != NULL; l = l->next ) {
                 l->alpha = 1.0f;
             }
         }
@@ -308,40 +308,40 @@ END:
             if ( !handled ) {
                 platform_dialog("Tried to load a corrupt Milton file or there was an error reading from disk.", "Error");
             }
-            milton_reset_canvas_and_set_default(milton_state);
+            milton_reset_canvas_and_set_default(milton);
         } else {
-            i32 id = milton_state->view->working_layer_id;
+            i32 id = milton->view->working_layer_id;
             {  // Use working_layer_id to make working_layer point to the correct thing
-                Layer* layer = milton_state->canvas->root_layer;
+                Layer* layer = milton->canvas->root_layer;
                 while ( layer ) {
                     if ( layer->id == id ) {
-                        milton_state->canvas->working_layer = layer;
+                        milton->canvas->working_layer = layer;
                         break;
                     }
                     layer = layer->next;
                 }
             }
-            milton_state->canvas->layer_guid = layer_guid;
+            milton->canvas->layer_guid = layer_guid;
 
             // Update GPU
-            milton_set_background_color(milton_state, milton_state->view->background_color);
-            gpu_update_picker(milton_state->render_data, &milton_state->gui->picker);
+            milton_set_background_color(milton, milton->view->background_color);
+            gpu_update_picker(milton->render_data, &milton->gui->picker);
         }
     } else {
         milton_log("milton_load: Could not open file!\n");
-        milton_reset_canvas_and_set_default(milton_state);
+        milton_reset_canvas_and_set_default(milton);
     }
 #undef READ
 }
 
 void
-milton_save(MiltonState* milton_state)
+milton_save(MiltonState* milton)
 {
     // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
     i32 history_count = 0;
     u32 milton_binary_version = 0;
     i32 num_layers = 0;
-    milton_state->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
+    milton->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
     int pid = (int)getpid();
     PATH_CHAR tmp_fname[MAX_PATH] = {};
@@ -359,16 +359,16 @@ milton_save(MiltonState* milton_state)
 
         WRITE(&milton_magic, sizeof(u32), 1, fd);
 
-        milton_binary_version = milton_state->mlt_binary_version;
+        milton_binary_version = milton->mlt_binary_version;
 
         WRITE(&milton_binary_version, sizeof(u32), 1, fd);
-        WRITE(milton_state->view, sizeof(CanvasView), 1, fd);
+        WRITE(milton->view, sizeof(CanvasView), 1, fd);
 
-        num_layers = layer::number_of_layers(milton_state->canvas->root_layer);
+        num_layers = layer::number_of_layers(milton->canvas->root_layer);
         WRITE(&num_layers, sizeof(i32), 1, fd);
-        WRITE(&milton_state->canvas->layer_guid, sizeof(i32), 1, fd);
+        WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
-        for ( Layer* layer = milton_state->canvas->root_layer; layer; layer=layer->next  ) {
+        for ( Layer* layer = milton->canvas->root_layer; layer; layer=layer->next  ) {
             if ( layer->strokes.count > INT_MAX ) {
                 milton_die_gracefully("FATAL. Number of strokes in layer greater than can be stored in file format. ");
             }
@@ -421,17 +421,17 @@ milton_save(MiltonState* milton_state)
         }
 
         if ( milton_binary_version >= 5 ) {
-           v3f rgb = gui_get_picker_rgb(milton_state->gui);
+           v3f rgb = gui_get_picker_rgb(milton->gui);
            WRITE(&rgb, sizeof(rgb), 1, fd);
         }
         else {
-           WRITE(&milton_state->gui->picker.data, sizeof(PickerData), 1, fd);
+           WRITE(&milton->gui->picker.data, sizeof(PickerData), 1, fd);
         }
 
         // Buttons
         if ( ok ) {
             i32 button_count = 0;
-            MiltonGui* gui = milton_state->gui;
+            MiltonGui* gui = milton->gui;
             // Count buttons
             for (ColorButton* b = gui->picker.color_buttons; b!= NULL; b = b->next, button_count++) { }
             // Write
@@ -448,28 +448,28 @@ milton_save(MiltonState* milton_state)
         // Brush
         if ( milton_binary_version >= 2 && milton_binary_version <= 5 ) {
             // PEN, ERASER
-            WRITE(&milton_state->brushes, sizeof(Brush), 2, fd);
+            WRITE(&milton->brushes, sizeof(Brush), 2, fd);
             // Sizes
-            WRITE(&milton_state->brush_sizes, sizeof(i32), 2, fd);
+            WRITE(&milton->brush_sizes, sizeof(i32), 2, fd);
         }
         else if ( milton_binary_version > 5 ) {
             u16 num_brushes = 3;  // Brush, eraser, primitive.
             WRITE(&num_brushes, sizeof(num_brushes), 1, fd);
-            WRITE(&milton_state->brushes, sizeof(Brush), num_brushes, fd);
-            WRITE(&milton_state->brush_sizes, sizeof(i32), num_brushes, fd);
+            WRITE(&milton->brushes, sizeof(Brush), num_brushes, fd);
+            WRITE(&milton->brush_sizes, sizeof(i32), num_brushes, fd);
         }
 
-        history_count = (i32)milton_state->canvas->history.count;
-        if ( milton_state->canvas->history.count > INT_MAX ) {
+        history_count = (i32)milton->canvas->history.count;
+        if ( milton->canvas->history.count > INT_MAX ) {
             history_count = 0;
         }
         WRITE(&history_count, sizeof(history_count), 1, fd);
-        WRITE(milton_state->canvas->history.data, sizeof(*milton_state->canvas->history.data), (size_t)history_count, fd);
+        WRITE(milton->canvas->history.data, sizeof(*milton->canvas->history.data), (size_t)history_count, fd);
 
         // MLT 3
         // Layer alpha
         if ( milton_binary_version >= 3 ) {
-            Layer* l = milton_state->canvas->root_layer;
+            Layer* l = milton->canvas->root_layer;
             for ( i64 i = 0; ok && i < num_layers; ++i ) {
                 mlt_assert(l);
                 WRITE(&l->alpha, sizeof(l->alpha), 1, fd);
@@ -481,14 +481,14 @@ END:
         if ( file_error == 0 ) {
             int close_ret = fclose(fd);
             if ( close_ret == 0 ) {
-                ok = platform_move_file(tmp_fname, milton_state->mlt_file_path);
+                ok = platform_move_file(tmp_fname, milton->mlt_file_path);
                 if ( ok ) {
                     //  \o/
-                    milton_save_postlude(milton_state);
+                    milton_save_postlude(milton);
                 }
                 else {
                     milton_log("Could not move file. Moving on. Avoiding this save.\n");
-                    milton_state->flags |= MiltonStateFlags_MOVE_FILE_FAILED;
+                    milton->flags |= MiltonStateFlags_MOVE_FILE_FAILED;
                 }
             }
             else {

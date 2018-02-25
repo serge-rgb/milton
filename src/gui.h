@@ -124,13 +124,13 @@ struct MiltonGui
 //
 // Call from the main loop before milton_update
 
-void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton_state);
+void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton);
 
 
 
 //
 void                gui_init(Arena* root_arena, MiltonGui* gui, f32 scale);
-void                gui_toggle_visibility(MiltonState* milton_state);
+void                gui_toggle_visibility(MiltonState* milton);
 void                gui_toggle_menu_visibility(MiltonGui* gui);
 void                gui_toggle_help(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
