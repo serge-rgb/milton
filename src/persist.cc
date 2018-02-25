@@ -646,7 +646,7 @@ milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
 }
 
 b32
-milton_prefs_load(PlatformPrefs* prefs)
+milton_appstate_load(PlatformPrefs* prefs)
 {
     b32 loaded = false;
     PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
@@ -675,7 +675,7 @@ milton_prefs_load(PlatformPrefs* prefs)
 }
 
 void
-milton_prefs_save(PlatformPrefs* prefs)
+milton_appstate_save(PlatformPrefs* prefs)
 {
     PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
     platform_fname_at_config(fname, MAX_PATH);

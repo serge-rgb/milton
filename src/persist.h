@@ -13,6 +13,6 @@ void milton_load(MiltonState* milton);
 void milton_save(MiltonState* milton);
 void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);
 
-b32  milton_prefs_load(PlatformPrefs* prefs);
-void milton_prefs_save(PlatformPrefs* prefs);
+b32  milton_appstate_load(PlatformPrefs* prefs);
+void milton_appstate_save(PlatformPrefs* prefs);
 

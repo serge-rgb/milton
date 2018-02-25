@@ -627,7 +627,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     PlatformPrefs prefs = {};
 
     milton_log("Loading preferences...\n");
-    if ( milton_prefs_load(&prefs) ) {
+    if ( milton_appstate_load(&prefs) ) {
         milton_log("Prefs file window size: %dx%d\n", prefs.width, prefs.height);
     }
 
@@ -1256,7 +1256,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
             prefs.width  = size.w;
             prefs.height = size.h;
-            milton_prefs_save(&prefs);
+            milton_appstate_save(&prefs);
         }
     }
 
