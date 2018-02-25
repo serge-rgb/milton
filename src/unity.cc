@@ -16,7 +16,6 @@
 #include "sdl_milton.cc"
 #include "shadergen.cc"
 #include "StrokeList.cc"
-#include "tests.cc"
 #include "third_party_libs.cc"
 #include "utils.cc"
 #include "vector.cc"

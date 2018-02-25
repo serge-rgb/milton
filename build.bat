@@ -3,6 +3,8 @@
 
 setlocal
 
+
+REM NOTE: do not set this to 1 unless you're willing to change the hardcoded path below...
 set doUnityClangBuild=0
 
 set warnFlags=-Wno-writable-strings -Wno-format-security -Wno-deprecated-declarations -Wno-microsoft-include
@@ -14,6 +16,8 @@ if "%doUnityClangBuild%"=="1" (
 			       clang-cl /Zi src\shadergen.cc %warnFlags% -o shadergen.exe
 			       shadergen.exe
 			       clang-cl src\unity.cc /Zi %includeFlags% %warnFlags% third_party\bin\SDL2.lib %WindowsKitDir%Gdi32.lib %WindowsKitDir%OpenGl32.lib %WindowsKitDir%Shell32.lib %WindowsKitDir%Comdlg32.lib  %WindowsKitDir%Ole32.lib  %WindowsKitDir%OleAut32.lib -o milton.exe
-			      ) else (
-				      tundra\bin\tundra2.exe
-				     )
+
+) else (
+      tundra\bin\tundra2.exe
+      exit /b %errorlevel%
+     )
