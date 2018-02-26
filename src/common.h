@@ -22,6 +22,8 @@ typedef uint64_t    u64;
 
 typedef float       f32;
 
+typedef size_t      sz;
+
 typedef i32         b32;
 
 #if defined(_WIN32)

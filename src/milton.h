@@ -10,7 +10,6 @@
 #include "DArray.h"
 #include "profiler.h"
 
-#define MILTON_USE_VAO              0
 #define STROKE_MAX_POINTS           2048
 #define MILTON_DEFAULT_SCALE        (1 << 10)
 #define NO_PRESSURE_INFO            -1.0f
@@ -26,9 +25,6 @@ struct MiltonGLState
     GLuint quad_program;
     GLuint texture;
     GLuint vbo;
-#if MILTON_USE_VAO
-    GLuint quad_vao;
-#endif
 };
 
 enum class MiltonMode
@@ -88,26 +84,33 @@ struct CanvasState
     i32         stroke_id_count;
 };
 
-enum PrimitiveFSM {
+enum PrimitiveFSM
+{
     Primitive_WAITING,
     Primitive_DRAWING,
     Primitive_DONE,
 };
 
-struct MiltonState
+#pragma pack(push, 1)
+struct MiltonSettings
 {
-    u8  bytes_per_pixel;
+    v3f background_color;
+};
+#pragma pack(pop)
 
+struct Eyedropper
+{
+    u8* buffer;
+};
+
+struct Milton
+{
     b32 flags;  // See MiltonStateFlags
 
     i32 max_width;
     i32 max_height;
 
-    u8* eyedropper_buffer;  // Get pixels from OpenGL framebuffer and store them here for eydropper operations.
-
-    MiltonGLState* gl;
-
-    struct MiltonGui* gui;
+    // u8* eyedropper_buffer;  // Get pixels from OpenGL framebuffer and store them here for eydropper operations.
 
     // Persistence
     PATH_CHAR*  mlt_file_path;
@@ -126,6 +129,8 @@ struct MiltonState
     // ---- The Painting
     CanvasState*    canvas;
     CanvasView*     view;
+
+    Eyedropper* eyedropper;
 
     Brush       brushes[BrushEnum_COUNT];
     i32         brush_sizes[BrushEnum_COUNT];  // In screen pixels
@@ -151,13 +156,11 @@ struct MiltonState
     Arena       root_arena;     // Lives forever
     Arena       canvas_arena;   // Gets reset every canvas.
 
-    // ====
-    // Debug helpers
-    // ====
-#if MILTON_DEBUG
-    b32 DEBUG_sse2_switch;
-    b32 DEBUG_replaying;
-#endif
+    // Subsystems
+    MiltonGLState* gl;
+    MiltonGui* gui;
+    MiltonSettings* settings;  // User settings
+
 #if MILTON_ENABLE_PROFILING
     b32 viz_window_visible;
     GraphData graph_frame;
@@ -221,52 +224,52 @@ enum SaveEnum
     SaveEnum_GOOD_TO_GO,
 };
 
-void milton_init(MiltonState* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open);
+void milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open);
 
 // Expects absolute path
-void milton_set_canvas_file(MiltonState* milton, PATH_CHAR* fname);
-void milton_set_default_canvas_file(MiltonState* milton);
+void milton_set_canvas_file(Milton* milton, PATH_CHAR* fname);
+void milton_set_default_canvas_file(Milton* milton);
 void milton_set_last_canvas_fname(PATH_CHAR* last_fname);
 void milton_unset_last_canvas_fname();
 
-void milton_save_postlude(MiltonState* milton);
+void milton_save_postlude(Milton* milton);
 
 
-void milton_reset_canvas(MiltonState* milton);
-void milton_reset_canvas_and_set_default(MiltonState* milton);
+void milton_reset_canvas(Milton* milton);
+void milton_reset_canvas_and_set_default(Milton* milton);
 
-void milton_gl_backend_draw(MiltonState* milton);
+void milton_gl_backend_draw(Milton* milton);
 
-b32 milton_current_mode_is_for_drawing(MiltonState* milton);
+b32 milton_current_mode_is_for_drawing(Milton* milton);
 
 // Between 0 and k_max_brush_size
-i32     milton_get_brush_radius(MiltonState* milton);
-void    milton_set_brush_size(MiltonState* milton, i32 size);
-void    milton_increase_brush_size(MiltonState* milton);
-void    milton_decrease_brush_size(MiltonState* milton);
-float   milton_get_brush_alpha(MiltonState* milton);
-void    milton_set_brush_alpha(MiltonState* milton, float alpha);
+i32     milton_get_brush_radius(Milton* milton);
+void    milton_set_brush_size(Milton* milton, i32 size);
+void    milton_increase_brush_size(Milton* milton);
+void    milton_decrease_brush_size(Milton* milton);
+float   milton_get_brush_alpha(Milton* milton);
+void    milton_set_brush_alpha(Milton* milton, float alpha);
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
-void milton_resize_and_pan(MiltonState* milton, v2l pan_delta, v2i new_screen_size);
+void milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size);
 
 
-void milton_use_previous_mode(MiltonState* milton);
-void milton_switch_mode(MiltonState* milton, MiltonMode mode);
+void milton_use_previous_mode(Milton* milton);
+void milton_switch_mode(Milton* milton, MiltonMode mode);
 
 // Our "game loop" inner function.
-void milton_update_and_render(MiltonState* milton, MiltonInput* input);
+void milton_update_and_render(Milton* milton, MiltonInput* input);
 
-void milton_try_quit(MiltonState* milton);
+void milton_try_quit(Milton* milton);
 
-void milton_new_layer(MiltonState* milton);
-void milton_set_working_layer(MiltonState* milton, Layer* layer);
-void milton_delete_working_layer(MiltonState* milton);
-void milton_set_background_color(MiltonState* milton, v3f background_color);
+void milton_new_layer(Milton* milton);
+void milton_set_working_layer(Milton* milton, Layer* layer);
+void milton_delete_working_layer(Milton* milton);
+void milton_set_background_color(Milton* milton, v3f background_color);
 
 // Set the center of the zoom
-void milton_set_zoom_at_point(MiltonState* milton, v2i zoom_center);
-void milton_set_zoom_at_screen_center(MiltonState* milton);
+void milton_set_zoom_at_point(Milton* milton, v2i zoom_center);
+void milton_set_zoom_at_screen_center(Milton* milton);
 
-b32  milton_brush_smoothing_enabled(MiltonState* milton);
-void milton_toggle_brush_smoothing(MiltonState* milton);
+b32  milton_brush_smoothing_enabled(Milton* milton);
+void milton_toggle_brush_smoothing(Milton* milton);

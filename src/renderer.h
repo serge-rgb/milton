@@ -50,7 +50,7 @@ struct CanvasView;
 struct Exporter;
 struct Stroke;
 struct Layer;
-struct MiltonState;
+struct Milton;
 struct CanvasState;
 
 RenderData* gpu_allocate_render_data(Arena* arena);
@@ -109,7 +109,7 @@ void gpu_clip_strokes_and_update(Arena* arena,
 void gpu_reset_render_flags(RenderData* render_data, int flags);
 
 void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height);
-void gpu_render_to_buffer(MiltonState* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha);
+void gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha);
 
 void gpu_release_data(RenderData* render_data);
 

@@ -9,8 +9,9 @@
 
 struct Arena;
 struct MiltonInput;
-struct MiltonState;
+struct Milton;
 struct PlatformState;
+struct MiltonSettings;
 
 enum ColorPickerFlags
 {
@@ -117,6 +118,8 @@ struct MiltonGui
     v2i preview_pos_prev;  // Keep the previous position to clear the canvas.
 
     f32 scale;
+
+    MiltonSettings* modified_settings;
 };
 
 //
@@ -124,13 +127,13 @@ struct MiltonGui
 //
 // Call from the main loop before milton_update
 
-void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  MiltonState* milton);
+void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milton* milton);
 
 
 
 //
 void                gui_init(Arena* root_arena, MiltonGui* gui, f32 scale);
-void                gui_toggle_visibility(MiltonState* milton);
+void                gui_toggle_visibility(Milton* milton);
 void                gui_toggle_menu_visibility(MiltonGui* gui);
 void                gui_toggle_help(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);

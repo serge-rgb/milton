@@ -161,6 +161,7 @@ void    platform_fname_at_exe(PATH_CHAR* fname, size_t len);
 b32     platform_move_file(PATH_CHAR* src, PATH_CHAR* dest);
 
 void str_to_path_char(char* str, PATH_CHAR* out, size_t out_sz);
+// void path_char_to_str(char* str, PATH_CHAR* out, size_t out_sz);
 
 enum DeleteErrorTolerance
 {

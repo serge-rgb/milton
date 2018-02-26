@@ -52,7 +52,7 @@ milton_unset_last_canvas_fname()
 }
 
 void
-milton_load(MiltonState* milton)
+milton_load(Milton* milton)
 {
     // Declare variables here to silence compiler warnings about using GOTO.
     i32 history_count = 0;
@@ -335,7 +335,7 @@ END:
 }
 
 void
-milton_save(MiltonState* milton)
+milton_save(Milton* milton)
 {
     // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
     i32 history_count = 0;
@@ -692,5 +692,50 @@ milton_appstate_save(PlatformPrefs* prefs)
     }
     else {
         milton_log("Could not open file for writing prefs :(\n");
+    }
+}
+
+void milton_settings_load(MiltonSettings* settings)
+{
+    PATH_CHAR settings_fname[MAX_PATH] = TO_PATH_STR("milton_settings.ini"); {
+        platform_fname_at_config(settings_fname, MAX_PATH);
+    }
+
+    b32 ok = false;
+    auto* fd = platform_fopen(settings_fname, TO_PATH_STR("rb"));
+    if ( fd ) {
+        u16 struct_size = 0;
+        if ( fread(&struct_size, sizeof(u16), 1, fd) ) {
+            if (struct_size <= sizeof(*settings)) {
+                if ( fread(settings, sizeof(*settings), 1, fd) ) {
+                    ok = true;
+                }
+            }
+        }
+    }
+    if ( !ok ) {
+        milton_log("Warning: Failed to read settings file\n");
+    }
+}
+
+void milton_settings_save(MiltonSettings* settings)
+{
+    PATH_CHAR settings_fname[MAX_PATH] = TO_PATH_STR("milton_settings.ini"); {
+        platform_fname_at_config(settings_fname, MAX_PATH);
+    }
+
+    b32 ok = false;
+    auto* fd = platform_fopen(settings_fname, TO_PATH_STR("wb"));
+    if ( fd ) {
+        mlt_assert( sizeof(*settings) < 1<<16 );
+        u16 sz = sizeof(*settings);
+        if ( fwrite(&sz, sizeof(sz), 1, fd) ) {
+            if ( fwrite(settings, sizeof(*settings), 1, fd) ) {
+                ok = true;
+            }
+        }
+    }
+    if ( !ok ) {
+        milton_log("Warning: could not correctly save settings file\n");
     }
 }

@@ -89,6 +89,8 @@ init_localization()
         EN(TXT_disable_stroke_smoothing, "Disable Stroke Smoothing");
         EN(TXT_enable_stroke_smoothing, "Enable Stroke Smoothing");
         EN(TXT_transparent_background, "Transparent background");
+        EN(TXT_settings, "Settings");
+        EN(TXT_default_background_color, "Default background color for new canvas:");
     }
 
     {  // Spanish

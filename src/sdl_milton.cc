@@ -91,7 +91,7 @@ panning_update(PlatformState* platform_state)
 }
 
 MiltonInput
-sdl_event_loop(MiltonState* milton, PlatformState* platform_state)
+sdl_event_loop(Milton* milton, PlatformState* platform_state)
 {
     MiltonInput milton_input = {};
     milton_input.mode_to_set = MiltonMode::NONE;
@@ -761,7 +761,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     // ==== Initialize milton
 
-    MiltonState* milton = arena_bootstrap(MiltonState, root_arena, 1024*1024);
+    Milton* milton = arena_bootstrap(Milton, root_arena, 1024*1024);
 
     if ( !gl::load() ) {
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");

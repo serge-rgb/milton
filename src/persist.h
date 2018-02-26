@@ -5,14 +5,18 @@
 
 #include "platform.h"
 
-struct MiltonState;
+struct Milton;
+struct MiltonSettings;
 
 PATH_CHAR* milton_get_last_canvas_fname();
 
-void milton_load(MiltonState* milton);
-void milton_save(MiltonState* milton);
+void milton_load(Milton* milton);
+void milton_save(Milton* milton);
 void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);
 
 b32  milton_appstate_load(PlatformPrefs* prefs);
 void milton_appstate_save(PlatformPrefs* prefs);
+
+void milton_settings_load(MiltonSettings* settings);
+void milton_settings_save(MiltonSettings* settings);
 

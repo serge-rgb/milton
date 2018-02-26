@@ -1553,7 +1553,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
 }
 
 void
-gpu_render_to_buffer(MiltonState* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha)
+gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha)
 {
     CanvasView saved_view = *milton->view;
     RenderData* render_data = milton->render_data;
