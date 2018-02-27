@@ -10,6 +10,8 @@ add_executable(shadergen
   src/shadergen.cc
 )
 
+set(SDL2DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/SDL2-2.0.3)
+
 FILE (GLOB ShaderSources src/*.glsl third_party/*.glsl)
 
 add_executable(Milton WIN32 MACOSX_BUNDLE
@@ -108,10 +110,10 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   )
 
   find_package(OpenGL REQUIRED)
-  find_package(SDL2 REQUIRED)
   find_package(GTK2 2.6 REQUIRED gtk)
   find_package(X11 REQUIRED)
   find_library(XINPUT_LIBRARY libXi.so)
+  find_package(Threads REQUIRED)
 
   if(XINPUT_LIBRARY STREQUAL "XINPUT_LIBRARY-NOTFOUND")
       message(FATAL_ERROR "Could not find libXi.so")
@@ -129,31 +131,26 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     message(FATAL_ERROR "Could not find X11 libraries")
   endif()
 
-  if(NOT SDL2_FOUND)
-    message(FATAL_ERROR "Could not find SDL2 libraries")
-  endif()
-
-  # on ubuntu 16.04 LTS CMake complains about the -lSDL2 link switch
-  # having trailing/leading spaces.
-  # string(STRIP a b) will remove those spaces.
-  string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
-
   target_include_directories(Milton PRIVATE
     ${GTK2_INCLUDE_DIRS}
     ${X11_INCLUDE_DIR}
-    ${SDL2_INCLUDE_DIRS}
+    ${SDL2DIR}/build/linux64/include/SDL2
     ${OPENGL_INCLUDE_DIR}
   )
 
   target_link_libraries(Milton
     ${GTK2_LIBRARIES}
     ${X11_LIBRARIES}
-    ${SDL2_LIBRARIES}
     ${OPENGL_LIBRARIES}
-    ${XINPUT_LIBRARY})
+    ${XINPUT_LIBRARY}
+    ${SDL2DIR}/build/linux64/lib/libSDL2main.a
+    ${SDL2DIR}/build/linux64/lib/libSDL2.a
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${CMAKE_DL_LIBS}
+    )
 
 else()
-  add_subdirectory(third_party/SDL2-2.0.3)
+  add_subdirectory(${SDL2DIR})
   target_link_libraries(Milton SDL2-static)
 endif()
 
@@ -169,7 +166,7 @@ endif()
 
 if(WIN32 OR APPLE)
   target_include_directories(Milton PRIVATE
-    third_party/SDL2-2.0.3/include
+    ${SDL2DIR}/include
   )
 endif()
 

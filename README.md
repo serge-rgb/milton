@@ -36,7 +36,7 @@ Here is the  [latest video tutorial](https://www.youtube.com/watch?v=g27gHio2Ohk
 
 Check out the [patreon page](https://www.patreon.com/serge_rgb?ty=h) if you would like to help out. :)
 
-Milton is Windows only at the moment. Linux and OSX support is intended for the future, but I don't know when that will come.
+While on Windows there are binaries available, for Milton on Linux or OSX you will have to compile from source. There are some basic build instructions below. They will probably build, but please be prepared to do a bit of debugging on your end if you run into trouble, since these are not the primary development platforms.
 
 How to Compile
 ==============
@@ -66,26 +66,26 @@ installed.
 Linux
 -----
 
-Porting in progress.
+Work in progress, but is known to build and run.
 
-### Building
-
-Library and header dependencies:
+### Dependencies
+Use your linux distribution's package manager to install these.
 * X11
-* SDL2
 * OpenGL
 * XInput
 * GTK2
 
-Release build using CMake:
+### Building
+
+Release build:
 ```sh
-mkdir build
-cmake ..
-make
-./Milton
+./build-lin.sh
+build/Milton
 ```
 
-There are some CMake options you might care about:
+build-lin.sh uses cmake under the hood, and any arguments you pass to it will be passed along to cmake.
+
+Here are some CMake options you might care about:
 
 | flag | type | does |
 | ---- | ---- | ---- |
@@ -93,14 +93,19 @@ There are some CMake options you might care about:
 | `TRY_GL3` | `bool` | Tells Milton to target OpenGL3.2. Does not guarantee that such a context will be created. This is the default Debug target. |
 | `CMAKE_BUILD_TYPE` | `string` | Configures the build type. Defaults to `Release`. Available build types are: `Release` and `Debug`. |
 
+
 Example debug build using GL2.1:
-`cmake -DCMAKE_BUILD_TYPE=Debug -DTRY_GL2=1 ..`
+`./build-lin.sh -DCMAKE_BUILD_TYPE=Debug -DTRY_GL2=1`
 
 OSX
 ---
 
-_No OSX support at the moment._
+Work in progress.
 
+### Building
+`./setup_osx.sh`
+
+If you run into troubles building on OSX, please try to submit a pull request if possible.
 
 License
 =======
