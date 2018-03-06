@@ -19,6 +19,7 @@ struct StrokeBucket
 {
     Stroke          data[STROKELIST_BUCKET_COUNT];
     StrokeBucket*   next;
+    StrokeBucket*   prev;
     Rect            bounding_rect;
 };
 

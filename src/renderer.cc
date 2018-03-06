@@ -1044,15 +1044,10 @@ gpu_clip_strokes_and_update(Arena* arena,
         }
 
         StrokeBucket* bucket = &l->strokes.root;
-        i64 bucket_i = 0;
+        i64 bucket_i = (l->strokes.count - 1) / STROKELIST_BUCKET_COUNT;
 
         while ( bucket ) {
             i64 count = 0;
-            if ( l->strokes.count < bucket_i * STROKELIST_BUCKET_COUNT ) {
-               // There is an allocated bucket but we have already iterated
-               // through all the actual strokes.
-               break;
-            }
             if ( l->strokes.count - bucket_i*STROKELIST_BUCKET_COUNT >= STROKELIST_BUCKET_COUNT ) {
                 count = STROKELIST_BUCKET_COUNT;
             } else {
@@ -1068,7 +1063,7 @@ gpu_clip_strokes_and_update(Arena* arena,
                                 || screen_bounds.bottom < bbox.top;
 
             if ( !bucket_outside ) {
-                for ( i64 i = 0; i < count; ++i ) {
+                for ( i64 i = count-1; i >= 0; --i ) {
                     Stroke* s = &bucket->data[i];
 
                     if ( s != NULL ) {
@@ -1081,8 +1076,8 @@ gpu_clip_strokes_and_update(Arena* arena,
 
                         i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
                         // Area might be 0 if the stroke is smaller than
-                        // a pixel. We don't draw it in that case.
-                        if ( !is_outside && area!=0 ) {
+                        // a pixel. It gets clipped out in that case.
+                        if ( !is_outside && area != 0 ) {
                             gpu_cook_stroke(arena, render_data, s);
                             push(clip_array, s->render_element);
                         }
@@ -1113,8 +1108,8 @@ gpu_clip_strokes_and_update(Arena* arena,
                 }
             }
             #endif
-            bucket = bucket->next;
-            bucket_i += 1;
+            bucket = bucket->prev;
+            bucket_i -= 1;
         }
 
         // Add the working stroke on the current layer.
@@ -1179,7 +1174,7 @@ static void
 gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                   i32 view_width, i32 view_height, float background_alpha=1.0f)
 {
-    // FLip it. GL is bottom-left.
+    // Flip it. GL is bottom-left.
     i32 x = view_x;
     i32 y = render_data->height - (view_y+view_height);
     i32 w = view_width;
@@ -1227,7 +1222,6 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glDepthFunc(GL_NOTEQUAL);
 
     glUseProgram(render_data->stroke_program);
@@ -1240,6 +1234,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
         for ( i64 i = 0; i < (i64)clip_array->count; i++ ) {
             RenderElement* re = &clip_array->data[i];
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
             if ( re->flags & RenderElementFlags_LAYER ) {
 
@@ -1336,6 +1331,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
             }
             // If this render element is not a layer, then it is a stroke.
             else {
+                glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
                 i64 count = re->count;
 
                 if ( count > 0 ) {

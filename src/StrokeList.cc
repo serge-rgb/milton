@@ -27,6 +27,7 @@ push(StrokeList* list, const Stroke& element)
     while ( bucket_i != 0 ) {
         if ( !bucket->next ) {
             bucket->next = create_bucket(list->arena);
+            bucket->next->prev = bucket;
         }
         bucket = bucket->next;
         bucket_i -= 1;
