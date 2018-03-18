@@ -843,23 +843,14 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                 bounds[bounds_i++] = { (float)min_x, (float)min_y, (float)stroke_z };
                 bounds[bounds_i++] = { (float)min_x, (float)max_y, (float)stroke_z };
                 bounds[bounds_i++] = { (float)max_x, (float)max_y, (float)stroke_z };
-
-                // Leaving this commented to show how each quad works, conceptually.
-                //bounds[bounds_i++] = { (float)max_x, (float)max_y, (float)stroke_z };
-                //bounds[bounds_i++] = { (float)min_x, (float)min_y, (float)stroke_z };
                 bounds[bounds_i++]   = { (float)max_x, (float)min_y, (float)stroke_z };
 
                 indices[indices_i++] = (u16)(idx + 0);
                 indices[indices_i++] = (u16)(idx + 1);
                 indices[indices_i++] = (u16)(idx + 2);
 
-                //indices[indices_i++] = (u16)(idx + 3);
                 indices[indices_i++] = (u16)(idx + 2);
-
-                //indices[indices_i++] = (u16)(idx + 4);
                 indices[indices_i++] = (u16)(idx + 0);
-
-                //indices[indices_i++] = (u16)(idx + 5);
                 indices[indices_i++] = (u16)(idx + 3);
 
                 // Pressures are in (0,1] but we need to encode them as integers.

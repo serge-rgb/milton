@@ -924,7 +924,6 @@ copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke
                 out_stroke->pressures[out_i] = in_stroke->pressures[i];
                 out_stroke->points[out_i++] = in_stroke->points[i];
             }
-
         }
 
         out_stroke->num_points = out_i;
