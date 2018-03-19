@@ -55,6 +55,12 @@ magnitude(v2f a)
     return sqrtf(DOT(a, a));
 }
 
+i64
+magnitude(v2l a)
+{
+    return sqrtf((float)DOT(a, a));
+}
+
 f32
 distance(v2f a, v2f b)
 {

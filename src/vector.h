@@ -64,12 +64,24 @@ typedef Vector2<float>   v2f;
     return a;               \
 }
 
+#define operator2_assign_scalar(OP) \
+    template<typename T> \
+    Vector2<T>& \
+    operator OP (Vector2<T>& a, T b) \
+{                           \
+    a.x OP b;            \
+    a.y OP b;            \
+    return a;               \
+}
+
 operator2_vector(+)
 operator2_vector(-)
 operator2_assign(+=)
 operator2_assign(-=)
 operator2_scalar(*)
 operator2_scalar(/)
+operator2_assign_scalar(*=)
+operator2_assign_scalar(/=)
 
 template<typename Type>
 bool

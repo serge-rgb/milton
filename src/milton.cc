@@ -208,10 +208,106 @@ milton_primitive_input(Milton* milton, MiltonInput* input, b32 end_stroke)
     }
 }
 
+void
+stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pressure)
+{
+    b32 not_the_first = false;
+    if ( stroke->num_points >= 1 ) {
+        not_the_first = true;
+    }
+
+    // A point passes inspection if:
+    //  a) it's the first point of this stroke
+    //  b) it is being appended to the stroke and it didn't merge with the previous point.
+    b32 passed_inspection = true;
+
+    if ( passed_inspection && not_the_first ) {
+        i32 in_radius = (i32)(pressure * stroke->brush.radius);
+
+        // Limit the number of points we check so that we don't mess with the stroke too much.
+        int point_window = 4;
+        for ( i32 i = stroke->num_points - 1; passed_inspection && i >= 0; --i ) {
+            if ( i - stroke->num_points >= point_window ) {
+                break;
+            }
+            v2l stroke_point = stroke->points[i];
+            i32 stroke_radius = (i32)(stroke->brush.radius * stroke->pressures[i]);
+
+            // Pop every point that is contained by the new one, but don't leave it empty
+            if ( stroke_point_contains_point(canvas_point, in_radius, stroke_point, stroke_radius) ) {
+                if ( stroke->num_points > 1 ) {
+                    --stroke->num_points;
+                } else {
+                    break;
+                }
+            }
+            // Don't append this point if it's contained in a previous point.
+            else if ( stroke_point_contains_point(stroke_point, stroke_radius, canvas_point, in_radius) ) {
+                // If some other point in the past contains this point,
+                // then this point is invalid.
+                passed_inspection = false;
+                break;
+            }
+        }
+    }
+
+    // Cleared to be appended.
+    if ( passed_inspection ) {
+        // Add to current stroke.
+        if ( stroke->num_points < STROKE_MAX_POINTS ) {
+
+            // Check the angle
+            if ( stroke->num_points >= 2 ) {
+                v2l p0 = stroke->points[stroke->num_points - 2];
+                v2l p1 = stroke->points[stroke->num_points - 1];
+
+                v2f d0 = v2l_to_v2f(p1-p0);
+                f32 mag_d0 = magnitude(d0);
+                if (mag_d0 > 0.0f) {
+                    d0 /= mag_d0;
+                    v2l p3 = canvas_point;
+                    v2f d1 = v2l_to_v2f(p3-p1);
+                    f32 mag_d1 = magnitude(d1);
+                    if ( mag_d1 > 0.0f ) {
+                        d1 /= mag_d1;
+                        v2f md0 = d0 * -1.0f;
+                        float cos_angle = DOT(md0, d1);
+                        if ( cos_angle > -0.99f && cos_angle < 0.0f ) {
+                            mlt_assert(cos_angle < 0.0f);
+                            v2l p2 = p1 + v2f_to_v2l(d0*(0.5f*mag_d1));
+#define HALFPOINT(a, b) (((a) + (b)) / (i64)2)
+                            v2l px = HALFPOINT(p1, p2);
+                            v2l py = HALFPOINT(p2, p3);
+                            v2l p_interp = HALFPOINT(px, py);
+#if 1
+                            stroke_append_point_with_interpolation(stroke, p_interp, pressure);
+#else
+                            int index = stroke->num_points++;
+                            stroke->points[index] = p_interp;
+                            stroke->pressures[index] = pressure;
+#endif
+#undef HALFPOINT
+                        }
+                    }
+                }
+
+            }
+
+
+            if ( stroke->num_points < STROKE_MAX_POINTS ) {
+
+                int index = stroke->num_points++;
+                stroke->points[index] = canvas_point;
+                stroke->pressures[index] = pressure;
+
+            }
+        }
+    }
+}
+
 static void
 milton_stroke_input(Milton* milton, MiltonInput* input)
 {
-    i64 num_discarded = 0;
     if ( input->input_count == 0 ) {
         return;
     }
@@ -240,104 +336,34 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
             pressure = 1.0f;
         }
 
-        b32 not_the_first = false;
-        if ( ws->num_points >= 1 ) {
-            not_the_first = true;
-        }
+        if ( milton_brush_smoothing_enabled(milton) ) {
+            // Stroke smoothing.
+            // Change canvas_point depending on the average of the last `N` points.
+            // The new point is a weighted sum of factor*average (1-factor)*canvas_point
+            i64 N = 2;
+            if ( ws->num_points > N ) {
+                v2l average = {};
+                float factor = 0.55f;
 
-        // A point passes inspection if:
-        //  a) it's the first point of this stroke
-        //  b) it is being appended to the stroke and it didn't merge with the previous point.
-        b32 passed_inspection = true;
-
-        if ( pressure == NO_PRESSURE_INFO ) {
-            passed_inspection = false;
-            num_discarded++;
-        }
-
-        if ( passed_inspection && not_the_first ) {
-            i32 in_radius = (i32)(pressure * ws->brush.radius);
-
-            // Limit the number of points we check so that we don't mess with the stroke too much.
-            int point_window = 4;
-            int count = 0;
-            // Pop every point that is contained by the new one, but don't leave it empty
-
-            for ( i32 i = ws->num_points - 1; passed_inspection && i >= 0; --i ) {
-                if ( ++count >= point_window ) {
-                    break;
+                for ( i64 i = 0; i < N; ++i ) {
+                    average += (ws->points[ws->num_points-1 - i]) / N;
                 }
-                v2l this_point = ws->points[i];
-                i32 this_radius = (i32)(ws->brush.radius * ws->pressures[i]);
 
-                if ( stroke_point_contains_point(canvas_point, in_radius, this_point, this_radius) ) {
-                    if ( ws->num_points > 1 ) {
-                        --ws->num_points;
-                    } else {
-                        break;
-                    }
-                }
-                else if ( stroke_point_contains_point(this_point, this_radius, canvas_point, in_radius) ) {
-                    // If some other point in the past contains this point,
-                    // then this point is invalid.
-                    passed_inspection = false;
-                    num_discarded += ws->num_points - i;
-                    break;
-                }
+                auto* view = milton->view;
+
+                float f_average_x = average.x - pan_center.x;
+                float f_average_y = average.y - pan_center.y;
+                float f_canvas_point_x = canvas_point.x - pan_center.x;
+                float f_canvas_point_y = canvas_point.y - pan_center.y;
+
+                canvas_point.x = (i64)roundf (f_average_x*factor + f_canvas_point_x*(1-factor));
+                canvas_point.y = (i64)roundf (f_average_y*factor + f_canvas_point_y*(1-factor));
+
+                canvas_point += pan_center;
             }
         }
 
-        // Cleared to be appended.
-        if ( passed_inspection && ws->num_points < (STROKE_MAX_POINTS-1) ) {
-            if ( milton_brush_smoothing_enabled(milton) ) {
-                // Stroke smoothing.
-                // Change canvas_point depending on the average of the last `N` points.
-                // The new point is a weighted sum of factor*average (1-factor)*canvas_point
-                i64 N = 2;
-                if ( ws->num_points > N ) {
-                    v2l average = {};
-                    float factor = 0.55f;
-
-                    for ( i64 i = 0; i < N; ++i ) {
-                        average += (ws->points[ws->num_points-1 - i]) / N;
-                    }
-
-                    auto* view = milton->view;
-
-                    float f_average_x = average.x - pan_center.x;
-                    float f_average_y = average.y - pan_center.y;
-                    float f_canvas_point_x = canvas_point.x - pan_center.x;
-                    float f_canvas_point_y = canvas_point.y - pan_center.y;
-
-                    canvas_point.x = (i64)roundf (f_average_x*factor + f_canvas_point_x*(1-factor));
-                    canvas_point.y = (i64)roundf (f_average_y*factor + f_canvas_point_y*(1-factor));
-
-                    canvas_point += pan_center;
-                }
-            }
-
-            // Add to current stroke.
-            int index = ws->num_points++;
-            ws->points[index] = canvas_point;
-            ws->pressures[index] = pressure;
-        }
-    }
-
-#if 0
-    if (num_discarded > 0)
-    {
-        milton_log("INFO: Discarded %d points.\n", num_discarded);
-    }
-#endif
-
-    // Validate. remove points that are standing in the same place, even if they have different pressures.
-    for ( i32 np = 0; np < ws->num_points-1; ++np ) {
-        if ( ws->points[np] == ws->points[np+1] ) {
-            for ( i32 new_i = np; new_i < ws->num_points-1; ++new_i ) {
-                ws->points[new_i] = ws->points[new_i+1];
-            }
-            --ws->num_points;
-        }
+        stroke_append_point_with_interpolation(ws, canvas_point, pressure);
     }
 }
 
@@ -551,7 +577,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 
     // Enable brush smoothing by default
     if ( !milton_brush_smoothing_enabled(milton) ) {
-        milton_toggle_brush_smoothing(milton);
+        // milton_toggle_brush_smoothing(milton);
     }
 
 #if MILTON_ENABLE_PROFILING
@@ -847,6 +873,23 @@ milton_validate(Milton* milton)
 
 
 // Copy points from in_stroke to out_stroke, but do interpolation to smooth it out.
+static void
+copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_stroke)
+{
+    i32 num_points = in_stroke->num_points;
+    // Shallow copy
+    *out_stroke = *in_stroke;
+
+    // Deep copy
+    out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2l);
+    out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
+
+    memcpy(out_stroke->points, in_stroke->points, num_points * sizeof(v2l));
+    memcpy(out_stroke->pressures, in_stroke->pressures, num_points * sizeof(f32));
+
+    out_stroke->render_element = {};
+}
+
 static void
 copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_stroke)
 {
@@ -1204,7 +1247,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 // Copy current stroke.
                 Stroke new_stroke = {};
                 CanvasState* canvas = milton->canvas;
-                copy_with_smooth_interpolation(&canvas->arena, milton->view, &milton->working_stroke, &new_stroke);
+                copy_stroke(&canvas->arena, milton->view, &milton->working_stroke, &new_stroke);
                 {
                     new_stroke.brush = milton->working_stroke.brush;
                     new_stroke.layer_id = milton->view->working_layer_id;

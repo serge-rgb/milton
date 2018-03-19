@@ -171,17 +171,16 @@ milton_load(Milton* milton)
                     READ(&stroke.brush, sizeof(Brush), 1, fd);
                     READ(&stroke.num_points, sizeof(i32), 1, fd);
 
-                    if ( stroke.num_points >= STROKE_MAX_POINTS || stroke.num_points <= 0 ) {
+                    if ( stroke.num_points > STROKE_MAX_POINTS || stroke.num_points <= 0 ) {
                         milton_log("ERROR: File has a stroke with %d points\n",
                                    stroke.num_points);
                         // Older versions have a possible off-by-one bug here.
-                        if (stroke.num_points < STROKE_MAX_POINTS)  {
+                        if (stroke.num_points <= STROKE_MAX_POINTS)  {
                             stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
                             READ(stroke.points, sizeof(v2l), (size_t)stroke.num_points, fd);
                             stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
                             READ(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
                             READ(&stroke.layer_id, sizeof(i32), 1, fd);
-                            stroke.num_points = STROKE_MAX_POINTS - 1;
 
                             stroke.bounding_rect = bounding_box_for_stroke(&stroke);
 
@@ -384,7 +383,7 @@ milton_save(Milton* milton)
                 for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
                     Stroke* stroke = get(&layer->strokes, stroke_i);
                     mlt_assert(stroke->num_points > 0);
-                    if (stroke->num_points > 0 && stroke->num_points < STROKE_MAX_POINTS) {
+                    if (stroke->num_points > 0 && stroke->num_points <= STROKE_MAX_POINTS) {
                         WRITE(&stroke->brush, sizeof(Brush), 1, fd);
                         WRITE(&stroke->num_points, sizeof(i32), 1, fd);
                         WRITE(stroke->points, sizeof(v2l), (size_t)stroke->num_points, fd);
