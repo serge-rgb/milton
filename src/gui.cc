@@ -778,7 +778,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milton* mi
             ImGui::Text(msg);
 
             snprintf(msg, array_count(msg),
-                     "System %f ms\n",
+                     "System %f ms \n",
                      system);
             ImGui::Text(msg);
 
@@ -791,9 +791,26 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milton* mi
             ImGui::PlotHistogram("Graph",
                           (const float*)hist, array_count(hist));
 
-            snprintf(msg, array_count(msg),
-                     "Total %f ms\n",
-                     sum);
+            {
+                static const int window_size = 100;
+                static float moving_window[window_size] = {};
+                static int window_i = 0;
+
+                moving_window[window_i++] = sum;
+                window_i %= window_size;
+
+                float mavg = 0.0f;
+                for ( int i =0; i < window_size; ++i ) {
+                    mavg += moving_window[i];
+                }
+                mavg /= window_size;
+
+                snprintf(msg, array_count(msg),
+                     "Total %f ms (%f ms m. avg)\n",
+                     sum,
+                     mavg);
+
+            }
             ImGui::Text(msg);
 
             ImGui::Dummy({0,30});

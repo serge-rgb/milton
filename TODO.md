@@ -2,6 +2,7 @@ To-Do
 =====
 
 - Bugs
+    - AZERTY doesn't make any sense
 - macOS port
     - Replace Dear Imgui's menu with Cocoa menu.
     - Keyboard bindings
