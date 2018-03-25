@@ -17,11 +17,9 @@ main()
     vec2 a = v_pointa.xy;
     vec2 b = v_pointb.xy;
     vec2 ab = b - a;
-    vec2 ap = canvas_point - a;
     float len_ab = length(ab);
-    float len_ap = length(ap);
 
-    float t = clamp(dot(ap, ab)/len_ab, 0.0, len_ab) / len_ab;
+    float t = clamp(dot(canvas_point - a, ab)/len_ab, 0.0, len_ab) / len_ab;
     vec2 stroke_point = mix(a, b, t);
     float pressure = mix(v_pointa.z, v_pointb.z, t);
 

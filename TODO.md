@@ -41,5 +41,6 @@ To-Do
     - Input recorder for reproducing bugs
     - linux - load dynamic libs at runtime
     - store font data in binary
+    - switch to cmake for all platforms
 - Milton Library
     - Refactor. Write sample program.

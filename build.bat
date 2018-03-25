@@ -18,6 +18,7 @@ if "%doUnityClangBuild%"=="1" (
 			       clang-cl src\unity.cc /Zi %includeFlags% %warnFlags% third_party\bin\SDL2.lib %WindowsKitDir%Gdi32.lib %WindowsKitDir%OpenGl32.lib %WindowsKitDir%Shell32.lib %WindowsKitDir%Comdlg32.lib  %WindowsKitDir%Ole32.lib  %WindowsKitDir%OleAut32.lib -o milton.exe
 
 ) else (
+      del build\win64-msvc-debug-default\Milton.exe
       tundra\bin\tundra2.exe
       exit /b %errorlevel%
-     )
+      )

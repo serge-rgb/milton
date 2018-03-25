@@ -13,6 +13,13 @@
 #include "platform.h"
 #include "vector.h"
 
+/**
+ * Debug global variables
+ **/
+
+int g_debug_interpolation = 0;
+
+
 // Defined below.
 static void milton_validate(Milton* milton);
 
@@ -272,20 +279,13 @@ stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pre
                         d1 /= mag_d1;
                         v2f md0 = d0 * -1.0f;
                         float cos_angle = DOT(md0, d1);
-                        if ( cos_angle > -0.99f && cos_angle < 0.0f ) {
+                        if ( g_debug_interpolation && cos_angle > -0.999f && cos_angle < 0.0f ) {
                             mlt_assert(cos_angle < 0.0f);
                             v2l p2 = p1 + v2f_to_v2l(d0*(0.5f*mag_d1));
 #define HALFPOINT(a, b) (((a) + (b)) / (i64)2)
-                            v2l px = HALFPOINT(p1, p2);
-                            v2l py = HALFPOINT(p2, p3);
-                            v2l p_interp = HALFPOINT(px, py);
-#if 1
+                            v2l p_interp = HALFPOINT(HALFPOINT(p1, p2), HALFPOINT(p2, p3));
+                            mlt_assert(p_interp != p1 && p_interp != p2 && p_interp != p3);
                             stroke_append_point_with_interpolation(stroke, p_interp, pressure);
-#else
-                            int index = stroke->num_points++;
-                            stroke->points[index] = p_interp;
-                            stroke->pressures[index] = pressure;
-#endif
 #undef HALFPOINT
                         }
                     }

@@ -448,8 +448,9 @@ sdl_event_loop(Milton* milton, PlatformState* platform_state)
                     if ( !ImGui::GetIO().WantCaptureMouse  ) {
                         if ( keycode == SDLK_m ) {
                             gui_toggle_menu_visibility(milton->gui);
-                        }
-                        else if ( keycode == SDLK_e ) {
+                        } else if ( keycode == SDLK_d ) {
+                            g_debug_interpolation = !g_debug_interpolation;
+                        } else if ( keycode == SDLK_e ) {
                             milton_input.mode_to_set = MiltonMode::ERASER;
                         }
                         else if ( keycode == SDLK_b ) {
