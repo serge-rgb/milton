@@ -3,8 +3,6 @@
 
 #pragma once
 
-extern int g_debug_interpolation;
-
 #define MILTON_MAJOR_VERSION 1
 #define MILTON_MINOR_VERSION 6
 #define MILTON_MICRO_VERSION 2
@@ -38,7 +36,7 @@ extern int g_debug_interpolation;
 
 #define MILTON_ENABLE_PROFILING 1
 
-#define REDRAW_EVERY_FRAME 1
+#define REDRAW_EVERY_FRAME 0
 
 #define MILTON_HARDWARE_BRUSH_CURSOR 1
  // No support for system cursor on linux or macos for now

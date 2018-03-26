@@ -47,6 +47,13 @@ struct RenderData
     GLuint blur_program;
 #if MILTON_DEBUG
     GLuint simple_program;
+    GLuint debug_point_program;
+    struct DebugPoint
+    {
+        GLuint rect_vbo;
+        v3f color;
+    };
+    DArray<DebugPoint> debug_points;
 #endif
 
     // VBO for the screen-covering quad.
@@ -523,6 +530,16 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
         objs[1] = gl::compile_shader(g_simple_f, GL_FRAGMENT_SHADER);
 
         gl::link_program(render_data->simple_program, objs, array_count(objs));
+    }
+    {
+        // Debug points
+        render_data->debug_point_program = glCreateProgram();
+
+        GLuint objs[2] = {};
+        objs[0] = gl::compile_shader(g_simple_v, GL_VERTEX_SHADER);
+        objs[1] = gl::compile_shader(g_simple_f, GL_FRAGMENT_SHADER);
+
+        gl::link_program(render_data->debug_point_program, objs, array_count(objs));
     }
 #endif
 
@@ -1661,4 +1678,33 @@ void
 gpu_release_data(RenderData* render_data)
 {
     release(&render_data->clip_array);
+}
+
+
+// Debug functions
+
+void
+gpu_push_debug_point(RenderData* r, v2l point, v3f color)
+{
+#if MILTON_DEBUG
+    float u = 1.0f;
+    GLfloat uv_data[] = {
+        0,0,
+        0,u,
+        u,u,
+        u,0,
+    };
+    GLuint vbo_uv = 0;
+    glGenBuffers(1, &vbo_uv);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_uv);
+    DEBUG_gl_mark_buffer(vbo_uv);
+    glBufferData(GL_ARRAY_BUFFER, array_count(uv_data)*sizeof(*uv_data), uv_data, GL_STATIC_DRAW);
+    // push(r->debug_points, {vbo_uv, color});
+#endif
+}
+
+void
+gpu_clear_debug_points(RenderData* r)
+{
+
 }

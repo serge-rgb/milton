@@ -270,36 +270,32 @@ stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pre
 
                 v2f d0 = v2l_to_v2f(p1-p0);
                 f32 mag_d0 = magnitude(d0);
-                if (mag_d0 > 0.0f) {
+                if ( mag_d0 > 0.0f ) {
                     d0 /= mag_d0;
                     v2l p3 = canvas_point;
                     v2f d1 = v2l_to_v2f(p3-p1);
                     f32 mag_d1 = magnitude(d1);
                     if ( mag_d1 > 0.0f ) {
                         d1 /= mag_d1;
-                        v2f md0 = d0 * -1.0f;
-                        float cos_angle = DOT(md0, d1);
-                        if ( g_debug_interpolation && cos_angle > -0.999f && cos_angle < 0.0f ) {
-                            mlt_assert(cos_angle < 0.0f);
-                            v2l p2 = p1 + v2f_to_v2l(d0*(0.5f*mag_d1));
+                        float cos_angle = -DOT(d0, d1);
+                        if ( cos_angle > -0.95f && cos_angle < 0.0f) {
+                            v2l p2 = p1 + v2f_to_v2l(d0*(0.5f*mag_d1/cos_angle));
 #define HALFPOINT(a, b) (((a) + (b)) / (i64)2)
                             v2l p_interp = HALFPOINT(HALFPOINT(p1, p2), HALFPOINT(p2, p3));
-                            mlt_assert(p_interp != p1 && p_interp != p2 && p_interp != p3);
-                            stroke_append_point_with_interpolation(stroke, p_interp, pressure);
+                            if ( p_interp != p1 && p_interp != p2 && p_interp != p3 ) {
+                                // gpu_push_debug_point(milton->render_data, p_interp, v3f(1, 0, 1));
+                                stroke_append_point_with_interpolation(stroke, p_interp, pressure);
+                            }
 #undef HALFPOINT
                         }
                     }
                 }
-
             }
 
-
             if ( stroke->num_points < STROKE_MAX_POINTS ) {
-
                 int index = stroke->num_points++;
                 stroke->points[index] = canvas_point;
                 stroke->pressures[index] = pressure;
-
             }
         }
     }
@@ -1151,6 +1147,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                     if ( prev_num_points == 0 && ws->num_points > 0 ) {
                         // New stroke. Clear screen without blur.
                         do_full_redraw = true;
+                        // gpu_clear_debug_points(milton->render_data);
                     }
                 }
             }
