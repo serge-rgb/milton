@@ -1,11 +1,14 @@
 // Copyright (c) 2015 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-
 in vec3 v_pointa;
 in vec3 v_pointb;
 
 uniform sampler2D u_canvas;
+
+#if INTERPOLATION_VIZ
+in vec3 v_debug_color;
+#endif
 
 void
 main()
@@ -26,6 +29,13 @@ main()
     // Distance between fragment and stroke
     float dist = distance(stroke_point, canvas_point) - u_radius*pressure;
 
+#if INTERPOLATION_VIZ
+    if (distance(canvas_point, a) < u_radius) {
+      out_color = mix(vec4(v_debug_color, 1.0), u_brush_color, 0.5);
+    } else {
+      discard;
+    }
+#else
     if ( dist < 0 ) {
         if ( brush_is_eraser() ) {
             vec2 coord = gl_FragCoord.xy / u_screen_size;
@@ -43,4 +53,5 @@ main()
     } else {
         discard;
     }
+#endif // INTERPOLATION_VIZ
 }//END

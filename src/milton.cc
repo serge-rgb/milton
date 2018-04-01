@@ -216,7 +216,7 @@ milton_primitive_input(Milton* milton, MiltonInput* input, b32 end_stroke)
 }
 
 void
-stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pressure)
+stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pressure, bool point_is_interpolated=false)
 {
     b32 not_the_first = false;
     if ( stroke->num_points >= 1 ) {
@@ -278,13 +278,12 @@ stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pre
                     if ( mag_d1 > 0.0f ) {
                         d1 /= mag_d1;
                         float cos_angle = -DOT(d0, d1);
-                        if ( cos_angle > -0.95f && cos_angle < 0.0f) {
+                        if ( cos_angle > -0.8f && cos_angle < 0.0f) {
                             v2l p2 = p1 + v2f_to_v2l(d0*(0.5f*mag_d1/cos_angle));
 #define HALFPOINT(a, b) (((a) + (b)) / (i64)2)
                             v2l p_interp = HALFPOINT(HALFPOINT(p1, p2), HALFPOINT(p2, p3));
                             if ( p_interp != p1 && p_interp != p2 && p_interp != p3 ) {
-                                // gpu_push_debug_point(milton->render_data, p_interp, v3f(1, 0, 1));
-                                stroke_append_point_with_interpolation(stroke, p_interp, pressure);
+                                stroke_append_point_with_interpolation(stroke, p_interp, pressure, true);
                             }
 #undef HALFPOINT
                         }
@@ -296,6 +295,11 @@ stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pre
                 int index = stroke->num_points++;
                 stroke->points[index] = canvas_point;
                 stroke->pressures[index] = pressure;
+#if INTERPOLATION_VIZ
+                if ( point_is_interpolated ) {
+                    stroke->debug_flags[index] |= Stroke::INTERPOLATED;
+                }
+#endif
             }
         }
     }
@@ -499,6 +503,9 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->canvas = arena_bootstrap(CanvasState, arena, 1024*1024);
     milton->working_stroke.points    = arena_alloc_array(&milton->root_arena, STROKE_MAX_POINTS, v2l);
     milton->working_stroke.pressures = arena_alloc_array(&milton->root_arena, STROKE_MAX_POINTS, f32);
+#if INTERPOLATION_VIZ
+    milton->working_stroke.debug_flags = arena_alloc_array(&milton->root_arena, STROKE_MAX_POINTS, int);
+#endif
 
 #if MILTON_SAVE_ASYNC
     milton->save_mutex = SDL_CreateMutex();
@@ -877,105 +884,18 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
     *out_stroke = *in_stroke;
 
     // Deep copy
-    out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2l);
-    out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
+    out_stroke->points    = arena_alloc_array(arena, num_points, v2l);
+    out_stroke->pressures = arena_alloc_array(arena, num_points, f32);
 
     memcpy(out_stroke->points, in_stroke->points, num_points * sizeof(v2l));
     memcpy(out_stroke->pressures, in_stroke->pressures, num_points * sizeof(f32));
 
+#if INTERPOLATION_VIZ
+    out_stroke->debug_flags = arena_alloc_array(arena, num_points * sizeof(int), int);
+    memcpy(out_stroke->debug_flags, in_stroke->debug_flags, num_points*sizeof(int));
+#endif
+
     out_stroke->render_element = {};
-}
-
-static void
-copy_with_smooth_interpolation(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_stroke)
-{
-    i32 num_points = in_stroke->num_points;
-
-    // At most we are adding twice as many points. This is wasteful but at the moment it looks like
-    // a reasonable tradeoff vs the complexity/perf hit of using something smaller.
-
-    if ( num_points >= 4 && 2*num_points <= STROKE_MAX_POINTS ) {
-        out_stroke->points    = arena_alloc_array(arena, 2*num_points, v2l);
-        out_stroke->pressures = arena_alloc_array(arena, 2*num_points, f32);
-
-        // Push the first points.
-        memcpy(out_stroke->points, in_stroke->points, 4 * sizeof(v2l));
-        memcpy(out_stroke->pressures, in_stroke->pressures, 4 * sizeof(f32));
-
-        i32 out_i = 4;
-
-        // Go through each four consecutive points in the stroke and copy them to new array, but do
-        // interpolation with a cubic Bezier.
-
-        // Relative to center to maintain precision.
-        v2l canvas_center = raster_to_canvas(view, VEC2L(view->screen_size/2));
-        v2f a = {}; // Will get copied from b in the loop below.
-        v2f b = v2l_to_v2f(in_stroke->points[0] - canvas_center);
-        v2f c = v2l_to_v2f(in_stroke->points[1] - canvas_center);
-        v2f d = v2l_to_v2f(in_stroke->points[2] - canvas_center);
-
-        for ( i32 i = 3; i < num_points; ++i ) {
-            a = b;
-            b = c;
-            c = d;
-            d = v2l_to_v2f(in_stroke->points[i] - canvas_center);
-
-            if ( out_i >= STROKE_MAX_POINTS-1 ) {
-                break;  // Keep the stroke from becoming larger than we support.
-            }
-
-            float scale = 0.5f;
-            v2f p0 = a;
-            v2f p1 = b - ((a - b) * scale);
-            v2f p2 = c - ((d - c) * scale);
-            v2f p3 = d;
-
-            // Diffs to calculate angle
-            v2f d0 = p0 - p1;
-            v2f d1 = p2 - p1;
-            v2f d2 = p1 - p2;
-            v2f d3 = p3 - p2;
-
-            float n0 = fabs(DOT(d0, d1)) / (magnitude(d0) * magnitude(d1));
-            float n1 = fabs(DOT(d2, d3)) / (magnitude(d2) * magnitude(d3));
-
-            // If the sum of both angles is greater than this threshold, interpolate.
-            float cos_min_angle = 0.05f;
-            if ( 2 - n0 - n1 > cos_min_angle*2 ) {
-                v2f n = {};
-                n = n + p0 * 0.125f;
-                n = n + p1 * 0.375f;
-                n = n + p2 * 0.375f;
-                n = n + p3 * 0.125f;
-
-                out_stroke->pressures[out_i] = in_stroke->pressures[i - 2];
-                out_stroke->points[out_i++] = v2f_to_v2l(b) + canvas_center;
-
-                out_stroke->pressures[out_i] = out_stroke->pressures[out_i-1]; // Use the same pressure value as last point.
-                out_stroke->points[out_i++] = v2f_to_v2l(n) + canvas_center;
-            } else {
-                out_stroke->points[out_i] = in_stroke->points[i-2];
-                out_stroke->pressures[out_i++] = in_stroke->pressures[i-2];
-            }
-
-            // Always add the last point.
-            if ( i == num_points - 1 ) {
-                out_stroke->pressures[out_i] = in_stroke->pressures[i];
-                out_stroke->points[out_i++] = in_stroke->points[i];
-            }
-        }
-
-        out_stroke->num_points = out_i;
-    }
-    // Four or less points in stroke, or stroke is too large.
-    else {
-        out_stroke->points    = arena_alloc_array(arena, num_points, v2l);
-        out_stroke->pressures = arena_alloc_array(arena, num_points, f32);
-
-        memcpy(out_stroke->points, in_stroke->points, in_stroke->num_points * sizeof(v2l));
-        memcpy(out_stroke->pressures, in_stroke->pressures, in_stroke->num_points * sizeof(f32));
-        out_stroke->num_points = in_stroke->num_points;
-    }
 }
 
 void

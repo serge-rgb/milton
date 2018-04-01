@@ -27,4 +27,12 @@ struct Stroke
     i32             layer_id;
     Rect            bounding_rect;
     RenderElement   render_element;
+#if INTERPOLATION_VIZ
+    enum DebugFlags
+    {
+      NONE = (0),
+      INTERPOLATED  = (1<<0),
+    };
+    int* debug_flags;
+#endif
 };

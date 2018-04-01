@@ -244,6 +244,11 @@ compile_shader (const char* in_src, GLuint type, char* config)
                                        : "#define in varying   \n#define out\n#define out_color gl_FragColor\n",
             "#define texture texture2D\n",
         #endif
+        #if INTERPOLATION_VIZ
+            "#define INTERPOLATION_VIZ 1\n",
+        #else
+            "#define INTERPOLATION_VIZ 0\n",
+        #endif
         (check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE)) ? "#define HAS_TEXTURE_MULTISAMPLE 1\n"
                                                                    : "#define HAS_TEXTURE_MULTISAMPLE 0\n",
        "#if HAS_TEXTURE_MULTISAMPLE\n",

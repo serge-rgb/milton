@@ -38,6 +38,13 @@
 
 #define REDRAW_EVERY_FRAME 0
 
+#define INTERPOLATION_VIZ 1
+  #if !MILTON_DEBUG
+    #undef INTERPOLATION_VIZ
+    #define INTERPOLATION_VIZ 0
+  #endif
+
+
 #define MILTON_HARDWARE_BRUSH_CURSOR 1
  // No support for system cursor on linux or macos for now
 #if defined(__linux__) || defined(__MACH__)

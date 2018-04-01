@@ -818,19 +818,28 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             // N-1 (num segments)
             const size_t count_indices = 6*((size_t)npoints-1);
 
+            size_t count_debug = 0;
+#if INTERPOLATION_VIZ
+            count_debug = count_attribs;
+#endif
             v3f* bounds;
             v3f* apoints;
             v3f* bpoints;
+            v3f* debug = NULL;
             u16* indices;
             Arena scratch_arena = arena_push(arena,
                                              count_attribs*sizeof(decltype(*bounds))  // Bounds
                                              + 2*count_attribs*sizeof(decltype(*apoints)) // Attributes a,b
+                                             + count_debug*sizeof(decltype(*debug))    // Visualization
                                              + count_indices*sizeof(decltype(*indices)));  // Indices
 
             bounds  = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             apoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             bpoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             indices = arena_alloc_array(&scratch_arena, count_indices, u16);
+#if INTERPOLATION_VIZ
+            debug = arena_alloc_array(&scratch_arena, count_debug, v3f);
+#endif
 
             mlt_assert(render_data->scale > 0);
 
@@ -838,6 +847,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             size_t apoints_i = 0;
             size_t bpoints_i = 0;
             size_t indices_i = 0;
+            size_t debug_i = 0;
             for ( i64 i=0; i < npoints-1; ++i ) {
                 v2i point_i = relative_to_render_center(render_data, stroke->points[i]);
                 v2i point_j = relative_to_render_center(render_data, stroke->points[i+1]);
@@ -870,14 +880,30 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                 indices[indices_i++] = (u16)(idx + 0);
                 indices[indices_i++] = (u16)(idx + 3);
 
+
                 // Pressures are in (0,1] but we need to encode them as integers.
                 float pressure_a = stroke->pressures[i];
                 float pressure_b = stroke->pressures[i+1];
+
+#if INTERPOLATION_VIZ
+                v3f debug_color;
+
+                if ( stroke->debug_flags[i] & Stroke::INTERPOLATED ) {
+                  debug_color = { 1.0f, 0.0f, 0.0f };
+                }
+                else {
+                  debug_color = { 0.0f, 1.0f, 0.0f };
+                }
+#endif
 
                 // Add attributes for each new vertex.
                 for ( int repeat = 0; repeat < 4; ++repeat ) {
                     apoints[apoints_i++] = { (float)point_i.x, (float)point_i.y, pressure_a };
                     bpoints[bpoints_i++] = { (float)point_j.x, (float)point_j.y, pressure_b };
+
+#if INTERPOLATION_VIZ
+                    debug[debug_i++] = debug_color;
+#endif
                 }
             }
 
@@ -891,51 +917,59 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             GLuint vbo_pointa = 0;
             GLuint vbo_pointb = 0;
             GLuint indices_buffer = 0;
+            GLuint vbo_debug = 0;
+
 
             GLenum hint = GL_STATIC_DRAW;
             if ( cook_option == CookStroke_UPDATE_WORKING_STROKE ) {
                 hint = GL_DYNAMIC_DRAW;
             }
-            // Cooking the stroke for the first time.
-            if ( stroke->render_element.vbo_stroke == 0 ) {
+            if ( stroke->render_element.vbo_stroke != 0 ) {
+                vbo_stroke = stroke->render_element.vbo_stroke;
+                vbo_pointa = stroke->render_element.vbo_pointa;
+                vbo_pointb = stroke->render_element.vbo_pointb;
+                indices_buffer = stroke->render_element.indices;
+#if INTERPOLATION_VIZ
+                vbo_debug = stroke->render_element.vbo_debug;
+#endif
+
+                auto clear_array_buffer = [hint](GLint vbo, size_t size) {
+                  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+                  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(size), NULL, hint);
+                };
+                clear_array_buffer(vbo_stroke, bounds_i*sizeof(decltype(*bounds)));
+                clear_array_buffer(vbo_pointa, bounds_i*sizeof(decltype(*apoints)));
+                clear_array_buffer(vbo_pointb, bounds_i*sizeof(decltype(*bpoints)));
+                clear_array_buffer(indices_buffer, indices_i*sizeof(decltype(*indices)));
+            }
+            else {
                 glGenBuffers(1, &vbo_stroke);
                 glGenBuffers(1, &vbo_pointa);
                 glGenBuffers(1, &vbo_pointb);
                 glGenBuffers(1, &indices_buffer);
+#if INTERPOLATION_VIZ
+                glGenBuffers(1, &vbo_debug);
+#endif
 
                 DEBUG_gl_mark_buffer(vbo_stroke);
                 DEBUG_gl_mark_buffer(vbo_pointa);
                 DEBUG_gl_mark_buffer(vbo_pointb);
                 DEBUG_gl_mark_buffer(indices_buffer);
-
-                glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), bounds, hint);
-                glBindBuffer(GL_ARRAY_BUFFER, vbo_pointa);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), apoints, hint);
-                glBindBuffer(GL_ARRAY_BUFFER, vbo_pointb);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), bpoints, hint);
-                glBindBuffer(GL_ARRAY_BUFFER, indices_buffer);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(indices_i*sizeof(decltype(*indices))), indices, hint);
             }
-            // Updating the working stroke
-            else {
-                vbo_stroke = stroke->render_element.vbo_stroke;
-                vbo_pointa = stroke->render_element.vbo_pointa;
-                vbo_pointb = stroke->render_element.vbo_pointb;
-                indices_buffer = stroke->render_element.indices;
 
-                glBindBuffer(GL_ARRAY_BUFFER, vbo_stroke);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), NULL, hint);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bounds))), bounds, hint);
-                glBindBuffer(GL_ARRAY_BUFFER, vbo_pointa);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), NULL, hint);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*apoints))), apoints, hint);
-                glBindBuffer(GL_ARRAY_BUFFER, vbo_pointb);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), NULL, hint);
-                glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(bounds_i*sizeof(decltype(*bpoints))), bpoints, hint);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_buffer);
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(indices_i*sizeof(decltype(*indices))), NULL, hint);
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(indices_i*sizeof(decltype(*indices))), indices, hint);
+            /*Send data to GPU*/ {
+                auto send_buffer_data = [hint](GLint vbo, size_t size, void* data) {
+                  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+                  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(size), data, hint);
+                };
+
+                send_buffer_data(vbo_stroke, bounds_i*sizeof(decltype(*bounds)), bounds);
+                send_buffer_data(vbo_pointa, bounds_i*sizeof(decltype(*apoints)), apoints);
+                send_buffer_data(vbo_pointb, bounds_i*sizeof(decltype(*bpoints)), bpoints);
+                send_buffer_data(indices_buffer, indices_i*sizeof(decltype(*indices)), indices);
+#if INTERPOLATION_VIZ
+                send_buffer_data(vbo_debug, debug_i*sizeof(decltype(*debug)), debug);
+#endif
             }
 
             RenderElement re = stroke->render_element;
@@ -943,9 +977,13 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             re.vbo_pointa = vbo_pointa;
             re.vbo_pointb = vbo_pointb;
             re.indices = indices_buffer;
+#if INTERPOLATION_VIZ
+            re.vbo_debug = vbo_debug;
+#endif
             re.count = (i64)(indices_i);
             re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
             re.radius = stroke->brush.radius;
+
             mlt_assert(re.count > 1);
 
             stroke->render_element = re;
@@ -971,12 +1009,6 @@ gpu_free_strokes(Stroke* strokes, i64 count, RenderData* render_data)
             DEBUG_gl_validate_buffer(re->vbo_pointb);
             DEBUG_gl_validate_buffer(re->indices);
 
-            mlt_assert(re->vbo_stroke != render_data->vbo_screen_quad);
-            mlt_assert(re->vbo_pointa != render_data->vbo_screen_quad);
-            mlt_assert(re->vbo_pointb != render_data->vbo_screen_quad);
-            mlt_assert(re->indices != render_data->vbo_screen_quad);
-
-
             glDeleteBuffers(1, &re->vbo_stroke);
             glDeleteBuffers(1, &re->vbo_pointa);
             glDeleteBuffers(1, &re->vbo_pointb);
@@ -987,10 +1019,7 @@ gpu_free_strokes(Stroke* strokes, i64 count, RenderData* render_data)
             DEBUG_gl_unmark_buffer(re->vbo_pointb);
             DEBUG_gl_unmark_buffer(re->indices);
 
-            re->vbo_stroke = 0;
-            re->vbo_pointa = 0;
-            re->vbo_pointb = 0;
-            re->indices = 0;
+            *re = {};
         }
     }
 }
@@ -1243,6 +1272,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
     GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
     GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
     GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
+    GLint loc_debug = glGetAttribLocation(render_data->stroke_program, "a_debug_color");
     if ( loc >= 0 ) {
         DArray<RenderElement>* clip_array = &render_data->clip_array;
 
@@ -1375,6 +1405,15 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                                               /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
                                               /*stride*/ 0, /*ptr*/ 0);
                     }
+#if INTERPOLATION_VIZ
+                    if ( loc_debug >= 0 ) {
+                        glBindBuffer(GL_ARRAY_BUFFER, re->vbo_debug);
+                        glEnableVertexAttribArray((GLuint)loc_debug);
+                        glVertexAttribPointer(/*attrib location*/ (GLuint)loc_debug,
+                                              /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                              /*stride*/ 0, /*ptr*/ 0);
+                    }
+#endif
 
                     glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke);
                     glEnableVertexAttribArray((GLuint)loc);

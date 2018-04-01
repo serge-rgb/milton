@@ -16,6 +16,9 @@ struct RenderElement
     GLuint  vbo_pointa;
     GLuint  vbo_pointb;
     GLuint  indices;
+#if INTERPOLATION_VIZ
+    GLuint vbo_debug;
+#endif
 
     i64     count;
 

@@ -181,6 +181,9 @@ milton_load(Milton* milton)
                             stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
                             READ(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
                             READ(&stroke.layer_id, sizeof(i32), 1, fd);
+#if INTERPOLATION_VIZ
+                            stroke.debug_flags = arena_alloc_array(&canvas->arena, stroke.num_points, int);
+#endif
 
                             stroke.bounding_rect = bounding_box_for_stroke(&stroke);
 
@@ -202,6 +205,9 @@ milton_load(Milton* milton)
                                 stroke.points[i] = VEC2L(points_32bit[i]);
                             }
                         }
+#if INTERPOLATION_VIZ
+                        stroke.debug_flags = arena_alloc_array(&canvas->arena, stroke.num_points, int);
+#endif
                         stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
                         READ(stroke.pressures, sizeof(f32), (size_t)stroke.num_points, fd);
                         READ(&stroke.layer_id, sizeof(i32), 1, fd);
