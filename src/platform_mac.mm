@@ -18,6 +18,10 @@
 #include "platform.h"
 #include "memory.h"
 
+#if __MAC_OS_X_VERSION_MIN_REQUIRED < 101200
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
 
 #define MAX_PATH PATH_MAX
 
@@ -162,10 +166,20 @@ perf_count_to_sec(u64 counter)
 u64
 perf_counter()
 {
-    // clock_gettime() on macOS is only supported on macOS Sierra and later.
-    // For older macOS operating systems, mach_absolute_time() will be need to be used.
     timespec tp;
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 101200 // clock_gettime() on macOS is only supported on macOS Sierra and later.
     int res = clock_gettime(CLOCK_REALTIME, &tp);
+#else
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+
+    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+    int res = clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    tp.tv_sec = mts.tv_sec;
+    tp.tv_nsec = mts.tv_nsec;
+#endif
 
     // TODO: Check errno and provide more informations
     if ( res ) {
