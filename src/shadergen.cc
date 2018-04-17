@@ -206,6 +206,7 @@ main(int argc, char** argv)
         output_shader(outfd, "src/outline.f.glsl");
         output_shader(outfd, "src/stroke_raster.v.glsl", "src/common.glsl");
         output_shader(outfd, "src/stroke_raster.f.glsl", "src/common.glsl");
+        output_shader(outfd, "src/stroke_debug.f.glsl", "src/common.glsl");
         output_shader(outfd, "src/exporter_rect.f.glsl");
         output_shader(outfd, "src/texture_fill.f.glsl");
         output_shader(outfd, "src/quad.v.glsl");

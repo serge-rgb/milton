@@ -37,6 +37,7 @@ struct RenderData
 
     // OpenGL programs.
     GLuint stroke_program;
+    GLuint stroke_debug_program;
     GLuint quad_program;
     GLuint picker_program;
     GLuint layer_blend_program;
@@ -455,8 +456,20 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
         gl::link_program(render_data->stroke_program, objs, array_count(objs));
 
-        glUseProgram(render_data->stroke_program);
         gl::set_uniform_i(render_data->stroke_program, "u_canvas", 0);
+    }
+    {  // Stroke debug program
+        render_data->stroke_debug_program = glCreateProgram();
+        GLuint objs[2] = {};
+
+        objs[0] = gl::compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
+        objs[1] = gl::compile_shader(g_stroke_debug_f, GL_FRAGMENT_SHADER);
+
+        render_data->stroke_debug_program = glCreateProgram();
+
+        gl::link_program(render_data->stroke_debug_program, objs, array_count(objs));
+
+        gl::set_uniform_i(render_data->stroke_debug_program, "u_canvas", 0);
     }
     {  // Color picker program
         render_data->picker_program = glCreateProgram();
@@ -628,6 +641,7 @@ gpu_update_scale(RenderData* render_data, i32 scale)
 {
     render_data->scale = scale;
     gl::set_uniform_i(render_data->stroke_program, "u_scale", scale);
+    gl::set_uniform_i(render_data->stroke_debug_program, "u_scale", scale);
 }
 
 void
@@ -734,6 +748,7 @@ set_screen_size(RenderData* render_data, float* fscreen)
 {
     GLuint programs[] = {
         render_data->stroke_program,
+        render_data->stroke_debug_program,
         render_data->layer_blend_program,
         render_data->texture_fill_program,
         render_data->exporter_program,
@@ -757,8 +772,6 @@ relative_to_render_center(RenderData* render_data, v2l point)
 void
 gpu_update_canvas(RenderData* render_data, CanvasState* canvas, CanvasView* view)
 {
-    glUseProgram(render_data->stroke_program);
-
     v2i center = view->zoom_center;
     v2l pan = view->pan_center;
     v2i new_render_center = VEC2I(pan / (i64)(1<<RENDER_CHUNK_SIZE_LOG2));
@@ -769,6 +782,8 @@ gpu_update_canvas(RenderData* render_data, CanvasState* canvas, CanvasView* view
     }
     gl::set_uniform_vec2i(render_data->stroke_program, "u_pan_center", 1, relative_to_render_center(render_data, pan).d);
     gl::set_uniform_vec2i(render_data->stroke_program, "u_zoom_center", 1, center.d);
+    gl::set_uniform_vec2i(render_data->stroke_debug_program, "u_pan_center", 1, relative_to_render_center(render_data, pan).d);
+    gl::set_uniform_vec2i(render_data->stroke_debug_program, "u_zoom_center", 1, center.d);
     gpu_update_scale(render_data, view->scale);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     set_screen_size(render_data, fscreen);
@@ -806,8 +821,6 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             arena_pop(&scratch_arena);
         }
         else if ( npoints > 1 ) {
-            glUseProgram(render_data->stroke_program);
-
             // 3 (triangle) *
             // 2 (two per segment) *
             // N-1 (segments per stroke)
@@ -1272,7 +1285,6 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
     GLint loc = glGetAttribLocation(render_data->stroke_program, "a_position");
     GLint loc_a = glGetAttribLocation(render_data->stroke_program, "a_pointa");
     GLint loc_b = glGetAttribLocation(render_data->stroke_program, "a_pointb");
-    GLint loc_debug = glGetAttribLocation(render_data->stroke_program, "a_debug_color");
     if ( loc >= 0 ) {
         DArray<RenderElement>* clip_array = &render_data->clip_array;
 
@@ -1379,10 +1391,12 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                 if ( count > 0 ) {
                     if ( !(render_data->current_color == re->color) ) {
                         gl::set_uniform_vec4(render_data->stroke_program, "u_brush_color", 1, re->color.d);
+                        gl::set_uniform_vec4(render_data->stroke_debug_program, "u_brush_color", 1, re->color.d);
                         render_data->current_color = re->color;
                     }
                     if ( render_data->current_radius != re->radius ) {
                         gl::set_uniform_i(render_data->stroke_program, "u_radius", re->radius);
+                        gl::set_uniform_i(render_data->stroke_debug_program, "u_radius", re->radius);
                         render_data->current_radius = re->radius;
                     }
 
@@ -1405,15 +1419,6 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                                               /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
                                               /*stride*/ 0, /*ptr*/ 0);
                     }
-#if INTERPOLATION_VIZ
-                    if ( loc_debug >= 0 ) {
-                        glBindBuffer(GL_ARRAY_BUFFER, re->vbo_debug);
-                        glEnableVertexAttribArray((GLuint)loc_debug);
-                        glVertexAttribPointer(/*attrib location*/ (GLuint)loc_debug,
-                                              /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
-                                              /*stride*/ 0, /*ptr*/ 0);
-                    }
-#endif
 
                     glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke);
                     glEnableVertexAttribArray((GLuint)loc);
@@ -1427,10 +1432,49 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
                     if ( is_eraser(re->color) ) {
                         glDisable(GL_BLEND);
                         glBindTexture(texture_target, render_data->eraser_texture);
+                        gl::set_uniform_i(render_data->stroke_debug_program, "u_canvas", 0);
                         gl::set_uniform_i(render_data->stroke_program, "u_canvas", 0);
                     }
 
                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
+
+#if INTERPOLATION_VIZ
+                    glUseProgram(render_data->stroke_debug_program);
+                    glDisable(GL_DEPTH_TEST);
+                    loc = glGetAttribLocation(render_data->stroke_debug_program, "a_position");
+                    loc_a = glGetAttribLocation(render_data->stroke_debug_program, "a_pointa");
+                    glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointa);
+                    glEnableVertexAttribArray((GLuint)loc_a);
+                    glVertexAttribPointer(/*attrib location*/ (GLuint)loc_a,
+                                          /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                          /*stride*/ 0, /*ptr*/ 0);
+                    loc_b = glGetAttribLocation(render_data->stroke_debug_program, "a_pointb");
+                    glBindBuffer(GL_ARRAY_BUFFER, re->vbo_pointb);
+                    glEnableVertexAttribArray((GLuint)loc_b);
+                    glVertexAttribPointer(/*attrib location*/ (GLuint)loc_b,
+                                          /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                          /*stride*/ 0, /*ptr*/ 0);
+                    GLint loc_debug = glGetAttribLocation(render_data->stroke_debug_program, "a_debug_color");
+                    if ( loc_debug >= 0 ) {
+                        glBindBuffer(GL_ARRAY_BUFFER, re->vbo_debug);
+                        glEnableVertexAttribArray((GLuint)loc_debug);
+                        glVertexAttribPointer(/*attrib location*/ (GLuint)loc_debug,
+                                              /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                              /*stride*/ 0, /*ptr*/ 0);
+                    }
+
+                    glBindBuffer(GL_ARRAY_BUFFER, re->vbo_stroke);
+                    glEnableVertexAttribArray((GLuint)loc);
+                    glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
+                                          /*size*/ 3, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                          /*stride*/ 0, /*ptr*/ 0);
+
+                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
+
+                    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
+                    glUseProgram(render_data->stroke_program);
+                    glEnable(GL_DEPTH_TEST);
+#endif
 
                     if ( is_eraser(re->color) ) {
                         glEnable(GL_BLEND);

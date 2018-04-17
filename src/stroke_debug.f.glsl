@@ -6,9 +6,7 @@ in vec3 v_pointb;
 
 uniform sampler2D u_canvas;
 
-#if INTERPOLATION_VIZ
 in vec3 v_debug_color;
-#endif
 
 void
 main()
@@ -26,23 +24,8 @@ main()
     vec2 stroke_point = mix(a, b, t);
     float pressure = mix(v_pointa.z, v_pointb.z, t);
 
-    // Distance between fragment and stroke
-    float dist = distance(stroke_point, canvas_point) - u_radius*pressure;
-
-    if ( dist < 0 ) {
-        if ( brush_is_eraser() ) {
-            vec2 coord = gl_FragCoord.xy / u_screen_size;
-            vec4 eraser_color = texture(u_canvas, coord);
-            out_color = eraser_color;
-        }
-        else {
-            out_color = u_brush_color;
-        }
-#if 0
-    } else if (dist/u_scale < 1.0 ) {
-       out_color = u_brush_color;
-       out_color.a = 1.0 - dist/u_scale;
-#endif
+    if ( distance(canvas_point, a) < u_radius*0.5 ) {
+        out_color = vec4(v_debug_color, 1.0);
     } else {
         discard;
     }
