@@ -16,7 +16,7 @@ struct RenderElement
     GLuint  vbo_pointa;
     GLuint  vbo_pointb;
     GLuint  indices;
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
     GLuint vbo_debug;
 #endif
 

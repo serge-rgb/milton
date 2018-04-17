@@ -38,10 +38,12 @@
 
 #define REDRAW_EVERY_FRAME 1
 
-#define INTERPOLATION_VIZ 1
+#define STROKE_INTERPOLATION 1
+
+#define STROKE_DEBUG_VIZ 1
   #if !MILTON_DEBUG
-    #undef INTERPOLATION_VIZ
-    #define INTERPOLATION_VIZ 0
+    #undef STROKE_DEBUG_VIZ
+    #define STROKE_DEBUG_VIZ 0
   #endif
 
 

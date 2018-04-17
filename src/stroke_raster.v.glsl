@@ -8,10 +8,11 @@ in vec3 a_pointb;
 out vec3 v_pointa;
 out vec3 v_pointb;
 
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
 in vec3 a_debug_color;
 out vec3 v_debug_color;
 #endif
+
 #define MAX_DEPTH_VALUE 1048576.0
 
 
@@ -20,7 +21,7 @@ main()
 {
     v_pointa = a_pointa;
     v_pointb = a_pointb;
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
     v_debug_color = a_debug_color;
 #endif
     gl_Position.xy = canvas_to_raster_gl(a_position.xy);

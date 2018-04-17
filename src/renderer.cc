@@ -832,7 +832,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             const size_t count_indices = 6*((size_t)npoints-1);
 
             size_t count_debug = 0;
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
             count_debug = count_attribs;
 #endif
             v3f* bounds;
@@ -850,7 +850,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             apoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             bpoints = arena_alloc_array(&scratch_arena, count_attribs, v3f);
             indices = arena_alloc_array(&scratch_arena, count_indices, u16);
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
             debug = arena_alloc_array(&scratch_arena, count_debug, v3f);
 #endif
 
@@ -898,7 +898,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                 float pressure_a = stroke->pressures[i];
                 float pressure_b = stroke->pressures[i+1];
 
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
                 v3f debug_color;
 
                 if ( stroke->debug_flags[i] & Stroke::INTERPOLATED ) {
@@ -914,7 +914,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                     apoints[apoints_i++] = { (float)point_i.x, (float)point_i.y, pressure_a };
                     bpoints[bpoints_i++] = { (float)point_j.x, (float)point_j.y, pressure_b };
 
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
                     debug[debug_i++] = debug_color;
 #endif
                 }
@@ -942,7 +942,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                 vbo_pointa = stroke->render_element.vbo_pointa;
                 vbo_pointb = stroke->render_element.vbo_pointb;
                 indices_buffer = stroke->render_element.indices;
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
                 vbo_debug = stroke->render_element.vbo_debug;
 #endif
 
@@ -960,7 +960,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                 glGenBuffers(1, &vbo_pointa);
                 glGenBuffers(1, &vbo_pointb);
                 glGenBuffers(1, &indices_buffer);
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
                 glGenBuffers(1, &vbo_debug);
 #endif
 
@@ -980,7 +980,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
                 send_buffer_data(vbo_pointa, bounds_i*sizeof(decltype(*apoints)), apoints);
                 send_buffer_data(vbo_pointb, bounds_i*sizeof(decltype(*bpoints)), bpoints);
                 send_buffer_data(indices_buffer, indices_i*sizeof(decltype(*indices)), indices);
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
                 send_buffer_data(vbo_debug, debug_i*sizeof(decltype(*debug)), debug);
 #endif
             }
@@ -990,7 +990,7 @@ gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke, CookStrok
             re.vbo_pointa = vbo_pointa;
             re.vbo_pointb = vbo_pointb;
             re.indices = indices_buffer;
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
             re.vbo_debug = vbo_debug;
 #endif
             re.count = (i64)(indices_i);
@@ -1438,7 +1438,7 @@ gpu_render_canvas(RenderData* render_data, i32 view_x, i32 view_y,
 
                     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
 
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
                     glUseProgram(render_data->stroke_debug_program);
                     glDisable(GL_DEPTH_TEST);
                     loc = glGetAttribLocation(render_data->stroke_debug_program, "a_position");

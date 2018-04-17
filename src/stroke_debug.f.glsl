@@ -24,7 +24,7 @@ main()
     vec2 stroke_point = mix(a, b, t);
     float pressure = mix(v_pointa.z, v_pointb.z, t);
 
-    if ( distance(canvas_point, a) < u_radius*0.5 ) {
+    if ( distance(canvas_point, a) < u_radius*0.1 ) {
         out_color = vec4(v_debug_color, 1.0);
     } else {
         discard;

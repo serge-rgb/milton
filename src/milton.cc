@@ -264,6 +264,7 @@ stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pre
         if ( stroke->num_points < STROKE_MAX_POINTS ) {
 
             // Check the angle
+#if STROKE_INTERPOLATION
             if ( stroke->num_points >= 2 ) {
                 v2l p0 = stroke->points[stroke->num_points - 2];
                 v2l p1 = stroke->points[stroke->num_points - 1];
@@ -277,8 +278,8 @@ stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pre
                     f32 mag_d1 = magnitude(d1);
                     if ( mag_d1 > 0.0f ) {
                         d1 /= mag_d1;
-                        float cos_angle = -DOT(d0, d1);
-                        if ( cos_angle > -0.8f && cos_angle < 0.0f) {
+                        float cos_angle = DOT(d0, d1);
+                        if ( cos_angle < 0.9f && cos_angle > 0.6f) {
                             v2l p2 = p1 + v2f_to_v2l(d0*(0.5f*mag_d1/cos_angle));
 #define HALFPOINT(a, b) (((a) + (b)) / (i64)2)
                             v2l p_interp = HALFPOINT(HALFPOINT(p1, p2), HALFPOINT(p2, p3));
@@ -290,12 +291,13 @@ stroke_append_point_with_interpolation(Stroke* stroke, v2l canvas_point, f32 pre
                     }
                 }
             }
+#endif // STROKE_INTERPOLATION
 
             if ( stroke->num_points < STROKE_MAX_POINTS ) {
                 int index = stroke->num_points++;
                 stroke->points[index] = canvas_point;
                 stroke->pressures[index] = pressure;
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
                 if ( point_is_interpolated ) {
                     stroke->debug_flags[index] |= Stroke::INTERPOLATED;
                 }
@@ -503,7 +505,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->canvas = arena_bootstrap(CanvasState, arena, 1024*1024);
     milton->working_stroke.points    = arena_alloc_array(&milton->root_arena, STROKE_MAX_POINTS, v2l);
     milton->working_stroke.pressures = arena_alloc_array(&milton->root_arena, STROKE_MAX_POINTS, f32);
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
     milton->working_stroke.debug_flags = arena_alloc_array(&milton->root_arena, STROKE_MAX_POINTS, int);
 #endif
 
@@ -580,7 +582,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 
     // Enable brush smoothing by default
     if ( !milton_brush_smoothing_enabled(milton) ) {
-        // milton_toggle_brush_smoothing(milton);
+        milton_toggle_brush_smoothing(milton);
     }
 
 #if MILTON_ENABLE_PROFILING
@@ -890,7 +892,7 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
     memcpy(out_stroke->points, in_stroke->points, num_points * sizeof(v2l));
     memcpy(out_stroke->pressures, in_stroke->pressures, num_points * sizeof(f32));
 
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
     out_stroke->debug_flags = arena_alloc_array(arena, num_points * sizeof(int), int);
     memcpy(out_stroke->debug_flags, in_stroke->debug_flags, num_points*sizeof(int));
 #endif

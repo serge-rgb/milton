@@ -27,7 +27,7 @@ struct Stroke
     i32             layer_id;
     Rect            bounding_rect;
     RenderElement   render_element;
-#if INTERPOLATION_VIZ
+#if STROKE_DEBUG_VIZ
     enum DebugFlags
     {
       NONE = (0),

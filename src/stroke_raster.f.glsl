@@ -6,10 +6,6 @@ in vec3 v_pointb;
 
 uniform sampler2D u_canvas;
 
-#if INTERPOLATION_VIZ
-in vec3 v_debug_color;
-#endif
-
 void
 main()
 {
