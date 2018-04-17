@@ -2,6 +2,7 @@ To-Do
 =====
 
 - Bugs
+    - Smoothing should be applied to input points, not interpolated points.
     - AZERTY doesn't make any sense
 - macOS port
     - Replace Dear Imgui's menu with Cocoa menu.

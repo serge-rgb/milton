@@ -458,6 +458,7 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
         gl::set_uniform_i(render_data->stroke_program, "u_canvas", 0);
     }
+#if STROKE_DEBUG_VIZ
     {  // Stroke debug program
         render_data->stroke_debug_program = glCreateProgram();
         GLuint objs[2] = {};
@@ -471,6 +472,7 @@ gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker)
 
         gl::set_uniform_i(render_data->stroke_debug_program, "u_canvas", 0);
     }
+#endif
     {  // Color picker program
         render_data->picker_program = glCreateProgram();
         GLuint objs[2] = {};
