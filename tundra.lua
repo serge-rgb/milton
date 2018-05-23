@@ -155,7 +155,7 @@ Build {
                     -- Comment for cleanup
                     "/wd4100", "/wd4189", "/wd4800", "/wd4127", "/wd4239", "/wd4987",
                     -- Disabled warnings
-                    "/wd4305", "/wd4820", "/wd4255", "/wd4710", "/wd4711", "/wd4201", "/wd4204", "/wd4191", "/wd5027", "/wd4514", "/wd4242", "/wd4244", "/wd4738", "/wd4619", "/wd4505",
+                    "/wd4305", "/wd4820", "/wd4255", "/wd4710", "/wd4711", "/wd4201", "/wd4204", "/wd4191", "/wd5027", "/wd4514", "/wd4242", "/wd4244", "/wd4738", "/wd4619", "/wd4505", "/wd4365"
                 },
                 SHADERGEN_BIN = "$(OBJECTROOT)$(SEP)$(BUILD_ID)$(SEP)shadergen.exe",
                 PROGOPTS = "/DEBUG /SAFESEH:NO",
