@@ -2,7 +2,7 @@
 *.mlt
 
 # Visual Studio crap
-third_party/SDL2-2.0.3/VisualC
+third_party/SDL2-*/VisualC
 *.vcxproj.user
 *.sdf
 *.opensdf
