@@ -74,9 +74,6 @@ void profiler_output();
 void profiler_reset();
 
 #if defined(_WIN64) && MILTON_ENABLE_PROFILING
-
-    #define PROFILER_IMPLEMENTATION
-
     extern u64 g_profiler_ticks[PROF_COUNT];     // Total cpu clocks
     extern u64 g_profiler_last[PROF_COUNT];
     extern u64 g_profiler_count[PROF_COUNT];     // How many calls

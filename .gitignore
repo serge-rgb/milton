@@ -8,7 +8,7 @@ third_party/SDL2-2.0.3/VisualC
 *.opensdf
 *.psess
 *.vsp
-
+*.sln
 VS2015/**/*.tlog
 VS2015/**/*.cache
 VS2015/**/*.idb
@@ -21,6 +21,8 @@ VS2015/**/*.dll
 VS2015/Milton/x64
 VS2015/Milton/x86
 *.opendb
+*.VC.db
+*.vs
 
 
 # Windows profiler
@@ -35,10 +37,6 @@ third_party/SDL2-2.0.3/libtool
 third_party/SDL2-2.0.3/sdl2-config
 third_party/SDL2-2.0.3/sdl2.pc
 
-
-# glew build
-third_party/glew-1.13.0/build/vc12/tmp/*
-
 # build dir
 build/
 
@@ -46,3 +44,9 @@ src/shaders.gen.h
 
 # Tundra stuff
 .tundra*
+
+# RenderDoc
+*.cap
+
+# Deploy script
+OUTPUT
