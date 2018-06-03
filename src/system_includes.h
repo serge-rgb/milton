@@ -45,7 +45,7 @@
 
 #if defined(_WIN32)
 
-#include "SDL_opengl.h"
+#include "gl.h"
 
 #elif defined(__linux__)
 

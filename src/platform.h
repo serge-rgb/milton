@@ -155,6 +155,7 @@ PATH_CHAR*   platform_save_dialog(FileKind kind);
 void    platform_dialog(char* info, char* title);
 b32     platform_dialog_yesno(char* info, char* title);
 
+void*   platform_get_gl_proc(char* name);
 void    platform_load_gl_func_pointers();
 
 void    platform_fname_at_exe(PATH_CHAR* fname, size_t len);
@@ -175,7 +176,6 @@ void    platform_fname_at_config(PATH_CHAR* fname, size_t len);
 void    platform_open_link(char* link);
 
 WallTime platform_get_walltime();
-
 
 void    platform_cursor_hide();
 void    platform_cursor_show();

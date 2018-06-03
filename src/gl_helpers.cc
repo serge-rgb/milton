@@ -3,11 +3,11 @@
 
 
 #include "gl_helpers.h"
+#include "gl.h"
 
 #include "memory.h"
 #include "platform.h"
 
-#include "gl_functions.inl"
 
 GL_DEBUG_CALLBACK(milton_gl_debug_callback)
 {
@@ -16,11 +16,6 @@ GL_DEBUG_CALLBACK(milton_gl_debug_callback)
 
 
 #if defined(_WIN32)
-    // OpenGL function prototypes.
-    #define X(ret, name, ...) typedef ret WINAPI name##Proc(__VA_ARGS__); name##Proc * name ;
-        GL_FUNCTIONS
-    #undef X
-
     // Declaring glMinSampleShadingARB because we have a different path for loading it.
     typedef void glMinSampleShadingARBProc(GLclampf value); glMinSampleShadingARBProc* glMinSampleShadingARB;
 #endif  //_WIN32
@@ -92,7 +87,7 @@ enable_debug(GlDebugCallback callback)
     // As of this writing, there is no support in macos for debug contexts.
 #if !defined(__MACH__)
     glEnable(GL_DEBUG_OUTPUT);
-    glDebugMessageCallback(milton_gl_debug_callback, NULL);
+    // glDebugMessageCallback(milton_gl_debug_callback, NULL);
 #endif
 }
 
@@ -116,11 +111,17 @@ load ()
 #define GETADDRESS(func, fatal_on_fail) \
                         { \
                             func = (decltype(func))wglGetProcAddress(#func); \
-                            if ( func == NULL && fatal_on_fail )  { \
-                                char* msg = "Could not load function " #func; \
+                            if ( func == NULL )  { \
+                                char* msg = "Could not load function " #func  "\n";\
                                 milton_log(msg);\
-                                milton_die_gracefully(msg); \
+                                if (fatal_on_fail)\
+                                {\
+                                    milton_die_gracefully(msg); \
+                                }\
                             } \
+                            else {\
+                                milton_log("Loaded " #func "\n");\
+                            }\
                         }
 #elif defined(__linux__)
     #define GETADDRESS(f, e)
@@ -153,13 +154,14 @@ load ()
 #endif
 
     // Load
-#define X(ret, name, ...) GETADDRESS(name, /*fatal on fail*/true)
+#define X(ret, func, ...) func = (decltype(func)) platform_get_gl_proc(#func);
     GL_FUNCTIONS
 #undef X
-    GETADDRESS(glMinSampleShadingARB, /*Not fatal on fail*/false)
 
     bool ok = true;
     // Extension checking.
+
+#if MULTISAMPLING_ENABLED
     i64 num_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions);
 
@@ -167,14 +169,12 @@ load ()
         for ( i64 extension_i = 0; extension_i < num_extensions; ++extension_i ) {
             char* extension_string = (char*)glGetStringi(GL_EXTENSIONS, (GLuint)extension_i);
 
-            #if MULTISAMPLING_ENABLED
                 if ( strcmp(extension_string, "GL_ARB_sample_shading") == 0 ) {
                     gl::set_flags(GLHelperFlags_SAMPLE_SHADING);
                 }
                 if ( strcmp(extension_string, "GL_ARB_texture_multisample") == 0 ) {
                     gl::set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
                 }
-            #endif
         }
     }
     // glGetStringi probably does not handle GL_EXTENSIONS
@@ -192,14 +192,12 @@ load ()
                 if ( len < MAX_EXTENSION_LEN ) {
                     memcpy((void*)ext, (void*)begin, len);
                     ext[len]='\0';
-                    #if MULTISAMPLING_ENABLED
                         if ( strcmp(ext, "GL_ARB_sample_shading") == 0 ) {
                             gl::set_flags(GLHelperFlags_SAMPLE_SHADING);
                         }
                         if ( strcmp(ext, "GL_ARB_texture_multisample") == 0 ) {
                             gl::set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
                         }
-                    #endif
                     begin = end+1;
                 }
                 else {
@@ -208,6 +206,7 @@ load ()
             }
          }
     }
+#endif
 
 #if defined(_WIN32)
 #pragma warning(push, 0)
@@ -281,7 +280,7 @@ compile_shader (const char* in_src, GLuint type, char* config)
         char* log = (char*)mlt_calloc(1, (size_t)length, "Strings");
         GLsizei written_len;
         // glGetShaderInfoLog(obj, length, &written_len, log);
-        glGetShaderInfoLog (obj, length, &written_len, log);
+        glGetShaderInfoLog (obj, length, &written_len, (GLchar*)log);
         gl::log("Shader compilation info. \n    ---- Info log:\n");
         gl::log(log);
 
@@ -327,7 +326,7 @@ link_program (GLuint obj, GLuint shaders[], int64_t num_shaders)
         glGetProgramiv(obj, GL_INFO_LOG_LENGTH, &len);
         GLsizei written_len;
         char* log = (char*)mlt_calloc(1, (size_t)len, "Strings");
-        glGetProgramInfoLog(obj, (GLsizei)len, &written_len, log);
+        glGetProgramInfoLog(obj, (GLsizei)len, &written_len, (GLchar*)log);
         //glGetInfoLog(obj, (GLsizei)len, &written_len, log);
         gl::log(log);
         mlt_free(log, "Strings");
@@ -348,7 +347,7 @@ bool
 set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
 {
     bool ok = true;
-    GLint loc = glGetAttribLocation(program, name);
+    GLint loc = glGetAttribLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)data_sz, data, GL_STATIC_DRAW);
@@ -363,7 +362,7 @@ set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
 
     if ( ok ) {
@@ -379,7 +378,7 @@ set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
 
     if ( ok ) {
@@ -395,7 +394,7 @@ set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
 
     if ( ok ) {
@@ -411,7 +410,7 @@ set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform2fv(loc, (GLsizei)count, vals);
@@ -426,7 +425,7 @@ set_uniform_vec2(GLuint program, char* name, float x, float y)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform2f(loc, x, y);
@@ -441,7 +440,7 @@ set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform2iv(loc, (GLsizei)count, vals);
@@ -456,7 +455,7 @@ set_uniform_f(GLuint program, char* name, float val)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform1f(loc, val);
@@ -471,7 +470,7 @@ set_uniform_i(GLuint program, char* name, i32 val)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform1i(loc, val);
@@ -486,7 +485,7 @@ set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
     glUseProgram(program);
     bool ok = true;
-    GLint loc = glGetUniformLocation(program, name);
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform2i(loc, x, y);
@@ -559,6 +558,7 @@ new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment, GLenum texture
 GLuint
 new_color_texture_multisample(int w, int h)
 {
+#if MULTISAMPLING_ENABLED
     GLuint t = 0;
     glGenTextures(1, &t);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
@@ -570,11 +570,15 @@ new_color_texture_multisample(int w, int h)
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
     return t;
+#else
+    return 0;
+#endif
 }
 
 GLuint
 new_depth_stencil_texture_multisample(int w, int h)
 {
+#if MULTISAMPLING_ENABLED
     GLuint t = 0;
     glGenTextures(1, &t);
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
@@ -588,6 +592,34 @@ new_depth_stencil_texture_multisample(int w, int h)
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
     return t;
+#else
+    return 0;
+#endif
+}
+
+void
+resize_color_texture_multisample(GLuint t, int w, int h)
+{
+#if MULTISAMPLING_ENABLED
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                            GL_RGBA,
+                            w,h,
+                            GL_TRUE);
+#endif
+}
+
+void
+resize_depth_stencil_texture_multisample(GLuint t, int w, int h)
+{
+#if MULTISAMPLING_ENABLED
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
+                            GL_DEPTH24_STENCIL8,
+                            w,h,
+                            GL_TRUE);
+
+#endif
 }
 
 void
@@ -601,15 +633,6 @@ resize_color_texture(GLuint t, int w, int h)
                  /*data = */ NULL);
 }
 
-void
-resize_color_texture_multisample(GLuint t, int w, int h)
-{
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                            GL_RGBA,
-                            w,h,
-                            GL_TRUE);
-}
 
 void
 resize_depth_stencil_texture(GLuint t, int w, int h)
@@ -622,16 +645,6 @@ resize_depth_stencil_texture(GLuint t, int w, int h)
                  /*data = */ NULL);
 }
 
-void
-resize_depth_stencil_texture_multisample(GLuint t, int w, int h)
-{
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                            GL_DEPTH24_STENCIL8,
-                            w,h,
-                            GL_TRUE);
-
-}
 
 }  // namespace gl
 

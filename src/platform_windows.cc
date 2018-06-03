@@ -26,6 +26,34 @@ GET_DPI_FOR_MONITOR_PROC( GetDpiForMonitorStub )
     return 0;
 }
 
+void*
+platform_get_gl_proc(char* name)
+{
+    void* func = NULL;
+    func = (void*)wglGetProcAddress(name);
+    if ( func == NULL )  {
+        static HMODULE dll_handle = LoadLibraryA("OpenGL32.dll");
+        if (dll_handle) {
+            func = (void*)GetProcAddress(dll_handle, name);
+        }
+
+        if (func) {
+            milton_log("Loaded %s from OpenGL32.dll\n", name);
+        }
+        else {
+            static const sz msglen = 128;
+            char msg[msglen] = {};
+            snprintf(msg, msglen, "Could not load function %s\nYour GPU does not support Milton :(", name);
+            milton_log(msg);
+            milton_die_gracefully(msg);
+        }
+    }
+    else {
+        milton_log("Loaded %s rom WGL\n", name);
+    }
+    return func;
+}
+
 void
 win_load_dpi_api(WinDpiApi* api) {
     HMODULE shcore = LoadLibrary("Shcore.dll");

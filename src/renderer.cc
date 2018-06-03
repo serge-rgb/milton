@@ -1551,6 +1551,7 @@ gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32
                                   /*stride*/0, /*ptr*/0);
             glEnableVertexAttribArray((GLuint)loc);
             GLint loc_norm = glGetAttribLocation(render_data->picker_program, "a_norm");
+
             if ( loc_norm >= 0 ) {
                 DEBUG_gl_validate_buffer(render_data->vbo_picker_norm);
                 glBindBuffer(GL_ARRAY_BUFFER, render_data->vbo_picker_norm);

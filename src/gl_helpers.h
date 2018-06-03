@@ -6,23 +6,19 @@
 #include "common.h"
 #include "system_includes.h"
 
-#include "gl_functions.inl"
+#include "gl.h"
 
 // GL_DEBUG_OUTPUT defines
 #define GL_DEBUG_OUTPUT                   0x92E0
 
 #define GL_DEBUG_CALLBACK(name)  void name(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 
+
 typedef GL_DEBUG_CALLBACK(GlDebugCallback);
 
 GL_DEBUG_CALLBACK(milton_gl_debug_callback);
 
 #if defined(_WIN32)
-    // OpenGL function prototypes.
-    #define X(ret, name, ...) typedef ret WINAPI name ## Proc(__VA_ARGS__); extern name##Proc * name ;
-        GL_FUNCTIONS
-    #undef X
-
     // Declaring glMinSampleShadingARB because we have a different path for loading it.
     typedef void glMinSampleShadingARBProc (GLclampf value); extern glMinSampleShadingARBProc* glMinSampleShadingARB;
 #endif  //_WIN32
@@ -58,15 +54,18 @@ bool    set_uniform_i (GLuint program, char* name, i32 val);
 bool    set_uniform_vec2i (GLuint program, char* name, i32 x, i32 y);
 
 GLuint  new_color_texture (int w, int h);
-GLuint  new_color_texture_multisample (int w, int h);
 GLuint  new_depth_stencil_texture (int w, int h);
-GLuint  new_depth_stencil_texture_multisample (int w, int h);
 GLuint  new_fbo (GLuint color_attachment, GLuint depth_stencil_attachment=0, GLenum texture_target=GL_TEXTURE_2D);
 
-void    resize_color_texture (GLuint t, int w, int h);
+#if MULTISAMPLING_ENABLED
+GLuint  new_color_texture_multisample (int w, int h);
+GLuint  new_depth_stencil_texture_multisample (int w, int h);
 void    resize_color_texture_multisample (GLuint t, int w, int h);
-void    resize_depth_stencil_texture (GLuint t, int w, int h);
 void    resize_depth_stencil_texture_multisample (GLuint t, int w, int h);
+#endif
+
+void    resize_color_texture (GLuint t, int w, int h);
+void    resize_depth_stencil_texture (GLuint t, int w, int h);
 
 }  // namespace gl
 

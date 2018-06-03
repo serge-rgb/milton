@@ -744,6 +744,10 @@ milton_main(bool is_fullscreen, char* file_to_open)
         milton_die_gracefully("Could not create OpenGL context\n");
     }
 
+    if ( !gl::load() ) {
+        milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
+    }
+
     SDL_GL_SetSwapInterval(0);
 
     int actual_major = 0;
@@ -761,10 +765,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
     // ==== Initialize milton
 
     Milton* milton = arena_bootstrap(Milton, root_arena, 1024*1024);
-
-    if ( !gl::load() ) {
-        milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
-    }
 
     // Ask for native events to poll tablet events.
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
