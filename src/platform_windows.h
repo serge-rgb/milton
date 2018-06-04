@@ -64,8 +64,14 @@ HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt H
 
 
 
+// C standard library function defs.
+// --------------------------------
 
-// The returns value mean different things, but other than that, we're ok
+
+
+void win_load_clib();
+
+// ---------------
 
 
 // Shcore.dll

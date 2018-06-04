@@ -2,30 +2,23 @@
 
 
 :: NOTE: Milton provides built SDL binaries for Windows 64 and 32 bit. If for
-:: whatever reason you need to go through the hassle of building SDL, follow
-:: these instructions.
+:: whatever reason you need to go through the hassle of building SDL, this is
+:: the script we use to build it
 ::
 ::
 
-:: Windows SDK 15063
-
-:: The provided is vanilla SDL-2.0.8 with the following changes:
+:: Milton provides a vanilla SDL-2.0.8 with the following changes:
 ::
-:: Directories removed to save space:
-::    ./test
-::    XCode iOS Demo dir
+::    - Directories removed to save space:
+::          test
+::          XCode iOS Demo dir
+::    - VS SDL project changed to compile a static library instead of a DLL.
+::    - removed _ftol2_sse implementation from SDL_stdlib.c since it causes linker problems on x86
 ::
-:: VS SDL project changed to compile a static library instead of a DLL.
 ::
 :: Building:
-::   Either run this script from the third_party directory. Or do the following by hand:
+::   Run this script from the third_party directory.
 ::
-:: In the SDL2-2.0.8 directory, open VisualC\SDL.sln in Visual Studio 2017 and
-:: build the SDL project. Do not build the whole solution, as the test
-:: directory has been deleted.
-::
-:: In a VS command prompt, this script attempts to do the above in an automated
-:: fashion.
 ::
 
 set target=x64

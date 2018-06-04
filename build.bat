@@ -5,6 +5,8 @@ setlocal
 
 set platform=x64
 
+if "%1"=="x86" set platform=x86
+
 set unityBuild=1
 
 set warnFlags=
@@ -19,7 +21,10 @@ popd
 build\shadergen.exe
 
 pushd build
-cl ..\src\unity.cc /Zi %includeFlags% %warnFlags% /Femilton.exe /link mincore.lib ..\third_party\bin\x64\SDL2.lib kernel32.lib OpenGL32.lib User32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib
+cl ..\src\unity.cc /MTd /Zi %includeFlags% %warnFlags% /Femilton.exe /wd4217 /link mincore.lib ..\third_party\bin\%platform%\SDL2.lib kernel32.lib OpenGL32.lib User32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib
 
+         copy "..\milton_icon.ico" "milton_icon.ico"
+         copy "..\third_party\Carlito.ttf" "Carlito.ttf"
+         copy "..\third_party\Carlito.LICENSE" "Carlito.LICENSE"
 :: ..\third_party\bin\%platform%\SDL2.lib
 popd

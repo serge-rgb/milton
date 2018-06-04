@@ -9,7 +9,6 @@ typedef char GLchar;
 typedef short GLshort;
 typedef int GLint;
 typedef int GLsizei;
-typedef ptrdiff_t GLsizeiptr;
 typedef unsigned char GLubyte;
 typedef unsigned short GLushort;
 typedef unsigned int GLuint;

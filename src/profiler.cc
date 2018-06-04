@@ -1,7 +1,7 @@
 // Copyright (c) 2015 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-#if defined(_WIN64) && MILTON_ENABLE_PROFILING
+#if defined(_WIN32) && MILTON_ENABLE_PROFILING
 u64 g_profiler_ticks[PROF_COUNT];
 u64 g_profiler_last[PROF_COUNT];
 u64 g_profiler_count[PROF_COUNT];

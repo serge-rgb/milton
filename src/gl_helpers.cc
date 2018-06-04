@@ -9,11 +9,6 @@
 #include "platform.h"
 
 
-GL_DEBUG_CALLBACK(milton_gl_debug_callback)
-{
-    milton_log("OpenGL debug message: [%s]\n", message);
-}
-
 
 #if defined(_WIN32)
     // Declaring glMinSampleShadingARB because we have a different path for loading it.
@@ -79,16 +74,6 @@ query_error (const char* expr, const char* file, int line)
         snprintf(buffer, 256, "   ---- Expression: %s\n", expr);
         gl::log(buffer);
     }
-}
-
-void
-enable_debug(GlDebugCallback callback)
-{
-    // As of this writing, there is no support in macos for debug contexts.
-#if !defined(__MACH__)
-    glEnable(GL_DEBUG_OUTPUT);
-    // glDebugMessageCallback(milton_gl_debug_callback, NULL);
-#endif
 }
 
 static void

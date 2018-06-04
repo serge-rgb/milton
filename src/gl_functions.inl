@@ -2,15 +2,11 @@
 // License: https://github.com/serge-rgb/milton#license
 
 #define GL_FUNCTIONS \
-    X(GLboolean, glIsProgram,             GLuint program)                                         \
-    X(GLboolean, glIsShader,              GLuint shader)                                          \
     X(GLenum,   glGetError, void)\
     X(GLint,    glGetAttribLocation,      GLuint program, GLchar* name)                     \
     X(GLint,    glGetUniformLocation,     GLuint program, GLchar *name)                     \
-    X(GLuint,   glCreateShader,           GLenum type)                                            \
     X(const GLubyte *, glGetString, GLenum name )\
     X(const GLubyte*, glGetStringi,       GLenum name, GLuint index)                              \
-    X(void,     glAttachShader,           GLuint program, GLuint shader)                          \
     X(void,     glBindFramebufferEXT,     GLenum target, GLuint framebuffer)                      \
     X(void,     glBindTexture,            GLenum target, GLuint text) \
     X(void,     glBufferData,             GLenum target, GLsizeiptr size, GLvoid *data, GLenum usage) \
@@ -19,6 +15,10 @@
     X(void,     glFramebufferTexture2DEXT, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) \
     X(void,     glGenFramebuffersEXT,     GLsizei n, GLuint* framebuffers)                        \
     X(void,     glGenTextures,            GLsizei n, GLuint* textures) \
+    X(void,     glAttachShader,           GLuint program, GLuint shader)                          \
+    X(GLboolean, glIsProgram,             GLuint program)                                         \
+    X(GLboolean, glIsShader,              GLuint shader)                                          \
+    X(GLuint,   glCreateShader,           GLenum type)                                            \
     X(void,     glGetIntegerv, GLenum pname, GLint *params )\
     X(void,     glGetProgramInfoLog,      GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog) \
     X(void,     glGetProgramiv,           GLuint program, GLenum pname, GLint* params)            \
