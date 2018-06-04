@@ -529,13 +529,11 @@ localexit:
     /* *INDENT-ON* */
 }
 
-#if 0  // SDL 2.0.8 compiled in x86 causes a redefined-symbol linker error with milton compiling with /MTd.
 void
 _ftol2_sse()
 {
     _ftol();
 }
-#endif
 
 /* 64-bit math operators for 32-bit systems */
 void

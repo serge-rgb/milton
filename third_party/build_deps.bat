@@ -13,7 +13,6 @@
 ::          test
 ::          XCode iOS Demo dir
 ::    - VS SDL project changed to compile a static library instead of a DLL.
-::    - removed _ftol2_sse implementation from SDL_stdlib.c since it causes linker problems on x86
 ::
 ::
 :: Building:

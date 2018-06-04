@@ -21,10 +21,13 @@ popd
 build\shadergen.exe
 
 pushd build
-cl ..\src\unity.cc /MTd /Zi %includeFlags% %warnFlags% /Femilton.exe /wd4217 /link mincore.lib ..\third_party\bin\%platform%\SDL2.lib kernel32.lib OpenGL32.lib User32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib
 
          copy "..\milton_icon.ico" "milton_icon.ico"
          copy "..\third_party\Carlito.ttf" "Carlito.ttf"
          copy "..\third_party\Carlito.LICENSE" "Carlito.LICENSE"
+         copy ..\Milton.rc Milton.rc
+         rc Milton.rc
+
+cl Milton.res ..\src\unity.cc /MTd /Zi %includeFlags% %warnFlags% /Femilton.exe /wd4217 /link mincore.lib ..\third_party\bin\%platform%\SDL2.lib kernel32.lib OpenGL32.lib User32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib
 :: ..\third_party\bin\%platform%\SDL2.lib
 popd
