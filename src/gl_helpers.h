@@ -51,6 +51,8 @@ bool    set_uniform_f (GLuint program, char* name, float val);
 bool    set_uniform_i (GLuint program, char* name, i32 val);
 bool    set_uniform_vec2i (GLuint program, char* name, i32 x, i32 y);
 
+void    vertex_attrib_v3f(GLuint program, char* name);
+
 GLuint  new_color_texture (int w, int h);
 GLuint  new_depth_stencil_texture (int w, int h);
 GLuint  new_fbo (GLuint color_attachment, GLuint depth_stencil_attachment=0, GLenum texture_target=GL_TEXTURE_2D);
