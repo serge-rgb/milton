@@ -4,7 +4,7 @@
 typedef unsigned int GLenum;
 typedef unsigned char GLboolean;
 typedef unsigned int GLbitfield;
-typedef char GLbyte;
+typedef signed char GLbyte;
 typedef char GLchar;
 typedef short GLshort;
 typedef int GLint;

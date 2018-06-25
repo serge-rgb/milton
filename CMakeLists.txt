@@ -10,7 +10,7 @@ add_executable(shadergen
   src/shadergen.cc
 )
 
-set(SDL2DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/SDL2-2.0.3)
+set(SDL2DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/SDL2-2.0.8)
 
 FILE (GLOB ShaderSources src/*.glsl third_party/*.glsl)
 
@@ -86,13 +86,13 @@ if(UNIX)
     -Wno-unused-variable
     -Wno-unused-result
     -Wno-write-strings
-    -Wno-c++11-compat-deprecated-writable-strings
+    # -Wno-c++11-compat-deprecated-writable-strings
     -Wno-null-dereference
     -Wno-format
     -fno-strict-aliasing
     -fno-omit-frame-pointer
-    -Wno-extern-c-compat
-    -Werror
+    # -Wno-extern-c-compat
+    # -Werror
     )
   target_sources(Milton PRIVATE
     src/platform_unix.cc

@@ -140,7 +140,9 @@ load ()
 
     // Load
 #define X(ret, func, ...) func = (decltype(func)) platform_get_gl_proc(#func);
+#if not defined(__linux__)
     GL_FUNCTIONS
+#endif
 #undef X
 
     bool ok = true;

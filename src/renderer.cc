@@ -320,6 +320,7 @@ gpu_init(RenderData* r, CanvasView* view, ColorPicker* picker)
 {
     r->stroke_z = MAX_DEPTH_VALUE - 20;
 
+#if MULTISAMPLING_ENABLED
     if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glEnable(GL_MULTISAMPLE);
         if ( gl::check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
@@ -327,6 +328,7 @@ gpu_init(RenderData* r, CanvasView* view, ColorPicker* picker)
             glMinSampleShadingARB(1.0f);
         }
     }
+#endif
 
     {
         GLfloat viewport_dims[2] = {};
@@ -531,42 +533,57 @@ gpu_init(RenderData* r, CanvasView* view, ColorPicker* picker)
 
     // Framebuffer object for canvas. Layer buffer
     {
+#if MULTISAMPLING_ENABLED
         if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
             r->canvas_texture = gl::new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
-        } else {
+        } else
+#endif
+        {
             r->canvas_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
         }
 
+#if MULTISAMPLING_ENABLED
         if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
             r->eraser_texture = gl::new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
-        } else {
+        } else
+#endif
+        {
             r->eraser_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
         }
 
         glGenTextures(1, &r->helper_texture);
 
+#if MULTISAMPLING_ENABLED
         if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
             r->helper_texture = gl::new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
-        } else {
+        } else
+#endif
+        {
             r->helper_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
         }
 
 
         glGenTextures(1, &r->stencil_texture);
 
+#if MULTISAMPLING_ENABLED
         if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
             r->stencil_texture = gl::new_depth_stencil_texture_multisample(view->screen_size.w, view->screen_size.h);
         }
-        else {
+        else
+#endif
+        {
             r->stencil_texture = gl::new_depth_stencil_texture(view->screen_size.w, view->screen_size.h);
         }
 
         // Create framebuffer object.
         GLenum texture_target;
+#if MULTISAMPLING_ENABLED
         if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
             texture_target = GL_TEXTURE_2D_MULTISAMPLE;
         }
-        else{
+        else
+#endif
+        {
             texture_target = GL_TEXTURE_2D;
         }
         r->fbo = gl::new_fbo(r->canvas_texture, r->stencil_texture, texture_target);
@@ -589,13 +606,16 @@ gpu_resize(RenderData* r, CanvasView* view)
     r->width = view->screen_size.w;
     r->height = view->screen_size.h;
 
+#if MULTISAMPLING_ENABLED
     if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         gl::resize_color_texture_multisample(r->eraser_texture, r->width, r->height);
         gl::resize_color_texture_multisample(r->canvas_texture, r->width, r->height);
         gl::resize_color_texture_multisample(r->helper_texture, r->width, r->height);
         gl::resize_depth_stencil_texture_multisample(r->stencil_texture, r->width, r->height);
     }
-    else {
+    else
+#endif
+    {
         gl::resize_color_texture(r->eraser_texture, r->width, r->height);
         gl::resize_color_texture(r->canvas_texture, r->width, r->height);
         gl::resize_color_texture(r->helper_texture, r->width, r->height);
@@ -1219,9 +1239,12 @@ gpu_render_canvas(RenderData* r, i32 view_x, i32 view_y,
     glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
 
     GLenum texture_target;
+#if MULTISAMPLING_ENABLED
     if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-    } else {
+    } else
+#endif
+    {
         texture_target = GL_TEXTURE_2D;
     }
 
@@ -1443,9 +1466,12 @@ gpu_render(RenderData* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_heig
     gpu_render_canvas(r, view_x, view_y, view_width, view_height);
 
     GLenum texture_target;
+#if MULTISAMPLING_ENABLED
     if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-    } else {
+    } else
+#endif
+    {
         texture_target = GL_TEXTURE_2D;
     }
 
@@ -1455,6 +1481,7 @@ gpu_render(RenderData* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_heig
 
     glDisable(GL_DEPTH_TEST);
 
+#if MULTISAMPLING_ENABLED
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                   r->canvas_texture, 0);
@@ -1464,7 +1491,9 @@ gpu_render(RenderData* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_heig
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                   r->helper_texture, 0);
         glBindTexture(texture_target, r->canvas_texture);
-    } else {
+    } else
+#endif
+    {
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                   r->helper_texture, 0);
         glBindTexture(texture_target, r->canvas_texture);
@@ -1505,6 +1534,7 @@ gpu_render(RenderData* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_heig
 
     // Do post-processing on painting and on GUI elements. Draw to backbuffer
 
+#if MULTISAMPLING_ENABLED
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 
@@ -1528,7 +1558,9 @@ gpu_render(RenderData* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_heig
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
     }
-    else {  // Resolve
+    else
+#endif
+    {  // Resolve
         glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
         glBindFramebufferEXT(GL_READ_FRAMEBUFFER, r->fbo);
         glBlitFramebufferEXT(0, 0, r->width, r->height,
@@ -1633,6 +1665,7 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
 
 
     // Post processing
+#if MULTISAMPLING_ENABLED
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glUseProgram(r->postproc_program);
         glBindTexture(GL_TEXTURE_2D, r->canvas_texture);
@@ -1646,7 +1679,9 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
 
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
-    } else {
+    } else
+#endif
+    {
         glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
         glBindFramebufferEXT(GL_READ_FRAMEBUFFER, r->fbo);
         glBlitFramebufferEXT(0, 0, buf_w, buf_h,
