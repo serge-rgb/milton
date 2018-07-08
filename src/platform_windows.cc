@@ -10,6 +10,11 @@ extern "C" {
 
 static FILE* g_win32_logfile;
 
+struct PlatformSpecific
+{
+    HWND    hwnd;
+    WinDpiApi* win_dpi_api;
+};
 
 #define LOAD_DLL_PROC(dll, name) name##Proc* name = (name##Proc*)GetProcAddress(dll, #name);
 
@@ -24,6 +29,184 @@ GET_DPI_FOR_MONITOR_PROC( GetDpiForMonitorStub )
     *dpiX = 96;
     *dpiY = 96;
     return 0;
+}
+
+void
+platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo)
+{
+    platform->specific = (PlatformSpecific*)platform_allocate(sizeof(PlatformSpecific));
+    platform->specific->win_dpi_api = (WinDpiApi*)mlt_calloc(1, sizeof(WinDpiApi), "Setup");
+    win_load_dpi_api(platform->specific->win_dpi_api);
+
+    platform->specific->win_dpi_api->SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+
+    mlt_assert(sysinfo->subsystem == SDL_SYSWM_WINDOWS);
+
+    // Handle the case where the window was too big for the screen.
+    HWND hwnd = sysinfo->info.win.window;
+    // TODO: Fullscreen
+    // if (!is_fullscreen) {
+    {
+        RECT res_rect;
+        RECT win_rect;
+        HWND dhwnd = GetDesktopWindow();
+        GetWindowRect(dhwnd, &res_rect);
+        GetClientRect(hwnd, &win_rect);
+
+        platform->specific->hwnd = hwnd;
+
+        i32 snap_threshold = 300;
+        if (win_rect.right != platform->width
+            || win_rect.bottom != platform->height
+            // Also maximize if the size is large enough to "snap"
+            || (win_rect.right + snap_threshold >= res_rect.right
+                && win_rect.left + snap_threshold >= res_rect.left)
+            || win_rect.left < 0
+            || win_rect.top < 0) {
+            // Our prefs weren't right. Let's maximize.
+
+            SetWindowPos(hwnd, HWND_TOP, 20, 20, win_rect.right - 20, win_rect.bottom - 20, SWP_SHOWWINDOW);
+            platform->width = win_rect.right - 20;
+            platform->height = win_rect.bottom - 20;
+            ShowWindow(hwnd, SW_MAXIMIZE);
+        }
+    }
+    // Load EasyTab
+    EasyTabResult easytab_res = EasyTab_Load(platform->specific->hwnd);
+    if (easytab_res != EASYTAB_OK) {
+        milton_log("EasyTab failed to load. Code %d\n", easytab_res);
+    }
+
+}
+
+void
+platform_deinit(PlatformState* platform)
+{
+    EasyTab_Unload();
+}
+
+void
+platform_setup_cursor(Arena* arena, PlatformState* platform)
+{
+    {  // Load icon (Win32)
+        int si = sizeof(HICON);
+        HINSTANCE handle = GetModuleHandle(nullptr);
+        PATH_CHAR icopath[MAX_PATH] = L"milton_icon.ico";
+        platform_fname_at_exe(icopath, MAX_PATH);
+        HICON icon = (HICON)LoadImageW(NULL, icopath, IMAGE_ICON, /*W*/0, /*H*/0,
+                                       LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED);
+        if ( icon != NULL ) {
+            SendMessage(platform->specific->hwnd, WM_SETICON, ICON_SMALL, (LPARAM)icon);
+        }
+    }
+
+    // Setup hardware cursor.
+
+#if MILTON_HARDWARE_BRUSH_CURSOR
+    {  // Set brush HW cursor
+        milton_log("Setting up hardware cursor.\n");
+        size_t w = (size_t)GetSystemMetrics(SM_CXCURSOR);
+        size_t h = (size_t)GetSystemMetrics(SM_CYCURSOR);
+
+        size_t arr_sz = (w*h+7) / 8;
+
+        char* andmask = arena_alloc_array(arena, arr_sz, char);
+        char* xormask = arena_alloc_array(arena, arr_sz, char);
+
+        i32 counter = 0;
+        {
+            size_t cx = w/2;
+            size_t cy = h/2;
+            for ( size_t j = 0; j < h; ++j ) {
+                for ( size_t i = 0; i < w; ++i ) {
+                    size_t dist = (i-cx)*(i-cx) + (j-cy)*(j-cy);
+
+                    // 32x32 default;
+                    i64 girth = 3; // girth of cursor in pixels
+                    size_t radius = 8;
+                    if ( w == 32 && h == 32 ) {
+                        // 32x32
+                    }
+                    else if ( w == 64 && h == 64 ) {
+                        girth *= 2;
+                        radius *= 2;
+                    }
+                    else {
+                        milton_log("WARNING: Got an unexpected cursor size of %dx%d. Using 32x32 and hoping for the best.\n", w, h);
+                        w = 32;
+                        h = 32;
+                        cx = 16;
+                        cy = 16;
+                    }
+                    i64 diff        = (i64)(dist - SQUARE(radius));
+                    b32 in_white = diff < SQUARE(girth-0.5f) && diff > -SQUARE(girth-0.5f);
+                    diff = (i64)(dist - SQUARE(radius+1));
+                    b32 in_black = diff < SQUARE(girth) && diff > -SQUARE(girth);
+
+                    size_t idx = j*w + i;
+
+                    size_t ai = idx / 8;
+                    size_t bi = idx % 8;
+
+                    // This code block for windows CreateCursor
+#if 0
+                    if (incircle &&
+                        // Cross-hair effect. Only pixels inside half-radius bands get drawn.
+                        (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2))
+                    {
+                        if (toggle_black)
+                        {
+                            xormask[ai] |= (1 << (7 - bi));
+                        }
+                        else
+                        {
+                            xormask[ai] &= ~(1 << (7 - bi));
+                            xormask[ai] &= ~(1 << (7 - bi));
+                        }
+                        toggle_black = !toggle_black;
+                    }
+                    else
+                    {
+                        andmask[ai] |= (1 << (7 - bi));
+                    }
+#endif
+                    // SDL code block
+                    if ( in_white ) {
+                        // Cross-hair effect. Only pixels inside half-radius bands get drawn.
+                        /* (i > cx-radius/2 && i < cx+radius/2 || j > cy-radius/2 && j < cy+radius/2)) */
+                        andmask[ai] &= ~(1 << (7 - bi));  // White
+                        xormask[ai] |= (1 << (7 - bi));
+                    }
+                    else if ( in_black ) {
+                        xormask[ai] |= (1 << (7 - bi));  // Black
+                        andmask[ai] |= (1 << (7 - bi));
+
+                    }
+                    else {
+                        andmask[ai] &= ~(1 << (7 - bi));     // Transparent
+                        xormask[ai] &= ~(1 << (7 - bi));
+                    }
+                }
+            }
+        }
+        //platform->hcursor = CreateCursor(/*HINSTANCE*/ 0,
+        //                                      /*xHotSpot*/(int)(w/2),
+        //                                      /*yHotSpot*/(int)(h/2),
+        //                                      /* nWidth */(int)w,
+        //                                      /* nHeight */(int)h,
+        //                                      (VOID*)andmask,
+        //                                      (VOID*)xormask);
+
+        platform->cursor_brush = SDL_CreateCursor((Uint8*)andmask,
+                                                 (Uint8*)xormask,
+                                                 (int)w,
+                                                 (int)h,
+                                                 /*xHotSpot*/(int)(w/2),
+                                                 /*yHotSpot*/(int)(h/2));
+
+    }
+    mlt_assert(platform->cursor_brush != NULL);
+#endif  // MILTON_HARDWARE_BRUSH_CURSOR
 }
 
 void*
@@ -108,9 +291,11 @@ platform_allocate(size_t size)
 }
 
 void
-platform_deallocate_internal(void* pointer)
+platform_deallocate_internal(void** pointer)
 {
-    VirtualFree(pointer, 0, MEM_RELEASE);
+    mlt_assert(*pointer);
+    VirtualFree(*pointer, 0, MEM_RELEASE);
+    *pointer = NULL;
 }
 
 void
@@ -125,8 +310,8 @@ win32_debug_output(char* str)
 float
 platform_ui_scale(PlatformState* p)
 {
-    WinDpiApi* api = p->win_dpi_api;
-    HMONITOR hmon = MonitorFromWindow(p->hwnd, MONITOR_DEFAULTTONEAREST);
+    WinDpiApi* api = p->specific->win_dpi_api;
+    HMONITOR hmon = MonitorFromWindow(p->specific->hwnd, MONITOR_DEFAULTTONEAREST);
     UINT dpix = 96;
     UINT dpiy = dpix;
     api->GetDpiForMonitor(hmon, MDT_EFFECTIVE_DPI, &dpix, &dpiy);
@@ -629,3 +814,4 @@ CALLBACK WinMain(HINSTANCE hInstance,
 }
 
 } // extern "C"
+

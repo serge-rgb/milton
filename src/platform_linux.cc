@@ -32,6 +32,13 @@ perf_counter()
 }
 
 void
+platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo)
+{
+    mlt_assert(sysinfo.subsystem == SDL_SYSWM_X11);
+    EasyTab_Load(sysinfo.info.x11.display, sysinfo.info.x11.window);
+}
+
+void
 platform_point_to_pixel(PlatformState* ps, v2l* inout)
 {
 

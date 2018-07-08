@@ -38,7 +38,8 @@ enum LayoutType
 };
 
 struct SDL_Cursor;
-struct WinDpiApi;
+
+struct PlatformSpecific;
 
 struct PlatformState
 {
@@ -82,11 +83,9 @@ struct PlatformState
     SDL_Window* window;
 
     // Windows hardware cursor
-#if defined(_WIN32)
-    HWND    hwnd;
-    WinDpiApi* win_dpi_api;
-#endif
-    float ui_scale;
+    PlatformSpecific* specific;
+
+   float ui_scale;
 };
 
 typedef enum HistoryDebug
@@ -106,9 +105,13 @@ typedef struct TabletState_s TabletState;
 
 int milton_main(bool is_fullscreen, char* file_to_open);
 
+void    platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo);
+void    platform_deinit(PlatformState* platform);
+void    platform_setup_cursor(Arena* arena, PlatformState* platform);
+
 void*   platform_allocate(size_t size);
-#define platform_deallocate(pointer) platform_deallocate_internal((pointer)); {(pointer) = NULL;}
-void    platform_deallocate_internal(void* ptr);
+#define platform_deallocate(pointer) platform_deallocate_internal((void**)&(pointer));
+void    platform_deallocate_internal(void** ptr);
 float   platform_ui_scale(PlatformState* p);
 void    platform_point_to_pixel(PlatformState* ps, v2l* inout);
 void    platform_point_to_pixel_i(PlatformState* ps, v2i* inout);

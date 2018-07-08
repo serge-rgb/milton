@@ -240,10 +240,9 @@ void milton_reset_canvas_and_set_default(Milton* milton);
 
 void milton_gl_backend_draw(Milton* milton);
 
-b32 milton_current_mode_is_for_drawing(Milton* milton);
+b32 current_mode_is_for_drawing(Milton* milton);
 
-// Between 0 and k_max_brush_size
-i32     milton_get_brush_radius(Milton* milton);
+i32     milton_get_brush_radius(Milton* milton);   // Between 0 and k_max_brush_size
 void    milton_set_brush_size(Milton* milton, i32 size);
 void    milton_increase_brush_size(Milton* milton);
 void    milton_decrease_brush_size(Milton* milton);
@@ -252,7 +251,6 @@ void    milton_set_brush_alpha(Milton* milton, float alpha);
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 void milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size);
-
 
 void milton_use_previous_mode(Milton* milton);
 void milton_switch_mode(Milton* milton, MiltonMode mode);

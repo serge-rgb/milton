@@ -338,7 +338,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milton* mi
         ImGui::SetNextWindowSize({ui_scale * 271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
 
-        b32 show_brush_window = (milton_current_mode_is_for_drawing(milton));
+        b32 show_brush_window = (current_mode_is_for_drawing(milton));
 
         // Brush Window
         if ( show_brush_window ) {

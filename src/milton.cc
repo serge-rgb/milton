@@ -13,13 +13,6 @@
 #include "platform.h"
 #include "vector.h"
 
-/**
- * Debug global variables
- **/
-
-int g_debug_interpolation = 0;
-
-
 // Defined below.
 static void milton_validate(Milton* milton);
 
@@ -167,7 +160,7 @@ is_user_drawing(Milton* milton)
 }
 
 b32
-milton_current_mode_is_for_drawing(Milton* milton)
+current_mode_is_for_drawing(Milton* milton)
 {
     b32 result = milton->current_mode == MiltonMode::PEN ||
             milton->current_mode == MiltonMode::ERASER ||
@@ -440,7 +433,7 @@ milton_get_brush_radius(Milton* milton)
 void
 milton_set_brush_size(Milton* milton, i32 size)
 {
-    if ( milton_current_mode_is_for_drawing(milton) ) {
+    if ( current_mode_is_for_drawing(milton) ) {
         if ( size <= MILTON_MAX_BRUSH_SIZE && size > 0 ) {
             (*pointer_to_brush_size(milton)) = size;
             milton_update_brushes(milton);
@@ -452,7 +445,7 @@ milton_set_brush_size(Milton* milton, i32 size)
 void
 milton_increase_brush_size(Milton* milton)
 {
-    if ( milton_current_mode_is_for_drawing(milton) ) {
+    if ( current_mode_is_for_drawing(milton) ) {
         i32 brush_size = milton_get_brush_radius(milton);
         if ( brush_size < MILTON_MAX_BRUSH_SIZE && brush_size > 0 ) {
             milton_set_brush_size(milton, brush_size + 1);
@@ -465,7 +458,7 @@ milton_increase_brush_size(Milton* milton)
 void
 milton_decrease_brush_size(Milton* milton)
 {
-    if ( milton_current_mode_is_for_drawing(milton) ) {
+    if ( current_mode_is_for_drawing(milton) ) {
         i32 brush_size = milton_get_brush_radius(milton);
         if ( brush_size > 1 ) {
             milton_set_brush_size(milton, brush_size - 1);
@@ -1029,7 +1022,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
-    if ( milton_current_mode_is_for_drawing(milton) ) {
+    if ( current_mode_is_for_drawing(milton) ) {
         brush_outline_should_draw = true;
     }
 
@@ -1050,7 +1043,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     if ( input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK) ) {
-        if ( milton_current_mode_is_for_drawing(milton) ) {
+        if ( current_mode_is_for_drawing(milton) ) {
             if ( !is_user_drawing(milton)
                  && gui_consume_input(milton->gui, input) ) {
                 milton_update_brushes(milton);
@@ -1270,7 +1263,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
 
     if ( !(milton->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW) ) {
-        float radius = (brush_outline_should_draw && milton_current_mode_is_for_drawing(milton)) ? (float)milton_get_brush_radius(milton) : -1;
+        float radius = (brush_outline_should_draw && current_mode_is_for_drawing(milton)) ? (float)milton_get_brush_radius(milton) : -1;
         gpu_update_brush_outline(milton->render_data,
                                 milton->hover_point.x, milton->hover_point.y,
                                 radius);
