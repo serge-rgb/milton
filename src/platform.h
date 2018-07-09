@@ -5,6 +5,7 @@
 #pragma once
 
 #include "common.h"
+#include "memory.h"
 
 #include "system_includes.h"
 #include "utils.h"

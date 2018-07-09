@@ -69,7 +69,3 @@ void    resize_depth_stencil_texture (GLuint t, int w, int h);
 
 }  // namespace gl
 
-#if defined(__linux__)
-    // There is no function prototype for the EXT version of this function but there is for GL core one.
-    #define glBlitFramebufferEXT glBlitFramebuffer
-#endif

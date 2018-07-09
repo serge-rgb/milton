@@ -13,20 +13,24 @@ u64 g_profiler_count[PROF_COUNT];
 void
 profiler_reset()
 {
+#if defined(_WIN32) && MILTON_ENABLE_PROFILING
     for ( i32 i = 0; i < PROF_COUNT; ++i ) {
         g_profiler_count[i] = 0;
     }
+#endif
 }
 
 
 void
 profiler_init()
 {
+#if defined(_WIN32) && MILTON_ENABLE_PROFILING
     for( i64 i=0; i<PROF_COUNT; ++i ) {
         g_profiler_ticks[i] = 0;
         g_profiler_last[i]  = 0;
         g_profiler_count[i] = 0;
     }
+#endif
 }
 
 

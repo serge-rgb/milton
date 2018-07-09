@@ -322,9 +322,10 @@ gpu_init(RenderData* r, CanvasView* view, ColorPicker* picker)
 
     if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glEnable(GL_MULTISAMPLE);
+        // TODO: remove sample shading
         if ( gl::check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
             glEnable(GL_SAMPLE_SHADING_ARB);
-            glMinSampleShadingARB(1.0f);
+            // glMinSampleShadingARB(1.0f);
         }
     }
 

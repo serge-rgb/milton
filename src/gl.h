@@ -27,16 +27,17 @@ typedef double GLclampd;
 // Modern functions.
 #include "gl_functions.inl"
 
-#if defined(_WIN32)
-    // OpenGL function prototypes.
-   #define X(ret, name, ...) typedef ret name##Proc(__VA_ARGS__); name##Proc * name ;
-       GL_FUNCTIONS
-   #undef X
-#elif defined(__MACH__)
+#if defined(__MACH__)
    #define X(ret, name, ...) ret name(__VA_ARGS__);
        GL_FUNCTIONS
    #undef X
+#else
+// OpenGL function prototypes.
+#define X(ret, name, ...) typedef ret name##Proc(__VA_ARGS__); name##Proc * name ;
+    GL_FUNCTIONS
+#undef X
 #endif  //_WIN32
+
 
 #ifndef GLAPI
 #define GLAPI extern

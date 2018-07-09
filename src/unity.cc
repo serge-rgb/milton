@@ -17,7 +17,10 @@
 #include "vector.cc"
 
 #if defined(_WIN32)
-#include "platform_windows.cc"
+   #include "platform_windows.cc"
+#elif defined(__linux__)
+   #include "platform_unix.cc"
+   #include "platform_linux.cc"
 #endif
 
 #include "third_party_libs.cc"

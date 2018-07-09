@@ -34,16 +34,16 @@ perf_counter()
 void
 platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo)
 {
-    mlt_assert(sysinfo.subsystem == SDL_SYSWM_X11);
+    mlt_assert(sysinfo->subsystem == SDL_SYSWM_X11);
     gtk_init(NULL, NULL);
-    EasyTab_Load(sysinfo.info.x11.display, sysinfo.info.x11.window);
+    EasyTab_Load(sysinfo->info.x11.display, sysinfo->info.x11.window);
 }
 
 EasyTabResult
 platform_handle_sysevent(PlatformState* platform, SDL_SysWMEvent* sysevent)
 {
     mlt_assert(sysevent->msg->subsystem == SDL_SYSWM_X11);
-    EasyTabResult res = EasyTab_HandleEvent(&sysevent.msg->msg.x11.event);
+    EasyTabResult res = EasyTab_HandleEvent(&sysevent->msg->msg.x11.event);
     return res;
 }
 
@@ -180,6 +180,8 @@ platform_fname_at_config(PATH_CHAR* fname, size_t len)
 void
 platform_fname_at_exe(PATH_CHAR* fname, size_t len)
 {
+   // TODO: Fix this
+#if 0
     u32 bufsize = (u32)len;
     char buffer[MAX_PATH] = {};
     strncpy(buffer, fname, MAX_PATH);
@@ -197,6 +199,7 @@ platform_fname_at_exe(PATH_CHAR* fname, size_t len)
     }
     strncat(fname, "/", len);
     strncat(fname, buffer, len);
+#endif
     return;
 }
 

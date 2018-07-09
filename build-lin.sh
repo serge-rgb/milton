@@ -8,7 +8,7 @@ cd $MYDIR
 #
 # This really should become an ExternalProject_Add inside the CMakelists.txt
 # and windows, linux, and osx should all use the same approach for building cmake.
-pushd third_party/SDL2-2.0.3
+pushd third_party/SDL2-2.0.8
     CMAKE_CMD='cmake
     -D ARTS:BOOL=OFF
     -D ALSA:BOOL=OFF
