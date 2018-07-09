@@ -82,10 +82,9 @@ struct PlatformState
 
     SDL_Window* window;
 
-    // Windows hardware cursor
     PlatformSpecific* specific;
 
-   float ui_scale;
+    float ui_scale;
 };
 
 typedef enum HistoryDebug
@@ -107,7 +106,11 @@ int milton_main(bool is_fullscreen, char* file_to_open);
 
 void    platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo);
 void    platform_deinit(PlatformState* platform);
+
 void    platform_setup_cursor(Arena* arena, PlatformState* platform);
+
+EasyTabResult platform_handle_sysevent(PlatformState* platform, SDL_SysWMEvent* sysevent);
+void          platform_event_tick();
 
 void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((void**)&(pointer));

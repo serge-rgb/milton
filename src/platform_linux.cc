@@ -35,7 +35,22 @@ void
 platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo)
 {
     mlt_assert(sysinfo.subsystem == SDL_SYSWM_X11);
+    gtk_init(NULL, NULL);
     EasyTab_Load(sysinfo.info.x11.display, sysinfo.info.x11.window);
+}
+
+EasyTabResult
+platform_handle_sysevent(PlatformState* platform, SDL_SysWMEvent* sysevent)
+{
+    mlt_assert(sysevent->msg->subsystem == SDL_SYSWM_X11);
+    EasyTabResult res = EasyTab_HandleEvent(&sysevent.msg->msg.x11.event);
+    return res;
+}
+
+void
+platform_event_tick()
+{
+    gtk_main_iteration_do(FALSE);
 }
 
 void

@@ -209,6 +209,23 @@ platform_setup_cursor(Arena* arena, PlatformState* platform)
 #endif  // MILTON_HARDWARE_BRUSH_CURSOR
 }
 
+EasyTabResult
+platform_handle_sysevent(PlatformState* platform, SDL_SysWMEvent* sysevent)
+{
+    EasyTabResult res = EASYTAB_EVENT_NOT_HANDLED;
+    mlt_assert(sysevent->msg->subsystem == SDL_SYSWM_WINDOWS);
+    res = EasyTab_HandleEvent(sysevent->msg->msg.win.hwnd,
+                              sysevent->msg->msg.win.msg,
+                              sysevent->msg->msg.win.lParam,
+                              sysevent->msg->msg.win.wParam);
+    return res;
+}
+
+void
+platform_event_tick()
+{
+}
+
 void*
 platform_get_gl_proc(char* name)
 {

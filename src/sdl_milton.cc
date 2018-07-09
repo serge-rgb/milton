@@ -139,30 +139,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
                 i32 bit_touch_old = (EasyTab->Buttons & EasyTab_Buttons_Pen_Touch);
 
-                switch( sysevent.msg->subsystem ) {
-#if defined(_WIN32)
-                case SDL_SYSWM_WINDOWS: {
-
-                    er = EasyTab_HandleEvent(sysevent.msg->msg.win.hwnd,
-                                             sysevent.msg->msg.win.msg,
-                                             sysevent.msg->msg.win.lParam,
-                                             sysevent.msg->msg.win.wParam);
-
-                } break;
-#elif defined(__linux__)
-                case SDL_SYSWM_X11:{
-                    er = EasyTab_HandleEvent(&sysevent.msg->msg.x11.event);
-                } break;
-#elif defined(__MACH__)
-                case SDL_SYSWM_COCOA:
-                    // SDL does not implement this in the version we're using.
-                    // See platform_OSX_SDL_hooks.(h|m) for our SDL hack.
-                    break;
-#endif
-                default:
-                    break;  // Are we in Wayland yet?
-
-                }
+                er = platform_handle_sysevent(platform, &sysevent);
 
                 if ( er == EASYTAB_OK ) {
                     i32 bit_touch = (EasyTab->Buttons & EasyTab_Buttons_Pen_Touch);
@@ -619,14 +596,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     PlatformState platform = {};
 
-    #if defined (__linux__)
-    gtk_init(NULL, NULL);
-    #endif
-    #if defined(_WIN32)
-    #endif
-
-
-
     PlatformPrefs prefs = {};
 
     milton_log("Loading preferences...\n");
@@ -975,18 +944,14 @@ milton_main(bool is_fullscreen, char* file_to_open)
                     }
                 }
         }
-        // IN OSX: SDL polled all events, we get all the pressure inputs from our hook
-#if defined(__MACH__)
-        platform.num_pressure_results = 0;
-        int num_polled_pressures = 0;
-
-        float* polled_pressures = milton_osx_poll_pressures(&num_polled_pressures);
-        if ( num_polled_pressures ) {
-            for ( int i = num_polled_pressures - 1; i >= 0; --i ) {
-                milton_input.pressures[platform.num_pressure_results++] = polled_pressures[i];
-            }
-        }
-#endif
+        // NOTE:
+        //  Previous Milton versions had a hack where SDL was modified to call
+        //  milton_osx_tablet_hook, where it would fill up some arrays.
+        //  Here we would call milton_osx_poll_pressures to access those arrays.
+        //
+        //  OSX support is currently in limbo. Those two functions still exist
+        //  but are not called anywhere.
+        //    -Sergio 2018/07/08
 
         i32 input_flags = (i32)milton_input.flags;
 
@@ -1048,9 +1013,8 @@ milton_main(bool is_fullscreen, char* file_to_open)
         PROFILE_GRAPH_BEGIN(system);
         SDL_GL_SwapWindow(window);
 
-#if defined(__linux__)
-        gtk_main_iteration_do(FALSE);
-#endif
+        platform_event_tick();
+
         // Sleep if the frame took less time than the refresh rate.
         u64 frame_time_us = perf_counter() - frame_start_us;
 

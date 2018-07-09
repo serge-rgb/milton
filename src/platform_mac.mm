@@ -88,6 +88,13 @@ platform_save_dialog_mac(FileKind kind)
     }
 }
 
+EasyTabResult
+platform_handle_sysevent(PlatformState* platform, SDL_SysWMEvent* sysevent)
+{
+    mlt_assert(sysevent->msg->subsystem == SDL_SYSWM_COCOA);
+    return EASYTAB_EVENT_NOT_HANDLED;
+}
+
 void
 platform_open_link_mac(char* link)
 {
