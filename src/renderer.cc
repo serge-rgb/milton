@@ -849,21 +849,52 @@ gpu_cook_stroke(Arena* arena, RenderData* r, Stroke* stroke, CookStrokeOpt cook_
                 float radius_i = stroke->pressures[i]*brush.radius;
                 float radius_j = stroke->pressures[i+1]*brush.radius;
 
-                i32 min_x = min(point_i.x-radius_i, point_j.x-radius_j);
-                i32 min_y = min(point_i.y-radius_i, point_j.y-radius_j);
-
-                i32 max_x = max(point_i.x+radius_i, point_j.x+radius_j);
-                i32 max_y = max(point_i.y+radius_i, point_j.y+radius_j);
-
-                // Bounding geometry and attributes
-
-                mlt_assert (bounds_i < ((1<<16)-4));
                 u16 idx = (u16)bounds_i;
+                if ( point_i == point_j ) {
+                    i32 min_x = min(point_i.x - radius_i, point_j.x - radius_j);
+                    i32 min_y = min(point_i.y - radius_i, point_j.y - radius_j);
+                    i32 max_x = max(point_i.x + radius_i, point_j.x + radius_j);
+                    i32 max_y = max(point_i.y + radius_i, point_j.y + radius_j);
 
-                bounds[bounds_i++] = { (float)min_x, (float)min_y, (float)stroke_z };
-                bounds[bounds_i++] = { (float)min_x, (float)max_y, (float)stroke_z };
-                bounds[bounds_i++] = { (float)max_x, (float)max_y, (float)stroke_z };
-                bounds[bounds_i++]   = { (float)max_x, (float)min_y, (float)stroke_z };
+                    // Bounding geometry and attributes
+
+                    mlt_assert (bounds_i < ((1<<16)-4));
+
+                    bounds[bounds_i++] = { (float)min_x, (float)min_y, (float)stroke_z };
+                    bounds[bounds_i++] = { (float)min_x, (float)max_y, (float)stroke_z };
+                    bounds[bounds_i++] = { (float)max_x, (float)max_y, (float)stroke_z };
+                    bounds[bounds_i++]   = { (float)max_x, (float)min_y, (float)stroke_z };
+                } else {
+                    // Points are different. Do a coordinate change for a tighter box.
+                    v2f d = normalized(v2i_to_v2f(point_j - point_i));
+                    auto basis_change = [&d](v2f v) {
+                        v2f res = {
+                            v.x * d.x + v.y * d.y,
+                            v.x * d.y - v.y * d.x,
+                        };
+
+                        return res;
+                    };
+                    v2f p = basis_change(v2i_to_v2f(point_i));
+                    v2f q = basis_change(v2i_to_v2f(point_j));
+
+                    f32 min_x = min(p.x - radius_i, q.x - radius_j);
+                    f32 min_y = min(p.y - radius_i, q.y - radius_j);
+                    f32 max_x = max(p.x + radius_i, q.x + radius_j);
+                    f32 max_y = max(p.y + radius_i, q.y + radius_j);
+
+                    v2f A = basis_change(v2f{ min_x, min_y });
+                    v2f B = basis_change(v2f{ min_x, max_y });
+                    v2f C = basis_change(v2f{ max_x, max_y });
+                    v2f D = basis_change(v2f{ max_x, min_y });
+
+                    mlt_assert (bounds_i < ((1<<16)-4));
+
+                    bounds[bounds_i++] = { A.x, A.y, (float)stroke_z };
+                    bounds[bounds_i++] = { B.x, B.y, (float)stroke_z };
+                    bounds[bounds_i++] = { C.x, C.y, (float)stroke_z };
+                    bounds[bounds_i++] = { D.x, D.y, (float)stroke_z };
+                }
 
                 indices[indices_i++] = (u16)(idx + 0);
                 indices[indices_i++] = (u16)(idx + 1);

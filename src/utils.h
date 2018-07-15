@@ -57,6 +57,10 @@ f32 deegrees_to_radians(int d);
 
 f32 radians_to_degrees(f32 r);
 
+f32 norm(v2f v);
+
+v2f normalized (v2f v);
+
 #define SQUARE(x) ((x) * (x))
 
 

@@ -91,6 +91,21 @@ radians_to_degrees(f32 r)
     return (180 * r) / kPi;
 }
 
+f32
+norm(v2f v)
+{
+   f32 result = sqrtf(v.x * v.x + v.y * v.y);
+   return result;
+}
+
+v2f
+normalized (v2f v)
+{
+   v2f result = v / norm(v);
+   return result;
+}
+
+
 // Could be called a signed area. `orientation(a, b, c) / 2` is the area of the
 // triangle.
 // If positive, c is to the left of ab. Negative: right of ab. 0 if
