@@ -44,7 +44,7 @@ How to Compile
 Windows
 -------
 
-Milton currently supports Visual Studio 2015.
+Milton currently supports Visual Studio 2017.
 
 Other versions of Visual Studio might not work.
 
@@ -56,11 +56,11 @@ Run `cmd.exe` and type the following
 build.bat
 ```
 
-Milton will be compiled to `build\win64-msvc-debug-default\Milton.exe`
+Milton will be compiled to `build\Milton.exe`
 
-Alternatively, to build with clang open build.bat and change the value of
-doUnityClangBuild to 1. It assumes that you have LLVM and the Windows 10 SDK
-installed.
+
+This repo provides a binary SDL.lib that was compiled by running
+`build_deps.bat` in the `third_party` directory.
 
 
 Linux

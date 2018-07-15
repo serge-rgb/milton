@@ -11,7 +11,6 @@ set unityBuild=1
 
 set warnFlags=
 set includeFlags=-I..\third_party\SDL2-2.0.8\include -I..\third_party\imgui\ -I..\third_party
-set WindowsKitDir="C:\Program Files (x86)\Windows Kits\10\Lib\10.0.15063.0\um\x64\\"
 
 if not exist build mkdir build
 pushd build
