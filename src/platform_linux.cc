@@ -300,3 +300,9 @@ platform_get_walltime()
     wt.ms = tv.tv_usec / 1000;
     return wt;
 }
+
+void*
+platform_get_gl_proc(char* name) 
+{
+    mlt_assert(!"not implemented.");
+}

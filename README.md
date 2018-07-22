@@ -70,10 +70,19 @@ Work in progress, but is known to build and run.
 
 ### Dependencies
 Use your linux distribution's package manager to install these.
-* X11
-* OpenGL
+* X11 (`libx11-dev` on Debian-based distros)
+* OpenGL (`libgl1-mesa-dev` on Debian-based distros)
 * XInput
-* GTK2
+* GTK2 (`libgtk2-dev` on Debian-based distros)
+
+On Ubuntu, these are Milton's required packages:
+
+```
+libx11-dev
+libgl1-mesa-dev
+libxext-dev
+```
+
 
 ### Building
 
@@ -112,7 +121,7 @@ License
 
     Milton
 
-    Copyright (C) 2015 - 2017 Sergio Gonzalez
+    Copyright (C) 2015 - 2018 Sergio Gonzalez
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
