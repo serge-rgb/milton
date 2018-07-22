@@ -9,6 +9,8 @@
 #define IMPL_MISSING mlt_assert(!"IMPLEMENT")
 
 
+extern "C" void* glXGetProcAddressARB(const GLubyte * procName);
+
 float
 perf_count_to_sec(u64 counter)
 {
@@ -304,5 +306,17 @@ platform_get_walltime()
 void*
 platform_get_gl_proc(char* name) 
 {
-    mlt_assert(!"not implemented.");
+    return glXGetProcAddressARB((GLubyte*)name);
+}
+
+void
+platform_deinit(PlatformState* platform)
+{
+
+}
+
+void
+platform_setup_cursor(Arena* arena, PlatformState* platform)
+{
+
 }

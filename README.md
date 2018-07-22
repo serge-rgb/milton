@@ -78,9 +78,11 @@ Use your linux distribution's package manager to install these.
 On Ubuntu, these are Milton's required packages:
 
 ```
+cmake
 libx11-dev
 libgl1-mesa-dev
 libxext-dev
+libgtk2.0-dev
 ```
 
 

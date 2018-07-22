@@ -92,53 +92,6 @@ check_flags (int flags)
 bool
 load ()
 {
-#if defined(_WIN32)
-#define GETADDRESS(func, fatal_on_fail) \
-                        { \
-                            func = (decltype(func))wglGetProcAddress(#func); \
-                            if ( func == NULL )  { \
-                                char* msg = "Could not load function " #func  "\n";\
-                                milton_log(msg);\
-                                if (fatal_on_fail)\
-                                {\
-                                    milton_die_gracefully(msg); \
-                                }\
-                            } \
-                            else {\
-                                milton_log("Loaded " #func "\n");\
-                            }\
-                        }
-#elif defined(__linux__)
-    #define GETADDRESS(f, e)
-
-    #if 0
-    #define GETADDRESS(func) \
-                        { \
-                            milton_log("Loading OpenGL function " #func "\n"); \
-                            func = (func##Proc))dlsym(lib, #func); \
-                            if ( !func ) { \
-                                milton_log("Could not load function " #func "\n"); \
-                                milton_die_gracefully("Error loading GL function."); \
-                            }\
-                        }
-
-
-    void* lib = dlopen("libGL.so", RTLD_LAZY);
-    if (!lib) {
-        printf("ERROR: libGL.so couldn't be loaded\n");
-        return false;
-    }
-    #endif
-#elif defined(__MACH__)
-    #define GETADDRESS(f, e)
-
-    // ARB_vertex_array_object on macOS not available, but apple extension is.
-    #define glGenVertexArrays glGenVertexArraysAPPLE
-    #define glBindVertexArray glBindVertexArrayAPPLE
-
-#endif
-
-    // Load
 #define X(ret, func, ...) func = (decltype(func)) platform_get_gl_proc(#func);
     GL_FUNCTIONS
 #undef X
