@@ -57,12 +57,6 @@ milton_die_gracefully(char* message)
     exit(EXIT_FAILURE);
 }
 
-#ifdef __linux__
-void        platform_load_gl_func_pointers() {}
-#elif __MACH__
-void        platform_load_gl_func_pointers() {}
-#endif
-
 typedef struct UnixMemoryHeader_s
 {
     size_t size;
