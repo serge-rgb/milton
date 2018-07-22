@@ -24,8 +24,13 @@ typedef double GLclampd;
 
 #include "gl_functions.inl"
 
+#define GL_DEBUG_CALLBACK(name)  void name(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+
+typedef GL_DEBUG_CALLBACK(GlDebugCallback);
+
 // OpenGL function prototypes.
 #define X(ret, name, ...) typedef ret name##Proc(__VA_ARGS__); name##Proc * name ;
+	GL_FUNCTIONS_DEBUG
     GL_FUNCTIONS
 #undef X
 

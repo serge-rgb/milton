@@ -7,17 +7,15 @@
 #define MILTON_MINOR_VERSION 6
 #define MILTON_MICRO_VERSION 2
 
-#if !defined(MILTON_DEBUG)
+#if !defined(MILTON_DEBUG)  // Might be defined by cmake
     #define MILTON_DEBUG 1
 #endif
 
-
 #define MILTON_ZOOM_DEBUG 0
-    // Force MILTON_ZOOM_DEBUG to 0 if MILTON_DEBUG is 0.
-#if !MILTON_DEBUG
-    #undef MILTON_ZOOM_DEBUG
-    #define MILTON_ZOOM_DEBUG 0
-#endif
+    #if !MILTON_DEBUG
+        #undef MILTON_ZOOM_DEBUG
+        #define MILTON_ZOOM_DEBUG 0
+    #endif
 
 // Windows Options
 #if defined(_WIN32)
@@ -29,14 +27,11 @@
     #endif
 #endif
 
-#define MULTISAMPLING_ENABLED 0  // When disabled, the renderer uses FXAA for screen-space AA.
-    #define MSAA_NUM_SAMPLES 4
-
 #define MILTON_MULTITHREADED 1
 
 #define MILTON_ENABLE_PROFILING 1
 
-#define REDRAW_EVERY_FRAME 0
+#define REDRAW_EVERY_FRAME 1
 
 #define STROKE_DEBUG_VIZ 0
   #if !MILTON_DEBUG
@@ -53,7 +48,7 @@
 #endif
 
 // Uses GL 2.1 when 0
-#define USE_GL_3_2 1
+#define USE_GL_3_2 0
     #if !MILTON_DEBUG  // Don't use 3.2 in release.
         #undef USE_GL_3_2
         #define USE_GL_3_2 0
@@ -71,12 +66,8 @@
 // Spawn threads to save the canvas.
 #define MILTON_SAVE_ASYNC 1
 
-#ifdef CMAKE_TRY_GL2
-    #undef USE_GL_3_2
-    #define USE_GL_3_2 0
-#endif
+// NOTE: Multisampling is no longer supported in Milton. This define is left
+// in because there is some helper code which I would prefer not to delete.
+#define MULTISAMPLING_ENABLED 0  // When disabled, the renderer uses FXAA for screen-space AA.
+    #define MSAA_NUM_SAMPLES 4
 
-#ifdef CMAKE_TRY_GL3
-    #undef USE_GL_3_2
-    #define USE_GL_3_2 1
-#endif

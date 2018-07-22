@@ -7,8 +7,6 @@ set platform=x64
 
 if "%1"=="x86" set platform=x86
 
-set unityBuild=1
-
 set warnFlags=
 set includeFlags=-I..\third_party\SDL2-2.0.8\include -I..\third_party\imgui\ -I..\third_party
 

@@ -27,17 +27,6 @@ target_include_directories(Milton PRIVATE
 
 # Handle various switches, build types etc.
 
-## Helps to know that we're compiling using cmake in milton_configuration.h
-add_definitions(-DIS_USING_CMAKE=1)
-
-if(TRY_GL2)
-  message(STATUS "Compiling for OpenGL2.1")
-  add_definitions(-DCMAKE_TRY_GL2=1)
-elseif(TRY_GL3)
-  message(STATUS "Compiling for OpenGL3.2")
-  add_definitions(-DCMAKE_TRY_GL3=1)
-endif()
-
 ## Default build type to Release
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
@@ -114,8 +103,8 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     ${X11_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${XINPUT_LIBRARY}
-    ${SDL2DIR}/build/linux64/lib/libSDL2main.a
-    ${SDL2DIR}/build/linux64/lib/libSDL2.a
+    ${SDL2DIR}/build/linux64/lib/libSDL2maind.a
+    ${SDL2DIR}/build/linux64/lib/libSDL2d.a
     ${CMAKE_THREAD_LIBS_INIT}
     ${CMAKE_DL_LIBS}
     )

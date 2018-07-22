@@ -23,7 +23,7 @@ pushd third_party/SDL2-2.0.8
 
     mkdir -p build/linrelease
     pushd build/linrelease
-        eval $CMAKE_CMD -D CMAKE_BUILD_TYPE="Release" ../.. || exit 1
+        eval $CMAKE_CMD -D CMAKE_BUILD_TYPE="Debug" ../.. || exit 1
         make -j install || exit 1
     popd
 popd

@@ -1,6 +1,13 @@
 // Copyright (c) 2015 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+#if MILTON_DEBUG
+#define GL_FUNCTIONS_DEBUG \
+    X(void,   glDebugMessageCallback, GlDebugCallback callback​, void* userParam​)
+#else
+    #define GL_FUNCTIONS_DEBUG
+#endif // MILTON_DEBUG
+
 #define GL_FUNCTIONS \
     X(GLenum,   glGetError, void)\
     X(GLint,    glGetAttribLocation,      GLuint program, GLchar* name)                     \

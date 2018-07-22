@@ -315,9 +315,20 @@ gpu_update_brush_outline(RenderData* r, i32 cx, i32 cy, i32 radius,
     }
 }
 
+GL_DEBUG_CALLBACK(milton_gl_debug_callback)
+{
+    milton_log("[OpenGl Debug message (severity: %d)]: %s\n", severity, message);
+}
+
+
 b32
 gpu_init(RenderData* r, CanvasView* view, ColorPicker* picker)
 {
+    #if MILTON_DEBUG
+        glEnable(GL_DEBUG_OUTPUT);
+        glDebugMessageCallback(milton_gl_debug_callback, NULL);
+    #endif
+
     r->stroke_z = MAX_DEPTH_VALUE - 20;
 
     if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
