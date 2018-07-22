@@ -317,7 +317,14 @@ gpu_update_brush_outline(RenderData* r, i32 cx, i32 cy, i32 radius,
 
 GL_DEBUG_CALLBACK(milton_gl_debug_callback)
 {
-    milton_log("[OpenGl Debug message (severity: %d)]: %s\n", severity, message);
+    switch ( type ) {
+        case GL_DEBUG_TYPE_ERROR:
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        case GL_DEBUG_SOURCE_APPLICATION: {
+            milton_log("[OpenGl Debug message (severity: %d)]: %s\n", severity, message);
+        } break;
+    }
 }
 
 

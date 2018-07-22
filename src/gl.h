@@ -30,8 +30,8 @@ typedef GL_DEBUG_CALLBACK(GlDebugCallback);
 
 // OpenGL function prototypes.
 #define X(ret, name, ...) typedef ret name##Proc(__VA_ARGS__); name##Proc * name ;
-	GL_FUNCTIONS_DEBUG
-    GL_FUNCTIONS
+   GL_FUNCTIONS_DEBUG
+   GL_FUNCTIONS
 #undef X
 
 #ifndef GLAPI

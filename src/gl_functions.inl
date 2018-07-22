@@ -3,7 +3,7 @@
 
 #if MILTON_DEBUG
 #define GL_FUNCTIONS_DEBUG \
-    X(void,   glDebugMessageCallback, GlDebugCallback callback​, void* userParam​)
+    X(void, glDebugMessageCallback, GlDebugCallback callback, void* user_param)
 #else
     #define GL_FUNCTIONS_DEBUG
 #endif // MILTON_DEBUG
