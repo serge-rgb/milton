@@ -175,11 +175,11 @@ get_localized_string(int id)
                 size_t len = strlen(name) + strlen(spacer) + strlen(cmd) + 2 /*[]*/+ 1/*\n*/;
                 char* with_cmd = (char*)mlt_calloc(len, 1, "Strings");
 
-                strncat(with_cmd, name, strlen(name));
-                strncat(with_cmd, spacer, strlen(spacer));
-                strncat(with_cmd, "[", 1);
-                strncat(with_cmd, cmd, strlen(cmd));
-                strncat(with_cmd, "]", 1);
+                strncat(with_cmd, name, len - 1);
+                strncat(with_cmd, spacer, len - strlen(with_cmd) - 1);
+                strncat(with_cmd, "[", len - strlen(with_cmd) - 1);
+                strncat(with_cmd, cmd, len - strlen(with_cmd) - 1);
+                strncat(with_cmd, "]", len - strlen(with_cmd) - 1);
 
                 g_baked_strings_with_commands[id] = with_cmd;
             }
