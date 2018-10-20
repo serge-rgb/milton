@@ -19,6 +19,7 @@ pushd third_party/SDL2-2.0.8
     -D CMAKE_INSTALL_PREFIX="../linux64"
     -G "Unix Makefiles"
     -D CMAKE_DEBUG_POSTFIX="_debug"
+    -D SDL_STATIC_PIC:BOOL=ON
     '
 
     mkdir -p build/linrelease
