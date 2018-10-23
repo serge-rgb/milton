@@ -1,47 +1,57 @@
 To-Do
 =====
 
-- Bugs
-    - Smoothing should be applied to input points, not interpolated points.
-    - AZERTY doesn't make any sense
-- macOS port
-    - Replace Dear Imgui's menu with Cocoa menu.
-    - Keyboard bindings
-- Application
-    - GUI
-        - nuklear port
-        - Color picker inside ImGui window.
-        - Image Button
-        - Reduce or remove widget rounding
-        - Radial menu
-    - Features:
-        - full-screen option
-        - front-to-back rendering
-        - alt eye dropper
-        - zoom-out toggle for overview and for navigation
-        - general, implicitly defined brushes
-        - transparent window / background.
-        - Select strokes
-            - Scale, cut, copy, paste
-        - rectangles
-        - circles / ellipses
-        - merge layers
-        - layer color balance
-        - select layer by stroke
-        - pressure response graph
-        - stroke masking?
-        - unzoomable&unpannable layer ("pin layer" feature) ?
-        - eraser toggle
-        - pressure toggle
-    - Settings file
-        - Default BG
-           or
-        - Template files - change the default canvas.
-        - Key shortcuts
-- Polish and/or Debug layer
-    - Input recorder for reproducing bugs
-    - linux - load dynamic libs at runtime
+Next release
+------------
+
+[ ] incremental saves
+[ ] settings file
+[ ] fix azerty
+[ ] bezier interpolation
+[ ] huion fix
+
+Back log
+--------
+
+- bugs
+    - AZERTY bindings are broken
+    - #87 #99 huion tablets don't work
+    - #94 multi monitor wacom
+    - #96 #47 #23 #21 microsoft surface broken
+- engine
+    - incremental saves
+- renderer
+    - bezier stroke interpolation
+    - front-to-back rendering
     - store font data in binary
-    - switch to cmake for all platforms
-- Milton Library
-    - Refactor. Write sample program.
+    - vulkan or dx12 port
+- UI
+    - color picker inside ImGui window
+    - image button for brushes
+- features
+    - finish Line feature
+    - Settings file (default BG, template files, shortcuts)
+    - stroke selection, copy & paste
+    - alt eye dropper
+    - full-screen option
+    - zoom-out toggle for overview and for navigation
+    - general, implicitly defined brushes
+    - transparent window / background.
+    - rectangles
+    - circles / ellipses
+    - merge layers
+    - select layer by stroke
+    - pressure response graph
+    - stroke masking?
+    - eraser toggle
+    - pressure toggle
+    - unzoomable&unpannable layer ("pin layer" feature) ?
+    - #95 pen for drawing + fingers for navigation
+    - layer color balance
+- linux port
+    - #102 #101 fix build
+    - #100 high gpu utilization (ns -> us)
+    - #98 perf counter incorrect
+- macos port
+    - #97
+- feature back log
