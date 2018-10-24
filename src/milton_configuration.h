@@ -5,7 +5,7 @@
 
 #define MILTON_MAJOR_VERSION 1
 #define MILTON_MINOR_VERSION 6
-#define MILTON_MICRO_VERSION 2
+#define MILTON_MICRO_VERSION 0
 
 #if !defined(MILTON_DEBUG)  // Might be defined by cmake
     #define MILTON_DEBUG 1
@@ -31,7 +31,9 @@
 
 #define MILTON_ENABLE_PROFILING 1
 
-#define REDRAW_EVERY_FRAME 1
+#define REDRAW_EVERY_FRAME 0
+
+#define INCREMENTAL_SAVES 1
 
 #define STROKE_DEBUG_VIZ 0
   #if !MILTON_DEBUG

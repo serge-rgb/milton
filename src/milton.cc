@@ -1308,9 +1308,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             milton_reset_canvas(milton);
             gpu_release_data(milton->render_data);
 
-            #if DEBUG_MEMORY_USAGE
-                debug_memory_dump_allocations();
-            #endif
+            debug_memory_dump_allocations();
         }
     }
 

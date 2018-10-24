@@ -75,8 +75,7 @@ u8* arena_alloc_bytes(Arena* arena, size_t num_bytes, int alloc_flags=Arena_NONE
 
 void* arena_bootstrap_(size_t size, size_t obj_size, size_t offset);
 
-#if DEBUG_MEMORY_USAGE
-    void* calloc_with_debug(size_t n, size_t sz, char* category, char* file, i64 line);
-    void  free_with_debug(void* ptr, char* category);
-    void* realloc_with_debug(void* ptr, size_t sz, char* category, char* file, i64 line);
-#endif
+void* calloc_with_debug(size_t n, size_t sz, char* category, char* file, i64 line);
+void  free_with_debug(void* ptr, char* category);
+void* realloc_with_debug(void* ptr, size_t sz, char* category, char* file, i64 line);
+void debug_memory_dump_allocations();

@@ -63,60 +63,19 @@ This repo provides a binary SDL.lib that was compiled by running
 `build_deps.bat` in the `third_party` directory.
 
 
-Linux
------
+Linux and macOS
+---------------
 
-Work in progress, but is known to build and run.
-
-### Dependencies
-Use your linux distribution's package manager to install these.
-* X11 (`libx11-dev` on Debian-based distros)
-* OpenGL (`libgl1-mesa-dev` on Debian-based distros)
-* XInput
-* GTK2 (`libgtk2-dev` on Debian-based distros)
-
-On Ubuntu, these are Milton's required packages:
-
-```
-cmake
-libx11-dev
-libgl1-mesa-dev
-libxext-dev
-libgtk2.0-dev
-```
+As of 2018-10-24, linux and mac are not officially supported. I (Sergio) would like to support them again but my efforts are currently going into producing a new release for Windows. You can try and compile with the included scripts, but things will likely not work!
 
 
-### Building
+Versioning scheme
+=================
 
-Release build:
-```sh
-./build-lin.sh
-build/Milton
-```
+Milton uses a MAJOR.MINOR.PATCH versioning scheme, where MAJOR keeps track of very significant changes, such as a UI overhaul. MINOR keeps track of binary file format compatibility. PATCH is incremented for new releases that do not break file format compatibility. PATCH version gets reset to 0 when the MINOR version increases.
 
-build-lin.sh uses cmake under the hood, and any arguments you pass to it will be passed along to cmake.
+For example, Milton version 1.3.1 can read mlt files produced any previous version, but it can't read files produced by 1.4.0
 
-Here are some CMake options you might care about:
-
-| flag                  | type          | does                                                                                                                          |
-| ----                  | ----          | ----                                                                                                                          |
-| `TRY_GL2`             | `bool`        | Tells Milton to target OpenGL2.1. Does not guarantee that such a context will be created. This is the default Release target. |
-| `TRY_GL3`             | `bool`        | Tells Milton to target OpenGL3.2. Does not guarantee that such a context will be created. This is the default Debug target.   |
-| `CMAKE_BUILD_TYPE`    | `string`      | Configures the build type. Defaults to `Release`. Available build types are: `Release` and `Debug`.                           |
-
-
-Example debug build u   sing GL2.1:
-`./build-lin.sh -DCMAKE_BUILD_TYPE=Debug -DTRY_GL2=1`
-
-OSX
----
-
-Work in progress.
-
-### Building
-`./setup_osx.sh`
-
-If you run into troubles building on OSX, please try to submit a pull request if possible.
 
 License
 =======

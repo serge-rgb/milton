@@ -29,13 +29,20 @@ VS2015/Milton/x86
 *.sleepy
 
 # SDL build
-third_party/SDL2-2.0.3/Makefile
-third_party/SDL2-2.0.3/Makefile.rules
-third_party/SDL2-2.0.3/config.log
-third_party/SDL2-2.0.3/config.status
-third_party/SDL2-2.0.3/libtool
-third_party/SDL2-2.0.3/sdl2-config
-third_party/SDL2-2.0.3/sdl2.pc
+third_party/SDL2-*/Makefile
+third_party/SDL2-*/Makefile.rules
+third_party/SDL2-*/config.log
+third_party/SDL2-*/config.status
+third_party/SDL2-*/libtool
+third_party/SDL2-*/sdl2-config
+third_party/SDL2-*/sdl2.pc
+third_party/SDL2-*/CMakeFiles
+third_party/SDL2-*/*.vcxproj
+third_party/SDL2-*/*.filters
+third_party/SDL2-*/*.cmake
+third_party/SDL2-*/CMakeCache.txt
+third_party/SDL2-*/*/Debug/*
+
 
 # build dir
 build/

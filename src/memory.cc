@@ -163,7 +163,33 @@ arena_reset_noclear(Arena* arena)
     arena->count = 0;
 }
 
-#if DEBUG_MEMORY_USAGE
+#if !DEBUG_MEMORY_USAGE
+
+void
+debug_memory_dump_allocations()
+{
+
+}
+
+void*
+calloc_with_debug(size_t n, size_t sz, char* category, char* file, i64 line)
+{
+    return NULL;
+}
+
+void
+free_with_debug(void* ptr, char* category)
+{
+
+}
+
+void*
+realloc_with_debug(void* ptr, size_t sz, char* category, char* file, i64 line)
+{
+    return NULL;
+}
+
+#else // DEBUG_MEMORY_USAGE
 
 #define NUM_MEMORY_DEBUG_BUCKETS    23
 #define HASH_TABLE_SIZE             1023

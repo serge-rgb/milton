@@ -340,7 +340,7 @@ END:
 }
 
 void
-milton_save(Milton* milton)
+milton_save_at_point(Milton* milton, u64 point)
 {
     // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
     i32 history_count = 0;
@@ -511,6 +511,13 @@ END:
     }
 #undef WRITE
 }
+
+void
+milton_save(Milton* milton)
+{
+    milton_save_at_point(milton, 0);
+}
+
 
 PATH_CHAR*
 milton_get_last_canvas_fname()
