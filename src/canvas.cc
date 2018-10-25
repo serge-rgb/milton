@@ -79,83 +79,83 @@ canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
 }
 
 
-namespace layer {
-
-i64
-count_strokes(Layer* root)
+namespace layer
 {
-    i64 count = 0;
-    for ( Layer *layer = root;
-          layer != NULL;
-          layer = layer->next ) {
-        count += layer->strokes.count;
+    i64
+    count_strokes(Layer* root)
+    {
+        i64 count = 0;
+        for ( Layer *layer = root;
+              layer != NULL;
+              layer = layer->next ) {
+            count += layer->strokes.count;
+        }
+        return count;
     }
-    return count;
-}
 
-Layer*
-get_topmost(Layer* root)
-{
-    Layer* layer = root;
-    while ( layer->next ) {
-        layer = layer->next;
+    Layer*
+    get_topmost(Layer* root)
+    {
+        Layer* layer = root;
+        while ( layer->next ) {
+            layer = layer->next;
+        }
+        return layer;
     }
-    return layer;
-}
-Layer*
-get_by_id(Layer* root_layer, i32 id)
-{
-    Layer* l = NULL;
-    for ( Layer* layer = root_layer; layer; layer = layer->next ) {
-        if ( layer->id == id ) {
-            l = layer;
+    Layer*
+    get_by_id(Layer* root_layer, i32 id)
+    {
+        Layer* l = NULL;
+        for ( Layer* layer = root_layer; layer; layer = layer->next ) {
+            if ( layer->id == id ) {
+                l = layer;
+            }
+        }
+        return l;
+    }
+
+    // Push stroke at the top of the current layer
+    Stroke*
+    layer_push_stroke(Layer* layer, Stroke stroke)
+    {
+        push(&layer->strokes, stroke);
+        return peek(&layer->strokes);
+    }
+
+    b32
+    layer_has_blur_effect(Layer* layer)
+    {
+        b32 result = false;
+        for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) {
+            if ( e->enabled && e->type == LayerEffectType_BLUR ) {
+                result = true;
+                break;
+            }
+        }
+        return result;
+    }
+
+
+    void
+    layer_toggle_visibility(Layer* layer)
+    {
+        b32 visible = layer->flags & LayerFlags_VISIBLE;
+        if ( visible ) {
+            layer->flags &= ~LayerFlags_VISIBLE;
+        } else {
+            layer->flags |= LayerFlags_VISIBLE;
         }
     }
-    return l;
-}
 
-// Push stroke at the top of the current layer
-Stroke*
-layer_push_stroke(Layer* layer, Stroke stroke)
-{
-    push(&layer->strokes, stroke);
-    return peek(&layer->strokes);
-}
-
-b32
-layer_has_blur_effect(Layer* layer)
-{
-    b32 result = false;
-    for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) {
-        if ( e->enabled && e->type == LayerEffectType_BLUR ) {
-            result = true;
-            break;
+    i32
+    number_of_layers(Layer* layer)
+    {
+        int n = 0;
+        while ( layer ) {
+            ++n;
+            layer = layer->next;
         }
+        return n;
     }
-    return result;
-}
-
-
-void
-layer_toggle_visibility(Layer* layer)
-{
-    b32 visible = layer->flags & LayerFlags_VISIBLE;
-    if ( visible ) {
-        layer->flags &= ~LayerFlags_VISIBLE;
-    } else {
-        layer->flags |= LayerFlags_VISIBLE;
-    }
-}
-
-i32
-number_of_layers(Layer* layer)
-{
-    int n = 0;
-    while ( layer ) {
-        ++n;
-        layer = layer->next;
-    }
-    return n;
-}
 
 }  // namespace layer

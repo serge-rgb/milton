@@ -518,7 +518,6 @@ milton_save(Milton* milton)
     milton_save_at_point(milton, 0);
 }
 
-
 PATH_CHAR*
 milton_get_last_canvas_fname()
 {

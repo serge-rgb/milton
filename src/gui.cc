@@ -15,13 +15,82 @@
 #define NUM_BUTTONS 5
 #define BOUNDS_RADIUS_PX 80
 
+
 void
-milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milton* milton)
+gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton)
+{
+    b32 show_brush_window = (current_mode_is_for_drawing(milton));
+    auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
+    MiltonGui* gui = milton->gui;
+
+    // Brush Window
+    if ( show_brush_window ) {
+        if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
+            if ( milton->current_mode == MiltonMode::PEN ||
+                 milton->current_mode == MiltonMode::PRIMITIVE ) {
+                const float pen_alpha = milton_get_brush_alpha(milton);
+                mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
+                float mut_alpha = pen_alpha*100;
+                ImGui::SliderFloat(LOC(opacity), &mut_alpha, 1, 100, "%.0f%%");
+
+                mut_alpha /= 100.0f;
+                if (mut_alpha > 1.0f ) mut_alpha = 1.0f;
+                if ( mut_alpha != pen_alpha ) {
+                    milton_set_brush_alpha(milton, mut_alpha);
+                    gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
+                }
+            }
+
+            const auto size = milton_get_brush_radius(milton);
+            auto mut_size = size;
+
+            ImGui::SliderInt(LOC(brush_size), &mut_size, 1, MILTON_MAX_BRUSH_SIZE);
+
+            if ( mut_size != size ) {
+                milton_set_brush_size(milton, mut_size);
+                milton->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
+            }
+
+            if ( milton->current_mode != MiltonMode::PEN ) {
+                if ( ImGui::Button(LOC(switch_to_brush)) ) {
+                    i32 f = input->flags;
+                    input->flags = (MiltonInputFlags)f;
+                    input->mode_to_set = MiltonMode::PEN;
+                }
+            }
+
+            if ( milton->current_mode != MiltonMode::PRIMITIVE ) {
+                if ( ImGui::Button(LOC(switch_to_primitive)) ) {
+                    i32 f = input->flags;
+                    input->flags = (MiltonInputFlags)f;
+                    input->mode_to_set = MiltonMode::PRIMITIVE;
+                }
+            }
+
+            if ( milton->current_mode != MiltonMode::ERASER ) {
+                if ( ImGui::Button(LOC(switch_to_eraser)) ) {
+                    input->mode_to_set = MiltonMode::ERASER;
+                }
+            }
+        }
+        // Important to place this before ImGui::End()
+        const v2i pos = {
+            (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_radius(milton)),
+            (i32)(ImGui::GetWindowPos().y),
+        };
+        ImGui::End();  // Brushes
+        if (( milton->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW )) {
+            milton->gui->preview_pos = pos;
+        }
+    }
+}
+
+void
+milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 {
     CanvasState* canvas = milton->canvas;
     MiltonGui* gui = milton->gui;
     // ImGui Section
-    auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
 
     // Spawn below the picker
     Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
@@ -254,9 +323,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milton* mi
                     input->mode_to_set = MiltonMode::ERASER;
                 }
                 // Panning
-                char* move_str = platform_state->is_panning==false? LOC(move_canvas) : LOC(stop_moving_canvas);
+                char* move_str = platform->is_panning==false? LOC(move_canvas) : LOC(stop_moving_canvas);
                 if ( ImGui::MenuItem(move_str) ) {
-                    platform_state->waiting_for_pan_input = true;
+                    platform->waiting_for_pan_input = true;
                 }
                 // Eye Dropper
                 if ( ImGui::MenuItem(LOC(eye_dropper)) ) {
@@ -337,69 +406,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milton* mi
         ImGui::SetNextWindowPos(ImVec2(ui_scale * 10, ui_scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowSize({ui_scale * 271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
-
-        b32 show_brush_window = (current_mode_is_for_drawing(milton));
-
-        // Brush Window
-        if ( show_brush_window ) {
-            if ( ImGui::Begin(LOC(brushes), NULL, default_imgui_window_flags) ) {
-                if ( milton->current_mode == MiltonMode::PEN ||
-                     milton->current_mode == MiltonMode::PRIMITIVE ) {
-                    const float pen_alpha = milton_get_brush_alpha(milton);
-                    mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
-                    float mut_alpha = pen_alpha*100;
-                    ImGui::SliderFloat(LOC(opacity), &mut_alpha, 1, 100, "%.0f%%");
-
-                    mut_alpha /= 100.0f;
-                    if (mut_alpha > 1.0f ) mut_alpha = 1.0f;
-                    if ( mut_alpha != pen_alpha ) {
-                        milton_set_brush_alpha(milton, mut_alpha);
-                        gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
-                    }
-                }
-
-                const auto size = milton_get_brush_radius(milton);
-                auto mut_size = size;
-
-                ImGui::SliderInt(LOC(brush_size), &mut_size, 1, MILTON_MAX_BRUSH_SIZE);
-
-                if ( mut_size != size ) {
-                    milton_set_brush_size(milton, mut_size);
-                    milton->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
-                }
-
-                if ( milton->current_mode != MiltonMode::PEN ) {
-                    if ( ImGui::Button(LOC(switch_to_brush)) ) {
-                        i32 f = input->flags;
-                        input->flags = (MiltonInputFlags)f;
-                        input->mode_to_set = MiltonMode::PEN;
-                    }
-                }
-
-                if ( milton->current_mode != MiltonMode::PRIMITIVE ) {
-                    if ( ImGui::Button(LOC(switch_to_primitive)) ) {
-                        i32 f = input->flags;
-                        input->flags = (MiltonInputFlags)f;
-                        input->mode_to_set = MiltonMode::PRIMITIVE;
-                    }
-                }
-
-                if ( milton->current_mode != MiltonMode::ERASER ) {
-                    if ( ImGui::Button(LOC(switch_to_eraser)) ) {
-                        input->mode_to_set = MiltonMode::ERASER;
-                    }
-                }
-            }
-            // Important to place this before ImGui::End()
-            const v2i pos = {
-                (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_radius(milton)),
-                (i32)(ImGui::GetWindowPos().y),
-            };
-            ImGui::End();  // Brushes
-            if (( milton->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW )) {
-                milton->gui->preview_pos = pos;
-            }
-        }
+        gui_brush_window(input, platform, milton);
 
         // Layer window
         ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
