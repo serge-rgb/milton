@@ -15,6 +15,224 @@
 #define NUM_BUTTONS 5
 #define BOUNDS_RADIUS_PX 80
 
+void
+gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f32 brush_window_height)
+{
+    float ui_scale = milton->gui->scale;
+    MiltonGui* gui = milton->gui;
+    const Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
+    CanvasState* canvas = milton->canvas;
+
+    // Layer window
+    ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*220), ImGuiSetCond_FirstUseEver);
+    if ( ImGui::Begin(LOC(layers)) ) {
+        CanvasView* view = milton->view;
+        // left
+        ImGui::BeginChild("left pane", ImVec2(150, 0), true);
+
+        Layer* layer = milton->canvas->root_layer;
+        while ( layer->next ) { layer = layer->next; }  // Move to the top layer.
+        while ( layer ) {
+            bool v = layer->flags & LayerFlags_VISIBLE;
+            ImGui::PushID(layer->id);
+            if ( ImGui::Checkbox("##select", &v) ) {
+                layer::layer_toggle_visibility(layer);
+                input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+            }
+            ImGui::PopID();
+            ImGui::SameLine();
+            if ( ImGui::Selectable(layer->name, milton->canvas->working_layer == layer) ) {
+                milton_set_working_layer(milton, layer);
+            }
+            layer = layer->prev;
+        }
+        ImGui::EndChild();
+        ImGui::SameLine();
+
+        ImGui::BeginGroup();
+        ImGui::BeginChild("item view", ImVec2(0, 25));
+        if ( ImGui::Button(LOC(new_layer)) ) {
+            milton_new_layer(milton);
+        }
+        ImGui::SameLine();
+
+        // Layer effects
+        if ( canvas ) {
+            Layer* working_layer = canvas->working_layer;
+            Arena* canvas_arena = &canvas->arena;
+
+            static b32 show_effects = false;
+            if ( ImGui::Button("Effects")) {
+                show_effects = !show_effects;
+            }
+            if ( show_effects ) {
+                // ImGui::GetWindow(Pos|Size) works in here because we are inside Begin()/End() calls.
+                i32 pos_x = (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + 10);
+                i32 pos_y = (i32)(ImGui::GetWindowPos().y);
+
+                ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiSetCond_FirstUseEver);
+                // ImGui::SetNextWindowPos(ImVec2(pos_x, 20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
+                ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*500), ImGuiSetCond_FirstUseEver);
+
+                if ( ImGui::Begin("Effects") ) {
+                    ImGui::Text(LOC(opacity));
+                    f32 alpha = canvas->working_layer->alpha;
+                    if ( ImGui::SliderFloat("##opacity", &alpha, 0.0f, 1.0f) ) {
+                        // Used the slider. Ask if it's OK to convert the binary format.
+                        if ( milton->mlt_binary_version < 3 ) {
+                            milton_log("Modified milton file from %d to 3\n", milton->mlt_binary_version);
+                            milton->mlt_binary_version = 3;
+                        }
+                        input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+
+                        if ( alpha > 1 ) { alpha = 1; }
+                        if ( alpha < 0 ) { alpha = 0; }
+
+                        canvas->working_layer->alpha = alpha;
+                    }
+
+                    static b32 selecting = false;
+
+                    ImGui::Separator();
+
+                    if ( ImGui::Button("Add Blur") ) {
+                        LayerEffect* e = arena_alloc_elem(canvas_arena, LayerEffect);
+                        e->next = working_layer->effects;
+                        working_layer->effects = e;
+                        e->enabled = true;
+                        e->blur.original_scale = milton->view->scale;
+                        e->blur.kernel_size = 10;
+                        input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+                    }
+
+                    LayerEffect* prev = NULL;
+                    int effect_id = 1;
+                    for ( LayerEffect* e = working_layer->effects; e != NULL; e = e->next ) {
+                        ImGui::PushID(effect_id);
+                        static bool v = 0;
+                        if ( ImGui::Checkbox("Enabled", (bool*)&e->enabled) ) {
+                            input->flags |= MiltonInputFlags_FULL_REFRESH;
+                        }
+                        if ( ImGui::SliderInt("Level", &e->blur.kernel_size, 2, 100, 0) ) {
+                            if (e->blur.kernel_size % 2 == 0) {
+                                --e->blur.kernel_size;
+                            }
+                            input->flags |= MiltonInputFlags_FULL_REFRESH;
+                        }
+                        {
+                            if (ImGui::Button("Delete")) {
+                                if (prev) {
+                                    prev->next = e->next;
+                                } else {  // Was the first.
+                                    working_layer->effects = e->next;
+                                }
+                                input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+                            }
+                        }
+                        ImGui::PopID();
+                        prev = e;
+                        ImGui::Separator();
+                        effect_id++;
+                    }
+                    // ImGui::Slider
+                } ImGui::End();
+
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::EndChild();
+        ImGui::BeginChild("buttons");
+
+        static b32 is_renaming = false;
+        if ( is_renaming == false ) {
+            ImGui::Text(milton->canvas->working_layer->name);
+            ImGui::Indent();
+            if ( ImGui::Button(LOC(rename)) )
+            {
+                is_renaming = true;
+            }
+            ImGui::Unindent();
+        }
+        else if ( is_renaming ) {
+            if (ImGui::InputText("##rename",
+                                  milton->canvas->working_layer->name,
+                                  13,
+                                  //MAX_LAYER_NAME_LEN,
+                                  ImGuiInputTextFlags_EnterReturnsTrue
+                                  //,ImGuiInputTextFlags flags = 0, ImGuiTextEditCallback callback = NULL, void* user_data = NULL
+                                 )) {
+                is_renaming = false;
+            }
+            ImGui::SameLine();
+            if ( ImGui::Button(LOC(ok)) )
+            {
+                is_renaming = false;
+            }
+        }
+        ImGui::Text(LOC(move));
+
+        Layer* a = NULL;
+        Layer* b = NULL;
+        if ( ImGui::Button(LOC(up)) ) {
+            b = milton->canvas->working_layer;
+            a = b->next;
+        }
+        ImGui::SameLine();
+        if ( ImGui::Button(LOC(down)) ) {
+            a = milton->canvas->working_layer;
+            b = a->prev;
+        }
+
+
+        if ( a && b ) {
+            // n <-> a <-> b <-> p
+            // n <-> b <-> a <-> p
+            Layer* n = a->next;
+            Layer* p = b->prev;
+            b->next = n;
+            if ( n ) n->prev = b;
+            a->prev = p;
+            if ( p ) p->next = a;
+
+            a->next = b;
+            b->prev = a;
+
+            // Make sure root is first
+            while ( milton->canvas->root_layer->prev ) {
+                milton->canvas->root_layer = milton->canvas->root_layer->prev;
+            }
+            input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+        }
+
+        if ( milton->canvas->working_layer->next
+             || milton->canvas->working_layer->prev ) {
+            static bool deleting = false;
+            if ( deleting == false ) {
+                if ( ImGui::Button(LOC(delete)) ) {
+                    deleting = true;
+                }
+            }
+            else if ( deleting ) {
+                ImGui::Text(LOC(are_you_sure));
+                ImGui::Text(LOC(cant_be_undone));
+                if ( ImGui::Button(LOC(yes)) ) {
+                    milton_delete_working_layer(milton);
+                    deleting = false;
+                }
+                ImGui::SameLine();
+                if ( ImGui::Button(LOC(no)) ) {
+                    deleting = false;
+                }
+            }
+        }
+        ImGui::EndChild();
+        ImGui::EndGroup();
+
+    } ImGui::End();
+}
+
 
 void
 gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton)
@@ -86,90 +304,17 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton)
 }
 
 void
-milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
+gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_settings)
 {
-    CanvasState* canvas = milton->canvas;
-    MiltonGui* gui = milton->gui;
-    // ImGui Section
-
-    // Spawn below the picker
-    Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
-
-    int color_stack = 0;
-
-    static auto color_window_background = ImVec4{.929f, .949f, .957f, 1};
-    //static auto color_title_bg        = ImVec4{.957f,.353f, .286f,1};
-    static auto color_title_bg          = color_window_background;
-    static auto color_title_fg          = ImVec4{151/255.f, 184/255.f, 210/255.f, 1};
-
-    static auto color_buttons         = ImVec4{.686f, .796f, 1.0f, 1};
-    static auto color_buttons_active  = ImVec4{.886f, .796f, 1.0f, 1};
-    static auto color_buttons_hovered = ImVec4{.706f, .816f, 1.0f, 1};
-
-    static auto color_menu_bg        = ImVec4{.784f, .392f, .784f, 1};
-    static auto color_text           = ImVec4{.2f,.2f,.2f,1};
-    static auto color_slider         = ImVec4{ 148/255.f, 182/255.f, 182/255.f,1};
-    static auto frame_background     = ImVec4{ 0.862745f, 0.862745f, 0.862745f,1};
-    static auto color_text_selected  = ImVec4{ 0.509804f, 0.627451f, 0.823529f,1};
-    static auto color_header_hovered = color_buttons;
-
-    // Helper Imgui code to select color scheme
-#if 0
-    ImGui::ColorEdit3("Window Background", (float*)&color_window_background);
-    ImGui::ColorEdit3("Title background", (float*)&color_title_bg);
-    ImGui::ColorEdit3("Title background active", (float*)&color_title_fg);
-
-    ImGui::ColorEdit3("Buttons", (float*)&color_buttons);
-    ImGui::ColorEdit3("Menu BG", (float*)&color_menu_bg);
-    ImGui::ColorEdit3("text", (float*)&color_text);
-    ImGui::ColorEdit3("frame background", (float*)&frame_background);
-    ImGui::ColorEdit3("selected", (float*)&color_text_selected);
-    if ( ImGui::Button("Print out") ) {
-        auto print_color = [&](char* label, ImVec4 c) {
-            milton_log("%s : %f, %f, %f \n", label, c.x, c.y, c.z);
-        };
-        print_color("window bg", color_window_background);
-        print_color("title bg", color_title_bg);
-        print_color("buttons", color_buttons);
-        print_color("menu bg", color_menu_bg);
-        print_color("text", color_text);
-        print_color("selected", frame_background);
-        print_color("selected", color_text_selected);
-    }
-#endif
-
-    ImGui::PushStyleColor(ImGuiCol_WindowBg,        color_window_background); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_PopupBg,         color_window_background); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_TitleBg,         color_title_bg); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,   color_title_fg); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_Text,            color_text); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_MenuBarBg,       color_title_bg); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg,  color_buttons_active); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_FrameBg,      frame_background); ++color_stack;
-
-    ImGui::PushStyleColor(ImGuiCol_SliderGrab,      color_buttons); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive,      color_buttons_active); ++color_stack;
-
-    ImGui::PushStyleColor(ImGuiCol_Button,          color_buttons); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,      color_buttons_hovered); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,          color_buttons_active); ++color_stack;
-
-    ImGui::PushStyleColor(ImGuiCol_Header,          color_buttons); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   color_buttons_hovered); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive,    color_buttons_active); ++color_stack;
-
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,   color_buttons); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered,      color_buttons_hovered); ++color_stack;
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,      color_buttons_active); ++color_stack;
-
-    ImGui::PushStyleColor(ImGuiCol_CheckMark,      color_slider); ++color_stack;
-
     // Menu ----
     int menu_style_stack = 0;
-    // TODO: translate
-    char* default_will_be_lost = "The default canvas will be cleared. Save it?";
 
-    static b32 show_settings = false;
+    MiltonGui* gui = milton->gui;
+    CanvasState* canvas = milton->canvas;
+
+    // TODO: translate
+    static char* default_will_be_lost = "The default canvas will be cleared. Save it?";
+
     if ( gui->menu_visible ) {
         if ( ImGui::BeginMainMenuBar() ) {
             if ( ImGui::BeginMenu(LOC(file)) ) {
@@ -387,6 +532,91 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
         }
         ImGui::PopStyleColor(menu_style_stack);
     }
+}
+
+
+void
+milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
+{
+    CanvasState* canvas = milton->canvas;
+    MiltonGui* gui = milton->gui;
+    // ImGui Section
+
+    // Spawn below the picker
+    const Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
+
+    int color_stack = 0;
+
+    static auto color_window_background = ImVec4{.929f, .949f, .957f, 1};
+    //static auto color_title_bg        = ImVec4{.957f,.353f, .286f,1};
+    static auto color_title_bg          = color_window_background;
+    static auto color_title_fg          = ImVec4{151/255.f, 184/255.f, 210/255.f, 1};
+
+    static auto color_buttons         = ImVec4{.686f, .796f, 1.0f, 1};
+    static auto color_buttons_active  = ImVec4{.886f, .796f, 1.0f, 1};
+    static auto color_buttons_hovered = ImVec4{.706f, .816f, 1.0f, 1};
+
+    static auto color_menu_bg        = ImVec4{.784f, .392f, .784f, 1};
+    static auto color_text           = ImVec4{.2f,.2f,.2f,1};
+    static auto color_slider         = ImVec4{ 148/255.f, 182/255.f, 182/255.f,1};
+    static auto frame_background     = ImVec4{ 0.862745f, 0.862745f, 0.862745f,1};
+    static auto color_text_selected  = ImVec4{ 0.509804f, 0.627451f, 0.823529f,1};
+    static auto color_header_hovered = color_buttons;
+
+    // Helper Imgui code to select color scheme
+#if 0
+    ImGui::ColorEdit3("Window Background", (float*)&color_window_background);
+    ImGui::ColorEdit3("Title background", (float*)&color_title_bg);
+    ImGui::ColorEdit3("Title background active", (float*)&color_title_fg);
+
+    ImGui::ColorEdit3("Buttons", (float*)&color_buttons);
+    ImGui::ColorEdit3("Menu BG", (float*)&color_menu_bg);
+    ImGui::ColorEdit3("text", (float*)&color_text);
+    ImGui::ColorEdit3("frame background", (float*)&frame_background);
+    ImGui::ColorEdit3("selected", (float*)&color_text_selected);
+    if ( ImGui::Button("Print out") ) {
+        auto print_color = [&](char* label, ImVec4 c) {
+            milton_log("%s : %f, %f, %f \n", label, c.x, c.y, c.z);
+        };
+        print_color("window bg", color_window_background);
+        print_color("title bg", color_title_bg);
+        print_color("buttons", color_buttons);
+        print_color("menu bg", color_menu_bg);
+        print_color("text", color_text);
+        print_color("selected", frame_background);
+        print_color("selected", color_text_selected);
+    }
+#endif
+
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,        color_window_background); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_PopupBg,         color_window_background); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBg,         color_title_bg); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,   color_title_fg); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_Text,            color_text); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_MenuBarBg,       color_title_bg); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_TextSelectedBg,  color_buttons_active); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,      frame_background); ++color_stack;
+
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab,      color_buttons); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive,      color_buttons_active); ++color_stack;
+
+    ImGui::PushStyleColor(ImGuiCol_Button,          color_buttons); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,      color_buttons_hovered); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,          color_buttons_active); ++color_stack;
+
+    ImGui::PushStyleColor(ImGuiCol_Header,          color_buttons); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,   color_buttons_hovered); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive,    color_buttons_active); ++color_stack;
+
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,   color_buttons); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered,      color_buttons_hovered); ++color_stack;
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,      color_buttons_active); ++color_stack;
+
+    ImGui::PushStyleColor(ImGuiCol_CheckMark,      color_slider); ++color_stack;
+
+    static b32 show_settings = false;
+
+    gui_menu(input, platform, milton, show_settings);
 
     float ui_scale = milton->gui->scale;
 
@@ -408,214 +638,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
         gui_brush_window(input, platform, milton);
 
-        // Layer window
-        ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*220), ImGuiSetCond_FirstUseEver);
-        if ( ImGui::Begin(LOC(layers)) ) {
-            CanvasView* view = milton->view;
-            // left
-            ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-
-            Layer* layer = milton->canvas->root_layer;
-            while ( layer->next ) { layer = layer->next; }  // Move to the top layer.
-            while ( layer ) {
-                bool v = layer->flags & LayerFlags_VISIBLE;
-                ImGui::PushID(layer->id);
-                if ( ImGui::Checkbox("##select", &v) ) {
-                    layer::layer_toggle_visibility(layer);
-                    input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-                }
-                ImGui::PopID();
-                ImGui::SameLine();
-                if ( ImGui::Selectable(layer->name, milton->canvas->working_layer == layer) ) {
-                    milton_set_working_layer(milton, layer);
-                }
-                layer = layer->prev;
-            }
-            ImGui::EndChild();
-            ImGui::SameLine();
-
-            ImGui::BeginGroup();
-            ImGui::BeginChild("item view", ImVec2(0, 25));
-            if ( ImGui::Button(LOC(new_layer)) ) {
-                milton_new_layer(milton);
-            }
-            ImGui::SameLine();
-
-            // Layer effects
-            if ( canvas ) {
-                Layer* working_layer = canvas->working_layer;
-                Arena* canvas_arena = &canvas->arena;
-
-                static b32 show_effects = false;
-                if ( ImGui::Button("Effects")) {
-                    show_effects = !show_effects;
-                }
-                if ( show_effects ) {
-                    // ImGui::GetWindow(Pos|Size) works in here because we are inside Begin()/End() calls.
-                    i32 pos_x = (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + 10);
-                    i32 pos_y = (i32)(ImGui::GetWindowPos().y);
-
-                    ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiSetCond_FirstUseEver);
-                    // ImGui::SetNextWindowPos(ImVec2(pos_x, 20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
-                    ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*500), ImGuiSetCond_FirstUseEver);
-
-                    if ( ImGui::Begin("Effects") ) {
-                        ImGui::Text(LOC(opacity));
-                        f32 alpha = canvas->working_layer->alpha;
-                        if ( ImGui::SliderFloat("##opacity", &alpha, 0.0f, 1.0f) ) {
-                            // Used the slider. Ask if it's OK to convert the binary format.
-                            if ( milton->mlt_binary_version < 3 ) {
-                                milton_log("Modified milton file from %d to 3\n", milton->mlt_binary_version);
-                                milton->mlt_binary_version = 3;
-                            }
-                            input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-
-                            if ( alpha > 1 ) { alpha = 1; }
-                            if ( alpha < 0 ) { alpha = 0; }
-
-                            canvas->working_layer->alpha = alpha;
-                        }
-
-                        static b32 selecting = false;
-
-                        ImGui::Separator();
-
-                        if ( ImGui::Button("Add Blur") ) {
-                            LayerEffect* e = arena_alloc_elem(canvas_arena, LayerEffect);
-                            e->next = working_layer->effects;
-                            working_layer->effects = e;
-                            e->enabled = true;
-                            e->blur.original_scale = milton->view->scale;
-                            e->blur.kernel_size = 10;
-                            input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-                        }
-
-                        LayerEffect* prev = NULL;
-                        int effect_id = 1;
-                        for ( LayerEffect* e = working_layer->effects; e != NULL; e = e->next ) {
-                            ImGui::PushID(effect_id);
-                            static bool v = 0;
-                            if ( ImGui::Checkbox("Enabled", (bool*)&e->enabled) ) {
-                                input->flags |= MiltonInputFlags_FULL_REFRESH;
-                            }
-                            if ( ImGui::SliderInt("Level", &e->blur.kernel_size, 2, 100, 0) ) {
-                                if (e->blur.kernel_size % 2 == 0) {
-                                    --e->blur.kernel_size;
-                                }
-                                input->flags |= MiltonInputFlags_FULL_REFRESH;
-                            }
-                            {
-                                if (ImGui::Button("Delete")) {
-                                    if (prev) {
-                                        prev->next = e->next;
-                                    } else {  // Was the first.
-                                        working_layer->effects = e->next;
-                                    }
-                                    input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-                                }
-                            }
-                            ImGui::PopID();
-                            prev = e;
-                            ImGui::Separator();
-                            effect_id++;
-                        }
-                        // ImGui::Slider
-                    } ImGui::End();
-
-                }
-            }
-
-            ImGui::Separator();
-            ImGui::EndChild();
-            ImGui::BeginChild("buttons");
-
-            static b32 is_renaming = false;
-            if ( is_renaming == false ) {
-                ImGui::Text(milton->canvas->working_layer->name);
-                ImGui::Indent();
-                if ( ImGui::Button(LOC(rename)) )
-                {
-                    is_renaming = true;
-                }
-                ImGui::Unindent();
-            }
-            else if ( is_renaming ) {
-                if (ImGui::InputText("##rename",
-                                      milton->canvas->working_layer->name,
-                                      13,
-                                      //MAX_LAYER_NAME_LEN,
-                                      ImGuiInputTextFlags_EnterReturnsTrue
-                                      //,ImGuiInputTextFlags flags = 0, ImGuiTextEditCallback callback = NULL, void* user_data = NULL
-                                     )) {
-                    is_renaming = false;
-                }
-                ImGui::SameLine();
-                if ( ImGui::Button(LOC(ok)) )
-                {
-                    is_renaming = false;
-                }
-            }
-            ImGui::Text(LOC(move));
-
-            Layer* a = NULL;
-            Layer* b = NULL;
-            if ( ImGui::Button(LOC(up)) ) {
-                b = milton->canvas->working_layer;
-                a = b->next;
-            }
-            ImGui::SameLine();
-            if ( ImGui::Button(LOC(down)) ) {
-                a = milton->canvas->working_layer;
-                b = a->prev;
-            }
-
-
-            if ( a && b ) {
-                // n <-> a <-> b <-> p
-                // n <-> b <-> a <-> p
-                Layer* n = a->next;
-                Layer* p = b->prev;
-                b->next = n;
-                if ( n ) n->prev = b;
-                a->prev = p;
-                if ( p ) p->next = a;
-
-                a->next = b;
-                b->prev = a;
-
-                // Make sure root is first
-                while ( milton->canvas->root_layer->prev ) {
-                    milton->canvas->root_layer = milton->canvas->root_layer->prev;
-                }
-                input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-            }
-
-            if ( milton->canvas->working_layer->next
-                 || milton->canvas->working_layer->prev ) {
-                static bool deleting = false;
-                if ( deleting == false ) {
-                    if ( ImGui::Button(LOC(delete)) ) {
-                        deleting = true;
-                    }
-                }
-                else if ( deleting ) {
-                    ImGui::Text(LOC(are_you_sure));
-                    ImGui::Text(LOC(cant_be_undone));
-                    if ( ImGui::Button(LOC(yes)) ) {
-                        milton_delete_working_layer(milton);
-                        deleting = false;
-                    }
-                    ImGui::SameLine();
-                    if ( ImGui::Button(LOC(no)) ) {
-                        deleting = false;
-                    }
-                }
-            }
-            ImGui::EndChild();
-            ImGui::EndGroup();
-
-        } ImGui::End();
+        gui_layer_window(input, platform, milton, brush_window_height);
 
         // Settings window
         if ( show_settings ) {
@@ -745,6 +768,25 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
             exporter_init(&milton->gui->exporter);
         }
     } // exporting
+
+
+#if MILTON_DEBUG
+    ImGui::SetNextWindowSize({500, 200}, ImGuiSetCond_FirstUseEver);
+    static bool read_new_format = false;
+    static bool save_new_format = false;
+
+    if ( ImGui::Begin("New file format") ) {
+        ImGui::Text("Read new file format");
+        ImGui::SameLine();
+        if ( ImGui::Checkbox("##read", &read_new_format) ) {
+        }
+
+        ImGui::Text("Save new file format");
+        ImGui::SameLine();
+        if ( ImGui::Checkbox("##write", &save_new_format) ) {
+        }
+    } ImGui::End();
+#endif
 
 #if MILTON_ENABLE_PROFILING
     ImGui::SetNextWindowPos(ImVec2(ui_scale*300, ui_scale*205), ImGuiSetCond_FirstUseEver);
