@@ -339,8 +339,84 @@ END:
 #undef READ
 }
 
+struct SaveBlockHeader {
+    enum {
+        Block_PAINTING_DESC,
+        Block_COLOR_PICKER,
+        Block_BUTTONS,
+        Block_BRUSHES,
+        Block_LAYER,
+    } type;
+};
+
 void
-milton_save_at_point(Milton* milton, u64 point)
+milton_save_v6(Milton* milton)
+{
+    // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
+    // TODO: is this still needed?
+    i32 history_count = 0;
+    u32 milton_binary_version = 0;
+    i32 num_layers = 0;
+    milton->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
+
+    int pid = (int)getpid();
+    PATH_CHAR tmp_fname[MAX_PATH] = {};
+    PATH_SNPRINTF(tmp_fname, MAX_PATH, TO_PATH_STR("milton_tmp.%d.mlt"), pid);
+
+    platform_fname_at_config(tmp_fname, MAX_PATH);
+
+    FILE* fd = platform_fopen(tmp_fname, TO_PATH_STR("wb"));
+
+    b32 ok = true;
+
+    char* failure = NULL;
+    if ( fd ) {
+#define WRITE(address, sz, num, fd) \
+        do { \
+            if (!fwrite_checked(address, sz, num, fd)) { \
+                static char* msg = #address;\
+                failure = msg;\
+                goto END; \
+            }  \
+        } while(0);
+
+        u32 milton_magic = MILTON_MAGIC_NUMBER;
+
+        WRITE(&milton_magic, sizeof(u32), 1, fd);
+
+        milton_binary_version = milton->mlt_binary_version;
+
+        WRITE(&milton_binary_version, sizeof(u32), 1, fd);
+        WRITE(milton->view, sizeof(CanvasView), 1, fd);
+
+        num_layers = layer::number_of_layers(milton->canvas->root_layer);
+        WRITE(&num_layers, sizeof(i32), 1, fd);
+        WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
+        // Block:
+    }
+
+END:
+
+    if ( failure ) {
+        milton_log("FAILED SAVE: [%s]\n");
+    }
+    else {
+        PATH_CHAR tmp_fname[MAX_PATH] = {};
+        PATH_SNPRINTF(tmp_fname, MAX_PATH, "%s_NEW.mlt", milton->mlt_file_path);
+        if ( !platform_move_file(tmp_fname, milton->mlt_file_path) ) {
+            milton_log("Could not replace filename in atomic save: [%s]\n", tmp_fname);
+        }
+        else {
+            // Success!
+            milton_save_postlude(milton);
+        }
+    }
+
+#undef WRITE
+}
+
+void
+milton_save_preV6(Milton* milton)
 {
     // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
     i32 history_count = 0;
@@ -515,7 +591,12 @@ END:
 void
 milton_save(Milton* milton)
 {
-    milton_save_at_point(milton, 0);
+    if ( milton->DEV_use_new_format_write ) {
+        milton_save_v6(milton);
+    }
+    else {
+        milton_save_preV6(milton);
+    }
 }
 
 PATH_CHAR*

@@ -772,18 +772,27 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
 #if MILTON_DEBUG
     ImGui::SetNextWindowSize({500, 200}, ImGuiSetCond_FirstUseEver);
-    static bool read_new_format = false;
-    static bool save_new_format = false;
 
     if ( ImGui::Begin("New file format") ) {
         ImGui::Text("Read new file format");
         ImGui::SameLine();
-        if ( ImGui::Checkbox("##read", &read_new_format) ) {
+        if ( ImGui::Checkbox("##read", &milton->DEV_use_new_format_read) ) {
+        }
+        ImGui::SameLine();
+
+        if ( ImGui::Button("Read once") ) {
+
         }
 
         ImGui::Text("Save new file format");
         ImGui::SameLine();
-        if ( ImGui::Checkbox("##write", &save_new_format) ) {
+        if ( ImGui::Checkbox("##write", &milton->DEV_use_new_format_read) ) {
+        }
+
+        ImGui::SameLine();
+
+        if ( ImGui::Button("Write once") ) {
+            milton_save_v6(milton);
         }
     } ImGui::End();
 #endif

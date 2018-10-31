@@ -113,6 +113,8 @@ struct Milton
     // u8* eyedropper_buffer;  // Get pixels from OpenGL framebuffer and store them here for eydropper operations.
 
     // Persistence
+    bool DEV_use_new_format_read;
+    bool DEV_use_new_format_write;
     PATH_CHAR*  mlt_file_path;
     u32         mlt_binary_version;
     WallTime    last_save_time;
