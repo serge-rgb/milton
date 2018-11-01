@@ -226,7 +226,12 @@ enum SaveEnum
     SaveEnum_GOOD_TO_GO,
 };
 
-void milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open);
+enum MiltonInitFlags
+{
+    MiltonInit_DEFAULT = 0,
+    MiltonInit_FOR_TEST = 1<<0,  // No graphics layer. No reading from disk
+};
+void milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open, MiltonInitFlags init_flags = MiltonInit_DEFAULT);
 
 // Expects absolute path
 void milton_set_canvas_file(Milton* milton, PATH_CHAR* fname);

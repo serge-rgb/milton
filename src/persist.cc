@@ -52,6 +52,12 @@ milton_unset_last_canvas_fname()
 }
 
 void
+milton_load_v6(Milton* milton)
+{
+
+}
+
+void
 milton_load(Milton* milton)
 {
     // Declare variables here to silence compiler warnings about using GOTO.
@@ -340,13 +346,14 @@ END:
 }
 
 struct SaveBlockHeader {
-    enum {
+    enum Type {
         Block_PAINTING_DESC,
         Block_COLOR_PICKER,
         Block_BUTTONS,
         Block_BRUSHES,
         Block_LAYER,
     } type;
+
 };
 
 void
@@ -397,14 +404,19 @@ milton_save_v6(Milton* milton)
 
 END:
 
+    int file_error = ferror(fd);
+    if ( file_error == 0 ) {
+        int close_ret = fclose(fd);
+    }
+
     if ( failure ) {
         milton_log("FAILED SAVE: [%s]\n");
     }
     else {
-        PATH_CHAR tmp_fname[MAX_PATH] = {};
-        PATH_SNPRINTF(tmp_fname, MAX_PATH, "%s_NEW.mlt", milton->mlt_file_path);
-        if ( !platform_move_file(tmp_fname, milton->mlt_file_path) ) {
-            milton_log("Could not replace filename in atomic save: [%s]\n", tmp_fname);
+        PATH_CHAR tmp_mlt_path[MAX_PATH] = {};
+        PATH_SNPRINTF(tmp_mlt_path, MAX_PATH, TO_PATH_STR("%s_NEW.mlt"), milton->mlt_file_path);
+        if ( !platform_move_file(tmp_fname, tmp_mlt_path/*milton->mlt_file_path*/) ) {
+            milton_log("Could not replace filename in atomic save: [%s]\n", tmp_mlt_path);
         }
         else {
             // Success!

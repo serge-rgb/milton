@@ -455,8 +455,11 @@ settings_init(MiltonSettings* s)
 }
 
 void
-milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open)
+milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open, MiltonInitFlags init_flags)
 {
+    b32 init_graphics = !(init_flags & MiltonInit_FOR_TEST);
+    b32 read_from_disk = !(init_flags & MiltonInit_FOR_TEST);
+
     init_localization();
 
     milton->canvas = arena_bootstrap(CanvasState, arena, 1024*1024);
@@ -475,7 +478,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->current_mode = MiltonMode::PEN;
     milton->last_mode = MiltonMode::PEN;
 
-    milton->gl = arena_alloc_elem(&milton->root_arena, MiltonGLState);
+    if (init_graphics) { milton->gl = arena_alloc_elem(&milton->root_arena, MiltonGLState); }
     milton->gui = arena_alloc_elem(&milton->root_arena, MiltonGui);
     milton->settings = arena_alloc_elem(&milton->root_arena, MiltonSettings);
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
@@ -483,16 +486,16 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     gui_init(&milton->root_arena, milton->gui, ui_scale);
     settings_init(milton->settings);
 
-    milton_settings_load(milton->settings);
+    if (read_from_disk) { milton_settings_load(milton->settings); }
 
     milton->view = arena_alloc_elem(&milton->root_arena, CanvasView);
     milton_set_default_view(milton);
 
     milton->view->screen_size = { width, height };
 
-    gpu_init(milton->render_data, milton->view, &milton->gui->picker);
+    if (init_graphics) { gpu_init(milton->render_data, milton->view, &milton->gui->picker); }
 
-    gpu_update_background(milton->render_data, milton->view->background_color);
+    if (init_graphics) { gpu_update_background(milton->render_data, milton->view->background_color); }
 
     { // Get/Set Milton Canvas (.mlt) file
         if ( file_to_open == NULL ) {
@@ -534,7 +537,8 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 
     milton->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
-    milton_load(milton);
+    if (read_from_disk) { milton_load(milton); }
+
     milton_validate(milton);
 
     // Enable brush smoothing by default
