@@ -356,7 +356,7 @@ milton_set_canvas_file_(Milton* milton, PATH_CHAR* fname, b32 is_default)
         milton_log("milton_set_canvas_file: fname was too long %lu\n", len);
         fname = TO_PATH_STR("MiltonPersist.mlt");
     }
-    milton->mlt_file_path = fname;
+    milton->persist->mlt_file_path = fname;
 
     if ( !is_default ) {
         milton_set_last_canvas_fname(fname);
@@ -482,6 +482,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->gui = arena_alloc_elem(&milton->root_arena, MiltonGui);
     milton->settings = arena_alloc_elem(&milton->root_arena, MiltonSettings);
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
+    milton->persist = arena_alloc_elem(&milton->root_arena, MiltonPersist);
 
     gui_init(&milton->root_arena, milton->gui, ui_scale);
     settings_init(milton->settings);
@@ -535,7 +536,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     }
     milton_set_brush_alpha(milton, 1.0f);
 
-    milton->last_save_time = {};
+    milton->persist->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
     if (read_from_disk) { milton_load(milton); }
 
@@ -596,8 +597,8 @@ milton_reset_canvas(Milton* milton)
     CanvasState* canvas = milton->canvas;
 
     gpu_free_strokes(milton->render_data, milton->canvas);
-    milton->mlt_binary_version = MILTON_MINOR_VERSION;
-    milton->last_save_time = {};
+    milton->persist->mlt_binary_version = MILTON_MINOR_VERSION;
+    milton->persist->last_save_time = {};
 
     // Clear history
     release(&canvas->history);
@@ -683,8 +684,8 @@ milton_try_quit(Milton* milton)
 void
 milton_save_postlude(Milton* milton)
 {
-    milton->last_save_time = platform_get_walltime();
-    milton->last_save_stroke_count = layer::count_strokes(milton->canvas->root_layer);
+    milton->persist->last_save_time = platform_get_walltime();
+    milton->persist->last_save_stroke_count = layer::count_strokes(milton->canvas->root_layer);
 
     milton->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
 }
@@ -1261,7 +1262,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         if (    !(milton->flags & MiltonStateFlags_RUNNING)
              && (milton->flags & MiltonStateFlags_LAST_SAVE_FAILED)
              && (milton->flags & MiltonStateFlags_MOVE_FILE_FAILED)
-             && milton->last_save_stroke_count != layer::count_strokes(milton->canvas->root_layer) ) {
+             && milton->persist->last_save_stroke_count != layer::count_strokes(milton->canvas->root_layer) ) {
             // TODO: Stop using MoveFileEx?
             //  Why does MoveFileEx fail? Ask someone who knows this stuff.
             // Wait a moment and try again. If this fails, prompt to save somewhere else.
@@ -1271,7 +1272,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             if (    (milton->flags & MiltonStateFlags_LAST_SAVE_FAILED)
                  && (milton->flags & MiltonStateFlags_MOVE_FILE_FAILED) ) {
                 char msg[1024];
-                WallTime lst = milton->last_save_time;
+                WallTime lst = milton->persist->last_save_time;
                 snprintf(msg, 1024, "Milton failed to save this canvas. The last successful save was at %.2d:%.2d:%.2d. Try saving to another file?",
                          lst.hours, lst.minutes, lst.seconds);
                 b32 another = platform_dialog_yesno(msg, "Try another file?");

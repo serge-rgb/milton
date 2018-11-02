@@ -8,6 +8,35 @@
 struct Milton;
 struct MiltonSettings;
 
+struct SaveBlockHeader
+{
+    enum Type
+    {
+        Block_PAINTING_DESC,
+        Block_COLOR_PICKER,
+        Block_BUTTONS,
+        Block_BRUSHES,
+        Block_LAYER,
+    } type;
+
+};
+
+
+struct MiltonPersist
+{
+    // Persistence
+    bool DEV_use_new_format_read;
+    bool DEV_use_new_format_write;
+    PATH_CHAR*  mlt_file_path;
+    u32         mlt_binary_version;
+    WallTime    last_save_time;
+    i64         last_save_stroke_count;  // This is a workaround to MoveFileEx failing occasionally, particularaly when
+                                        // when the mlt file gets large.
+                                        // Check that all the strokes are saved at quit time in case that
+                                        // the last MoveFileEx failed.
+    DArray<SaveBlockHeader> blocks;
+};
+
 PATH_CHAR* milton_get_last_canvas_fname();
 
 void milton_load(Milton* milton);

@@ -66,6 +66,7 @@ struct MiltonGui;
 struct RenderData;
 struct CanvasView;
 struct Layer;
+struct MiltonPersist;
 
 // Stuff than can be reset when unloading a canvas
 struct CanvasState
@@ -110,18 +111,6 @@ struct Milton
     i32 max_width;
     i32 max_height;
 
-    // u8* eyedropper_buffer;  // Get pixels from OpenGL framebuffer and store them here for eydropper operations.
-
-    // Persistence
-    bool DEV_use_new_format_read;
-    bool DEV_use_new_format_write;
-    PATH_CHAR*  mlt_file_path;
-    u32         mlt_binary_version;
-    WallTime    last_save_time;
-    i64         last_save_stroke_count;  // This is a workaround to MoveFileEx failing occasionally, particularaly when
-                                        // when the mlt file gets large.
-                                        // Check that all the strokes are saved at quit time in case that
-                                        // the last MoveFileEx failed.
 #if MILTON_SAVE_ASYNC
     SDL_mutex*  save_mutex;
     i64         save_flag;   // See SaveEnum
@@ -162,6 +151,7 @@ struct Milton
     MiltonGLState* gl;
     MiltonGui* gui;
     MiltonSettings* settings;  // User settings
+    MiltonPersist* persist;
 
 #if MILTON_ENABLE_PROFILING
     b32 viz_window_visible;

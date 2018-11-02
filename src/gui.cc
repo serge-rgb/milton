@@ -80,9 +80,9 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                     f32 alpha = canvas->working_layer->alpha;
                     if ( ImGui::SliderFloat("##opacity", &alpha, 0.0f, 1.0f) ) {
                         // Used the slider. Ask if it's OK to convert the binary format.
-                        if ( milton->mlt_binary_version < 3 ) {
-                            milton_log("Modified milton file from %d to 3\n", milton->mlt_binary_version);
-                            milton->mlt_binary_version = 3;
+                        if ( milton->persist->mlt_binary_version < 3 ) {
+                            milton_log("Modified milton file from %d to 3\n", milton->persist->mlt_binary_version);
+                            milton->persist->mlt_binary_version = 3;
                         }
                         input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
 
@@ -511,13 +511,13 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                 }
                 ImGui::EndMenu();
             }
-            PATH_CHAR* utf16_name = str_trim_to_last_slash(milton->mlt_file_path);
+            PATH_CHAR* utf16_name = str_trim_to_last_slash(milton->persist->mlt_file_path);
 
             char file_name[MAX_PATH] = {};
             utf16_to_utf8_simple(utf16_name, file_name);
 
             char msg[1024];
-            WallTime lst = milton->last_save_time;
+            WallTime lst = milton->persist->last_save_time;
 
             snprintf(msg, 1024, "\t%s -- Last saved: %.2d:%.2d:%.2d\t\tZoom level %.2f",
                      (milton->flags & MiltonStateFlags_DEFAULT_CANVAS) ? "[Default canvas]" :
@@ -776,7 +776,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
     if ( ImGui::Begin("New file format") ) {
         ImGui::Text("Read new file format");
         ImGui::SameLine();
-        if ( ImGui::Checkbox("##read", &milton->DEV_use_new_format_read) ) {
+        if ( ImGui::Checkbox("##read", &milton->persist->DEV_use_new_format_read) ) {
         }
         ImGui::SameLine();
 
@@ -786,7 +786,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
         ImGui::Text("Save new file format");
         ImGui::SameLine();
-        if ( ImGui::Checkbox("##write", &milton->DEV_use_new_format_read) ) {
+        if ( ImGui::Checkbox("##write", &milton->persist->DEV_use_new_format_read) ) {
         }
 
         ImGui::SameLine();

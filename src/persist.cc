@@ -71,7 +71,7 @@ milton_load(Milton* milton)
     MiltonGui* gui = NULL;
     auto saved_size = milton->view->screen_size;
 
-    milton_log("Loading file %s\n", milton->mlt_file_path);
+    milton_log("Loading file %s\n", milton->persist->mlt_file_path);
     // Reset the canvas.
     milton_reset_canvas(milton);
 
@@ -80,8 +80,8 @@ milton_load(Milton* milton)
 
     // Unload gpu data if the strokes have been cooked.
     gpu_free_strokes(milton->render_data, milton->canvas);
-    mlt_assert(milton->mlt_file_path);
-    FILE* fd = platform_fopen(milton->mlt_file_path, TO_PATH_STR("rb"));
+    mlt_assert(milton->persist->mlt_file_path);
+    FILE* fd = platform_fopen(milton->persist->mlt_file_path, TO_PATH_STR("rb"));
     b32 ok = true;  // fread check
     b32 handled = false;  // when ok==false but we don't need to prompt a scary message.
 
@@ -94,7 +94,7 @@ milton_load(Milton* milton)
         if (ok) {
             if ( milton_binary_version < 4 ) {
                 if ( platform_dialog_yesno ("This file will be updated to the new version of Milton. Older versions won't be able to open it. Is this OK?", "File format change") ) {
-                    milton->mlt_binary_version = MILTON_MINOR_VERSION;
+                    milton->persist->mlt_binary_version = MILTON_MINOR_VERSION;
                     milton_log("Updating this file to latest mlt version.\n");
                 } else {
                     ok = false;
@@ -102,7 +102,7 @@ milton_load(Milton* milton)
                     goto END;
                 }
             } else {
-                milton->mlt_binary_version = milton_binary_version;
+                milton->persist->mlt_binary_version = milton_binary_version;
             }
         }
 
@@ -345,16 +345,15 @@ END:
 #undef READ
 }
 
-struct SaveBlockHeader {
-    enum Type {
-        Block_PAINTING_DESC,
-        Block_COLOR_PICKER,
-        Block_BUTTONS,
-        Block_BRUSHES,
-        Block_LAYER,
-    } type;
+void
+milton_save_block_list(Milton* milton)
+{
+    MiltonPersist* p = milton->persist;
+    for (sz block_index = 0; block_index < p->blocks.count; ++block_index)
+    {
 
-};
+    }
+}
 
 void
 milton_save_v6(Milton* milton)
@@ -391,15 +390,19 @@ milton_save_v6(Milton* milton)
 
         WRITE(&milton_magic, sizeof(u32), 1, fd);
 
-        milton_binary_version = milton->mlt_binary_version;
+        milton_binary_version = milton->persist->mlt_binary_version;
 
         WRITE(&milton_binary_version, sizeof(u32), 1, fd);
+        u32 size_of_canvas_view = (u32) sizeof CanvasView;
+
+        // TODO: canvas view padding
+        WRITE(&size_of_canvas_view, sizeof u32, 1, fd);
         WRITE(milton->view, sizeof(CanvasView), 1, fd);
 
-        num_layers = layer::number_of_layers(milton->canvas->root_layer);
-        WRITE(&num_layers, sizeof(i32), 1, fd);
         WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
+
         // Block:
+        milton_save_block_list(milton);
     }
 
 END:
@@ -414,8 +417,8 @@ END:
     }
     else {
         PATH_CHAR tmp_mlt_path[MAX_PATH] = {};
-        PATH_SNPRINTF(tmp_mlt_path, MAX_PATH, TO_PATH_STR("%s_NEW.mlt"), milton->mlt_file_path);
-        if ( !platform_move_file(tmp_fname, tmp_mlt_path/*milton->mlt_file_path*/) ) {
+        PATH_SNPRINTF(tmp_mlt_path, MAX_PATH, TO_PATH_STR("%s_NEW.mlt"), milton->persist->mlt_file_path);
+        if ( !platform_move_file(tmp_fname, tmp_mlt_path/*milton->persist->mlt_file_path*/) ) {
             milton_log("Could not replace filename in atomic save: [%s]\n", tmp_mlt_path);
         }
         else {
@@ -452,7 +455,7 @@ milton_save_preV6(Milton* milton)
 
         WRITE(&milton_magic, sizeof(u32), 1, fd);
 
-        milton_binary_version = milton->mlt_binary_version;
+        milton_binary_version = milton->persist->mlt_binary_version;
 
         WRITE(&milton_binary_version, sizeof(u32), 1, fd);
         WRITE(milton->view, sizeof(CanvasView), 1, fd);
@@ -574,7 +577,7 @@ END:
         if ( file_error == 0 ) {
             int close_ret = fclose(fd);
             if ( close_ret == 0 ) {
-                ok = platform_move_file(tmp_fname, milton->mlt_file_path);
+                ok = platform_move_file(tmp_fname, milton->persist->mlt_file_path);
                 if ( ok ) {
                     //  \o/
                     milton_save_postlude(milton);
@@ -603,7 +606,7 @@ END:
 void
 milton_save(Milton* milton)
 {
-    if ( milton->DEV_use_new_format_write ) {
+    if ( milton->persist->DEV_use_new_format_write ) {
         milton_save_v6(milton);
     }
     else {
