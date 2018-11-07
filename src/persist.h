@@ -8,16 +8,26 @@
 struct Milton;
 struct MiltonSettings;
 
+enum BlockType
+{
+    Block_PAINTING_DESC,
+    Block_COLOR_PICKER,
+    Block_BUTTONS,
+    Block_BRUSHES,
+    Block_LAYER,
+};
+
 struct SaveBlockHeader
 {
-    enum Type
+    BlockType type;
+
+    union
     {
-        Block_PAINTING_DESC,
-        Block_COLOR_PICKER,
-        Block_BUTTONS,
-        Block_BRUSHES,
-        Block_LAYER,
-    } type;
+        struct BlockLayer
+        {
+            i32 id;
+        } block_layer;
+    };
 
 };
 

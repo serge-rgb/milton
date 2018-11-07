@@ -478,7 +478,9 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->current_mode = MiltonMode::PEN;
     milton->last_mode = MiltonMode::PEN;
 
-    if (init_graphics) { milton->gl = arena_alloc_elem(&milton->root_arena, MiltonGLState); }
+    milton->render_data = gpu_allocate_render_data(&milton->root_arena);
+
+    milton->gl = arena_alloc_elem(&milton->root_arena, MiltonGLState);
     milton->gui = arena_alloc_elem(&milton->root_arena, MiltonGui);
     milton->settings = arena_alloc_elem(&milton->root_arena, MiltonSettings);
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
@@ -643,6 +645,18 @@ milton_reset_canvas_and_set_default(Milton* milton)
 
         exporter_init(&gui->exporter);
     }
+
+    // Set up blocks.
+    {
+        MiltonPersist* p = milton->persist;
+
+        push(&p->blocks, { Block_BRUSHES });
+        push(&p->blocks, { Block_BUTTONS });
+        push(&p->blocks, { Block_COLOR_PICKER });
+    }
+
+
+
     milton_update_brushes(milton);
 
     milton_set_default_canvas_file(milton);

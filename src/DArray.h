@@ -16,6 +16,13 @@ struct DArray
     i64     count;
     i64     capacity;
     T*      data;
+
+    T&
+    operator[](sz i)
+    {
+        mlt_assert(i < count);
+        return data[i];
+    }
 };
 
 template <typename T>
@@ -159,3 +166,4 @@ end(const DArray<T>& arr)
     }
     return result;
 }
+

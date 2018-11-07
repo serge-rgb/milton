@@ -51,11 +51,48 @@ milton_unset_last_canvas_fname()
     }
 }
 
+#define READ(address, size, num, fd) \
+        do { \
+            if (!fread_checked(address,size,num,fd))  { \
+                 goto END;\
+            } \
+        } while(0)
+
 void
 milton_load_v6(Milton* milton)
 {
+    char* failure = NULL;
 
+    FILE* fd = platform_fopen(milton->persist->mlt_file_path, TO_PATH_STR("rb"));
+
+    if ( fd ) {
+        u32 milton_magic = 0;
+        u32 milton_binary_version = 0;
+        READ(&milton_magic, sizeof(u32), 1, fd);
+        READ(&milton_binary_version, sizeof(u32), 1, fd);
+
+        if (milton_binary_version > MILTON_MINOR_VERSION) {
+            failure = "This file was created by a newer version of Milton";
+        }
+        // TODO: canvas view padding
+        u32 size_of_canvas_view = 0;
+        READ(&size_of_canvas_view, sizeof u32, 1, fd);
+        if (size_of_canvas_view != sizeof CanvasView) {
+            failure = "Unexpected size of CanvasView";
+            goto END;
+        }
+        else {
+            READ(milton->view, sizeof(CanvasView), 1, fd);
+        }
+
+        READ(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
+    }
+END:
+    if (failure) {
+        milton_log("File load error: [%s]\n", failure);
+    }
 }
+#undef READ
 
 void
 milton_load(Milton* milton)
@@ -345,14 +382,65 @@ END:
 #undef READ
 }
 
-void
-milton_save_block_list(Milton* milton)
-{
-    MiltonPersist* p = milton->persist;
-    for (sz block_index = 0; block_index < p->blocks.count; ++block_index)
-    {
+#define WRITE(address, sz, num, fd) \
+        do { \
+            if (!fwrite_checked(address, sz, num, fd)) { \
+                static char* msg = #address;\
+                failure = msg;\
+                goto END; \
+            }  \
+        } while(0);
 
+static char*
+save_block_brushes(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+
+    u16 num_brushes = 3;  // Brush, eraser, primitive.
+    WRITE(&num_brushes, sizeof(num_brushes), 1, fd);
+    WRITE(&milton->brushes, sizeof(Brush), num_brushes, fd);
+    WRITE(&milton->brush_sizes, sizeof(i32), num_brushes, fd);
+END:
+    return failure;
+}
+
+static char*
+save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
+{
+    char* failure = NULL;
+    switch(header->type) {
+        case Block_BRUSHES: {
+            failure = save_block_brushes(milton, fd);
+        } break;
+        case Block_BUTTONS: {
+
+        } break;
+        case Block_COLOR_PICKER: {
+
+        } break;
+        default: {
+            mlt_assert(!"block dispatch");
+        } break;
     }
+    return failure;
+}
+
+char*
+milton_save_block_list(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+    MiltonPersist* p = milton->persist;
+    for ( sz block_index = 0; block_index < p->blocks.count; ++block_index ) {
+        SaveBlockHeader* h = &p->blocks[block_index];
+        char* block_fail = save_block(milton, fd, h);
+
+        if (block_fail) {
+            failure = block_fail;
+            break;
+        }
+    }
+
+    return failure;
 }
 
 void
@@ -373,18 +461,8 @@ milton_save_v6(Milton* milton)
 
     FILE* fd = platform_fopen(tmp_fname, TO_PATH_STR("wb"));
 
-    b32 ok = true;
-
     char* failure = NULL;
     if ( fd ) {
-#define WRITE(address, sz, num, fd) \
-        do { \
-            if (!fwrite_checked(address, sz, num, fd)) { \
-                static char* msg = #address;\
-                failure = msg;\
-                goto END; \
-            }  \
-        } while(0);
 
         u32 milton_magic = MILTON_MAGIC_NUMBER;
 
@@ -402,7 +480,7 @@ milton_save_v6(Milton* milton)
         WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
         // Block:
-        milton_save_block_list(milton);
+        failure = milton_save_block_list(milton, fd);
     }
 
 END:

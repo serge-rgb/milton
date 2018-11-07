@@ -755,8 +755,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
     milton_log("UI scale is %f\n", platform.ui_scale);
     // Initialize milton
     {
-        milton->render_data = gpu_allocate_render_data(&milton->root_arena);
-
         PATH_CHAR* file_to_open_ = NULL;
         PATH_CHAR buffer[MAX_PATH] = {};
 

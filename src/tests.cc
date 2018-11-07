@@ -9,6 +9,8 @@ CALLBACK WinMain(HINSTANCE hInstance,
 
         milton_init(&milton, 0, 0, 1, TO_PATH_STR("TEST_loading.mlt"), MiltonInit_FOR_TEST);
 
+        milton_reset_canvas_and_set_default(&milton);
+
         milton_save_v6(&milton);
     }
 
