@@ -65,15 +65,26 @@ milton_load_v6(Milton* milton)
 
     FILE* fd = platform_fopen(milton->persist->mlt_file_path, TO_PATH_STR("rb"));
 
-    if ( fd ) {
+    if ( !fd ) {
+        failure = "could not open file";
+    }
+    else {
         u32 milton_magic = 0;
         u32 milton_binary_version = 0;
         READ(&milton_magic, sizeof(u32), 1, fd);
+
+        if ( milton_magic != MILTON_MAGIC_NUMBER ) {
+            failure = "wrong magic number";
+        }
+
         READ(&milton_binary_version, sizeof(u32), 1, fd);
 
         if (milton_binary_version > MILTON_MINOR_VERSION) {
             failure = "This file was created by a newer version of Milton";
         }
+
+        mlt_assert(milton_binary_version >= 6);
+
         // TODO: canvas view padding
         u32 size_of_canvas_view = 0;
         READ(&size_of_canvas_view, sizeof u32, 1, fd);
@@ -405,6 +416,22 @@ END:
 }
 
 static char*
+save_block_buttons(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+
+    return failure;
+}
+
+static char*
+save_block_color_picker(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+
+    return failure;
+}
+
+static char*
 save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
 {
     char* failure = NULL;
@@ -413,10 +440,10 @@ save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
             failure = save_block_brushes(milton, fd);
         } break;
         case Block_BUTTONS: {
-
+            failure = save_block_buttons(milton, fd);
         } break;
         case Block_COLOR_PICKER: {
-
+            failure = save_block_color_picker(milton, fd);
         } break;
         default: {
             mlt_assert(!"block dispatch");
@@ -494,10 +521,10 @@ END:
         milton_log("FAILED SAVE: [%s]\n");
     }
     else {
-        PATH_CHAR tmp_mlt_path[MAX_PATH] = {};
-        PATH_SNPRINTF(tmp_mlt_path, MAX_PATH, TO_PATH_STR("%s_NEW.mlt"), milton->persist->mlt_file_path);
-        if ( !platform_move_file(tmp_fname, tmp_mlt_path/*milton->persist->mlt_file_path*/) ) {
-            milton_log("Could not replace filename in atomic save: [%s]\n", tmp_mlt_path);
+        //PATH_CHAR tmp_mlt_path[MAX_PATH] = {};
+        //PATH_SNPRINTF(tmp_mlt_path, MAX_PATH, TO_PATH_STR("%s_NEW.mlt"), milton->persist->mlt_file_path);
+        if ( !platform_move_file(tmp_fname, milton->persist->mlt_file_path) ) {
+            milton_log("Could not replace filename in atomic save: [%s]\n", milton->persist->mlt_file_path);
         }
         else {
             // Success!

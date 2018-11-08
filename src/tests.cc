@@ -7,9 +7,12 @@ CALLBACK WinMain(HINSTANCE hInstance,
     {
         Milton milton = {};
 
-        milton_init(&milton, 0, 0, 1, TO_PATH_STR("TEST_loading.mlt"), MiltonInit_FOR_TEST);
+        PATH_CHAR* path = TO_PATH_STR("TEST_loading.mlt");
+        milton_init(&milton, 0, 0, 1, path, MiltonInit_FOR_TEST);
 
         milton_reset_canvas_and_set_default(&milton);
+
+        milton.persist->mlt_file_path = path;
 
         milton_save_v6(&milton);
     }

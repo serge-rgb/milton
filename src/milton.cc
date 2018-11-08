@@ -480,7 +480,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 
     milton->render_data = gpu_allocate_render_data(&milton->root_arena);
 
-    milton->gl = arena_alloc_elem(&milton->root_arena, MiltonGLState);
+    if (init_graphics) { milton->gl = arena_alloc_elem(&milton->root_arena, MiltonGLState); }
     milton->gui = arena_alloc_elem(&milton->root_arena, MiltonGui);
     milton->settings = arena_alloc_elem(&milton->root_arena, MiltonSettings);
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
@@ -563,9 +563,12 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 void
 upload_gui(Milton* milton)
 {
-    gpu_update_canvas(milton->render_data, milton->canvas, milton->view);
-    gpu_resize(milton->render_data, milton->view);
-    gpu_update_picker(milton->render_data, &milton->gui->picker);
+    if (milton->gl)
+    {
+        gpu_update_canvas(milton->render_data, milton->canvas, milton->view);
+        gpu_resize(milton->render_data, milton->view);
+        gpu_update_picker(milton->render_data, &milton->gui->picker);
+    }
 }
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
