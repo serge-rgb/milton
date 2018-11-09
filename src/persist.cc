@@ -51,60 +51,6 @@ milton_unset_last_canvas_fname()
     }
 }
 
-#define READ(address, size, num, fd) \
-        do { \
-            if (!fread_checked(address,size,num,fd))  { \
-                 goto END;\
-            } \
-        } while(0)
-
-void
-milton_load_v6(Milton* milton)
-{
-    char* failure = NULL;
-
-    FILE* fd = platform_fopen(milton->persist->mlt_file_path, TO_PATH_STR("rb"));
-
-    if ( !fd ) {
-        failure = "could not open file";
-    }
-    else {
-        u32 milton_magic = 0;
-        u32 milton_binary_version = 0;
-        READ(&milton_magic, sizeof(u32), 1, fd);
-
-        if ( milton_magic != MILTON_MAGIC_NUMBER ) {
-            failure = "wrong magic number";
-        }
-
-        READ(&milton_binary_version, sizeof(u32), 1, fd);
-
-        if (milton_binary_version > MILTON_MINOR_VERSION) {
-            failure = "This file was created by a newer version of Milton";
-        }
-
-        mlt_assert(milton_binary_version >= 6);
-
-        // TODO: canvas view padding
-        u32 size_of_canvas_view = 0;
-        READ(&size_of_canvas_view, sizeof u32, 1, fd);
-        if (size_of_canvas_view != sizeof CanvasView) {
-            failure = "Unexpected size of CanvasView";
-            goto END;
-        }
-        else {
-            READ(milton->view, sizeof(CanvasView), 1, fd);
-        }
-
-        READ(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
-    }
-END:
-    if (failure) {
-        milton_log("File load error: [%s]\n", failure);
-    }
-}
-#undef READ
-
 void
 milton_load(Milton* milton)
 {
@@ -420,6 +366,18 @@ save_block_buttons(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
 
+    MiltonGui* gui = milton->gui;
+    // Count buttons
+    i32 button_count = 0;
+    for (ColorButton* b = gui->picker.color_buttons; b!= NULL; b = b->next) { button_count++; }
+    // Write
+    WRITE(&button_count, sizeof(i32), 1, fd);
+    for ( ColorButton* b = gui->picker.color_buttons;
+          b!= NULL;
+          b = b->next ) {
+        WRITE(&b->rgba, sizeof(v4f), 1, fd);
+    }
+END:
     return failure;
 }
 
@@ -428,6 +386,10 @@ save_block_color_picker(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
 
+    v3f rgb = gui_get_picker_rgb(milton->gui);
+    WRITE(&rgb, sizeof(rgb), 1, fd);
+
+END:
     return failure;
 }
 
@@ -435,6 +397,8 @@ static char*
 save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
 {
     char* failure = NULL;
+    WRITE(header, sizeof SaveBlockHeader, 1, fd);
+
     switch(header->type) {
         case Block_BRUSHES: {
             failure = save_block_brushes(milton, fd);
@@ -449,16 +413,18 @@ save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
             mlt_assert(!"block dispatch");
         } break;
     }
+END:
     return failure;
 }
 
-char*
-milton_save_block_list(Milton* milton, FILE* fd)
+static char*
+save_block_list(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
     MiltonPersist* p = milton->persist;
     for ( sz block_index = 0; block_index < p->blocks.count; ++block_index ) {
         SaveBlockHeader* h = &p->blocks[block_index];
+
         char* block_fail = save_block(milton, fd, h);
 
         if (block_fail) {
@@ -469,6 +435,54 @@ milton_save_block_list(Milton* milton, FILE* fd)
 
     return failure;
 }
+
+#define READ(address, size, num, fd) \
+        do { \
+            if (!fread_checked(address,size,num,fd))  { \
+                static char* msg = #address;\
+                failure = msg;\
+                goto END;\
+            } \
+        } while(0)
+
+
+static char*
+read_block_list(Milton* milton, u32 block_count, FILE* fd)
+{
+    char* failure = NULL;
+    MiltonPersist* p = milton->persist;
+    mlt_assert(p->blocks.count == 0);
+
+    for (u32 block_i = 0; block_i < block_count; ++block_i) {
+        SaveBlockHeader header = {};
+        READ(&header, sizeof SaveBlockHeader, 1, fd);
+
+        switch (header.type) {
+            case Block_PAINTING_DESC: {
+
+            } break;
+            case Block_COLOR_PICKER: {
+
+            } break;
+            case Block_BUTTONS: {
+
+            } break;
+            case Block_BRUSHES: {
+
+            } break;
+            case Block_LAYER: {
+
+            } break;
+            default: {
+                failure = "Invalid block identifier.";
+            }
+        }
+    }
+
+END:
+    return failure;
+}
+
 
 void
 milton_save_v6(Milton* milton)
@@ -506,8 +520,14 @@ milton_save_v6(Milton* milton)
 
         WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
+        u16 block_size = (u16)sizeof SaveBlockHeader;
+        WRITE(&block_size, sizeof u16, 1, fd);
+
+        u32 block_count = (u32)milton->persist->blocks.count;
+        WRITE(&block_count, sizeof(u32), 1, fd);
+
         // Block:
-        failure = milton_save_block_list(milton, fd);
+        failure = save_block_list(milton, fd);
     }
 
 END:
@@ -534,6 +554,62 @@ END:
 
 #undef WRITE
 }
+
+void
+milton_load_v6(Milton* milton)
+{
+    char* failure = NULL;
+
+    FILE* fd = platform_fopen(milton->persist->mlt_file_path, TO_PATH_STR("rb"));
+
+    if ( !fd ) {
+        failure = "could not open file";
+    }
+    else {
+        u32 milton_magic = 0;
+        u32 milton_binary_version = 0;
+        READ(&milton_magic, sizeof(u32), 1, fd);
+
+        if ( milton_magic != MILTON_MAGIC_NUMBER ) {
+            failure = "wrong magic number";
+        }
+
+        READ(&milton_binary_version, sizeof(u32), 1, fd);
+
+        if (milton_binary_version > MILTON_MINOR_VERSION) {
+            failure = "This file was created by a newer version of Milton";
+        }
+
+        mlt_assert(milton_binary_version >= 6);
+
+        // TODO: canvas view padding
+        u32 size_of_canvas_view = 0;
+        READ(&size_of_canvas_view, sizeof u32, 1, fd);
+        if (size_of_canvas_view != sizeof CanvasView) {
+            failure = "Unexpected size of CanvasView";
+            goto END;
+        }
+        else {
+            READ(milton->view, sizeof(CanvasView), 1, fd);
+        }
+
+        READ(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
+
+        milton->persist->blocks.count = 0;
+        // TODO: clear block header memory?
+
+        u32 block_count = 0;
+        READ(&block_count, sizeof(u32), 1, fd);
+
+        failure = read_block_list(milton, block_count, fd);
+    }
+END:
+    if (failure) {
+        milton_log("File load error: [%s]\n", failure);
+    }
+}
+#undef READ
+
 
 void
 milton_save_preV6(Milton* milton)

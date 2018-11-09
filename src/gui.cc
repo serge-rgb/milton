@@ -771,30 +771,34 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
 
 #if MILTON_DEBUG
-    ImGui::SetNextWindowSize({500, 200}, ImGuiSetCond_FirstUseEver);
+    static bool file_format_window = false;
 
-    if ( ImGui::Begin("New file format") ) {
-        ImGui::Text("Read new file format");
-        ImGui::SameLine();
-        if ( ImGui::Checkbox("##read", &milton->persist->DEV_use_new_format_read) ) {
-        }
-        ImGui::SameLine();
+    if (file_format_window) {
+        ImGui::SetNextWindowSize({500, 200}, ImGuiSetCond_FirstUseEver);
 
-        if ( ImGui::Button("Read once") ) {
+        if ( ImGui::Begin("New file format") ) {
+            ImGui::Text("Read new file format");
+            ImGui::SameLine();
+            if ( ImGui::Checkbox("##read", &milton->persist->DEV_use_new_format_read) ) {
+            }
+            ImGui::SameLine();
 
-        }
+            if ( ImGui::Button("Read once") ) {
 
-        ImGui::Text("Save new file format");
-        ImGui::SameLine();
-        if ( ImGui::Checkbox("##write", &milton->persist->DEV_use_new_format_read) ) {
-        }
+            }
 
-        ImGui::SameLine();
+            ImGui::Text("Save new file format");
+            ImGui::SameLine();
+            if ( ImGui::Checkbox("##write", &milton->persist->DEV_use_new_format_read) ) {
+            }
 
-        if ( ImGui::Button("Write once") ) {
-            milton_save_v6(milton);
-        }
-    } ImGui::End();
+            ImGui::SameLine();
+
+            if ( ImGui::Button("Write once") ) {
+                milton_save_v6(milton);
+            }
+        } ImGui::End();
+    }
 #endif
 
 #if MILTON_ENABLE_PROFILING

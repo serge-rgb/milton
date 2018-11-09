@@ -10,6 +10,8 @@ struct MiltonSettings;
 
 enum BlockType
 {
+    Block_INVALID,
+
     Block_PAINTING_DESC,
     Block_COLOR_PICKER,
     Block_BUTTONS,
@@ -17,9 +19,10 @@ enum BlockType
     Block_LAYER,
 };
 
+#pragma pack(push, 1)
 struct SaveBlockHeader
 {
-    BlockType type;
+    u16 type; /*BlockType*/
 
     union
     {
@@ -30,6 +33,7 @@ struct SaveBlockHeader
     };
 
 };
+#pragma pack(pop)
 
 
 struct MiltonPersist
