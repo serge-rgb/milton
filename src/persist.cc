@@ -15,8 +15,6 @@
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
-// Will allocate memory so that if the read fails, we will restore what was
-// originally in there.
 static b32
 fread_checked(void* dst, size_t sz, size_t count, FILE* fd)
 {
@@ -339,6 +337,18 @@ END:
 #undef READ
 }
 
+#define END_IF_FAILED(expr)\
+    do {\
+        failure = expr;\
+        if (failure) { \
+            goto END; \
+        }\
+    } while (0)
+
+#define FAIL(msg) \
+    failure = msg; \
+    goto END;
+
 #define WRITE(address, sz, num, fd) \
         do { \
             if (!fwrite_checked(address, sz, num, fd)) { \
@@ -445,6 +455,50 @@ save_block_list(Milton* milton, FILE* fd)
             } \
         } while(0)
 
+static char*
+read_block_brushes(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+
+    u16 num_brushes = 3;  // Brush, eraser, primitive.
+    READ(&num_brushes, sizeof(num_brushes), 1, fd);
+
+    if (num_brushes != 3) {
+        FAIL("invalid number of brushes");
+    }
+
+    READ(&milton->brushes, sizeof(Brush), num_brushes, fd);
+    READ(&milton->brush_sizes, sizeof(i32), num_brushes, fd);
+END:
+    return failure;
+}
+
+static char*
+read_block_buttons(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+
+    MiltonGui* gui = milton->gui;
+    // Count buttons
+    i32 button_count = 0;
+    for (ColorButton* b = gui->picker.color_buttons; b!= NULL; b = b->next) { button_count++; }
+
+    i32 button_count_in_file = 0;
+    READ(&button_count_in_file, sizeof(i32), 1, fd);
+
+    if (button_count_in_file != button_count) {
+        FAIL("Unexpected number of buttons in file");
+    }
+    for ( ColorButton* b = gui->picker.color_buttons;
+          b!= NULL;
+          b = b->next ) {
+        READ(&b->rgba, sizeof(v4f), 1, fd);
+    }
+END:
+    return failure;
+}
+
+
 
 static char*
 read_block_list(Milton* milton, u32 block_count, FILE* fd)
@@ -465,16 +519,17 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
 
             } break;
             case Block_BUTTONS: {
-
+                END_IF_FAILED ( read_block_buttons(milton, fd) );
             } break;
             case Block_BRUSHES: {
-
+                END_IF_FAILED ( read_block_brushes(milton, fd) );
             } break;
             case Block_LAYER: {
 
             } break;
             default: {
                 failure = "Invalid block identifier.";
+                goto END;
             }
         }
     }
@@ -597,6 +652,14 @@ milton_load_v6(Milton* milton)
 
         milton->persist->blocks.count = 0;
         // TODO: clear block header memory?
+
+        u16 block_size = 0;
+        READ(&block_size, sizeof u16, 1, fd);
+
+        if (block_size != sizeof SaveBlockHeader) {
+            failure = "Invalid size for block header";
+            goto END;
+        }
 
         u32 block_count = 0;
         READ(&block_count, sizeof(u32), 1, fd);
