@@ -656,6 +656,8 @@ milton_reset_canvas_and_set_default(Milton* milton)
         push(&p->blocks, { Block_BRUSHES });
         push(&p->blocks, { Block_BUTTONS });
         push(&p->blocks, { Block_COLOR_PICKER });
+        push(&p->blocks, { Block_LAYER_DESCRIPTIONS });
+
     }
 
 

@@ -404,6 +404,44 @@ END:
 }
 
 static char*
+save_block_layer_descriptions(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+
+    i32 num_layers = layer::number_of_layers(milton->canvas->root_layer);
+    WRITE(&num_layers, sizeof (decltype(num_layers)), 1, fd);
+    WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
+
+    Layer* layer = milton->canvas->root_layer;
+    for (i32 layer_i = 0 ; layer_i < num_layers; ++layer_i) {
+        mlt_assert(layer);
+        i32 num_effects = 0;
+        for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) { ++num_effects; }
+
+        WRITE(&layer->id, sizeof i32, 1, fd);
+        f32 alpha = layer->alpha;
+        WRITE(&alpha, sizeof f32, 1, fd);
+
+        WRITE(&num_effects, sizeof i32, 1, fd);
+
+        for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) {
+            WRITE(&e->type, sizeof(e->type), 1, fd);
+            WRITE(&e->enabled, sizeof(e->enabled), 1, fd);
+            switch (e->type) {
+                case LayerEffectType_BLUR: {
+                    WRITE(&e->blur.original_scale, sizeof(e->blur.original_scale), 1, fd);
+                    WRITE(&e->blur.kernel_size, sizeof(e->blur.kernel_size), 1, fd);
+                } break;
+            }
+        }
+
+        layer = layer->next;
+    }
+END:
+    return failure;
+}
+
+static char*
 save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
 {
     char* failure = NULL;
@@ -418,6 +456,9 @@ save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
         } break;
         case Block_COLOR_PICKER: {
             failure = save_block_color_picker(milton, fd);
+        } break;
+        case Block_LAYER_DESCRIPTIONS: {
+            failure = save_block_layer_descriptions(milton, fd);
         } break;
         default: {
             mlt_assert(!"block dispatch");
@@ -498,6 +539,13 @@ END:
     return failure;
 }
 
+static char*
+read_block_layer_descriptions(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+END:
+    return failure;
+}
 
 
 static char*
@@ -512,11 +560,11 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
         READ(&header, sizeof SaveBlockHeader, 1, fd);
 
         switch (header.type) {
-            case Block_PAINTING_DESC: {
+            case Block_LAYER_DESCRIPTIONS: {
 
             } break;
             case Block_COLOR_PICKER: {
-
+                END_IF_FAILED ( read_block_layer_descriptions(milton, fd) );
             } break;
             case Block_BUTTONS: {
                 END_IF_FAILED ( read_block_buttons(milton, fd) );
@@ -524,7 +572,7 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
             case Block_BRUSHES: {
                 END_IF_FAILED ( read_block_brushes(milton, fd) );
             } break;
-            case Block_LAYER: {
+            case Block_LAYER_CONTENT: {
 
             } break;
             default: {

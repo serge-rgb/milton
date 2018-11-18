@@ -12,11 +12,11 @@ enum BlockType
 {
     Block_INVALID,
 
-    Block_PAINTING_DESC,
     Block_COLOR_PICKER,
     Block_BUTTONS,
     Block_BRUSHES,
-    Block_LAYER,
+    Block_LAYER_DESCRIPTIONS,
+    Block_LAYER_CONTENT,
 };
 
 #pragma pack(push, 1)

@@ -7,7 +7,7 @@ set platform=x64
 
 if "%1"=="x86" set platform=x86
 
-set warnFlags=
+set warnFlags=-FC
 set includeFlags=-I..\third_party\SDL2-2.0.8\include -I..\third_party\imgui\ -I..\third_party
 
 if not exist build mkdir build
