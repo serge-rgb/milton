@@ -336,8 +336,7 @@ END:
             milton->canvas->layer_guid = layer_guid;
 
             // Update GPU
-            milton_set_background_color(milton, milton->view->background_color);
-            gpu_update_picker(milton->render_data, &milton->gui->picker);
+            milton->flags |= MiltonStateFlags_JUST_SAVED;
         }
     } else {
         milton_log("milton_load: Could not open file!\n");
@@ -357,7 +356,7 @@ milton_persist_set_blocks_for_painting(Milton* milton)
     push(&p->blocks, { Block_BRUSHES });
     push(&p->blocks, { Block_BUTTONS });
     push(&p->blocks, { Block_COLOR_PICKER });
-    push(&p->blocks, { Block_LAYER_DESCRIPTIONS });
+    push(&p->blocks, { Block_PAINTING_DESCRIPTION });
 
     for (Layer* layer = milton->canvas->root_layer;
          layer;
@@ -438,9 +437,16 @@ END:
 }
 
 static char*
-save_block_layer_descriptions(Milton* milton, FILE* fd)
+save_block_painting_description(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
+
+    // TODO: hard code struct sizes used by file format
+    u32 size_of_canvas_view = sizeof CanvasView;
+    WRITE(&size_of_canvas_view, sizeof u32, 1, fd);
+    WRITE(milton->view, sizeof(CanvasView), 1, fd);
+
+    WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
     i32 num_layers = layer::number_of_layers(milton->canvas->root_layer);
     WRITE(&num_layers, sizeof (decltype(num_layers)), 1, fd);
@@ -453,6 +459,8 @@ save_block_layer_descriptions(Milton* milton, FILE* fd)
         for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) { ++num_effects; }
 
         WRITE(&layer->id, sizeof i32, 1, fd);
+
+        WRITE(&layer->flags, sizeof i32, 1, fd);
 
         f32 alpha = layer->alpha;
         WRITE(&alpha, sizeof f32, 1, fd);
@@ -528,8 +536,8 @@ save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
         case Block_COLOR_PICKER: {
             failure = save_block_color_picker(milton, fd);
         } break;
-        case Block_LAYER_DESCRIPTIONS: {
-            failure = save_block_layer_descriptions(milton, fd);
+        case Block_PAINTING_DESCRIPTION: {
+            failure = save_block_painting_description(milton, fd);
         } break;
         case Block_LAYER_CONTENT: {
             failure = save_block_layer_content(milton, fd, header->block_layer.id);
@@ -628,10 +636,26 @@ END:
 }
 
 static char*
-read_block_layer_descriptions(Milton* milton, FILE* fd)
+read_block_painting_description(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
     CanvasState* canvas = milton->canvas;
+
+    u32 size_of_canvas_view = 0;
+    READ(&size_of_canvas_view, sizeof u32, 1, fd);
+    if (size_of_canvas_view != sizeof CanvasView) {
+        failure = "Unexpected size of CanvasView";
+        goto END;
+    }
+    else {
+        READ(milton->view, sizeof(CanvasView), 1, fd);
+    }
+
+    // TODO: set working layer id
+
+
+
+    READ(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
     i32 num_layers = 0;
     READ(&num_layers, sizeof (decltype(num_layers)), 1, fd);
@@ -646,6 +670,8 @@ read_block_layer_descriptions(Milton* milton, FILE* fd)
         milton_new_layer_with_id(milton, id);
         Layer* layer = milton->canvas->working_layer;
         mlt_assert(layer);
+
+        READ(&layer->flags, sizeof i32, 1, fd);
 
         READ(&layer->alpha, sizeof f32, 1, fd);
 
@@ -728,8 +754,8 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
         READ(&header, sizeof SaveBlockHeader, 1, fd);
 
         switch (header.type) {
-            case Block_LAYER_DESCRIPTIONS: {
-                END_IF_FAILED ( read_block_layer_descriptions(milton, fd) );
+            case Block_PAINTING_DESCRIPTION: {
+                END_IF_FAILED ( read_block_painting_description(milton, fd) );
             } break;
             case Block_LAYER_CONTENT: {
                 END_IF_FAILED ( read_block_layer_content(milton, fd, header.block_layer.id) );
@@ -854,7 +880,7 @@ milton_load_v6_file(Milton* milton, PATH_CHAR* fname)
     }
     else {
         milton_reset_canvas(milton);
-        gpu_free_strokes(milton->render_data, milton->canvas);
+        gpu_free_strokes(milton->render_data, milton->canvas);  // TODO: Probably do this in just_loaded handler
 
         u32 milton_magic = 0;
         u32 milton_binary_version = 0;
@@ -871,19 +897,6 @@ milton_load_v6_file(Milton* milton, PATH_CHAR* fname)
         }
 
         mlt_assert(milton_binary_version >= 6);
-
-        // TODO: canvas view padding
-        u32 size_of_canvas_view = 0;
-        READ(&size_of_canvas_view, sizeof u32, 1, fd);
-        if (size_of_canvas_view != sizeof CanvasView) {
-            failure = "Unexpected size of CanvasView";
-            goto END;
-        }
-        else {
-            READ(milton->view, sizeof(CanvasView), 1, fd);
-        }
-
-        READ(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
         milton->persist->blocks.count = 0;
         // TODO: clear block header memory?
@@ -909,6 +922,9 @@ END:
 
     if (failure) {
         milton_log("File load error: [%s]\n", failure);
+    }
+    else {
+        milton->flags |= MiltonStateFlags_JUST_SAVED;
     }
 }
 #undef READ

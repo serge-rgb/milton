@@ -164,7 +164,7 @@ enum MiltonStateFlags
     MiltonStateFlags_RUNNING                = 1 << 0,
                                            // 1 << 1 unused
     MiltonStateFlags_REQUEST_QUALITY_REDRAW = 1 << 2,
-                                           // 1 << 3 unused
+    MiltonStateFlags_JUST_SAVED             = 1 << 3,
     MiltonStateFlags_NEW_CANVAS             = 1 << 4,
     MiltonStateFlags_DEFAULT_CANVAS         = 1 << 5,
     MiltonStateFlags_IGNORE_NEXT_CLICKUP    = 1 << 6,  // When selecting eyedropper from menu, avoid the click from selecting the color...

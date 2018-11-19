@@ -656,7 +656,7 @@ milton_reset_canvas_and_set_default(Milton* milton)
         push(&p->blocks, { Block_BRUSHES });
         push(&p->blocks, { Block_BUTTONS });
         push(&p->blocks, { Block_COLOR_PICKER });
-        push(&p->blocks, { Block_LAYER_DESCRIPTIONS });
+        push(&p->blocks, { Block_PAINTING_DESCRIPTION });
 
         for (Layer* layer = milton->canvas->root_layer;
             layer;
@@ -1332,6 +1332,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             }
         }
 
+
         // About to quit.
         if ( !(milton->flags & MiltonStateFlags_RUNNING) ) {
 
@@ -1349,6 +1350,13 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
             debug_memory_dump_allocations();
         }
+    }
+
+    // Update render resources after loading
+    if (milton->flags & MiltonStateFlags_JUST_SAVED) {
+        milton_set_background_color(milton, milton->view->background_color);
+        gpu_update_picker(milton->render_data, &milton->gui->picker);
+        milton->flags &= ~MiltonStateFlags_JUST_SAVED;
     }
 
     i32 view_x = 0;

@@ -15,7 +15,7 @@ enum BlockType
     Block_COLOR_PICKER,
     Block_BUTTONS,
     Block_BRUSHES,
-    Block_LAYER_DESCRIPTIONS,
+    Block_PAINTING_DESCRIPTION,
     Block_LAYER_CONTENT,
 };
 

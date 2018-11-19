@@ -39,7 +39,7 @@ struct Layer
     StrokeList strokes;
     char    name[MAX_LAYER_NAME_LEN];
 
-    i32     flags;  // LayerFlags[
+    i32     flags;  // LayerFlags
 
     float alpha;
 
