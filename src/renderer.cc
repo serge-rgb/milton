@@ -1345,7 +1345,6 @@ gpu_render_canvas(RenderData* r, i32 view_x, i32 view_y,
                             // Box filter implementation uses the separable property.
                             // Apply horizontal pass and then vertical pass.
                             int kernel_size = e->blur.kernel_size * e->blur.original_scale / r->scale;
-                            kernel_size = min(200, kernel_size);
                             box_filter_pass(r, kernel_size, BoxFilterPass_VERTICAL);
                             swap(out_texture, in_texture);
                             glBindTexture(texture_target, in_texture);

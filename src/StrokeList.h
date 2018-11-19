@@ -39,3 +39,8 @@ Stroke pop(StrokeList* list);
 Stroke* peek(StrokeList* list);
 void reset(StrokeList* list);
 i64 count(StrokeList* list);
+
+struct StrokeIterator;
+
+Stroke* stroke_iter_init(StrokeList* list, StrokeIterator* iter);
+Stroke* stroke_iter_next(StrokeIterator* iter);

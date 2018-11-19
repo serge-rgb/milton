@@ -658,6 +658,15 @@ milton_reset_canvas_and_set_default(Milton* milton)
         push(&p->blocks, { Block_COLOR_PICKER });
         push(&p->blocks, { Block_LAYER_DESCRIPTIONS });
 
+        for (Layer* layer = milton->canvas->root_layer;
+            layer;
+            layer = layer->next) {
+            SaveBlockHeader header = {};
+            header.type = Block_LAYER_CONTENT;
+            header.block_layer.id = layer->id;
+            push(&p->blocks,  header);
+        }
+
     }
 
 
@@ -746,10 +755,16 @@ milton_new_layer(Milton* milton)
     CanvasState* canvas = milton->canvas;
     i32 id = canvas->layer_guid++;
     milton_log("Increased guid to %d\n", canvas->layer_guid);
+    milton_new_layer_with_id(milton, id);
+}
 
+void
+milton_new_layer_with_id(Milton* milton, i32 new_id)
+{
+    CanvasState* canvas = milton->canvas;
     Layer* layer = arena_alloc_elem(&canvas->arena, Layer);
     {
-        layer->id = id;
+        layer->id = new_id;
         layer->flags = LayerFlags_VISIBLE;
         layer->strokes.arena = &canvas->arena;
         layer->alpha = 1.0f;
@@ -889,7 +904,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     b32 end_stroke = (input->flags & MiltonInputFlags_END_STROKE);
     b32 do_full_redraw = false;
     b32 brush_outline_should_draw = false;
-    int render_flags = RenderDataFlags_NONE;
+    int render_flags = RenderDataFlags_NONE | RenderDataFlags_WITH_BLUR;
 
     b32 draw_custom_rectangle = false;  // Custom rectangle used for new strokes, undo/redo.
     Rect custom_rectangle = rect_without_size();

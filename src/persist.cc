@@ -15,6 +15,15 @@
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
+
+#pragma pack(push, 1)
+struct PersistStrokePoint
+{
+    v2l point;
+    f32 pressure;
+};
+#pragma pack(pop)
+
 static b32
 fread_checked(void* dst, size_t sz, size_t count, FILE* fd)
 {
@@ -337,6 +346,31 @@ END:
 #undef READ
 }
 
+void
+milton_persist_set_blocks_for_painting(Milton* milton)
+{
+    // Set up blocks.
+    MiltonPersist* p = milton->persist;
+
+    reset(&p->blocks);
+
+    push(&p->blocks, { Block_BRUSHES });
+    push(&p->blocks, { Block_BUTTONS });
+    push(&p->blocks, { Block_COLOR_PICKER });
+    push(&p->blocks, { Block_LAYER_DESCRIPTIONS });
+
+    for (Layer* layer = milton->canvas->root_layer;
+         layer;
+         layer = layer->next) {
+        SaveBlockHeader header = {};
+        header.type = Block_LAYER_CONTENT;
+        header.block_layer.id = layer->id;
+        push(&p->blocks,  header);
+    }
+
+
+}
+
 #define END_IF_FAILED(expr)\
     do {\
         failure = expr;\
@@ -419,6 +453,7 @@ save_block_layer_descriptions(Milton* milton, FILE* fd)
         for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) { ++num_effects; }
 
         WRITE(&layer->id, sizeof i32, 1, fd);
+
         f32 alpha = layer->alpha;
         WRITE(&alpha, sizeof f32, 1, fd);
 
@@ -432,11 +467,47 @@ save_block_layer_descriptions(Milton* milton, FILE* fd)
                     WRITE(&e->blur.original_scale, sizeof(e->blur.original_scale), 1, fd);
                     WRITE(&e->blur.kernel_size, sizeof(e->blur.kernel_size), 1, fd);
                 } break;
+                default : {
+                    mlt_assert("Leyer effect save not implemented.");
+                } break;
             }
         }
 
         layer = layer->next;
     }
+END:
+    return failure;
+}
+
+static char*
+save_block_layer_content(Milton* milton, FILE* fd, i32 layer_id)
+{
+    char* failure = NULL;
+    StrokeIterator stroke_iter = {};
+
+    Layer* layer = layer::get_by_id(milton->canvas->root_layer, layer_id);
+
+    i32 num_strokes = count(&layer->strokes);
+    WRITE(&num_strokes, sizeof i32, 1, fd);
+
+    Stroke* stroke = NULL;
+
+    for (stroke = stroke_iter_init(&layer->strokes, &stroke_iter);
+         stroke != NULL;
+         stroke = stroke_iter_next(&stroke_iter)) {
+
+        WRITE(&stroke->brush, sizeof Brush, 1, fd);
+        WRITE(&stroke->num_points, sizeof i32, 1, fd);
+
+        // TODO: Is this really slow?
+        for (i32 point_i = 0; point_i < stroke->num_points; ++point_i) {
+            PersistStrokePoint point /*={}*/;
+            point.point = stroke->points[point_i];
+            point.pressure = stroke->pressures[point_i];
+            WRITE(&point, sizeof PersistStrokePoint, 1, fd);
+        }
+    }
+
 END:
     return failure;
 }
@@ -459,6 +530,9 @@ save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
         } break;
         case Block_LAYER_DESCRIPTIONS: {
             failure = save_block_layer_descriptions(milton, fd);
+        } break;
+        case Block_LAYER_CONTENT: {
+            failure = save_block_layer_content(milton, fd, header->block_layer.id);
         } break;
         default: {
             mlt_assert(!"block dispatch");
@@ -515,6 +589,20 @@ END:
 }
 
 static char*
+read_block_color_picker(Milton* milton, FILE* fd)
+{
+    char* failure = NULL;
+
+    v3f rgb = {};
+    READ(&rgb, sizeof(rgb), 1, fd);
+    gui_picker_from_rgb(&milton->gui->picker, rgb);
+
+END:
+    return failure;
+}
+
+
+static char*
 read_block_buttons(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
@@ -543,6 +631,86 @@ static char*
 read_block_layer_descriptions(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
+    CanvasState* canvas = milton->canvas;
+
+    i32 num_layers = 0;
+    READ(&num_layers, sizeof (decltype(num_layers)), 1, fd);
+
+    i32 layer_guid = 0;
+    READ(&layer_guid, sizeof(i32), 1, fd);
+
+    for (i32 layer_i = 0 ; layer_i < num_layers; ++layer_i) {
+        i32 id = 0;
+        READ(&id, sizeof i32, 1, fd);
+
+        milton_new_layer_with_id(milton, id);
+        Layer* layer = milton->canvas->working_layer;
+        mlt_assert(layer);
+
+        READ(&layer->alpha, sizeof f32, 1, fd);
+
+        i32 num_effects = 0;
+
+        READ(&num_effects, sizeof i32, 1, fd);
+        if ( num_effects > 0 ) {
+            LayerEffect** e = &layer->effects;
+            for ( i64 i = 0; i < num_effects; ++i ) {
+                mlt_assert(*e == NULL);
+                *e = arena_alloc_elem(&canvas->arena, LayerEffect);
+                READ(&(*e)->type, sizeof((*e)->type), 1, fd);
+                READ(&(*e)->enabled, sizeof((*e)->enabled), 1, fd);
+                switch ((*e)->type) {
+                    case LayerEffectType_BLUR: {
+                        READ(&(*e)->blur.original_scale, sizeof((*e)->blur.original_scale), 1, fd);
+                        READ(&(*e)->blur.kernel_size, sizeof((*e)->blur.kernel_size), 1, fd);
+                    } break;
+                }
+                e = &(*e)->next;
+            }
+        }
+    }
+
+    milton->canvas->layer_guid = layer_guid;
+END:
+    return failure;
+}
+
+static char*
+read_block_layer_content(Milton* milton, FILE* fd, i32 layer_id)
+{
+    char* failure = NULL;
+    CanvasState* canvas = milton->canvas;
+
+    Layer* layer = layer::get_by_id(milton->canvas->root_layer, layer_id);
+
+    mlt_assert(count(&layer->strokes) == 0);
+
+    i32 num_strokes = 0;
+    READ(&num_strokes, sizeof i32, 1, fd);
+
+    Stroke* stroke = NULL;
+
+    for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
+        Stroke stroke = {};
+        READ(&stroke.brush, sizeof Brush, 1, fd);
+        READ(&stroke.num_points, sizeof i32, 1, fd);
+
+        stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
+        stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
+
+        for (i32 point_i = 0; point_i < stroke.num_points; ++point_i) {
+            PersistStrokePoint point = {};
+            READ(&point, sizeof PersistStrokePoint, 1, fd);
+
+            stroke.points[point_i] = point.point;
+            stroke.pressures[point_i] = point.pressure;
+
+        }
+        stroke.layer_id = layer_id;
+        stroke.bounding_rect = bounding_box_for_stroke(&stroke);
+        layer::layer_push_stroke(layer, stroke);
+    }
+
 END:
     return failure;
 }
@@ -561,19 +729,19 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
 
         switch (header.type) {
             case Block_LAYER_DESCRIPTIONS: {
-
+                END_IF_FAILED ( read_block_layer_descriptions(milton, fd) );
+            } break;
+            case Block_LAYER_CONTENT: {
+                END_IF_FAILED ( read_block_layer_content(milton, fd, header.block_layer.id) );
             } break;
             case Block_COLOR_PICKER: {
-                END_IF_FAILED ( read_block_layer_descriptions(milton, fd) );
+                END_IF_FAILED ( read_block_color_picker(milton, fd) );
             } break;
             case Block_BUTTONS: {
                 END_IF_FAILED ( read_block_buttons(milton, fd) );
             } break;
             case Block_BRUSHES: {
                 END_IF_FAILED ( read_block_brushes(milton, fd) );
-            } break;
-            case Block_LAYER_CONTENT: {
-
             } break;
             default: {
                 failure = "Invalid block identifier.";
@@ -589,6 +757,12 @@ END:
 
 void
 milton_save_v6(Milton* milton)
+{
+    milton_save_v6_file(milton, milton->persist->mlt_file_path);
+}
+
+void
+milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
 {
     // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
     // TODO: is this still needed?
@@ -644,15 +818,19 @@ END:
         milton_log("FAILED SAVE: [%s]\n");
     }
     else {
-        //PATH_CHAR tmp_mlt_path[MAX_PATH] = {};
-        //PATH_SNPRINTF(tmp_mlt_path, MAX_PATH, TO_PATH_STR("%s_NEW.mlt"), milton->persist->mlt_file_path);
-        if ( !platform_move_file(tmp_fname, milton->persist->mlt_file_path) ) {
-            milton_log("Could not replace filename in atomic save: [%s]\n", milton->persist->mlt_file_path);
+        if ( !platform_move_file(tmp_fname, fname) ) {
+            milton_log("Could not replace filename in atomic save: [%s]\n", fname);
+            failure = "Unsuccessful atomic save";
         }
         else {
             // Success!
             milton_save_postlude(milton);
         }
+    }
+    if (failure) {
+        char message[MAX_PATH] = {};
+        snprintf(message, array_count(message), "Milton save failed: %s.", failure);
+        platform_dialog(message, "Error");
     }
 
 #undef WRITE
@@ -661,14 +839,23 @@ END:
 void
 milton_load_v6(Milton* milton)
 {
+    milton_load_v6_file(milton, milton->persist->mlt_file_path);
+}
+
+void
+milton_load_v6_file(Milton* milton, PATH_CHAR* fname)
+{
     char* failure = NULL;
 
-    FILE* fd = platform_fopen(milton->persist->mlt_file_path, TO_PATH_STR("rb"));
+    FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
 
     if ( !fd ) {
         failure = "could not open file";
     }
     else {
+        milton_reset_canvas(milton);
+        gpu_free_strokes(milton->render_data, milton->canvas);
+
         u32 milton_magic = 0;
         u32 milton_binary_version = 0;
         READ(&milton_magic, sizeof(u32), 1, fd);
@@ -715,6 +902,11 @@ milton_load_v6(Milton* milton)
         failure = read_block_list(milton, block_count, fd);
     }
 END:
+    int close_ret = fclose(fd);
+    if (close_ret) {
+        failure = "Could not close file";
+    }
+
     if (failure) {
         milton_log("File load error: [%s]\n", failure);
     }

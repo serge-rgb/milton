@@ -258,6 +258,7 @@ void milton_update_and_render(Milton* milton, MiltonInput* input);
 void milton_try_quit(Milton* milton);
 
 void milton_new_layer(Milton* milton);
+void milton_new_layer_with_id(Milton* milton, i32 new_id);
 void milton_set_working_layer(Milton* milton, Layer* layer);
 void milton_delete_working_layer(Milton* milton);
 void milton_set_background_color(Milton* milton, v3f background_color);

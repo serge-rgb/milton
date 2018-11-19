@@ -93,3 +93,44 @@ StrokeList::operator[] (i64 i)
     Stroke* e = get(this, i);
     return e;
 }
+
+struct StrokeIterator
+{
+    StrokeBucket* cur_bucket;
+    int i;
+    int count;
+};
+
+Stroke* stroke_iter_init(StrokeList* list, StrokeIterator* iter)
+{
+    Stroke* result = NULL;
+
+    iter->cur_bucket = &list->root;
+    iter->count = list->count;
+    iter->i = 0;
+
+    if (iter->cur_bucket && iter->count > 0) {
+        result = iter->cur_bucket->data;
+    }
+
+    return result;
+}
+
+Stroke* stroke_iter_next(StrokeIterator* iter)
+{
+    Stroke* result = NULL;
+
+    if (iter->cur_bucket) {
+        iter->i++;
+        if ((iter->i % STROKELIST_BUCKET_COUNT) == 0) {
+            iter->cur_bucket = iter->cur_bucket->next;
+        }
+
+        if (iter->i < iter->count) {
+            int bucket_i = iter->i % STROKELIST_BUCKET_COUNT;
+            result = &iter->cur_bucket->data[bucket_i];
+        }
+    }
+
+    return result;
+}
