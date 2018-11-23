@@ -49,6 +49,9 @@ struct MiltonPersist
                                         // Check that all the strokes are saved at quit time in case that
                                         // the last MoveFileEx failed.
     DArray<SaveBlockHeader> blocks;
+    DArray<SaveBlockHeader> last_saved_blocks;
+
+    sz bytes_to_last_block;
 };
 
 PATH_CHAR* milton_get_last_canvas_fname();

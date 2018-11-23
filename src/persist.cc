@@ -355,7 +355,6 @@ milton_persist_set_blocks_for_painting(Milton* milton)
 
     push(&p->blocks, { Block_BRUSHES });
     push(&p->blocks, { Block_BUTTONS });
-    push(&p->blocks, { Block_COLOR_PICKER });
     push(&p->blocks, { Block_PAINTING_DESCRIPTION });
 
     for (Layer* layer = milton->canvas->root_layer;
@@ -367,7 +366,8 @@ milton_persist_set_blocks_for_painting(Milton* milton)
         push(&p->blocks,  header);
     }
 
-
+    // Putting the color picker at the bottom for now, for testing. Later, the order of blocks will change to MRU.
+    push(&p->blocks, { Block_COLOR_PICKER });
 }
 
 #define END_IF_FAILED(expr)\
@@ -551,12 +551,16 @@ END:
 }
 
 static char*
-save_block_list(Milton* milton, FILE* fd)
+save_block_list(Milton* milton, FILE* fd, sz* bytes_to_last_block)
 {
     char* failure = NULL;
     MiltonPersist* p = milton->persist;
     for ( sz block_index = 0; block_index < p->blocks.count; ++block_index ) {
         SaveBlockHeader* h = &p->blocks[block_index];
+
+        if (block_index == p->blocks.count - 1) {
+            *bytes_to_last_block = ftell(fd);
+        }
 
         char* block_fail = save_block(milton, fd, h);
 
@@ -698,6 +702,7 @@ read_block_painting_description(Milton* milton, FILE* fd)
     milton->view->working_layer_id = working_layer_id;
 
     milton->canvas->layer_guid = layer_guid;
+
 END:
     return failure;
 }
@@ -781,6 +786,28 @@ END:
     return failure;
 }
 
+b32
+can_save_incrementally(DArray<SaveBlockHeader>* last_saved, DArray<SaveBlockHeader>* blocks)
+{
+    b32 result = true;
+    if (last_saved && count(last_saved) && count(last_saved) == count(blocks)) {
+        for (sz i = 0; i < blocks->count; ++i) {
+            if ((*blocks)[i].type != (*last_saved)[i].type) {
+                result = false;
+                break;
+            }
+            else if ((*blocks)[i].type == Block_LAYER_CONTENT &&
+                     (*blocks)[i].block_layer.id != (*last_saved)[i].block_layer.id) {
+                result = false;
+                break;
+            }
+        }
+    }
+    else {
+        result = false;
+    }
+    return result;
+}
 
 void
 milton_save_v6(Milton* milton)
@@ -796,6 +823,9 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
     i32 history_count = 0;
     u32 milton_binary_version = 0;
     i32 num_layers = 0;
+    sz bytes_to_last_block = 0;
+    MiltonPersist* p = milton->persist;
+
     milton->flags |= MiltonStateFlags_LAST_SAVE_FAILED;  // Assume failure. Remove flag on success.
 
     int pid = (int)getpid();
@@ -804,47 +834,87 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
 
     platform_fname_at_config(tmp_fname, MAX_PATH);
 
-    FILE* fd = platform_fopen(tmp_fname, TO_PATH_STR("wb"));
+    b32 do_incremental_save = false;
+
+	FILE* fd = NULL;
+    if ( can_save_incrementally(&p->last_saved_blocks, &p->blocks) ) {
+        SaveBlockHeader last_header = p->blocks[count(&p->blocks) - 1];
+        if (last_header.type != Block_LAYER_CONTENT) {
+            do_incremental_save = true;
+            bytes_to_last_block = p->bytes_to_last_block;
+        }
+    }
+
+	if (do_incremental_save) {
+		fd = platform_fopen(fname, TO_PATH_STR("r+b"));
+	}
+	else {
+		fd = platform_fopen(tmp_fname, TO_PATH_STR("wb"));
+	}
 
     char* failure = NULL;
     if ( fd ) {
+        if ( do_incremental_save ) {
+            fseek(fd, p->bytes_to_last_block, SEEK_SET);
+            SaveBlockHeader last_header = p->blocks[count(&p->blocks) - 1];
+            failure = save_block(milton, fd, &last_header);
+        }
+        else {
+            u32 milton_magic = MILTON_MAGIC_NUMBER;
 
-        u32 milton_magic = MILTON_MAGIC_NUMBER;
+            WRITE(&milton_magic, sizeof(u32), 1, fd);
 
-        WRITE(&milton_magic, sizeof(u32), 1, fd);
+            milton_binary_version = milton->persist->mlt_binary_version;
 
-        milton_binary_version = milton->persist->mlt_binary_version;
+            WRITE(&milton_binary_version, sizeof(u32), 1, fd);
 
-        WRITE(&milton_binary_version, sizeof(u32), 1, fd);
+            u16 block_size = (u16)sizeof SaveBlockHeader;
+            WRITE(&block_size, sizeof u16, 1, fd);
 
-        u16 block_size = (u16)sizeof SaveBlockHeader;
-        WRITE(&block_size, sizeof u16, 1, fd);
+            u32 block_count = (u32)milton->persist->blocks.count;
+            WRITE(&block_count, sizeof(u32), 1, fd);
 
-        u32 block_count = (u32)milton->persist->blocks.count;
-        WRITE(&block_count, sizeof(u32), 1, fd);
-
-        // Block:
-        failure = save_block_list(milton, fd);
+            // Block:
+            failure = save_block_list(milton, fd, &bytes_to_last_block);
+        }
     }
 
 END:
 
-    int file_error = ferror(fd);
-    if ( file_error == 0 ) {
-        int close_ret = fclose(fd);
+    if (!fd) {
+        static char msg[MAX_PATH] = {};
+        snprintf(msg, MAX_PATH, "could not open file. errno %d", errno);
+
+        failure = msg;
+    }
+    else {
+        int file_error = ferror(fd);
+        if ( file_error == 0 ) {
+            int close_ret = fclose(fd);
+        }
+        else {
+            static char msg[MAX_PATH] = {};
+            snprintf(msg, MAX_PATH, "file error %d", file_error);
+            failure = msg;
+        }
     }
 
     if ( failure ) {
         milton_log("FAILED SAVE: [%s]\n");
     }
     else {
-        if ( !platform_move_file(tmp_fname, fname) ) {
+        if ( !do_incremental_save && !platform_move_file(tmp_fname, fname) ) {
             milton_log("Could not replace filename in atomic save: [%s]\n", fname);
             failure = "Unsuccessful atomic save";
         }
         else {
             // Success!
             milton_save_postlude(milton);
+            p->bytes_to_last_block = bytes_to_last_block;
+            p->last_saved_blocks.count = 0;
+            for (sz i = 0; i < p->blocks.count; ++i) {
+                push(&p->last_saved_blocks, p->blocks[i]);
+            }
         }
     }
     if (failure) {
@@ -882,6 +952,7 @@ milton_load_v6_file(Milton* milton, PATH_CHAR* fname)
 
         if ( milton_magic != MILTON_MAGIC_NUMBER ) {
             failure = "wrong magic number";
+			goto END;
         }
 
         READ(&milton_binary_version, sizeof(u32), 1, fd);

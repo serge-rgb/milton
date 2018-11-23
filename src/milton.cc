@@ -712,8 +712,9 @@ milton_try_quit(Milton* milton)
 void
 milton_save_postlude(Milton* milton)
 {
-    milton->persist->last_save_time = platform_get_walltime();
-    milton->persist->last_save_stroke_count = layer::count_strokes(milton->canvas->root_layer);
+    MiltonPersist* p = milton->persist;
+    p->last_save_time = platform_get_walltime();
+    p->last_save_stroke_count = layer::count_strokes(milton->canvas->root_layer);
 
     milton->flags &= ~MiltonStateFlags_LAST_SAVE_FAILED;
 }
