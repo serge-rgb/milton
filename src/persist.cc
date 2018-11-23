@@ -651,9 +651,8 @@ read_block_painting_description(Milton* milton, FILE* fd)
         READ(milton->view, sizeof(CanvasView), 1, fd);
     }
 
-    // TODO: set working layer id
-
-
+    // This is going to get rewritten when creating layers. Save it and rewrite after.
+    i32 working_layer_id = milton->view->working_layer_id;
 
     READ(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
@@ -695,6 +694,8 @@ read_block_painting_description(Milton* milton, FILE* fd)
             }
         }
     }
+
+    milton->view->working_layer_id = working_layer_id;
 
     milton->canvas->layer_guid = layer_guid;
 END:
@@ -815,13 +816,6 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
         milton_binary_version = milton->persist->mlt_binary_version;
 
         WRITE(&milton_binary_version, sizeof(u32), 1, fd);
-        u32 size_of_canvas_view = (u32) sizeof CanvasView;
-
-        // TODO: canvas view padding
-        WRITE(&size_of_canvas_view, sizeof u32, 1, fd);
-        WRITE(milton->view, sizeof(CanvasView), 1, fd);
-
-        WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
         u16 block_size = (u16)sizeof SaveBlockHeader;
         WRITE(&block_size, sizeof u16, 1, fd);
@@ -894,12 +888,12 @@ milton_load_v6_file(Milton* milton, PATH_CHAR* fname)
 
         if (milton_binary_version > MILTON_MINOR_VERSION) {
             failure = "This file was created by a newer version of Milton";
+            goto END;
         }
 
         mlt_assert(milton_binary_version >= 6);
 
         milton->persist->blocks.count = 0;
-        // TODO: clear block header memory?
 
         u16 block_size = 0;
         READ(&block_size, sizeof u16, 1, fd);
@@ -922,6 +916,7 @@ END:
 
     if (failure) {
         milton_log("File load error: [%s]\n", failure);
+        milton_reset_canvas_and_set_default(milton);
     }
     else {
         milton->flags |= MiltonStateFlags_JUST_SAVED;
