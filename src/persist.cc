@@ -837,6 +837,7 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
     b32 do_incremental_save = false;
 
 	FILE* fd = NULL;
+    PATH_CHAR* fopen_flags = TO_PATH_STR("wb");
     if ( can_save_incrementally(&p->last_saved_blocks, &p->blocks) ) {
         SaveBlockHeader last_header = p->blocks[count(&p->blocks) - 1];
         if (last_header.type != Block_LAYER_CONTENT) {
@@ -845,14 +846,19 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
         }
     }
 
-	if (do_incremental_save) {
-		fd = platform_fopen(fname, TO_PATH_STR("r+b"));
-	}
-	else {
-		fd = platform_fopen(tmp_fname, TO_PATH_STR("wb"));
-	}
-
     char* failure = NULL;
+
+    if (do_incremental_save) {
+        // Move existing file to temp location.
+        if (!platform_move_file(fname, tmp_fname)) {
+            failure = "could not move file to temp location for incremental save.";
+        }
+
+        fopen_flags = TO_PATH_STR("r+b");
+    }
+
+    fd = platform_fopen(tmp_fname, fopen_flags);
+
     if ( fd ) {
         if ( do_incremental_save ) {
             fseek(fd, p->bytes_to_last_block, SEEK_SET);
@@ -903,7 +909,7 @@ END:
         milton_log("FAILED SAVE: [%s]\n");
     }
     else {
-        if ( !do_incremental_save && !platform_move_file(tmp_fname, fname) ) {
+        if ( !platform_move_file(tmp_fname, fname) ) {
             milton_log("Could not replace filename in atomic save: [%s]\n", fname);
             failure = "Unsuccessful atomic save";
         }
