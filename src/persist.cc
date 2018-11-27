@@ -363,7 +363,9 @@ milton_persist_set_blocks_for_painting(Milton* milton)
         SaveBlockHeader header = {};
         header.type = Block_LAYER_CONTENT;
         header.block_layer.id = layer->id;
-        push(&p->blocks,  header);
+        SaveBlock block = {};
+        block.header = header;
+        push(&p->blocks,  block);
     }
 
     // Putting the color picker at the bottom for now, for testing. Later, the order of blocks will change to MRU.
@@ -487,6 +489,46 @@ END:
     return failure;
 }
 
+static b32
+block_equals(SaveBlockHeader a, SaveBlockHeader b)
+{
+    b32 eq = false;
+    if (a.type == b.type) {
+        if (a.type == Block_LAYER_CONTENT) {
+            eq = a.block_layer.id == b.block_layer.id;
+        }
+        else {
+            eq = true;
+        }
+    }
+    return eq;
+}
+
+void
+milton_mark_block_for_save(MiltonPersist* p, SaveBlockHeader header)
+{
+    u64 count = p->blocks.count;
+    for (sz block_i = 0; block_i < count; ++block_i) {
+        if (block_equals(header, p->blocks[block_i].header)) {
+            // Swap
+            if (block_i != count-1) {
+                SaveBlockHeader tmp = p->blocks[count - 1].header;
+
+                p->blocks[count - 1] = {};
+                p->blocks[count - 1].header = p->blocks[block_i].header;
+
+                p->blocks[block_i] = {};
+                p->blocks[block_i].header = tmp;
+            }
+            else {
+                p->blocks[block_i].save_id = SaveBlock_DIRTY;
+            }
+            break;
+        }
+    }
+}
+
+
 static char*
 save_block_layer_content(Milton* milton, FILE* fd, i32 layer_id)
 {
@@ -556,7 +598,7 @@ save_block_list(Milton* milton, FILE* fd, sz* bytes_to_last_block)
     char* failure = NULL;
     MiltonPersist* p = milton->persist;
     for ( sz block_index = 0; block_index < p->blocks.count; ++block_index ) {
-        SaveBlockHeader* h = &p->blocks[block_index];
+        SaveBlockHeader* h = &p->blocks[block_index].header;
 
         if (block_index == p->blocks.count - 1) {
             *bytes_to_last_block = ftell(fd);
@@ -787,25 +829,19 @@ END:
 }
 
 b32
-can_save_incrementally(DArray<SaveBlockHeader>* last_saved, DArray<SaveBlockHeader>* blocks)
+can_save_incrementally(u16 save_id, DArray<SaveBlock>* blocks)
 {
     b32 result = true;
-    if (last_saved && count(last_saved) && count(last_saved) == count(blocks)) {
-        for (sz i = 0; i < blocks->count; ++i) {
-            if ((*blocks)[i].type != (*last_saved)[i].type) {
-                result = false;
-                break;
-            }
-            else if ((*blocks)[i].type == Block_LAYER_CONTENT &&
-                     (*blocks)[i].block_layer.id != (*last_saved)[i].block_layer.id) {
-                result = false;
-                break;
-            }
+    mlt_assert(save_id != 0);
+
+    // Check all blocks but the last one.
+    for (sz block_i = 0; block_i < blocks->count - 1; ++block_i) {
+        if (blocks->data[block_i].save_id != save_id) {
+            result = false;
+            break;
         }
     }
-    else {
-        result = false;
-    }
+
     return result;
 }
 
@@ -838,8 +874,8 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
 
 	FILE* fd = NULL;
     PATH_CHAR* fopen_flags = TO_PATH_STR("wb");
-    if ( can_save_incrementally(&p->last_saved_blocks, &p->blocks) ) {
-        SaveBlockHeader last_header = p->blocks[count(&p->blocks) - 1];
+    if ( can_save_incrementally(p->save_id, &p->blocks) ) {
+        SaveBlockHeader last_header = p->blocks[count(&p->blocks) - 1].header;
         if (last_header.type != Block_LAYER_CONTENT) {
             do_incremental_save = true;
             bytes_to_last_block = p->bytes_to_last_block;
@@ -862,7 +898,7 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
     if ( fd ) {
         if ( do_incremental_save ) {
             fseek(fd, p->bytes_to_last_block, SEEK_SET);
-            SaveBlockHeader last_header = p->blocks[count(&p->blocks) - 1];
+            SaveBlockHeader last_header = p->blocks[count(&p->blocks) - 1].header;
             failure = save_block(milton, fd, &last_header);
         }
         else {
@@ -917,9 +953,10 @@ END:
             // Success!
             milton_save_postlude(milton);
             p->bytes_to_last_block = bytes_to_last_block;
-            p->last_saved_blocks.count = 0;
-            for (sz i = 0; i < p->blocks.count; ++i) {
-                push(&p->last_saved_blocks, p->blocks[i]);
+
+            p->save_id++;
+            if (p->save_id == 0) {
+                p->save_id++;
             }
         }
     }
@@ -997,6 +1034,8 @@ END:
     }
     else {
         milton->flags |= MiltonStateFlags_JUST_SAVED;
+
+        milton_persist_set_blocks_for_painting(milton);
     }
 }
 #undef READ

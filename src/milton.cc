@@ -538,6 +538,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     }
     milton_set_brush_alpha(milton, 1.0f);
 
+    milton->persist->save_id = 1;
     milton->persist->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
     if (read_from_disk) { milton_load(milton); }
@@ -664,7 +665,10 @@ milton_reset_canvas_and_set_default(Milton* milton)
             SaveBlockHeader header = {};
             header.type = Block_LAYER_CONTENT;
             header.block_layer.id = layer->id;
-            push(&p->blocks,  header);
+            SaveBlock block = {};
+            block.header = header;
+            block.save_id = 0;
+            push(&p->blocks, block);
         }
 
     }
@@ -1052,6 +1056,10 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                  && gui_consume_input(milton->gui, input) ) {
                 milton_update_brushes(milton);
                 gpu_update_picker(milton->render_data, &milton->gui->picker);
+
+                // TODO: Get the type of GUI change and mark corresponding block for save.
+                // SaveBlockHeader header = { Block_BRUSHES };
+                // milton_mark_block_for_save(milton->persist, header);
             }
             else if ( !milton->gui->owns_user_input
                       && (milton->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
@@ -1198,6 +1206,13 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 // Make sure we show blurred layers when finishing a stroke.
                 render_flags |= RenderDataFlags_WITH_BLUR;
                 do_full_redraw = true;
+
+                // Update save block
+                SaveBlockHeader header = {};
+                header.type = Block_LAYER_CONTENT;
+                header.block_layer.id = milton->view->working_layer_id;
+
+                milton_mark_block_for_save(milton->persist, header);
             }
         }
     }

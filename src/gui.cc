@@ -806,7 +806,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
             }
 
             if (do_write) {
-                milton_persist_set_blocks_for_painting(milton);
+                // TODO: DEBUG CODE
+                if (milton->persist->blocks.count == 0) {
+                    milton_persist_set_blocks_for_painting(milton);
+                }
+                //
                 milton_save_v6_file(milton, TO_PATH_STR("TEST_V6.mlt"));
             }
             if (do_read) {

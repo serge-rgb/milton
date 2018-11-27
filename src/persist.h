@@ -35,6 +35,18 @@ struct SaveBlockHeader
 };
 #pragma pack(pop)
 
+enum
+{
+    SaveBlock_DIRTY,
+};
+
+struct SaveBlock
+{
+    SaveBlockHeader header;
+
+    u16 save_id;
+};
+
 
 struct MiltonPersist
 {
@@ -48,8 +60,9 @@ struct MiltonPersist
                                         // when the mlt file gets large.
                                         // Check that all the strokes are saved at quit time in case that
                                         // the last MoveFileEx failed.
-    DArray<SaveBlockHeader> blocks;
-    DArray<SaveBlockHeader> last_saved_blocks;
+    DArray<SaveBlock> blocks;
+
+    u16 save_id;
 
     sz bytes_to_last_block;
 };
@@ -73,4 +86,6 @@ void milton_settings_load(MiltonSettings* settings);
 void milton_settings_save(MiltonSettings* settings);
 
 void milton_persist_set_blocks_for_painting(Milton* milton);
+
+void milton_mark_block_for_save(MiltonPersist* p, SaveBlockHeader header);
 
