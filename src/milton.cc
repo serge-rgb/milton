@@ -650,30 +650,7 @@ milton_reset_canvas_and_set_default(Milton* milton)
         exporter_init(&gui->exporter);
     }
 
-    // Set up blocks.
-    {
-        MiltonPersist* p = milton->persist;
-
-        push(&p->blocks, { Block_BRUSHES });
-        push(&p->blocks, { Block_BUTTONS });
-        push(&p->blocks, { Block_COLOR_PICKER });
-        push(&p->blocks, { Block_PAINTING_DESCRIPTION });
-
-        for (Layer* layer = milton->canvas->root_layer;
-            layer;
-            layer = layer->next) {
-            SaveBlockHeader header = {};
-            header.type = Block_LAYER_CONTENT;
-            header.block_layer.id = layer->id;
-            SaveBlock block = {};
-            block.header = header;
-            block.save_id = 0;
-            push(&p->blocks, block);
-        }
-
-    }
-
-
+    milton_persist_set_blocks_for_painting(milton);
 
     milton_update_brushes(milton);
 

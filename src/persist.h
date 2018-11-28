@@ -8,13 +8,15 @@
 struct Milton;
 struct MiltonSettings;
 
+#define NUM_FIXED_BLOCKS 3  // Picker, buttons, brushes.
 enum BlockType
 {
-    Block_INVALID,
-
+    // Fixed-size and fixed-position
     Block_COLOR_PICKER,
     Block_BUTTONS,
     Block_BRUSHES,
+
+    // Dynamic size and movable
     Block_PAINTING_DESCRIPTION,
     Block_LAYER_CONTENT,
 };
@@ -35,16 +37,15 @@ struct SaveBlockHeader
 };
 #pragma pack(pop)
 
-enum
-{
-    SaveBlock_DIRTY,
-};
 
 struct SaveBlock
 {
     SaveBlockHeader header;
 
-    u16 save_id;
+    u64 bytes_begin;
+    u64 bytes_end;
+
+    u8 dirty;
 };
 
 
