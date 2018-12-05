@@ -369,6 +369,7 @@ milton_persist_set_blocks_for_painting(Milton* milton)
         header.block_layer.id = layer->id;
         SaveBlock block = {};
         block.header = header;
+        block.dirty = true;
         push(&p->blocks,  block);
     }
 
@@ -514,10 +515,11 @@ milton_mark_block_for_save(MiltonPersist* p, SaveBlockHeader header)
 {
     u64 count = p->blocks.count;
     for (sz block_i = 0; block_i < count; ++block_i) {
-        p->blocks[block_i].dirty = true;
         if (block_equals(header, p->blocks[block_i].header)) {
+            p->blocks[block_i].dirty = true;
+
             // Swap
-            if (block_i != count-1) {
+            if (header.type >= NUM_FIXED_BLOCKS && block_i != count-1) {
                 SaveBlockHeader tmp = p->blocks[count - 1].header;
 
                 p->blocks[count - 1] = {};
@@ -525,8 +527,6 @@ milton_mark_block_for_save(MiltonPersist* p, SaveBlockHeader header)
 
                 p->blocks[block_i] = {};
                 p->blocks[block_i].header = tmp;
-            }
-            else {
             }
             break;
         }
@@ -607,17 +607,17 @@ save_block_list(Milton* milton, FILE* fd)
         SaveBlock* block = &p->blocks[block_index];
         SaveBlockHeader* h = &block->header;
 
-        if (block->dirty) {
-            block->bytes_begin = ftell(fd);
+        if ( block->dirty ) {
+            mlt_assert(block->bytes_begin == ftell(fd));
             char* block_fail = save_block(milton, fd, h);
-            block->bytes_end = ftell(fd);
+            mlt_assert(block->bytes_end == ftell(fd));
 
-            if (block_fail) {
+            if ( block_fail ) {
                 failure = block_fail;
                 break;
             }
 
-            block->dirty = true;
+            block->dirty = false;
 
         }
         else {
@@ -625,20 +625,26 @@ save_block_list(Milton* milton, FILE* fd)
         }
     }
 
+    b32 file_dirty = false;  // When a dynamic block is dirty, the rest of the file is dirty.
     for ( u64 block_index = NUM_FIXED_BLOCKS; block_index < p->blocks.count; ++block_index ) {
         SaveBlock* block = &p->blocks[block_index];
         SaveBlockHeader* h = &block->header;
         u64 current_bytes = ftell(fd);
-        if (block->dirty && block->bytes_begin == current_bytes) {
-            // If it's not the last block, save everything after this.
-            // TODO: If it's the last block and it's a content block, do incremental content block save.
+
+
+        if ( !block->dirty && !file_dirty ) {
+            mlt_assert (block->bytes_begin == current_bytes);
+            fseek(fd, block->bytes_end, SEEK_SET);
         }
         else {
-            if (current_bytes != block->bytes_begin) {
-                mlt_assert(!"unexpected save mismatch");
-                // TODO: Handle this by setting all blocks as dirty.
+            file_dirty = true;
+            // TODO: Check if last block && layer content. Only save latest stroke(s)
+            block->bytes_begin = ftell(fd);
+            failure = save_block(milton, fd, &block->header);
+            block->bytes_end = ftell(fd);
+            if ( !failure ) {
+                block->dirty = false;
             }
-            fseek(fd, block->bytes_end, SEEK_SET);\
         }
     }
 
@@ -829,8 +835,11 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
     mlt_assert(p->blocks.count == 0);
 
     for (u32 block_i = 0; block_i < block_count; ++block_i) {
+        u64 bytes_begin = ftell(fd);
+
         SaveBlockHeader header = {};
         READ(&header, sizeof SaveBlockHeader, 1, fd);
+
 
         switch (header.type) {
             case Block_PAINTING_DESCRIPTION: {
@@ -853,6 +862,11 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
                 goto END;
             }
         }
+        SaveBlock block = {};
+        block.header = header;
+        block.bytes_begin = bytes_begin;
+        block.bytes_end = ftell(fd);
+        push(&p->blocks, block);
     }
 
 END:
@@ -893,18 +907,22 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
     b32 do_incremental_save = true;
 
 	FILE* fd = NULL;
-    PATH_CHAR* fopen_flags = TO_PATH_STR("r+b");
 
     char* failure = NULL;
 
     // Move existing file to temp location.
     // TODO: Maybe warn that doing this across drive letter might result in copying all the data?
     // TODO: Maybe the temp location should be right next to the file in question?
-    if (!platform_move_file(fname, tmp_fname)) {
+    if ( !platform_move_file(fname, tmp_fname) ) {
         failure = "could not move file to temp location for incremental save.";
     }
 
-    fd = platform_fopen(tmp_fname, fopen_flags);
+    fd = platform_fopen(tmp_fname, TO_PATH_STR("r+b"));
+
+    if ( !fd ) {
+        fd = platform_fopen(tmp_fname, TO_PATH_STR("w"));
+        // TODO: Mark all blocks as dirty to prevent trying to save incrementally to a new file?
+    }
 
     if ( fd ) {
         // TODO: do not always save boiler plate.
@@ -947,7 +965,7 @@ END:
     }
 
     if ( failure ) {
-        milton_log("FAILED SAVE: [%s]\n");
+        milton_log("FAILED SAVE: [%s]\n", failure);
     }
     else {
         if ( !platform_move_file(tmp_fname, fname) ) {
@@ -1027,9 +1045,11 @@ milton_load_v6_file(Milton* milton, PATH_CHAR* fname)
         failure = read_block_list(milton, block_count, fd);
     }
 END:
-    int close_ret = fclose(fd);
-    if (close_ret) {
-        failure = "Could not close file";
+    if (fd) {
+        int close_ret = fclose(fd);
+        if (close_ret) {
+            failure = "Could not close file";
+        }
     }
 
     if (failure) {
@@ -1038,8 +1058,6 @@ END:
     }
     else {
         milton->flags |= MiltonStateFlags_JUST_SAVED;
-
-        milton_persist_set_blocks_for_painting(milton);
     }
 }
 #undef READ

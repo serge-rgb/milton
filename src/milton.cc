@@ -972,6 +972,12 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
                         do_full_redraw = true;
                         render_flags |= RenderDataFlags_WITH_BLUR;
+
+                        SaveBlockHeader header = {};
+                        header.type = Block_LAYER_CONTENT;
+                        header.block_layer.id = h.layer_id;
+
+                        milton_mark_block_for_save(milton->persist, header);
                     }
                     break;
                 }
@@ -992,9 +998,15 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                             do_full_redraw = true;
                             render_flags |= RenderDataFlags_WITH_BLUR;
 
+                            SaveBlockHeader header = {};
+                            header.type = Block_LAYER_CONTENT;
+                            header.block_layer.id = h.layer_id;
+
+                            milton_mark_block_for_save(milton->persist, header);
 
                             break;
                         }
+
                         stroke = pop(&milton->canvas->stroke_graveyard);  // Keep popping in case the graveyard has info from deleted layers
                     }
 
@@ -1035,8 +1047,14 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 gpu_update_picker(milton->render_data, &milton->gui->picker);
 
                 // TODO: Get the type of GUI change and mark corresponding block for save.
-                // SaveBlockHeader header = { Block_BRUSHES };
-                // milton_mark_block_for_save(milton->persist, header);
+                SaveBlockHeader header = { Block_BRUSHES };
+                milton_mark_block_for_save(milton->persist, header);
+
+                header = { Block_BRUSHES };
+                milton_mark_block_for_save(milton->persist, header);
+
+                header = { Block_COLOR_PICKER };
+                milton_mark_block_for_save(milton->persist, header);
             }
             else if ( !milton->gui->owns_user_input
                       && (milton->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
