@@ -4,7 +4,7 @@
 #include <mach-o/dyld.h>
 
 #define Rect MacRect
-#define ALIGN MacALIGN
+// #define ALIGN MacALIGN
 #include <Cocoa/Cocoa.h>
 #undef Rect
 #undef ALIGN
@@ -18,12 +18,48 @@
 #include "platform.h"
 #include "memory.h"
 
+#include <dlfcn.h>
+
 
 #define MAX_PATH PATH_MAX
 
 
 #include <AppKit/AppKit.h>
 
+void
+platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo)
+{
+
+}
+
+void
+platform_deinit(PlatformState* platform)
+{
+
+}
+
+void
+platform_event_tick()
+{
+}
+
+void
+platform_setup_cursor(Arena* arena, PlatformState* platform)
+{
+
+}
+
+void*
+platform_get_gl_proc(char* name)
+{
+    static void* image = NULL;
+
+    if (NULL == image) {
+        image = dlopen("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL", RTLD_LAZY);
+    }
+    return (image ? dlsym(image, (const char *)name) : NULL);
+
+}
 
 char*
 mac_panel(NSSavePanel *panel, FileKind kind)

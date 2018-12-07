@@ -333,7 +333,7 @@ gpu_init(RenderData* r, CanvasView* view, ColorPicker* picker)
 {
     #if MILTON_DEBUG
         glEnable(GL_DEBUG_OUTPUT);
-        glDebugMessageCallback(milton_gl_debug_callback, NULL);
+        if (glDebugMessageCallback) {  glDebugMessageCallback(milton_gl_debug_callback, NULL); }
     #endif
 
     r->stroke_z = MAX_DEPTH_VALUE - 20;

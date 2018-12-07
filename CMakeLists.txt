@@ -59,8 +59,12 @@ if(UNIX)
     -fno-strict-aliasing
     -fno-omit-frame-pointer
     -Wno-extern-c-compat
-    -Werror
+    #-Werror
     )
+  if (APPLE)
+      set(UnixCFlags "${UnixCFlags}" -ObjC++)
+  endif()
+
   target_compile_options(shadergen PRIVATE
     ${UnixCFlags})
   target_compile_options(Milton PRIVATE

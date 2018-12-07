@@ -448,32 +448,33 @@ static char*
 save_block_painting_description(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
-
+    i32 num_layers = 0;
+    Layer* layer;
     // TODO: hard code struct sizes used by file format
-    u32 size_of_canvas_view = sizeof CanvasView;
-    WRITE(&size_of_canvas_view, sizeof u32, 1, fd);
+    u32 size_of_canvas_view = sizeof (CanvasView);
+    WRITE(&size_of_canvas_view, sizeof (u32), 1, fd);
     WRITE(milton->view, sizeof(CanvasView), 1, fd);
 
     WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
-    i32 num_layers = layer::number_of_layers(milton->canvas->root_layer);
+    num_layers = layer::number_of_layers(milton->canvas->root_layer);
     WRITE(&num_layers, sizeof (decltype(num_layers)), 1, fd);
     WRITE(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
-    Layer* layer = milton->canvas->root_layer;
+    layer = milton->canvas->root_layer;
     for (i32 layer_i = 0 ; layer_i < num_layers; ++layer_i) {
         mlt_assert(layer);
         i32 num_effects = 0;
         for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) { ++num_effects; }
 
-        WRITE(&layer->id, sizeof i32, 1, fd);
+        WRITE(&layer->id, sizeof (i32), 1, fd);
 
-        WRITE(&layer->flags, sizeof i32, 1, fd);
+        WRITE(&layer->flags, sizeof (i32), 1, fd);
 
         f32 alpha = layer->alpha;
-        WRITE(&alpha, sizeof f32, 1, fd);
+        WRITE(&alpha, sizeof (f32), 1, fd);
 
-        WRITE(&num_effects, sizeof i32, 1, fd);
+        WRITE(&num_effects, sizeof (i32), 1, fd);
 
         for ( LayerEffect* e = layer->effects; e != NULL; e = e->next ) {
             WRITE(&e->type, sizeof(e->type), 1, fd);
@@ -541,25 +542,25 @@ save_block_layer_content(Milton* milton, FILE* fd, i32 layer_id)
     StrokeIterator stroke_iter = {};
 
     Layer* layer = layer::get_by_id(milton->canvas->root_layer, layer_id);
+    Stroke* stroke = NULL;
 
     i32 num_strokes = count(&layer->strokes);
-    WRITE(&num_strokes, sizeof i32, 1, fd);
+    WRITE(&num_strokes, sizeof (i32), 1, fd);
 
-    Stroke* stroke = NULL;
 
     for (stroke = stroke_iter_init(&layer->strokes, &stroke_iter);
          stroke != NULL;
          stroke = stroke_iter_next(&stroke_iter)) {
 
-        WRITE(&stroke->brush, sizeof Brush, 1, fd);
-        WRITE(&stroke->num_points, sizeof i32, 1, fd);
+        WRITE(&stroke->brush, sizeof (Brush), 1, fd);
+        WRITE(&stroke->num_points, sizeof (i32), 1, fd);
 
         // TODO: Is this really slow?
         for (i32 point_i = 0; point_i < stroke->num_points; ++point_i) {
             PersistStrokePoint point /*={}*/;
             point.point = stroke->points[point_i];
             point.pressure = stroke->pressures[point_i];
-            WRITE(&point, sizeof PersistStrokePoint, 1, fd);
+            WRITE(&point, sizeof (PersistStrokePoint), 1, fd);
         }
     }
 
@@ -571,7 +572,7 @@ static char*
 save_block(Milton* milton, FILE* fd, SaveBlockHeader* header)
 {
     char* failure = NULL;
-    WRITE(header, sizeof SaveBlockHeader, 1, fd);
+    WRITE(header, sizeof (SaveBlockHeader), 1, fd);
 
     switch(header->type) {
         case Block_BRUSHES: {
@@ -723,10 +724,13 @@ read_block_painting_description(Milton* milton, FILE* fd)
 {
     char* failure = NULL;
     CanvasState* canvas = milton->canvas;
+    i32 working_layer_id = 0;
+    i32 layer_guid = 0;
+    i32 num_layers = 0;
 
     u32 size_of_canvas_view = 0;
-    READ(&size_of_canvas_view, sizeof u32, 1, fd);
-    if (size_of_canvas_view != sizeof CanvasView) {
+    READ(&size_of_canvas_view, sizeof (u32), 1, fd);
+    if (size_of_canvas_view != sizeof (CanvasView)) {
         failure = "Unexpected size of CanvasView";
         goto END;
     }
@@ -735,31 +739,29 @@ read_block_painting_description(Milton* milton, FILE* fd)
     }
 
     // This is going to get rewritten when creating layers. Save it and rewrite after.
-    i32 working_layer_id = milton->view->working_layer_id;
+    working_layer_id = milton->view->working_layer_id;
 
     READ(&milton->canvas->layer_guid, sizeof(i32), 1, fd);
 
-    i32 num_layers = 0;
     READ(&num_layers, sizeof (decltype(num_layers)), 1, fd);
 
-    i32 layer_guid = 0;
     READ(&layer_guid, sizeof(i32), 1, fd);
 
     for (i32 layer_i = 0 ; layer_i < num_layers; ++layer_i) {
         i32 id = 0;
-        READ(&id, sizeof i32, 1, fd);
+        READ(&id, sizeof (i32), 1, fd);
 
         milton_new_layer_with_id(milton, id);
         Layer* layer = milton->canvas->working_layer;
         mlt_assert(layer);
 
-        READ(&layer->flags, sizeof i32, 1, fd);
+        READ(&layer->flags, sizeof (i32), 1, fd);
 
-        READ(&layer->alpha, sizeof f32, 1, fd);
+        READ(&layer->alpha, sizeof (f32), 1, fd);
 
         i32 num_effects = 0;
 
-        READ(&num_effects, sizeof i32, 1, fd);
+        READ(&num_effects, sizeof (i32), 1, fd);
         if ( num_effects > 0 ) {
             LayerEffect** e = &layer->effects;
             for ( i64 i = 0; i < num_effects; ++i ) {
@@ -796,22 +798,22 @@ read_block_layer_content(Milton* milton, FILE* fd, i32 layer_id)
 
     mlt_assert(count(&layer->strokes) == 0);
 
-    i32 num_strokes = 0;
-    READ(&num_strokes, sizeof i32, 1, fd);
-
     Stroke* stroke = NULL;
+
+    i32 num_strokes = 0;
+    READ(&num_strokes, sizeof (i32), 1, fd);
 
     for (i32 stroke_i = 0; stroke_i < num_strokes; ++stroke_i) {
         Stroke stroke = {};
-        READ(&stroke.brush, sizeof Brush, 1, fd);
-        READ(&stroke.num_points, sizeof i32, 1, fd);
+        READ(&stroke.brush, sizeof(Brush), 1, fd);
+        READ(&stroke.num_points, sizeof(i32), 1, fd);
 
         stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
         stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
 
         for (i32 point_i = 0; point_i < stroke.num_points; ++point_i) {
             PersistStrokePoint point = {};
-            READ(&point, sizeof PersistStrokePoint, 1, fd);
+            READ(&point, sizeof (PersistStrokePoint), 1, fd);
 
             stroke.points[point_i] = point.point;
             stroke.pressures[point_i] = point.pressure;
@@ -838,7 +840,7 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
         u64 bytes_begin = ftell(fd);
 
         SaveBlockHeader header = {};
-        READ(&header, sizeof SaveBlockHeader, 1, fd);
+        READ(&header, sizeof (SaveBlockHeader), 1, fd);
 
 
         switch (header.type) {
@@ -935,8 +937,8 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
 
         WRITE(&milton_binary_version, sizeof(u32), 1, fd);
 
-        u16 block_size = (u16)sizeof SaveBlockHeader;
-        WRITE(&block_size, sizeof u16, 1, fd);
+        u16 block_size = (u16)sizeof(SaveBlockHeader);
+        WRITE(&block_size, sizeof (u16), 1, fd);
 
         u32 block_count = (u32)milton->persist->blocks.count;
         WRITE(&block_count, sizeof(u32), 1, fd);
@@ -1032,9 +1034,9 @@ milton_load_v6_file(Milton* milton, PATH_CHAR* fname)
         milton->persist->blocks.count = 0;
 
         u16 block_size = 0;
-        READ(&block_size, sizeof u16, 1, fd);
+        READ(&block_size, sizeof (u16), 1, fd);
 
-        if (block_size != sizeof SaveBlockHeader) {
+        if (block_size != sizeof (SaveBlockHeader)) {
             failure = "Invalid size for block header";
             goto END;
         }

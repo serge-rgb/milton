@@ -31,6 +31,7 @@
 #include <SDL_syswm.h>
 
 // Platform independent includes:
+#include <errno.h>
 #include <float.h>
 #include <limits.h>
 #include <math.h>
@@ -59,8 +60,9 @@
 
 #elif defined (__MACH__)
 
-#define GL_GLEXT_PROTOTYPES 1
-#include "SDL_opengl.h"
+// #define GL_GLEXT_PROTOTYPES 1
+// #include "SDL_opengl.h"
+#include "gl.h"
 
 #endif // OpenGL includes
 

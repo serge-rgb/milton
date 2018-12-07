@@ -17,18 +17,23 @@
 #include "vector.cc"
 
 #if defined(_WIN32)
-   #include "platform_windows.cc"
+    #include "platform_windows.cc"
 #elif defined(__linux__)
-   #include "platform_unix.cc"
-   #include "platform_linux.cc"
+    #include "platform_unix.cc"
+    #include "platform_linux.cc"
+#elif defined(__MACH__)
+    #include "platform_unix.cc"
+    #include "platform_mac.mm"
 #endif
 #if !defined(TESTING)
-   #if defined(_WIN32)
-      #include "platform_main_windows.cc"
-   #elif defined(__linux__)
-      #include "platform_main_unix.cc"
-      #include "platform_main_linux.cc"
-   #endif
+    #if defined(_WIN32)
+       #include "platform_main_windows.cc"
+    #elif defined(__linux__)
+       #include "platform_main_unix.cc"
+       #include "platform_main_linux.cc"
+    #elif defined(__MACH__)
+       // #include "platform_main_unix.cc"
+    #endif
 #else // TESTING
    #include "tests.cc"
 #endif

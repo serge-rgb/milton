@@ -22,16 +22,18 @@ enum BlockType
 };
 
 #pragma pack(push, 1)
+struct BlockLayer
+{
+    i32 id;
+};
+
 struct SaveBlockHeader
 {
     u16 type; /*BlockType*/
 
     union
     {
-        struct BlockLayer
-        {
-            i32 id;
-        } block_layer;
+        BlockLayer block_layer;
     };
 
 };
