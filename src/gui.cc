@@ -811,6 +811,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
                     milton_persist_set_blocks_for_painting(milton);
                 }
                 //
+                milton->persist->mlt_binary_version = 6;
                 milton_save_v6_file(milton, TO_PATH_STR("TEST_V6.mlt"));
             }
             if (do_read) {

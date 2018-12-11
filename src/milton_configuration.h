@@ -12,19 +12,13 @@
 #endif
 
 #define MILTON_ZOOM_DEBUG 0
-    #if !MILTON_DEBUG
-        #undef MILTON_ZOOM_DEBUG
-        #define MILTON_ZOOM_DEBUG 0
-    #endif
+
+#define MILTON_DEBUG_SAVE 1
 
 // Windows Options
 #if defined(_WIN32)
     // If 1, print to VS console. Debug messages always print to log file.
     #define WIN32_DEBUGGER_OUTPUT 1
-    #if !MILTON_DEBUG
-        #undef WIN32_DEBUGGER_OUTPUT
-        #define WIN32_DEBUGGER_OUTPUT 0
-    #endif
 #endif
 
 #define MILTON_MULTITHREADED 1
@@ -33,16 +27,10 @@
 
 #define REDRAW_EVERY_FRAME 1
 
-#define INCREMENTAL_SAVES 1
-
 #define STROKE_DEBUG_VIZ 0
-  #if !MILTON_DEBUG
-    #undef STROKE_DEBUG_VIZ
-    #define STROKE_DEBUG_VIZ 0
-  #endif
-
 
 #define MILTON_HARDWARE_BRUSH_CURSOR 1
+
  // No support for system cursor on linux or macos for now
 #if defined(__linux__) || defined(__MACH__)
 #undef MILTON_HARDWARE_BRUSH_CURSOR
@@ -51,10 +39,7 @@
 
 // Uses GL 2.1 when 0
 #define USE_GL_3_2 0
-    #if !MILTON_DEBUG  // Don't use 3.2 in release.
-        #undef USE_GL_3_2
-        #define USE_GL_3_2 0
-    #endif
+    
 
     // Use 3.2 on macos. OpenGL 3.2 is supported by all mac computers since macOS 10.8.5
     // https://developer.apple.com/opengl/OpenGL-Capabilities-Tables.pdf
@@ -70,6 +55,28 @@
 
 // NOTE: Multisampling is no longer supported in Milton. This define is left
 // in because there is some helper code which I would prefer not to delete.
-#define MULTISAMPLING_ENABLED 0  // When disabled, the renderer uses FXAA for screen-space AA.
+#define MULTISAMPLING_ENABLED 0
     #define MSAA_NUM_SAMPLES 4
 
+
+
+// When not in debug mode, disable all debug flags.
+
+#if !MILTON_DEBUG
+
+    #undef MILTON_ZOOM_DEBUG
+    #define MILTON_ZOOM_DEBUG 0
+
+    #undef WIN32_DEBUGGER_OUTPUT
+    #define WIN32_DEBUGGER_OUTPUT 0
+
+    #undef USE_GL_3_2
+    #define USE_GL_3_2 0
+
+    #undef REDRAW_EVERY_FRAME
+    #define REDRAW_EVERY_FRAME 1
+
+    #undef STROKE_DEBUG_VIZ
+    #define STROKE_DEBUG_VIZ 0
+
+#endif

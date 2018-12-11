@@ -15,6 +15,27 @@
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
+#if MILTON_DEBUG_SAVE
+static i32 g_bytes_written = 0;
+
+void debug_mark_bytes(u64 bytes) 
+{
+    g_bytes_written += bytes;
+}
+
+void save_debug_log(char* message, ...)
+{
+    va_list args;
+    va_start(args, message);
+    milton_log_args(message, args);
+    va_end(args);
+}
+
+#else
+
+void debug_mark_bytes(u64 bytes) {}
+
+#endif
 
 #pragma pack(push, 1)
 struct PersistStrokePoint
@@ -397,6 +418,7 @@ milton_persist_set_blocks_for_painting(Milton* milton)
                 failure = msg;\
                 goto END; \
             }  \
+            debug_mark_bytes(num * sz); \
         } while(0);
 
 static char*
@@ -609,9 +631,11 @@ save_block_list(Milton* milton, FILE* fd)
         SaveBlockHeader* h = &block->header;
 
         if ( block->dirty ) {
-            mlt_assert(block->bytes_begin == ftell(fd));
+            mlt_assert(block->bytes_begin == 0 || block->bytes_begin == ftell(fd));
+            block->bytes_begin = ftell(fd);
             char* block_fail = save_block(milton, fd, h);
-            mlt_assert(block->bytes_end == ftell(fd));
+            mlt_assert(block->bytes_end == 0 || block->bytes_end == ftell(fd));
+            block->bytes_end = ftell(fd);
 
             if ( block_fail ) {
                 failure = block_fail;
@@ -842,7 +866,6 @@ read_block_list(Milton* milton, u32 block_count, FILE* fd)
         SaveBlockHeader header = {};
         READ(&header, sizeof (SaveBlockHeader), 1, fd);
 
-
         switch (header.type) {
             case Block_PAINTING_DESCRIPTION: {
                 END_IF_FAILED ( read_block_painting_description(milton, fd) );
@@ -891,6 +914,10 @@ milton_save_v6(Milton* milton)
 void
 milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
 {
+    #if MILTON_DEBUG_SAVE
+    g_bytes_written = 0;
+    #endif
+
     // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
     // TODO: is this still needed?
     i32 history_count = 0;
@@ -991,6 +1018,8 @@ END:
     }
 
 #undef WRITE
+
+    save_debug_log("End of save: %d bytes written.", g_bytes_written);
 }
 
 void
