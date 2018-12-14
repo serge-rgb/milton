@@ -101,7 +101,7 @@ struct StrokeIterator
     int count;
 };
 
-Stroke* stroke_iter_init(StrokeList* list, StrokeIterator* iter)
+Stroke* stroke_iter_init_at(StrokeList* list, StrokeIterator* iter, u64 stroke_i)
 {
     Stroke* result = NULL;
 
@@ -109,10 +109,22 @@ Stroke* stroke_iter_init(StrokeList* list, StrokeIterator* iter)
     iter->count = list->count;
     iter->i = 0;
 
-    if (iter->cur_bucket && iter->count > 0) {
-        result = iter->cur_bucket->data;
+    if (stroke_i < iter->count) {
+        iter->i = stroke_i;
+        for (u64 i = 0; i < stroke_i / STROKELIST_BUCKET_COUNT; ++i) {
+            iter->cur_bucket = iter->cur_bucket->next;
+        }
+
+        result = &iter->cur_bucket->data[iter->i % STROKELIST_BUCKET_COUNT];
     }
 
+
+    return result;
+}
+
+Stroke* stroke_iter_init(StrokeList* list, StrokeIterator* iter)
+{
+    Stroke* result = stroke_iter_init_at(list, iter, 0);
     return result;
 }
 

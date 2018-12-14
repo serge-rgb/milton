@@ -31,9 +31,11 @@ struct SaveBlockHeader
 {
     u16 type; /*BlockType*/
 
+    // MLT version 6
     union
     {
-        BlockLayer block_layer;
+        // TODO: if layer content is the only one who uses this, maybe it would be better to save block_layer outside of the header.
+        BlockLayer block_layer;  // Block_LAYER_CONTENT
     };
 
 };
@@ -48,6 +50,12 @@ struct SaveBlock
     u64 bytes_end;
 
     u8 dirty;
+
+    union
+    {
+        // Block_LAYER_CONTENT
+        u64 num_saved_strokes;
+    };
 };
 
 

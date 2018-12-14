@@ -18,7 +18,7 @@
 #if MILTON_DEBUG_SAVE
 static i32 g_bytes_written = 0;
 
-void debug_mark_bytes(u64 bytes) 
+void debug_mark_bytes(u64 bytes)
 {
     g_bytes_written += bytes;
 }
@@ -547,6 +547,7 @@ milton_mark_block_for_save(MiltonPersist* p, SaveBlockHeader header)
 
                 p->blocks[count - 1] = {};
                 p->blocks[count - 1].header = p->blocks[block_i].header;
+                p->blocks[count - 1].dirty = true;
 
                 p->blocks[block_i] = {};
                 p->blocks[block_i].header = tmp;
@@ -556,21 +557,13 @@ milton_mark_block_for_save(MiltonPersist* p, SaveBlockHeader header)
     }
 }
 
-
 static char*
-save_block_layer_content(Milton* milton, FILE* fd, i32 layer_id)
+write_stroke_list(FILE* fd, StrokeList* strokes, u64 stroke_i)
 {
     char* failure = NULL;
     StrokeIterator stroke_iter = {};
 
-    Layer* layer = layer::get_by_id(milton->canvas->root_layer, layer_id);
-    Stroke* stroke = NULL;
-
-    i32 num_strokes = count(&layer->strokes);
-    WRITE(&num_strokes, sizeof (i32), 1, fd);
-
-
-    for (stroke = stroke_iter_init(&layer->strokes, &stroke_iter);
+    for (Stroke* stroke = stroke_iter_init_at(strokes, &stroke_iter, stroke_i);
          stroke != NULL;
          stroke = stroke_iter_next(&stroke_iter)) {
 
@@ -585,7 +578,41 @@ save_block_layer_content(Milton* milton, FILE* fd, i32 layer_id)
             WRITE(&point, sizeof (PersistStrokePoint), 1, fd);
         }
     }
+END:
+    return failure;
+}
 
+static char*
+save_block_layer_content(Milton* milton, FILE* fd, i32 layer_id)
+{
+    char* failure = NULL;
+
+    Layer* layer = layer::get_by_id(milton->canvas->root_layer, layer_id);
+    Stroke* stroke = NULL;
+
+    i32 num_strokes = count(&layer->strokes);
+    WRITE(&num_strokes, sizeof (i32), 1, fd);
+
+    failure = write_stroke_list(fd, &layer->strokes, 0);
+END:
+    return failure;
+}
+
+static char*
+save_layer_content_increment(Milton* milton, size_t bytes_end, FILE* fd, i32 layer_id, u64 stroke_i)
+{
+    char* failure = NULL;
+    Layer* l = layer::get_by_id(milton->canvas->root_layer, layer_id);
+
+    fseek(fd, sizeof(SaveBlockHeader), SEEK_CUR);  // Skip to num_strokes
+
+    i32 num_strokes = count(&l->strokes);  // Always update num_strokes.
+    WRITE(&num_strokes, sizeof (i32), 1, fd);
+
+    fseek(fd, bytes_end, SEEK_SET);
+
+
+    failure = write_stroke_list(fd, &l->strokes, stroke_i);
 END:
     return failure;
 }
@@ -663,12 +690,30 @@ save_block_list(Milton* milton, FILE* fd)
         }
         else {
             file_dirty = true;
-            // TODO: Check if last block && layer content. Only save latest stroke(s)
-            block->bytes_begin = ftell(fd);
-            failure = save_block(milton, fd, &block->header);
-            block->bytes_end = ftell(fd);
-            if ( !failure ) {
-                block->dirty = false;
+
+            // Incremental layer content
+            if ( block_index == p->blocks.count - 1 &&
+                 block->header.type == Block_LAYER_CONTENT &&
+                 block->bytes_begin < block->bytes_end ) {
+                block->bytes_begin = ftell(fd);
+
+                failure = save_layer_content_increment(milton, block->bytes_end, fd, block->header.block_layer.id, block->num_saved_strokes);
+
+                block->bytes_end = ftell(fd);
+            }
+            // Regular block save
+            else {
+                block->bytes_begin = ftell(fd);
+                failure = save_block(milton, fd, &block->header);
+                block->bytes_end = ftell(fd);
+                if ( !failure ) {
+                    block->dirty = false;
+                }
+            }
+
+            if ( block->header.type == Block_LAYER_CONTENT ) {
+                Layer* l = layer::get_by_id(milton->canvas->root_layer, block->header.block_layer.id);
+                block->num_saved_strokes = layer::count_strokes(l);
             }
         }
     }
