@@ -650,8 +650,6 @@ milton_reset_canvas_and_set_default(Milton* milton)
         exporter_init(&gui->exporter);
     }
 
-    milton_persist_set_blocks_for_painting(milton);
-
     milton_update_brushes(milton);
 
     milton_set_default_canvas_file(milton);
@@ -976,8 +974,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                         SaveBlockHeader header = {};
                         header.type = Block_LAYER_CONTENT;
                         header.block_layer.id = h.layer_id;
-
-                        milton_mark_block_for_save(milton->persist, header);
                     }
                     break;
                 }
@@ -1001,8 +997,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                             SaveBlockHeader header = {};
                             header.type = Block_LAYER_CONTENT;
                             header.block_layer.id = h.layer_id;
-
-                            milton_mark_block_for_save(milton->persist, header);
 
                             break;
                         }
@@ -1045,16 +1039,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                  && gui_consume_input(milton->gui, input) ) {
                 milton_update_brushes(milton);
                 gpu_update_picker(milton->render_data, &milton->gui->picker);
-
-                // TODO: Get the type of GUI change and mark corresponding block for save.
-                SaveBlockHeader header = { Block_BRUSHES };
-                milton_mark_block_for_save(milton->persist, header);
-
-                header = { Block_BRUSHES };
-                milton_mark_block_for_save(milton->persist, header);
-
-                header = { Block_COLOR_PICKER };
-                milton_mark_block_for_save(milton->persist, header);
             }
             else if ( !milton->gui->owns_user_input
                       && (milton->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
@@ -1206,8 +1190,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 SaveBlockHeader header = {};
                 header.type = Block_LAYER_CONTENT;
                 header.block_layer.id = milton->view->working_layer_id;
-
-                milton_mark_block_for_save(milton->persist, header);
             }
         }
     }

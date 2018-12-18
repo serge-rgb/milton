@@ -769,58 +769,6 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
         }
     } // exporting
 
-
-#if MILTON_DEBUG
-    static bool file_format_window = true;
-
-    if (file_format_window) {
-        ImGui::SetNextWindowSize({500, 200}, ImGuiSetCond_FirstUseEver);
-
-        if ( ImGui::Begin("New file format") ) {
-            b32 do_read = false;
-            b32 do_write = false;
-            ImGui::Text("Read new file format");
-            ImGui::SameLine();
-            if ( ImGui::Checkbox("##read", &milton->persist->DEV_use_new_format_read) ) {
-            }
-            ImGui::SameLine();
-
-            if ( ImGui::Button("Read once") ) {
-                do_read = true;
-            }
-
-            ImGui::Text("Save new file format");
-            ImGui::SameLine();
-            if ( ImGui::Checkbox("##write", &milton->persist->DEV_use_new_format_read) ) {
-            }
-
-            ImGui::SameLine();
-
-            if ( ImGui::Button("Write once") ) {
-                do_write = true;
-            }
-
-            if ( ImGui::Button("Read and write") ) {
-                do_read = true;
-                do_write = true;
-            }
-
-            if (do_write) {
-                // TODO: DEBUG CODE
-                if (milton->persist->blocks.count == 0) {
-                    milton_persist_set_blocks_for_painting(milton);
-                }
-                //
-                milton->persist->mlt_binary_version = 6;
-                milton_save_v6_file(milton, TO_PATH_STR("TEST_V6.mlt"));
-            }
-            if (do_read) {
-                milton_load_v6_file(milton, TO_PATH_STR("TEST_V6.mlt"));
-            }
-        } ImGui::End();
-    }
-#endif
-
 #if MILTON_ENABLE_PROFILING
     ImGui::SetNextWindowPos(ImVec2(ui_scale*300, ui_scale*205), ImGuiSetCond_FirstUseEver);
     ImGui::SetNextWindowSize({ui_scale*350, ui_scale*285}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences

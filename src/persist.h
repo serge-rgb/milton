@@ -62,8 +62,6 @@ struct SaveBlock
 struct MiltonPersist
 {
     // Persistence
-    bool DEV_use_new_format_read;
-    bool DEV_use_new_format_write;
     PATH_CHAR*  mlt_file_path;
     u32         mlt_binary_version;
     WallTime    last_save_time;
@@ -83,11 +81,6 @@ PATH_CHAR* milton_get_last_canvas_fname();
 void milton_load(Milton* milton);
 void milton_save(Milton* milton);
 
-void milton_load_v6_file(Milton* milton, PATH_CHAR* path);
-
-void milton_save_v6(Milton* milton);  // TODO: Remove this once the new save format is done
-void milton_save_v6_file(Milton* milton, PATH_CHAR* path);
-
 void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);
 
 b32  milton_appstate_load(PlatformPrefs* prefs);
@@ -96,7 +89,4 @@ void milton_appstate_save(PlatformPrefs* prefs);
 void milton_settings_load(MiltonSettings* settings);
 void milton_settings_save(MiltonSettings* settings);
 
-void milton_persist_set_blocks_for_painting(Milton* milton);
-
-void milton_mark_block_for_save(MiltonPersist* p, SaveBlockHeader header);
 
