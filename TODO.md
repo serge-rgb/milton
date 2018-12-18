@@ -4,7 +4,7 @@ To-Do
 Next release
 ------------
 
-[ ] incremental saves
+[ ] save thread with bandwidth limit
 [ ] settings file
 [ ] fix azerty
 [ ] bezier interpolation
