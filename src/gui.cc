@@ -380,6 +380,7 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                     if ( name ) {
                         milton_log("Saving to %s\n", name);
                         milton_set_canvas_file(milton, name);
+                        milton_save(milton);
                         input->flags |= MiltonInputFlags_SAVE_FILE;
                         b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
                                                                  DeleteErrorTolerance_OK_NOT_EXIST);

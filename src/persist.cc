@@ -964,7 +964,6 @@ milton_save_v6_file(Milton* milton, PATH_CHAR* fname)
     #endif
 
     // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
-    // TODO: is this still needed?
     i32 history_count = 0;
     u32 milton_binary_version = 0;
     i32 num_layers = 0;
@@ -1131,6 +1130,9 @@ END:
     if (failure) {
         milton_log("File load error: [%s]\n", failure);
         milton_reset_canvas_and_set_default(milton);
+        char message[MAX_PATH] = {};
+        snprintf(message, array_count(message), "Milton save failed: %s.", failure);
+        platform_dialog(message, "Error");
     }
     else {
         milton->flags |= MiltonStateFlags_JUST_SAVED;
