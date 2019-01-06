@@ -8,19 +8,13 @@
 static FILE* g_unix_logfile;
 
 void
-unix_log(char* format, ...)
+unix_log_args(char* format, va_list args)
 {
-    char message[ 4096 ];
-
+    char message [ 4096] = {0};
     int num_bytes_written = 0;
+    mlt_assert(format != NULL);
 
-    va_list args;
-
-    mlt_assert (format != NULL);
-
-    va_start(args, format);
-
-    num_bytes_written = vsnprintf(message, sizeof( message ) - 1, format, args);
+    num_bytes_written = vsnprintf(message, sizeof(message) - 1, format, args);
 
     if ( num_bytes_written > 0 ) {
         printf("%s", message);
@@ -36,6 +30,22 @@ unix_log(char* format, ...)
             fwrite(message, 1, num_bytes_written, g_unix_logfile);
         }
     }
+}
+
+void
+unix_log(char* format, ...)
+{
+    char message[ 4096 ];
+
+    int num_bytes_written = 0;
+
+    va_list args;
+
+    mlt_assert (format != NULL);
+
+    va_start(args, format);
+
+    unix_log_args(format, args);
 
     va_end( args );
 }
