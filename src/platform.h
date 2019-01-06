@@ -126,7 +126,7 @@ void    platform_pixel_to_point(PlatformState* ps, v2l* inout);
 void    milton_fatal(char* message);
 void    milton_die_gracefully(char* message);
 
-
+int platform_titlebar_height(PlatformState* p);
 
 void cursor_show();
 void cursor_hide();

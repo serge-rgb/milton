@@ -689,20 +689,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
     platform.width = size_px.w;
     platform.height = size_px.h;
 
-    // Sometimes SDL sets the window position such that it's impossible to move
-    // without using Windows shortcuts that not everyone knows. Check if this
-    // is the case and set a good default.
-    {
-        if (!is_fullscreen) {
-            int x = 0, y = 0;
-            SDL_GetWindowPosition(window, &x, &y);
-            if ( x < 0 && y < 0 ) {
-                milton_log("Negative coordinates for window position. Setting it to 100,100. \n");
-                SDL_SetWindowPosition(window, 100, 100);
-            }
-        }
-    }
-
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 
     if ( !gl_context ) {
@@ -781,6 +767,15 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     platform_setup_cursor(&milton->root_arena, &platform);
 
+    // Sometimes SDL sets the window position such that it's impossible to move
+    // without using Windows shortcuts that not everyone knows. Check if this
+    // is the case and set a good default.
+    if (!is_fullscreen) {
+        const int pixel_padding = platform_titlebar_height(&platform);
+        int x = 0, y = 0;
+        SDL_GetWindowPosition(window, &x, &y);
+        SDL_SetWindowPosition(window, min(max(0, x), platform.width - pixel_padding), min(max(pixel_padding, y), platform.height  - pixel_padding));
+    }
 
     // ImGui setup
     {

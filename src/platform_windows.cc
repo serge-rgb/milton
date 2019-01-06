@@ -85,6 +85,21 @@ platform_deinit(PlatformState* platform)
     EasyTab_Unload();
 }
 
+int 
+platform_titlebar_height(PlatformState* p)
+{
+    HWND window = p->specific->hwnd;
+    TITLEBARINFO ti = {};
+
+    ti.cbSize = sizeof(TITLEBARINFO);
+
+    GetTitleBarInfo(window, &ti);
+
+    int height = ti.rcTitleBar.bottom - ti.rcTitleBar.top;
+
+    return height;
+}
+
 void
 platform_setup_cursor(Arena* arena, PlatformState* platform)
 {

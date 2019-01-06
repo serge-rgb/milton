@@ -136,6 +136,12 @@ platform_monitor_refresh_hz()
     return hz;
 }
 
+int 
+platform_titlebar_height(PlatformState* p)
+{
+    return 20; // TODO: implement on mac and linux
+}
+
 int
 main(int argc, char** argv)
 {
@@ -145,3 +151,5 @@ main(int argc, char** argv)
     }
     milton_main(false, file_to_open);
 }
+
+
