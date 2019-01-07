@@ -15,13 +15,7 @@
 
 #define MILTON_MAGIC_NUMBER 0X11DECAF3
 
-#if MILTON_DEBUG_SAVE
-static i32 g_bytes_written = 0;
-
-void debug_mark_bytes(u64 bytes)
-{
-    g_bytes_written += bytes;
-}
+static u64 g_bytes_written = 0;
 
 void save_debug_log(char* message, ...)
 {
@@ -30,12 +24,6 @@ void save_debug_log(char* message, ...)
     milton_log_args(message, args);
     va_end(args);
 }
-
-#else
-
-void debug_mark_bytes(u64 bytes) {}
-
-#endif
 
 #pragma pack(push, 1)
 struct PersistStrokePoint
@@ -395,12 +383,28 @@ write_data(void* address, size_t size, size_t count, FILE* fd)
     if ( written != count ) {
         ok = false;
     }
+    else {
+        g_bytes_written += written * size;
+    }
     return ok;
 }
 
 void
+begin_data_tracking()
+{
+    g_bytes_written = 0;
+}
+
+u64 
+end_data_tracking()
+{
+    return g_bytes_written;
+}
+
+u64
 milton_save(Milton* milton)
 {
+    begin_data_tracking();
     // Declaring variables here to silence compiler warnings about GOTO jumping declarations.
     i32 history_count = 0;
     u32 milton_binary_version = 0;
@@ -606,7 +610,6 @@ milton_save(Milton* milton)
             }
         }
 
-END:
         int file_error = ferror(fd);
         if ( file_error == 0 ) {
             int close_ret = fclose(fd);
@@ -633,11 +636,13 @@ END:
             milton_log("File IO error. Error code %d. \n", file_error);
         }
 
+        
     }
     else {
         milton_die_gracefully("Could not create file for saving! ");
-        return;
     }
+    u64 bytes_written = end_data_tracking();
+    return bytes_written;
 }
 
 PATH_CHAR*

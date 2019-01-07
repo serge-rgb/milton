@@ -454,6 +454,8 @@ settings_init(MiltonSettings* s)
     s->background_color = v3f{1,1,1};
 }
 
+int milton_save_thread(void* state_);  // forward
+
 void
 milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open, MiltonInitFlags init_flags)
 {
@@ -469,12 +471,6 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->working_stroke.debug_flags = arena_alloc_array(&milton->root_arena, STROKE_MAX_POINTS, int);
 #endif
 
-#if MILTON_SAVE_ASYNC
-    milton->save_mutex = SDL_CreateMutex();
-    milton->save_flag = SaveEnum_GOOD_TO_GO;
-    milton->save_cond = SDL_CreateCond();
-#endif
-
     milton->current_mode = MiltonMode::PEN;
     milton->last_mode = MiltonMode::PEN;
 
@@ -485,6 +481,8 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->settings = arena_alloc_elem(&milton->root_arena, MiltonSettings);
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
     milton->persist = arena_alloc_elem(&milton->root_arena, MiltonPersist);
+
+    milton->persist->target_MB_per_sec = 0.2f;
 
     gui_init(&milton->root_arena, milton->gui, ui_scale);
     settings_init(milton->settings);
@@ -538,7 +536,6 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     }
     milton_set_brush_alpha(milton, 1.0f);
 
-    milton->persist->save_id = 1;
     milton->persist->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
     if (read_from_disk) { milton_load(milton); }
@@ -559,6 +556,12 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 #if MILTON_ENABLE_PROFILING
     profiler_init();
 #endif
+    
+    #if MILTON_SAVE_ASYNC
+        milton->save_mutex = SDL_CreateMutex();
+        milton->save_cond = SDL_CreateCond();
+        milton->save_thread = SDL_CreateThread(milton_save_thread, "Save thread", (void*)milton);
+    #endif
 }
 
 void
@@ -699,33 +702,84 @@ milton_save_postlude(Milton* milton)
 }
 
 #if MILTON_SAVE_ASYNC
-int  // Thread
-milton_save_async(void* state_)
+void
+trigger_async_save(Milton* milton)
+{
+    SDL_LockMutex(milton->save_mutex);
+    {
+        milton->save_flag = SaveEnum_SAVE_REQUESTED;
+    }
+    SDL_UnlockMutex(milton->save_mutex);
+}
+
+void
+milton_kill_save_thread(Milton* milton)
+{
+    SDL_LockMutex(milton->save_mutex);
+    milton->save_flag = SaveEnum_KILL;
+    SDL_UnlockMutex(milton->save_mutex);
+ 
+    // Do a save tick.
+    SDL_LockMutex(milton->save_mutex);
+    SDL_CondSignal(milton->save_cond);
+    SDL_UnlockMutex(milton->save_mutex);
+
+    SDL_WaitThread(milton->save_thread, NULL);
+}
+
+int
+milton_save_thread(void* state_)
 {
     Milton* milton = (Milton*)state_;
+    MiltonPersist* p = milton->persist;
 
-    SDL_LockMutex(milton->save_mutex);
-    i64 flag = milton->save_flag;
+    b32 running = true;
+    float time_to_wait_s = 0.0f;
+    u64 wait_begin_us = perf_counter();
 
-    if( flag == SaveEnum_GOOD_TO_GO ) {
-        milton->save_flag = SaveEnum_IN_USE;
+    while ( running ) {
+        bool do_save = false;
+        SDL_LockMutex(milton->save_mutex); 
+
+        SDL_CondWait(milton->save_cond, milton->save_mutex); // Wait for a frame tick.
+
+        if ( milton->save_flag == SaveEnum_KILL ) {
+            running = false;
+        }
+        else {
+            float time_waited_s = perf_count_to_sec(perf_counter() - wait_begin_us);
+            if (time_waited_s <= time_to_wait_s) {
+                time_to_wait_s -= time_waited_s;
+            }
+            else {
+                if ( milton->save_flag == SaveEnum_SAVE_REQUESTED ) {
+                    do_save = true;
+                    milton->save_flag = SaveEnum_WAITING;
+                }
+            }
+			wait_begin_us = perf_counter();
+        }
         SDL_UnlockMutex(milton->save_mutex);
 
-        milton_save(milton);
+        if ( do_save ) {
+            // Wait. Either one frame, or the time to stay below bandwidth.
+            u64 begin_us = perf_counter();
+            u64 bytes_written = milton_save(milton);
+            u64 duration_us = perf_counter() - begin_us;
 
-        SDL_LockMutex(milton->save_mutex);
+            // Sleep, if necessary.
+            float duration_s = duration_us / 1000000.0f;
+            
+            float MB_written = bytes_written / (1024.0f * 1024.0f);
+            float MB_per_sec = MB_written / duration_s;
 
-        milton->save_flag = SaveEnum_GOOD_TO_GO;
-
-        SDL_CondSignal(milton->save_cond);
-
-        SDL_UnlockMutex(milton->save_mutex);
+            if (MB_per_sec > p->target_MB_per_sec) {
+                time_to_wait_s = MB_written / p->target_MB_per_sec - duration_s;
+                wait_begin_us = perf_counter();
+            }
+        }
     }
-    else if ( flag == SaveEnum_IN_USE ) {
-        SDL_UnlockMutex(milton->save_mutex);
-    }
-
-    return flag;
+    return 0;
 }
 #endif
 
@@ -1280,7 +1334,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             milton_save(milton);
         } else {
 #if MILTON_SAVE_ASYNC
-            SDL_CreateThread(milton_save_async, "Async Save Thread", (void*)milton);
+            trigger_async_save(milton);
 #else
             milton_save(milton);
 #endif
@@ -1328,15 +1382,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
         // About to quit.
         if ( !(milton->flags & MiltonStateFlags_RUNNING) ) {
-
-            // Make sure that async save threads have finished.
-#if MILTON_SAVE_ASYNC
-            while ( milton->save_flag == SaveEnum_IN_USE ) {
-                SDL_CondWait(milton->save_cond, milton->save_mutex);
-                mlt_assert(milton->save_flag == SaveEnum_GOOD_TO_GO);
-            }
-#endif
-
+            milton_kill_save_thread(milton);
             // Release resources
             milton_reset_canvas(milton);
             gpu_release_data(milton->render_data);
@@ -1344,6 +1390,12 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             debug_memory_dump_allocations();
         }
     }
+
+#if MILTON_SAVE_ASYNC
+    SDL_LockMutex(milton->save_mutex);
+    SDL_CondSignal(milton->save_cond);
+    SDL_UnlockMutex(milton->save_mutex);
+#endif
 
     // Update render resources after loading
     if (milton->flags & MiltonStateFlags_JUST_SAVED) {

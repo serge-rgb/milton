@@ -71,7 +71,9 @@ struct MiltonPersist
                                         // the last MoveFileEx failed.
     DArray<SaveBlock> blocks;
 
-    u16 save_id;
+    //u16 save_id;
+
+    float target_MB_per_sec;
 
     sz bytes_to_last_block;
 };
@@ -79,7 +81,7 @@ struct MiltonPersist
 PATH_CHAR* milton_get_last_canvas_fname();
 
 void milton_load(Milton* milton);
-void milton_save(Milton* milton);
+u64 milton_save(Milton* milton);
 
 void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);
 

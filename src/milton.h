@@ -115,6 +115,7 @@ struct Milton
     SDL_mutex*  save_mutex;
     i64         save_flag;   // See SaveEnum
     SDL_cond*   save_cond;
+    SDL_Thread* save_thread;
 #endif
 
     // ---- The Painting
@@ -212,8 +213,9 @@ struct MiltonInput
 
 enum SaveEnum
 {
-    SaveEnum_IN_USE,
-    SaveEnum_GOOD_TO_GO,
+    SaveEnum_WAITING,
+    SaveEnum_SAVE_REQUESTED,
+    SaveEnum_KILL,
 };
 
 enum MiltonInitFlags
