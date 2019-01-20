@@ -1,14 +1,14 @@
-To-Do
+\To-Do
 =====
 
 Next release
 ------------
 
-[ ] save thread with bandwidth limit
+[x] save thread with bandwidth limit
 [ ] settings file
 [ ] fix azerty
 [ ] bezier interpolation
-[ ] huion fix
+[x] huion fix
 
 Back log
 --------

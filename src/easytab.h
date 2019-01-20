@@ -1148,10 +1148,14 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
             EasyTab->Buttons |= PacketBuffer[i].pkButtons;
         }
 
-        // Fill the orientation of the last packet in the buffer.
-        EasyTab->Orientation.Azimuth = PacketBuffer[NumPackets - 1].pkOrientation.orAzimuth;
-        EasyTab->Orientation.Altitude = PacketBuffer[NumPackets - 1].pkOrientation.orAltitude;
-        EasyTab->Orientation.Twist = PacketBuffer[NumPackets - 1].pkOrientation.orTwist;
+        // Fill the ergtation of the last packet in the buffer.
+        if (NumPackets)
+        {
+            EasyTab->Orientation.Azimuth = PacketBuffer[NumPackets - 1].pkOrientation.orAzimuth;
+            EasyTab->Orientation.Altitude = PacketBuffer[NumPackets - 1].pkOrientation.orAltitude;
+            EasyTab->Orientation.Twist = PacketBuffer[NumPackets - 1].pkOrientation.orTwist;
+        }
+
         EasyTab->NumPackets = NumPackets;
 
         result = EASYTAB_OK;
