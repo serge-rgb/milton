@@ -194,7 +194,9 @@ typedef enum
 #define EASYTAB_TRUE                1
 #define EASYTAB_FALSE               0
 #define EASYTAB_BOOL                int
+#define EASYTAB_ABS(val)  ( ((val) >= 0) ? val : -val )
 #endif
+
 
 typedef enum
 {
@@ -670,10 +672,12 @@ typedef struct EasyTab_s
     LONG InputExtentX;
     LONG InputExtentY;
 
-    LONG ScreenOriginX;
-    LONG ScreenOriginY;
-    LONG ScreenExtentX;
-    LONG ScreenExtentY;
+    LONG OutputOriginX;
+    LONG OutputOriginY;
+
+    LONG OutputExtentX;
+    LONG OutputExtentY;
+
 
 #endif // WIN32
 } EasyTabInfo;
@@ -980,12 +984,12 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         AXIS        RangeY     = {0};
         AXIS        Pressure   = {0};
 
-        EasyTab->WTInfoA(WTI_DDCTXS, 0, &LogContext);
+        EasyTab->WTInfoA(WTI_DEFSYSCTX, 0, &LogContext);
         EasyTab->WTInfoA(WTI_DEVICES, DVC_X, &RangeX);
         EasyTab->WTInfoA(WTI_DEVICES, DVC_Y, &RangeY);
         EasyTab->WTInfoA(WTI_DEVICES, DVC_NPRESSURE, &Pressure);
 
-        LogContext.lcPktData = PACKETDATA; // ??
+        LogContext.lcPktData = PACKETDATA;  // Specify the data we want in each packet.
         LogContext.lcOptions |= CXO_MESSAGES;
         if (MoveCursor) { LogContext.lcOptions |= CXO_SYSTEM; }
         LogContext.lcPktMode = PACKETMODE;
@@ -996,21 +1000,30 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
         LogContext.lcPktRate = DesiredPktRate;
         #endif
 
-        LogContext.lcOutExtY = -LogContext.lcOutExtY;
-
         EasyTab->InputOriginX = LogContext.lcInOrgX;
         EasyTab->InputOriginY = LogContext.lcInOrgY;
         EasyTab->InputExtentX = LogContext.lcInExtX;
         EasyTab->InputExtentY = LogContext.lcInExtY;
 
-        EasyTab->ScreenOriginX = GetSystemMetrics(SM_XVIRTUALSCREEN);
-        EasyTab->ScreenOriginY = GetSystemMetrics(SM_YVIRTUALSCREEN);
+        LogContext.lcOutOrgX = 0;
+        LogContext.lcOutExtX = LogContext.lcInExtX;
 
-        EasyTab->ScreenExtentX = GetSystemMetrics( SM_CXVIRTUALSCREEN );
-        EasyTab->ScreenExtentY = GetSystemMetrics( SM_CYVIRTUALSCREEN );
+        LogContext.lcOutOrgY = 0;
+        LogContext.lcOutExtY = -LogContext.lcInExtY;
 
-        float SysExtX          = LogContext.lcSysExtX;
-        float SysExtY          = LogContext.lcSysExtY;
+
+
+        LogContext.lcOutOrgX = 0;
+        LogContext.lcOutExtX = LogContext.lcInExtX;
+
+        LogContext.lcOutOrgY = 0;
+        LogContext.lcOutExtY = -LogContext.lcInExtY;
+
+
+        EasyTab->OutputOriginX = GetSystemMetrics(SM_XVIRTUALSCREEN); // LogContext.lcOutOrgX;
+        EasyTab->OutputOriginY = GetSystemMetrics(SM_YVIRTUALSCREEN); // LogContext.lcOutOrgY;
+        EasyTab->OutputExtentX = GetSystemMetrics( SM_CXVIRTUALSCREEN );
+        EasyTab->OutputExtentY = GetSystemMetrics( SM_CYVIRTUALSCREEN );
 
         if (TrackingMode == EASYTAB_TRACKING_MODE_RELATIVE)
         {
@@ -1094,23 +1107,40 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
     EasyTab->NumPackets = 0;
     if (Message == WT_PACKET)
     {
+        #define EASYTAB_SIGN(val) ( ((val) >= 0) ? 1 : -1 )
+
         int NumPackets = EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE, PacketBuffer);
-        POINT PointBuffer[EASYTAB_PACKETQUEUE_SIZE] = { 0 };
 
         if ( NumPackets ) { EasyTab->Buttons = 0; }
         for (int i = 0; i < NumPackets; ++i)
         {
-            float x = (PacketBuffer[i].pkX - EasyTab->InputOriginX) / (float)EasyTab->InputExtentX;
-            float y = (PacketBuffer[i].pkY - EasyTab->InputOriginY) / (float)EasyTab->InputExtentY;
+            float x;
+            float y;
+            if (EASYTAB_SIGN(EasyTab->OutputExtentX) == EASYTAB_SIGN(EasyTab->InputExtentX))
+            {
+                x = ((PacketBuffer[i].pkX - EasyTab->InputOriginX) * EASYTAB_ABS(EasyTab->OutputExtentX) / (float)EASYTAB_ABS(EasyTab->InputExtentX)) + EasyTab->OutputOriginX;
+            }
+            else
+            {
+                x = EASYTAB_ABS(EasyTab->OutputExtentX) * (EASYTAB_ABS(EasyTab->InputExtentX) - (PacketBuffer[i].pkX - EasyTab->InputOriginX)) / (float)EASYTAB_ABS(EasyTab->InputExtentX) +  EasyTab->OutputOriginX;
+            }
 
-            PointBuffer[i].x = EasyTab->ScreenOriginX + x * EasyTab->ScreenExtentX;
-            PointBuffer[i].y = EasyTab->ScreenOriginY + y * EasyTab->ScreenExtentY;
+            if (EASYTAB_SIGN(EasyTab->OutputExtentX) == EASYTAB_SIGN(EasyTab->InputExtentX))
+            {
+                y = ((PacketBuffer[i].pkY - EasyTab->InputOriginY) * EASYTAB_ABS(EasyTab->OutputExtentY) / (float)EASYTAB_ABS(EasyTab->InputExtentY)) + EasyTab->OutputOriginY;
+            }
+            else
+            {
+                y = EASYTAB_ABS(EasyTab->OutputExtentY) * (EASYTAB_ABS(EasyTab->InputExtentY) - (PacketBuffer[i].pkY - EasyTab->InputOriginY)) / (float)EASYTAB_ABS(EasyTab->InputExtentY) +  EasyTab->OutputOriginY;
+            }
 
-            RECT ClientRect = {0};
-            GetClientRect(Window, &ClientRect);
-            ScreenToClient(Window, &PointBuffer[i]);
-            EasyTab->PosX[i] = PointBuffer[i].x;
-            EasyTab->PosY[i] = PointBuffer[i].y;
+
+            POINT point = { (long)x, (long)y };
+
+            ScreenToClient(Window, &point);
+
+            EasyTab->PosX[i] = point.x;
+            EasyTab->PosY[i] = point.y;
 
             EasyTab->Pressure[i] = (float)PacketBuffer[i].pkNormalPressure / (float)EasyTab->MaxPressure;
 
@@ -1125,6 +1155,8 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         EasyTab->NumPackets = NumPackets;
 
         result = EASYTAB_OK;
+
+        #undef EASYTAB_SIGN
     }
     else if (Message == WT_PROXIMITY &&
              (HCTX)WParam == EasyTab->Context)
