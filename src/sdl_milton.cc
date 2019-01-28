@@ -1,8 +1,10 @@
 // Copyright (c) 2015 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
+#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM "gl.h"
 #include <imgui.h>
-#include <imgui_impl_sdl_gl3.h>
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_opengl3.h"
 
 #include "milton.h"
 #include "gl_helpers.h"
@@ -108,7 +110,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
     SDL_Event event;
     while ( SDL_PollEvent(&event) ) {
-        ImGui_ImplSdlGL3_ProcessEvent(&event);
+        ImGui_ImplSDL2_ProcessEvent(&event);
 
         SDL_Keymod keymod = SDL_GetModState();
         platform->is_ctrl_down = (keymod & KMOD_LCTRL) | (keymod & KMOD_RCTRL);
@@ -699,6 +701,19 @@ milton_main(bool is_fullscreen, char* file_to_open)
         milton_die_gracefully("Milton could not load the necessary OpenGL functionality. Exiting.");
     }
 
+    // Init ImGUI
+    ImGui::CreateContext();
+
+
+#if USE_GL_3_2
+    const char* gl_version = "#version 330 \n";
+#else
+    const char* gl_version = "#version 120 \n";
+#endif
+
+    ImGui_ImplSDL2_InitForOpenGL(window, &gl_context);
+    ImGui_ImplOpenGL3_Init(gl_version);
+
     SDL_GL_SetSwapInterval(0);
 
     int actual_major = 0;
@@ -759,9 +774,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
     milton_resize_and_pan(milton, {}, {platform.width, platform.height});
 
     platform.window_id = SDL_GetWindowID(window);
-
-    // Init ImGUI
-    ImGui_ImplSdlGL3_Init(window);
 
     i32 display_hz = platform_monitor_refresh_hz();
 
@@ -948,7 +960,10 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         i32 input_flags = (i32)milton_input.flags;
 
-        ImGui_ImplSdlGL3_NewFrame(window);
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        ImGui::NewFrame();
+
         // Clear our pointer input because we captured an ImGui widget!
         if ( ImGui::GetIO().WantCaptureMouse ) {
             platform.num_point_results = 0;
@@ -1001,10 +1016,15 @@ milton_main(bool is_fullscreen, char* file_to_open)
         if ( !(milton->flags & MiltonStateFlags_RUNNING) ) {
             platform.should_quit = true;
         }
-        ImGui::Render();
+        {
+            ImGuiIO& io = ImGui::GetIO(); (void)io;
+            ImGui::Render();
+            SDL_GL_MakeCurrent(window, gl_context);
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
+        SDL_GL_SwapWindow(window);
         PROFILE_GRAPH_END(GL);
         PROFILE_GRAPH_BEGIN(system);
-        SDL_GL_SwapWindow(window);
 
         platform_event_tick();
 

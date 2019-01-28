@@ -5,6 +5,7 @@ Next release
 ------------
 
 [x] save thread with bandwidth limit
+[ ] GUI image buttons
 [ ] settings file
 [ ] fix azerty
 [ ] bezier interpolation

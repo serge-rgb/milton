@@ -16,7 +16,7 @@
     X(const GLubyte*, glGetStringi,       GLenum name, GLuint index)                              \
     X(void,     glBindFramebufferEXT,     GLenum target, GLuint framebuffer)                      \
     X(void,     glBindTexture,            GLenum target, GLuint text) \
-    X(void,     glBufferData,             GLenum target, GLsizeiptr size, GLvoid *data, GLenum usage) \
+    X(void,     glBufferData,             GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage) \
     X(void,     glCompileShader,          GLuint shader)                                          \
     X(void,     glEnable, GLenum cap )\
     X(void,     glFramebufferTexture2DEXT, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) \
