@@ -80,6 +80,7 @@
     X(void,     glDeleteProgram,          GLuint program)                                         \
     X(void,     glDeleteTextures,         GLsizei n, const GLuint *textures)\
     X(void,     glDeleteShader,           GLuint shader)                                          \
+    X(void, glPolygonMode,  GLenum face, GLenum mode) \
 
     // X(void,     glBindAttribLocation,     GLuint program, GLuint index, GLchar* name)       \
     // X(void,     glDeleteFramebuffersEXT,  GLsizei n, GLuint *framebuffers)                  \
