@@ -23,14 +23,14 @@
 //  2018-08-01: Inputs: Workaround for Emscripten which doesn't seem to handle focus related calls.
 //  2018-06-29: Inputs: Added support for the ImGuiMouseCursor_Hand cursor.
 //  2018-06-08: Misc: Extracted imgui_impl_sdl.cpp/.h away from the old combined SDL2+OpenGL/Vulkan examples.
-//  2018-06-08: Misc: ImGui_ImplSDL2_InitForOpenGL() now takes a SDL_GLContext parameter. 
+//  2018-06-08: Misc: ImGui_ImplSDL2_InitForOpenGL() now takes a SDL_GLContext parameter.
 //  2018-05-09: Misc: Fixed clipboard paste memory leak (we didn't call SDL_FreeMemory on the data returned by SDL_GetClipboardText).
 //  2018-03-20: Misc: Setup io.BackendFlags ImGuiBackendFlags_HasMouseCursors flag + honor ImGuiConfigFlags_NoMouseCursorChange flag.
 //  2018-02-16: Inputs: Added support for mouse cursors, honoring ImGui::GetMouseCursor() value.
 //  2018-02-06: Misc: Removed call to ImGui::Shutdown() which is not available from 1.60 WIP, user needs to call CreateContext/DestroyContext themselves.
 //  2018-02-06: Inputs: Added mapping for ImGuiKey_Space.
 //  2018-02-05: Misc: Using SDL_GetPerformanceCounter() instead of SDL_GetTicks() to be able to handle very high framerate (1000+ FPS).
-//  2018-02-05: Inputs: Keyboard mapping is using scancodes everywhere instead of a confusing mixture of keycodes and scancodes. 
+//  2018-02-05: Inputs: Keyboard mapping is using scancodes everywhere instead of a confusing mixture of keycodes and scancodes.
 //  2018-01-20: Inputs: Added Horizontal Mouse Wheel support.
 //  2018-01-19: Inputs: When available (SDL 2.0.4+) using SDL_CaptureMouse() to retrieve coordinates outside of client area when dragging. Otherwise (SDL 2.0.3 and before) testing for SDL_WINDOW_INPUT_FOCUS instead of SDL_WINDOW_MOUSE_FOCUS.
 //  2018-01-18: Inputs: Added mapping for ImGuiKey_Insert.
@@ -238,7 +238,7 @@ static void ImGui_ImplSDL2_UpdateMousePosAndButtons()
         io.MousePos = ImVec2((float)mx, (float)my);
     }
 
-    // SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL window boundaries shouldn't e.g. trigger the OS window resize cursor. 
+    // SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL window boundaries shouldn't e.g. trigger the OS window resize cursor.
     // The function is only supported from SDL 2.0.4 (released Jan 2016)
     bool any_mouse_button_down = ImGui::IsAnyMouseDown();
     SDL_CaptureMouse(any_mouse_button_down ? SDL_TRUE : SDL_FALSE);
@@ -246,26 +246,6 @@ static void ImGui_ImplSDL2_UpdateMousePosAndButtons()
     if (SDL_GetWindowFlags(g_Window) & SDL_WINDOW_INPUT_FOCUS)
         io.MousePos = ImVec2((float)mx, (float)my);
 #endif
-}
-
-static void ImGui_ImplSDL2_UpdateMouseCursor()
-{
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange)
-        return;
-
-    ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
-    if (io.MouseDrawCursor || imgui_cursor == ImGuiMouseCursor_None)
-    {
-        // Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
-        SDL_ShowCursor(SDL_FALSE);
-    }
-    else
-    {
-        // Show OS mouse cursor
-        SDL_SetCursor(g_MouseCursors[imgui_cursor] ? g_MouseCursors[imgui_cursor] : g_MouseCursors[ImGuiMouseCursor_Arrow]);
-        SDL_ShowCursor(SDL_TRUE);
-    }
 }
 
 void ImGui_ImplSDL2_NewFrame(SDL_Window* window)
@@ -288,5 +268,4 @@ void ImGui_ImplSDL2_NewFrame(SDL_Window* window)
     g_Time = current_time;
 
     ImGui_ImplSDL2_UpdateMousePosAndButtons();
-    ImGui_ImplSDL2_UpdateMouseCursor();
 }

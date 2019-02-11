@@ -85,7 +85,7 @@ platform_deinit(PlatformState* platform)
     EasyTab_Unload();
 }
 
-int 
+int
 platform_titlebar_height(PlatformState* p)
 {
     HWND window = p->specific->hwnd;
@@ -378,7 +378,7 @@ win32_log(char *format, ...)
     va_end(args);
 }
 
-void 
+void
 win32_log_args(char* format, va_list args)
 {
     char message[ 4096 ];
