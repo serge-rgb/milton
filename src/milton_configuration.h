@@ -25,9 +25,9 @@
 
 #define MILTON_ENABLE_PROFILING 1
 
-#define REDRAW_EVERY_FRAME 1
+#define REDRAW_EVERY_FRAME 0
 
-#define STROKE_DEBUG_VIZ 0
+#define STROKE_DEBUG_VIZ 1
 
 #define MILTON_HARDWARE_BRUSH_CURSOR 1
 
@@ -39,7 +39,7 @@
 
 // Uses GL 2.1 when 0
 #define USE_GL_3_2 0
-    
+
 
     // Use 3.2 on macos. OpenGL 3.2 is supported by all mac computers since macOS 10.8.5
     // https://developer.apple.com/opengl/OpenGL-Capabilities-Tables.pdf

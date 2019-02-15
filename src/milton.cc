@@ -255,11 +255,6 @@ stroke_append_point(Stroke* stroke, v2l canvas_point, f32 pressure)
             int index = stroke->num_points++;
             stroke->points[index] = canvas_point;
             stroke->pressures[index] = pressure;
-            #if STROKE_DEBUG_VIZ
-                if ( point_is_interpolated ) {
-                    stroke->debug_flags[index] |= Stroke::INTERPOLATED;
-                }
-            #endif
         }
     }
 }
@@ -556,7 +551,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 #if MILTON_ENABLE_PROFILING
     profiler_init();
 #endif
-    
+
     #if MILTON_SAVE_ASYNC
         milton->save_mutex = SDL_CreateMutex();
         milton->save_cond = SDL_CreateCond();
@@ -718,7 +713,7 @@ milton_kill_save_thread(Milton* milton)
     SDL_LockMutex(milton->save_mutex);
     milton->save_flag = SaveEnum_KILL;
     SDL_UnlockMutex(milton->save_mutex);
- 
+
     // Do a save tick.
     SDL_LockMutex(milton->save_mutex);
     SDL_CondSignal(milton->save_cond);
@@ -739,7 +734,7 @@ milton_save_thread(void* state_)
 
     while ( running ) {
         bool do_save = false;
-        SDL_LockMutex(milton->save_mutex); 
+        SDL_LockMutex(milton->save_mutex);
 
         SDL_CondWait(milton->save_cond, milton->save_mutex); // Wait for a frame tick.
 
@@ -769,7 +764,7 @@ milton_save_thread(void* state_)
 
             // Sleep, if necessary.
             float duration_s = duration_us / 1000000.0f;
-            
+
             float MB_written = bytes_written / (1024.0f * 1024.0f);
             float MB_per_sec = MB_written / duration_s;
 

@@ -5,11 +5,12 @@ Next release
 ------------
 
 [x] save thread with bandwidth limit
+[ ] bezier interpolation
+[x] huion fix
+
 [ ] GUI image buttons
 [ ] settings file
 [ ] fix azerty
-[ ] bezier interpolation
-[x] huion fix
 
 Back log
 --------

@@ -15,6 +15,8 @@ struct RenderElement
     GLuint  vbo_stroke;
     GLuint  vbo_pointa;
     GLuint  vbo_pointb;
+    GLuint  vbo_pointp;
+    GLuint  vbo_pointq;
     GLuint  indices;
 #if STROKE_DEBUG_VIZ
     GLuint vbo_debug;
