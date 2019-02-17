@@ -714,7 +714,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     ImGui_ImplSDL2_InitForOpenGL(window, &gl_context);
     ImGui_ImplOpenGL3_Init(gl_version);
 
-    SDL_GL_SetSwapInterval(0);
+    SDL_GL_SetSwapInterval(1);
 
     int actual_major = 0;
     int actual_minor = 0;

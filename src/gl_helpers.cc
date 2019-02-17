@@ -597,6 +597,19 @@ vertex_attrib_v3f(GLuint program, char* name, GLuint vbo)
     }
 }
 
+void
+vertex_attrib_v2f(GLuint program, char* name, GLuint vbo)
+{
+    GLint loc = glGetAttribLocation(program, name);
+    if (loc >= 0) {
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glEnableVertexAttribArray((GLuint)loc);
+        glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
+                              /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
+                              /*stride*/ 0, /*ptr*/ 0);
+    }
+}
+
 
 }  // namespace gl
 

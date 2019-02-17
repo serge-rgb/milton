@@ -3,6 +3,8 @@
 
 in vec3 v_pointa;
 in vec3 v_pointb;
+in vec2 v_pointp;
+in vec2 v_pointq;
 
 uniform sampler2D u_canvas;
 
@@ -12,9 +14,13 @@ main()
     vec2 screen_point = vec2(gl_FragCoord.x, u_screen_size.y - gl_FragCoord.y);
 
     vec2 canvas_point = raster_to_canvas_gl(screen_point);
-
     vec2 a = v_pointa.xy;
     vec2 b = v_pointb.xy;
+
+    // Interpolation points
+    vec2 p = v_pointp;
+    vec2 q = v_pointq;
+
     vec2 ab = b - a;
     float len_ab = length(ab);
 
@@ -22,7 +28,19 @@ main()
     if (len_ab != 0.0) {
         t = clamp(dot((canvas_point - a)/len_ab, ab / len_ab), 0.0, 1.0);
     }
+
+    #if 0
     vec2 stroke_point = mix(a, b, t);
+    #elif 0
+    vec2 stroke_point = mix(p, q, t);
+    #else
+    vec2 stroke_point =
+        a * (1-t)*(1-t)*(1-t) +
+        3*p*t*(1-t)*(1-t) +
+        3*q*t*t*(1-t) +
+         b*t*t*t;
+     #endif
+
     float pressure = mix(v_pointa.z, v_pointb.z, t);
 
     // Distance between fragment and stroke
