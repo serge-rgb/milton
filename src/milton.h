@@ -104,6 +104,14 @@ struct Eyedropper
     u8* buffer;
 };
 
+struct SmoothFilter
+{
+    #define SMOOTHING_WINDOW 6
+    v2l points[SMOOTHING_WINDOW];
+    size_t index;
+    size_t n_points;
+};
+
 struct Milton
 {
     b32 flags;  // See MiltonStateFlags
@@ -141,6 +149,8 @@ struct Milton
     MiltonMode last_mode;
 
     PrimitiveFSM primitive_fsm;
+
+    SmoothFilter* smooth_filter;
 
     RenderData* render_data;  // Hardware Renderer
 

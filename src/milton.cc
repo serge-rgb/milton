@@ -259,6 +259,40 @@ stroke_append_point(Stroke* stroke, v2l canvas_point, f32 pressure)
     }
 }
 
+static v2l
+smooth_filter(SmoothFilter* filter, v2l input)
+{
+    filter->points[filter->index++] = input;
+    filter->index %= SMOOTHING_WINDOW;
+
+    float factor = 1.0 / SMOOTHING_WINDOW;
+
+    v2f sum = {0};
+    for (int i = 0; i < SMOOTHING_WINDOW; ++i) {
+        v2f point = {
+            (float)filter->points[i].x - input.x,
+            (float)filter->points[i].y - input.y,
+        };
+
+        sum = sum + point * factor;
+    }
+
+    v2l result = {
+        (long)sum.x + input.x,
+        (long)sum.y + input.y,
+    };
+
+    return result;
+}
+
+static void
+clear_smooth_filter(SmoothFilter* filter, v2l value)
+{
+    for (int i = 0; i < SMOOTHING_WINDOW; ++i) {
+        filter->points[i] = value;
+    }
+}
+
 static void
 milton_stroke_input(Milton* milton, MiltonInput* input)
 {
@@ -266,18 +300,23 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
         return;
     }
 
+
     // Using the pan center to do a change of coordinates so that we
     // don't lose precision when we convert to floating point
     v2l pan_center = milton->view->pan_center;
 
     Stroke* ws = &milton->working_stroke;
 
+    if (ws->num_points == 0) {
+        clear_smooth_filter(milton->smooth_filter, input->points[0]);
+    }
+
     //milton_log("Stroke input with %d packets\n", input->input_count);
     ws->brush    = milton_get_brush(milton);
     ws->layer_id = milton->view->working_layer_id;
 
     for ( int input_i = 0; input_i < input->input_count; ++input_i ) {
-        v2l in_point = input->points[input_i];
+        v2l in_point = smooth_filter(milton->smooth_filter, input->points[input_i]);
 
         v2l canvas_point = raster_to_canvas(milton->view, in_point);
 
@@ -288,33 +327,6 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
             pressure = pressure_min + input->pressures[input_i] * (1.0f - pressure_min);
         } else {
             pressure = 1.0f;
-        }
-
-        if ( milton_brush_smoothing_enabled(milton) ) {
-            // Stroke smoothing.
-            // Change canvas_point depending on the average of the last `N` points.
-            // The new point is a weighted sum of factor*average (1-factor)*canvas_point
-            i64 N = 2;
-            if ( ws->num_points > N ) {
-                v2l average = {};
-                float factor = 0.55f;
-
-                for ( i64 i = 0; i < N; ++i ) {
-                    average += (ws->points[ws->num_points-1 - i]) / N;
-                }
-
-                auto* view = milton->view;
-
-                float f_average_x = average.x - pan_center.x;
-                float f_average_y = average.y - pan_center.y;
-                float f_canvas_point_x = canvas_point.x - pan_center.x;
-                float f_canvas_point_y = canvas_point.y - pan_center.y;
-
-                canvas_point.x = (i64)roundf (f_average_x*factor + f_canvas_point_x*(1-factor));
-                canvas_point.y = (i64)roundf (f_average_y*factor + f_canvas_point_y*(1-factor));
-
-                canvas_point += pan_center;
-            }
         }
 
         stroke_append_point(ws, canvas_point, pressure);
@@ -470,6 +482,8 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->last_mode = MiltonMode::PEN;
 
     milton->render_data = gpu_allocate_render_data(&milton->root_arena);
+
+    milton->smooth_filter = arena_alloc_elem(&milton->root_arena, SmoothFilter);
 
     if (init_graphics) { milton->gl = arena_alloc_elem(&milton->root_arena, MiltonGLState); }
     milton->gui = arena_alloc_elem(&milton->root_arena, MiltonGui);
@@ -1102,7 +1116,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                     if ( prev_num_points == 0 && ws->num_points > 0 ) {
                         // New stroke. Clear screen without blur.
                         do_full_redraw = true;
-                        // gpu_clear_debug_points(milton->render_data);
                     }
                 }
             }
