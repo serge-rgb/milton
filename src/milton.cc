@@ -307,7 +307,7 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
 
     Stroke* ws = &milton->working_stroke;
 
-    if (ws->num_points == 0) {
+    if ((milton->flags & MiltonStateFlags_BRUSH_SMOOTHING) && ws->num_points == 0) {
         clear_smooth_filter(milton->smooth_filter, input->points[0]);
     }
 
@@ -316,7 +316,11 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
     ws->layer_id = milton->view->working_layer_id;
 
     for ( int input_i = 0; input_i < input->input_count; ++input_i ) {
-        v2l in_point = smooth_filter(milton->smooth_filter, input->points[input_i]);
+
+        v2l in_point = input->points[input_i];
+        if (milton->flags & MiltonStateFlags_BRUSH_SMOOTHING) {
+            in_point = smooth_filter(milton->smooth_filter, in_point);
+        }
 
         v2l canvas_point = raster_to_canvas(milton->view, in_point);
 

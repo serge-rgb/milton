@@ -1022,9 +1022,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
             SDL_GL_MakeCurrent(window, gl_context);
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
-        SDL_GL_SwapWindow(window);
         PROFILE_GRAPH_END(GL);
         PROFILE_GRAPH_BEGIN(system);
+        SDL_GL_SwapWindow(window);
 
         platform_event_tick();
 

@@ -1182,7 +1182,7 @@ picker_init(ColorPicker* picker)
         (f32)picker->center.y
     };
     picker_update_wheel(picker, fpoint);
-    picker->data.hsv = v3f{ 0, 1, 1 };
+    picker->data.hsv = v3f{ 0, 1, 0 };
 }
 
 Rect

@@ -8,7 +8,7 @@
 #define MILTON_MICRO_VERSION 0
 
 #if !defined(MILTON_DEBUG)  // Might be defined by cmake
-    #define MILTON_DEBUG 1
+    #define MILTON_DEBUG 0
 #endif
 
 #define MILTON_ZOOM_DEBUG 0
@@ -78,5 +78,8 @@
 
     #undef STROKE_DEBUG_VIZ
     #define STROKE_DEBUG_VIZ 0
+
+    #undef MILTON_ENABLE_PROFILING
+    #define MILTON_ENABLE_PROFILING 0
 
 #endif
