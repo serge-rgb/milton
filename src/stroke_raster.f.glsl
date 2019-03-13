@@ -29,7 +29,7 @@ main()
         t = clamp(dot((canvas_point - a)/len_ab, ab / len_ab), 0.0, 1.0);
     }
 
-    #if 0
+    #if 1
     vec2 stroke_point = mix(a, b, t);
     #elif 0
     vec2 stroke_point = mix(p, q, t);

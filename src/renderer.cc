@@ -864,9 +864,14 @@ gpu_cook_stroke(Arena* arena, RenderData* r, Stroke* stroke, CookStrokeOpt cook_
 
             mlt_assert(r->scale > 0);
 
-            // Compute
+            interp_p[0] = v2i_to_v2f(relative_to_render_center(r, stroke->points[0]));
+            interp_q[0] = v2i_to_v2f(relative_to_render_center(r, stroke->points[1]));
+
+            interp_p[npoints-1] = v2i_to_v2f(relative_to_render_center(r, stroke->points[npoints-2]));
+            interp_q[npoints-1] = v2i_to_v2f(relative_to_render_center(r, stroke->points[npoints-1]));
+
             // Compute interpolation points for the stroke.
-            for ( size_t i = 1; i < npoints; ++i ) {
+            for ( size_t i = 1; i < npoints-1; ++i ) {
                 v2f prev = v2i_to_v2f(relative_to_render_center(r, stroke->points[i - 1]));
                 v2f point = v2i_to_v2f(relative_to_render_center(r, stroke->points[i]));
                 v2f next = v2i_to_v2f(relative_to_render_center(r, stroke->points[i + 1]));
@@ -890,10 +895,6 @@ gpu_cook_stroke(Arena* arena, RenderData* r, Stroke* stroke, CookStrokeOpt cook_
                 interp_q[i - 1] = prev_q;
             }
 
-            // Missing p an q.
-            // TODO: Do a reflection. Just repeating values for now. This may even be good enough?
-            interp_p[0] = v2i_to_v2f(relative_to_render_center(r, stroke->points[0]));
-            interp_q[npoints-1] = v2i_to_v2f(relative_to_render_center(r, stroke->points[npoints-1]));
 
             size_t bounds_i = 0;
             size_t apoints_i = 0;
@@ -985,8 +986,6 @@ gpu_cook_stroke(Arena* arena, RenderData* r, Stroke* stroke, CookStrokeOpt cook_
                 for ( int repeat = 0; repeat < 4; ++repeat ) {
                     apoints[apoints_i++] = { (float)point_i.x, (float)point_i.y, pressure_a };
                     bpoints[bpoints_i++] = { (float)point_j.x, (float)point_j.y, pressure_b };
-                    // ppoints[ppoints_i++] = { (float)point_i.x, (float)point_i.y };
-                    // qpoints[qpoints_i++] = { (float)point_j.x, (float)point_j.y };
                     ppoints[ppoints_i++] = interp_p[i];
                     qpoints[qpoints_i++] = interp_q[i];
                     #if STROKE_DEBUG_VIZ
