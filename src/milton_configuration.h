@@ -13,8 +13,6 @@
 
 #define MILTON_ZOOM_DEBUG 0
 
-#define MILTON_DEBUG_SAVE 1
-
 // Windows Options
 #if defined(_WIN32)
     // If 1, print to VS console. Debug messages always print to log file.

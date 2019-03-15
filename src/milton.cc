@@ -214,48 +214,11 @@ stroke_append_point(Stroke* stroke, v2l canvas_point, f32 pressure)
     b32 not_the_first =  stroke->num_points >= 1;
 
     // A point passes inspection if:
-    //  a) it's the first point of this stroke
-    //  b) it is being appended to the stroke and it didn't merge with the previous point.
-    b32 passed_inspection = true;
-
-    if ( passed_inspection && not_the_first ) {
-        i32 in_radius = (i32)(pressure * stroke->brush.radius);
-
-        // Limit the number of points we check so that we don't mess with the stroke too much.
-        int point_window = 4;
-        for ( i32 i = stroke->num_points - 1; passed_inspection && i >= 0; --i ) {
-            if ( i - stroke->num_points >= point_window ) {
-                break;
-            }
-            v2l stroke_point = stroke->points[i];
-            i32 stroke_radius = (i32)(stroke->brush.radius * stroke->pressures[i]);
-
-            // Pop every point that is contained by the new one, but don't leave it empty
-            if ( stroke_point_contains_point(canvas_point, in_radius, stroke_point, stroke_radius) ) {
-                if ( stroke->num_points > 1 ) {
-                    --stroke->num_points;
-                } else {
-                    break;
-                }
-            }
-            // Don't append this point if it's contained in a previous point.
-            else if ( stroke_point_contains_point(stroke_point, stroke_radius, canvas_point, in_radius) ) {
-                // If some other point in the past contains this point,
-                // then this point is invalid.
-                passed_inspection = false;
-                break;
-            }
-        }
-    }
-
-    // Cleared to be appended.
-    if ( passed_inspection ) {
-        // Add to current stroke.
-        if ( stroke->num_points < STROKE_MAX_POINTS ) {
-            int index = stroke->num_points++;
-            stroke->points[index] = canvas_point;
-            stroke->pressures[index] = pressure;
-        }
+    // Add to current stroke.
+    if ( stroke->num_points < STROKE_MAX_POINTS ) {
+        int index = stroke->num_points++;
+        stroke->points[index] = canvas_point;
+        stroke->pressures[index] = pressure;
     }
 }
 

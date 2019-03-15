@@ -1,6 +1,6 @@
 if exist OUTPUT goto OUTPUT_EXISTS
 
-set builddir=build\win64-msvc-debug-default
+set builddir=build
 set sdlbindir=third_party\bin
 
 mkdir OUTPUT
