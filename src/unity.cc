@@ -29,8 +29,8 @@
     #if defined(_WIN32)
        #include "platform_main_windows.cc"
     #elif defined(__linux__)
-       #include "platform_main_unix.cc"
-       #include "platform_main_linux.cc"
+//       #include "platform_main_unix.cc"
+//       #include "platform_main_linux.cc"
     #elif defined(__MACH__)
        // #include "platform_main_unix.cc"
     #endif
