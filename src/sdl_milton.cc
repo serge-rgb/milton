@@ -188,6 +188,10 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         platform->pointer = point;
                     }
                 }
+
+                if (er == EASYTAB_NEEDS_REINIT) {
+                    platform_dialog("Tablet information changed. You might want to restart Milton", "Tablet info changed.");
+                }
             } break;
             case SDL_MOUSEBUTTONDOWN: {
                 if ( event.button.windowID != platform->window_id ) {
@@ -714,7 +718,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     ImGui_ImplSDL2_InitForOpenGL(window, &gl_context);
     ImGui_ImplOpenGL3_Init(gl_version);
 
-    SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(0);
 
     int actual_major = 0;
     int actual_minor = 0;

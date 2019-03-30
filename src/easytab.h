@@ -176,6 +176,8 @@ typedef enum
 {
     EASYTAB_OK = 0,
 
+    EASYTAB_NEEDS_REINIT = 1,
+
     // Errors
     EASYTAB_MEMORY_ERROR           = -1,
     EASYTAB_X11_ERROR              = -2,
@@ -292,6 +294,11 @@ typedef enum
         #define CXO_MARGIN      0x8000
         #define CXO_MGNINSIDE   0x4000
         #define CXO_CSRMESSAGES 0x0008 /* 1.1 */
+
+        // Context status values
+        #define CXS_DISABLED  0x0001
+        #define CXS_OBSCURED  0x0002
+        #define CXS_ONTOP     0x0004
 
         #define DVC_NAME        1
         #define DVC_HARDWARE    2
@@ -1098,12 +1105,6 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 
     PACKET PacketBuffer[EASYTAB_PACKETQUEUE_SIZE] = {0};
 
-    // Bring our context to the top.
-    if (EasyTab && EasyTab->WTOverlap)
-    {
-       EasyTab->WTOverlap(EasyTab->Context, TRUE);
-    }
-
     EasyTab->NumPackets = 0;
     if (Message == WT_PACKET)
     {
@@ -1185,14 +1186,42 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
         // see https://msdn.microsoft.com/en-us/library/windows/desktop/ms646274.aspx
         BOOL Active = (WParam & 0xFFFF) != 0;
 
-        // Enable / Disable the context when focus changes (e.g. our window is minimized)
-        // and move our context to the bottom with WTOverlap when we lose focus.
         // see http://www.wacomeng.com/windows/docs/NotesForTabletAwarePCDevelopers.html#_Toc274818945
         EasyTab->WTEnable(EasyTab->Context, Active);
-        if (!Active)
+        result = EASYTAB_OK;
+    }
+    else if (Message == WT_CTXOVERLAP && EasyTab->Context)
+    {
+        if (LParam & CXS_OBSCURED)
         {
-            EasyTab->WTOverlap(EasyTab->Context, FALSE);
+            // We want to be on top even when obscured, because of overlayed
+            // windows that don't steal focus.
+            EasyTab->WTOverlap(EasyTab->Context, true);
         }
+        result = EASYTAB_OK;
+    }
+    else if (Message == WT_CTXUPDATE)
+    {
+        HCTX UpdatedContext = (HCTX)WParam;
+        result = EASYTAB_OK;
+    }
+    else if (Message == WT_CTXOPEN)
+    {
+        HCTX NewContext = (HCTX)WParam;
+        EasyTab->Context = NewContext;
+        result = EASYTAB_OK;
+    }
+    else if (Message == WT_CTXCLOSE)
+    {
+        if ((HCTX)WParam == EasyTab->Context)
+        {
+            EasyTab->Context = 0;
+        }
+        result = EASYTAB_OK;
+    }
+    else if (Message == WT_INFOCHANGE)
+    {
+        result = EASYTAB_NEEDS_REINIT;
     }
 
     return result;
