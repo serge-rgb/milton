@@ -11,6 +11,8 @@
 #include "gui.h"
 #include "persist.h"
 
+#include "shortcuts.h"
+
 
 static void
 cursor_set_and_show(SDL_Cursor* cursor)
@@ -48,6 +50,204 @@ get_current_keyboard_layout()
     }
 
     return layout;
+}
+
+void shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event* event, MiltonInput* input)
+{
+    if ( event->wheel.windowID != platform->window_id ) {
+        return;
+    }
+
+    SDL_Keycode keycode = event->key.keysym.sym;
+
+    // Actions accepting key repeats.
+    {
+        if ( keycode == SDLK_LEFTBRACKET ) {
+            milton_decrease_brush_size(milton);
+            milton->hover_flash_ms = (i32)SDL_GetTicks();
+        }
+        else if ( keycode == SDLK_RIGHTBRACKET ) {
+            milton_increase_brush_size(milton);
+            milton->hover_flash_ms = (i32)SDL_GetTicks();
+        }
+        if ( platform->is_ctrl_down ) {
+            if ( (platform->keyboard_layout == LayoutType_QWERTZ && (keycode == SDLK_ASTERISK))
+               || (platform->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_EQUALS))
+               || (platform->keyboard_layout == LayoutType_QWERTY && (keycode == SDLK_EQUALS))
+               || keycode == SDLK_PLUS ) {
+                input->scale++;
+                milton_set_zoom_at_screen_center(milton);
+            }
+            if ( (platform->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_6))
+               || keycode == SDLK_MINUS ) {
+                input->scale--;
+                milton_set_zoom_at_screen_center(milton);
+            }
+            if ( keycode == SDLK_z ) {
+                if ( platform->is_shift_down ) {
+                    input->flags |= MiltonInputFlags_REDO;
+                }
+                else {
+                input->flags |= MiltonInputFlags_UNDO;
+                }
+            }
+        }
+
+    }
+
+    if ( event->key.repeat ) {
+        return;
+    }
+
+    // Non-repeatable keys
+
+    // Stop stroking when any key is hit
+    input->flags |= MiltonInputFlags_END_STROKE;
+
+    if ( keycode == SDLK_SPACE ) {
+        platform->is_space_down = true;
+                        // Stahp
+    }
+                    // Ctrl-KEY with no key repeats.
+    if ( platform->is_ctrl_down ) {
+        if ( keycode == SDLK_e ) {
+            input->mode_to_set = MiltonMode::EXPORTING;
+        }
+        if ( keycode == SDLK_q ) {
+            milton_try_quit(milton);
+        }
+        char* default_will_be_lost = "The default canvas will be cleared. Save it?";
+        if ( keycode == SDLK_n ) {
+            b32 save_file = false;
+            if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
+                if ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
+                    save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                }
+            }
+            if ( save_file ) {
+                PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                if ( name ) {
+                    milton_log("Saving to %s\n", name);
+                    milton_set_canvas_file(milton, name);
+                    milton_save(milton);
+                    b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
+                    if ( del == false ) {
+                        platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
+                            "Info");
+                    }
+                }
+            }
+
+                            // New Canvas
+            milton_reset_canvas_and_set_default(milton);
+            input->flags |= MiltonInputFlags_FULL_REFRESH;
+            milton->flags |= MiltonStateFlags_DEFAULT_CANVAS;
+
+        }
+        if ( keycode == SDLK_o ) {
+            b32 save_requested = false;
+                            // If current canvas is MiltonPersist, then prompt to save
+            if ( ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
+                b32 save_file = false;
+                if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
+                    save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                }
+                if ( save_file ) {
+                    PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                    if ( name ) {
+                        milton_log("Saving to %s\n", name);
+                        milton_set_canvas_file(milton, name);
+                        milton_save(milton);
+                        b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                         DeleteErrorTolerance_OK_NOT_EXIST);
+                        if ( del == false ) {
+                            platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                                "Info");
+                        }
+                    }
+                }
+            }
+            PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+            if ( fname ) {
+                milton_set_canvas_file(milton, fname);
+                input->flags |= MiltonInputFlags_OPEN_FILE;
+            }
+        }
+        if ( keycode == SDLK_a ) {
+                            // NOTE(possible refactor): There is a copy of this at milton.c end of file
+            PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+            if ( name ) {
+                milton_log("Saving to %s\n", name);
+                milton_set_canvas_file(milton, name);
+                input->flags |= MiltonInputFlags_SAVE_FILE;
+                b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                 DeleteErrorTolerance_OK_NOT_EXIST);
+                if ( del == false ) {
+                    platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                        "Info");
+                }
+            }
+        }
+    }
+    else {
+        if ( !ImGui::GetIO().WantCaptureMouse  ) {
+            if ( keycode == SDLK_m ) {
+                gui_toggle_menu_visibility(milton->gui);
+            } else if ( keycode == SDLK_e ) {
+                input->mode_to_set = MiltonMode::ERASER;
+            }
+            else if ( keycode == SDLK_b ) {
+                input->mode_to_set = MiltonMode::PEN;
+            }
+            else if ( keycode == SDLK_i ) {
+                input->mode_to_set = MiltonMode::EYEDROPPER;
+            }
+            else if ( keycode == SDLK_l ) {
+                input->mode_to_set = MiltonMode::PRIMITIVE;
+            }
+            else if ( keycode == SDLK_TAB ) {
+                gui_toggle_visibility(milton);
+            }
+            else if ( keycode == SDLK_F1 ) {
+                gui_toggle_help(milton->gui);
+            }
+            else if ( keycode == SDLK_1 ) {
+                milton_set_brush_alpha(milton, 0.1f);
+            }
+            else if ( keycode == SDLK_2 ) {
+                milton_set_brush_alpha(milton, 0.2f);
+            }
+            else if ( keycode == SDLK_3 ) {
+                milton_set_brush_alpha(milton, 0.3f);
+            }
+            else if ( keycode == SDLK_4 ) {
+                milton_set_brush_alpha(milton, 0.4f);
+            }
+            else if ( keycode == SDLK_5 ) {
+                milton_set_brush_alpha(milton, 0.5f);
+            }
+            else if ( keycode == SDLK_6 ) {
+                milton_set_brush_alpha(milton, 0.6f);
+            }
+            else if ( keycode == SDLK_7 ) {
+                milton_set_brush_alpha(milton, 0.7f);
+            }
+            else if ( keycode == SDLK_8 ) {
+                milton_set_brush_alpha(milton, 0.8f);
+            }
+            else if ( keycode == SDLK_9 ) {
+                milton_set_brush_alpha(milton, 0.9f);
+            }
+            else if ( keycode == SDLK_0 ) {
+                milton_set_brush_alpha(milton, 1.0f);
+            }
+        }
+    #if MILTON_ENABLE_PROFILING
+        if ( keycode == SDLK_BACKQUOTE ) {
+            milton->viz_window_visible = !milton->viz_window_visible;
+        }
+    #endif
+    }
 }
 
 void
@@ -106,8 +306,6 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
     platform->num_point_results = 0;
     platform->keyboard_layout = get_current_keyboard_layout();
 
-    i32 input_flags = (i32)MiltonInputFlags_NONE;
-
     SDL_Event event;
     while ( SDL_PollEvent(&event) ) {
         ImGui_ImplSDL2_ProcessEvent(&event);
@@ -129,10 +327,10 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 #pragma warning (disable : 4061)
 #endif
         switch ( event.type ) {
-            case SDL_QUIT:
-            platform_cursor_show();
-            milton_try_quit(milton);
-            break;
+            case SDL_QUIT: {
+                platform_cursor_show();
+                milton_try_quit(milton);
+            } break;
             case SDL_SYSWMEVENT: {
                 f32 pressure = NO_PRESSURE_INFO;
                 SDL_SysWMEvent sysevent = event.syswm;
@@ -183,7 +381,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
                         platform_point_to_pixel_i(platform, &point);
 
-                        input_flags |= MiltonInputFlags_HOVERING;
+                        milton_input.flags |= MiltonInputFlags_HOVERING;
 
                         platform->pointer = point;
                     }
@@ -210,7 +408,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         v2i point = v2i{(int)long_point.x, (int)long_point.y};
 
                         if ( !platform->is_panning && point.x >= 0 && point.y > 0 ) {
-                            input_flags |= MiltonInputFlags_CLICK;
+                            milton_input.flags |= MiltonInputFlags_CLICK;
                             milton_input.click = point;
 
                             platform->is_pointer_down = true;
@@ -241,8 +439,8 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         platform->is_middle_button_down = false;
                     }
                     pointer_up = true;
-                    input_flags |= MiltonInputFlags_CLICKUP;
-                    input_flags |= MiltonInputFlags_END_STROKE;
+                    milton_input.flags |= MiltonInputFlags_CLICKUP;
+                    milton_input.flags |= MiltonInputFlags_END_STROKE;
                 }
             } break;
             case SDL_MOUSEMOTION: {
@@ -270,9 +468,9 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                                 milton_input.pressures[platform->num_pressure_results++] = NO_PRESSURE_INFO;
                             }
                         }
-                        input_flags &= ~MiltonInputFlags_HOVERING;
+                        milton_input.flags &= ~MiltonInputFlags_HOVERING;
                     } else {
-                        input_flags |= MiltonInputFlags_HOVERING;
+                        milton_input.flags |= MiltonInputFlags_HOVERING;
                     }
                 }
                 break;
@@ -294,201 +492,8 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                 break;
             }
             case SDL_KEYDOWN: {
-                if ( event.wheel.windowID != platform->window_id ) {
-                    break;
-                }
-
-                SDL_Keycode keycode = event.key.keysym.sym;
-
-                // Actions accepting key repeats.
-                {
-                    if ( keycode == SDLK_LEFTBRACKET ) {
-                        milton_decrease_brush_size(milton);
-                        milton->hover_flash_ms = (i32)SDL_GetTicks();
-                    }
-                    else if ( keycode == SDLK_RIGHTBRACKET ) {
-                        milton_increase_brush_size(milton);
-                        milton->hover_flash_ms = (i32)SDL_GetTicks();
-                    }
-                    if ( platform->is_ctrl_down ) {
-                        if ( (platform->keyboard_layout == LayoutType_QWERTZ && (keycode == SDLK_ASTERISK))
-                             || (platform->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_EQUALS))
-                             || (platform->keyboard_layout == LayoutType_QWERTY && (keycode == SDLK_EQUALS))
-                             || keycode == SDLK_PLUS ) {
-                            milton_input.scale++;
-                            milton_set_zoom_at_screen_center(milton);
-                        }
-                        if ( (platform->keyboard_layout == LayoutType_AZERTY && (keycode == SDLK_6))
-                             || keycode == SDLK_MINUS ) {
-                            milton_input.scale--;
-                            milton_set_zoom_at_screen_center(milton);
-                        }
-                        if ( keycode == SDLK_z ) {
-                            if ( platform->is_shift_down ) {
-                                input_flags |= MiltonInputFlags_REDO;
-                            }
-                            else {
-                                input_flags |= MiltonInputFlags_UNDO;
-                            }
-                        }
-                    }
-
-                }
-
-                if ( event.key.repeat ) {
-                    break;
-                }
-
-                // Stop stroking when any key is hit
-                input_flags |= MiltonInputFlags_END_STROKE;
-
-                if ( keycode == SDLK_SPACE ) {
-                    platform->is_space_down = true;
-                    // Stahp
-                }
-                // Ctrl-KEY with no key repeats.
-                if ( platform->is_ctrl_down ) {
-                    if ( keycode == SDLK_e ) {
-                        milton_input.mode_to_set = MiltonMode::EXPORTING;
-                    }
-                    if ( keycode == SDLK_q ) {
-                        milton_try_quit(milton);
-                    }
-                    char* default_will_be_lost = "The default canvas will be cleared. Save it?";
-                    if ( keycode == SDLK_n ) {
-                        b32 save_file = false;
-                        if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
-                            if ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
-                                save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
-                            }
-                        }
-                        if ( save_file ) {
-                            PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
-                            if ( name ) {
-                                milton_log("Saving to %s\n", name);
-                                milton_set_canvas_file(milton, name);
-                                milton_save(milton);
-                                b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
-                                if ( del == false ) {
-                                    platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
-                                                    "Info");
-                                }
-                            }
-                        }
-
-                        // New Canvas
-                        milton_reset_canvas_and_set_default(milton);
-                        input_flags |= MiltonInputFlags_FULL_REFRESH;
-                        milton->flags |= MiltonStateFlags_DEFAULT_CANVAS;
-
-                    }
-                    if ( keycode == SDLK_o ) {
-                        b32 save_requested = false;
-                        // If current canvas is MiltonPersist, then prompt to save
-                        if ( ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
-                            b32 save_file = false;
-                            if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
-                                save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
-                            }
-                            if ( save_file ) {
-                                PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
-                                if ( name ) {
-                                    milton_log("Saving to %s\n", name);
-                                    milton_set_canvas_file(milton, name);
-                                    milton_save(milton);
-                                    b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
-                                                                             DeleteErrorTolerance_OK_NOT_EXIST);
-                                    if ( del == false ) {
-                                        platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
-                                                        "Info");
-                                    }
-                                }
-                            }
-                        }
-                        PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
-                        if ( fname ) {
-                            milton_set_canvas_file(milton, fname);
-                            input_flags |= MiltonInputFlags_OPEN_FILE;
-                        }
-                    }
-                    if ( keycode == SDLK_a ) {
-                        // NOTE(possible refactor): There is a copy of this at milton.c end of file
-                        PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
-                        if ( name ) {
-                            milton_log("Saving to %s\n", name);
-                            milton_set_canvas_file(milton, name);
-                            input_flags |= MiltonInputFlags_SAVE_FILE;
-                            b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
-                                                                     DeleteErrorTolerance_OK_NOT_EXIST);
-                            if ( del == false ) {
-                                platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
-                                                "Info");
-                            }
-                        }
-                    }
-                }
-                else {
-                    if ( !ImGui::GetIO().WantCaptureMouse  ) {
-                        if ( keycode == SDLK_m ) {
-                            gui_toggle_menu_visibility(milton->gui);
-                        } else if ( keycode == SDLK_e ) {
-                            milton_input.mode_to_set = MiltonMode::ERASER;
-                        }
-                        else if ( keycode == SDLK_b ) {
-                            milton_input.mode_to_set = MiltonMode::PEN;
-                        }
-                        else if ( keycode == SDLK_i ) {
-                            milton_input.mode_to_set = MiltonMode::EYEDROPPER;
-                        }
-                        else if ( keycode == SDLK_l ) {
-                            milton_input.mode_to_set = MiltonMode::PRIMITIVE;
-                        }
-                        else if ( keycode == SDLK_TAB ) {
-                            gui_toggle_visibility(milton);
-                        }
-                        else if ( keycode == SDLK_F1 ) {
-                            gui_toggle_help(milton->gui);
-                        }
-                        else if ( keycode == SDLK_1 ) {
-                            milton_set_brush_alpha(milton, 0.1f);
-                        }
-                        else if ( keycode == SDLK_2 ) {
-                            milton_set_brush_alpha(milton, 0.2f);
-                        }
-                        else if ( keycode == SDLK_3 ) {
-                            milton_set_brush_alpha(milton, 0.3f);
-                        }
-                        else if ( keycode == SDLK_4 ) {
-                            milton_set_brush_alpha(milton, 0.4f);
-                        }
-                        else if ( keycode == SDLK_5 ) {
-                            milton_set_brush_alpha(milton, 0.5f);
-                        }
-                        else if ( keycode == SDLK_6 ) {
-                            milton_set_brush_alpha(milton, 0.6f);
-                        }
-                        else if ( keycode == SDLK_7 ) {
-                            milton_set_brush_alpha(milton, 0.7f);
-                        }
-                        else if ( keycode == SDLK_8 ) {
-                            milton_set_brush_alpha(milton, 0.8f);
-                        }
-                        else if ( keycode == SDLK_9 ) {
-                            milton_set_brush_alpha(milton, 0.9f);
-                        }
-                        else if ( keycode == SDLK_0 ) {
-                            milton_set_brush_alpha(milton, 1.0f);
-                        }
-                    }
-#if MILTON_ENABLE_PROFILING
-                    if ( keycode == SDLK_BACKQUOTE ) {
-                        milton->viz_window_visible = !milton->viz_window_visible;
-                    }
-#endif
-                }
-
-                break;
-            }
+                shortcut_handle_keydown(milton, platform, &event, &milton_input);
+            } break;
             case SDL_KEYUP: {
                 if ( event.key.windowID != platform->window_id ) {
                     break;
@@ -521,7 +526,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                     platform->height = size.h;
 
 
-                    input_flags |= MiltonInputFlags_FULL_REFRESH;
+                    milton_input.flags |= MiltonInputFlags_FULL_REFRESH;
                     glViewport(0, 0, platform->width, platform->height);
                     break;
                 }
@@ -558,7 +563,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
     if ( pointer_up ) {
         // Add final point
         if ( !platform->is_panning && platform->is_pointer_down ) {
-            input_flags |= MiltonInputFlags_END_STROKE;
+            milton_input.flags |= MiltonInputFlags_END_STROKE;
             input_point = { event.button.x, event.button.y };
 
             platform_point_to_pixel_i(platform, &input_point);
@@ -567,14 +572,12 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                 milton_input.points[platform->num_point_results++] = VEC2L(input_point);
             }
             // Start drawing hover as soon as we stop the stroke.
-            input_flags |= MiltonInputFlags_HOVERING;
+            milton_input.flags |= MiltonInputFlags_HOVERING;
         }
         platform->is_pointer_down = false;
 
         platform->num_point_results = 0;
     }
-
-    milton_input.flags = input_flags;
 
     return milton_input;
 }
