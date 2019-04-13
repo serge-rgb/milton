@@ -31,20 +31,72 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
         // left
         ImGui::BeginChild("left pane", ImVec2(150, 0), true);
 
+        static b32 is_renaming = false;
+        static i32 layer_renaming_idx = -1;
+        static b32 focus_rename_field = false;
+
         Layer* layer = milton->canvas->root_layer;
         while ( layer->next ) { layer = layer->next; }  // Move to the top layer.
         while ( layer ) {
+
             bool v = layer->flags & LayerFlags_VISIBLE;
             ImGui::PushID(layer->id);
+
             if ( ImGui::Checkbox("##select", &v) ) {
                 layer::layer_toggle_visibility(layer);
                 input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
             }
+
             ImGui::PopID();
             ImGui::SameLine();
-            if ( ImGui::Selectable(layer->name, milton->canvas->working_layer == layer) ) {
-                milton_set_working_layer(milton, layer);
+
+            // TODO(michalc): clicking anywhere else than on the layer should cancel
+            // the name change
+
+            if ( is_renaming ) {
+                if ( layer->id == layer_renaming_idx ) {
+                    if ( focus_rename_field ) {
+                        ImGui::SetKeyboardFocusHere(0);
+                        focus_rename_field = false;
+                    }
+                    if ( ImGui::InputText("##rename",
+                                          milton->canvas->working_layer->name,
+                                          13,
+                                          //MAX_LAYER_NAME_LEN,
+                                          ImGuiInputTextFlags_EnterReturnsTrue
+                                          //,ImGuiInputTextFlags flags = 0, ImGuiTextEditCallback callback = NULL, void* user_data = NULL
+                                         )) {
+                        is_renaming = false;
+                    }
+                }
+                else {
+                    if ( ImGui::Selectable(layer->name,
+                                           milton->canvas->working_layer == layer,
+                                           ImGuiSelectableFlags_AllowDoubleClick) ) {
+                        if ( ImGui::IsMouseDoubleClicked(0) ) {
+                            // TODO(michalc): add setting the layer name
+                            layer_renaming_idx = layer->id;
+                            focus_rename_field = true;
+                        }
+                        is_renaming = false;
+                        milton_set_working_layer(milton, layer);
+                    }
+                }
             }
+            else {
+                if ( ImGui::Selectable(layer->name,
+                                       milton->canvas->working_layer == layer,
+                                       ImGuiSelectableFlags_AllowDoubleClick) ) {
+                    if ( ImGui::IsMouseDoubleClicked(0) ) {
+                        // TODO(michalc): add setting the layer name
+                        layer_renaming_idx = layer->id;
+                        is_renaming = true;
+                        focus_rename_field = true;
+                    }
+                    milton_set_working_layer(milton, layer);
+                }
+            }
+
             layer = layer->prev;
         }
         ImGui::EndChild();
@@ -145,32 +197,6 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
         ImGui::EndChild();
         ImGui::BeginChild("buttons");
 
-        static b32 is_renaming = false;
-        if ( is_renaming == false ) {
-            ImGui::Text(milton->canvas->working_layer->name);
-            ImGui::Indent();
-            if ( ImGui::Button(loc(TXT_rename)) )
-            {
-                is_renaming = true;
-            }
-            ImGui::Unindent();
-        }
-        else if ( is_renaming ) {
-            if (ImGui::InputText("##rename",
-                                  milton->canvas->working_layer->name,
-                                  13,
-                                  //MAX_LAYER_NAME_LEN,
-                                  ImGuiInputTextFlags_EnterReturnsTrue
-                                  //,ImGuiInputTextFlags flags = 0, ImGuiTextEditCallback callback = NULL, void* user_data = NULL
-                                 )) {
-                is_renaming = false;
-            }
-            ImGui::SameLine();
-            if ( ImGui::Button(loc(TXT_ok)) )
-            {
-                is_renaming = false;
-            }
-        }
         ImGui::Text(loc(TXT_move));
 
         Layer* a = NULL;
