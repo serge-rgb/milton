@@ -3,7 +3,7 @@
 
 #pragma once
 
-enum BindableActions
+enum BindableAction
 {
    Action_DECREASE_BRUSH_SIZE,
    Action_INCREASE_BRUSH_SIZE,
@@ -42,33 +42,55 @@ enum BindableActions
 
 };
 
-struct KeyboardShortcut
+enum ModifierFlags
+{
+   Modifier_NONE = 0,
+
+   Modifier_CTRL = 1<<0,
+   Modifier_WIN = 1<<1,
+   Modifier_ALT = 1<<2,
+   Modifier_SPACE = 1<<3, // Spaaaaaace
+   Modifier_SHIFT = 1<<4,
+} ;
+
+struct Binding
 {
    u8 accepts_repeats;
-   enum
-   {
-      Modifier_CTRL = 1<<0,
-      Modifier_WIN = 1<<1,
-      Modifier_ALT = 1<<2,
-      Modifier_SPACE = 1<<3, // Spaaaaaace
-   } modifiers;
+
+   ModifierFlags modifiers;
 
    i8 bound_key;  // Positive values are ascii keys.
-   // Negative values:
-   enum
+   // Zero/Negative values:
+   enum Key
    {
-      Binding_ESC = -1,
-      Binding_F1 = -2,
-      Binding_F2 = -3,
-      Binding_F3 = -4,
-      Binding_F4 = -5,
-      Binding_F5 = -6,
-      Binding_F6 = -7,
-      Binding_F7 = -8,
-      Binding_F8 = -9,
-      Binding_F9 = -10,
-      Binding_F10 = -11,
-      Binding_F11 = -12,
-      Binding_F12 = -13,
+      UNBOUND = 0,
+      ESC = -1,
+      F1 = -2,
+      F2 = -3,
+      F3 = -4,
+      F4 = -5,
+      F5 = -6,
+      F6 = -7,
+      F7 = -8,
+      F8 = -9,
+      F9 = -10,
+      F10 = -11,
+      F11 = -12,
+      F12 = -13,
    };
+
+   BindableAction action;
 };
+
+struct MiltonBindings
+{
+   #define MAX_NUM_BINDINGS 32
+
+   size_t num_bindings;
+   Binding bindings[MAX_NUM_BINDINGS];
+};
+
+// void set_default_bindings(MiltonBindings* bindings);
+// void set_default_bindings(MiltonBindings* bindings, MiltonInput* input)
+
+//void binding_dispatch_action(BindableAction a);

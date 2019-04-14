@@ -12,6 +12,7 @@
 #include "persist.h"
 #include "platform.h"
 #include "vector.h"
+#include "bindings.h"
 
 // Defined below.
 static void milton_validate(Milton* milton);
@@ -457,6 +458,9 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->settings = arena_alloc_elem(&milton->root_arena, MiltonSettings);
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
     milton->persist = arena_alloc_elem(&milton->root_arena, MiltonPersist);
+
+    milton->bindings = arena_alloc_elem(&milton->root_arena, MiltonBindings);
+    set_default_bindings(milton->bindings);
 
     milton->persist->target_MB_per_sec = 0.2f;
 

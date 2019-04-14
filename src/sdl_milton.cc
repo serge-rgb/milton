@@ -10,8 +10,7 @@
 #include "gl_helpers.h"
 #include "gui.h"
 #include "persist.h"
-
-#include "shortcuts.h"
+#include "bindings.h"
 
 
 static void
@@ -52,8 +51,55 @@ get_current_keyboard_layout()
     return layout;
 }
 
-void shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event* event, MiltonInput* input)
+void
+shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event* event, MiltonInput* input)
 {
+    MiltonBindings* bindings = milton->bindings;
+
+    SDL_Keymod m = SDL_GetModState();
+    SDL_Keycode k = event->key.keysym.sym;
+
+    for (sz i = 0; i < bindings->num_bindings; ++i) {
+        Binding* b = &bindings->bindings[i];
+        u32 active_modifiers = 0;
+
+        if (m & KMOD_CTRL) { active_modifiers |= Modifier_CTRL; }
+        if (m & KMOD_SHIFT) { active_modifiers |= Modifier_SHIFT; }
+        if (m & KMOD_GUI) { active_modifiers |= Modifier_WIN; }
+        if (m & KMOD_ALT) { active_modifiers |= Modifier_ALT; }
+        if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_SPACE]) { active_modifiers |= Modifier_SPACE; }
+
+        i8 active_key = 0;
+        if (k >= SDLK_a && k <= SDLK_z) {
+            active_key = k;
+        }
+        else {
+            switch (k) {
+                case SDLK_ESCAPE: { active_key = Binding::ESC; } break;
+                case SDLK_F1: { active_key = Binding::F1; } break;
+                case SDLK_F2: { active_key = Binding::F2; } break;
+                case SDLK_F3: { active_key = Binding::F3; } break;
+                case SDLK_F4: { active_key = Binding::F4; } break;
+                case SDLK_F5: { active_key = Binding::F5; } break;
+                case SDLK_F6: { active_key = Binding::F6; } break;
+                case SDLK_F7: { active_key = Binding::F7; } break;
+                case SDLK_F8: { active_key = Binding::F8; } break;
+                case SDLK_F9: { active_key = Binding::F9; } break;
+                case SDLK_F10: { active_key = Binding::F10; } break;
+                case SDLK_F11: { active_key = Binding::F11; } break;
+                case SDLK_F12: { active_key = Binding::F12; } break;
+                default: {  } break;
+            }
+        }
+
+        if ( active_key &&
+             (!event->key.repeat || b->accepts_repeats) &&
+             active_modifiers == b->modifiers &&
+             active_key == b->bound_key ) {
+            binding_dispatch_action(b->action, input);
+        }
+    }
+
     if ( event->wheel.windowID != platform->window_id ) {
         return;
     }
@@ -88,7 +134,6 @@ void shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event*
                     input->flags |= MiltonInputFlags_REDO;
                 }
                 else {
-                input->flags |= MiltonInputFlags_UNDO;
                 }
             }
         }
