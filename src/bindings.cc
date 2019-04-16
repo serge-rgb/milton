@@ -3,6 +3,9 @@
 
 #include "bindings.h"
 #include "milton.h"
+#include "gui.h"
+#include "persist.h"
+
 
 static Binding
 binding(ModifierFlags mod, i8 key, BindableAction action)
@@ -31,7 +34,7 @@ set_default_bindings(MiltonBindings* bindings)
 {
    Binding* b = bindings->bindings;
    b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL, 'z', Action_UNDO);
-   b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL | Modifier_SHIFT, 'z', Action_REDO);
+   b[bindings->num_bindings++] = repeatable_binding((ModifierFlags)(Modifier_CTRL | Modifier_SHIFT), 'z', Action_REDO);
    b[bindings->num_bindings++] = repeatable_binding(Modifier_NONE, '[', Action_DECREASE_BRUSH_SIZE);
    b[bindings->num_bindings++] = repeatable_binding(Modifier_NONE, ']', Action_INCREASE_BRUSH_SIZE);
    b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL, '=', Action_ZOOM_IN);
@@ -42,7 +45,7 @@ set_default_bindings(MiltonBindings* bindings)
    b[bindings->num_bindings++] = binding(Modifier_CTRL, 'q', Action_QUIT);
    b[bindings->num_bindings++] = binding(Modifier_CTRL, 'n', Action_NEW);
    b[bindings->num_bindings++] = binding(Modifier_CTRL, 'o', Action_OPEN);
-   b[bindings->num_bindings++] = binding(Modifier_CTRL | Modifier_SHIFT, 's', Action_SAVE_AS);
+   b[bindings->num_bindings++] = binding((ModifierFlags)(Modifier_CTRL | Modifier_SHIFT), 's', Action_SAVE_AS);
 
    b[bindings->num_bindings++] = binding(Modifier_NONE, 'm', Action_TOGGLE_MENU);
    b[bindings->num_bindings++] = binding(Modifier_NONE, 'e', Action_MODE_ERASER);
@@ -60,6 +63,8 @@ set_default_bindings(MiltonBindings* bindings)
 void
 binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton)
 {
+   char* default_will_be_lost = "The default canvas will be cleared. Save it?";
+
    switch (a) {
       case Action_DECREASE_BRUSH_SIZE: {
          milton_decrease_brush_size(milton);

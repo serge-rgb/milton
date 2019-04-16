@@ -33,6 +33,7 @@ enum BindableAction
    Action_SET_BRUSH_ALPHA_80,
    Action_SET_BRUSH_ALPHA_90,
    Action_SET_BRUSH_ALPHA_100,
+   Action_HELP,
 
    // Debug bindings
 
