@@ -65,6 +65,7 @@ struct Binding
    {
       UNBOUND = 0,
       ESC = -1,
+
       F1 = -2,
       F2 = -3,
       F3 = -4,
@@ -77,6 +78,10 @@ struct Binding
       F10 = -11,
       F11 = -12,
       F12 = -13,
+
+      TAB = -14,
+
+      BACKQUOTE = -15,
    };
 
    BindableAction action;

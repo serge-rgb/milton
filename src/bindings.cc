@@ -25,101 +25,196 @@ repeatable_binding(ModifierFlags mod, i8 key, BindableAction action)
    return b;
 }
 
+
 void
 set_default_bindings(MiltonBindings* bindings)
 {
    Binding* b = bindings->bindings;
    b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL, 'z', Action_UNDO);
+   b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL | Modifier_SHIFT, 'z', Action_REDO);
+   b[bindings->num_bindings++] = repeatable_binding(Modifier_NONE, '[', Action_DECREASE_BRUSH_SIZE);
+   b[bindings->num_bindings++] = repeatable_binding(Modifier_NONE, ']', Action_INCREASE_BRUSH_SIZE);
+   b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL, '=', Action_ZOOM_IN);
+   b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL, '-', Action_ZOOM_OUT);
+
+   b[bindings->num_bindings++] = binding(Modifier_CTRL, '-', Action_ZOOM_OUT);
+   b[bindings->num_bindings++] = binding(Modifier_CTRL, 'e', Action_EXPORT);
+   b[bindings->num_bindings++] = binding(Modifier_CTRL, 'q', Action_QUIT);
+   b[bindings->num_bindings++] = binding(Modifier_CTRL, 'n', Action_NEW);
+   b[bindings->num_bindings++] = binding(Modifier_CTRL, 'o', Action_OPEN);
+   b[bindings->num_bindings++] = binding(Modifier_CTRL | Modifier_SHIFT, 's', Action_SAVE_AS);
+
+   b[bindings->num_bindings++] = binding(Modifier_NONE, 'm', Action_TOGGLE_MENU);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, 'e', Action_MODE_ERASER);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, 'b', Action_MODE_PEN);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, 'i', Action_MODE_EYEDROPPER);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, 'l', Action_MODE_PRIMITIVE);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, Binding::F1, Action_HELP);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, Binding::TAB, Action_TOGGLE_GUI);
+
+#if MILTON_DEBUG
+   b[bindings->num_bindings++] = binding(Modifier_NONE, Binding::BACKQUOTE, Action_TOGGLE_DEBUG_WINDOW);
+#endif
 }
 
 void
-binding_dispatch_action(BindableAction a, MiltonInput* input)
+binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton)
 {
    switch (a) {
       case Action_DECREASE_BRUSH_SIZE: {
-
+         milton_decrease_brush_size(milton);
+         milton->hover_flash_ms = (i32)SDL_GetTicks();
       } break;
       case Action_INCREASE_BRUSH_SIZE: {
-
+         milton_increase_brush_size(milton);
+         milton->hover_flash_ms = (i32)SDL_GetTicks();
       } break;
       case Action_ZOOM_IN: {
-
+         input->scale++;
+         milton_set_zoom_at_screen_center(milton);
       } break;
       case Action_ZOOM_OUT: {
-
+         input->scale--;
+         milton_set_zoom_at_screen_center(milton);
       } break;
       case Action_REDO: {
-
+          input->flags |= MiltonInputFlags_REDO;
       } break;
       case Action_UNDO: {
           input->flags |= MiltonInputFlags_UNDO;
       } break;
       case Action_EXPORT: {
-
+         input->mode_to_set = MiltonMode::EXPORTING;
       } break;
       case Action_QUIT: {
-
+         milton_try_quit(milton);
       } break;
       case Action_NEW: {
-
+         b32 save_file = false;
+         if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
+             if ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
+                 save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+             }
+         }
+         if ( save_file ) {
+             PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+             if ( name ) {
+                 milton_log("Saving to %s\n", name);
+                 milton_set_canvas_file(milton, name);
+                 milton_save(milton);
+                 b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
+                 if ( del == false ) {
+                     platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
+                         "Info");
+                 }
+             }
+         }
+         milton_reset_canvas_and_set_default(milton);
+         input->flags |= MiltonInputFlags_FULL_REFRESH;
+         milton->flags |= MiltonStateFlags_DEFAULT_CANVAS;
       } break;
       case Action_SAVE: {
-
+         INVALID_CODE_PATH;
       } break;
       case Action_SAVE_AS: {
-
+         PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+         if ( name ) {
+             milton_log("Saving to %s\n", name);
+             milton_set_canvas_file(milton, name);
+             input->flags |= MiltonInputFlags_SAVE_FILE;
+             b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+              DeleteErrorTolerance_OK_NOT_EXIST);
+             if ( del == false ) {
+                 platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                     "Info");
+             }
+         }
       } break;
       case Action_OPEN: {
-
+         b32 save_requested = false;
+                         // If current canvas is MiltonPersist, then prompt to save
+         if ( ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
+             b32 save_file = false;
+             if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
+                 save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+             }
+             if ( save_file ) {
+                 PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
+                 if ( name ) {
+                     milton_log("Saving to %s\n", name);
+                     milton_set_canvas_file(milton, name);
+                     milton_save(milton);
+                     b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
+                      DeleteErrorTolerance_OK_NOT_EXIST);
+                     if ( del == false ) {
+                         platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                             "Info");
+                     }
+                 }
+             }
+         }
+         PATH_CHAR* fname = platform_open_dialog(FileKind_MILTON_CANVAS);
+         if ( fname ) {
+             milton_set_canvas_file(milton, fname);
+             input->flags |= MiltonInputFlags_OPEN_FILE;
+         }
       } break;
       case Action_TOGGLE_MENU: {
-
+         gui_toggle_menu_visibility(milton->gui);
       } break;
       case Action_TOGGLE_GUI: {
-
+         gui_toggle_visibility(milton);
       } break;
       case Action_MODE_ERASER: {
-
+         input->mode_to_set = MiltonMode::ERASER;
       } break;
       case Action_MODE_PEN: {
-
+         input->mode_to_set = MiltonMode::PEN;
       } break;
       case Action_MODE_EYEDROPPER: {
-
+         input->mode_to_set = MiltonMode::EYEDROPPER;
       } break;
       case Action_MODE_PRIMITIVE: {
-
+         input->mode_to_set = MiltonMode::PRIMITIVE;
       } break;
       case Action_SET_BRUSH_ALPHA_10: {
-
+         milton_set_brush_alpha(milton, 0.1f);
       } break;
       case Action_SET_BRUSH_ALPHA_20: {
-
+         milton_set_brush_alpha(milton, 0.2f);
       } break;
       case Action_SET_BRUSH_ALPHA_30: {
-
+         milton_set_brush_alpha(milton, 0.3f);
       } break;
       case Action_SET_BRUSH_ALPHA_40: {
-
+         milton_set_brush_alpha(milton, 0.4f);
       } break;
       case Action_SET_BRUSH_ALPHA_50: {
-
+         milton_set_brush_alpha(milton, 0.5f);
       } break;
       case Action_SET_BRUSH_ALPHA_60: {
-
+         milton_set_brush_alpha(milton, 0.6f);
       } break;
       case Action_SET_BRUSH_ALPHA_70: {
-
+         milton_set_brush_alpha(milton, 0.7f);
       } break;
       case Action_SET_BRUSH_ALPHA_80: {
-
+         milton_set_brush_alpha(milton, 0.8f);
       } break;
       case Action_SET_BRUSH_ALPHA_90: {
-
+         milton_set_brush_alpha(milton, 0.9f);
       } break;
       case Action_SET_BRUSH_ALPHA_100: {
-
+         milton_set_brush_alpha(milton, 1.0);
       } break;
+      case Action_HELP: {
+         gui_toggle_help(milton->gui);
+      } break;
+   #if MILTON_DEBUG
+      case Action_TOGGLE_DEBUG_WINDOW: {
+         milton->viz_window_visible = !milton->viz_window_visible;
+      } break;
+   #endif
       default: {
          mlt_assert(!"Unhandled keyboard binding");
       }
