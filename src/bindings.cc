@@ -53,10 +53,21 @@ set_default_bindings(MiltonBindings* bindings)
    b[bindings->num_bindings++] = binding(Modifier_NONE, 'i', Action_MODE_EYEDROPPER);
    b[bindings->num_bindings++] = binding(Modifier_NONE, 'l', Action_MODE_PRIMITIVE);
    b[bindings->num_bindings++] = binding(Modifier_NONE, Binding::F1, Action_HELP);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, Binding::TAB, Action_TOGGLE_GUI);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '\t', Action_TOGGLE_GUI);
+
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '1', Action_SET_BRUSH_ALPHA_10);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '2', Action_SET_BRUSH_ALPHA_20);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '3', Action_SET_BRUSH_ALPHA_30);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '4', Action_SET_BRUSH_ALPHA_40);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '5', Action_SET_BRUSH_ALPHA_50);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '6', Action_SET_BRUSH_ALPHA_60);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '7', Action_SET_BRUSH_ALPHA_70);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '8', Action_SET_BRUSH_ALPHA_80);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '9', Action_SET_BRUSH_ALPHA_90);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '0', Action_SET_BRUSH_ALPHA_100);
 
 #if MILTON_DEBUG
-   b[bindings->num_bindings++] = binding(Modifier_NONE, Binding::BACKQUOTE, Action_TOGGLE_DEBUG_WINDOW);
+   b[bindings->num_bindings++] = binding(Modifier_NONE, '`', Action_TOGGLE_DEBUG_WINDOW);
 #endif
 }
 

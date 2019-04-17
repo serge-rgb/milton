@@ -98,6 +98,10 @@ shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event* even
             binding_dispatch_action(b->action, input, milton);
         }
     }
+    if (k == SDLK_SPACE)
+    {
+        platform->is_space_down = true;
+    }
 }
 
 void

@@ -79,10 +79,6 @@ struct Binding
       F10 = -11,
       F11 = -12,
       F12 = -13,
-
-      TAB = -14,
-
-      BACKQUOTE = -15,
    };
 
    BindableAction action;
