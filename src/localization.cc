@@ -91,6 +91,11 @@ init_localization()
         EN(TXT_transparent_background, "Transparent background");
         EN(TXT_settings, "Settings");
         EN(TXT_default_background_color, "Default background color for new canvas:");
+        EN(TXT_set_current_background_color_as_default, "Set current background color as default");
+        EN(TXT_background_color, "Background color");
+        EN(TXT_background_COLON, "Background:");
+        EN(TXT_OPENBRACKET_default_canvas_CLOSE_BRACKET, "[Default canvas]");
+        EN(TXT_could_not_delete_default_canvas, "Could not delete default canvas. Contents will be still there when you create a new canvas.");
     }
 
     {  // Spanish
@@ -157,7 +162,7 @@ init_localization()
 
 // str -- A string, translated and present in the tables within localization.c
 char*
-get_localized_string(int id)
+loc(Texts id)
 {
     // TODO: Grab this from system
     i32 loc = Language_ENGLISH;
@@ -186,7 +191,7 @@ get_localized_string(int id)
             result = g_baked_strings_with_commands[id];
         }
     } else {
-        result = "STRING NEEDS LOCALIZATION";
+        result = "STRING NEEDS locALIZATION";
     }
 
     return result;

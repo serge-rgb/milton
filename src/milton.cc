@@ -460,7 +460,6 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->persist = arena_alloc_elem(&milton->root_arena, MiltonPersist);
 
     milton->bindings = arena_alloc_elem(&milton->root_arena, MiltonBindings);
-    set_default_bindings(milton->bindings);
 
     milton->persist->target_MB_per_sec = 0.2f;
 

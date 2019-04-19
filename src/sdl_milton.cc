@@ -59,38 +59,40 @@ shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event* even
     SDL_Keymod m = SDL_GetModState();
     SDL_Keycode k = event->key.keysym.sym;
 
-    for (sz i = 0; i < bindings->num_bindings; ++i) {
+    i8 active_key = 0;
+    if (k >= 1 && k <= 127) {
+        active_key = k;
+    }
+    else {
+        switch (k) {
+            case SDLK_ESCAPE: { active_key = Binding::ESC; } break;
+            case SDLK_F1: { active_key = Binding::F1; } break;
+            case SDLK_F2: { active_key = Binding::F2; } break;
+            case SDLK_F3: { active_key = Binding::F3; } break;
+            case SDLK_F4: { active_key = Binding::F4; } break;
+            case SDLK_F5: { active_key = Binding::F5; } break;
+            case SDLK_F6: { active_key = Binding::F6; } break;
+            case SDLK_F7: { active_key = Binding::F7; } break;
+            case SDLK_F8: { active_key = Binding::F8; } break;
+            case SDLK_F9: { active_key = Binding::F9; } break;
+            case SDLK_F10: { active_key = Binding::F10; } break;
+            case SDLK_F11: { active_key = Binding::F11; } break;
+            case SDLK_F12: { active_key = Binding::F12; } break;
+            default: {  } break;
+        }
+    }
+
+    u32 active_modifiers = 0;
+
+    if (m & KMOD_CTRL) { active_modifiers |= Modifier_CTRL; }
+    if (m & KMOD_SHIFT) { active_modifiers |= Modifier_SHIFT; }
+    if (m & KMOD_GUI) { active_modifiers |= Modifier_WIN; }
+    if (m & KMOD_ALT) { active_modifiers |= Modifier_ALT; }
+    if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_SPACE]) { active_modifiers |= Modifier_SPACE; }
+
+    for (sz i = 0; i < Action_COUNT; ++i) {
         Binding* b = &bindings->bindings[i];
-        u32 active_modifiers = 0;
 
-        if (m & KMOD_CTRL) { active_modifiers |= Modifier_CTRL; }
-        if (m & KMOD_SHIFT) { active_modifiers |= Modifier_SHIFT; }
-        if (m & KMOD_GUI) { active_modifiers |= Modifier_WIN; }
-        if (m & KMOD_ALT) { active_modifiers |= Modifier_ALT; }
-        if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_SPACE]) { active_modifiers |= Modifier_SPACE; }
-
-        i8 active_key = 0;
-        if (k >= 1 && k <= 127) {
-            active_key = k;
-        }
-        else {
-            switch (k) {
-                case SDLK_ESCAPE: { active_key = Binding::ESC; } break;
-                case SDLK_F1: { active_key = Binding::F1; } break;
-                case SDLK_F2: { active_key = Binding::F2; } break;
-                case SDLK_F3: { active_key = Binding::F3; } break;
-                case SDLK_F4: { active_key = Binding::F4; } break;
-                case SDLK_F5: { active_key = Binding::F5; } break;
-                case SDLK_F6: { active_key = Binding::F6; } break;
-                case SDLK_F7: { active_key = Binding::F7; } break;
-                case SDLK_F8: { active_key = Binding::F8; } break;
-                case SDLK_F9: { active_key = Binding::F9; } break;
-                case SDLK_F10: { active_key = Binding::F10; } break;
-                case SDLK_F11: { active_key = Binding::F11; } break;
-                case SDLK_F12: { active_key = Binding::F12; } break;
-                default: {  } break;
-            }
-        }
         if ( active_key &&
              (!event->key.repeat || b->accepts_repeats) &&
              active_modifiers == b->modifiers &&
@@ -98,8 +100,8 @@ shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event* even
             binding_dispatch_action(b->action, input, milton);
         }
     }
-    if (k == SDLK_SPACE)
-    {
+
+    if ( k == SDLK_SPACE ) {
         platform->is_space_down = true;
     }
 }
@@ -631,6 +633,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
         if ( is_fullscreen ) {
             milton->gui->menu_visible = false;
         }
+
+        // TODO: Set default bindings based on platform.
+        set_default_bindings(milton->bindings);
     }
     milton_resize_and_pan(milton, {}, {platform.width, platform.height});
 

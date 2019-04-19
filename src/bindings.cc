@@ -7,67 +7,69 @@
 #include "persist.h"
 
 
-static Binding
-binding(ModifierFlags mod, i8 key, BindableAction action)
+static void
+binding(MiltonBindings* bs, ModifierFlags mod, i8 key, BindableAction action)
 {
    Binding b = {0};
    b.modifiers = mod;
    b.bound_key = key;
    b.action = action;
-   return b;
+
+   bs->bindings[action] = b;
 }
 
-static Binding
-repeatable_binding(ModifierFlags mod, i8 key, BindableAction action)
+static void
+repeatable_binding(MiltonBindings* bs, ModifierFlags mod, i8 key, BindableAction action)
 {
    Binding b = {0};
    b.accepts_repeats = true;
    b.modifiers = mod;
    b.bound_key = key;
    b.action = action;
-   return b;
+
+   bs->bindings[action] = b;
 }
 
 
 void
-set_default_bindings(MiltonBindings* bindings)
+set_default_bindings(MiltonBindings* bs)
 {
-   Binding* b = bindings->bindings;
-   b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL, 'z', Action_UNDO);
-   b[bindings->num_bindings++] = repeatable_binding((ModifierFlags)(Modifier_CTRL | Modifier_SHIFT), 'z', Action_REDO);
-   b[bindings->num_bindings++] = repeatable_binding(Modifier_NONE, '[', Action_DECREASE_BRUSH_SIZE);
-   b[bindings->num_bindings++] = repeatable_binding(Modifier_NONE, ']', Action_INCREASE_BRUSH_SIZE);
-   b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL, '=', Action_ZOOM_IN);
-   b[bindings->num_bindings++] = repeatable_binding(Modifier_CTRL, '-', Action_ZOOM_OUT);
+   Binding* b = bs->bindings;
+   repeatable_binding(bs, Modifier_CTRL, 'z', Action_UNDO);
+   repeatable_binding(bs, (ModifierFlags)(Modifier_CTRL | Modifier_SHIFT), 'z', Action_REDO);
+   repeatable_binding(bs, Modifier_NONE, '[', Action_DECREASE_BRUSH_SIZE);
+   repeatable_binding(bs, Modifier_NONE, ']', Action_INCREASE_BRUSH_SIZE);
+   repeatable_binding(bs, Modifier_CTRL, '=', Action_ZOOM_IN);
+   repeatable_binding(bs, Modifier_CTRL, '-', Action_ZOOM_OUT);
 
-   b[bindings->num_bindings++] = binding(Modifier_CTRL, '-', Action_ZOOM_OUT);
-   b[bindings->num_bindings++] = binding(Modifier_CTRL, 'e', Action_EXPORT);
-   b[bindings->num_bindings++] = binding(Modifier_CTRL, 'q', Action_QUIT);
-   b[bindings->num_bindings++] = binding(Modifier_CTRL, 'n', Action_NEW);
-   b[bindings->num_bindings++] = binding(Modifier_CTRL, 'o', Action_OPEN);
-   b[bindings->num_bindings++] = binding((ModifierFlags)(Modifier_CTRL | Modifier_SHIFT), 's', Action_SAVE_AS);
+   binding(bs, Modifier_CTRL, '-', Action_ZOOM_OUT);
+   binding(bs, Modifier_CTRL, 'e', Action_EXPORT);
+   binding(bs, Modifier_CTRL, 'q', Action_QUIT);
+   binding(bs, Modifier_CTRL, 'n', Action_NEW);
+   binding(bs, Modifier_CTRL, 'o', Action_OPEN);
+   binding(bs, (ModifierFlags)(Modifier_CTRL | Modifier_SHIFT), 's', Action_SAVE_AS);
 
-   b[bindings->num_bindings++] = binding(Modifier_NONE, 'm', Action_TOGGLE_MENU);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, 'e', Action_MODE_ERASER);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, 'b', Action_MODE_PEN);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, 'i', Action_MODE_EYEDROPPER);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, 'l', Action_MODE_PRIMITIVE);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, Binding::F1, Action_HELP);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '\t', Action_TOGGLE_GUI);
+   binding(bs, Modifier_NONE, 'm', Action_TOGGLE_MENU);
+   binding(bs, Modifier_NONE, 'e', Action_MODE_ERASER);
+   binding(bs, Modifier_NONE, 'b', Action_MODE_PEN);
+   binding(bs, Modifier_NONE, 'i', Action_MODE_EYEDROPPER);
+   binding(bs, Modifier_NONE, 'l', Action_MODE_PRIMITIVE);
+   binding(bs, Modifier_NONE, Binding::F1, Action_HELP);
+   binding(bs, Modifier_NONE, '\t', Action_TOGGLE_GUI);
 
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '1', Action_SET_BRUSH_ALPHA_10);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '2', Action_SET_BRUSH_ALPHA_20);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '3', Action_SET_BRUSH_ALPHA_30);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '4', Action_SET_BRUSH_ALPHA_40);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '5', Action_SET_BRUSH_ALPHA_50);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '6', Action_SET_BRUSH_ALPHA_60);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '7', Action_SET_BRUSH_ALPHA_70);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '8', Action_SET_BRUSH_ALPHA_80);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '9', Action_SET_BRUSH_ALPHA_90);
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '0', Action_SET_BRUSH_ALPHA_100);
+   binding(bs, Modifier_NONE, '1', Action_SET_BRUSH_ALPHA_10);
+   binding(bs, Modifier_NONE, '2', Action_SET_BRUSH_ALPHA_20);
+   binding(bs, Modifier_NONE, '3', Action_SET_BRUSH_ALPHA_30);
+   binding(bs, Modifier_NONE, '4', Action_SET_BRUSH_ALPHA_40);
+   binding(bs, Modifier_NONE, '5', Action_SET_BRUSH_ALPHA_50);
+   binding(bs, Modifier_NONE, '6', Action_SET_BRUSH_ALPHA_60);
+   binding(bs, Modifier_NONE, '7', Action_SET_BRUSH_ALPHA_70);
+   binding(bs, Modifier_NONE, '8', Action_SET_BRUSH_ALPHA_80);
+   binding(bs, Modifier_NONE, '9', Action_SET_BRUSH_ALPHA_90);
+   binding(bs, Modifier_NONE, '0', Action_SET_BRUSH_ALPHA_100);
 
 #if MILTON_DEBUG
-   b[bindings->num_bindings++] = binding(Modifier_NONE, '`', Action_TOGGLE_DEBUG_WINDOW);
+   binding(bs, Modifier_NONE, '`', Action_TOGGLE_DEBUG_WINDOW);
 #endif
 }
 

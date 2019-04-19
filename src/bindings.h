@@ -41,6 +41,7 @@ enum BindableAction
    Action_TOGGLE_DEBUG_WINDOW,
    #endif
 
+   Action_COUNT,
 };
 
 enum ModifierFlags
@@ -86,10 +87,12 @@ struct Binding
 
 struct MiltonBindings
 {
-   #define MAX_NUM_BINDINGS 32
-
-   size_t num_bindings;
-   Binding bindings[MAX_NUM_BINDINGS];
+   // NOTE: On key-down, we have to loop over this array to find a matching
+   // binding. Action_COUNT is a small number so this is not really a problem.
+   // It's unlikely to ever be a problem, but if we ever get to a point where
+   // there are enough actions that looping over this array feels too wrong,
+   // we can add a map here.
+   Binding bindings[Action_COUNT];
 };
 
 // void set_default_bindings(MiltonBindings* bindings);
