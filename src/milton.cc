@@ -432,6 +432,14 @@ settings_init(MiltonSettings* s)
 int milton_save_thread(void* state_);  // forward
 
 void
+reset_working_stroke(Milton* milton)
+{
+    milton->working_stroke.num_points = 0;
+    milton->working_stroke.render_element.count = 0;
+    milton->working_stroke.bounding_rect = rect_without_size();
+}
+
+void
 milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open, MiltonInitFlags init_flags)
 {
     b32 init_graphics = !(init_flags & MiltonInit_FOR_TEST);
@@ -445,6 +453,8 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 #if STROKE_DEBUG_VIZ
     milton->working_stroke.debug_flags = arena_alloc_array(&milton->root_arena, STROKE_MAX_POINTS, int);
 #endif
+
+    reset_working_stroke(milton);
 
     milton->current_mode = MiltonMode::PEN;
     milton->last_mode = MiltonMode::PEN;
@@ -1206,11 +1216,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
                 HistoryElement h = { HistoryElement_STROKE_ADD, milton->canvas->working_layer->id };
                 push(&milton->canvas->history, h);
-                // Clear working_stroke
-                {
-                    milton->working_stroke.num_points = 0;
-                    milton->working_stroke.render_element.count = 0;
-                }
+
+                reset_working_stroke(milton);
 
                 clear_stroke_redo(milton);
 

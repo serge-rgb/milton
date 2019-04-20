@@ -384,7 +384,7 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                         b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
                                                                  DeleteErrorTolerance_OK_NOT_EXIST);
                         if ( del == false ) {
-                            platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
+                            platform_dialog(loc(TXT_could_not_delete_default_canvas),
                                             "Info");
                         }
                     }
