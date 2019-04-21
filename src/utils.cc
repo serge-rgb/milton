@@ -395,10 +395,10 @@ Rect
 rect_without_size()
 {
     Rect rect;
-    rect.left = INT_MAX;
-    rect.right = INT_MIN;
-    rect.top = INT_MAX;
-    rect.bottom = INT_MIN;
+    rect.left = I64_MAX;
+    rect.right = I64_MIN;
+    rect.top = I64_MAX;
+    rect.bottom = I64_MIN;
     return rect;
 }
 
