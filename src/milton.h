@@ -39,7 +39,7 @@ enum class MiltonMode
     HISTORY,
 };
 
-enum
+enum BrushEnum
 {
     BrushEnum_PEN,
     BrushEnum_ERASER,

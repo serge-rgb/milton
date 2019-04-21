@@ -26,7 +26,7 @@ pushd build
          rc Milton.rc
 
 if "%1"=="test" (
-   cl Milton.res ..\src\unity_tests.cc /MTd /Zi %includeFlags% %warnFlags% /FetestMilton.exe /wd4217 /link mincore.lib ..\third_party\bin\%platform%\SDL2.lib kernel32.lib OpenGL32.lib User32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib
+   cl ..\src\unity_tests.cc /Od /MTd /Zi %includeFlags% %warnFlags% /FetestMilton.exe /wd4217 /link mincore.lib ..\third_party\bin\%platform%\SDL2.lib kernel32.lib OpenGL32.lib User32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib /SUBSYSTEM:Console
 ) else (
    cl Milton.res ..\src\unity.cc /Od /MTd /Zi %includeFlags% %warnFlags% /Femilton.exe /wd4217 /link mincore.lib ..\third_party\bin\%platform%\SDL2.lib kernel32.lib OpenGL32.lib User32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib
 )

@@ -27,6 +27,7 @@ static char* g_baked_strings_with_commands[TXT_Count];  // These get malloc'd on
 void
 init_localization()
 {
+    memset(g_localized_strings, 0, sizeof(g_localized_strings));
     { // English
         EN(TXT_file, "File");
         EN(TXT_open_milton_canvas, "Open Milton Canvas");
