@@ -82,6 +82,41 @@ enum Texts
     TXT_background_COLON,
     TXT_could_not_delete_default_canvas,
 
+    // Actions
+    TXT_Action_FIRST,
+    TXT_Action_DECREASE_BRUSH_SIZE = TXT_Action_FIRST,
+    TXT_Action_INCREASE_BRUSH_SIZE,
+    TXT_Action_ZOOM_IN,
+    TXT_Action_ZOOM_OUT,
+    TXT_Action_REDO,
+    TXT_Action_UNDO,
+    TXT_Action_EXPORT,
+    TXT_Action_QUIT,
+    TXT_Action_NEW,
+    TXT_Action_SAVE,
+    TXT_Action_SAVE_AS,
+    TXT_Action_OPEN,
+    TXT_Action_TOGGLE_MENU,
+    TXT_Action_TOGGLE_GUI,
+    TXT_Action_MODE_ERASER,
+    TXT_Action_MODE_PEN,
+    TXT_Action_MODE_EYEDROPPER,
+    TXT_Action_MODE_PRIMITIVE,
+    TXT_Action_SET_BRUSH_ALPHA_10,
+    TXT_Action_SET_BRUSH_ALPHA_20,
+    TXT_Action_SET_BRUSH_ALPHA_30,
+    TXT_Action_SET_BRUSH_ALPHA_40,
+    TXT_Action_SET_BRUSH_ALPHA_50,
+    TXT_Action_SET_BRUSH_ALPHA_60,
+    TXT_Action_SET_BRUSH_ALPHA_70,
+    TXT_Action_SET_BRUSH_ALPHA_80,
+    TXT_Action_SET_BRUSH_ALPHA_90,
+    TXT_Action_SET_BRUSH_ALPHA_100,
+    TXT_Action_HELP,
+#if MILTON_ENABLE_PROFILING
+    TXT_Action_TOGGLE_DEBUG_WINDOW,
+#endif
+
     TXT_Count,
 };
 

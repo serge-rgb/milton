@@ -7,6 +7,8 @@
 #define MILTON_MINOR_VERSION 6
 #define MILTON_MICRO_VERSION 1
 
+#define MILTON_FEATURE_SETTINGS_DEV 1
+
 #define MILTON_DEBUG 1
 
 #if !defined(MILTON_DEBUG)  // Might be defined by cmake

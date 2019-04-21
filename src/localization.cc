@@ -97,6 +97,40 @@ init_localization()
         EN(TXT_background_COLON, "Background:");
         EN(TXT_OPENBRACKET_default_canvas_CLOSE_BRACKET, "[Default canvas]");
         EN(TXT_could_not_delete_default_canvas, "Could not delete default canvas. Contents will be still there when you create a new canvas.");
+
+        EN(TXT_Action_DECREASE_BRUSH_SIZE, "Decrease brush size");
+        EN(TXT_Action_INCREASE_BRUSH_SIZE, "Increase brush size");
+        EN(TXT_Action_ZOOM_IN, "Zoom in");
+        EN(TXT_Action_ZOOM_OUT, "Zoom out");
+        EN(TXT_Action_REDO, "Redo");
+        EN(TXT_Action_UNDO, "Undo");
+        EN(TXT_Action_EXPORT, "Export");
+        EN(TXT_Action_QUIT, "Quit");
+        EN(TXT_Action_NEW, "New");
+        EN(TXT_Action_SAVE, "Save");
+        EN(TXT_Action_SAVE_AS, "Save As");
+        EN(TXT_Action_OPEN, "Open");
+        EN(TXT_Action_TOGGLE_MENU, "Menu");
+        EN(TXT_Action_TOGGLE_GUI, "Toggle GUI");
+        EN(TXT_Action_MODE_ERASER, "Eraser");
+        EN(TXT_Action_MODE_PEN, "Pen");
+        EN(TXT_Action_MODE_EYEDROPPER, "Eyedropper");
+        EN(TXT_Action_MODE_PRIMITIVE, "Primitive");
+        EN(TXT_Action_SET_BRUSH_ALPHA_10, "Set alpha to 10%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_20, "Set alpha to 20%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_30, "Set alpha to 30%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_40, "Set alpha to 40%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_50, "Set alpha to 50%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_60, "Set alpha to 60%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_70, "Set alpha to 70%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_80, "Set alpha to 80%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_90, "Set alpha to 90%");
+        EN(TXT_Action_SET_BRUSH_ALPHA_100, "Set alpha to 100%");
+        EN(TXT_Action_HELP, "Help");
+    #if MILTON_ENABLE_PROFILING
+        EN(TXT_Action_TOGGLE_DEBUG_WINDOW, "Toggle debug window");
+    #endif
+
     }
 
     {  // Spanish

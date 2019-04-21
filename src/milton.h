@@ -97,6 +97,8 @@ enum PrimitiveFSM
 struct MiltonSettings
 {
     v3f background_color;
+
+    MiltonBindings bindings;
 };
 #pragma pack(pop)
 
@@ -164,7 +166,6 @@ struct Milton
     MiltonGui* gui;
     MiltonSettings* settings;  // User settings
     MiltonPersist* persist;
-    MiltonBindings* bindings;
 
 #if MILTON_ENABLE_PROFILING
     b32 viz_window_visible;

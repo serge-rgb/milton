@@ -49,8 +49,6 @@ struct PlatformState
 
     v2i pointer;
 
-    b32 is_ctrl_down;
-    b32 is_shift_down;
     b32 is_space_down;
     b32 is_pointer_down;
     b32 is_middle_button_down;

@@ -5,7 +5,9 @@
 
 enum BindableAction
 {
-   Action_DECREASE_BRUSH_SIZE,
+   Action_FIRST,
+
+   Action_DECREASE_BRUSH_SIZE = Action_FIRST,
    Action_INCREASE_BRUSH_SIZE,
    Action_ZOOM_IN,
    Action_ZOOM_OUT,

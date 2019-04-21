@@ -395,7 +395,7 @@ begin_data_tracking()
     g_bytes_written = 0;
 }
 
-u64 
+u64
 end_data_tracking()
 {
     return g_bytes_written;
@@ -636,7 +636,7 @@ milton_save(Milton* milton)
             milton_log("File IO error. Error code %d. \n", file_error);
         }
 
-        
+
     }
     else {
         milton_die_gracefully("Could not create file for saving! ");
@@ -833,7 +833,8 @@ milton_appstate_save(PlatformPrefs* prefs)
     }
 }
 
-void milton_settings_load(MiltonSettings* settings)
+b32
+milton_settings_load(MiltonSettings* settings)
 {
     PATH_CHAR settings_fname[MAX_PATH] = TO_PATH_STR("milton_settings.ini"); {
         platform_fname_at_config(settings_fname, MAX_PATH);
@@ -854,6 +855,8 @@ void milton_settings_load(MiltonSettings* settings)
     if ( !ok ) {
         milton_log("Warning: Failed to read settings file\n");
     }
+
+    return ok;
 }
 
 void milton_settings_save(MiltonSettings* settings)

@@ -439,6 +439,7 @@ reset_working_stroke(Milton* milton)
     milton->working_stroke.bounding_rect = rect_without_size();
 }
 
+
 void
 milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file_to_open, MiltonInitFlags init_flags)
 {
@@ -469,14 +470,19 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
     milton->persist = arena_alloc_elem(&milton->root_arena, MiltonPersist);
 
-    milton->bindings = arena_alloc_elem(&milton->root_arena, MiltonBindings);
-
     milton->persist->target_MB_per_sec = 0.2f;
 
     gui_init(&milton->root_arena, milton->gui, ui_scale);
     settings_init(milton->settings);
 
-    if (read_from_disk) { milton_settings_load(milton->settings); }
+    b32 loaded_settings = false;
+    if (read_from_disk) {
+        loaded_settings = milton_settings_load(milton->settings);
+    }
+
+    if (!loaded_settings) {
+        set_default_bindings(&milton->settings->bindings);
+    }
 
     milton->view = arena_alloc_elem(&milton->root_arena, CanvasView);
     milton_set_default_view(milton);

@@ -392,9 +392,12 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                 if ( ImGui::MenuItem(loc(TXT_export_to_image_DOTS)) ) {
                     milton_switch_mode(milton, MiltonMode::EXPORTING);
                 }
-                if ( ImGui::MenuItem(loc(TXT_settings)) ) {
+                if ( ImGui::MenuItem(loc(TXT_settings)) && !show_settings ) {
                     show_settings = true;
                     *gui->modified_settings = *milton->settings;
+                    for (sz i = Action_FIRST; i < Action_COUNT; ++i) {
+                        gui->scratch_binding_key[i][0] = gui->modified_settings->bindings.bindings[i].bound_key;
+                    }
                 }
                 if ( ImGui::MenuItem(loc(TXT_quit)) ) {
                     milton_try_quit(milton);
@@ -614,7 +617,17 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
     ImGui::PushStyleColor(ImGuiCol_CheckMark,      color_slider); ++color_stack;
 
+
+    #if MILTON_FEATURE_SETTINGS_DEV
+    static b32 show_settings = true;
+    static b32 once = true;
+    if (once) {
+        *gui->modified_settings = *milton->settings;
+        once = false;
+    }
+    #else
     static b32 show_settings = false;
+    #endif
 
     gui_menu(input, platform, milton, show_settings);
 
@@ -642,7 +655,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
         // Settings window
         if ( show_settings ) {
-            ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*200),
+            ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*600),
                                      ImGuiSetCond_FirstUseEver);
             if ( ImGui::Begin(loc(TXT_settings)) ) {
                 ImGui::Text(loc(TXT_default_background_color));
@@ -653,6 +666,19 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
                 }
                 if ( ImGui::Button(loc(TXT_set_current_background_color_as_default)) ) {
                     gui->modified_settings->background_color = milton->view->background_color;
+                }
+
+                MiltonBindings* bs = &gui->modified_settings->bindings;
+
+                for (sz i = Action_FIRST; i < Action_COUNT; ++i ) {
+                    Binding* b = bs->bindings + i;
+
+                    char* action_str = (char*)loc((Texts)(TXT_Action_FIRST + (int)i));
+                    if (ImGui::InputText(action_str,
+                                         (char*)gui->scratch_binding_key[i],
+                                         sizeof(gui->scratch_binding_key[i]))) {
+                        b->bound_key = gui->scratch_binding_key[i][0];
+                    }
                 }
 
                 ImGui::SetCursorPosY( ImGui::GetCursorPosY() + ui_scale*80 );
