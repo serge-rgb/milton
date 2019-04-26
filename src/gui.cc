@@ -618,16 +618,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
     ImGui::PushStyleColor(ImGuiCol_CheckMark,      color_slider); ++color_stack;
 
 
-    #if MILTON_FEATURE_SETTINGS_DEV
-    static b32 show_settings = true;
-    static b32 once = true;
-    if (once) {
-        *gui->modified_settings = *milton->settings;
-        once = false;
-    }
-    #else
     static b32 show_settings = false;
-    #endif
 
     gui_menu(input, platform, milton, show_settings);
 
@@ -655,9 +646,32 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
         // Settings window
         if ( show_settings ) {
-            ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*600),
+            auto ok_cancel = [&](int i) {
+
+                char ok[64] = {};
+                snprintf(ok, array_count(ok), "%s##%d", loc(TXT_ok), i);
+                char cancel[64] = {};
+                snprintf(cancel, array_count(cancel), "%s##%d", loc(TXT_cancel), i);
+
+    			if (ImGui::Button(ok)) {
+    				*milton->settings = *gui->modified_settings;
+    				milton_settings_save(milton->settings);
+    				show_settings = false;
+    			}
+    			ImGui::SameLine();
+    			if (ImGui::Button(cancel)) {
+    				show_settings = false;
+    			}
+            };
+
+
+            ImGui::SetNextWindowSize(ImVec2(ui_scale*400, ui_scale*400),
                                      ImGuiSetCond_FirstUseEver);
             if ( ImGui::Begin(loc(TXT_settings)) ) {
+
+                ok_cancel(1);
+                ImGui::Separator();
+
                 ImGui::Text(loc(TXT_default_background_color));
 
                 v3f* bg = &gui->modified_settings->background_color;
@@ -668,30 +682,44 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
                     gui->modified_settings->background_color = milton->view->background_color;
                 }
 
+                ImGui::Separator();
+
                 MiltonBindings* bs = &gui->modified_settings->bindings;
 
                 for (sz i = Action_FIRST; i < Action_COUNT; ++i ) {
                     Binding* b = bs->bindings + i;
 
+                    char control_lbl[64] = {};
+                    snprintf(control_lbl, array_count(control_lbl), "control##%d", (int)i);
+
+                    char alt_lbl[64] = {};
+                    snprintf(alt_lbl, array_count(alt_lbl), "alt##%d", (int)i);
+
+                    char win_lbl[64] = {};
+					snprintf(win_lbl, array_count(win_lbl), "win##%d", (int)i);
+
+
+                    ImGui::CheckboxFlags(control_lbl, (unsigned int*)&b->modifiers, Modifier_CTRL);
+                    ImGui::SameLine();
+                    ImGui::CheckboxFlags(alt_lbl, (unsigned int*)&b->modifiers, Modifier_ALT);
+                    ImGui::SameLine();
+                    ImGui::CheckboxFlags(win_lbl, (unsigned int*)&b->modifiers, Modifier_WIN);
+                    ImGui::SameLine();
+
+                    ImGui::PushItemWidth(60);
                     char* action_str = (char*)loc((Texts)(TXT_Action_FIRST + (int)i));
                     if (ImGui::InputText(action_str,
                                          (char*)gui->scratch_binding_key[i],
-                                         sizeof(gui->scratch_binding_key[i]))) {
+                                         sizeof(gui->scratch_binding_key[i]),
+                                         ImGuiInputTextFlags_AllowTabInput)) {
                         b->bound_key = gui->scratch_binding_key[i][0];
                     }
+                    ImGui::PopItemWidth();
                 }
 
                 ImGui::SetCursorPosY( ImGui::GetCursorPosY() + ui_scale*80 );
 
-                if ( ImGui::Button(loc(TXT_ok)) ) {
-                    *milton->settings = *gui->modified_settings;
-                    milton_settings_save(milton->settings);
-                    show_settings = false;
-                }
-                ImGui::SameLine();
-                if ( ImGui::Button(loc(TXT_cancel)) ) {
-                    show_settings = false;
-                }
+				ok_cancel(2);
 
             } ImGui::End();
         }
