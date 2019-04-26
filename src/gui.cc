@@ -393,6 +393,9 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                     milton_switch_mode(milton, MiltonMode::EXPORTING);
                 }
                 if ( ImGui::MenuItem(loc(TXT_settings)) && !show_settings ) {
+                    if (!gui->visible) {
+                        gui_toggle_visibility(milton->gui);
+                    }
                     show_settings = true;
                     *gui->modified_settings = *milton->settings;
                     for (sz i = Action_FIRST; i < Action_COUNT; ++i) {
@@ -488,7 +491,7 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
             }
             if ( ImGui::BeginMenu(loc(TXT_view)) ) {
                 if ( ImGui::MenuItem(loc(TXT_toggle_gui_visibility)) ) {
-                    gui_toggle_visibility(milton);
+                    gui_toggle_visibility(milton->gui);
                 }
 #if MILTON_ENABLE_PROFILING
                 if ( ImGui::MenuItem("Toggle Debug Data [BACKQUOTE]") ) {
@@ -1360,9 +1363,8 @@ gui_consume_input(MiltonGui* gui, MiltonInput* input)
 }
 
 void
-gui_toggle_visibility(Milton* milton)
+gui_toggle_visibility(MiltonGui* gui)
 {
-    MiltonGui* gui = milton->gui;
     gui->visible = !gui->visible;
 }
 

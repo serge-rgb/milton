@@ -666,10 +666,10 @@ milton_switch_mode(Milton* milton, MiltonMode mode)
         }
 
         if ( mode == MiltonMode::EXPORTING && milton->gui->visible ) {
-            gui_toggle_visibility(milton);
+            gui_toggle_visibility(milton->gui);
         }
         if ( milton->last_mode == MiltonMode::EXPORTING && !milton->gui->visible ) {
-            gui_toggle_visibility(milton);
+            gui_toggle_visibility(milton->gui);
         }
     }
 }

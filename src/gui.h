@@ -135,7 +135,7 @@ void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milto
 
 //
 void                gui_init(Arena* root_arena, MiltonGui* gui, f32 scale);
-void                gui_toggle_visibility(Milton* milton);
+void                gui_toggle_visibility(MiltonGui* gui);
 void                gui_toggle_menu_visibility(MiltonGui* gui);
 void                gui_toggle_help(MiltonGui* gui);
 v3f                 gui_get_picker_rgb(MiltonGui* gui);
