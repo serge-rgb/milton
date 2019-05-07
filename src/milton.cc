@@ -76,20 +76,21 @@ milton_update_brushes(Milton* milton)
         if ( i == BrushEnum_PEN ) {
             // Alpha is set by the UI
             brush->color = to_premultiplied(gui_get_picker_rgb(milton->gui), brush->alpha);
+            brush->color = v4f{0.0f, 1.0f, 0.0f, 1.0f};
 
             // Check for eraser magic value (see blend.f.glsl and layer_blend.f.glsl)
             if ( brush->color.r == 0.0f &&
                  brush->color.g == 1.0f &&
                  brush->color.b == 0.0f &&
                  brush->color.a == 1.0f ) {
-                brush->color.g = 0xFE/255.0f;
+                // Grab the largest float that's less than 1.0f
+                *reinterpret_cast<u32*>(&brush->color.g) -= 1;
             }
         }
         else if ( i == BrushEnum_ERASER ) {
             brush->color = k_eraser_color;
         }
         else if ( i == BrushEnum_PRIMITIVE ) {
-            brush->alpha = milton_get_brush_alpha(milton);
             brush->color = to_premultiplied(gui_get_picker_rgb(milton->gui), brush->alpha);
         }
     }
@@ -160,13 +161,19 @@ is_user_drawing(Milton* milton)
     return result;
 }
 
+static b32
+mode_is_for_drawing(MiltonMode mode)
+{
+    b32 result = mode == MiltonMode::PEN ||
+            mode == MiltonMode::ERASER ||
+            mode == MiltonMode::PRIMITIVE;
+    return result;
+}
+
 b32
 current_mode_is_for_drawing(Milton* milton)
 {
-    b32 result = milton->current_mode == MiltonMode::PEN ||
-            milton->current_mode == MiltonMode::ERASER ||
-            milton->current_mode == MiltonMode::PRIMITIVE;
-    return result;
+    return mode_is_for_drawing(milton->current_mode);
 }
 
 static void
@@ -999,7 +1006,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     if ( input->mode_to_set != milton->current_mode
-         && (input->mode_to_set == MiltonMode::PEN || input->mode_to_set == MiltonMode::ERASER)) {
+         && mode_is_for_drawing(input->mode_to_set)) {
         end_stroke = true;
     }
 
@@ -1268,7 +1275,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                     else {
                         // This is not supposed to happen but if we get here we won't crash and burn.
                         milton_switch_mode(milton, MiltonMode::PEN);
-                        milton_log("Warning: Unexpected code path: Toggling modes. Toggleabel mode was set twice. Switching to pen.\n");
+                        milton_log("Warning: Unexpected code path: Toggling modes. Toggleable mode was set twice. Switching to pen.\n");
                     }
                 }
             }
