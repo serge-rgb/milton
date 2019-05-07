@@ -76,7 +76,6 @@ milton_update_brushes(Milton* milton)
         if ( i == BrushEnum_PEN ) {
             // Alpha is set by the UI
             brush->color = to_premultiplied(gui_get_picker_rgb(milton->gui), brush->alpha);
-            brush->color = v4f{0.0f, 1.0f, 0.0f, 1.0f};
 
             // Check for eraser magic value (see blend.f.glsl and layer_blend.f.glsl)
             if ( brush->color.r == 0.0f &&
