@@ -131,7 +131,7 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
             }
 
         }
-        if ( k == SDLK_SPACE ) {
+        if ( k == SDLK_SPACE && !is_keyup ) {
             platform->is_space_down = true;
         }
     }
