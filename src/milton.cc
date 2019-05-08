@@ -932,6 +932,18 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
 }
 
 void
+milton_peek_out_begin(Milton* milton)
+{
+
+}
+
+void
+milton_peek_out_end(Milton* milton)
+{
+
+}
+
+void
 milton_update_and_render(Milton* milton, MiltonInput* input)
 {
     PROFILE_GRAPH_BEGIN(update);

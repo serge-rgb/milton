@@ -284,3 +284,7 @@ void milton_set_zoom_at_screen_center(Milton* milton);
 
 b32  milton_brush_smoothing_enabled(Milton* milton);
 void milton_toggle_brush_smoothing(Milton* milton);
+
+void milton_peek_out_begin(Milton* milton);
+
+void milton_peek_out_end(Milton* milton);

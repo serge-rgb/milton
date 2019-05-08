@@ -5,6 +5,8 @@
 
 enum BindableAction
 {
+   Action_NONE,
+
    Action_FIRST,
 
    Action_DECREASE_BRUSH_SIZE = Action_FIRST,
@@ -36,14 +38,19 @@ enum BindableAction
    Action_SET_BRUSH_ALPHA_90,
    Action_SET_BRUSH_ALPHA_100,
    Action_HELP,
-
-   // Debug bindings
+   Action_PEEK_OUT,
 
    #if MILTON_ENABLE_PROFILING
-   Action_TOGGLE_DEBUG_WINDOW,
+      // Debug bindings
+      Action_TOGGLE_DEBUG_WINDOW,
    #endif
 
    Action_COUNT,
+
+   // Press-and-release actions.
+   ActionRelease_PEEK_OUT,
+
+   Action_COUNT_WITH_RELEASE,
 };
 
 enum ModifierFlags
@@ -55,11 +62,12 @@ enum ModifierFlags
    Modifier_ALT = 1<<2,
    Modifier_SPACE = 1<<3, // Spaaaaaace
    Modifier_SHIFT = 1<<4,
-} ;
+};
 
 struct Binding
 {
    u8 accepts_repeats;
+   u8 on_release;
 
    ModifierFlags modifiers;
 
@@ -94,7 +102,7 @@ struct MiltonBindings
    // It's unlikely to ever be a problem, but if we ever get to a point where
    // there are enough actions that looping over this array feels too wrong,
    // we can add a map here.
-   Binding bindings[Action_COUNT];
+   Binding bindings[Action_COUNT_WITH_RELEASE];
 };
 
 // void set_default_bindings(MiltonBindings* bindings);

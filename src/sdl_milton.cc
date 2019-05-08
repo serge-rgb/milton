@@ -52,7 +52,7 @@ get_current_keyboard_layout()
 }
 
 void
-shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event* event, MiltonInput* input)
+shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, MiltonInput* input, b32 is_keyup)
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -102,17 +102,35 @@ shortcut_handle_keydown(Milton* milton, PlatformState* platform, SDL_Event* even
         if (m & KMOD_ALT) { active_modifiers |= Modifier_ALT; }
         if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_SPACE]) { active_modifiers |= Modifier_SPACE; }
 
-        for (sz i = 0; i < Action_COUNT; ++i) {
-            Binding* b = &bindings->bindings[i];
-
-            if ( active_key &&
-                 (!event->key.repeat || b->accepts_repeats) &&
-                 active_modifiers == b->modifiers &&
-                 active_key == b->bound_key ) {
-                binding_dispatch_action(b->action, input, milton);
+        if (is_keyup) {
+            for (sz i = Action_COUNT + 1; i < Action_COUNT_WITH_RELEASE; ++i) {
+                Binding* b = &bindings->bindings[i];
+                if ( active_key &&
+                     (!event->key.repeat || b->accepts_repeats) &&
+                     active_modifiers == b->modifiers &&
+                     active_key == b->bound_key &&
+                     b->on_release &&
+                     b->action != Action_NONE ) {
+                    binding_dispatch_action(b->action, input, milton);
+                }
             }
         }
+        // keydown
+        else  {
+            for (sz i = 0; i < Action_COUNT; ++i) {
+                Binding* b = &bindings->bindings[i];
 
+                if ( active_key &&
+                     (!event->key.repeat || b->accepts_repeats) &&
+                     active_modifiers == b->modifiers &&
+                     active_key == b->bound_key &&
+                     !b->on_release &&
+                     b->action != Action_NONE ) {
+                    binding_dispatch_action(b->action, input, milton);
+                }
+            }
+
+        }
         if ( k == SDLK_SPACE ) {
             platform->is_space_down = true;
         }
@@ -359,7 +377,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                 break;
             }
             case SDL_KEYDOWN: {
-                shortcut_handle_keydown(milton, platform, &event, &milton_input);
+                shortcut_handle_key(milton, platform, &event, &milton_input, /*is_keyup*/false);
             } break;
             case SDL_KEYUP: {
                 if ( event.key.windowID != platform->window_id ) {
@@ -371,6 +389,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                 if ( keycode == SDLK_SPACE ) {
                     platform->is_space_down = false;
                 }
+                shortcut_handle_key(milton, platform, &event, &milton_input, /*is_keyup*/true);
             } break;
             case SDL_WINDOWEVENT: {
                 if ( platform->window_id != event.window.windowID ) {

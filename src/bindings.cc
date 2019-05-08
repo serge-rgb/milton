@@ -30,6 +30,22 @@ repeatable_binding(MiltonBindings* bs, ModifierFlags mod, i8 key, BindableAction
    bs->bindings[action] = b;
 }
 
+static void
+binding_with_release(MiltonBindings* bs, ModifierFlags mod, i8 key, BindableAction pressed, BindableAction release)
+{
+   Binding b = {0};
+
+   b.modifiers = mod;
+   b.bound_key = key;
+   b.action = pressed;
+
+   bs->bindings[pressed] = b;
+
+   b.action = release;
+   b.on_release = true;
+   bs->bindings[release] = b;
+}
+
 
 void
 set_default_bindings(MiltonBindings* bs)
@@ -68,8 +84,10 @@ set_default_bindings(MiltonBindings* bs)
    binding(bs, Modifier_NONE, '9', Action_SET_BRUSH_ALPHA_90);
    binding(bs, Modifier_NONE, '0', Action_SET_BRUSH_ALPHA_100);
 
+   binding_with_release(bs, Modifier_NONE, '`', Action_PEEK_OUT, ActionRelease_PEEK_OUT);
+
 #if MILTON_DEBUG
-   binding(bs, Modifier_NONE, '`', Action_TOGGLE_DEBUG_WINDOW);
+   binding(bs, Modifier_CTRL, '`', Action_TOGGLE_DEBUG_WINDOW);
 #endif
 }
 
@@ -178,55 +196,61 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton)
          }
       } break;
       case Action_TOGGLE_MENU: {
-         gui_toggle_menu_visibility(milton->gui);
+          gui_toggle_menu_visibility(milton->gui);
       } break;
       case Action_TOGGLE_GUI: {
-         gui_toggle_visibility(milton->gui);
+          gui_toggle_visibility(milton->gui);
       } break;
       case Action_MODE_ERASER: {
-         input->mode_to_set = MiltonMode::ERASER;
+          input->mode_to_set = MiltonMode::ERASER;
       } break;
       case Action_MODE_PEN: {
-         input->mode_to_set = MiltonMode::PEN;
+          input->mode_to_set = MiltonMode::PEN;
       } break;
       case Action_MODE_EYEDROPPER: {
-         input->mode_to_set = MiltonMode::EYEDROPPER;
+          input->mode_to_set = MiltonMode::EYEDROPPER;
       } break;
       case Action_MODE_PRIMITIVE: {
-         input->mode_to_set = MiltonMode::PRIMITIVE;
+          input->mode_to_set = MiltonMode::PRIMITIVE;
       } break;
       case Action_SET_BRUSH_ALPHA_10: {
-         milton_set_brush_alpha(milton, 0.1f);
+          milton_set_brush_alpha(milton, 0.1f);
       } break;
       case Action_SET_BRUSH_ALPHA_20: {
-         milton_set_brush_alpha(milton, 0.2f);
+          milton_set_brush_alpha(milton, 0.2f);
       } break;
       case Action_SET_BRUSH_ALPHA_30: {
-         milton_set_brush_alpha(milton, 0.3f);
+          milton_set_brush_alpha(milton, 0.3f);
       } break;
       case Action_SET_BRUSH_ALPHA_40: {
-         milton_set_brush_alpha(milton, 0.4f);
+          milton_set_brush_alpha(milton, 0.4f);
       } break;
       case Action_SET_BRUSH_ALPHA_50: {
-         milton_set_brush_alpha(milton, 0.5f);
+          milton_set_brush_alpha(milton, 0.5f);
       } break;
       case Action_SET_BRUSH_ALPHA_60: {
-         milton_set_brush_alpha(milton, 0.6f);
+          milton_set_brush_alpha(milton, 0.6f);
       } break;
       case Action_SET_BRUSH_ALPHA_70: {
-         milton_set_brush_alpha(milton, 0.7f);
+          milton_set_brush_alpha(milton, 0.7f);
       } break;
       case Action_SET_BRUSH_ALPHA_80: {
-         milton_set_brush_alpha(milton, 0.8f);
+          milton_set_brush_alpha(milton, 0.8f);
       } break;
       case Action_SET_BRUSH_ALPHA_90: {
-         milton_set_brush_alpha(milton, 0.9f);
+          milton_set_brush_alpha(milton, 0.9f);
       } break;
       case Action_SET_BRUSH_ALPHA_100: {
-         milton_set_brush_alpha(milton, 1.0);
+          milton_set_brush_alpha(milton, 1.0);
       } break;
       case Action_HELP: {
-         gui_toggle_help(milton->gui);
+          gui_toggle_help(milton->gui);
+      } break;
+      case Action_PEEK_OUT: {
+         milton_peek_out_begin(milton);
+      } break;
+      case ActionRelease_PEEK_OUT: {
+         milton_peek_out_end(milton);
       } break;
    #if MILTON_DEBUG
       case Action_TOGGLE_DEBUG_WINDOW: {
