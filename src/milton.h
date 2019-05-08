@@ -177,7 +177,7 @@ enum MiltonStateFlags
 {
     MiltonStateFlags_RUNNING                = 1 << 0,
                                            // 1 << 1 unused
-    MiltonStateFlags_REQUEST_QUALITY_REDRAW = 1 << 2,
+    MiltonStateFlags_FULL_REDRAW_REQUESTED = 1 << 2,
     MiltonStateFlags_JUST_SAVED             = 1 << 3,
     MiltonStateFlags_NEW_CANVAS             = 1 << 4,
     MiltonStateFlags_DEFAULT_CANVAS         = 1 << 5,

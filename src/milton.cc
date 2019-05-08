@@ -838,10 +838,9 @@ milton_delete_working_layer(Milton* milton)
         else wl = layer->prev;
         milton_set_working_layer(milton, wl);
     }
-    if ( layer == milton->canvas->root_layer )
+    if ( layer == milton->canvas->root_layer ) {
         milton->canvas->root_layer = milton->canvas->working_layer;
-
-    // milton->flags |= MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+    }
 }
 
 b32
@@ -934,13 +933,19 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
 void
 milton_peek_out_begin(Milton* milton)
 {
+    double log_scale = log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE);
+    i64 new_scale = min(pow(2, log_scale + 1.0) * MILTON_DEFAULT_SCALE, 1<<16);
 
+    gpu_update_scale(milton->render_data, new_scale);
+
+    milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
 }
 
 void
 milton_peek_out_end(Milton* milton)
 {
-
+    gpu_update_scale(milton->render_data, milton->view->scale);
+    milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
 }
 
 void
@@ -970,8 +975,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         render_flags |= RenderDataFlags_WITH_BLUR;
     }
 
-    if ( milton->flags & MiltonStateFlags_REQUEST_QUALITY_REDRAW ) {
-        milton->flags &= ~MiltonStateFlags_REQUEST_QUALITY_REDRAW;
+    if ( milton->flags & MiltonStateFlags_FULL_REDRAW_REQUESTED ) {
+        milton->flags &= ~MiltonStateFlags_FULL_REDRAW_REQUESTED;
         do_full_redraw = true;
     }
 

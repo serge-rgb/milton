@@ -525,6 +525,7 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
             char msg[1024];
             WallTime lst = milton->persist->last_save_time;
 
+            // TODO: Translate!
             snprintf(msg, 1024, "\t%s -- Last saved: %.2d:%.2d:%.2d\t\tZoom level %.2f",
                      (milton->flags & MiltonStateFlags_DEFAULT_CANVAS) ? loc(TXT_OPENBRACKET_default_canvas_CLOSE_BRACKET):
                      file_name,
