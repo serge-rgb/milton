@@ -711,7 +711,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
                     ImGui::SameLine();
 
                     ImGui::PushItemWidth(60);
-                    char* action_str = (char*)loc((Texts)(TXT_Action_FIRST + (int)i));
+                    // mlt_assert(TXT_Action_FIRST + (int)i < TXT_Count);
+                    char* action_str = (char*)loc((Texts)(TXT_Action_FIRST + (int)i - Action_FIRST));
                     if (ImGui::InputText(action_str,
                                          (char*)gui->scratch_binding_key[i],
                                          sizeof(gui->scratch_binding_key[i]),
