@@ -105,7 +105,7 @@ enum ClipFlags
 };
 void gpu_clip_strokes_and_update(Arena* arena,
                                  RenderData* render_data,
-                                 CanvasView* view,
+                                 CanvasView* view, i64 render_scale,
                                  Layer* root_layer, Stroke* working_stroke,
                                  i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_JUST_CLIP);
 

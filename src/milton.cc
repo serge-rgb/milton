@@ -930,13 +930,26 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
     out_stroke->render_element = {};
 }
 
+i64
+milton_render_scale(Milton* milton)
+{
+    if (milton->is_peeking)
+    {
+        double log_scale = log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE);
+        i64 new_scale = min(pow(2, log_scale + 1.0) * MILTON_DEFAULT_SCALE, 1<<16);
+        return new_scale;
+    }
+    else
+    {
+        return milton->view->scale;
+    }
+}
+
 void
 milton_peek_out_begin(Milton* milton)
 {
-    double log_scale = log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE);
-    i64 new_scale = min(pow(2, log_scale + 1.0) * MILTON_DEFAULT_SCALE, 1<<16);
-
-    gpu_update_scale(milton->render_data, new_scale);
+    milton->is_peeking = true;
+    gpu_update_scale(milton->render_data, milton_render_scale(milton));
 
     milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
 }
@@ -944,6 +957,7 @@ milton_peek_out_begin(Milton* milton)
 void
 milton_peek_out_end(Milton* milton)
 {
+    milton->is_peeking = false;
     gpu_update_scale(milton->render_data, milton->view->scale);
     milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
 }
@@ -1461,7 +1475,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     PROFILE_GRAPH_BEGIN(clipping);
 
-    gpu_clip_strokes_and_update(&milton->root_arena, milton->render_data, milton->view,
+    i64 render_scale = milton_render_scale(milton);
+    gpu_clip_strokes_and_update(&milton->root_arena, milton->render_data, milton->view, render_scale,
                                 milton->canvas->root_layer, &milton->working_stroke,
                                 view_x, view_y, view_width, view_height, clip_flags);
     PROFILE_GRAPH_END(clipping);

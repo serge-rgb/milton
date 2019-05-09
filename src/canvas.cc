@@ -7,11 +7,11 @@
 v4f k_eraser_color = {23,34,45,56};
 
 v2l
-canvas_to_raster(CanvasView* view, v2l canvas_point)
+canvas_to_raster_with_scale(CanvasView* view, v2l canvas_point, i64 scale)
 {
     v2l raster_point = {
-        ((canvas_point.x - view->pan_center.x) / view->scale) + view->zoom_center.x,
-        ((canvas_point.y - view->pan_center.y) / view->scale) + view->zoom_center.y,
+        ((canvas_point.x - view->pan_center.x) / scale) + view->zoom_center.x,
+        ((canvas_point.y - view->pan_center.y) / scale) + view->zoom_center.y,
     };
     return raster_point;
 }
@@ -25,6 +25,12 @@ raster_to_canvas(CanvasView* view, v2l raster_point)
     };
 
     return canvas_point;
+}
+
+v2l
+canvas_to_raster(CanvasView* view, v2l canvas_point)
+{
+    return canvas_to_raster_with_scale(view, canvas_point, view->scale);
 }
 
 // Does point p0 with radius r0 contain point p1 with radius r1?

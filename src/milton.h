@@ -146,6 +146,10 @@ struct Milton
     i32 hover_flash_ms;  // Set on keyboard shortcut to change brush size.
                         // Brush hover "flashes" if it is currently hidden to show its current size.
 
+    // TODO: I don't know how the system is going to look, so for now putting the render zoom stuff here.
+    b32 is_peeking;
+
+
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
     MiltonMode current_mode;

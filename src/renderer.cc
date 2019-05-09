@@ -1092,6 +1092,7 @@ void
 gpu_clip_strokes_and_update(Arena* arena,
                             RenderData* r,
                             CanvasView* view,
+                            i64 scale,
                             Layer* root_layer, Stroke* working_stroke,
                             i32 x, i32 y, i32 w, i32 h, ClipFlags flags)
 {
@@ -1137,8 +1138,8 @@ gpu_clip_strokes_and_update(Arena* arena,
                 count = l->strokes.count % STROKELIST_BUCKET_COUNT;
             }
             Rect bbox = bucket->bounding_rect;
-            bbox.top_left = canvas_to_raster(view, bbox.top_left);
-            bbox.bot_right = canvas_to_raster(view, bbox.bot_right);
+            bbox.top_left = canvas_to_raster_with_scale(view, bbox.top_left, scale);
+            bbox.bot_right = canvas_to_raster_with_scale(view, bbox.bot_right, scale);
 
             b32 bucket_outside =   screen_bounds.left   > bbox.right
                                 || screen_bounds.top    > bbox.bottom
@@ -1151,8 +1152,8 @@ gpu_clip_strokes_and_update(Arena* arena,
 
                     if ( s != NULL ) {
                         Rect bounds = s->bounding_rect;
-                        bounds.top_left = canvas_to_raster(view, bounds.top_left);
-                        bounds.bot_right = canvas_to_raster(view, bounds.bot_right);
+                        bounds.top_left = canvas_to_raster_with_scale(view, bounds.top_left, scale);
+                        bounds.bot_right = canvas_to_raster_with_scale(view, bounds.bot_right, scale);
 
                         b32 is_outside = bounds.left > (x+w) || bounds.right < x
                                 || bounds.top > (y+h) || bounds.bottom < y;
@@ -1674,7 +1675,7 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
 
     glViewport(0, 0, buf_w, buf_h);
     glScissor(0, 0, buf_w, buf_h);
-    gpu_clip_strokes_and_update(&milton->root_arena, r, milton->view, milton->canvas->root_layer,
+    gpu_clip_strokes_and_update(&milton->root_arena, r, milton->view, milton->view->scale, milton->canvas->root_layer,
                                 &milton->working_stroke, 0, 0, buf_w, buf_h);
 
     r->flags |= RenderDataFlags_WITH_BLUR;
@@ -1741,7 +1742,7 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
 
     // Re-render
     gpu_clip_strokes_and_update(&milton->root_arena,
-                                r, milton->view, milton->canvas->root_layer,
+                                r, milton->view, milton->view->scale, milton->canvas->root_layer,
                                 &milton->working_stroke, 0, 0, r->width,
                                 r->height);
     gpu_render(r, 0, 0, r->width, r->height);
