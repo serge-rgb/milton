@@ -111,7 +111,7 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
                      active_key == b->bound_key &&
                      b->on_release &&
                      b->action != Action_NONE ) {
-                    binding_dispatch_action(b->action, input, milton);
+                    binding_dispatch_action(b->action, input, milton, platform->pointer);
                 }
             }
         }
@@ -126,7 +126,7 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
                      active_key == b->bound_key &&
                      !b->on_release &&
                      b->action != Action_NONE ) {
-                    binding_dispatch_action(b->action, input, milton);
+                    binding_dispatch_action(b->action, input, milton, platform->pointer);
                 }
             }
 

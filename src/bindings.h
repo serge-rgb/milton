@@ -105,7 +105,3 @@ struct MiltonBindings
    Binding bindings[Action_COUNT_WITH_RELEASE];
 };
 
-// void set_default_bindings(MiltonBindings* bindings);
-// void set_default_bindings(MiltonBindings* bindings, MiltonInput* input)
-
-//void binding_dispatch_action(BindableAction a);

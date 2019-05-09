@@ -946,20 +946,26 @@ milton_render_scale(Milton* milton)
 }
 
 void
-milton_peek_out_begin(Milton* milton)
+milton_peek_out_begin(Milton* milton, v2i screen_point)
 {
     milton->is_peeking = true;
-    gpu_update_scale(milton->render_data, milton_render_scale(milton));
 
     milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
+
+    milton_set_zoom_at_point(milton, screen_point);
+    // TODO: The previous call results in a useles call to gpu_update_scale. Figure out how to pass the scale to the GPU only once.
+    gpu_update_scale(milton->render_data, milton_render_scale(milton));
 }
 
 void
-milton_peek_out_end(Milton* milton)
+milton_peek_out_end(Milton* milton, v2i screen_point)
 {
     milton->is_peeking = false;
-    gpu_update_scale(milton->render_data, milton->view->scale);
     milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
+
+    milton_set_zoom_at_point(milton, screen_point);
+    // TODO: Same comment as above
+    gpu_update_scale(milton->render_data, milton->view->scale);
 }
 
 void

@@ -147,6 +147,11 @@ struct Milton
                         // Brush hover "flashes" if it is currently hidden to show its current size.
 
     // TODO: I don't know how the system is going to look, so for now putting the render zoom stuff here.
+    // TODO: peek-out
+    // - Either disable input while peeking out or remove distinction between scale and "render scale"
+    // - log2 is wrong. use actual base for zoom
+    // - animation
+    // - gpu_update_scale issue
     b32 is_peeking;
 
 
@@ -289,6 +294,6 @@ void milton_set_zoom_at_screen_center(Milton* milton);
 b32  milton_brush_smoothing_enabled(Milton* milton);
 void milton_toggle_brush_smoothing(Milton* milton);
 
-void milton_peek_out_begin(Milton* milton);
+void milton_peek_out_begin(Milton* milton, v2i screen_point);
 
-void milton_peek_out_end(Milton* milton);
+void milton_peek_out_end(Milton* milton, v2i screen_point);

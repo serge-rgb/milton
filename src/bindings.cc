@@ -92,7 +92,7 @@ set_default_bindings(MiltonBindings* bs)
 }
 
 void
-binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton)
+binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2i pointer)
 {
    char* default_will_be_lost = "The default canvas will be cleared. Save it?";
 
@@ -247,10 +247,10 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton)
           gui_toggle_help(milton->gui);
       } break;
       case Action_PEEK_OUT: {
-         milton_peek_out_begin(milton);
+         milton_peek_out_begin(milton, pointer);
       } break;
       case ActionRelease_PEEK_OUT: {
-         milton_peek_out_end(milton);
+         milton_peek_out_end(milton, pointer);
       } break;
    #if MILTON_DEBUG
       case Action_TOGGLE_DEBUG_WINDOW: {
