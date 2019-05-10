@@ -37,6 +37,7 @@ enum class MiltonMode
     EXPORTING,
     EYEDROPPER,
     HISTORY,
+    PEEK_OUT,
 };
 
 enum BrushEnum
@@ -152,8 +153,6 @@ struct Milton
     // - log2 is wrong. use actual base for zoom
     // - animation
     // - gpu_update_scale issue
-    b32 is_peeking;
-
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode

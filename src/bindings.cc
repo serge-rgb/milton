@@ -247,10 +247,11 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
           gui_toggle_help(milton->gui);
       } break;
       case Action_PEEK_OUT: {
-         milton_peek_out_begin(milton, pointer);
+         input->mode_to_set = MiltonMode::PEEK_OUT;
       } break;
       case ActionRelease_PEEK_OUT: {
-         milton_peek_out_end(milton, pointer);
+         mlt_assert (milton->current_mode == MiltonMode::PEEK_OUT);
+         input->mode_to_set = MiltonMode::PEEK_OUT;  // It's a toggleable mode, so we set it twice to toggle out of it.
       } break;
    #if MILTON_DEBUG
       case Action_TOGGLE_DEBUG_WINDOW: {

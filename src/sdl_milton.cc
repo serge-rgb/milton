@@ -112,6 +112,7 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
                      b->on_release &&
                      b->action != Action_NONE ) {
                     binding_dispatch_action(b->action, input, milton, platform->pointer);
+                    platform->force_next_frame = true;
                 }
             }
         }
@@ -127,6 +128,7 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
                      !b->on_release &&
                      b->action != Action_NONE ) {
                     binding_dispatch_action(b->action, input, milton, platform->pointer);
+                    platform->force_next_frame = true;
                 }
             }
 

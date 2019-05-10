@@ -263,6 +263,19 @@ clear_smooth_filter(SmoothFilter* filter, v2l value)
     }
 }
 
+i64
+milton_render_scale(Milton* milton)
+{
+    if ( milton->current_mode == MiltonMode::PEEK_OUT ) {
+        double log_scale = log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE);
+        i64 new_scale = min(pow(2, log_scale + 1.0) * MILTON_DEFAULT_SCALE, 1<<16);
+        return new_scale;
+    }
+    else {
+        return milton->view->scale;
+    }
+}
+
 static void
 milton_stroke_input(Milton* milton, MiltonInput* input)
 {
@@ -270,6 +283,9 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
         return;
     }
 
+    if ( milton->view->scale != milton_render_scale(milton) ) {
+        return;  // We can't draw while peeking.
+    }
 
     // Using the pan center to do a change of coordinates so that we
     // don't lose precision when we convert to floating point
@@ -930,26 +946,9 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
     out_stroke->render_element = {};
 }
 
-i64
-milton_render_scale(Milton* milton)
-{
-    if (milton->is_peeking)
-    {
-        double log_scale = log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE);
-        i64 new_scale = min(pow(2, log_scale + 1.0) * MILTON_DEFAULT_SCALE, 1<<16);
-        return new_scale;
-    }
-    else
-    {
-        return milton->view->scale;
-    }
-}
-
 void
 milton_peek_out_begin(Milton* milton, v2i screen_point)
 {
-    milton->is_peeking = true;
-
     milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
 
     milton_set_zoom_at_point(milton, screen_point);
@@ -960,7 +959,6 @@ milton_peek_out_begin(Milton* milton, v2i screen_point)
 void
 milton_peek_out_end(Milton* milton, v2i screen_point)
 {
-    milton->is_peeking = false;
     milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
 
     milton_set_zoom_at_point(milton, screen_point);
@@ -1300,6 +1298,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             MiltonMode toggleable_modes[] = {
                 MiltonMode::EYEDROPPER,
                 MiltonMode::PRIMITIVE,
+                MiltonMode::PEEK_OUT,
             };
 
             for ( size_t i = 0; i < array_count(toggleable_modes); ++i ) {
@@ -1307,6 +1306,15 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 if ( current_mode == toggle ) {
                     if ( milton->last_mode != toggle ) {
                         milton_use_previous_mode(milton);
+                        switch ( toggle ) {
+                            case MiltonMode::PEEK_OUT: {
+                                milton_peek_out_end(milton, input->hover_point);
+                                do_full_redraw = true;
+                            } break;
+                            default: {
+                                // This toggleable mode does not have a finalizer function.
+                            }
+                        }
                     }
                     else {
                         // This is not supposed to happen but if we get here we won't crash and burn.
@@ -1325,6 +1333,10 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 milton_update_brushes(milton);
                 // If we are drawing, end the current stroke so that it
                 // doesn't change from eraser to brush or vice versa.
+            }
+            if (input->mode_to_set == MiltonMode::PEEK_OUT) {
+                milton_peek_out_begin(milton, input->hover_point);
+                do_full_redraw = true;  // TODO: Might make sense to turn this variable into a function.
             }
         }
     }
@@ -1462,7 +1474,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     else if ( draw_custom_rectangle ) {
         view_x = custom_rectangle.left;
         view_y = custom_rectangle.top;
-        //view_y = milton->view->screen_size.h - custom_rectangle.bottom;
         view_width = custom_rectangle.right - custom_rectangle.left;
         view_height = custom_rectangle.bottom - custom_rectangle.top;
         VALIDATE_RECT(custom_rectangle);
