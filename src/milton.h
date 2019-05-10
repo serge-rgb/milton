@@ -151,7 +151,8 @@ struct Milton
     // TODO: peek-out
     // - animation
     // - gpu_update_scale issue
-    // - change zoom center as the user pans.
+    // - change zoom center as the user pans
+	// - increment value in settings gui should be a percentage
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
