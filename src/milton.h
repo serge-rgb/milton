@@ -14,7 +14,6 @@
 #define MILTON_DEFAULT_SCALE        (1 << 10)
 #define NO_PRESSURE_INFO            -1.0f
 #define MAX_INPUT_BUFFER_ELEMS      32
-#define MILTON_MINIMUM_SCALE        (1 << 4)
 #define MILTON_MAX_BRUSH_SIZE       100
 #define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
@@ -98,6 +97,7 @@ enum PrimitiveFSM
 struct MiltonSettings
 {
     v3f background_color;
+    float peek_out_increment;
 
     MiltonBindings bindings;
 };
@@ -149,10 +149,9 @@ struct Milton
 
     // TODO: I don't know how the system is going to look, so for now putting the render zoom stuff here.
     // TODO: peek-out
-    // - Either disable input while peeking out or remove distinction between scale and "render scale"
-    // - log2 is wrong. use actual base for zoom
     // - animation
     // - gpu_update_scale issue
+    // - change zoom center as the user pans.
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode

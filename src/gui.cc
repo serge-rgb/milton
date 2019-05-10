@@ -530,7 +530,11 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                      (milton->flags & MiltonStateFlags_DEFAULT_CANVAS) ? loc(TXT_OPENBRACKET_default_canvas_CLOSE_BRACKET):
                      file_name,
                      lst.hours, lst.minutes, lst.seconds,
-                     log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE));
+                     // We divide by MILTON_DEFAULT_SCALE to give a frame of
+                     // reference to the user, where 1.0 is the default. For
+                     // our calculations in other places, we don't do the
+                     // divide.
+                     log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE) / log2(SCALE_FACTOR));
 
             if ( ImGui::BeginMenu(msg, /*bool enabled = */false) ) {
                 ImGui::EndMenu();
@@ -682,9 +686,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
                 if (ImGui::ColorEdit3(loc(TXT_color), bg->d)) {
                     // TODO: Let milton know that we need to save the settings
                 }
+
                 if ( ImGui::Button(loc(TXT_set_current_background_color_as_default)) ) {
                     gui->modified_settings->background_color = milton->view->background_color;
                 }
+
+                float* peek_out_increment = &gui->modified_settings->peek_out_increment;
+                ImGui::SliderFloat(loc(TXT_peek_out_increment), peek_out_increment, 0.0f, 20.0f);
 
                 ImGui::Separator();
 

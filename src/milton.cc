@@ -267,8 +267,8 @@ i64
 milton_render_scale(Milton* milton)
 {
     if ( milton->current_mode == MiltonMode::PEEK_OUT ) {
-        double log_scale = log2(1 + milton->view->scale / (double)MILTON_DEFAULT_SCALE);
-        i64 new_scale = min(pow(2, log_scale + 1.0) * MILTON_DEFAULT_SCALE, 1<<16);
+        double log_scale = log2(1 + milton->view->scale) / log2(SCALE_FACTOR);
+        i64 new_scale = min(pow(SCALE_FACTOR, log_scale + milton->settings->peek_out_increment), VIEW_SCALE_LIMIT);
         return new_scale;
     }
     else {
@@ -449,6 +449,7 @@ void
 settings_init(MiltonSettings* s)
 {
     s->background_color = v3f{1,1,1};
+    s->peek_out_increment = DEFAULT_PEEK_OUT_INCREMENT_LOG;
 }
 
 int milton_save_thread(void* state_);  // forward
@@ -1009,17 +1010,10 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     if ( input->scale ) {
         do_full_redraw = true;
 
-// Debug
-#if MILTON_ZOOM_DEBUG
-        f32 scale_factor = 1.5f;
-        i32 view_scale_limit = 1 << 20;
-// Sensible
-#else
-        f32 scale_factor = 1.3f;
-        i32 view_scale_limit = (1 << 16);
-#endif
+        f32 scale_factor = SCALE_FACTOR;
+        i32 view_scale_limit = VIEW_SCALE_LIMIT;
 
-        i32 min_scale = MILTON_MINIMUM_SCALE;
+        i32 min_scale = MINIMUM_SCALE;
 
         if ( input->scale > 0 && milton->view->scale >= min_scale ) {
             milton->view->scale = (i32)(ceilf(milton->view->scale / scale_factor));
