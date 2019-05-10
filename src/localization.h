@@ -81,7 +81,7 @@ enum Texts
     TXT_OPENBRACKET_default_canvas_CLOSE_BRACKET,
     TXT_background_COLON,
     TXT_could_not_delete_default_canvas,
-    TXT_peek_out_increment,
+    TXT_peek_out_increment_percent,
 
     // Actions
     TXT_Action_FIRST,

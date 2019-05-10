@@ -98,7 +98,7 @@ init_localization()
         EN(TXT_background_COLON, "Background:");
         EN(TXT_OPENBRACKET_default_canvas_CLOSE_BRACKET, "[Default canvas]");
         EN(TXT_could_not_delete_default_canvas, "Could not delete default canvas. Contents will be still there when you create a new canvas.");
-        EN(TXT_peek_out_increment, "Peek-out increment");
+        EN(TXT_peek_out_increment_percent, "Peek-out increment percentage");
 
         EN(TXT_Action_DECREASE_BRUSH_SIZE, "Decrease brush size");
         EN(TXT_Action_INCREASE_BRUSH_SIZE, "Increase brush size");

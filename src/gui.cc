@@ -691,8 +691,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
                     gui->modified_settings->background_color = milton->view->background_color;
                 }
 
-                float* peek_out_increment = &gui->modified_settings->peek_out_increment;
-                ImGui::SliderFloat(loc(TXT_peek_out_increment), peek_out_increment, 0.0f, 20.0f);
+				const float peek_range = 20;
+				int peek_out_percent = 100 * (gui->modified_settings->peek_out_increment / peek_range);
+                if (ImGui::SliderInt(loc(TXT_peek_out_increment_percent), &peek_out_percent, 0, 100)) {
+					gui->modified_settings->peek_out_increment = (peek_out_percent / 100.0f) * peek_range;
+				}
 
                 ImGui::Separator();
 
