@@ -200,3 +200,7 @@ swap(T& a, T& b)
 
 u64 hash(char* string, size_t len);
 
+template<typename T>
+T lerp(T begin, T end, float t) {
+    return begin * (1.0f - t) + (end * t);
+}

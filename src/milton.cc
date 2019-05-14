@@ -269,7 +269,24 @@ milton_render_scale(Milton* milton)
     if ( milton->current_mode == MiltonMode::PEEK_OUT ) {
         double log_scale = log2(1 + milton->view->scale) / log2(SCALE_FACTOR);
         i64 new_scale = min(pow(SCALE_FACTOR, log_scale + milton->settings->peek_out_increment), VIEW_SCALE_LIMIT);
-        return new_scale;
+
+        WallTime time = platform_get_walltime();
+
+        u64 ms = difference_in_ms(milton->peek_out_begin_anim, time);
+
+        float interp = 0.0f;
+        if (ms < PEEK_OUT_DURATION_MS) {
+            interp = ms / (float)PEEK_OUT_DURATION_MS;
+        }
+        else {
+            interp = 1.0f;
+        }
+
+        if (milton->peek_out_ended) {
+            interp = 1 - interp;
+        }
+
+        return lerp(milton->view->scale, new_scale, interp);
     }
     else {
         return milton->view->scale;
@@ -948,24 +965,39 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
 }
 
 void
-milton_peek_out_begin(Milton* milton, v2i screen_point)
+peek_out_trigger_start(Milton* milton, v2i screen_point)
 {
-    milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
+    if (milton->current_mode != MiltonMode::PEEK_OUT) {
+        milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
 
-    milton_set_zoom_at_point(milton, screen_point);
-    // TODO: The previous call results in a useles call to gpu_update_scale. Figure out how to pass the scale to the GPU only once.
-    gpu_update_scale(milton->render_data, milton_render_scale(milton));
+        milton_set_zoom_at_point(milton, screen_point);
+
+        milton->peek_out_begin_anim = platform_get_walltime();
+        milton->peek_out_ended = false;
+
+        milton_switch_mode(milton, MiltonMode::PEEK_OUT);
+    }
 }
 
 void
-milton_peek_out_end(Milton* milton, v2i screen_point)
+peek_out_trigger_stop(Milton* milton)
 {
-    milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
-
-    milton_set_zoom_at_point(milton, screen_point);
-    // TODO: Same comment as above
-    gpu_update_scale(milton->render_data, milton->view->scale);
+    if (milton->current_mode == MiltonMode::PEEK_OUT) {
+        milton->peek_out_begin_anim = platform_get_walltime();
+        milton->peek_out_ended = true;
+    }
 }
+
+void
+peek_out_tick(Milton* milton)
+{
+    gpu_update_scale(milton->render_data, milton_render_scale(milton));
+    if (milton->peek_out_ended &&
+        difference_in_ms(milton->peek_out_begin_anim, platform_get_walltime()) >= PEEK_OUT_DURATION_MS) {
+        milton_use_previous_mode(milton);
+    }
+}
+
 
 void
 milton_update_and_render(Milton* milton, MiltonInput* input)
@@ -1292,7 +1324,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             MiltonMode toggleable_modes[] = {
                 MiltonMode::EYEDROPPER,
                 MiltonMode::PRIMITIVE,
-                MiltonMode::PEEK_OUT,
             };
 
             for ( size_t i = 0; i < array_count(toggleable_modes); ++i ) {
@@ -1300,15 +1331,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 if ( current_mode == toggle ) {
                     if ( milton->last_mode != toggle ) {
                         milton_use_previous_mode(milton);
-                        switch ( toggle ) {
-                            case MiltonMode::PEEK_OUT: {
-                                milton_peek_out_end(milton, input->hover_point);
-                                do_full_redraw = true;
-                            } break;
-                            default: {
-                                // This toggleable mode does not have a finalizer function.
-                            }
-                        }
                     }
                     else {
                         // This is not supposed to happen but if we get here we won't crash and burn.
@@ -1327,10 +1349,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 milton_update_brushes(milton);
                 // If we are drawing, end the current stroke so that it
                 // doesn't change from eraser to brush or vice versa.
-            }
-            if (input->mode_to_set == MiltonMode::PEEK_OUT) {
-                milton_peek_out_begin(milton, input->hover_point);
-                do_full_redraw = true;  // TODO: Might make sense to turn this variable into a function.
             }
         }
     }
@@ -1444,6 +1462,10 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         milton->flags &= ~MiltonStateFlags_JUST_SAVED;
     }
 
+    if (milton->current_mode == MiltonMode::PEEK_OUT) {
+        peek_out_tick(milton);
+    }
+
     i32 view_x = 0;
     i32 view_y = 0;
     i32 view_width = 0;
@@ -1487,6 +1509,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     PROFILE_GRAPH_BEGIN(clipping);
 
     i64 render_scale = milton_render_scale(milton);
+
     gpu_clip_strokes_and_update(&milton->root_arena, milton->render_data, milton->view, render_scale,
                                 milton->canvas->root_layer, &milton->working_stroke,
                                 view_x, view_y, view_width, view_height, clip_flags);

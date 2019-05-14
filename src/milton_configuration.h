@@ -25,7 +25,7 @@
 
 #define MILTON_ENABLE_PROFILING 1
 
-#define REDRAW_EVERY_FRAME 0
+#define REDRAW_EVERY_FRAME 1
 
 #define STROKE_DEBUG_VIZ 0
 
@@ -48,6 +48,8 @@
     #endif
 
 #define DEFAULT_PEEK_OUT_INCREMENT_LOG 2.0
+
+#define PEEK_OUT_DURATION_MS 200
 
  // No support for system cursor on linux or macos for now
 #if defined(__linux__) || defined(__MACH__)

@@ -183,6 +183,8 @@ void    platform_open_link(char* link);
 
 WallTime platform_get_walltime();
 
+u64 difference_in_ms(WallTime start, WallTime end);
+
 void    platform_cursor_hide();
 void    platform_cursor_show();
 

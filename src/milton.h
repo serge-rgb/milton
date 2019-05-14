@@ -149,9 +149,9 @@ struct Milton
 
     // TODO: I don't know how the system is going to look, so for now putting the render zoom stuff here.
     // TODO: peek-out
-    // - animation
+    // - use a struct for funcs
     // - gpu_update_scale issue
-    // - change zoom center as the user pans
+
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
@@ -292,6 +292,6 @@ void milton_set_zoom_at_screen_center(Milton* milton);
 b32  milton_brush_smoothing_enabled(Milton* milton);
 void milton_toggle_brush_smoothing(Milton* milton);
 
-void milton_peek_out_begin(Milton* milton, v2i screen_point);
 
-void milton_peek_out_end(Milton* milton, v2i screen_point);
+void peek_out_trigger_start(Milton* milton, v2i screen_point);
+void peek_out_trigger_stop(Milton* milton);

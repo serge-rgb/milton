@@ -500,3 +500,23 @@ hash(char* string, size_t len)
     }
     return h;
 }
+
+u64
+difference_in_ms(WallTime start, WallTime end)
+{
+    // Note: There is some risk of overflow here, but at the time of my
+    // writing this we are only using this for animations, where things won't
+    // explode.
+
+    u64 diff = end.ms - start.ms;
+    if (end.s > start.s) {
+        diff += 1000 * (end.s - start.s);
+    }
+    if (end.m > start.m) {
+        diff += 1000 * 60 * (end.m - start.s);
+    }
+    if (end.h > start.h) {
+        diff += 1000 * 60 * 60 * (end.h - start.h);
+    }
+    return diff;
+}
