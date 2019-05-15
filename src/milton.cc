@@ -965,24 +965,27 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
 }
 
 void
-peek_out_trigger_start(Milton* milton, v2i screen_point)
+peek_out_trigger_start(Milton* milton)
 {
+    milton_set_zoom_at_point(milton, milton->hover_point);
     if (milton->current_mode != MiltonMode::PEEK_OUT) {
         milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
 
-        milton_set_zoom_at_point(milton, screen_point);
 
         milton->peek_out_begin_anim = platform_get_walltime();
         milton->peek_out_ended = false;
 
         milton_switch_mode(milton, MiltonMode::PEEK_OUT);
     }
+    else if (milton->peek_out_ended) {
+        milton->peek_out_ended = false;
+    }
 }
 
 void
 peek_out_trigger_stop(Milton* milton)
 {
-    if (milton->current_mode == MiltonMode::PEEK_OUT) {
+    if (milton->current_mode == MiltonMode::PEEK_OUT && !milton->peek_out_ended) {
         milton->peek_out_begin_anim = platform_get_walltime();
         milton->peek_out_ended = true;
     }

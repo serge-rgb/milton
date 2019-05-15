@@ -151,7 +151,9 @@ struct Milton
     // TODO: peek-out
     // - use a struct for funcs
     // - gpu_update_scale issue
-
+    // - change zoom center as the user pans.
+    WallTime peek_out_begin_anim;
+    b32 peek_out_ended;
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode
@@ -293,5 +295,5 @@ b32  milton_brush_smoothing_enabled(Milton* milton);
 void milton_toggle_brush_smoothing(Milton* milton);
 
 
-void peek_out_trigger_start(Milton* milton, v2i screen_point);
+void peek_out_trigger_start(Milton* milton);
 void peek_out_trigger_stop(Milton* milton);

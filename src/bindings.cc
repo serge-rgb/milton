@@ -247,7 +247,7 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
           gui_toggle_help(milton->gui);
       } break;
       case Action_PEEK_OUT: {
-          peek_out_trigger_start(milton, input->hover_point);
+          peek_out_trigger_start(milton);
       } break;
       case ActionRelease_PEEK_OUT: {
           peek_out_trigger_stop(milton);
