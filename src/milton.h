@@ -149,11 +149,14 @@ struct Milton
 
     // TODO: I don't know how the system is going to look, so for now putting the render zoom stuff here.
     // TODO: peek-out
+    // - zoom lerp should be in log units
     // - use a struct for funcs
     // - gpu_update_scale issue
     // - change zoom center as the user pans.
     WallTime peek_out_begin_anim;
     b32 peek_out_ended;
+    i64 high_scale;
+    i64 low_scale;
 
     // Read only
     // Set these with milton_switch_mode and milton_use_previous_mode

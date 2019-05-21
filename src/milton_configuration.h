@@ -49,7 +49,7 @@
 
 #define DEFAULT_PEEK_OUT_INCREMENT_LOG 2.0
 
-#define PEEK_OUT_DURATION_MS 200
+#define PEEK_OUT_SPEED 20  // ms / increment
 
  // No support for system cursor on linux or macos for now
 #if defined(__linux__) || defined(__MACH__)

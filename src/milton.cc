@@ -263,20 +263,20 @@ clear_smooth_filter(SmoothFilter* filter, v2l value)
     }
 }
 
+static u64 peek_out_duration_ms(Milton* milton);  // forward decl
+
+
 i64
 milton_render_scale(Milton* milton)
 {
     if ( milton->current_mode == MiltonMode::PEEK_OUT ) {
-        double log_scale = log2(1 + milton->view->scale) / log2(SCALE_FACTOR);
-        i64 new_scale = min(pow(SCALE_FACTOR, log_scale + milton->settings->peek_out_increment), VIEW_SCALE_LIMIT);
-
         WallTime time = platform_get_walltime();
 
         u64 ms = difference_in_ms(milton->peek_out_begin_anim, time);
 
         float interp = 0.0f;
-        if (ms < PEEK_OUT_DURATION_MS) {
-            interp = ms / (float)PEEK_OUT_DURATION_MS;
+        if (ms < peek_out_duration_ms(milton)) {
+            interp = ms / (float)peek_out_duration_ms(milton);
         }
         else {
             interp = 1.0f;
@@ -286,7 +286,7 @@ milton_render_scale(Milton* milton)
             interp = 1 - interp;
         }
 
-        return lerp(milton->view->scale, new_scale, interp);
+        return lerp(milton->low_scale, milton->high_scale, interp);
     }
     else {
         return milton->view->scale;
@@ -964,21 +964,33 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
     out_stroke->render_element = {};
 }
 
+static i64
+peek_out_target_scale(Milton* milton)
+{
+    double log_scale = log2(1 + milton->view->scale) / log2(SCALE_FACTOR);
+    i64 target = min(pow(SCALE_FACTOR, log_scale + milton->settings->peek_out_increment), VIEW_SCALE_LIMIT);
+    return target;
+}
+
+static u64
+peek_out_duration_ms(Milton* milton)
+{
+    u64 duration = milton->settings->peek_out_increment * PEEK_OUT_SPEED;
+    return duration;
+}
+
 void
 peek_out_trigger_start(Milton* milton)
 {
     milton_set_zoom_at_point(milton, milton->hover_point);
+
+    milton->low_scale = milton_render_scale(milton);
+    milton->high_scale = peek_out_target_scale(milton);
+    milton->peek_out_ended = false;
+    milton->peek_out_begin_anim = platform_get_walltime();
+
     if (milton->current_mode != MiltonMode::PEEK_OUT) {
-        milton->flags |= MiltonStateFlags_FULL_REDRAW_REQUESTED;
-
-
-        milton->peek_out_begin_anim = platform_get_walltime();
-        milton->peek_out_ended = false;
-
         milton_switch_mode(milton, MiltonMode::PEEK_OUT);
-    }
-    else if (milton->peek_out_ended) {
-        milton->peek_out_ended = false;
     }
 }
 
@@ -986,6 +998,9 @@ void
 peek_out_trigger_stop(Milton* milton)
 {
     if (milton->current_mode == MiltonMode::PEEK_OUT && !milton->peek_out_ended) {
+
+        milton->high_scale = milton_render_scale(milton);
+        milton->low_scale = milton->view->scale;
         milton->peek_out_begin_anim = platform_get_walltime();
         milton->peek_out_ended = true;
     }
@@ -995,8 +1010,9 @@ void
 peek_out_tick(Milton* milton)
 {
     gpu_update_scale(milton->render_data, milton_render_scale(milton));
-    if (milton->peek_out_ended &&
-        difference_in_ms(milton->peek_out_begin_anim, platform_get_walltime()) >= PEEK_OUT_DURATION_MS) {
+    if ( milton->current_mode == MiltonMode::PEEK_OUT &&
+         milton->peek_out_ended &&
+         difference_in_ms(milton->peek_out_begin_anim, platform_get_walltime()) >= peek_out_duration_ms(milton) ) {
         milton_use_previous_mode(milton);
     }
 }
