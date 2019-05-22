@@ -272,7 +272,7 @@ milton_render_scale(Milton* milton)
     if ( milton->current_mode == MiltonMode::PEEK_OUT ) {
         WallTime time = platform_get_walltime();
 
-        u64 ms = difference_in_ms(milton->peek_out_begin_anim, time);
+        u64 ms = difference_in_ms(milton->peek_out->begin_anim_time, time);
 
         float interp = 0.0f;
         if (ms < peek_out_duration_ms(milton)) {
@@ -282,11 +282,11 @@ milton_render_scale(Milton* milton)
             interp = 1.0f;
         }
 
-        if (milton->peek_out_ended) {
+        if (milton->peek_out->peek_out_ended) {
             interp = 1 - interp;
         }
 
-        return lerp(milton->low_scale, milton->high_scale, interp);
+        return lerp(milton->peek_out->low_scale, milton->peek_out->high_scale, interp);
     }
     else {
         return milton->view->scale;
@@ -341,11 +341,11 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
 }
 
 void
-milton_set_zoom_at_point(Milton* milton, v2i zoom_center)
+milton_set_zoom_at_point(Milton* milton, v2i new_zoom_center)
 {
-    milton->view->pan_center += VEC2L(zoom_center - milton->view->zoom_center) * (i64)milton->view->scale;
+    milton->view->pan_center += VEC2L(new_zoom_center - milton->view->zoom_center) * milton_render_scale(milton);
 
-    milton->view->zoom_center = zoom_center;
+    milton->view->zoom_center = new_zoom_center;
     gpu_update_canvas(milton->render_data, milton->canvas, milton->view);
 }
 
@@ -514,6 +514,8 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 
     gui_init(&milton->root_arena, milton->gui, ui_scale);
     settings_init(milton->settings);
+
+    milton->peek_out = arena_alloc_elem(&milton->root_arena, PeekOut);
 
     b32 loaded_settings = false;
     if (read_from_disk) {
@@ -982,12 +984,12 @@ peek_out_duration_ms(Milton* milton)
 void
 peek_out_trigger_start(Milton* milton)
 {
-    milton_set_zoom_at_point(milton, milton->hover_point);
+    milton_set_zoom_at_screen_center(milton);
 
-    milton->low_scale = milton_render_scale(milton);
-    milton->high_scale = peek_out_target_scale(milton);
-    milton->peek_out_ended = false;
-    milton->peek_out_begin_anim = platform_get_walltime();
+    milton->peek_out->low_scale = milton_render_scale(milton);
+    milton->peek_out->high_scale = peek_out_target_scale(milton);
+    milton->peek_out->peek_out_ended = false;
+    milton->peek_out->begin_anim_time = platform_get_walltime();
 
     if (milton->current_mode != MiltonMode::PEEK_OUT) {
         milton_switch_mode(milton, MiltonMode::PEEK_OUT);
@@ -997,26 +999,26 @@ peek_out_trigger_start(Milton* milton)
 void
 peek_out_trigger_stop(Milton* milton)
 {
-    if (milton->current_mode == MiltonMode::PEEK_OUT && !milton->peek_out_ended) {
-
-        milton->high_scale = milton_render_scale(milton);
-        milton->low_scale = milton->view->scale;
-        milton->peek_out_begin_anim = platform_get_walltime();
-        milton->peek_out_ended = true;
+    if (milton->current_mode == MiltonMode::PEEK_OUT && !milton->peek_out->peek_out_ended) {
+        milton_set_zoom_at_point(milton, milton->hover_point);
+        milton->peek_out->high_scale = milton_render_scale(milton);
+        milton->peek_out->low_scale = milton->view->scale;
+        milton->peek_out->begin_anim_time = platform_get_walltime();
+        milton->peek_out->peek_out_ended = true;
     }
 }
 
 void
 peek_out_tick(Milton* milton)
 {
-    gpu_update_scale(milton->render_data, milton_render_scale(milton));
-    if ( milton->current_mode == MiltonMode::PEEK_OUT &&
-         milton->peek_out_ended &&
-         difference_in_ms(milton->peek_out_begin_anim, platform_get_walltime()) >= peek_out_duration_ms(milton) ) {
-        milton_use_previous_mode(milton);
+    if (milton->current_mode == MiltonMode::PEEK_OUT) {
+        gpu_update_scale(milton->render_data, milton_render_scale(milton));
+        if ( milton->peek_out->peek_out_ended &&
+             difference_in_ms(milton->peek_out->begin_anim_time, platform_get_walltime()) > peek_out_duration_ms(milton) ) {
+            milton_use_previous_mode(milton);
+        }
     }
 }
-
 
 void
 milton_update_and_render(Milton* milton, MiltonInput* input)
@@ -1390,7 +1392,14 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
 
     if ( !(milton->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW) ) {
-        float radius = (brush_outline_should_draw && current_mode_is_for_drawing(milton)) ? (float)milton_get_brush_radius(milton) : -1;
+        float radius = -1;
+        if (brush_outline_should_draw && current_mode_is_for_drawing(milton)) {
+            radius = (float)milton_get_brush_radius(milton);
+        }
+        else if (milton->current_mode == MiltonMode::PEEK_OUT) {
+            radius = 100;  // TODO: Draw rectangle as cursor
+        }
+
         gpu_update_brush_outline(milton->render_data,
                                 milton->hover_point.x, milton->hover_point.y,
                                 radius);
@@ -1482,6 +1491,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     if (milton->current_mode == MiltonMode::PEEK_OUT) {
+        do_full_redraw = true;
         peek_out_tick(milton);
     }
 
@@ -1497,6 +1507,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 #if REDRAW_EVERY_FRAME
     do_full_redraw = true;
 #endif
+
     // Note: We flip the rectangles. GL is bottom-left by default.
     if ( do_full_redraw ) {
         view_width = milton->view->screen_size.w;
