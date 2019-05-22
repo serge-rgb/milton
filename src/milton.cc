@@ -1026,9 +1026,11 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     PROFILE_GRAPH_BEGIN(update);
 
     b32 end_stroke = (input->flags & MiltonInputFlags_END_STROKE);
-    b32 do_full_redraw = false;
+
+    milton->render_settings.do_full_redraw = false;
+
     b32 brush_outline_should_draw = false;
-    int render_flags = RenderDataFlags_NONE | RenderDataFlags_WITH_BLUR;
+    int render_flags = RenderBackendFlags_NONE | RenderBackendFlags_WITH_BLUR;
 
     b32 draw_custom_rectangle = false;  // Custom rectangle used for new strokes, undo/redo.
     Rect custom_rectangle = rect_without_size();
@@ -1043,25 +1045,25 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     if ( input->flags & MiltonInputFlags_OPEN_FILE ) {
         milton_load(milton);
         upload_gui(milton);
-        do_full_redraw = true;
-        render_flags |= RenderDataFlags_WITH_BLUR;
+        milton->render_settings.do_full_redraw = true;
+        render_flags |= RenderBackendFlags_WITH_BLUR;
     }
 
     if ( milton->flags & MiltonStateFlags_FULL_REDRAW_REQUESTED ) {
         milton->flags &= ~MiltonStateFlags_FULL_REDRAW_REQUESTED;
-        do_full_redraw = true;
+        milton->render_settings.do_full_redraw = true;
     }
 
     i32 now = (i32)SDL_GetTicks();
 
     if ( input->flags & MiltonInputFlags_FULL_REFRESH ) {
-        do_full_redraw = true;
+        milton->render_settings.do_full_redraw = true;
         // GUI might have changed layer effect parameters.
-        render_flags |= RenderDataFlags_WITH_BLUR;
+        render_flags |= RenderBackendFlags_WITH_BLUR;
     }
 
     if ( input->scale ) {
-        do_full_redraw = true;
+        milton->render_settings.do_full_redraw = true;
 
         f32 scale_factor = SCALE_FACTOR;
         i32 view_scale_limit = VIEW_SCALE_LIMIT;
@@ -1082,7 +1084,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         // If we are *not* zooming and we are panning, we can copy most of the
         // framebuffer
         if ( !(input->pan_delta == v2l{}) ) {
-            do_full_redraw = true;
+            milton->render_settings.do_full_redraw = true;
         }
     }
 
@@ -1105,8 +1107,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                         push(&milton->canvas->stroke_graveyard, stroke);
                         push(&milton->canvas->redo_stack, h);
 
-                        do_full_redraw = true;
-                        render_flags |= RenderDataFlags_WITH_BLUR;
+                        milton->render_settings.do_full_redraw = true;
+                        render_flags |= RenderBackendFlags_WITH_BLUR;
 
                         SaveBlockHeader header = {};
                         header.type = Block_LAYER_CONTENT;
@@ -1128,8 +1130,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                             push(&l->strokes, stroke);
                             push(&milton->canvas->history, h);
 
-                            do_full_redraw = true;
-                            render_flags |= RenderDataFlags_WITH_BLUR;
+                            milton->render_settings.do_full_redraw = true;
+                            render_flags |= RenderBackendFlags_WITH_BLUR;
 
                             SaveBlockHeader header = {};
                             header.type = Block_LAYER_CONTENT;
@@ -1189,7 +1191,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                     milton_stroke_input(milton, input);
                     if ( prev_num_points == 0 && ws->num_points > 0 ) {
                         // New stroke. Clear screen without blur.
-                        do_full_redraw = true;
+                        milton->render_settings.do_full_redraw = true;
                     }
                 }
             }
@@ -1203,12 +1205,12 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             gpu_update_export_rect(milton->render_data, exporter);
         }
         if ( exporter->state != ExporterState_EMPTY ) {
-             render_flags |= RenderDataFlags_EXPORTING;
+             render_flags |= RenderBackendFlags_EXPORTING;
         }
         milton->gui->flags &= ~(MiltonGuiFlags_SHOWING_PREVIEW);
     }
-    else if ( render_flags & RenderDataFlags_EXPORTING ) {
-        render_flags &= ~RenderDataFlags_EXPORTING;
+    else if ( render_flags & RenderBackendFlags_EXPORTING ) {
+        render_flags &= ~RenderBackendFlags_EXPORTING;
     }
 
     if ( (input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
@@ -1235,9 +1237,9 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     if ( milton->gui->visible ) {
-        render_flags |= RenderDataFlags_GUI_VISIBLE;
+        render_flags |= RenderBackendFlags_GUI_VISIBLE;
     } else {
-        render_flags &= ~RenderDataFlags_GUI_VISIBLE;
+        render_flags &= ~RenderBackendFlags_GUI_VISIBLE;
     }
 
     if ( milton->current_mode == MiltonMode::EYEDROPPER ) {
@@ -1316,8 +1318,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 clear_stroke_redo(milton);
 
                 // Make sure we show blurred layers when finishing a stroke.
-                render_flags |= RenderDataFlags_WITH_BLUR;
-                do_full_redraw = true;
+                render_flags |= RenderBackendFlags_WITH_BLUR;
+                milton->render_settings.do_full_redraw = true;
 
                 // Update save block
                 SaveBlockHeader header = {};
@@ -1491,7 +1493,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     if (milton->current_mode == MiltonMode::PEEK_OUT) {
-        do_full_redraw = true;
+        milton->render_settings.do_full_redraw = true;
         peek_out_tick(milton);
     }
 
@@ -1505,11 +1507,11 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     ClipFlags clip_flags = ClipFlags_JUST_CLIP;
 
 #if REDRAW_EVERY_FRAME
-    do_full_redraw = true;
+    milton->render_settings.do_full_redraw = true;
 #endif
 
     // Note: We flip the rectangles. GL is bottom-left by default.
-    if ( do_full_redraw ) {
+    if ( milton->render_settings.do_full_redraw ) {
         view_width = milton->view->screen_size.w;
         view_height = milton->view->screen_size.h;
         // Only update GPU data if we are redrawing the full screen. This means

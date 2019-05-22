@@ -36,19 +36,19 @@ struct RenderElement
     int     flags;  // RenderElementFlags enum;
 };
 
-enum RenderDataFlags
+enum RenderBackendFlags
 {
-    RenderDataFlags_NONE = 0,
+    RenderBackendFlags_NONE = 0,
 
-    RenderDataFlags_GUI_VISIBLE        = 1<<0,
-    RenderDataFlags_EXPORTING          = 1<<1,
-    RenderDataFlags_WITH_BLUR          = 1<<2,
+    RenderBackendFlags_GUI_VISIBLE        = 1<<0,
+    RenderBackendFlags_EXPORTING          = 1<<1,
+    RenderBackendFlags_WITH_BLUR          = 1<<2,
 };
 
 struct Arena;
-struct RenderData;
+struct RenderBackend;
 struct ColorPicker;
-struct RenderData;
+struct RenderBackend;
 struct CanvasView;
 struct Exporter;
 struct Stroke;
@@ -56,9 +56,9 @@ struct Layer;
 struct Milton;
 struct CanvasState;
 
-RenderData* gpu_allocate_render_data(Arena* arena);
+RenderBackend* gpu_allocate_render_data(Arena* arena);
 
-b32 gpu_init(RenderData* render_data, CanvasView* view, ColorPicker* picker);
+b32 gpu_init(RenderBackend* render_data, CanvasView* view, ColorPicker* picker);
 
 
 enum BrushOutlineEnum
@@ -66,22 +66,21 @@ enum BrushOutlineEnum
     BrushOutline_NO_FILL = 1<<0,
     BrushOutline_FILL    = 1<<1,
 };
-void gpu_update_brush_outline(RenderData* render_data, i32 cx, i32 cy, i32 radius,
+void gpu_update_brush_outline(RenderBackend* render_data, i32 cx, i32 cy, i32 radius,
                               BrushOutlineEnum outline_enum = BrushOutline_NO_FILL,
                               v4f color = {});
 
 
 
 
-// Send milton data to OpenGL
-void gpu_resize(RenderData* render_data, CanvasView* view);
-void gpu_update_picker(RenderData* render_data, ColorPicker* picker);
-void gpu_update_scale(RenderData* render_data, i32 scale);
-void gpu_update_export_rect(RenderData* render_data, Exporter* exporter);
-void gpu_update_background(RenderData* render_data, v3f background_color);
-void gpu_update_canvas(RenderData* render_data, CanvasState* canvas, CanvasView* view);
+void gpu_resize(RenderBackend* render_data, CanvasView* view);
+void gpu_update_picker(RenderBackend* render_data, ColorPicker* picker);
+void gpu_update_scale(RenderBackend* render_data, i32 scale);
+void gpu_update_export_rect(RenderBackend* render_data, Exporter* exporter);
+void gpu_update_background(RenderBackend* render_data, v3f background_color);
+void gpu_update_canvas(RenderBackend* render_data, CanvasState* canvas, CanvasView* view);
 
-void gpu_get_viewport_limits(RenderData* render_data, float* out_viewport_limits);
+void gpu_get_viewport_limits(RenderBackend* render_data, float* out_viewport_limits);
 i32  gpu_get_num_clipped_strokes(Layer* root_layer);
 
 
@@ -90,10 +89,10 @@ enum CookStrokeOpt
     CookStroke_NEW                   = 0,
     CookStroke_UPDATE_WORKING_STROKE = 1,
 };
-void gpu_cook_stroke(Arena* arena, RenderData* render_data, Stroke* stroke,
+void gpu_cook_stroke(Arena* arena, RenderBackend* render_data, Stroke* stroke,
                      CookStrokeOpt cook_option = CookStroke_NEW);
 
-void gpu_free_strokes(RenderData* render_data, CanvasState* canvas);
+void gpu_free_strokes(RenderBackend* render_data, CanvasState* canvas);
 
 
 // Creates OpenGL objects for strokes that are in view but are not loaded on the GPU. Deletes
@@ -104,15 +103,15 @@ enum ClipFlags
     ClipFlags_JUST_CLIP         = 1<<1,
 };
 void gpu_clip_strokes_and_update(Arena* arena,
-                                 RenderData* render_data,
+                                 RenderBackend* render_data,
                                  CanvasView* view, i64 render_scale,
                                  Layer* root_layer, Stroke* working_stroke,
                                  i32 x, i32 y, i32 w, i32 h, ClipFlags flags = ClipFlags_JUST_CLIP);
 
-void gpu_reset_render_flags(RenderData* render_data, int flags);
+void gpu_reset_render_flags(RenderBackend* render_data, int flags);
 
-void gpu_render(RenderData* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height);
+void gpu_render(RenderBackend* render_data,  i32 view_x, i32 view_y, i32 view_width, i32 view_height);
 void gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha);
 
-void gpu_release_data(RenderData* render_data);
+void gpu_release_data(RenderBackend* render_data);
 

@@ -19,7 +19,7 @@
 
 #define RENDER_CHUNK_SIZE_LOG2 28
 
-struct RenderData
+struct RenderBackend
 {
     f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
 
@@ -63,7 +63,7 @@ struct RenderData
     GLuint stencil_texture;
     GLuint fbo;
 
-    i32 flags;  // RenderDataFlags enum
+    i32 flags;  // RenderBackendFlags enum
 
     DArray<RenderElement> clip_array;
 
@@ -171,16 +171,16 @@ print_framebuffer_status()
     }
 }
 
-RenderData*
+RenderBackend*
 gpu_allocate_render_data(Arena* arena)
 {
-    RenderData* p = arena_alloc_elem(arena, RenderData);
+    RenderBackend* p = arena_alloc_elem(arena, RenderBackend);
     return p;
 }
 
 // Send Color Picker data to OpenGL.
 void
-gpu_update_picker(RenderData* r, ColorPicker* picker)
+gpu_update_picker(RenderBackend* r, ColorPicker* picker)
 {
     glUseProgram(r->picker_program);
     // Transform to [-1,1]
@@ -267,7 +267,7 @@ gpu_update_picker(RenderData* r, ColorPicker* picker)
 }
 
 void
-gpu_update_brush_outline(RenderData* r, i32 cx, i32 cy, i32 radius,
+gpu_update_brush_outline(RenderBackend* r, i32 cx, i32 cy, i32 radius,
                          BrushOutlineEnum outline_enum, v4f color)
 {
     if ( r->vbo_outline == 0 ) {
@@ -329,7 +329,7 @@ GL_DEBUG_CALLBACK(milton_gl_debug_callback)
 
 
 b32
-gpu_init(RenderData* r, CanvasView* view, ColorPicker* picker)
+gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
 {
     #if MILTON_DEBUG
         glEnable(GL_DEBUG_OUTPUT);
@@ -603,7 +603,7 @@ gpu_init(RenderData* r, CanvasView* view, ColorPicker* picker)
 }
 
 void
-gpu_resize(RenderData* r, CanvasView* view)
+gpu_resize(RenderBackend* r, CanvasView* view)
 {
     r->width = view->screen_size.w;
     r->height = view->screen_size.h;
@@ -623,13 +623,13 @@ gpu_resize(RenderData* r, CanvasView* view)
 }
 
 void
-gpu_reset_render_flags(RenderData* r, int flags)
+gpu_reset_render_flags(RenderBackend* r, int flags)
 {
     r->flags = flags;
 }
 
 void
-gpu_update_scale(RenderData* r, i32 scale)
+gpu_update_scale(RenderBackend* r, i32 scale)
 {
     r->scale = scale;
     gl::set_uniform_i(r->stroke_program, "u_scale", scale);
@@ -639,7 +639,7 @@ gpu_update_scale(RenderData* r, i32 scale)
 }
 
 void
-gpu_update_export_rect(RenderData* r, Exporter* exporter)
+gpu_update_export_rect(RenderBackend* r, Exporter* exporter)
 {
     if ( r->vbo_exporter[0] == 0 ) {
         glGenBuffers(4, r->vbo_exporter);
@@ -705,13 +705,13 @@ gpu_update_export_rect(RenderData* r, Exporter* exporter)
 }
 
 void
-gpu_update_background(RenderData* r, v3f background_color)
+gpu_update_background(RenderBackend* r, v3f background_color)
 {
     r->background_color = background_color;
 }
 
 void
-gpu_get_viewport_limits(RenderData* r, float* out_viewport_limits)
+gpu_get_viewport_limits(RenderBackend* r, float* out_viewport_limits)
 {
     if ( out_viewport_limits ) {
         out_viewport_limits[0] = r->viewport_limits[0];
@@ -738,7 +738,7 @@ gpu_get_num_clipped_strokes(Layer* root_layer)
 }
 
 static void
-set_screen_size(RenderData* r, float* fscreen)
+set_screen_size(RenderBackend* r, float* fscreen)
 {
     GLuint programs[] = {
         r->stroke_program,
@@ -759,14 +759,14 @@ set_screen_size(RenderData* r, float* fscreen)
 
 static
 v2i
-relative_to_render_center(RenderData* r, v2l point)
+relative_to_render_center(RenderBackend* r, v2l point)
 {
     v2i result = VEC2I(point - VEC2L(r->render_center*(1<<RENDER_CHUNK_SIZE_LOG2)));
     return result;
 }
 
 void
-gpu_update_canvas(RenderData* r, CanvasState* canvas, CanvasView* view)
+gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
 {
     v2i center = view->zoom_center;
     v2l pan = view->pan_center;
@@ -788,7 +788,7 @@ gpu_update_canvas(RenderData* r, CanvasState* canvas, CanvasView* view)
 }
 
 void
-gpu_cook_stroke(Arena* arena, RenderData* r, Stroke* stroke, CookStrokeOpt cook_option)
+gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt cook_option)
 {
     r->stroke_z = (r->stroke_z + 1) % (MAX_DEPTH_VALUE-1);
     const i32 stroke_z = r->stroke_z + 1;
@@ -1035,7 +1035,7 @@ gpu_cook_stroke(Arena* arena, RenderData* r, Stroke* stroke, CookStrokeOpt cook_
 }
 
 void
-gpu_free_strokes(Stroke* strokes, i64 count, RenderData* r)
+gpu_free_strokes(Stroke* strokes, i64 count, RenderBackend* r)
 {
     for ( i64 i = 0; i < count; ++i ) {
         Stroke* s = &strokes[i];
@@ -1066,7 +1066,7 @@ gpu_free_strokes(Stroke* strokes, i64 count, RenderData* r)
 }
 
 void
-gpu_free_strokes(RenderData* r, CanvasState* canvas)
+gpu_free_strokes(RenderBackend* r, CanvasState* canvas)
 {
     if ( canvas->root_layer != NULL ) {
         for ( Layer* l = canvas->root_layer;
@@ -1090,7 +1090,7 @@ gpu_free_strokes(RenderData* r, CanvasState* canvas)
 
 void
 gpu_clip_strokes_and_update(Arena* arena,
-                            RenderData* r,
+                            RenderBackend* r,
                             CanvasView* view,
                             i64 scale,
                             Layer* root_layer, Stroke* working_stroke,
@@ -1212,7 +1212,7 @@ gpu_clip_strokes_and_update(Arena* arena,
 }
 
 static void
-gpu_fill_with_texture(RenderData* r, float alpha = 1.0f)
+gpu_fill_with_texture(RenderBackend* r, float alpha = 1.0f)
 {
     // Assumes that texture object is already bound.
     glUseProgram(r->texture_fill_program);
@@ -1236,7 +1236,7 @@ enum BoxFilterPass
     BoxFilterPass_HORIZONTAL = 1,
 };
 static void
-box_filter_pass(RenderData* r, int kernel_size, int direction)
+box_filter_pass(RenderBackend* r, int kernel_size, int direction)
 {
     glUseProgram(r->blur_program);
     gl::set_uniform_i(r->blur_program, "u_kernel_size", kernel_size);
@@ -1255,7 +1255,7 @@ box_filter_pass(RenderData* r, int kernel_size, int direction)
 }
 
 static void
-gpu_render_canvas(RenderData* r, i32 view_x, i32 view_y,
+gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                   i32 view_width, i32 view_height, float background_alpha=1.0f)
 {
     // FLip it. GL is bottom-left.
@@ -1336,7 +1336,7 @@ gpu_render_canvas(RenderData* r, i32 view_x, i32 view_y,
                 for ( LayerEffect* e = re->effects; e != NULL; e = e->next ) {
                     if ( e->enabled == false ) { continue; }
 
-                    if ( (r->flags & RenderDataFlags_WITH_BLUR) && e->type == LayerEffectType_BLUR ) {
+                    if ( (r->flags & RenderBackendFlags_WITH_BLUR) && e->type == LayerEffectType_BLUR ) {
                         glBindTexture(texture_target, in_texture);
                         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                   texture_target, out_texture, 0);
@@ -1482,7 +1482,7 @@ gpu_render_canvas(RenderData* r, i32 view_x, i32 view_y,
 }
 
 void
-gpu_render(RenderData* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
+gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
 {
     glViewport(0, 0, r->width, r->height);
     glScissor(0, 0, r->width, r->height);
@@ -1526,7 +1526,7 @@ gpu_render(RenderData* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_heig
 
     // Render color picker
     // TODO: Only render if view rect intersects picker rect
-    if ( r->flags & RenderDataFlags_GUI_VISIBLE ) {
+    if ( r->flags & RenderBackendFlags_GUI_VISIBLE ) {
         // Render picker
         glUseProgram(r->picker_program);
         GLint loc = glGetAttribLocation(r->picker_program, "a_position");
@@ -1614,7 +1614,7 @@ gpu_render(RenderData* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_heig
     glDisable(GL_BLEND);
 
     // Exporter rect
-    if ( r->flags & RenderDataFlags_EXPORTING ) {
+    if ( r->flags & RenderBackendFlags_EXPORTING ) {
         // Update data if rect is not degenerate.
         // Draw outline.
         glUseProgram(r->exporter_program);
@@ -1638,7 +1638,7 @@ void
 gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha)
 {
     CanvasView saved_view = *milton->view;
-    RenderData* r = milton->render_data;
+    RenderBackend* r = milton->render_data;
     CanvasView* view = milton->view;
 
     i32 saved_width = r->width;
@@ -1678,7 +1678,7 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
     gpu_clip_strokes_and_update(&milton->root_arena, r, milton->view, milton->view->scale, milton->canvas->root_layer,
                                 &milton->working_stroke, 0, 0, buf_w, buf_h);
 
-    r->flags |= RenderDataFlags_WITH_BLUR;
+    r->flags |= RenderBackendFlags_WITH_BLUR;
     gpu_render_canvas(r, 0, 0, buf_w, buf_h, background_alpha);
 
 
@@ -1749,7 +1749,7 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
 }
 
 void
-gpu_release_data(RenderData* r)
+gpu_release_data(RenderBackend* r)
 {
     release(&r->clip_array);
 }

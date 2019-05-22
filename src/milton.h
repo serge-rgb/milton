@@ -63,7 +63,7 @@ struct HistoryElement
 };
 
 struct MiltonGui;
-struct RenderData;
+struct RenderBackend;
 struct CanvasView;
 struct Layer;
 struct MiltonPersist;
@@ -124,6 +124,11 @@ struct PeekOut
     i64 low_scale;
 };
 
+struct RenderSettings
+{
+    b32 do_full_redraw;
+};
+
 struct Milton
 {
     b32 flags;  // See MiltonStateFlags
@@ -155,8 +160,6 @@ struct Milton
     i32 hover_flash_ms;  // Set on keyboard shortcut to change brush size.
                         // Brush hover "flashes" if it is currently hidden to show its current size.
 
-    // TODO: I don't know how the system is going to look, so for now putting the render zoom stuff here.
-    // TODO: peek-out
     PeekOut* peek_out;
 
     // Read only
@@ -168,7 +171,8 @@ struct Milton
 
     SmoothFilter* smooth_filter;
 
-    RenderData* render_data;  // Hardware Renderer
+    RenderSettings render_settings;
+    RenderBackend* render_data;
 
     // Heap
     Arena       root_arena;     // Lives forever

@@ -10,10 +10,10 @@
 
 // Render Workers:
 //    We have a bunch of workers running on threads, who wait on a lockless
-//    queue to take BlockgroupRenderData structures.
+//    queue to take BlockgroupRenderBackend structures.
 //    When there is work available, they call blockgroup_render_thread with the
 //    appropriate parameters.
-struct BlockgroupRenderData
+struct BlockgroupRenderBackend
 {
     i32     block_start;
 };
@@ -26,7 +26,7 @@ struct RenderStack
 
     // LIFO work queue
     SDL_mutex*              mutex;
-    BlockgroupRenderData    blockgroup_render_data[RENDER_STACK_SIZE];
+    BlockgroupRenderBackend    blockgroup_render_data[RENDER_STACK_SIZE];
     i32                     index;
 
     SDL_sem*   work_available;
