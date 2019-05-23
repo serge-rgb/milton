@@ -21,7 +21,7 @@ void
 milton_set_background_color(Milton* milton, v3f background_color)
 {
     milton->view->background_color = background_color;
-    gpu_update_background(milton->render_data, milton->view->background_color);
+    gpu_update_background(milton->renderer, milton->view->background_color);
 }
 
 static void
@@ -346,7 +346,7 @@ milton_set_zoom_at_point(Milton* milton, v2i new_zoom_center)
     milton->view->pan_center += VEC2L(new_zoom_center - milton->view->zoom_center) * milton_render_scale(milton);
 
     milton->view->zoom_center = new_zoom_center;
-    gpu_update_canvas(milton->render_data, milton->canvas, milton->view);
+    gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
 }
 
 void
@@ -500,7 +500,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->current_mode = MiltonMode::PEN;
     milton->last_mode = MiltonMode::PEN;
 
-    milton->render_data = gpu_allocate_render_data(&milton->root_arena);
+    milton->renderer = gpu_allocate_render_backend(&milton->root_arena);
 
     milton->smooth_filter = arena_alloc_elem(&milton->root_arena, SmoothFilter);
 
@@ -531,9 +531,9 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 
     milton->view->screen_size = { width, height };
 
-    if (init_graphics) { gpu_init(milton->render_data, milton->view, &milton->gui->picker); }
+    if (init_graphics) { gpu_init(milton->renderer, milton->view, &milton->gui->picker); }
 
-    if (init_graphics) { gpu_update_background(milton->render_data, milton->view->background_color); }
+    if (init_graphics) { gpu_update_background(milton->renderer, milton->view->background_color); }
 
     { // Get/Set Milton Canvas (.mlt) file
         if ( file_to_open == NULL ) {
@@ -606,9 +606,9 @@ upload_gui(Milton* milton)
 {
     if (milton->gl)
     {
-        gpu_update_canvas(milton->render_data, milton->canvas, milton->view);
-        gpu_resize(milton->render_data, milton->view);
-        gpu_update_picker(milton->render_data, &milton->gui->picker);
+        gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
+        gpu_resize(milton->renderer, milton->view);
+        gpu_update_picker(milton->renderer, &milton->gui->picker);
     }
 }
 
@@ -642,7 +642,7 @@ milton_reset_canvas(Milton* milton)
 {
     CanvasState* canvas = milton->canvas;
 
-    gpu_free_strokes(milton->render_data, milton->canvas);
+    gpu_free_strokes(milton->renderer, milton->canvas);
     milton->persist->mlt_binary_version = MILTON_MINOR_VERSION;
     milton->persist->last_save_time = {};
 
@@ -669,7 +669,7 @@ milton_reset_canvas_and_set_default(Milton* milton)
     // New View
     milton_set_default_view(milton);
     milton->view->background_color = milton->settings->background_color;
-    gpu_update_background(milton->render_data, milton->view->background_color);
+    gpu_update_background(milton->renderer, milton->view->background_color);
 
     // Reset color buttons
     for ( ColorButton* b = milton->gui->picker.color_buttons; b!=NULL; b=b->next ) {
@@ -1012,10 +1012,21 @@ void
 peek_out_tick(Milton* milton)
 {
     if (milton->current_mode == MiltonMode::PEEK_OUT) {
-        gpu_update_scale(milton->render_data, milton_render_scale(milton));
+        gpu_update_scale(milton->renderer, milton_render_scale(milton));
         if ( milton->peek_out->peek_out_ended &&
              difference_in_ms(milton->peek_out->begin_anim_time, platform_get_walltime()) > peek_out_duration_ms(milton) ) {
             milton_use_previous_mode(milton);
+
+            i32 width = 100;
+            i32 height = 50;
+            i32 line_width = 5;
+
+            i32 left = milton->hover_point.x - width/2;
+            i32 right = milton->hover_point.x + width/2;
+            i32 top = milton->hover_point.y - height/2;
+            i32 bottom = milton->hover_point.y + height/2;
+
+            imm_rect(milton->renderer, left, right, top, bottom, line_width);
         }
     }
 }
@@ -1078,7 +1089,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         }
 
         milton_update_brushes(milton);
-        gpu_update_scale(milton->render_data, milton->view->scale);
+        gpu_update_scale(milton->renderer, milton->view->scale);
     }
     else if ( (input->flags & MiltonInputFlags_PANNING) ) {
         // If we are *not* zooming and we are panning, we can copy most of the
@@ -1177,7 +1188,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             if ( !is_user_drawing(milton)
                  && gui_consume_input(milton->gui, input) ) {
                 milton_update_brushes(milton);
-                gpu_update_picker(milton->render_data, &milton->gui->picker);
+                gpu_update_picker(milton->renderer, &milton->gui->picker);
             }
             else if ( !milton->gui->owns_user_input
                       && (milton->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
@@ -1202,7 +1213,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         Exporter* exporter = &milton->gui->exporter;
         b32 changed = exporter_input(exporter, input);
         if ( changed ) {
-            gpu_update_export_rect(milton->render_data, exporter);
+            gpu_update_export_rect(milton->renderer, exporter);
         }
         if ( exporter->state != ExporterState_EMPTY ) {
              render_flags |= RenderBackendFlags_EXPORTING;
@@ -1228,7 +1239,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 color = to_premultiplied(hsv_to_rgb(milton->gui->picker.data.hsv),
                                          milton_get_brush_alpha(milton));
             }
-            gpu_update_brush_outline(milton->render_data,
+            gpu_update_brush_outline(milton->renderer,
                                      preview_pos.x, preview_pos.y,
                                      milton_get_brush_radius(milton), BrushOutline_FILL, color);
         }
@@ -1259,7 +1270,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                              milton->view->screen_size.w,
                              milton->view->screen_size.h,
                              point);
-            gpu_update_picker(milton->render_data, &milton->gui->picker);
+            gpu_update_picker(milton->renderer, &milton->gui->picker);
         }
         if( input->flags & MiltonInputFlags_CLICKUP ) {
             if ( !(milton->flags & MiltonStateFlags_IGNORE_NEXT_CLICKUP) ) {
@@ -1283,7 +1294,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                        milton->current_mode == MiltonMode::PRIMITIVE)
                      && gui_mark_color_used(milton->gui) ) {
                     // Tell the renderer to update the picker
-                    gpu_update_picker(milton->render_data, &milton->gui->picker);
+                    gpu_update_picker(milton->renderer, &milton->gui->picker);
                 }
                 // Copy current stroke.
                 Stroke new_stroke = {};
@@ -1402,7 +1413,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             radius = 100;  // TODO: Draw rectangle as cursor
         }
 
-        gpu_update_brush_outline(milton->render_data,
+        gpu_update_brush_outline(milton->renderer,
                                 milton->hover_point.x, milton->hover_point.y,
                                 radius);
     }
@@ -1473,7 +1484,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             milton_kill_save_thread(milton);
             // Release resources
             milton_reset_canvas(milton);
-            gpu_release_data(milton->render_data);
+            gpu_release_data(milton->renderer);
 
             debug_memory_dump_allocations();
         }
@@ -1488,7 +1499,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     // Update render resources after loading
     if (milton->flags & MiltonStateFlags_JUST_SAVED) {
         milton_set_background_color(milton, milton->view->background_color);
-        gpu_update_picker(milton->render_data, &milton->gui->picker);
+        gpu_update_picker(milton->renderer, &milton->gui->picker);
         milton->flags &= ~MiltonStateFlags_JUST_SAVED;
     }
 
@@ -1502,7 +1513,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     i32 view_width = 0;
     i32 view_height = 0;
 
-    gpu_reset_render_flags(milton->render_data, render_flags);
+    gpu_reset_render_flags(milton->renderer, render_flags);
 
     ClipFlags clip_flags = ClipFlags_JUST_CLIP;
 
@@ -1542,12 +1553,12 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     i64 render_scale = milton_render_scale(milton);
 
-    gpu_clip_strokes_and_update(&milton->root_arena, milton->render_data, milton->view, render_scale,
+    gpu_clip_strokes_and_update(&milton->root_arena, milton->renderer, milton->view, render_scale,
                                 milton->canvas->root_layer, &milton->working_stroke,
                                 view_x, view_y, view_width, view_height, clip_flags);
     PROFILE_GRAPH_END(clipping);
 
-    gpu_render(milton->render_data, view_x, view_y, view_width, view_height);
+    gpu_render(milton->renderer, view_x, view_y, view_width, view_height);
 
     ARENA_VALIDATE(&milton->root_arena);
 }

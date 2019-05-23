@@ -172,7 +172,7 @@ print_framebuffer_status()
 }
 
 RenderBackend*
-gpu_allocate_render_data(Arena* arena)
+gpu_allocate_render_backend(Arena* arena)
 {
     RenderBackend* p = arena_alloc_elem(arena, RenderBackend);
     return p;
@@ -651,31 +651,31 @@ gpu_update_export_rect(RenderBackend* r, Exporter* exporter)
     i32 h = MLT_ABS(exporter->pivot.y - exporter->needle.y);
 
     // Normalize to [-1,1]^2
-    float normalized_rect[] = {
-        2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1),
-        2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1),
-        2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1),
-        2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1),
+    v2f normalized_rect[] = {
+        { 2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1) },
+        { 2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1) },
+        { 2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1) },
+        { 2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1) },
     };
 
     float px = 2.0f;
     float line_length = px / r->height;
 
     float top[] = {
-        normalized_rect[0], normalized_rect[1],
-        normalized_rect[2], normalized_rect[1]+line_length,
-        normalized_rect[4], normalized_rect[1]+line_length,
-        normalized_rect[6], normalized_rect[1],
+        normalized_rect[0].x, normalized_rect[0].y,
+        normalized_rect[1].x, normalized_rect[0].y+line_length,
+        normalized_rect[2].x, normalized_rect[0].y+line_length,
+        normalized_rect[3].x, normalized_rect[0].y,
     };
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[0]);
     DEBUG_gl_mark_buffer(r->vbo_exporter[0]);
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(top)*sizeof(*top), top, GL_DYNAMIC_DRAW);
-
+#if 0
     float bottom[] = {
-        normalized_rect[0], normalized_rect[3]-line_length,
-        normalized_rect[2], normalized_rect[3],
-        normalized_rect[4], normalized_rect[3],
-        normalized_rect[6], normalized_rect[3]-line_length,
+        normalized_rect[0].x, normalized_rect[1].y-line_length,
+        normalized_rect[1].x, normalized_rect[1].y,
+        normalized_rect[2].x, normalized_rect[1].y,
+        normalized_rect[3].x, normalized_rect[1].y-line_length,
     };
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[1]);
     DEBUG_gl_mark_buffer(r->vbo_exporter[1]);
@@ -684,24 +684,25 @@ gpu_update_export_rect(RenderBackend* r, Exporter* exporter)
     line_length = px / (r->width);
 
     float right[] = {
-        normalized_rect[4]-line_length, normalized_rect[1],
-        normalized_rect[4]-line_length, normalized_rect[3],
-        normalized_rect[4], normalized_rect[5],
-        normalized_rect[4], normalized_rect[7],
+        normalized_rect[2].x-line_length, normalized_rect[0].y,
+        normalized_rect[2].x-line_length, normalized_rect[1].y,
+        normalized_rect[2].x, normalized_rect[2].y,
+        normalized_rect[2].x, normalized_rect[3].y,
     };
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[2]);
     DEBUG_gl_mark_buffer(r->vbo_exporter[2]);
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(right)*sizeof(*right), right, GL_DYNAMIC_DRAW);
 
     float left[] = {
-        normalized_rect[0], normalized_rect[1],
-        normalized_rect[0], normalized_rect[3],
-        normalized_rect[0]+line_length, normalized_rect[5],
-        normalized_rect[0]+line_length, normalized_rect[7],
+        normalized_rect[0].x, normalized_rect[0].y,
+        normalized_rect[0].x, normalized_rect[1].y,
+        normalized_rect[0].x+line_length, normalized_rect[2].y,
+        normalized_rect[0].x+line_length, normalized_rect[3].y,
     };
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[3]);
     DEBUG_gl_mark_buffer(r->vbo_exporter[3]);
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(left)*sizeof(*left), left, GL_DYNAMIC_DRAW);
+    #endif
 }
 
 void
@@ -1620,7 +1621,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
         glUseProgram(r->exporter_program);
         GLint loc = glGetAttribLocation(r->exporter_program, "a_position");
         if ( loc>=0 && r->vbo_exporter[0] > 0 ) {
-            for ( int vbo_i = 0; vbo_i < 4; ++vbo_i ) {
+            for ( int vbo_i = 0; vbo_i < 1 /* ONLY DRAWING ONE RIGHT NOW */; ++vbo_i ) {
                 DEBUG_gl_validate_buffer(r->vbo_exporter[vbo_i]);
                 glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[vbo_i]);
                 glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0,0);
@@ -1638,7 +1639,7 @@ void
 gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha)
 {
     CanvasView saved_view = *milton->view;
-    RenderBackend* r = milton->render_data;
+    RenderBackend* r = milton->renderer;
     CanvasView* view = milton->view;
 
     i32 saved_width = r->width;
@@ -1755,3 +1756,7 @@ gpu_release_data(RenderBackend* r)
 }
 
 
+void imm_rect(RenderBackend* renderer, i32 left, i32 right, i32 top, i32 bottom, i32 line_width)
+{
+
+}
