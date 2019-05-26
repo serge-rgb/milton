@@ -35,6 +35,7 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
         static i32 layer_renaming_idx = -1;
         static b32 focus_rename_field = false;
 
+
         Layer* layer = milton->canvas->root_layer;
         while ( layer->next ) { layer = layer->next; }  // Move to the top layer.
         while ( layer ) {
@@ -50,8 +51,11 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
             ImGui::PopID();
             ImGui::SameLine();
 
-            // TODO(michalc): clicking anywhere else than on the layer should cancel
-            // the name change
+            // Draw the layers list. If in renaming mode, draw the layer that's being renamed as an InputText.
+            // Else just draw them as a list of Selectables.
+            if ( !ImGui::IsWindowFocused() ) {
+                is_renaming = false;
+            }
 
             if ( is_renaming ) {
                 if ( layer->id == layer_renaming_idx ) {
@@ -74,7 +78,6 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                                            milton->canvas->working_layer == layer,
                                            ImGuiSelectableFlags_AllowDoubleClick) ) {
                         if ( ImGui::IsMouseDoubleClicked(0) ) {
-                            // TODO(michalc): add setting the layer name
                             layer_renaming_idx = layer->id;
                             focus_rename_field = true;
                         }
@@ -88,7 +91,6 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                                        milton->canvas->working_layer == layer,
                                        ImGuiSelectableFlags_AllowDoubleClick) ) {
                     if ( ImGui::IsMouseDoubleClicked(0) ) {
-                        // TODO(michalc): add setting the layer name
                         layer_renaming_idx = layer->id;
                         is_renaming = true;
                         focus_rename_field = true;
