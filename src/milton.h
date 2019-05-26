@@ -294,6 +294,7 @@ void milton_new_layer_with_id(Milton* milton, i32 new_id);
 void milton_set_working_layer(Milton* milton, Layer* layer);
 void milton_delete_working_layer(Milton* milton);
 void milton_set_background_color(Milton* milton, v3f background_color);
+void milton_wipe_layer(Milton* milton);
 
 // Set the center of the zoom
 void milton_set_zoom_at_point(Milton* milton, v2i zoom_center);

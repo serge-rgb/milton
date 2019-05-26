@@ -105,6 +105,7 @@ namespace layer {
     void    layer_toggle_visibility (Layer* layer);
     b32     layer_has_blur_effect (Layer* layer);
     Stroke* layer_push_stroke (Layer* layer, Stroke stroke);
+    void    layer_wipe(Layer* layer);
     i32     number_of_layers (Layer* root);
     void    free_layers (Layer* root);
     i64     count_strokes (Layer* root);

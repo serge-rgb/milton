@@ -39,6 +39,7 @@ enum BindableAction
    Action_SET_BRUSH_ALPHA_100,
    Action_HELP,
    Action_PEEK_OUT,
+   Action_WIPE_LAYER,
 
    #if MILTON_ENABLE_PROFILING
       // Debug bindings
