@@ -343,8 +343,7 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
 void
 milton_set_zoom_at_point(Milton* milton, v2i new_zoom_center)
 {
-    milton->view->pan_center += VEC2L(new_zoom_center - milton->view->zoom_center) * milton_render_scale(milton);
-
+    milton->view->pan_center = raster_to_canvas_with_scale(milton->view, v2i_to_v2l(milton->hover_point), milton_render_scale(milton));
     milton->view->zoom_center = new_zoom_center;
     gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
 }
@@ -984,8 +983,6 @@ peek_out_duration_ms(Milton* milton)
 void
 peek_out_trigger_start(Milton* milton)
 {
-    milton_set_zoom_at_screen_center(milton);
-
     milton->peek_out->low_scale = milton_render_scale(milton);
     milton->peek_out->high_scale = peek_out_target_scale(milton);
     milton->peek_out->peek_out_ended = false;
@@ -1001,6 +998,7 @@ peek_out_trigger_stop(Milton* milton)
 {
     if (milton->current_mode == MiltonMode::PEEK_OUT && !milton->peek_out->peek_out_ended) {
         milton_set_zoom_at_point(milton, milton->hover_point);
+
         milton->peek_out->high_scale = milton_render_scale(milton);
         milton->peek_out->low_scale = milton->view->scale;
         milton->peek_out->begin_anim_time = platform_get_walltime();
@@ -1016,24 +1014,27 @@ peek_out_tick(Milton* milton)
         if ( milton->peek_out->peek_out_ended &&
              difference_in_ms(milton->peek_out->begin_anim_time, platform_get_walltime()) > peek_out_duration_ms(milton) ) {
             milton_use_previous_mode(milton);
-
-            i32 width = 100;
-            i32 height = 50;
-            i32 line_width = 5;
-
-            i32 left = milton->hover_point.x - width/2;
-            i32 right = milton->hover_point.x + width/2;
-            i32 top = milton->hover_point.y - height/2;
-            i32 bottom = milton->hover_point.y + height/2;
-
-            imm_rect(milton->renderer, left, right, top, bottom, line_width);
         }
+        i32 width = 100;
+        i32 height = 50;
+        i32 line_width = 5;
+
+        f32 cx = 2 * milton->hover_point.x / (f32)milton->view->screen_size.w - 1;
+        f32 cy = (2 * milton->hover_point.y / (f32)milton->view->screen_size.h - 1)*-1;
+        f32 left = cx - milton->view->scale / (f32)milton_render_scale(milton);
+        f32 right = cx + milton->view->scale / (f32)milton_render_scale(milton);
+        f32 top = cy - milton->view->scale / (f32)milton_render_scale(milton);
+        f32 bottom = cy + milton->view->scale / (f32)milton_render_scale(milton);
+
+        imm_rect(milton->renderer, left, right, top, bottom, line_width);
     }
 }
 
 void
 milton_update_and_render(Milton* milton, MiltonInput* input)
 {
+    imm_begin_frame(milton->renderer);
+
     PROFILE_GRAPH_BEGIN(update);
 
     b32 end_stroke = (input->flags & MiltonInputFlags_END_STROKE);
@@ -1212,9 +1213,21 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     if ( milton->current_mode == MiltonMode::EXPORTING ) {
         Exporter* exporter = &milton->gui->exporter;
         b32 changed = exporter_input(exporter, input);
-        if ( changed ) {
-            gpu_update_export_rect(milton->renderer, exporter);
+
+        {
+            i32 x = min(exporter->pivot.x, exporter->needle.x);
+            i32 y = min(exporter->pivot.y, exporter->needle.y);
+            i32 w = MLT_ABS(exporter->pivot.x - exporter->needle.x);
+            i32 h = MLT_ABS(exporter->pivot.y - exporter->needle.y);
+
+            float left = 2*((float)    x / (milton->view->screen_size.w))-1;
+            float right = 2*((GLfloat)(x+w) / (milton->view->screen_size.w))-1;
+            float top = -(2*((GLfloat)y     / (milton->view->screen_size.h))-1);
+            float bottom = -(2*((GLfloat)(y+h) / (milton->view->screen_size.h))-1);
+
+            imm_rect(milton->renderer, left, right, top, bottom, 2.0);
         }
+
         if ( exporter->state != ExporterState_EMPTY ) {
              render_flags |= RenderBackendFlags_EXPORTING;
         }
@@ -1408,9 +1421,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         float radius = -1;
         if (brush_outline_should_draw && current_mode_is_for_drawing(milton)) {
             radius = (float)milton_get_brush_radius(milton);
-        }
-        else if (milton->current_mode == MiltonMode::PEEK_OUT) {
-            radius = 100;  // TODO: Draw rectangle as cursor
         }
 
         gpu_update_brush_outline(milton->renderer,

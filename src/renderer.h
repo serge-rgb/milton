@@ -62,7 +62,8 @@ b32 gpu_init(RenderBackend* renderer, CanvasView* view, ColorPicker* picker);
 
 
 // Immediate-mode functions
-void imm_rect(RenderBackend* renderer, i32 left, i32 right, i32 top, i32 bottom, i32 line_width);
+void imm_begin_frame(RenderBackend* renderer);
+void imm_rect(RenderBackend* renderer, float left, float right, float top, float bottom, float line_width);
 // End of immediate-mode functions
 
 enum BrushOutlineEnum

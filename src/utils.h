@@ -43,6 +43,8 @@ v2f v2l_to_v2f(v2l p);
 
 v2f v2i_to_v2f(v2i p);
 
+v2l v2i_to_v2l(v2i p);
+
 #define kPi 3.14152654f
 
 #define DOT(a, b)  ((a).x * (b).x + (a).y * (b).y)

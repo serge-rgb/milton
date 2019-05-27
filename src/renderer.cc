@@ -19,6 +19,12 @@
 
 #define RENDER_CHUNK_SIZE_LOG2 28
 
+
+enum ImmediateFlag
+{
+    ImmediateFlag_RECT = (1<<0),
+};
+
 struct RenderBackend
 {
     f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
@@ -57,6 +63,8 @@ struct RenderBackend
     GLuint vbo_exporter;
     GLuint exporter_indices;
     int exporter_indices_count;
+
+    u32 imm_flags;  // ImmediateFlag
 
     // Objects used in rendering.
     GLuint canvas_texture;
@@ -1645,7 +1653,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     glDisable(GL_BLEND);
 
     // Exporter rect
-    if ( r->flags & RenderBackendFlags_EXPORTING ) {
+    if ( r->imm_flags & ImmediateFlag_RECT ) {
         // Update data if rect is not degenerate.
         // Draw outline.
         glUseProgram(r->exporter_program);
@@ -1786,7 +1794,70 @@ gpu_release_data(RenderBackend* r)
 }
 
 
-void imm_rect(RenderBackend* renderer, i32 left, i32 right, i32 top, i32 bottom, i32 line_width)
+void imm_begin_frame(RenderBackend* r)
 {
-
+    r->imm_flags = 0;
 }
+
+void imm_rect(RenderBackend* r, float left, float right, float top, float bottom, float line_width)
+{
+    if ( r->vbo_exporter == 0 ) {
+        glGenBuffers(1, &r->vbo_exporter);
+        mlt_assert(r->exporter_indices == 0);
+        glGenBuffers(1, &r->exporter_indices);
+    }
+
+    float toparr[] = {
+        // Top quad
+        left, top - line_width/r->height,
+        left, top + line_width/r->height,
+        right, top + line_width/r->height,
+        right, top - line_width/r->height,
+
+        // Bottom quad
+        left, bottom-line_width/r->height,
+        left, bottom+line_width/r->height,
+        right, bottom+line_width/r->height,
+        right, bottom-line_width/r->height,
+
+        // Left
+        left-line_width/r->width, top,
+        left-line_width/r->width, bottom,
+        left+line_width/r->width, bottom,
+        left+line_width/r->width, top,
+
+        // Right
+        right-line_width/r->width, top,
+        right-line_width/r->width, bottom,
+        right+line_width/r->width, bottom,
+        right+line_width/r->width, top,
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter);
+    DEBUG_gl_mark_buffer(r->vbo_exporter);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(toparr)*sizeof(*toparr), toparr, GL_DYNAMIC_DRAW);
+
+    u16 indices[] = {
+        // top
+        0,1,2,
+        2,3,0,
+
+        // bottom
+        4,5,6,
+        6,7,4,
+
+        // left
+        8,9,10,
+        10,11,8,
+
+        // right
+        12,13,14,
+        14,15,12,
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, r->exporter_indices);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(indices)*sizeof(*indices), indices, GL_STATIC_DRAW);
+
+    r->exporter_indices_count = array_count(indices);
+
+    r->imm_flags |= ImmediateFlag_RECT;
+}
+

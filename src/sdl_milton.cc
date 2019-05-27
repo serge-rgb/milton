@@ -916,7 +916,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
             ImGuiIO& io = ImGui::GetIO(); (void)io;
             ImGui::Render();
             SDL_GL_MakeCurrent(window, gl_context);
+            PUSH_GRAPHICS_GROUP("ImGui");
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            POP_GRAPHICS_GROUP();
         }
         PROFILE_GRAPH_END(GL);
         PROFILE_GRAPH_BEGIN(system);
