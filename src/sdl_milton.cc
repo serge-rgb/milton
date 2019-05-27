@@ -287,7 +287,11 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                      || event.button.button == SDL_BUTTON_MIDDLE
                      // Ignoring right click events for now
                      /*|| event.button.button == SDL_BUTTON_RIGHT*/ ) {
-                    if ( !ImGui::GetIO().WantCaptureMouse ) {
+
+                    if ( ImGui::GetIO().WantCaptureMouse ) {
+                        platform->force_next_frame = true;
+                    }
+                    else {
                         v2l long_point = { event.button.x, event.button.y };
 
                         platform_point_to_pixel(platform, &long_point);
@@ -309,9 +313,6 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                                 milton_input.pressures[platform->num_pressure_results++] = NO_PRESSURE_INFO;
                             }
                         }
-                    }
-                    else {
-                        platform->force_next_frame = true;
                     }
                 }
             } break;
@@ -915,7 +916,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
             ImGuiIO& io = ImGui::GetIO(); (void)io;
             ImGui::Render();
             SDL_GL_MakeCurrent(window, gl_context);
+            PUSH_GRAPHICS_GROUP("ImGui");
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            POP_GRAPHICS_GROUP();
         }
         PROFILE_GRAPH_END(GL);
         PROFILE_GRAPH_BEGIN(system);

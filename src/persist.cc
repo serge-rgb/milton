@@ -77,7 +77,7 @@ milton_load(Milton* milton)
 #define READ(address, size, num, fd) do { ok = fread_checked(address,size,num,fd); if (!ok){ goto END; } } while(0)
 
     // Unload gpu data if the strokes have been cooked.
-    gpu_free_strokes(milton->render_data, milton->canvas);
+    gpu_free_strokes(milton->renderer, milton->canvas);
     mlt_assert(milton->persist->mlt_file_path);
     FILE* fd = platform_fopen(milton->persist->mlt_file_path, TO_PATH_STR("rb"));
     b32 ok = true;  // fread check

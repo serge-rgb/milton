@@ -8,7 +8,15 @@
     #define GL_FUNCTIONS_DEBUG
 #endif // MILTON_DEBUG
 
-#define GL_FUNCTIONS \
+#if GRAPHICS_DEBUG
+    #define GL_FUNCTIONS_GRAPHICS_DEBUG \
+        X(void, glPushDebugGroup, GLenum source, GLuint id, GLsizei length, const char * message) \
+        X(void, glPopDebugGroup)
+#else
+    #define GL_FUNCTIONS_GRAPHICS_DEBUG
+#endif
+
+#define GL_FUNCTIONS_CORE \
     X(GLenum,   glGetError, void)\
     X(GLint,    glGetAttribLocation,      GLuint program, GLchar* name)                     \
     X(GLint,    glGetUniformLocation,     GLuint program, GLchar *name)                     \
@@ -97,3 +105,7 @@
     //
     //
 
+#define GL_FUNCTIONS \
+    GL_FUNCTIONS_GRAPHICS_DEBUG \
+    GL_FUNCTIONS_DEBUG \
+    GL_FUNCTIONS_CORE

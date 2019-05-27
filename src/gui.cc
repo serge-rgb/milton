@@ -811,7 +811,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
                     exporter->scale = 1;
                 }
                 float viewport_limits[2] = {};
-                gpu_get_viewport_limits(milton->render_data, viewport_limits);
+                gpu_get_viewport_limits(milton->renderer, viewport_limits);
 
                 while ( exporter->scale*raster_w > viewport_limits[0]
                         || exporter->scale*raster_h > viewport_limits[1] ) {

@@ -19,6 +19,12 @@
 
 #define RENDER_CHUNK_SIZE_LOG2 28
 
+
+enum ImmediateFlag
+{
+    ImmediateFlag_RECT = (1<<0),
+};
+
 struct RenderBackend
 {
     f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
@@ -54,7 +60,11 @@ struct RenderBackend
     GLuint vbo_outline_sizes;
 
     // Handles for exporter rectangle.
-    GLuint vbo_exporter[4]; // One for each line in rectangle
+    GLuint vbo_exporter;
+    GLuint exporter_indices;
+    int exporter_indices_count;
+
+    u32 imm_flags;  // ImmediateFlag
 
     // Objects used in rendering.
     GLuint canvas_texture;
@@ -172,7 +182,7 @@ print_framebuffer_status()
 }
 
 RenderBackend*
-gpu_allocate_render_data(Arena* arena)
+gpu_allocate_render_backend(Arena* arena)
 {
     RenderBackend* p = arena_alloc_elem(arena, RenderBackend);
     return p;
@@ -641,8 +651,10 @@ gpu_update_scale(RenderBackend* r, i32 scale)
 void
 gpu_update_export_rect(RenderBackend* r, Exporter* exporter)
 {
-    if ( r->vbo_exporter[0] == 0 ) {
-        glGenBuffers(4, r->vbo_exporter);
+    if ( r->vbo_exporter == 0 ) {
+        glGenBuffers(1, &r->vbo_exporter);
+        mlt_assert(r->exporter_indices == 0);
+        glGenBuffers(1, &r->exporter_indices);
     }
 
     i32 x = min(exporter->pivot.x, exporter->needle.x);
@@ -650,58 +662,72 @@ gpu_update_export_rect(RenderBackend* r, Exporter* exporter)
     i32 w = MLT_ABS(exporter->pivot.x - exporter->needle.x);
     i32 h = MLT_ABS(exporter->pivot.y - exporter->needle.y);
 
+    float left = 2*((float)    x/(r->width))-1;
+    float right = 2*((GLfloat)(x+w)/(r->width))-1;
+    float top = -(2*((GLfloat)y    /(r->height))-1);
+    float bottom = -(2*((GLfloat)(y+h)/(r->height))-1);
+
     // Normalize to [-1,1]^2
-    float normalized_rect[] = {
-        2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1),
-        2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1),
-        2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1),
-        2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1),
+    v2f normalized_rect[] = {
+        { 2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1) },
+        { 2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1) },
+        { 2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1) },
+        { 2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1) },
     };
 
     float px = 2.0f;
-    float line_length = px / r->height;
+    float line_width = px / r->height;
 
-    float top[] = {
-        normalized_rect[0], normalized_rect[1],
-        normalized_rect[2], normalized_rect[1]+line_length,
-        normalized_rect[4], normalized_rect[1]+line_length,
-        normalized_rect[6], normalized_rect[1],
+    float toparr[] = {
+        // Top quad
+        left, top - line_width/2,
+        left, top + line_width/2,
+        right, top + line_width/2,
+        right, top - line_width/2,
+
+        // Bottom quad
+        left, bottom-line_width/2,
+        left, bottom+line_width/2,
+        right, bottom+line_width/2,
+        right, bottom-line_width/2,
+
+        // Left
+        left-line_width/2, top,
+        left-line_width/2, bottom,
+        left+line_width/2, bottom,
+        left+line_width/2, top,
+
+        // Right
+        right-line_width/2, top,
+        right-line_width/2, bottom,
+        right+line_width/2, bottom,
+        right+line_width/2, top,
     };
-    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[0]);
-    DEBUG_gl_mark_buffer(r->vbo_exporter[0]);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(top)*sizeof(*top), top, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter);
+    DEBUG_gl_mark_buffer(r->vbo_exporter);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(toparr)*sizeof(*toparr), toparr, GL_DYNAMIC_DRAW);
 
-    float bottom[] = {
-        normalized_rect[0], normalized_rect[3]-line_length,
-        normalized_rect[2], normalized_rect[3],
-        normalized_rect[4], normalized_rect[3],
-        normalized_rect[6], normalized_rect[3]-line_length,
+    u16 indices[] = {
+        // top
+        0,1,2,
+        2,3,0,
+
+        // bottom
+        4,5,6,
+        6,7,4,
+
+        // left
+        8,9,10,
+        10,11,8,
+
+        // right
+        12,13,14,
+        14,15,12,
     };
-    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[1]);
-    DEBUG_gl_mark_buffer(r->vbo_exporter[1]);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(bottom)*sizeof(*bottom), bottom, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, r->exporter_indices);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(indices)*sizeof(*indices), indices, GL_STATIC_DRAW);
 
-    line_length = px / (r->width);
-
-    float right[] = {
-        normalized_rect[4]-line_length, normalized_rect[1],
-        normalized_rect[4]-line_length, normalized_rect[3],
-        normalized_rect[4], normalized_rect[5],
-        normalized_rect[4], normalized_rect[7],
-    };
-    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[2]);
-    DEBUG_gl_mark_buffer(r->vbo_exporter[2]);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(right)*sizeof(*right), right, GL_DYNAMIC_DRAW);
-
-    float left[] = {
-        normalized_rect[0], normalized_rect[1],
-        normalized_rect[0], normalized_rect[3],
-        normalized_rect[0]+line_length, normalized_rect[5],
-        normalized_rect[0]+line_length, normalized_rect[7],
-    };
-    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[3]);
-    DEBUG_gl_mark_buffer(r->vbo_exporter[3]);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(left)*sizeof(*left), left, GL_DYNAMIC_DRAW);
+    r->exporter_indices_count = array_count(indices);
 }
 
 void
@@ -1258,6 +1284,8 @@ static void
 gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                   i32 view_width, i32 view_height, float background_alpha=1.0f)
 {
+    PUSH_GRAPHICS_GROUP("render_canvas");
+
     // FLip it. GL is bottom-left.
     i32 x = view_x;
     i32 y = r->height - (view_y+view_height);
@@ -1313,6 +1341,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
     DArray<RenderElement>* clip_array = &r->clip_array;
 
+    PUSH_GRAPHICS_GROUP("render elements");
     for ( i64 i = 0; i < (i64)clip_array->count; i++ ) {
         RenderElement* re = &clip_array->data[i];
 
@@ -1477,13 +1506,18 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
             }
         }
     }
+    POP_GRAPHICS_GROUP();  // render elements
     glViewport(0, 0, r->width, r->height);
     glScissor(0, 0, r->width, r->height);
+
+    POP_GRAPHICS_GROUP();  // render_canvas
 }
 
 void
 gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
 {
+    PUSH_GRAPHICS_GROUP("gpu_render");
+
     glViewport(0, 0, r->width, r->height);
     glScissor(0, 0, r->width, r->height);
     glEnable(GL_BLEND);
@@ -1505,6 +1539,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
     glDisable(GL_DEPTH_TEST);
 
+    PUSH_GRAPHICS_GROUP("blit to helper texture");
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                   r->canvas_texture, 0);
@@ -1521,6 +1556,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
         gpu_fill_with_texture(r);
     }
+    POP_GRAPHICS_GROUP();
 
     // Render GUI on top of helper_texture
 
@@ -1555,6 +1591,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
     // Do post-processing on painting and on GUI elements. Draw to backbuffer
 
+    PUSH_GRAPHICS_GROUP("postproc");
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 
@@ -1584,9 +1621,11 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
         glBlitFramebufferEXT(0, 0, r->width, r->height,
                              0, 0, r->width, r->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
+    POP_GRAPHICS_GROUP();
 
     // Render outlines after doing AA.
 
+    PUSH_GRAPHICS_GROUP("outlines");
     // Brush outline
     {
         glUseProgram(r->outline_program);
@@ -1614,31 +1653,31 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     glDisable(GL_BLEND);
 
     // Exporter rect
-    if ( r->flags & RenderBackendFlags_EXPORTING ) {
+    if ( r->imm_flags & ImmediateFlag_RECT ) {
         // Update data if rect is not degenerate.
         // Draw outline.
         glUseProgram(r->exporter_program);
         GLint loc = glGetAttribLocation(r->exporter_program, "a_position");
-        if ( loc>=0 && r->vbo_exporter[0] > 0 ) {
-            for ( int vbo_i = 0; vbo_i < 4; ++vbo_i ) {
-                DEBUG_gl_validate_buffer(r->vbo_exporter[vbo_i]);
-                glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter[vbo_i]);
-                glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0,0);
-                glEnableVertexAttribArray((GLuint)loc);
+        if ( loc>=0 && r->vbo_exporter > 0 ) {
+            DEBUG_gl_validate_buffer(r->vbo_exporter);
+            gl::vertex_attrib_v2f(r->exporter_program, "a_position", r->vbo_exporter);
 
-                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-            }
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r->exporter_indices);
+
+            glDrawElements(GL_TRIANGLES, r->exporter_indices_count, GL_UNSIGNED_SHORT, 0);
         }
     }
+    POP_GRAPHICS_GROUP();  // outlines
 
     glUseProgram(0);
+    POP_GRAPHICS_GROUP(); // gpu_render
 }
 
 void
 gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w, i32 h, f32 background_alpha)
 {
     CanvasView saved_view = *milton->view;
-    RenderBackend* r = milton->render_data;
+    RenderBackend* r = milton->renderer;
     CanvasView* view = milton->view;
 
     i32 saved_width = r->width;
@@ -1754,4 +1793,71 @@ gpu_release_data(RenderBackend* r)
     release(&r->clip_array);
 }
 
+
+void imm_begin_frame(RenderBackend* r)
+{
+    r->imm_flags = 0;
+}
+
+void imm_rect(RenderBackend* r, float left, float right, float top, float bottom, float line_width)
+{
+    if ( r->vbo_exporter == 0 ) {
+        glGenBuffers(1, &r->vbo_exporter);
+        mlt_assert(r->exporter_indices == 0);
+        glGenBuffers(1, &r->exporter_indices);
+    }
+
+    float toparr[] = {
+        // Top quad
+        left, top - line_width/r->height,
+        left, top + line_width/r->height,
+        right, top + line_width/r->height,
+        right, top - line_width/r->height,
+
+        // Bottom quad
+        left, bottom-line_width/r->height,
+        left, bottom+line_width/r->height,
+        right, bottom+line_width/r->height,
+        right, bottom-line_width/r->height,
+
+        // Left
+        left-line_width/r->width, top,
+        left-line_width/r->width, bottom,
+        left+line_width/r->width, bottom,
+        left+line_width/r->width, top,
+
+        // Right
+        right-line_width/r->width, top,
+        right-line_width/r->width, bottom,
+        right+line_width/r->width, bottom,
+        right+line_width/r->width, top,
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter);
+    DEBUG_gl_mark_buffer(r->vbo_exporter);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(toparr)*sizeof(*toparr), toparr, GL_DYNAMIC_DRAW);
+
+    u16 indices[] = {
+        // top
+        0,1,2,
+        2,3,0,
+
+        // bottom
+        4,5,6,
+        6,7,4,
+
+        // left
+        8,9,10,
+        10,11,8,
+
+        // right
+        12,13,14,
+        14,15,12,
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, r->exporter_indices);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(indices)*sizeof(*indices), indices, GL_STATIC_DRAW);
+
+    r->exporter_indices_count = array_count(indices);
+
+    r->imm_flags |= ImmediateFlag_RECT;
+}
 

@@ -172,7 +172,7 @@ struct Milton
     SmoothFilter* smooth_filter;
 
     RenderSettings render_settings;
-    RenderBackend* render_data;
+    RenderBackend* renderer;
 
     // Heap
     Arena       root_arena;     // Lives forever

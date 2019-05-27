@@ -93,7 +93,6 @@ bool
 load ()
 {
 #define X(ret, func, ...) func = (decltype(func)) platform_get_gl_proc(#func);
-    GL_FUNCTIONS_DEBUG
     GL_FUNCTIONS
 #undef X
 

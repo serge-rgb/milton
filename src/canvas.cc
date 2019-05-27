@@ -17,14 +17,20 @@ canvas_to_raster_with_scale(CanvasView* view, v2l canvas_point, i64 scale)
 }
 
 v2l
-raster_to_canvas(CanvasView* view, v2l raster_point)
+raster_to_canvas_with_scale(CanvasView* view, v2l raster_point, i64 scale)
 {
     v2l canvas_point = {
-        ((raster_point.x - view->zoom_center.x) * view->scale) + view->pan_center.x,
-        ((raster_point.y - view->zoom_center.y) * view->scale) + view->pan_center.y,
+        ((raster_point.x - view->zoom_center.x) * scale) + view->pan_center.x,
+        ((raster_point.y - view->zoom_center.y) * scale) + view->pan_center.y,
     };
 
     return canvas_point;
+}
+
+v2l
+raster_to_canvas(CanvasView* view, v2l raster_point)
+{
+    return raster_to_canvas_with_scale(view, raster_point, view->scale);
 }
 
 v2l
