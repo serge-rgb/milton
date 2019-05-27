@@ -44,6 +44,7 @@ enum Texts
     TXT_switch_to_primitive,
     TXT_help_me,
     TXT_new_layer,
+    TXT_wipe_layer,
     TXT_rename,
     TXT_move,
     TXT_move_canvas,
@@ -115,6 +116,7 @@ enum Texts
     TXT_Action_SET_BRUSH_ALPHA_100,
     TXT_Action_HELP,
     TXT_Action_PEEK_OUT,
+    TXT_Action_WIPE_LAYER,
 
 #if MILTON_ENABLE_PROFILING
     TXT_Action_TOGGLE_DEBUG_WINDOW,

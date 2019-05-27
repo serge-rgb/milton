@@ -25,10 +25,12 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
 
     // Layer window
     ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*220), ImGuiSetCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(ui_scale*400, ui_scale*220), ImGuiSetCond_FirstUseEver);
+
     if ( ImGui::Begin(loc(TXT_layers)) ) {
         CanvasView* view = milton->view;
-        // left
+
+        // Layers window.
         ImGui::BeginChild("left pane", ImVec2(150, 0), true);
 
         static b32 is_renaming = false;
@@ -102,16 +104,22 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
             layer = layer->prev;
         }
         ImGui::EndChild();
+
         ImGui::SameLine();
 
         ImGui::BeginGroup();
         ImGui::BeginChild("item view", ImVec2(0, 25));
+        // New layer button.
         if ( ImGui::Button(loc(TXT_new_layer)) ) {
             milton_new_layer(milton);
         }
         ImGui::SameLine();
-
-        // Layer effects
+        // Wipe layer.
+        if ( ImGui::Button(loc(TXT_wipe_layer)) ) {
+            milton_wipe_layer(milton);
+        }
+        ImGui::SameLine();
+        // Layer effects button.
         if ( canvas ) {
             Layer* working_layer = canvas->working_layer;
             Arena* canvas_arena = &canvas->arena;
@@ -195,8 +203,8 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
             }
         }
 
-        ImGui::Separator();
         ImGui::EndChild();
+        ImGui::Separator();
         ImGui::BeginChild("buttons");
 
         ImGui::Text(loc(TXT_move));

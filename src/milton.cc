@@ -861,6 +861,11 @@ milton_set_working_layer(Milton* milton, Layer* layer)
     milton->view->working_layer_id = layer->id;
 }
 
+void milton_wipe_layer(Milton* milton)
+{
+    layer::layer_wipe(milton->canvas->working_layer);
+}
+
 void
 milton_delete_working_layer(Milton* milton)
 {

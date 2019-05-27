@@ -108,6 +108,7 @@ namespace layer
         }
         return layer;
     }
+
     Layer*
     get_by_id(Layer* root_layer, i32 id)
     {
@@ -141,6 +142,12 @@ namespace layer
         return result;
     }
 
+    void
+    layer_wipe(Layer* layer)
+    {
+        StrokeList* strokes = &(layer->strokes);
+        reset(strokes);
+    }
 
     void
     layer_toggle_visibility(Layer* layer)

@@ -64,6 +64,7 @@ set_default_bindings(MiltonBindings* bs)
    binding(bs, Modifier_CTRL, 'n', Action_NEW);
    binding(bs, Modifier_CTRL, 'o', Action_OPEN);
    binding(bs, (ModifierFlags)(Modifier_CTRL | Modifier_SHIFT), 's', Action_SAVE_AS);
+   binding(bs, Modifier_CTRL, 'c', Action_WIPE_LAYER);
 
    binding(bs, Modifier_NONE, 'm', Action_TOGGLE_MENU);
    binding(bs, Modifier_NONE, 'e', Action_MODE_ERASER);
@@ -251,6 +252,9 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
       } break;
       case ActionRelease_PEEK_OUT: {
           peek_out_trigger_stop(milton);
+      } break;
+      case Action_WIPE_LAYER: {
+          milton_wipe_layer(milton);
       } break;
    #if MILTON_DEBUG
       case Action_TOGGLE_DEBUG_WINDOW: {

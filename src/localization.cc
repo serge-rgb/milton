@@ -59,6 +59,7 @@ init_localization()
         EN(TXT_toggle_gui_visibility, "Toggle GUI Visibility");
         EN(TXT_layers, "Layers");
         EN(TXT_new_layer, "New Layer");
+        EN(TXT_wipe_layer, "Clean layer");
         EN(TXT_rename, "Rename");
         EN(TXT_move, "Move");
         EN(TXT_move_canvas, "Move canvas");
