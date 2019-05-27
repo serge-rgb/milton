@@ -1276,6 +1276,8 @@ static void
 gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                   i32 view_width, i32 view_height, float background_alpha=1.0f)
 {
+    PUSH_GRAPHICS_GROUP("render_canvas");
+
     // FLip it. GL is bottom-left.
     i32 x = view_x;
     i32 y = r->height - (view_y+view_height);
@@ -1331,6 +1333,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
     DArray<RenderElement>* clip_array = &r->clip_array;
 
+    PUSH_GRAPHICS_GROUP("render elements");
     for ( i64 i = 0; i < (i64)clip_array->count; i++ ) {
         RenderElement* re = &clip_array->data[i];
 
@@ -1495,13 +1498,18 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
             }
         }
     }
+    POP_GRAPHICS_GROUP();  // render elements
     glViewport(0, 0, r->width, r->height);
     glScissor(0, 0, r->width, r->height);
+
+    POP_GRAPHICS_GROUP();  // render_canvas
 }
 
 void
 gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_height)
 {
+    PUSH_GRAPHICS_GROUP("gpu_render");
+
     glViewport(0, 0, r->width, r->height);
     glScissor(0, 0, r->width, r->height);
     glEnable(GL_BLEND);
@@ -1523,6 +1531,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
     glDisable(GL_DEPTH_TEST);
 
+    PUSH_GRAPHICS_GROUP("blit to helper texture");
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
                                   r->canvas_texture, 0);
@@ -1539,6 +1548,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
         gpu_fill_with_texture(r);
     }
+    POP_GRAPHICS_GROUP();
 
     // Render GUI on top of helper_texture
 
@@ -1573,6 +1583,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
     // Do post-processing on painting and on GUI elements. Draw to backbuffer
 
+    PUSH_GRAPHICS_GROUP("postproc");
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 
@@ -1602,9 +1613,11 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
         glBlitFramebufferEXT(0, 0, r->width, r->height,
                              0, 0, r->width, r->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
+    POP_GRAPHICS_GROUP();
 
     // Render outlines after doing AA.
 
+    PUSH_GRAPHICS_GROUP("outlines");
     // Brush outline
     {
         glUseProgram(r->outline_program);
@@ -1646,8 +1659,10 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
             glDrawElements(GL_TRIANGLES, r->exporter_indices_count, GL_UNSIGNED_SHORT, 0);
         }
     }
+    POP_GRAPHICS_GROUP();  // outlines
 
     glUseProgram(0);
+    POP_GRAPHICS_GROUP(); // gpu_render
 }
 
 void
