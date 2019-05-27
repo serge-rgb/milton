@@ -341,11 +341,17 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
 }
 
 void
-milton_set_zoom_at_point(Milton* milton, v2i new_zoom_center)
+milton_set_zoom_at_point_with_scale(Milton* milton, v2i new_zoom_center, i64 scale)
 {
-    milton->view->pan_center = raster_to_canvas_with_scale(milton->view, v2i_to_v2l(milton->hover_point), milton_render_scale(milton));
+    milton->view->pan_center = raster_to_canvas_with_scale(milton->view, v2i_to_v2l(new_zoom_center), scale);
     milton->view->zoom_center = new_zoom_center;
     gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
+}
+
+void
+milton_set_zoom_at_point(Milton* milton, v2i new_zoom_center)
+{
+    milton_set_zoom_at_point_with_scale(milton, new_zoom_center, milton_render_scale(milton));
 }
 
 void
@@ -1015,18 +1021,24 @@ peek_out_tick(Milton* milton)
              difference_in_ms(milton->peek_out->begin_anim_time, platform_get_walltime()) > peek_out_duration_ms(milton) ) {
             milton_use_previous_mode(milton);
         }
-        i32 width = 100;
-        i32 height = 50;
-        i32 line_width = 5;
 
-        f32 cx = 2 * milton->hover_point.x / (f32)milton->view->screen_size.w - 1;
-        f32 cy = (2 * milton->hover_point.y / (f32)milton->view->screen_size.h - 1)*-1;
-        f32 left = cx - milton->view->scale / (f32)milton_render_scale(milton);
-        f32 right = cx + milton->view->scale / (f32)milton_render_scale(milton);
-        f32 top = cy - milton->view->scale / (f32)milton_render_scale(milton);
-        f32 bottom = cy + milton->view->scale / (f32)milton_render_scale(milton);
+        {
+            i32 width = 100;
+            i32 height = 50;
+            i32 line_width = 5;
 
-        imm_rect(milton->renderer, left, right, top, bottom, line_width);
+            // TODO: Interpolate pan vector
+            f32 scale = (f32)milton_render_scale(milton);
+
+            f32 cx = 2 * milton->hover_point.x / (f32)milton->view->screen_size.w - 1;
+            f32 cy = (2 * milton->hover_point.y / (f32)milton->view->screen_size.h - 1)*-1;
+            f32 left = cx - milton->view->scale / scale;
+            f32 right = cx + milton->view->scale / scale;
+            f32 top = cy - milton->view->scale / scale;
+            f32 bottom = cy + milton->view->scale / scale;
+
+            imm_rect(milton->renderer, left, right, top, bottom, line_width);
+        }
     }
 }
 
