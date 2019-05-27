@@ -1638,16 +1638,12 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
         glUseProgram(r->exporter_program);
         GLint loc = glGetAttribLocation(r->exporter_program, "a_position");
         if ( loc>=0 && r->vbo_exporter > 0 ) {
-            //for ( int vbo_i = 0; vbo_i < 4; ++vbo_i ) {
-                DEBUG_gl_validate_buffer(r->vbo_exporter);
-                gl::vertex_attrib_v2f(r->exporter_program, "a_position", r->vbo_exporter);
+            DEBUG_gl_validate_buffer(r->vbo_exporter);
+            gl::vertex_attrib_v2f(r->exporter_program, "a_position", r->vbo_exporter);
 
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r->exporter_indices);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r->exporter_indices);
 
-                glDrawElements(GL_TRIANGLES, r->exporter_indices_count, GL_UNSIGNED_SHORT, 0);
-
-                // glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-            //}
+            glDrawElements(GL_TRIANGLES, r->exporter_indices_count, GL_UNSIGNED_SHORT, 0);
         }
     }
 
