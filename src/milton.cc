@@ -265,32 +265,45 @@ clear_smooth_filter(SmoothFilter* filter, v2l value)
 
 static u64 peek_out_duration_ms(Milton* milton);  // forward decl
 
+static float peek_out_interpolation(Milton* milton)
+{
+    float interp = 0.0f;
+
+    WallTime time = platform_get_walltime();
+    u64 ms = difference_in_ms(milton->peek_out->begin_anim_time, time);
+
+    if (ms < peek_out_duration_ms(milton)) {
+        interp = ms / (float)peek_out_duration_ms(milton);
+    }
+    else {
+        interp = 1.0f;
+    }
+
+    if (milton->peek_out->peek_out_ended) {
+        interp = 1 - interp;
+    }
+    return interp;
+}
 
 i64
-milton_render_scale(Milton* milton)
+milton_render_scale_with_interpolation(Milton* milton, float interp)
 {
     if ( milton->current_mode == MiltonMode::PEEK_OUT ) {
-        WallTime time = platform_get_walltime();
-
-        u64 ms = difference_in_ms(milton->peek_out->begin_anim_time, time);
-
-        float interp = 0.0f;
-        if (ms < peek_out_duration_ms(milton)) {
-            interp = ms / (float)peek_out_duration_ms(milton);
-        }
-        else {
-            interp = 1.0f;
-        }
-
-        if (milton->peek_out->peek_out_ended) {
-            interp = 1 - interp;
-        }
-
         return lerp(milton->peek_out->low_scale, milton->peek_out->high_scale, interp);
     }
     else {
         return milton->view->scale;
     }
+}
+
+i64
+milton_render_scale(Milton* milton)
+{
+    float interp = 1.0f;
+    if (milton->current_mode == MiltonMode::PEEK_OUT) {
+        interp = peek_out_interpolation(milton);
+    }
+    return milton_render_scale_with_interpolation(milton, interp);
 }
 
 static void
@@ -989,6 +1002,8 @@ peek_out_duration_ms(Milton* milton)
 void
 peek_out_trigger_start(Milton* milton)
 {
+    milton->peek_out->begin_pan = milton->view->pan_center;
+
     milton->peek_out->low_scale = milton_render_scale(milton);
     milton->peek_out->high_scale = peek_out_target_scale(milton);
     milton->peek_out->peek_out_ended = false;
@@ -1005,30 +1020,49 @@ peek_out_trigger_stop(Milton* milton)
     if (milton->current_mode == MiltonMode::PEEK_OUT && !milton->peek_out->peek_out_ended) {
         milton_set_zoom_at_point(milton, milton->hover_point);
 
-        milton->peek_out->high_scale = milton_render_scale(milton);
+        i64 scale = milton_render_scale(milton);
+        milton->peek_out->high_scale = scale;
         milton->peek_out->low_scale = milton->view->scale;
         milton->peek_out->begin_anim_time = platform_get_walltime();
         milton->peek_out->peek_out_ended = true;
+        milton->peek_out->end_pan = raster_to_canvas_with_scale(milton->view, v2i_to_v2l(milton->hover_point), scale);
     }
 }
 
 void
 peek_out_tick(Milton* milton)
 {
+    PeekOut* peek = milton->peek_out;
+
     if (milton->current_mode == MiltonMode::PEEK_OUT) {
-        gpu_update_scale(milton->renderer, milton_render_scale(milton));
-        if ( milton->peek_out->peek_out_ended &&
-             difference_in_ms(milton->peek_out->begin_anim_time, platform_get_walltime()) > peek_out_duration_ms(milton) ) {
-            milton_use_previous_mode(milton);
+
+        float interp = peek_out_interpolation(milton);
+        if ( milton->peek_out->peek_out_ended ) {
+            i64 panx = lerp(peek->end_pan.x, peek->begin_pan.x, interp);
+            i64 pany = lerp(peek->end_pan.y, peek->begin_pan.y, interp);
+
+            v2l pan = { panx, pany };
+
+            milton->view->pan_center = pan;
+
+            // set zoom at point
+            milton->view->pan_center = pan;
+            milton->view->zoom_center = milton->view->screen_size / 2;
+            gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
+
+            if ( difference_in_ms(peek->begin_anim_time, platform_get_walltime()) > peek_out_duration_ms(milton) ) {
+                milton_use_previous_mode(milton);
+            }
         }
+        gpu_update_scale(milton->renderer, milton_render_scale(milton));
 
         {
             i32 width = 100;
             i32 height = 50;
-            i32 line_width = 5;
+            i32 line_width = 2;
 
             // TODO: Interpolate pan vector
-            f32 scale = (f32)milton_render_scale(milton);
+            f32 scale = (f32)milton_render_scale_with_interpolation(milton, interp);
 
             f32 cx = 2 * milton->hover_point.x / (f32)milton->view->screen_size.w - 1;
             f32 cy = (2 * milton->hover_point.y / (f32)milton->view->screen_size.h - 1)*-1;

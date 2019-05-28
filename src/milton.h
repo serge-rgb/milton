@@ -120,8 +120,12 @@ struct PeekOut
 {
     WallTime begin_anim_time;
     b32 peek_out_ended;
+
     i64 high_scale;
     i64 low_scale;
+
+    v2l begin_pan;
+    v2l end_pan;
 };
 
 struct RenderSettings
