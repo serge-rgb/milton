@@ -1002,6 +1002,7 @@ peek_out_duration_ms(Milton* milton)
 void
 peek_out_trigger_start(Milton* milton)
 {
+    milton_set_zoom_at_screen_center(milton);
     milton->peek_out->begin_pan = milton->view->pan_center;
 
     milton->peek_out->low_scale = milton_render_scale(milton);

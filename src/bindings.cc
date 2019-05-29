@@ -86,7 +86,7 @@ set_default_bindings(MiltonBindings* bs)
 
    binding_with_release(bs, Modifier_NONE, '`', Action_PEEK_OUT, ActionRelease_PEEK_OUT);
 
-#if MILTON_DEBUG
+#if MILTON_ENABLE_PROFILING
    binding(bs, Modifier_CTRL, '`', Action_TOGGLE_DEBUG_WINDOW);
 #endif
 }
@@ -252,7 +252,7 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
       case ActionRelease_PEEK_OUT: {
           peek_out_trigger_stop(milton);
       } break;
-   #if MILTON_DEBUG
+   #if MILTON_ENABLE_PROFILING
       case Action_TOGGLE_DEBUG_WINDOW: {
          milton->viz_window_visible = !milton->viz_window_visible;
       } break;
