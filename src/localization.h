@@ -115,6 +115,8 @@ enum Texts
     TXT_Action_SET_BRUSH_ALPHA_100,
     TXT_Action_HELP,
     TXT_Action_PEEK_OUT,
+    TXT_Action_ESCAPE,
+    TXT_Action_SELECT,
 
 #if MILTON_ENABLE_PROFILING
     TXT_Action_TOGGLE_DEBUG_WINDOW,

@@ -741,6 +741,12 @@ milton_use_previous_mode(Milton* milton)
 }
 
 void
+milton_escape(Milton* milton)
+{
+    milton_log("Escape!");
+}
+
+void
 milton_try_quit(Milton* milton)
 {
     milton->flags &= ~MiltonStateFlags_RUNNING;

@@ -72,7 +72,7 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
         SDL_Keycode k = event->key.keysym.sym;
 
         i8 active_key = 0;
-        if (k >= 1 && k <= 127) {
+        if (k >= 32 && k <= 127) {
             active_key = k;
         }
         else {

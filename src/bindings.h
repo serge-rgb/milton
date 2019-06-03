@@ -39,6 +39,8 @@ enum BindableAction
    Action_SET_BRUSH_ALPHA_100,
    Action_HELP,
    Action_PEEK_OUT,
+   Action_ESCAPE,
+   Action_SELECT,
 
    #if MILTON_ENABLE_PROFILING
       // Debug bindings

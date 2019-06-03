@@ -37,6 +37,7 @@ enum class MiltonMode
     EYEDROPPER,
     HISTORY,
     PEEK_OUT,
+    SELECT,
 };
 
 enum BrushEnum
@@ -287,6 +288,8 @@ void milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size);
 
 void milton_use_previous_mode(Milton* milton);
 void milton_switch_mode(Milton* milton, MiltonMode mode);
+
+void milton_escape(Milton* milton);
 
 // Our "game loop" inner function.
 void milton_update_and_render(Milton* milton, MiltonInput* input);
