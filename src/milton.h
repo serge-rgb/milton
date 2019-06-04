@@ -168,7 +168,7 @@ struct Milton
     PeekOut* peek_out;
 
     // Read only
-    // Set these with milton_switch_mode and milton_use_previous_mode
+    // Set these with milton_switch_mode and milton_leave_mode
     MiltonMode current_mode;
     MiltonMode last_mode;
 
@@ -286,7 +286,7 @@ void    milton_set_brush_alpha(Milton* milton, float alpha);
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 void milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size);
 
-void milton_use_previous_mode(Milton* milton);
+void milton_leave_mode(Milton* milton);
 void milton_switch_mode(Milton* milton, MiltonMode mode);
 
 void milton_escape(Milton* milton);

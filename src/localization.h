@@ -94,7 +94,6 @@ enum Texts
     TXT_Action_EXPORT,
     TXT_Action_QUIT,
     TXT_Action_NEW,
-    TXT_Action_SAVE,
     TXT_Action_SAVE_AS,
     TXT_Action_OPEN,
     TXT_Action_TOGGLE_MENU,

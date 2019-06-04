@@ -735,15 +735,35 @@ milton_switch_mode(Milton* milton, MiltonMode mode)
 }
 
 void
-milton_use_previous_mode(Milton* milton)
+milton_leave_mode(Milton* milton)
 {
+    // Deinit mode
+    switch (milton->current_mode) {
+        case MiltonMode::EXPORTING: {
+            milton->gui->exporter = Exporter{};
+        } break;
+        default: {
+
+        } break;
+    }
+
     milton_switch_mode(milton, milton->last_mode);
 }
 
 void
 milton_escape(Milton* milton)
 {
-    milton_log("Escape!");
+    switch (milton->current_mode) {
+        case MiltonMode::EXPORTING:
+        case MiltonMode::EYEDROPPER:
+        case MiltonMode::SELECT: {
+            milton_leave_mode(milton);
+        } break;
+
+        default: {
+            // Nothing
+        } break;
+    }
 }
 
 void
@@ -1058,7 +1078,7 @@ peek_out_tick(Milton* milton)
             gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
 
             if ( difference_in_ms(peek->begin_anim_time, platform_get_walltime()) > peek_out_duration_ms(milton) ) {
-                milton_use_previous_mode(milton);
+                milton_leave_mode(milton);
             }
         }
         gpu_update_scale(milton->renderer, milton_render_scale(milton));
@@ -1430,7 +1450,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 MiltonMode toggle = toggleable_modes[i];
                 if ( current_mode == toggle ) {
                     if ( milton->last_mode != toggle ) {
-                        milton_use_previous_mode(milton);
+                        milton_leave_mode(milton);
                     }
                     else {
                         // This is not supposed to happen but if we get here we won't crash and burn.
