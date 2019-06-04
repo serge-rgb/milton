@@ -150,9 +150,6 @@ binding_dispatch_action(BindableAction a, MiltonInput* out_input, Milton* milton
             out_input->flags |= MiltonInputFlags_FULL_REFRESH;
             milton->flags |= MiltonStateFlags_DEFAULT_CANVAS;
         } break;
-        case Action_SAVE: {
-            INVALID_CODE_PATH;
-        } break;
         case Action_SAVE_AS: {
             PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
             if ( name ) {

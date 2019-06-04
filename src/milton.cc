@@ -13,6 +13,7 @@
 #include "platform.h"
 #include "vector.h"
 #include "bindings.h"
+#include "copy_paste.h"
 
 // Defined below.
 static void milton_validate(Milton* milton);

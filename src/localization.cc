@@ -109,7 +109,6 @@ init_localization()
         EN(TXT_Action_EXPORT, "Export");
         EN(TXT_Action_QUIT, "Quit");
         EN(TXT_Action_NEW, "New");
-        EN(TXT_Action_SAVE, "Save");
         EN(TXT_Action_SAVE_AS, "Save As");
         EN(TXT_Action_OPEN, "Open");
         EN(TXT_Action_TOGGLE_MENU, "Menu");

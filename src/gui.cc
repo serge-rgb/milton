@@ -855,12 +855,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
         if ( ImGui::Button(loc(TXT_cancel)) ) {
             reset = true;
-            milton_use_previous_mode(milton);
+            milton_leave_mode(milton);
         }
         ImGui::End(); // Export...
         if ( !opened ) {
             reset = true;
-            milton_use_previous_mode(milton);
+            milton_leave_mode(milton);
         }
         if ( reset ) {
             exporter_init(&milton->gui->exporter);

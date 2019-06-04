@@ -69,6 +69,7 @@ struct CanvasView;
 struct Layer;
 struct MiltonPersist;
 struct MiltonBindings;
+struct CopyPaste;
 
 // Stuff than can be reset when unloading a canvas
 struct CanvasState
@@ -188,6 +189,7 @@ struct Milton
     MiltonGui* gui;
     MiltonSettings* settings;  // User settings
     MiltonPersist* persist;
+    CopyPaste* pasta;
 
 #if MILTON_ENABLE_PROFILING
     b32 viz_window_visible;

@@ -16,6 +16,7 @@
 #include "sdl_milton.cc"
 #include "utils.cc"
 #include "vector.cc"
+#include "copy_paste.cc"
 
 #if defined(_WIN32)
     #include "platform_windows.cc"

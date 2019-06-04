@@ -18,7 +18,6 @@ enum BindableAction
    Action_EXPORT,
    Action_QUIT,
    Action_NEW,
-   Action_SAVE,
    Action_SAVE_AS,
    Action_OPEN,
    Action_TOGGLE_MENU,
