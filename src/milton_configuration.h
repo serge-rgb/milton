@@ -17,10 +17,10 @@
 
 #define MILTON_ENABLE_PROFILING 1
 #define REDRAW_EVERY_FRAME 0
-#define GRAPHICS_DEBUG 0
+#define GRAPHICS_DEBUG 1
 #define MILTON_ZOOM_DEBUG 0
 #define STROKE_DEBUG_VIZ 0
-#define DEBUG_MEMORY_USAGE 0
+#define DEBUG_MEMORY_USAGE 1
 // Windows Debug Options
 #if defined(_WIN32)
     // If 1, print to VS console. Debug messages always print to log file.

@@ -77,6 +77,7 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
         }
         else {
             switch (k) {
+                case SDLK_TAB: { active_key = SDLK_TAB;  } break;
                 case SDLK_ESCAPE: { active_key = Binding::ESC; } break;
                 case SDLK_F1: { active_key = Binding::F1; } break;
                 case SDLK_F2: { active_key = Binding::F2; } break;
