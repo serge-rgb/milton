@@ -159,7 +159,7 @@ macos_get_window(PlatformState* ps)
 }
 
 void
-platform_point_to_pixel(PlatformState* ps, v2l* inout)
+platform_point_to_pixel(PlatformState* ps, v2i* inout)
 {
     NSRect rect;
     rect.origin = {};
@@ -173,15 +173,7 @@ platform_point_to_pixel(PlatformState* ps, v2l* inout)
 }
 
 void
-platform_point_to_pixel_i(PlatformState* ps, v2i* inout)
-{
-    v2l long_inout = { inout->x, inout->y };
-    platform_point_to_pixel(ps, &long_inout);
-    *inout = (v2i){(int)long_inout.x, (int)long_inout.y};
-}
-
-void
-platform_pixel_to_point(PlatformState* ps, v2l* inout)
+platform_pixel_to_point(PlatformState* ps, v2i* inout)
 {
     NSRect rect;
     rect.origin = {};

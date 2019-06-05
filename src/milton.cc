@@ -230,8 +230,8 @@ stroke_append_point(Stroke* stroke, v2l canvas_point, f32 pressure)
     }
 }
 
-static v2l
-smooth_filter(SmoothFilter* filter, v2l input)
+static v2i
+smooth_filter(SmoothFilter* filter, v2i input)
 {
     filter->points[filter->index++] = input;
     filter->index %= SMOOTHING_WINDOW;
@@ -248,16 +248,16 @@ smooth_filter(SmoothFilter* filter, v2l input)
         sum = sum + point * factor;
     }
 
-    v2l result = {
-        (long)sum.x + input.x,
-        (long)sum.y + input.y,
+    v2i result = {
+        (i32)sum.x + input.x,
+        (i32)sum.y + input.y,
     };
 
     return result;
 }
 
 static void
-clear_smooth_filter(SmoothFilter* filter, v2l value)
+clear_smooth_filter(SmoothFilter* filter, v2i value)
 {
     for (int i = 0; i < SMOOTHING_WINDOW; ++i) {
         filter->points[i] = value;
@@ -334,7 +334,7 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
 
     for ( int input_i = 0; input_i < input->input_count; ++input_i ) {
 
-        v2l in_point = input->points[input_i];
+        v2i in_point = input->points[input_i];
         if (milton->flags & MiltonStateFlags_BRUSH_SMOOTHING) {
             in_point = smooth_filter(milton->smooth_filter, in_point);
         }
@@ -357,7 +357,7 @@ milton_stroke_input(Milton* milton, MiltonInput* input)
 void
 milton_set_zoom_at_point_with_scale(Milton* milton, v2i new_zoom_center, i64 scale)
 {
-    milton->view->pan_center = raster_to_canvas_with_scale(milton->view, v2i_to_v2l(new_zoom_center), scale);
+    milton->view->pan_center = raster_to_canvas_with_scale(milton->view, new_zoom_center, scale);
     milton->view->zoom_center = new_zoom_center;
     gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
 }
@@ -633,7 +633,7 @@ upload_gui(Milton* milton)
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 void
-milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size)
+milton_resize_and_pan(Milton* milton, v2i pan_delta, v2i new_screen_size)
 {
     if ( milton->max_width <= new_screen_size.w ) {
         milton->max_width = new_screen_size.w + 256;
@@ -646,7 +646,7 @@ milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size)
         milton->view->screen_size = new_screen_size;
 
         // Add delta to pan vector
-        v2l pan_center = milton->view->pan_center - (pan_delta * milton->view->scale);
+        v2l pan_center = milton->view->pan_center - (v2i_to_v2l(pan_delta) * milton->view->scale);
 
         milton->view->pan_center = pan_center;
 
@@ -1053,7 +1053,7 @@ peek_out_trigger_stop(Milton* milton)
         milton->peek_out->low_scale = milton->view->scale;
         milton->peek_out->begin_anim_time = platform_get_walltime();
         milton->peek_out->peek_out_ended = true;
-        milton->peek_out->end_pan = raster_to_canvas_with_scale(milton->view, v2i_to_v2l(milton->hover_point), scale);
+        milton->peek_out->end_pan = raster_to_canvas_with_scale(milton->view, milton->hover_point, scale);
     }
 }
 
@@ -1167,11 +1167,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         gpu_update_scale(milton->renderer, milton->view->scale);
     }
     else if ( (input->flags & MiltonInputFlags_PANNING) ) {
-        // If we are *not* zooming and we are panning, we can copy most of the
-        // framebuffer
-        if ( !(input->pan_delta == v2l{}) ) {
-            milton->render_settings.do_full_redraw = true;
-        }
+        milton->render_settings.do_full_redraw = true;
     }
 
     if ( input->mode_to_set != milton->current_mode
@@ -1254,7 +1250,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     if ( is_user_drawing(milton) ) {
         i32 np = milton->working_stroke.num_points;
         if ( np > 0 ) {
-            milton->hover_point = VEC2I(canvas_to_raster(milton->view, milton->working_stroke.points[np-1]));
+            milton->hover_point = canvas_to_raster(milton->view, milton->working_stroke.points[np-1]);
         }
     }
 
@@ -1369,6 +1365,10 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         }
     }
 
+    if ( milton->current_mode == MiltonMode::SELECT ) {
+        pasta_input(milton->pasta, raster_to_canvas(milton->view, input->hover_point));
+    }
+
     // ---- End stroke
     if ( end_stroke ) {
         if ( milton->gui->owns_user_input ) {
@@ -1397,8 +1397,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
                     draw_custom_rectangle = true;
                     Rect bounds = new_stroke.bounding_rect;
-                    bounds.top_left = canvas_to_raster(milton->view, bounds.top_left);
-                    bounds.bot_right = canvas_to_raster(milton->view, bounds.bot_right);
+                    bounds.top_left = v2i_to_v2l(canvas_to_raster(milton->view, bounds.top_left));
+                    bounds.bot_right = v2i_to_v2l(canvas_to_raster(milton->view, bounds.bot_right));
                     custom_rectangle = rect_union(custom_rectangle, bounds);
                 }
 
@@ -1623,8 +1623,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
     else if ( milton->working_stroke.num_points > 0 ) {
         Rect bounds      = milton->working_stroke.bounding_rect;
-        bounds.top_left  = canvas_to_raster(milton->view, bounds.top_left);
-        bounds.bot_right = canvas_to_raster(milton->view, bounds.bot_right);
+        bounds.top_left  = v2i_to_v2l(canvas_to_raster(milton->view, bounds.top_left));
+        bounds.bot_right = v2i_to_v2l(canvas_to_raster(milton->view, bounds.bot_right));
 
         view_x           = bounds.left;
         view_y           = bounds.top;

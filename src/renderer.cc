@@ -29,7 +29,7 @@ struct RenderBackend
 {
     f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
 
-    v2i render_center;
+    v2l render_center;
 
     // OpenGL programs.
     GLuint stroke_program;
@@ -787,7 +787,7 @@ static
 v2i
 relative_to_render_center(RenderBackend* r, v2l point)
 {
-    v2i result = VEC2I(point - VEC2L(r->render_center*(1<<RENDER_CHUNK_SIZE_LOG2)));
+    v2i result = v2l_to_v2i(point - (r->render_center*i64(1<<RENDER_CHUNK_SIZE_LOG2)));
     return result;
 }
 
@@ -796,7 +796,7 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
 {
     v2i center = view->zoom_center;
     v2l pan = view->pan_center;
-    v2i new_render_center = VEC2I(pan / (i64)(1<<RENDER_CHUNK_SIZE_LOG2));
+    v2l new_render_center = (pan / (i64)(1<<RENDER_CHUNK_SIZE_LOG2));
     if ( new_render_center != r->render_center ) {
         milton_log("Moving to new render center. %d, %d Clearing render data.\n", new_render_center.x, new_render_center.y);
         r->render_center = new_render_center;
@@ -1164,8 +1164,8 @@ gpu_clip_strokes_and_update(Arena* arena,
                 count = l->strokes.count % STROKELIST_BUCKET_COUNT;
             }
             Rect bbox = bucket->bounding_rect;
-            bbox.top_left = canvas_to_raster_with_scale(view, bbox.top_left, scale);
-            bbox.bot_right = canvas_to_raster_with_scale(view, bbox.bot_right, scale);
+            bbox.top_left =  v2i_to_v2l(canvas_to_raster_with_scale(view, bbox.top_left, scale));
+            bbox.bot_right = v2i_to_v2l(canvas_to_raster_with_scale(view, bbox.bot_right, scale));
 
             b32 bucket_outside =   screen_bounds.left   > bbox.right
                                 || screen_bounds.top    > bbox.bottom
@@ -1178,8 +1178,8 @@ gpu_clip_strokes_and_update(Arena* arena,
 
                     if ( s != NULL ) {
                         Rect bounds = s->bounding_rect;
-                        bounds.top_left = canvas_to_raster_with_scale(view, bounds.top_left, scale);
-                        bounds.bot_right = canvas_to_raster_with_scale(view, bounds.bot_right, scale);
+                        bounds.top_left = v2i_to_v2l(canvas_to_raster_with_scale(view, bounds.top_left, scale));
+                        bounds.bot_right = v2i_to_v2l(canvas_to_raster_with_scale(view, bounds.bot_right, scale));
 
                         b32 is_outside = bounds.left > (x+w) || bounds.right < x
                                 || bounds.top > (y+h) || bounds.bottom < y;
@@ -1693,7 +1693,7 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
     milton_set_zoom_at_point(milton, center);
 
     milton->view->pan_center =
-        milton->view->pan_center + VEC2L(pan_delta)*milton->view->scale;
+        milton->view->pan_center + v2i_to_v2l(pan_delta)*milton->view->scale;
 
     milton->view->screen_size = v2i{buf_w, buf_h};
     r->width = buf_w;

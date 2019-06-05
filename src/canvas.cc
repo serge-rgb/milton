@@ -6,18 +6,18 @@
 
 v4f k_eraser_color = {23,34,45,56};
 
-v2l
+v2i
 canvas_to_raster_with_scale(CanvasView* view, v2l canvas_point, i64 scale)
 {
-    v2l raster_point = {
-        ((canvas_point.x - view->pan_center.x) / scale) + view->zoom_center.x,
-        ((canvas_point.y - view->pan_center.y) / scale) + view->zoom_center.y,
+    v2i raster_point = {
+        (i32)((canvas_point.x - view->pan_center.x) / scale) + view->zoom_center.x,
+        (i32)((canvas_point.y - view->pan_center.y) / scale) + view->zoom_center.y,
     };
     return raster_point;
 }
 
 v2l
-raster_to_canvas_with_scale(CanvasView* view, v2l raster_point, i64 scale)
+raster_to_canvas_with_scale(CanvasView* view, v2i raster_point, i64 scale)
 {
     v2l canvas_point = {
         ((raster_point.x - view->zoom_center.x) * scale) + view->pan_center.x,
@@ -28,12 +28,12 @@ raster_to_canvas_with_scale(CanvasView* view, v2l raster_point, i64 scale)
 }
 
 v2l
-raster_to_canvas(CanvasView* view, v2l raster_point)
+raster_to_canvas(CanvasView* view, v2i raster_point)
 {
     return raster_to_canvas_with_scale(view, raster_point, view->scale);
 }
 
-v2l
+v2i
 canvas_to_raster(CanvasView* view, v2l canvas_point)
 {
     return canvas_to_raster_with_scale(view, canvas_point, view->scale);
@@ -85,8 +85,8 @@ Rect
 canvas_rect_to_raster_rect(CanvasView* view, Rect canvas_rect)
 {
     Rect raster_rect;
-    raster_rect.bot_right = canvas_to_raster(view, canvas_rect.bot_right);
-    raster_rect.top_left = canvas_to_raster(view, canvas_rect.top_left);
+    raster_rect.bot_right = v2i_to_v2l(canvas_to_raster(view, canvas_rect.bot_right));
+    raster_rect.top_left = v2i_to_v2l(canvas_to_raster(view, canvas_rect.top_left));
     return raster_rect;
 }
 

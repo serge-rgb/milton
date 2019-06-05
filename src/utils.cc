@@ -44,6 +44,13 @@ v2i_to_v2l(v2i p)
     return v2l{p.x, p.y};
 }
 
+v2i
+v2l_to_v2i(v2l p)
+{
+    return v2i{(i32)p.x, (i32)p.y};
+}
+
+
 v2f
 v2i_to_v2f(v2i p)
 {

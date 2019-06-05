@@ -1027,7 +1027,7 @@ picker_update_points(ColorPicker* picker, float angle)
     picker->data.hsv.h = radians_to_degrees(angle);
     // Update the triangle
     float radius = 0.9f * (picker->wheel_radius - picker->wheel_half_width);
-    v2f center = v2l_to_v2f(VEC2L(picker->center));
+    v2f center = v2i_to_v2f(picker->center);
     {
         v2f point = polar_to_cartesian(-angle, radius);
         point = point + center;
@@ -1312,7 +1312,7 @@ exporter_input(Exporter* exporter, MiltonInput* input)
     b32 changed = false;
     if ( input->input_count > 0 ) {
         changed = true;
-        v2i point = VEC2I(input->points[input->input_count - 1]);
+        v2i point = input->points[input->input_count - 1];
         if ( exporter->state == ExporterState_EMPTY ||
              exporter->state == ExporterState_SELECTED ) {
             exporter->pivot = point;
@@ -1383,7 +1383,7 @@ b32
 gui_consume_input(MiltonGui* gui, MiltonInput* input)
 {
     b32 accepts = false;
-    v2i point = VEC2I(input->points[0]);
+    v2i point = input->points[0];
     if ( gui->visible ) {
         accepts = gui_point_hovers(gui, point);
         if ( !picker_is_active(&gui->picker) &&

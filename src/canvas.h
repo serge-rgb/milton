@@ -88,8 +88,8 @@ struct CanvasViewPreV4
 b32     is_eraser(v4f color);
 
 
-v2l     canvas_to_raster (CanvasView* view, v2l canvas_point);
-v2l     raster_to_canvas (CanvasView* view, v2l raster_point);
+v2i     canvas_to_raster (CanvasView* view, v2l canvas_point);
+v2l     raster_to_canvas (CanvasView* view, v2i raster_point);
 
 b32     stroke_point_contains_point (v2l p0, i64 r0, v2l p1, i64 r1);  // Does point p0 with radius r0 contain point p1 with radius r1?
 Rect    bounding_box_for_stroke (Stroke* stroke);

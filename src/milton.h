@@ -113,7 +113,7 @@ struct Eyedropper
 struct SmoothFilter
 {
     #define SMOOTHING_WINDOW 6
-    v2l points[SMOOTHING_WINDOW];
+    v2i points[SMOOTHING_WINDOW];
     size_t index;
     size_t n_points;
 };
@@ -237,14 +237,13 @@ struct MiltonInput
     int flags;  // MiltonInputFlags
     MiltonMode mode_to_set;
 
-    v2l  points[MAX_INPUT_BUFFER_ELEMS];
+    v2i  points[MAX_INPUT_BUFFER_ELEMS];
     f32  pressures[MAX_INPUT_BUFFER_ELEMS];
     i32  input_count;
 
     v2i  click;
     v2i  hover_point;
     i32  scale;
-    v2l  pan_delta;
 };
 
 
@@ -286,7 +285,7 @@ float   milton_get_brush_alpha(Milton* milton);
 void    milton_set_brush_alpha(Milton* milton, float alpha);
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
-void milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size);
+void milton_resize_and_pan(Milton* milton, v2i pan_delta, v2i new_screen_size);
 
 void milton_leave_mode(Milton* milton);
 void milton_switch_mode(Milton* milton, MiltonMode mode);

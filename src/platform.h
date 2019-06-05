@@ -57,8 +57,8 @@ struct PlatformState
     b32 was_panning;
     b32 waiting_for_pan_input; // Start panning from GUI menu.
 
-    v2l pan_start;
-    v2l pan_point;
+    v2i pan_start;
+    v2i pan_point;
 
     b32 should_quit;
     u32 window_id;
@@ -115,9 +115,8 @@ void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((void**)&(pointer));
 void    platform_deallocate_internal(void** ptr);
 float   platform_ui_scale(PlatformState* p);
-void    platform_point_to_pixel(PlatformState* ps, v2l* inout);
-void    platform_point_to_pixel_i(PlatformState* ps, v2i* inout);
-void    platform_pixel_to_point(PlatformState* ps, v2l* inout);
+void    platform_point_to_pixel(PlatformState* ps, v2i* inout);
+void    platform_pixel_to_point(PlatformState* ps, v2i* inout);
 
 #define milton_log platform_milton_log
 #define milton_log_args platform_milton_log_args

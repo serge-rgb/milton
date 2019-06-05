@@ -121,7 +121,7 @@ milton_load(Milton* milton)
             milton->view->screen_size = legacy_view.screen_size;
             milton->view->scale = legacy_view.scale;
             milton->view->zoom_center = legacy_view.zoom_center;
-            milton->view->pan_center = VEC2L(legacy_view.pan_center * -1);
+            milton->view->pan_center = v2i_to_v2l(legacy_view.pan_center * -1);
             milton->view->background_color = legacy_view.background_color;
             milton->view->working_layer_id = legacy_view.working_layer_id;
             milton->view->num_layers = legacy_view.num_layers;
@@ -206,7 +206,7 @@ milton_load(Milton* milton)
 
                             READ(points_32bit, sizeof(v2i), (size_t)stroke.num_points, fd);
                             for (int i = 0; i < stroke.num_points; ++i) {
-                                stroke.points[i] = VEC2L(points_32bit[i]);
+                                stroke.points[i] = v2i_to_v2l(points_32bit[i]);
                             }
                         }
 #if STROKE_DEBUG_VIZ

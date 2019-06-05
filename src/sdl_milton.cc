@@ -144,7 +144,7 @@ void
 panning_update(PlatformState* platform)
 {
     auto reset_pan_start = [platform]() {
-        platform->pan_start = VEC2L(platform->pointer);
+        platform->pan_start = platform->pointer;
         platform->pan_point = platform->pan_start;  // No huge pan_delta at beginning of pan.
     };
 
@@ -169,7 +169,7 @@ panning_update(PlatformState* platform)
                 platform->is_panning = false;
             }
             else {
-                platform->pan_point = VEC2L(platform->pointer);
+                platform->pan_point = platform->pointer;
             }
         }
         else {
@@ -243,7 +243,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         platform->is_pointer_down = true;
 
                         for ( int pi = 0; pi < EasyTab->NumPackets; ++pi ) {
-                            v2l point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
+                            v2i point = { EasyTab->PosX[pi], EasyTab->PosY[pi] };
 
                             platform_point_to_pixel(platform, &point);
 
@@ -267,7 +267,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                     if ( EasyTab->NumPackets > 0 ) {
                         v2i point = { EasyTab->PosX[EasyTab->NumPackets-1], EasyTab->PosY[EasyTab->NumPackets-1] };
 
-                        platform_point_to_pixel_i(platform, &point);
+                        platform_point_to_pixel(platform, &point);
 
                         milton_input.flags |= MiltonInputFlags_HOVERING;
 
@@ -293,11 +293,9 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         platform->force_next_frame = true;
                     }
                     else {
-                        v2l long_point = { event.button.x, event.button.y };
+                        v2i point = { event.button.x, event.button.y };
 
-                        platform_point_to_pixel(platform, &long_point);
-
-                        v2i point = v2i{(int)long_point.x, (int)long_point.y};
+                        platform_point_to_pixel(platform, &point);
 
                         if ( !platform->is_panning && point.x >= 0 && point.y > 0 ) {
                             milton_input.flags |= MiltonInputFlags_CLICK;
@@ -308,7 +306,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                             platform->is_middle_button_down = (event.button.button == SDL_BUTTON_MIDDLE);
 
                             if ( platform->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
-                                milton_input.points[platform->num_point_results++] = VEC2L(point);
+                                milton_input.points[platform->num_point_results++] = point;
                             }
                             if ( platform->num_pressure_results < MAX_INPUT_BUFFER_ELEMS ) {
                                 milton_input.pressures[platform->num_pressure_results++] = NO_PRESSURE_INFO;
@@ -338,7 +336,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                 }
                 input_point = {event.motion.x, event.motion.y};
 
-                platform_point_to_pixel_i(platform, &input_point);
+                platform_point_to_pixel(platform, &input_point);
 
                 platform->pointer = input_point;
 
@@ -351,7 +349,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         if (!platform->is_panning &&
                             (input_point.x >= 0 && input_point.y >= 0)) {
                             if (platform->num_point_results < MAX_INPUT_BUFFER_ELEMS) {
-                                milton_input.points[platform->num_point_results++] = VEC2L(input_point);
+                                milton_input.points[platform->num_point_results++] = input_point;
                             }
                             if (platform->num_pressure_results < MAX_INPUT_BUFFER_ELEMS) {
                                 milton_input.pressures[platform->num_pressure_results++] = NO_PRESSURE_INFO;
@@ -410,7 +408,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                 case SDL_WINDOWEVENT_SIZE_CHANGED: {
 
                     v2i size = { event.window.data1, event.window.data2 };
-                    platform_point_to_pixel_i(platform, &size);
+                    platform_point_to_pixel(platform, &size);
 
                     platform->width = size.w;
                     platform->height = size.h;
@@ -456,10 +454,10 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
             milton_input.flags |= MiltonInputFlags_END_STROKE;
             input_point = { event.button.x, event.button.y };
 
-            platform_point_to_pixel_i(platform, &input_point);
+            platform_point_to_pixel(platform, &input_point);
 
             if ( platform->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
-                milton_input.points[platform->num_point_results++] = VEC2L(input_point);
+                milton_input.points[platform->num_point_results++] = input_point;
             }
             // Start drawing hover as soon as we stop the stroke.
             milton_input.flags |= MiltonInputFlags_HOVERING;
@@ -582,7 +580,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     // Milton works in pixels, but macOS works distinguishing "points" and
     // "pixels", with most APIs working in points.
 
-    v2l size_px = { window_width, window_height };
+    v2i size_px = { window_width, window_height };
     platform_point_to_pixel(&platform, &size_px);
 
     platform.width = size_px.w;
@@ -784,7 +782,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
             // Convert x,y to pixels
             {
-               v2l v = { (long)x, (long)y };
+               v2i v = { x, y };
                platform_point_to_pixel(&platform, &v);
                x = v.x;
                y = v.y;
@@ -872,7 +870,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         // Clear pan delta if we are zooming
         if ( milton_input.scale != 0 ) {
-            milton_input.pan_delta = {};
             input_flags |= MiltonInputFlags_FULL_REFRESH;
         }
         else if ( platform.is_panning ) {
@@ -894,14 +891,13 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         milton_input.input_count = platform.num_point_results;
 
-        v2l pan_delta = platform.pan_point - platform.pan_start;
+        v2i pan_delta = platform.pan_point - platform.pan_start;
         if (    pan_delta.x != 0
              || pan_delta.y != 0
              || platform.width != milton->view->screen_size.x
              || platform.height != milton->view->screen_size.y ) {
             milton_resize_and_pan(milton, pan_delta, {platform.width, platform.height});
         }
-        milton_input.pan_delta = pan_delta;
 
         // Reset pan_start. Delta is not cumulative.
         platform.pan_start = platform.pan_point;
@@ -952,7 +948,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     if(!is_fullscreen) {
         bool save_prefs = prefs.width != platform.width || prefs.height != platform.height;
         if ( save_prefs ) {
-            v2l size =  { platform.width,platform.height };
+            v2i size =  { platform.width, platform.height };
             platform_pixel_to_point(&platform, &size);
 
             prefs.width  = size.w;

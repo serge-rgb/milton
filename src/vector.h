@@ -24,10 +24,6 @@ struct Vector2
 };
 
 
-Vector2<i32> VEC2I(Vector2<i64> o);
-
-Vector2<i64> VEC2L(Vector2<i32> o);
-
 // Types
 typedef Vector2<i32>     v2i;
 typedef Vector2<i64>     v2l;

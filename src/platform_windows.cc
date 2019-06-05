@@ -352,17 +352,12 @@ platform_ui_scale(PlatformState* p)
     return scale;
 }
 
-void    platform_point_to_pixel(PlatformState* ps, v2l* inout)
+void platform_point_to_pixel(PlatformState* ps, v2i* inout)
 {
 
 }
 
-void    platform_point_to_pixel_i(PlatformState* ps, v2i* inout)
-{
-
-}
-
-void    platform_pixel_to_point(PlatformState* ps, v2l* inout)
+void platform_pixel_to_point(PlatformState* ps, v2i* inout)
 {
 
 }

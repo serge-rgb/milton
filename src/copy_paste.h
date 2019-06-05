@@ -17,6 +17,9 @@ struct PastedStrokes
 
     SelectionId selection_id;
 
+    Rect bounds;
+    v2l offset;
+
     u64 num_sources;
     i32* source_stroke_ids;
 };
@@ -27,3 +30,5 @@ struct CopyPaste
 };
 
 void pasta_init(Arena*, CopyPaste* pasta);
+void pasta_input(CopyPaste* pasta, v2l point)
+;
