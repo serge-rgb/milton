@@ -9,7 +9,7 @@
 
 
 #if !defined(MILTON_DEBUG)  // Might be defined by cmake
-    #define MILTON_DEBUG 1
+    #define MILTON_DEBUG 0
 #endif
 
 
