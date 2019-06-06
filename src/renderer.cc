@@ -60,7 +60,7 @@ struct RenderBackend
     GLuint vbo_outline_sizes;
 
     // Handles for exporter rectangle.
-    GLuint vbo_exporter;
+    GLuint vbo_rect;
     GLuint exporter_indices;
     int exporter_indices_count;
 
@@ -646,88 +646,6 @@ gpu_update_scale(RenderBackend* r, i32 scale)
     #if STROKE_DEBUG_VIZ
         gl::set_uniform_i(r->stroke_debug_program, "u_scale", scale);
     #endif
-}
-
-void
-gpu_update_export_rect(RenderBackend* r, Exporter* exporter)
-{
-    if ( r->vbo_exporter == 0 ) {
-        glGenBuffers(1, &r->vbo_exporter);
-        mlt_assert(r->exporter_indices == 0);
-        glGenBuffers(1, &r->exporter_indices);
-    }
-
-    i32 x = min(exporter->pivot.x, exporter->needle.x);
-    i32 y = min(exporter->pivot.y, exporter->needle.y);
-    i32 w = MLT_ABS(exporter->pivot.x - exporter->needle.x);
-    i32 h = MLT_ABS(exporter->pivot.y - exporter->needle.y);
-
-    float left = 2*((float)    x/(r->width))-1;
-    float right = 2*((GLfloat)(x+w)/(r->width))-1;
-    float top = -(2*((GLfloat)y    /(r->height))-1);
-    float bottom = -(2*((GLfloat)(y+h)/(r->height))-1);
-
-    // Normalize to [-1,1]^2
-    v2f normalized_rect[] = {
-        { 2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1) },
-        { 2*((GLfloat)    x/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1) },
-        { 2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)(y+h)/(r->height))-1) },
-        { 2*((GLfloat)(x+w)/(r->width))-1, -(2*((GLfloat)y    /(r->height))-1) },
-    };
-
-    float px = 2.0f;
-    float line_width = px / r->height;
-
-    float toparr[] = {
-        // Top quad
-        left, top - line_width/2,
-        left, top + line_width/2,
-        right, top + line_width/2,
-        right, top - line_width/2,
-
-        // Bottom quad
-        left, bottom-line_width/2,
-        left, bottom+line_width/2,
-        right, bottom+line_width/2,
-        right, bottom-line_width/2,
-
-        // Left
-        left-line_width/2, top,
-        left-line_width/2, bottom,
-        left+line_width/2, bottom,
-        left+line_width/2, top,
-
-        // Right
-        right-line_width/2, top,
-        right-line_width/2, bottom,
-        right+line_width/2, bottom,
-        right+line_width/2, top,
-    };
-    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter);
-    DEBUG_gl_mark_buffer(r->vbo_exporter);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(toparr)*sizeof(*toparr), toparr, GL_DYNAMIC_DRAW);
-
-    u16 indices[] = {
-        // top
-        0,1,2,
-        2,3,0,
-
-        // bottom
-        4,5,6,
-        6,7,4,
-
-        // left
-        8,9,10,
-        10,11,8,
-
-        // right
-        12,13,14,
-        14,15,12,
-    };
-    glBindBuffer(GL_ARRAY_BUFFER, r->exporter_indices);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(indices)*sizeof(*indices), indices, GL_STATIC_DRAW);
-
-    r->exporter_indices_count = array_count(indices);
 }
 
 void
@@ -1658,9 +1576,9 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
         // Draw outline.
         glUseProgram(r->exporter_program);
         GLint loc = glGetAttribLocation(r->exporter_program, "a_position");
-        if ( loc>=0 && r->vbo_exporter > 0 ) {
-            DEBUG_gl_validate_buffer(r->vbo_exporter);
-            gl::vertex_attrib_v2f(r->exporter_program, "a_position", r->vbo_exporter);
+        if ( loc>=0 && r->vbo_rect > 0 ) {
+            DEBUG_gl_validate_buffer(r->vbo_rect);
+            gl::vertex_attrib_v2f(r->exporter_program, "a_position", r->vbo_rect);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r->exporter_indices);
 
@@ -1794,15 +1712,17 @@ gpu_release_data(RenderBackend* r)
 }
 
 
-void imm_begin_frame(RenderBackend* r)
+void
+imm_begin_frame(RenderBackend* r)
 {
     r->imm_flags = 0;
 }
 
-void imm_rect(RenderBackend* r, float left, float right, float top, float bottom, float line_width)
+void
+imm_rect(RenderBackend* r, float left, float right, float top, float bottom, float line_width)
 {
-    if ( r->vbo_exporter == 0 ) {
-        glGenBuffers(1, &r->vbo_exporter);
+    if ( r->vbo_rect == 0 ) {
+        glGenBuffers(1, &r->vbo_rect);
         mlt_assert(r->exporter_indices == 0);
         glGenBuffers(1, &r->exporter_indices);
     }
@@ -1832,8 +1752,8 @@ void imm_rect(RenderBackend* r, float left, float right, float top, float bottom
         right+line_width/r->width, bottom,
         right+line_width/r->width, top,
     };
-    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_exporter);
-    DEBUG_gl_mark_buffer(r->vbo_exporter);
+    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_rect);
+    DEBUG_gl_mark_buffer(r->vbo_rect);
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)array_count(toparr)*sizeof(*toparr), toparr, GL_DYNAMIC_DRAW);
 
     u16 indices[] = {
@@ -1860,4 +1780,11 @@ void imm_rect(RenderBackend* r, float left, float right, float top, float bottom
 
     r->imm_flags |= ImmediateFlag_RECT;
 }
+
+void
+imm_polygon(RenderBackend* renderer, v2i* points, sz num_points)
+{
+
+}
+
 

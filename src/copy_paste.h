@@ -30,5 +30,4 @@ struct CopyPaste
 };
 
 void pasta_init(Arena*, CopyPaste* pasta);
-void pasta_input(CopyPaste* pasta, v2l point)
-;
+void pasta_input(CopyPaste* pasta, v2l point);

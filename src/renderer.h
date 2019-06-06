@@ -62,8 +62,11 @@ b32 gpu_init(RenderBackend* renderer, CanvasView* view, ColorPicker* picker);
 
 
 // Immediate-mode functions
+
 void imm_begin_frame(RenderBackend* renderer);
 void imm_rect(RenderBackend* renderer, float left, float right, float top, float bottom, float line_width);
+void imm_polygon(RenderBackend* renderer, v2i* points, sz num_points);
+
 // End of immediate-mode functions
 
 enum BrushOutlineEnum
@@ -81,7 +84,6 @@ void gpu_update_brush_outline(RenderBackend* renderer, i32 cx, i32 cy, i32 radiu
 void gpu_resize(RenderBackend* renderer, CanvasView* view);
 void gpu_update_picker(RenderBackend* renderer, ColorPicker* picker);
 void gpu_update_scale(RenderBackend* renderer, i32 scale);
-void gpu_update_export_rect(RenderBackend* renderer, Exporter* exporter);
 void gpu_update_background(RenderBackend* renderer, v3f background_color);
 void gpu_update_canvas(RenderBackend* renderer, CanvasState* canvas, CanvasView* view);
 
