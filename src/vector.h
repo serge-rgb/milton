@@ -72,6 +72,8 @@ typedef Vector2<float>   v2f;
 
 operator2_vector(+)
 operator2_vector(-)
+operator2_vector(*)
+operator2_vector(/)
 operator2_assign(+=)
 operator2_assign(-=)
 operator2_scalar(*)

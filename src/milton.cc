@@ -1367,6 +1367,12 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     if ( milton->current_mode == MiltonMode::SELECT ) {
         pasta_input(milton->pasta, raster_to_canvas(milton->view, input->hover_point));
+        v2f points[] = {
+            v2f{ 0.0f, -0.5f },
+            v2f{ 0.5f, 0.5f },
+            v2f{ -0.5f, 0.5f }
+        };
+        imm_polygon(milton->renderer, points, array_count(points), 1.0f);
     }
 
     // ---- End stroke
