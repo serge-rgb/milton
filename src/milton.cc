@@ -1372,7 +1372,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             v2f{ 0.5f, 0.5f },
             v2f{ -0.5f, 0.5f }
         };
-        imm_polygon(milton->renderer, points, array_count(points), 1.0f);
+        imm_polygon(milton->renderer, points, array_count(points), 200.0f);
     }
 
     // ---- End stroke

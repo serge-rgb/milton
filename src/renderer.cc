@@ -1604,7 +1604,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
             //glDrawElements(GL_TRIANGLES, r->rect_indices_count, GL_UNSIGNED_SHORT, 0);
             // glDrawElements(GL_TRIANGLES, r->rect_indices_count, GL_UNSIGNED_SHORT, 0);
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
         }
     }
     POP_GRAPHICS_GROUP();  // outlines
@@ -1812,11 +1812,10 @@ imm_polygon(RenderBackend* r, v2f* points, sz num_points, f32 line_width)
         glGenBuffers(1, &r->polygon_indices);
     }
 
-    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_polygon);
-    DEBUG_gl_mark_buffer(r->vbo_polygon);
 
-    sz num_verts = num_points * 2;
+    sz num_verts = num_points * 2 + 2;
     v2f* verts = arena_alloc_array(&r->frame_arena, num_verts, v2f);
+
     v2f centroid = {};
     for (sz i = 0; i < num_points; ++i) {
         centroid += points[i];
@@ -1829,17 +1828,21 @@ imm_polygon(RenderBackend* r, v2f* points, sz num_points, f32 line_width)
     };
 
     sz vert_i = 0;
-    for (sz point_i = 0; point_i < num_points; ++point_i) {
-        v2f point = points[point_i];
+    for (sz point_i = 0; point_i < num_points + 1; ++point_i) {
+        v2f point = points[point_i % num_points];
         v2f offset = (direction(point) * v2f { line_width, line_width} ) / v2f{ (f32)r->width, (f32)r->height };
-        verts[vert_i++] = point + offset;
-        verts[vert_i++] = point - offset;
+        float off = 0.005f;
+        verts[vert_i++] = (point - centroid) * (1.0f + off) + centroid;
+        verts[vert_i++] = (point - centroid) * (1.0f - off) + centroid;
     }
 
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_points*sizeof(*points), points, GL_DYNAMIC_DRAW);
+    DEBUG_gl_mark_buffer(r->vbo_polygon);
 
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_polygon);
+    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_verts*sizeof(*verts), verts, GL_DYNAMIC_DRAW);
 
+    // glBindBuffer(GL_ARRAY_BUFFER, r->polygon_indices);
+    // glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_verts*sizeof(*inds), inds, GL_DYNAMIC_DRAW);
 
     r->imm_flags |= ImmediateFlag_POLYGON;
 }
