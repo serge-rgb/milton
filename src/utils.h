@@ -52,7 +52,7 @@ v2i v2l_to_v2i(v2l p);
 #define DOT(a, b)  ((a).x * (b).x + (a).y * (b).y)
 
 #define I64_MAX 9223372036854775807L
-#define I64_MIN -9223372036854775808L
+#define I64_MIN -9223372036854775807L
 
 f32 magnitude(v2f a);
 
