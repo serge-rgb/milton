@@ -68,8 +68,7 @@ struct RenderBackend
     sz rect_indices_count;
 
     GLuint vbo_polygon;
-    GLuint polygon_indices;
-    sz polygon_indices_count;
+    sz polygon_vert_count;
 
     u32 imm_flags;  // ImmediateFlag
 
@@ -1604,7 +1603,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
             //glDrawElements(GL_TRIANGLES, r->rect_indices_count, GL_UNSIGNED_SHORT, 0);
             // glDrawElements(GL_TRIANGLES, r->rect_indices_count, GL_UNSIGNED_SHORT, 0);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, r->polygon_vert_count);
         }
     }
     POP_GRAPHICS_GROUP();  // outlines
@@ -1808,8 +1807,6 @@ imm_polygon(RenderBackend* r, v2f* points, sz num_points, f32 line_width)
 {
     if (r->vbo_polygon == 0) {
         glGenBuffers(1, &r->vbo_polygon);
-        mlt_assert(r->polygon_indices == 0);
-        glGenBuffers(1, &r->polygon_indices);
     }
 
 
@@ -1840,6 +1837,8 @@ imm_polygon(RenderBackend* r, v2f* points, sz num_points, f32 line_width)
 
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo_polygon);
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_verts*sizeof(*verts), verts, GL_DYNAMIC_DRAW);
+
+    r->polygon_vert_count = num_verts;
 
     // glBindBuffer(GL_ARRAY_BUFFER, r->polygon_indices);
     // glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_verts*sizeof(*inds), inds, GL_DYNAMIC_DRAW);
