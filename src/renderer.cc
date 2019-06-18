@@ -1808,27 +1808,40 @@ imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
     sz num_verts = num_points * 2 + 2;
     v2f* verts = arena_alloc_array(&r->frame_arena, num_verts, v2f);
 
-    auto normal = [points, num_points](i64 i) {
+    sz vert_i = 0;
+    for (sz _i = 0; _i < num_points + 1; ++_i) {
+        i64 i = _i % num_points;
+
         i64 in = (i + 1) % num_points;
         i64 ip = (i - 1) % num_points;
         if (ip < 0) {
             ip = ip * (1 - num_points);
         }
 
-        v2f n1 = transpose_left(normalized(points[i] - points[ip]));
-        v2f n2 = transpose_left(normalized(points[in] - points[i]));
-        v2f n = normalized(n1 + n2);
-        return n;
-    };
+        v2f point = points[i];
+        v2f prev = points[ip];
+        v2f next = points[in];
 
-    sz vert_i = 0;
-    for (sz i = 0; i < num_points + 1; ++i) {
-        sz point_i = i % num_points;
+        v2f normal = {}; {
+            // TODO: Get right transpose based on winding
+            v2f n1 = transpose_left(normalized(point - prev));
+            v2f n2 = transpose_left(normalized(next - point));
+            normal = normalized(n1 + n2);
+        }
+        f32 cos_2_theta = DOT(prev-point, next - point); {
+            cos_2_theta /= magnitude(prev - point);  // TODO: Sanitize points so that two consecutive points are never equal
+            cos_2_theta /= magnitude(next - point);
+        }
+        f32 sin_2_theta = sqrt(0.5f * (1 - cos_2_theta));
 
-        v2f point = points[point_i];
-        v2f offset = (normal(point_i) * v2f { line_width, line_width} ) / v2f{ (f32)r->width, (f32)r->height };
+        f32 length = line_width * ( 1 / sin_2_theta );
+
+        // Note: We could divide by (W,H) instead of (W, W) and also figure out how to get the math right to preserve line width, but we only live so long.
+        v2f offset = (normal * v2f { length, length} ) / v2f{ (f32)r->width, (f32)r->width };
+        v2f inner_point = point + offset;
+
         verts[vert_i++] = point;
-        verts[vert_i++] = point + offset;
+        verts[vert_i++] = inner_point;
     }
 
     DEBUG_gl_mark_buffer(r->vbo_polygon);
