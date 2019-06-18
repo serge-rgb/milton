@@ -112,12 +112,25 @@ norm(v2f v)
 }
 
 v2f
-normalized (v2f v)
+normalized(v2f v)
 {
    v2f result = v / norm(v);
    return result;
 }
 
+v2f
+transpose_left(v2f v)
+{
+    v2f result = { -v.y, v.x };
+    return result;
+}
+
+v2f
+transpose_right(v2f v)
+{
+    v2f result = { v.y, -v.x };
+    return result;
+}
 
 // Could be called a signed area. `orientation(a, b, c) / 2` is the area of the
 // triangle.

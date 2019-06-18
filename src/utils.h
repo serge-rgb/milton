@@ -66,7 +66,10 @@ f32 radians_to_degrees(f32 r);
 
 f32 norm(v2f v);
 
-v2f normalized (v2f v);
+v2f normalized(v2f v);
+
+v2f transpose_left(v2f v);
+v2f transpose_right(v2f v);
 
 #define SQUARE(x) ((x) * (x))
 

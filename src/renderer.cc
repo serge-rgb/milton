@@ -1599,10 +1599,6 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
             DEBUG_gl_validate_buffer(r->vbo_polygon);
             gl::vertex_attrib_v2f(r->exporter_program, "a_position", r->vbo_polygon);
 
-            //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r->rect_indices);
-
-            //glDrawElements(GL_TRIANGLES, r->rect_indices_count, GL_UNSIGNED_SHORT, 0);
-            // glDrawElements(GL_TRIANGLES, r->rect_indices_count, GL_UNSIGNED_SHORT, 0);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, r->polygon_vert_count);
         }
     }
@@ -1803,34 +1799,36 @@ imm_rect(RenderBackend* r, float left, float right, float top, float bottom, flo
 }
 
 void
-imm_polygon(RenderBackend* r, v2f* points, sz num_points, f32 line_width)
+imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
 {
     if (r->vbo_polygon == 0) {
         glGenBuffers(1, &r->vbo_polygon);
     }
 
-
     sz num_verts = num_points * 2 + 2;
     v2f* verts = arena_alloc_array(&r->frame_arena, num_verts, v2f);
 
-    v2f centroid = {};
-    for (sz i = 0; i < num_points; ++i) {
-        centroid += points[i];
-    }
-    centroid /= (f32)num_points;
+    auto normal = [points, num_points](i64 i) {
+        i64 in = (i + 1) % num_points;
+        i64 ip = (i - 1) % num_points;
+        if (ip < 0) {
+            ip = ip * (1 - num_points);
+        }
 
-    auto direction = [centroid](v2f x) {
-        v2f diff = x - centroid;
-        return normalized(diff);
+        v2f n1 = transpose_left(normalized(points[i] - points[ip]));
+        v2f n2 = transpose_left(normalized(points[in] - points[i]));
+        v2f n = normalized(n1 + n2);
+        return n;
     };
 
     sz vert_i = 0;
-    for (sz point_i = 0; point_i < num_points + 1; ++point_i) {
-        v2f point = points[point_i % num_points];
-        v2f offset = (direction(point) * v2f { line_width, line_width} ) / v2f{ (f32)r->width, (f32)r->height };
-        float off = 0.005f;
-        verts[vert_i++] = (point - centroid) * (1.0f + off) + centroid;
-        verts[vert_i++] = (point - centroid) * (1.0f - off) + centroid;
+    for (sz i = 0; i < num_points + 1; ++i) {
+        sz point_i = i % num_points;
+
+        v2f point = points[point_i];
+        v2f offset = (normal(point_i) * v2f { line_width, line_width} ) / v2f{ (f32)r->width, (f32)r->height };
+        verts[vert_i++] = point;
+        verts[vert_i++] = point + offset;
     }
 
     DEBUG_gl_mark_buffer(r->vbo_polygon);
@@ -1839,9 +1837,6 @@ imm_polygon(RenderBackend* r, v2f* points, sz num_points, f32 line_width)
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_verts*sizeof(*verts), verts, GL_DYNAMIC_DRAW);
 
     r->polygon_vert_count = num_verts;
-
-    // glBindBuffer(GL_ARRAY_BUFFER, r->polygon_indices);
-    // glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_verts*sizeof(*inds), inds, GL_DYNAMIC_DRAW);
 
     r->imm_flags |= ImmediateFlag_POLYGON;
 }

@@ -65,7 +65,7 @@ b32 gpu_init(RenderBackend* renderer, CanvasView* view, ColorPicker* picker);
 
 void imm_begin_frame(RenderBackend* renderer);
 void imm_rect(RenderBackend* renderer, float left, float right, float top, float bottom, float line_width);
-void imm_polygon(RenderBackend* renderer, v2f* points, sz num_points, float line_width);
+void imm_polygon(RenderBackend* renderer, v2f* points, i64 num_points, float line_width);
 
 // End of immediate-mode functions
 
