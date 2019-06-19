@@ -1085,19 +1085,22 @@ peek_out_tick(Milton* milton)
         gpu_update_scale(milton->renderer, milton_render_scale(milton));
 
         {
-            i32 width = 100;
-            i32 height = 50;
             i32 line_width = 2;
 
             // TODO: Interpolate pan vector
             f32 scale = (f32)milton_render_scale_with_interpolation(milton, interp);
 
             f32 cx = 2 * milton->hover_point.x / (f32)milton->view->screen_size.w - 1;
-            f32 cy = (2 * milton->hover_point.y / (f32)milton->view->screen_size.h - 1)*-1;
+            f32 cy = 2 * milton->hover_point.y / (f32)milton->view->screen_size.h - 1;
             f32 left = cx - milton->view->scale / scale;
             f32 right = cx + milton->view->scale / scale;
             f32 top = cy - milton->view->scale / scale;
             f32 bottom = cy + milton->view->scale / scale;
+
+            left = ((left + 1)/2) * milton->view->screen_size.w;
+            right = ((right + 1)/2) * milton->view->screen_size.w;
+            top = ((top + 1)/2) * milton->view->screen_size.h;
+            bottom = ((bottom + 1)/2) * milton->view->screen_size.h;
 
             imm_rect(milton->renderer, left, right, top, bottom, line_width);
         }
@@ -1278,6 +1281,9 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 }
             }
         }
+        else if (milton->current_mode == MiltonMode::SELECT) {
+            pasta_input(milton->pasta, input);
+        }
     }
 
     if ( milton->current_mode == MiltonMode::EXPORTING ) {
@@ -1290,10 +1296,10 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             i32 w = MLT_ABS(exporter->pivot.x - exporter->needle.x);
             i32 h = MLT_ABS(exporter->pivot.y - exporter->needle.y);
 
-            float left = 2*((float)    x / (milton->view->screen_size.w))-1;
-            float right = 2*((GLfloat)(x+w) / (milton->view->screen_size.w))-1;
-            float top = -(2*((GLfloat)y     / (milton->view->screen_size.h))-1);
-            float bottom = -(2*((GLfloat)(y+h) / (milton->view->screen_size.h))-1);
+            float left = (float)    x ;
+            float right = (GLfloat)(x + w) ;
+            float top = ((GLfloat)y);
+            float bottom = ((GLfloat)(y + h));
 
             imm_rect(milton->renderer, left, right, top, bottom, 2.0);
         }
@@ -1366,13 +1372,17 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     if ( milton->current_mode == MiltonMode::SELECT ) {
-        pasta_input(milton->pasta, raster_to_canvas(milton->view, input->hover_point));
+        pasta_input(milton->pasta, input);
         v2f points[] = {
-            v2f{ 0.0f, -0.5f },
-            v2f{ 0.5f, 0.5f },
-            v2f{ -0.5f, 0.5f }
+            v2f{ 0.0f, -100.0f },
+            v2f{ 100.0f, 100.0f },
+            v2f{ -100.0f, 300.0f }
         };
-        imm_polygon(milton->renderer, points, array_count(points), 2.0f);
+
+        points[0] += v2f{300,300};
+        points[1] += v2f{300,300};
+        points[2] += v2f{300,300};
+        imm_polygon(milton->renderer, points, array_count(points), 40.0f);
     }
 
     // ---- End stroke

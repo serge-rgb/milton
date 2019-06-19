@@ -521,7 +521,7 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
         r->exporter_program = glCreateProgram();
 
         GLuint objs[2] = {};
-        objs[0] = gl::compile_shader(g_simple_v, GL_VERTEX_SHADER);
+        objs[0] = gl::compile_shader(g_simple_screen_v, GL_VERTEX_SHADER);
         objs[1] = gl::compile_shader(g_exporter_rect_f, GL_FRAGMENT_SHADER);
 
         gl::link_program(r->exporter_program, objs, array_count(objs));
@@ -1746,28 +1746,28 @@ imm_rect(RenderBackend* r, float left, float right, float top, float bottom, flo
 
     float toparr[] = {
         // Top quad
-        left, top - line_width/r->height,
-        left, top + line_width/r->height,
-        right, top + line_width/r->height,
-        right, top - line_width/r->height,
+        left, top - line_width,
+        left, top + line_width,
+        right, top + line_width,
+        right, top - line_width,
 
         // Bottom quad
-        left, bottom-line_width/r->height,
-        left, bottom+line_width/r->height,
-        right, bottom+line_width/r->height,
-        right, bottom-line_width/r->height,
+        left, bottom-line_width,
+        left, bottom+line_width,
+        right, bottom+line_width,
+        right, bottom-line_width,
 
         // Left
-        left-line_width/r->width, top,
-        left-line_width/r->width, bottom,
-        left+line_width/r->width, bottom,
-        left+line_width/r->width, top,
+        left-line_width, top,
+        left-line_width, bottom,
+        left+line_width, bottom,
+        left+line_width, top,
 
         // Right
-        right-line_width/r->width, top,
-        right-line_width/r->width, bottom,
-        right+line_width/r->width, bottom,
-        right+line_width/r->width, top,
+        right-line_width, top,
+        right-line_width, bottom,
+        right+line_width, bottom,
+        right+line_width, top,
     };
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo_rect);
     DEBUG_gl_mark_buffer(r->vbo_rect);
@@ -1834,10 +1834,9 @@ imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
         }
         f32 sin_2_theta = sqrt(0.5f * (1 - cos_2_theta));
 
-        f32 length = line_width * ( 1 / sin_2_theta );
+        f32 length = line_width * ( 1 / sin_2_theta );  // TODO: Sanitize points so that sin_2_theta can't be zero, which will only happen when the differences are colinear
 
-        // Note: We could divide by (W,H) instead of (W, W) and also figure out how to get the math right to preserve line width, but we only live so long.
-        v2f offset = (normal * v2f { length, length} ) / v2f{ (f32)r->width, (f32)r->width };
+        v2f offset = (normal * v2f { length, length});
         v2f inner_point = point + offset;
 
         verts[vert_i++] = point;

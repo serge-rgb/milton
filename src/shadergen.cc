@@ -201,6 +201,7 @@ main(int argc, char** argv)
         output_shader(outfd, "src/layer_blend.v.glsl");
         output_shader(outfd, "src/layer_blend.f.glsl");
         output_shader(outfd, "src/simple.v.glsl");
+        output_shader(outfd, "src/simple_screen.v.glsl");
         output_shader(outfd, "src/simple.f.glsl");
         output_shader(outfd, "src/outline.v.glsl");
         output_shader(outfd, "src/outline.f.glsl");

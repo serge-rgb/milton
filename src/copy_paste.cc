@@ -6,7 +6,9 @@ pasta_init(Arena* a, CopyPaste* pasta)
 }
 
 void
-pasta_input(CopyPaste* pasta, v2l point)
+pasta_input(CopyPaste* pasta, MiltonInput* input)
 {
-
+    for ( i64 input_i = 0; input_i < input->input_count; input_i++ ) {
+        v2i point = input->points[input_i];
+    }
 }

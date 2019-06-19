@@ -7,5 +7,5 @@ uniform vec2      u_screen_size;
 void
 main()
 {
-    gl_Position = vec4(a_position, 0, 1);
+    gl_Position = vec4(vec2(2,-2) * (a_position / u_screen_size) + vec2(-1,1), 0, 1);
 }
