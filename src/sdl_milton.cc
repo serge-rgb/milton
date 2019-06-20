@@ -829,7 +829,8 @@ milton_main(bool is_fullscreen, char* file_to_open)
                     }
                     else if ( milton->current_mode == MiltonMode::PEN ||
                               milton->current_mode == MiltonMode::ERASER ||
-                              milton->current_mode == MiltonMode::PRIMITIVE ) {
+                              milton->current_mode == MiltonMode::PRIMITIVE ||
+                              milton->current_mode == MiltonMode::SELECT ) {
                         #if MILTON_HARDWARE_BRUSH_CURSOR
                             cursor_set_and_show(platform.cursor_brush);
                         #else

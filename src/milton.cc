@@ -1237,7 +1237,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     // If the current mode is Pen or Eraser, we show the hover. It can be unset under various conditions later.
-    if ( current_mode_is_for_drawing(milton) ) {
+    if ( current_mode_is_for_drawing(milton) ||
+         milton->current_mode == MiltonMode::SELECT ) {
         brush_outline_should_draw = true;
     }
 
@@ -1496,7 +1497,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     #if MILTON_HARDWARE_BRUSH_CURSOR
-        if ( milton_get_brush_radius(milton) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ) {
+        if ( current_mode_is_for_drawing(milton) && milton_get_brush_radius(milton) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ) {
             brush_outline_should_draw = false;
         }
     #endif
@@ -1509,8 +1510,13 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     if ( !(milton->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW) ) {
         float radius = -1;
-        if (brush_outline_should_draw && current_mode_is_for_drawing(milton)) {
-            radius = (float)milton_get_brush_radius(milton);
+        if (brush_outline_should_draw) {
+            if (current_mode_is_for_drawing(milton)) {
+                radius = (float)milton_get_brush_radius(milton);
+            }
+            else if (milton->current_mode == MiltonMode::SELECT) {
+                radius = 10;
+            }
         }
 
         gpu_update_brush_outline(milton->renderer,
