@@ -1801,56 +1801,56 @@ imm_rect(RenderBackend* r, float left, float right, float top, float bottom, flo
 void
 imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
 {
-    if (r->vbo_polygon == 0) {
-        glGenBuffers(1, &r->vbo_polygon);
+    if (num_points > 0) {
+        if (r->vbo_polygon == 0) {
+            glGenBuffers(1, &r->vbo_polygon);
+        }
+
+        sz num_verts = num_points * 2 + 2;
+        v2f* verts = arena_alloc_array(&r->frame_arena, num_verts, v2f);
+
+        sz vert_i = 0;
+        for (sz _i = 0; _i < num_points + 1; ++_i) {
+            i64 i = _i % num_points;
+
+            i64 in = (i + 1) % num_points;
+            i64 ip = (i - 1) % num_points;
+            if (ip < 0) {
+                ip = ip * (1 - num_points);
+            }
+
+            v2f point = points[i];
+            v2f prev = points[ip];
+            v2f next = points[in];
+
+            v2f normal = {}; {
+                // TODO: Get right transpose based on winding
+                v2f n1 = transpose_left(normalized(point - prev));
+                v2f n2 = transpose_left(normalized(next - point));
+                normal = normalized(n1 + n2);
+            }
+            f32 cos_2_theta = DOT(prev-point, next - point); {
+                cos_2_theta /= magnitude(prev - point);  // TODO: Sanitize points so that two consecutive points are never equal
+                cos_2_theta /= magnitude(next - point);
+            }
+            f32 sin_2_theta = sqrt(0.5f * (1 - cos_2_theta));
+
+            f32 length = line_width * ( 1 / sin_2_theta );  // TODO: Sanitize points so that sin_2_theta can't be zero, which will only happen when the differences are colinear
+
+            v2f offset = (normal * v2f { length, length});
+            v2f inner_point = point + offset;
+
+            verts[vert_i++] = point;
+            verts[vert_i++] = inner_point;
+        }
+
+        DEBUG_gl_mark_buffer(r->vbo_polygon);
+
+        glBindBuffer(GL_ARRAY_BUFFER, r->vbo_polygon);
+        glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_verts*sizeof(*verts), verts, GL_DYNAMIC_DRAW);
+
+        r->polygon_vert_count = num_verts;
+
+        r->imm_flags |= ImmediateFlag_POLYGON;
     }
-
-    sz num_verts = num_points * 2 + 2;
-    v2f* verts = arena_alloc_array(&r->frame_arena, num_verts, v2f);
-
-    sz vert_i = 0;
-    for (sz _i = 0; _i < num_points + 1; ++_i) {
-        i64 i = _i % num_points;
-
-        i64 in = (i + 1) % num_points;
-        i64 ip = (i - 1) % num_points;
-        if (ip < 0) {
-            ip = ip * (1 - num_points);
-        }
-
-        v2f point = points[i];
-        v2f prev = points[ip];
-        v2f next = points[in];
-
-        v2f normal = {}; {
-            // TODO: Get right transpose based on winding
-            v2f n1 = transpose_left(normalized(point - prev));
-            v2f n2 = transpose_left(normalized(next - point));
-            normal = normalized(n1 + n2);
-        }
-        f32 cos_2_theta = DOT(prev-point, next - point); {
-            cos_2_theta /= magnitude(prev - point);  // TODO: Sanitize points so that two consecutive points are never equal
-            cos_2_theta /= magnitude(next - point);
-        }
-        f32 sin_2_theta = sqrt(0.5f * (1 - cos_2_theta));
-
-        f32 length = line_width * ( 1 / sin_2_theta );  // TODO: Sanitize points so that sin_2_theta can't be zero, which will only happen when the differences are colinear
-
-        v2f offset = (normal * v2f { length, length});
-        v2f inner_point = point + offset;
-
-        verts[vert_i++] = point;
-        verts[vert_i++] = inner_point;
-    }
-
-    DEBUG_gl_mark_buffer(r->vbo_polygon);
-
-    glBindBuffer(GL_ARRAY_BUFFER, r->vbo_polygon);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)num_verts*sizeof(*verts), verts, GL_DYNAMIC_DRAW);
-
-    r->polygon_vert_count = num_verts;
-
-    r->imm_flags |= ImmediateFlag_POLYGON;
 }
-
-

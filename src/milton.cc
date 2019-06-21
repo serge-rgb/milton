@@ -528,11 +528,13 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->settings = arena_alloc_elem(&milton->root_arena, MiltonSettings);
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
     milton->persist = arena_alloc_elem(&milton->root_arena, MiltonPersist);
+    milton->pasta = arena_alloc_elem(&milton->root_arena, CopyPaste);
 
     milton->persist->target_MB_per_sec = 0.2f;
 
     gui_init(&milton->root_arena, milton->gui, ui_scale);
     settings_init(milton->settings);
+    pasta_init(&milton->root_arena, milton->pasta);
 
     milton->peek_out = arena_alloc_elem(&milton->root_arena, PeekOut);
 
@@ -631,29 +633,27 @@ upload_gui(Milton* milton)
     }
 }
 
+void
+milton_notify_screen_resize(Milton* milton)
+{
+    pasta_clear(milton->pasta);
+}
+
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 void
 milton_resize_and_pan(Milton* milton, v2i pan_delta, v2i new_screen_size)
 {
-    if ( milton->max_width <= new_screen_size.w ) {
-        milton->max_width = new_screen_size.w + 256;
-    }
-    if ( milton->max_height <= new_screen_size.h ) {
-        milton->max_height = new_screen_size.h + 256;
-    }
-
-    if ( new_screen_size.w < milton->max_width && new_screen_size.h < milton->max_height ) {
+    if (milton->view->screen_size != new_screen_size) {
         milton->view->screen_size = new_screen_size;
-
-        // Add delta to pan vector
-        v2l pan_center = milton->view->pan_center - (v2i_to_v2l(pan_delta) * milton->view->scale);
-
-        milton->view->pan_center = pan_center;
-
-        upload_gui(milton);
-    } else {
-        milton_die_gracefully("Fatal error. Screen size is more than Milton can handle.");
+        milton_notify_screen_resize(milton);
     }
+
+    // Add delta to pan vector
+    v2l pan_center = milton->view->pan_center - (v2i_to_v2l(pan_delta) * milton->view->scale);
+
+    milton->view->pan_center = pan_center;
+
+    upload_gui(milton);
 }
 
 void
@@ -716,39 +716,60 @@ milton_reset_canvas_and_set_default(Milton* milton)
 }
 
 void
-milton_switch_mode(Milton* milton, MiltonMode mode)
+milton_enter_mode(Milton* milton, MiltonMode mode)
 {
-    if ( mode != milton->current_mode ) {
+    if (mode != milton->current_mode) {
         milton->last_mode = milton->current_mode;
+        switch (mode) {
+            case MiltonMode::EXPORTING: {
+                if (  milton->gui->visible ) {
+                    gui_toggle_visibility(milton->gui);
+                }
+            } break;
+            default: { }
+        }
         milton->current_mode = mode;
+    }
+}
 
-        if ( milton->last_mode == MiltonMode::EYEDROPPER) {
+
+void
+milton_deinit_mode(Milton* milton)
+{
+    // Deinit mode
+    switch (milton->current_mode) {
+        case MiltonMode::EYEDROPPER: {
             eyedropper_deinit(milton->eyedropper);
-        }
+        } break;
+        case MiltonMode::EXPORTING: {
+            milton->gui->exporter = Exporter{};
+            if ( !milton->gui->visible ) {
+                gui_toggle_visibility(milton->gui);
+            }
+        } break;
+        case MiltonMode::SELECT: {
+            pasta_clear(milton->pasta);
+        } break;
+        default: {
 
-        if ( mode == MiltonMode::EXPORTING && milton->gui->visible ) {
-            gui_toggle_visibility(milton->gui);
-        }
-        if ( milton->last_mode == MiltonMode::EXPORTING && !milton->gui->visible ) {
-            gui_toggle_visibility(milton->gui);
-        }
+        } break;
     }
 }
 
 void
 milton_leave_mode(Milton* milton)
 {
-    // Deinit mode
-    switch (milton->current_mode) {
-        case MiltonMode::EXPORTING: {
-            milton->gui->exporter = Exporter{};
-        } break;
-        default: {
+    milton_deinit_mode(milton);
+    milton_enter_mode(milton, milton->last_mode);
+}
 
-        } break;
+void
+milton_switch_mode(Milton* milton, MiltonMode mode)
+{
+    if ( mode != milton->current_mode ) {
+        milton_deinit_mode(milton);
+        milton_enter_mode(milton, mode);
     }
-
-    milton_switch_mode(milton, milton->last_mode);
 }
 
 void
@@ -1282,9 +1303,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 }
             }
         }
-        else if (milton->current_mode == MiltonMode::SELECT) {
-            pasta_input(milton->pasta, input);
-        }
     }
 
     if ( milton->current_mode == MiltonMode::EXPORTING ) {
@@ -1374,16 +1392,18 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     if ( milton->current_mode == MiltonMode::SELECT ) {
         pasta_input(milton->pasta, input);
-        v2f points[] = {
-            v2f{ 0.0f, -100.0f },
-            v2f{ 100.0f, 100.0f },
-            v2f{ -100.0f, 300.0f }
-        };
+        // v2f points[] = {
+        //     v2f{ 0.0f, -100.0f },
+        //     v2f{ 100.0f, 100.0f },
+        //     v2f{ -100.0f, 300.0f }
+        // };
 
-        points[0] += v2f{300,300};
-        points[1] += v2f{300,300};
-        points[2] += v2f{300,300};
-        imm_polygon(milton->renderer, points, array_count(points), 40.0f);
+        // points[0] += v2f{300,300};
+        // points[1] += v2f{300,300};
+        // points[2] += v2f{300,300};
+        Selection* s = milton->pasta->selection;
+        v2f* points = s->points;
+        imm_polygon(milton->renderer, points, s->num_points, 40.0f);
     }
 
     // ---- End stroke

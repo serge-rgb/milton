@@ -139,9 +139,6 @@ struct Milton
 {
     b32 flags;  // See MiltonStateFlags
 
-    i32 max_width;
-    i32 max_height;
-
 #if MILTON_SAVE_ASYNC
     SDL_mutex*  save_mutex;
     i64         save_flag;   // See SaveEnum

@@ -8,7 +8,7 @@ typedef u32 SelectionId;
 struct Selection
 {
     u16 num_points;
-    v2l* points;
+    v2f* points;
 };
 
 struct PastedStrokes
@@ -31,3 +31,4 @@ struct CopyPaste
 
 void pasta_init(Arena*, CopyPaste* pasta);
 void pasta_input(CopyPaste* pasta, MiltonInput* input);
+void pasta_clear(CopyPaste* pasta);
