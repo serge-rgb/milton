@@ -1392,18 +1392,9 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     if ( milton->current_mode == MiltonMode::SELECT ) {
         pasta_input(milton->pasta, input);
-        // v2f points[] = {
-        //     v2f{ 0.0f, -100.0f },
-        //     v2f{ 100.0f, 100.0f },
-        //     v2f{ -100.0f, 300.0f }
-        // };
-
-        // points[0] += v2f{300,300};
-        // points[1] += v2f{300,300};
-        // points[2] += v2f{300,300};
         Selection* s = milton->pasta->selection;
         v2f* points = s->points;
-        imm_polygon(milton->renderer, points, s->num_points, 40.0f);
+        imm_polygon(milton->renderer, points, s->num_points, 2.0f);
     }
 
     // ---- End stroke

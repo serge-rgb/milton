@@ -237,6 +237,37 @@ intersect_line_segments(v2i a, v2i b,
     return hit;
 }
 
+f32
+signed_area(v2f a, v2f b, v2f c)
+{
+    v2f v1 = b - a;
+    v2f v2 = c - a;
+    // det | v1.x    v2.x |
+    //     | v1.y    v2.y |
+    f32 area = (v1.x * v2.y) - (v2.x * v1.y);
+    return area;
+}
+
+b32
+is_ccw(v2f* points, i64 num_points)
+{
+    b32 ccw = true;
+   if (num_points >= 3) {
+        v2f centroid = {};
+        for (i64 i = 0; i < num_points; ++i) {
+            centroid += points[i] / (f32)num_points;
+        }
+
+        f32 area = 0;
+        for (i64 i = 0; i < num_points - 1; ++i) {
+            area += signed_area(points[0], points[i], points[i + 1]);
+        }
+
+        ccw = area >= 0.0f;
+    }
+    return ccw;
+}
+
 i32
 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
 {

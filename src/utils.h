@@ -101,6 +101,8 @@ b32 intersect_line_segments(v2i a, v2i b,
                             v2i u, v2i v,
                             v2f* out_intersection);
 
+b32 is_ccw(v2f* points, i64 num_points);
+
 
 // ---------------
 // The mighty rect

@@ -1514,42 +1514,6 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
         }
     }
 
-    // Do post-processing on painting and on GUI elements. Draw to backbuffer
-
-    PUSH_GRAPHICS_GROUP("postproc");
-    if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, r->helper_texture);
-
-        gl::set_uniform_i(r->postproc_program, "u_canvas", 0);
-
-        glUseProgram(r->postproc_program);
-
-        GLint loc = glGetAttribLocation(r->postproc_program, "a_position");
-        if ( loc >= 0 ) {
-            DEBUG_gl_validate_buffer(r->vbo_screen_quad);
-            glBindBuffer(GL_ARRAY_BUFFER, r->vbo_screen_quad);
-            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray((GLuint)loc);
-            glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
-                                  /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
-                                  /*stride*/ 0, /*ptr*/ 0);
-
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
-    }
-    else {  // Resolve
-        glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebufferEXT(GL_READ_FRAMEBUFFER, r->fbo);
-        glBlitFramebufferEXT(0, 0, r->width, r->height,
-                             0, 0, r->width, r->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    }
-    POP_GRAPHICS_GROUP();
-
-    // Render outlines after doing AA.
-
     PUSH_GRAPHICS_GROUP("outlines");
     // Brush outline
     {
@@ -1603,6 +1567,40 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
         }
     }
     POP_GRAPHICS_GROUP();  // outlines
+
+    // Do post-processing on painting and on GUI elements. Draw to backbuffer
+
+    PUSH_GRAPHICS_GROUP("postproc");
+    if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
+        glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, r->helper_texture);
+
+        gl::set_uniform_i(r->postproc_program, "u_canvas", 0);
+
+        glUseProgram(r->postproc_program);
+
+        GLint loc = glGetAttribLocation(r->postproc_program, "a_position");
+        if ( loc >= 0 ) {
+            DEBUG_gl_validate_buffer(r->vbo_screen_quad);
+            glBindBuffer(GL_ARRAY_BUFFER, r->vbo_screen_quad);
+            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray((GLuint)loc);
+            glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
+                                  /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
+                                  /*stride*/ 0, /*ptr*/ 0);
+
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+    }
+    else {  // Resolve
+        glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
+        glBindFramebufferEXT(GL_READ_FRAMEBUFFER, r->fbo);
+        glBlitFramebufferEXT(0, 0, r->width, r->height,
+                             0, 0, r->width, r->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    }
+    POP_GRAPHICS_GROUP();
 
     glUseProgram(0);
     POP_GRAPHICS_GROUP(); // gpu_render
@@ -1801,6 +1799,9 @@ imm_rect(RenderBackend* r, float left, float right, float top, float bottom, flo
 void
 imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
 {
+    // TODO: Hash the points array.
+
+
     if (num_points > 0) {
         if (r->vbo_polygon == 0) {
             glGenBuffers(1, &r->vbo_polygon);
@@ -1808,6 +1809,8 @@ imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
 
         sz num_verts = num_points * 2 + 2;
         v2f* verts = arena_alloc_array(&r->frame_arena, num_verts, v2f);
+
+        b32 ccw = is_ccw(points, num_points);
 
         sz vert_i = 0;
         for (sz _i = 0; _i < num_points + 1; ++_i) {
@@ -1824,11 +1827,17 @@ imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
             v2f next = points[in];
 
             v2f normal = {}; {
-                // TODO: Get right transpose based on winding
-                v2f n1 = transpose_left(normalized(point - prev));
-                v2f n2 = transpose_left(normalized(next - point));
+                v2f n1, n2;
+                if (ccw) {
+                    n1 = transpose_left(normalized(point - prev));
+                    n2 = transpose_left(normalized(next - point));
+                } else {
+                    n1 = transpose_right(normalized(point - prev));
+                    n2 = transpose_right(normalized(next - point));
+                }
                 normal = normalized(n1 + n2);
             }
+
             f32 cos_2_theta = DOT(prev-point, next - point); {
                 cos_2_theta /= magnitude(prev - point);  // TODO: Sanitize points so that two consecutive points are never equal
                 cos_2_theta /= magnitude(next - point);
