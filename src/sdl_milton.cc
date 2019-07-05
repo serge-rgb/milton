@@ -326,8 +326,6 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         platform->is_middle_button_down = false;
                     }
                     pointer_up = true;
-                    milton_input.flags |= MiltonInputFlags_CLICKUP;
-                    milton_input.flags |= MiltonInputFlags_END_STROKE;
                 }
             } break;
             case SDL_MOUSEMOTION: {
@@ -450,8 +448,8 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
     if ( pointer_up ) {
         // Add final point
+        milton_input.flags |= MiltonInputFlags_POINTER_RELEASE;
         if ( !platform->is_panning && platform->is_pointer_down ) {
-            milton_input.flags |= MiltonInputFlags_END_STROKE;
             input_point = { event.button.x, event.button.y };
 
             platform_point_to_pixel(platform, &input_point);

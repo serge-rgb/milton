@@ -215,7 +215,7 @@ enum MiltonInputFlags
     MiltonInputFlags_NONE = 0,
 
     MiltonInputFlags_FULL_REFRESH        = 1 << 0,
-    MiltonInputFlags_END_STROKE          = 1 << 1,
+    MiltonInputFlags_POINTER_RELEASE     = 1 << 1,
     MiltonInputFlags_UNDO                = 1 << 2,
     MiltonInputFlags_REDO                = 1 << 3,
                                         // 1 << 4 free to use
@@ -226,7 +226,6 @@ enum MiltonInputFlags
     MiltonInputFlags_SAVE_FILE           = 1 << 9,
     MiltonInputFlags_OPEN_FILE           = 1 << 10,
     MiltonInputFlags_CLICK               = 1 << 11,
-    MiltonInputFlags_CLICKUP             = 1 << 12,
 };
 
 struct MiltonInput

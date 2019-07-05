@@ -24,9 +24,17 @@ struct PastedStrokes
     i32* source_stroke_ids;
 };
 
+enum PastaFSM
+{
+    PastaFSM_EMPTY,
+    PastaFSM_SELECTING,
+    PastaFSM_READY,
+};
+
 struct CopyPaste
 {
     Selection* selection;
+    PastaFSM fsm;
 };
 
 void pasta_init(Arena*, CopyPaste* pasta);

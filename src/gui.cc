@@ -1323,7 +1323,7 @@ exporter_input(Exporter* exporter, MiltonInput* input)
             exporter->needle = point;
         }
     }
-    if ( (input->flags & MiltonInputFlags_END_STROKE) && exporter->state != ExporterState_EMPTY ) {
+    if ( (input->flags & MiltonInputFlags_POINTER_RELEASE) && exporter->state != ExporterState_EMPTY ) {
         exporter->state = ExporterState_SELECTED;
         changed = true;
     }

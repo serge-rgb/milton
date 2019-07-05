@@ -248,24 +248,24 @@ signed_area(v2f a, v2f b, v2f c)
     return area;
 }
 
-b32
-is_ccw(v2f* points, i64 num_points)
+f32
+signed_area(v2f* points, i64 num_points)
 {
-    b32 ccw = true;
-   if (num_points >= 3) {
-        v2f centroid = {};
-        for (i64 i = 0; i < num_points; ++i) {
-            centroid += points[i] / (f32)num_points;
-        }
-
-        f32 area = 0;
+    f32 area = 0.0f;
+    if (num_points >= 3) {
         for (i64 i = 0; i < num_points - 1; ++i) {
             area += signed_area(points[0], points[i], points[i + 1]);
         }
-
-        ccw = area >= 0.0f;
     }
-    return ccw;
+    return area;
+}
+
+b32
+is_ccw(v2f* points, i64 num_points)
+{
+    f32 area = signed_area(points, num_points);
+
+    return area >= 0.0f;
 }
 
 i32

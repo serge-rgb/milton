@@ -1135,7 +1135,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     PROFILE_GRAPH_BEGIN(update);
 
-    b32 end_stroke = (input->flags & MiltonInputFlags_END_STROKE);
+    b32 end_stroke = (input->flags & MiltonInputFlags_POINTER_RELEASE);
 
     milton->render_settings.do_full_redraw = false;
 
@@ -1148,7 +1148,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     b32 should_save =
             ((input->flags & MiltonInputFlags_OPEN_FILE)) ||
             ((input->flags & MiltonInputFlags_SAVE_FILE)) ||
-            ((input->flags & MiltonInputFlags_END_STROKE)) ||
             ((input->flags & MiltonInputFlags_UNDO)) ||
             ((input->flags & MiltonInputFlags_REDO));
 
@@ -1380,7 +1379,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                              point);
             gpu_update_picker(milton->renderer, &milton->gui->picker);
         }
-        if( input->flags & MiltonInputFlags_CLICKUP ) {
+        if( input->flags & MiltonInputFlags_POINTER_RELEASE ) {
             if ( !(milton->flags & MiltonStateFlags_IGNORE_NEXT_CLICKUP) ) {
                 milton_switch_mode(milton, MiltonMode::PEN);
                 milton_update_brushes(milton);
@@ -1393,12 +1392,12 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     if ( milton->current_mode == MiltonMode::SELECT ) {
         pasta_input(milton->pasta, input);
         Selection* s = milton->pasta->selection;
-        v2f* points = s->points;
-        imm_polygon(milton->renderer, points, s->num_points, 2.0f);
+        imm_polygon(milton->renderer, s->points, s->num_points, 1.0f);
     }
 
     // ---- End stroke
     if ( end_stroke ) {
+        should_save = true;
         if ( milton->gui->owns_user_input ) {
             gui_deactivate(milton->gui);
             brush_outline_should_draw = false;

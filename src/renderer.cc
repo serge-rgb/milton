@@ -1801,8 +1801,8 @@ imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
 {
     // TODO: Hash the points array.
 
-
-    if (num_points > 0) {
+    f32 area = signed_area(points, num_points);
+    if (area != 0.0f) {
         if (r->vbo_polygon == 0) {
             glGenBuffers(1, &r->vbo_polygon);
         }
@@ -1810,7 +1810,7 @@ imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
         sz num_verts = num_points * 2 + 2;
         v2f* verts = arena_alloc_array(&r->frame_arena, num_verts, v2f);
 
-        b32 ccw = is_ccw(points, num_points);
+        b32 ccw = area >= 0.0f;
 
         sz vert_i = 0;
         for (sz _i = 0; _i < num_points + 1; ++_i) {
@@ -1831,7 +1831,8 @@ imm_polygon(RenderBackend* r, v2f* points, i64 num_points, f32 line_width)
                 if (ccw) {
                     n1 = transpose_left(normalized(point - prev));
                     n2 = transpose_left(normalized(next - point));
-                } else {
+                }
+                else {
                     n1 = transpose_right(normalized(point - prev));
                     n2 = transpose_right(normalized(next - point));
                 }
