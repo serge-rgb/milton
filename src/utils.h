@@ -106,6 +106,9 @@ f32 signed_area(v2f* points, i64 num_points);
 
 b32 is_ccw(v2f* points, i64 num_points);
 
+f32 dot(v2f a, v2f b);
+
+v2f perp(v2f v);
 
 // ---------------
 // The mighty rect

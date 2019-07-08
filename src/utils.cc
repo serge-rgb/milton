@@ -268,6 +268,20 @@ is_ccw(v2f* points, i64 num_points)
     return area >= 0.0f;
 }
 
+f32
+dot(v2f a, v2f b)
+{
+    f32 r = a.x * b.x + a.y * b.y;
+    return r;
+}
+
+v2f
+perp(v2f v)
+{
+    v2f r = { -v.y, v.x };
+    return r;
+}
+
 i32
 rect_split(Rect** out_rects, Rect src_rect, i32 width, i32 height)
 {
