@@ -51,12 +51,16 @@ pasta_input(CopyPaste* pasta, MiltonInput* input)
             f32 disc = dot(d1, perp(d2));
             if (disc != 0.0f) {
                 f32 t = dot((o2 - o1), perp(d2)) / disc;
-                if (t > 0.0f && t < 1.0f) {
+                f32 u = dot(perp(o1 - o2), d1) / disc;
+                if (t > 0.0f && t < 1.0f &&
+                    u > 0.0f && u < 1.0f) {
                     finish_selecting = true;
                     break;
                 }
             }
-
+        }
+        if (finish_selecting) {
+            break;
         }
     }
 
