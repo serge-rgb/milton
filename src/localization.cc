@@ -27,7 +27,7 @@ static char* g_baked_strings_with_commands[TXT_Count];  // These get malloc'd on
 void
 init_localization()
 {
-    mlt_assert(TXT_Count - TXT_Action_FIRST == Action_COUNT - Action_FIRST);
+    mlt_assert(TXT_Count - TXT_Action_FIRST == Action_COUNT - Action_FIRST);  // If this hits, you need to match TXT_Action_ with Action_
     memset(g_localized_strings, 0, sizeof(g_localized_strings));
     { // English
         EN(TXT_file, "File");
@@ -130,6 +130,7 @@ init_localization()
         EN(TXT_Action_SET_BRUSH_ALPHA_100, "Set alpha to 100%");
         EN(TXT_Action_HELP, "Help");
         EN(TXT_Action_PEEK_OUT, "Peek out");
+        EN(TXT_Action_DRAG_BRUSH_SIZE, "Drag to change brush size");
     #if MILTON_ENABLE_PROFILING
         EN(TXT_Action_TOGGLE_DEBUG_WINDOW, "Toggle debug window");
     #endif

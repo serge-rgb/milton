@@ -1077,6 +1077,20 @@ peek_out_tick(Milton* milton)
     }
 }
 
+void 
+drag_brush_size_start(Milton* milton)
+{
+    milton_log("Starting to drag!\n");
+}
+
+void 
+drag_brush_size_stop(Milton* milton)
+{
+    milton_log("Ending drag!\n");
+}
+
+
+
 void
 milton_update_and_render(Milton* milton, MiltonInput* input)
 {

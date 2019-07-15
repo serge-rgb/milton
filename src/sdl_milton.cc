@@ -104,10 +104,30 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
         if (SDL_GetKeyboardState(NULL)[SDL_SCANCODE_SPACE]) { active_modifiers |= Modifier_SPACE; }
 
         if (is_keyup) {
+
+            // Switch on k again, this time catching when some of the modifiers were released.
+            switch (k) {
+                case SDLK_LSHIFT:
+                case SDLK_RSHIFT: {
+                    active_modifiers |= Modifier_SHIFT;
+                } break;
+                case SDLK_LALT: 
+                case SDLK_RALT: {
+                    active_modifiers |= Modifier_ALT;
+                } break;
+                case SDLK_LGUI: 
+                case SDLK_RGUI: {
+                    active_modifiers |= Modifier_WIN;
+                } break;
+                case SDLK_LCTRL: 
+                case SDLK_RCTRL: {
+                    active_modifiers |= Modifier_CTRL;
+                } break;
+            }
+
             for (sz i = Action_COUNT + 1; i < Action_COUNT_WITH_RELEASE; ++i) {
                 Binding* b = &bindings->bindings[i];
-                if ( active_key &&
-                     (!event->key.repeat || b->accepts_repeats) &&
+                if ( (!event->key.repeat || b->accepts_repeats) &&
                      active_modifiers == b->modifiers &&
                      active_key == b->bound_key &&
                      b->on_release &&
@@ -122,8 +142,7 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
             for (sz i = 0; i < Action_COUNT; ++i) {
                 Binding* b = &bindings->bindings[i];
 
-                if ( active_key &&
-                     (!event->key.repeat || b->accepts_repeats) &&
+                if ( (!event->key.repeat || b->accepts_repeats) &&
                      active_modifiers == b->modifiers &&
                      active_key == b->bound_key &&
                      !b->on_release &&

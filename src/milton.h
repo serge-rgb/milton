@@ -37,6 +37,7 @@ enum class MiltonMode
     EYEDROPPER,
     HISTORY,
     PEEK_OUT,
+    DRAG_BRUSH_SIZE,
 };
 
 enum BrushEnum
@@ -309,3 +310,6 @@ void milton_toggle_brush_smoothing(Milton* milton);
 
 void peek_out_trigger_start(Milton* milton);
 void peek_out_trigger_stop(Milton* milton);
+
+void drag_brush_size_start(Milton* milton);
+void drag_brush_size_stop(Milton* milton);

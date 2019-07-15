@@ -39,6 +39,7 @@ enum BindableAction
    Action_SET_BRUSH_ALPHA_100,
    Action_HELP,
    Action_PEEK_OUT,
+   Action_DRAG_BRUSH_SIZE,
 
    #if MILTON_ENABLE_PROFILING
       // Debug bindings
@@ -49,6 +50,7 @@ enum BindableAction
 
    // Press-and-release actions.
    ActionRelease_PEEK_OUT,
+   ActionRelease_DRAG_BRUSH_SIZE,
 
    Action_COUNT_WITH_RELEASE,
 };
