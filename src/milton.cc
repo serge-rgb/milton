@@ -1089,8 +1089,6 @@ drag_brush_size_stop(Milton* milton)
     milton_log("Ending drag!\n");
 }
 
-
-
 void
 milton_update_and_render(Milton* milton, MiltonInput* input)
 {
@@ -1289,13 +1287,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             imm_rect(milton->renderer, left, right, top, bottom, 2.0);
         }
 
-        if ( exporter->state != ExporterState_EMPTY ) {
-             render_flags |= RenderBackendFlags_EXPORTING;
-        }
         milton->gui->flags &= ~(MiltonGuiFlags_SHOWING_PREVIEW);
-    }
-    else if ( render_flags & RenderBackendFlags_EXPORTING ) {
-        render_flags &= ~RenderBackendFlags_EXPORTING;
     }
 
     if ( (input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {

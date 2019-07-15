@@ -41,7 +41,6 @@ enum RenderBackendFlags
     RenderBackendFlags_NONE = 0,
 
     RenderBackendFlags_GUI_VISIBLE        = 1<<0,
-    RenderBackendFlags_EXPORTING          = 1<<1,
     RenderBackendFlags_WITH_BLUR          = 1<<2,
 };
 
