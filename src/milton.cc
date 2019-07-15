@@ -1080,13 +1080,25 @@ peek_out_tick(Milton* milton)
 void 
 drag_brush_size_start(Milton* milton)
 {
-    milton_log("Starting to drag!\n");
+    if (milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE) {
+        milton_switch_mode(milton, MiltonMode::DRAG_BRUSH_SIZE);
+    }
 }
 
 void 
 drag_brush_size_stop(Milton* milton)
 {
+    mlt_assert (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE);
+    if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
+        milton_use_previous_mode(milton);
+    }
     milton_log("Ending drag!\n");
+}
+
+static void
+drag_brush_size_tick(Milton* milton, MiltonInput* input)
+{
+
 }
 
 void
@@ -1243,53 +1255,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         }
     }
 
-    if ( input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK) ) {
-        if ( current_mode_is_for_drawing(milton) ) {
-            if ( !is_user_drawing(milton)
-                 && gui_consume_input(milton->gui, input) ) {
-                milton_update_brushes(milton);
-                gpu_update_picker(milton->renderer, &milton->gui->picker);
-            }
-            else if ( !milton->gui->owns_user_input
-                      && (milton->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
-                if ( milton->current_mode == MiltonMode::PRIMITIVE ) {
-                    // Input for primitive.
-                    milton_primitive_input(milton, input, end_stroke);
-                }
-                else {  // Input for eraser and pen
-                    Stroke* ws = &milton->working_stroke;
-                    auto prev_num_points = ws->num_points;
-                    milton_stroke_input(milton, input);
-                    if ( prev_num_points == 0 && ws->num_points > 0 ) {
-                        // New stroke. Clear screen without blur.
-                        milton->render_settings.do_full_redraw = true;
-                    }
-                }
-            }
-        }
-    }
-
-    if ( milton->current_mode == MiltonMode::EXPORTING ) {
-        Exporter* exporter = &milton->gui->exporter;
-        b32 changed = exporter_input(exporter, input);
-
-        {
-            i32 x = min(exporter->pivot.x, exporter->needle.x);
-            i32 y = min(exporter->pivot.y, exporter->needle.y);
-            i32 w = MLT_ABS(exporter->pivot.x - exporter->needle.x);
-            i32 h = MLT_ABS(exporter->pivot.y - exporter->needle.y);
-
-            float left = 2*((float)    x / (milton->view->screen_size.w))-1;
-            float right = 2*((GLfloat)(x+w) / (milton->view->screen_size.w))-1;
-            float top = -(2*((GLfloat)y     / (milton->view->screen_size.h))-1);
-            float bottom = -(2*((GLfloat)(y+h) / (milton->view->screen_size.h))-1);
-
-            imm_rect(milton->renderer, left, right, top, bottom, 2.0);
-        }
-
-        milton->gui->flags &= ~(MiltonGuiFlags_SHOWING_PREVIEW);
-    }
-
     if ( (input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
         // Start drawing the preview if we just grabbed a slider.
         brush_outline_should_draw = false;
@@ -1319,7 +1284,53 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         render_flags &= ~RenderBackendFlags_GUI_VISIBLE;
     }
 
-    if ( milton->current_mode == MiltonMode::EYEDROPPER ) {
+    // Mode tick
+    if ( current_mode_is_for_drawing(milton) && 
+        (input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK)) ) {
+        if ( !is_user_drawing(milton)
+             && gui_consume_input(milton->gui, input) ) {
+            milton_update_brushes(milton);
+            gpu_update_picker(milton->renderer, &milton->gui->picker);
+        }
+        else if ( !milton->gui->owns_user_input
+                  && (milton->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
+            if ( milton->current_mode == MiltonMode::PRIMITIVE ) {
+                // Input for primitive.
+                milton_primitive_input(milton, input, end_stroke);
+            }
+            else {  // Input for eraser and pen
+                Stroke* ws = &milton->working_stroke;
+                auto prev_num_points = ws->num_points;
+                milton_stroke_input(milton, input);
+                if ( prev_num_points == 0 && ws->num_points > 0 ) {
+                    // New stroke. Clear screen without blur.
+                    milton->render_settings.do_full_redraw = true;
+                }
+            }
+        }
+    }
+
+    if ( milton->current_mode == MiltonMode::EXPORTING ) {
+        Exporter* exporter = &milton->gui->exporter;
+        b32 changed = exporter_input(exporter, input);
+
+        {
+            i32 x = min(exporter->pivot.x, exporter->needle.x);
+            i32 y = min(exporter->pivot.y, exporter->needle.y);
+            i32 w = MLT_ABS(exporter->pivot.x - exporter->needle.x);
+            i32 h = MLT_ABS(exporter->pivot.y - exporter->needle.y);
+
+            float left = 2*((float)    x / (milton->view->screen_size.w))-1;
+            float right = 2*((GLfloat)(x+w) / (milton->view->screen_size.w))-1;
+            float top = -(2*((GLfloat)y     / (milton->view->screen_size.h))-1);
+            float bottom = -(2*((GLfloat)(y+h) / (milton->view->screen_size.h))-1);
+
+            imm_rect(milton->renderer, left, right, top, bottom, 2.0);
+        }
+
+        milton->gui->flags &= ~(MiltonGuiFlags_SHOWING_PREVIEW);
+    } 
+    else if ( milton->current_mode == MiltonMode::EYEDROPPER ) {
         eyedropper_init(milton);
         v2i point = {};
         b32 in = false;
@@ -1347,6 +1358,14 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             }
         }
     }
+    else if (milton->current_mode == MiltonMode::PEEK_OUT) {
+        milton->render_settings.do_full_redraw = true;
+        peek_out_tick(milton);
+    }
+    else if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
+        drag_brush_size_tick(milton, input);
+    }
+
 
     // ---- End stroke
     if ( end_stroke ) {
@@ -1564,11 +1583,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         milton_set_background_color(milton, milton->view->background_color);
         gpu_update_picker(milton->renderer, &milton->gui->picker);
         milton->flags &= ~MiltonStateFlags_JUST_SAVED;
-    }
-
-    if (milton->current_mode == MiltonMode::PEEK_OUT) {
-        milton->render_settings.do_full_redraw = true;
-        peek_out_tick(milton);
     }
 
     i32 view_x = 0;
