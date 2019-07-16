@@ -418,7 +418,7 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                     }
                 }
                 if ( ImGui::MenuItem(loc(TXT_export_to_image_DOTS)) ) {
-                    milton_switch_mode(milton, MiltonMode::EXPORTING);
+                    milton_enter_mode(milton, MiltonMode::EXPORTING);
                 }
                 if ( ImGui::MenuItem(loc(TXT_settings)) && !show_settings ) {
                     if (!gui->visible) {
@@ -855,12 +855,12 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
         if ( ImGui::Button(loc(TXT_cancel)) ) {
             reset = true;
-            milton_use_previous_mode(milton);
+            milton_leave_mode(milton);
         }
         ImGui::End(); // Export...
         if ( !opened ) {
             reset = true;
-            milton_use_previous_mode(milton);
+            milton_leave_mode(milton);
         }
         if ( reset ) {
             exporter_init(&milton->gui->exporter);

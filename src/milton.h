@@ -17,7 +17,7 @@
 #define MILTON_MAX_BRUSH_SIZE       100
 #define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
-
+#define MODE_STACK_MAX 64
 
 struct MiltonGLState
 {
@@ -168,9 +168,10 @@ struct Milton
     PeekOut* peek_out;
 
     // Read only
-    // Set these with milton_switch_mode and milton_use_previous_mode
+    // Set these with milton_switch_mode and milton_leave_mode
     MiltonMode current_mode;
-    MiltonMode last_mode;
+    MiltonMode mode_stack[MODE_STACK_MAX];
+    sz n_mode_stack;
 
     PrimitiveFSM primitive_fsm;
 
@@ -286,8 +287,8 @@ void    milton_set_brush_alpha(Milton* milton, float alpha);
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
 void milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size);
 
-void milton_use_previous_mode(Milton* milton);
-void milton_switch_mode(Milton* milton, MiltonMode mode);
+MiltonMode milton_leave_mode(Milton* milton);
+void milton_enter_mode(Milton* milton, MiltonMode mode);
 
 // Our "game loop" inner function.
 void milton_update_and_render(Milton* milton, MiltonInput* input);

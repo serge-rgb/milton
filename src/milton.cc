@@ -516,7 +516,6 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     reset_working_stroke(milton);
 
     milton->current_mode = MiltonMode::PEN;
-    milton->last_mode = MiltonMode::PEN;
 
     milton->renderer = gpu_allocate_render_backend(&milton->root_arena);
 
@@ -714,30 +713,51 @@ milton_reset_canvas_and_set_default(Milton* milton)
     upload_gui(milton);
 }
 
-void
-milton_switch_mode(Milton* milton, MiltonMode mode)
+static void
+push_mode(Milton* milton, MiltonMode mode)
 {
-    if ( mode != milton->current_mode ) {
-        milton->last_mode = milton->current_mode;
-        milton->current_mode = mode;
-
-        if ( milton->last_mode == MiltonMode::EYEDROPPER) {
-            eyedropper_deinit(milton->eyedropper);
-        }
-
-        if ( mode == MiltonMode::EXPORTING && milton->gui->visible ) {
-            gui_toggle_visibility(milton->gui);
-        }
-        if ( milton->last_mode == MiltonMode::EXPORTING && !milton->gui->visible ) {
-            gui_toggle_visibility(milton->gui);
-        }
+    if (milton->n_mode_stack < MODE_STACK_MAX) {
+        milton->mode_stack[ milton->n_mode_stack++ ] = mode;
     }
 }
 
-void
-milton_use_previous_mode(Milton* milton)
+static MiltonMode
+pop_mode(Milton* milton)
 {
-    milton_switch_mode(milton, milton->last_mode);
+    MiltonMode result = MiltonMode::PEN;
+    if (milton->n_mode_stack) {
+        result = milton->mode_stack[ --milton->n_mode_stack ];
+    }
+    else {
+        mlt_assert(!"Trying to pop 0 sized mode stack! We can handle this, but it shouldn't happen.");
+    }
+    return result;
+}
+
+MiltonMode
+milton_leave_mode(Milton* milton)
+{
+    if (milton->current_mode == MiltonMode::EYEDROPPER) {
+        eyedropper_deinit(milton->eyedropper);
+    }
+    MiltonMode leaving = milton->current_mode;
+    milton->current_mode = pop_mode(milton);
+    return leaving;
+}
+
+void
+milton_enter_mode(Milton* milton, MiltonMode mode)
+{
+    if ( mode != milton->current_mode ) {
+        push_mode(milton, milton->current_mode);
+        if ( mode == MiltonMode::EXPORTING && milton->gui->visible ) {
+            gui_toggle_visibility(milton->gui);
+        }
+        if ( milton->current_mode == MiltonMode::EXPORTING && !milton->gui->visible ) {
+            gui_toggle_visibility(milton->gui);
+        }
+        milton->current_mode = mode;
+    }
 }
 
 void
@@ -1011,7 +1031,7 @@ peek_out_trigger_start(Milton* milton)
     milton->peek_out->begin_anim_time = platform_get_walltime();
 
     if (milton->current_mode != MiltonMode::PEEK_OUT) {
-        milton_switch_mode(milton, MiltonMode::PEEK_OUT);
+        milton_enter_mode(milton, MiltonMode::PEEK_OUT);
     }
 }
 
@@ -1052,7 +1072,7 @@ peek_out_tick(Milton* milton)
             gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
 
             if ( difference_in_ms(peek->begin_anim_time, platform_get_walltime()) > peek_out_duration_ms(milton) ) {
-                milton_use_previous_mode(milton);
+                milton_leave_mode(milton);
             }
         }
         gpu_update_scale(milton->renderer, milton_render_scale(milton));
@@ -1077,20 +1097,20 @@ peek_out_tick(Milton* milton)
     }
 }
 
-void 
+void
 drag_brush_size_start(Milton* milton)
 {
-    if (milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE) {
-        milton_switch_mode(milton, MiltonMode::DRAG_BRUSH_SIZE);
+    if (milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE &&
+        current_mode_is_for_drawing(milton)) {
+        milton_enter_mode(milton, MiltonMode::DRAG_BRUSH_SIZE);
     }
 }
 
-void 
+void
 drag_brush_size_stop(Milton* milton)
 {
-    mlt_assert (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE);
     if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
-        milton_use_previous_mode(milton);
+        milton_leave_mode(milton);
     }
     milton_log("Ending drag!\n");
 }
@@ -1098,6 +1118,7 @@ drag_brush_size_stop(Milton* milton)
 static void
 drag_brush_size_tick(Milton* milton, MiltonInput* input)
 {
+    mlt_assert(milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE);
 
 }
 
@@ -1285,7 +1306,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     // Mode tick
-    if ( current_mode_is_for_drawing(milton) && 
+    if ( current_mode_is_for_drawing(milton) &&
         (input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK)) ) {
         if ( !is_user_drawing(milton)
              && gui_consume_input(milton->gui, input) ) {
@@ -1329,7 +1350,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         }
 
         milton->gui->flags &= ~(MiltonGuiFlags_SHOWING_PREVIEW);
-    } 
+    }
     else if ( milton->current_mode == MiltonMode::EYEDROPPER ) {
         eyedropper_init(milton);
         v2i point = {};
@@ -1351,7 +1372,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         }
         if( input->flags & MiltonInputFlags_CLICKUP ) {
             if ( !(milton->flags & MiltonStateFlags_IGNORE_NEXT_CLICKUP) ) {
-                milton_switch_mode(milton, MiltonMode::PEN);
+                milton_enter_mode(milton, MiltonMode::PEN);
                 milton_update_brushes(milton);
             } else {
                 milton->flags &= ~MiltonStateFlags_IGNORE_NEXT_CLICKUP;
@@ -1448,12 +1469,12 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             for ( size_t i = 0; i < array_count(toggleable_modes); ++i ) {
                 MiltonMode toggle = toggleable_modes[i];
                 if ( current_mode == toggle ) {
-                    if ( milton->last_mode != toggle ) {
-                        milton_use_previous_mode(milton);
+                    if ( milton->n_mode_stack > 0 && milton->mode_stack[milton->n_mode_stack - 1] != toggle ) {
+                        milton_leave_mode(milton);
                     }
                     else {
                         // This is not supposed to happen but if we get here we won't crash and burn.
-                        milton_switch_mode(milton, MiltonMode::PEN);
+                        milton_enter_mode(milton, MiltonMode::PEN);
                         milton_log("Warning: Unexpected code path: Toggling modes. Toggleable mode was set twice. Switching to pen.\n");
                     }
                 }
@@ -1461,7 +1482,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         }
         // Change the current mode if it's different from the mode to set
         else {
-            milton_switch_mode(milton, input->mode_to_set);
+            milton_enter_mode(milton, input->mode_to_set);
             if (    input->mode_to_set == MiltonMode::PEN
                  || input->mode_to_set == MiltonMode::ERASER
                  || input->mode_to_set == MiltonMode::PRIMITIVE ) {
