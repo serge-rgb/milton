@@ -717,6 +717,7 @@ static void
 push_mode(Milton* milton, MiltonMode mode)
 {
     if (milton->n_mode_stack < MODE_STACK_MAX) {
+        milton->mode_stack_gui_visibility[ milton->n_mode_stack ] = milton->gui->visible;
         milton->mode_stack[ milton->n_mode_stack++ ] = mode;
     }
 }
@@ -727,9 +728,7 @@ pop_mode(Milton* milton)
     MiltonMode result = MiltonMode::PEN;
     if (milton->n_mode_stack) {
         result = milton->mode_stack[ --milton->n_mode_stack ];
-    }
-    else {
-        mlt_assert(!"Trying to pop 0 sized mode stack! We can handle this, but it shouldn't happen.");
+        milton->gui->visible = milton->mode_stack_gui_visibility[ milton->n_mode_stack ];
     }
     return result;
 }
@@ -1112,7 +1111,6 @@ drag_brush_size_stop(Milton* milton)
     if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
         milton_leave_mode(milton);
     }
-    milton_log("Ending drag!\n");
 }
 
 static void
@@ -1482,14 +1480,17 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         }
         // Change the current mode if it's different from the mode to set
         else {
-            milton_enter_mode(milton, input->mode_to_set);
-            if (    input->mode_to_set == MiltonMode::PEN
-                 || input->mode_to_set == MiltonMode::ERASER
-                 || input->mode_to_set == MiltonMode::PRIMITIVE ) {
+            if ( mode_is_for_drawing(input->mode_to_set) ) {
                 milton_update_brushes(milton);
-                // If we are drawing, end the current stroke so that it
-                // doesn't change from eraser to brush or vice versa.
+
+                // There is no way of leaving a drawing mode to some previous
+                // mode. Therefore, When entering a drawing mode we clear the
+                // mode stack.
+                while ( milton->n_mode_stack ) {
+                    milton_leave_mode(milton);
+                }
             }
+            milton_enter_mode(milton, input->mode_to_set);
         }
     }
 

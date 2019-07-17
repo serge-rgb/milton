@@ -171,6 +171,7 @@ struct Milton
     // Set these with milton_switch_mode and milton_leave_mode
     MiltonMode current_mode;
     MiltonMode mode_stack[MODE_STACK_MAX];
+    bool mode_stack_gui_visibility[MODE_STACK_MAX];  // TODO: This is stupid and broken
     sz n_mode_stack;
 
     PrimitiveFSM primitive_fsm;
