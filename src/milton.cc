@@ -58,7 +58,6 @@ milton_get_brush_enum(Milton* milton)
         case MiltonMode::EXPORTING:
         case MiltonMode::EYEDROPPER:
         case MiltonMode::HISTORY:
-        case MiltonMode::NONE:
         default: {
         } break;
     }
@@ -167,6 +166,44 @@ mode_is_for_drawing(MiltonMode mode)
             mode == MiltonMode::ERASER ||
             mode == MiltonMode::PRIMITIVE;
     return result;
+}
+
+static size_t
+get_gui_visibility_index(Milton* milton)
+{
+    size_t idx = Milton::GuiVisibleCategory_OTHER;
+    switch (milton->current_mode) {
+        case MiltonMode::PEN:
+        case MiltonMode::ERASER:
+        case MiltonMode::PRIMITIVE: {
+            idx = Milton::GuiVisibleCategory_DRAWING;
+        } break;
+        case MiltonMode::EXPORTING: {
+            idx = Milton::GuiVisibleCategory_EXPORTING;
+        } break;
+        case MiltonMode::EYEDROPPER:
+        case MiltonMode::HISTORY:
+        case MiltonMode::PEEK_OUT:
+        case MiltonMode::DRAG_BRUSH_SIZE:
+        case MiltonMode::COUNT: {
+            // Default, OTHER
+        } break;
+    }
+    return idx;
+}
+
+void
+milton_toggle_gui_visibility(Milton* milton)
+{
+    size_t idx = get_gui_visibility_index(milton);
+    milton->mode_gui_visibility[idx] = !milton->mode_gui_visibility[idx];
+}
+
+void
+milton_set_gui_visibility(Milton* milton, b32 visible)
+{
+    size_t idx = get_gui_visibility_index(milton);
+    milton->mode_gui_visibility[idx] = visible;
 }
 
 b32
@@ -601,6 +638,9 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
         milton_toggle_brush_smoothing(milton);
     }
 
+    // Default mode GUI visibility
+    milton->mode_gui_visibility[Milton::GuiVisibleCategory_DRAWING] = true;
+
 #if MILTON_ENABLE_PROFILING
     milton->viz_window_visible = false;  // hidden by default
 #endif
@@ -717,7 +757,6 @@ static void
 push_mode(Milton* milton, MiltonMode mode)
 {
     if (milton->n_mode_stack < MODE_STACK_MAX) {
-        milton->mode_stack_gui_visibility[ milton->n_mode_stack ] = milton->gui->visible;
         milton->mode_stack[ milton->n_mode_stack++ ] = mode;
     }
 }
@@ -728,7 +767,6 @@ pop_mode(Milton* milton)
     MiltonMode result = MiltonMode::PEN;
     if (milton->n_mode_stack) {
         result = milton->mode_stack[ --milton->n_mode_stack ];
-        milton->gui->visible = milton->mode_stack_gui_visibility[ milton->n_mode_stack ];
     }
     return result;
 }
@@ -749,12 +787,6 @@ milton_enter_mode(Milton* milton, MiltonMode mode)
 {
     if ( mode != milton->current_mode ) {
         push_mode(milton, milton->current_mode);
-        if ( mode == MiltonMode::EXPORTING && milton->gui->visible ) {
-            gui_toggle_visibility(milton->gui);
-        }
-        if ( milton->current_mode == MiltonMode::EXPORTING && !milton->gui->visible ) {
-            gui_toggle_visibility(milton->gui);
-        }
         milton->current_mode = mode;
     }
 }
@@ -1158,6 +1190,13 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     i32 now = (i32)SDL_GetTicks();
 
+    // Set GUI visibility
+    {
+        size_t idx = get_gui_visibility_index(milton);
+
+        milton->gui->visible = milton->mode_gui_visibility[idx];
+    }
+
     if ( input->flags & MiltonInputFlags_FULL_REFRESH ) {
         milton->render_settings.do_full_redraw = true;
         // GUI might have changed layer effect parameters.
@@ -1456,7 +1495,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     MiltonMode current_mode = milton->current_mode;
-    if ( input->mode_to_set != MiltonMode::NONE ) {
+    if ( input->mode_to_set < MiltonMode::COUNT ) {
         if ( current_mode == input->mode_to_set ) {
             // Modes we can toggle
             MiltonMode toggleable_modes[] = {

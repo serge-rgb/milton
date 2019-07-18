@@ -200,7 +200,7 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
             gui_toggle_menu_visibility(milton->gui);
         } break;
         case Action_TOGGLE_GUI: {
-            gui_toggle_visibility(milton->gui);
+            milton_toggle_gui_visibility(milton);
         } break;
         case Action_MODE_ERASER: {
             input->mode_to_set = MiltonMode::ERASER;

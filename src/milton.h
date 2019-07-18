@@ -28,16 +28,16 @@ struct MiltonGLState
 
 enum class MiltonMode
 {
-    NONE,
-
-    ERASER,
     PEN,
+    ERASER,
     PRIMITIVE, // Lines, circles, etc.
     EXPORTING,
     EYEDROPPER,
     HISTORY,
     PEEK_OUT,
     DRAG_BRUSH_SIZE,
+
+    COUNT,
 };
 
 enum BrushEnum
@@ -171,8 +171,16 @@ struct Milton
     // Set these with milton_switch_mode and milton_leave_mode
     MiltonMode current_mode;
     MiltonMode mode_stack[MODE_STACK_MAX];
-    bool mode_stack_gui_visibility[MODE_STACK_MAX];  // TODO: This is stupid and broken
     sz n_mode_stack;
+
+    enum GuiVisibleCategory {
+        GuiVisibleCategory_DRAWING,
+        GuiVisibleCategory_EXPORTING,
+        GuiVisibleCategory_OTHER,
+
+        GuiVisibleCategory_COUNT,
+    };
+    bool mode_gui_visibility[GuiVisibleCategory_COUNT];
 
     PrimitiveFSM primitive_fsm;
 
@@ -277,6 +285,9 @@ void milton_reset_canvas_and_set_default(Milton* milton);
 void milton_gl_backend_draw(Milton* milton);
 
 b32 current_mode_is_for_drawing(Milton* milton);
+
+void milton_toggle_gui_visibility(Milton* milton);
+void milton_set_gui_visibility(Milton* milton, b32 visible);
 
 i32     milton_get_brush_radius(Milton* milton);   // Between 0 and k_max_brush_size
 void    milton_set_brush_size(Milton* milton, i32 size);
