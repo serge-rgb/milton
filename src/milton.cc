@@ -164,7 +164,8 @@ mode_is_for_drawing(MiltonMode mode)
 {
     b32 result = mode == MiltonMode::PEN ||
             mode == MiltonMode::ERASER ||
-            mode == MiltonMode::PRIMITIVE;
+            mode == MiltonMode::PRIMITIVE ||
+            mode == MiltonMode::DRAG_BRUSH_SIZE;
     return result;
 }
 
@@ -172,22 +173,11 @@ static size_t
 get_gui_visibility_index(Milton* milton)
 {
     size_t idx = Milton::GuiVisibleCategory_OTHER;
-    switch (milton->current_mode) {
-        case MiltonMode::PEN:
-        case MiltonMode::ERASER:
-        case MiltonMode::PRIMITIVE: {
-            idx = Milton::GuiVisibleCategory_DRAWING;
-        } break;
-        case MiltonMode::EXPORTING: {
-            idx = Milton::GuiVisibleCategory_EXPORTING;
-        } break;
-        case MiltonMode::EYEDROPPER:
-        case MiltonMode::HISTORY:
-        case MiltonMode::PEEK_OUT:
-        case MiltonMode::DRAG_BRUSH_SIZE:
-        case MiltonMode::COUNT: {
-            // Default, OTHER
-        } break;
+    if (current_mode_is_for_drawing(milton)) {
+        idx = Milton::GuiVisibleCategory_DRAWING;
+    }
+    else if (milton->current_mode == MiltonMode::EXPORTING) {
+        idx = Milton::GuiVisibleCategory_EXPORTING;
     }
     return idx;
 }
