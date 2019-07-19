@@ -187,6 +187,7 @@ u64 difference_in_ms(WallTime start, WallTime end);
 
 void    platform_cursor_hide();
 void    platform_cursor_show();
+void    platform_cursor_set_position(v2i pos);
 
 i32 platform_monitor_refresh_hz();
 

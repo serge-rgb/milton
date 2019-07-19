@@ -766,6 +766,13 @@ platform_cursor_show()
     while ( ShowCursor(TRUE) < 0 );
 }
 
+void
+platform_cursor_set_position(v2i pos)
+{
+    SetCursorPos(pos.x, pos.y);
+}
+
+
 i32
 platform_monitor_refresh_hz()
 {
