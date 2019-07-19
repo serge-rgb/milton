@@ -254,7 +254,7 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
             peek_out_trigger_stop(milton);
         } break;
         case Action_DRAG_BRUSH_SIZE: {
-            drag_brush_size_start(milton);
+            drag_brush_size_start(milton, pointer);
         } break;
         case ActionRelease_DRAG_BRUSH_SIZE: {
             drag_brush_size_stop(milton);

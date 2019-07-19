@@ -55,6 +55,9 @@ milton_get_brush_enum(Milton* milton)
         case MiltonMode::PRIMITIVE: {
             brush_enum = BrushEnum_PRIMITIVE;
         } break;
+        case MiltonMode::DRAG_BRUSH_SIZE: {
+            brush_enum = milton->drag_brush->brush_idx;
+        } break;
         case MiltonMode::EXPORTING:
         case MiltonMode::EYEDROPPER:
         case MiltonMode::HISTORY:
@@ -443,9 +446,8 @@ milton_set_default_canvas_file(Milton* milton)
 }
 
 i32
-milton_get_brush_radius(Milton* milton)
+milton_get_brush_radius_for_enum(Milton* milton, int brush_enum)
 {
-    int brush_enum = milton_get_brush_enum(milton);
     i32 brush_size = milton->brush_sizes[brush_enum];
     if ( brush_size <= 0 ) {
        brush_size = 1;
@@ -453,8 +455,15 @@ milton_get_brush_radius(Milton* milton)
     return brush_size;
 }
 
+i32
+milton_get_brush_radius(Milton* milton)
+{
+    i32 radius = milton_get_brush_radius_for_enum(milton, milton_get_brush_enum(milton));
+    return radius;
+}
+
 void
-milton_set_brush_size(Milton* milton, i32 size)
+milton_set_brush_size_for_enum(Milton* milton, i32 size, int brush_idx)
 {
     if ( current_mode_is_for_drawing(milton) ) {
         if ( size <= MILTON_MAX_BRUSH_SIZE && size > 0 ) {
@@ -463,6 +472,13 @@ milton_set_brush_size(Milton* milton, i32 size)
         }
     }
 }
+
+void
+milton_set_brush_size(Milton* milton, i32 size)
+{
+    milton_set_brush_size_for_enum(milton, size, milton_get_brush_enum(milton));
+}
+
 
 // For keyboard shortcut.
 void
@@ -553,6 +569,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->settings = arena_alloc_elem(&milton->root_arena, MiltonSettings);
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
     milton->persist = arena_alloc_elem(&milton->root_arena, MiltonPersist);
+    milton->drag_brush = arena_alloc_elem(&milton->root_arena, MiltonDragBrush);
 
     milton->persist->target_MB_per_sec = 0.2f;
 
@@ -1119,10 +1136,14 @@ peek_out_tick(Milton* milton)
 }
 
 void
-drag_brush_size_start(Milton* milton)
+drag_brush_size_start(Milton* milton, v2i pointer)
 {
     if (milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE &&
         current_mode_is_for_drawing(milton)) {
+        milton->drag_brush->brush_idx = milton_get_brush_enum(milton);
+        i32 size = milton_get_brush_radius(milton);
+        milton->drag_brush->start_point = pointer;
+        milton->drag_brush->start_size = size;
         milton_enter_mode(milton, MiltonMode::DRAG_BRUSH_SIZE);
     }
 }
@@ -1138,8 +1159,11 @@ drag_brush_size_stop(Milton* milton)
 static void
 drag_brush_size_tick(Milton* milton, MiltonInput* input)
 {
-    mlt_assert(milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE);
-
+    MiltonDragBrush* drag = milton->drag_brush;
+    f32 drag_factor = 0.5f;
+    f32 new_size = drag->start_size + drag_factor * (input->hover_point.y - drag->start_point.y);
+    milton_set_brush_size_for_enum(milton, static_cast<i32>(new_size), drag->brush_idx);
+    milton_update_brushes(milton);
 }
 
 void
@@ -1529,7 +1553,8 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     #if MILTON_HARDWARE_BRUSH_CURSOR
-        if ( milton_get_brush_radius(milton) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ) {
+        if ( milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE &&
+            milton_get_brush_radius(milton) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ) {
             brush_outline_should_draw = false;
         }
     #endif

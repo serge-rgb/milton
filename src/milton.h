@@ -134,6 +134,13 @@ struct RenderSettings
     b32 do_full_redraw;
 };
 
+struct MiltonDragBrush
+{
+    i32 start_size;
+    i32 brush_idx;
+    v2i start_point;
+};
+
 struct Milton
 {
     b32 flags;  // See MiltonStateFlags
@@ -198,6 +205,7 @@ struct Milton
     MiltonGui* gui;
     MiltonSettings* settings;  // User settings
     MiltonPersist* persist;
+    MiltonDragBrush* drag_brush;
 
 #if MILTON_ENABLE_PROFILING
     b32 viz_window_visible;
@@ -324,5 +332,5 @@ void milton_toggle_brush_smoothing(Milton* milton);
 void peek_out_trigger_start(Milton* milton);
 void peek_out_trigger_stop(Milton* milton);
 
-void drag_brush_size_start(Milton* milton);
+void drag_brush_size_start(Milton* milton, v2i pointer);
 void drag_brush_size_stop(Milton* milton);
