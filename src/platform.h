@@ -108,8 +108,9 @@ void    platform_deinit(PlatformState* platform);
 
 void    platform_setup_cursor(Arena* arena, PlatformState* platform);
 
-void    platform_cursor_set_position(v2i pos);
-v2l     platform_cursor_get_position();
+void    platform_cursor_set_position(PlatformState* platform, v2i pos);
+// Get cursor position in client-rect space, whether or not it is within the client rect.
+v2i     platform_cursor_get_position(PlatformState* platform);
 
 EasyTabResult platform_handle_sysevent(PlatformState* platform, SDL_SysWMEvent* sysevent);
 void          platform_event_tick();
@@ -190,7 +191,6 @@ u64 difference_in_ms(WallTime start, WallTime end);
 
 void    platform_cursor_hide();
 void    platform_cursor_show();
-void    platform_cursor_set_position(v2i pos);
 
 i32 platform_monitor_refresh_hz();
 

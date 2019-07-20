@@ -683,6 +683,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
         str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
 
         milton_init(milton, platform.width, platform.height, platform.ui_scale, (PATH_CHAR*)file_to_open_);
+        milton->platform = &platform;
         milton->gui->menu_visible = true;
         if ( is_fullscreen ) {
             milton->gui->menu_visible = false;

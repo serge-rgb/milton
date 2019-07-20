@@ -138,7 +138,7 @@ struct MiltonDragBrush
 {
     i32 start_size;
     i32 brush_idx;
-    v2l start_point;
+    v2i start_point;
 };
 
 struct Milton
@@ -154,6 +154,7 @@ struct Milton
     SDL_cond*   save_cond;
     SDL_Thread* save_thread;
 #endif
+    PlatformState* platform;
 
     // ---- The Painting
     CanvasState*    canvas;

@@ -767,18 +767,32 @@ platform_cursor_show()
 }
 
 void
-platform_cursor_set_position(v2i pos)
+platform_cursor_set_position(PlatformState* platform, v2i pos)
 {
-    SetCursorPos(pos.x, pos.y);
+    RECT rect;
+    GetWindowRect(
+      platform->specific->hwnd,
+      &rect
+    );
+
+    SetCursorPos(pos.x + rect.left, pos.y + rect.top);
 }
 
-v2l
-platform_cursor_get_position()
+v2i
+platform_cursor_get_position(PlatformState* platform)
 {
-    v2l point = {};
-    POINT winPoint = {};
-    GetCursorPos(&winPoint);
-    point = { winPoint.x, winPoint.y };
+    v2i point = {};
+    {
+        POINT winPoint = {};
+        GetCursorPos(&winPoint);
+        RECT rect;
+        GetWindowRect(
+          platform->specific->hwnd,
+          &rect
+        );
+
+        point = { (i32)winPoint.x - rect.left, (i32)winPoint.y - rect.top};
+    }
     return point;
 }
 

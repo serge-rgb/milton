@@ -1142,7 +1142,7 @@ drag_brush_size_start(Milton* milton, v2i pointer)
          current_mode_is_for_drawing(milton) ) {
         milton->drag_brush->brush_idx = milton_get_brush_enum(milton);
         i32 size = milton_get_brush_radius(milton);
-        milton->drag_brush->start_point = platform_cursor_get_position();
+        milton->drag_brush->start_point = platform_cursor_get_position(milton->platform);
         milton->drag_brush->start_size = size;
         milton_enter_mode(milton, MiltonMode::DRAG_BRUSH_SIZE);
     }
@@ -1152,10 +1152,8 @@ void
 drag_brush_size_stop(Milton* milton)
 {
     if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
-        v2l point = milton->drag_brush->start_point;
-        if (point.x < (1ull << 31) && point.y < (1ull << 31)) {
-            platform_cursor_set_position(v2i {(i32) point.x, (i32) point.y });
-        }
+        v2i point = milton->drag_brush->start_point;
+        platform_cursor_set_position(milton->platform, point);
         milton_leave_mode(milton);
     }
 }
@@ -1165,7 +1163,7 @@ drag_brush_size_tick(Milton* milton, MiltonInput* input)
 {
     MiltonDragBrush* drag = milton->drag_brush;
     f32 drag_factor = 0.5f;
-    i64 mouse_y = platform_cursor_get_position().y;
+    i64 mouse_y = platform_cursor_get_position(milton->platform).y;
 
     f32 new_size = drag->start_size + drag_factor * (mouse_y - drag->start_point.y);
     milton_set_brush_size_for_enum(milton, static_cast<i32>(new_size), drag->brush_idx);
@@ -1578,8 +1576,13 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             radius = (float)milton_get_brush_radius(milton);
         }
 
+        v2i brush_point = milton->hover_point;
+        if ( milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE ) {
+            brush_point = milton->drag_brush->start_point;
+        }
+
         gpu_update_brush_outline(milton->renderer,
-                                milton->hover_point.x, milton->hover_point.y,
+                                brush_point.x, brush_point.y,
                                 radius);
     }
 
