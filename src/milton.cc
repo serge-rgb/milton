@@ -1138,11 +1138,11 @@ peek_out_tick(Milton* milton)
 void
 drag_brush_size_start(Milton* milton, v2i pointer)
 {
-    if (milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE &&
-        current_mode_is_for_drawing(milton)) {
+    if ( milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE &&
+         current_mode_is_for_drawing(milton) ) {
         milton->drag_brush->brush_idx = milton_get_brush_enum(milton);
         i32 size = milton_get_brush_radius(milton);
-        milton->drag_brush->start_point = pointer;
+        milton->drag_brush->start_point = platform_cursor_get_position();
         milton->drag_brush->start_size = size;
         milton_enter_mode(milton, MiltonMode::DRAG_BRUSH_SIZE);
     }
@@ -1152,6 +1152,10 @@ void
 drag_brush_size_stop(Milton* milton)
 {
     if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
+        v2l point = milton->drag_brush->start_point;
+        if (point.x < (1ull << 31) && point.y < (1ull << 31)) {
+            platform_cursor_set_position(v2i {(i32) point.x, (i32) point.y });
+        }
         milton_leave_mode(milton);
     }
 }
@@ -1161,7 +1165,9 @@ drag_brush_size_tick(Milton* milton, MiltonInput* input)
 {
     MiltonDragBrush* drag = milton->drag_brush;
     f32 drag_factor = 0.5f;
-    f32 new_size = drag->start_size + drag_factor * (input->hover_point.y - drag->start_point.y);
+    i64 mouse_y = platform_cursor_get_position().y;
+
+    f32 new_size = drag->start_size + drag_factor * (mouse_y - drag->start_point.y);
     milton_set_brush_size_for_enum(milton, static_cast<i32>(new_size), drag->brush_idx);
     milton_update_brushes(milton);
     // platform_cursor_set_position(drag->start_point);

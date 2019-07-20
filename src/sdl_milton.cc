@@ -111,15 +111,15 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
                 case SDLK_RSHIFT: {
                     active_modifiers |= Modifier_SHIFT;
                 } break;
-                case SDLK_LALT: 
+                case SDLK_LALT:
                 case SDLK_RALT: {
                     active_modifiers |= Modifier_ALT;
                 } break;
-                case SDLK_LGUI: 
+                case SDLK_LGUI:
                 case SDLK_RGUI: {
                     active_modifiers |= Modifier_WIN;
                 } break;
-                case SDLK_LCTRL: 
+                case SDLK_LCTRL:
                 case SDLK_RCTRL: {
                     active_modifiers |= Modifier_CTRL;
                 } break;
@@ -440,11 +440,12 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                     break;
                 }
                 case SDL_WINDOWEVENT_LEAVE:
-                    if ( event.window.windowID != platform->window_id )
-                    {
+                    if ( event.window.windowID != platform->window_id ) {
                         break;
                     }
-                    platform_cursor_show();
+                    if ( milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE ) {
+                        platform_cursor_show();
+                    }
                     break;
                     // --- A couple of events we might want to catch later...
                 case SDL_WINDOWEVENT_ENTER:
@@ -859,6 +860,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
                     }
                     else if ( milton->current_mode == MiltonMode::HISTORY ) {
                         cursor_set_and_show(platform.cursor_default);
+                    }
+                    else if ( milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE ) {
+                        platform_cursor_hide();
                     }
                     else if ( milton->current_mode != MiltonMode::PEN || milton->current_mode != MiltonMode::ERASER ) {
                         platform_cursor_hide();

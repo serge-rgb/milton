@@ -138,7 +138,7 @@ struct MiltonDragBrush
 {
     i32 start_size;
     i32 brush_idx;
-    v2i start_point;
+    v2l start_point;
 };
 
 struct Milton

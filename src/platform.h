@@ -108,6 +108,9 @@ void    platform_deinit(PlatformState* platform);
 
 void    platform_setup_cursor(Arena* arena, PlatformState* platform);
 
+void    platform_cursor_set_position(v2i pos);
+v2l     platform_cursor_get_position();
+
 EasyTabResult platform_handle_sysevent(PlatformState* platform, SDL_SysWMEvent* sysevent);
 void          platform_event_tick();
 

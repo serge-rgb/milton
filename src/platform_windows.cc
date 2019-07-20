@@ -772,6 +772,16 @@ platform_cursor_set_position(v2i pos)
     SetCursorPos(pos.x, pos.y);
 }
 
+v2l
+platform_cursor_get_position()
+{
+    v2l point = {};
+    POINT winPoint = {};
+    GetCursorPos(&winPoint);
+    point = { winPoint.x, winPoint.y };
+    return point;
+}
+
 
 i32
 platform_monitor_refresh_hz()
