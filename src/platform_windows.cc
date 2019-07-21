@@ -704,6 +704,44 @@ win32_cleanup_appdata()
     }
 }
 
+static v2i
+win32_client_to_screen(HWND hwnd, v2i client)
+{
+    POINT point = { client.x, client.y };
+    int res = MapWindowPoints(
+      hwnd,
+      HWND_DESKTOP,
+      &point,
+      1
+    );
+
+    if (res == 0) {
+        // TODO: Handle error
+    }
+
+    v2i screen = { point.x, point.y };
+    return screen;
+}
+
+static v2i
+win32_screen_to_client(HWND hwnd, v2i screen)
+{
+    POINT point = { screen.x, screen.y };
+    int res = MapWindowPoints(
+      HWND_DESKTOP,
+      hwnd,
+      &point,
+      1
+    );
+
+    if (res == 0) {
+        // TODO: Handle error
+    }
+
+    v2i client = { point.x, point.y };
+    return client;
+}
+
 void
 platform_open_link(char* link)
 {
@@ -769,13 +807,9 @@ platform_cursor_show()
 void
 platform_cursor_set_position(PlatformState* platform, v2i pos)
 {
-    RECT rect;
-    GetWindowRect(
-      platform->specific->hwnd,
-      &rect
-    );
+    pos = win32_client_to_screen(platform->specific->hwnd, pos);
 
-    SetCursorPos(pos.x + rect.left, pos.y + rect.top);
+    SetCursorPos(pos.x, pos.y);
 }
 
 v2i
@@ -785,13 +819,9 @@ platform_cursor_get_position(PlatformState* platform)
     {
         POINT winPoint = {};
         GetCursorPos(&winPoint);
-        RECT rect;
-        GetWindowRect(
-          platform->specific->hwnd,
-          &rect
-        );
+        point = { (i32)winPoint.x, (i32)winPoint.y };
 
-        point = { (i32)winPoint.x - rect.left, (i32)winPoint.y - rect.top};
+        point = win32_screen_to_client(platform->specific->hwnd, point);
     }
     return point;
 }
