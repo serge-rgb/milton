@@ -100,11 +100,9 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
     switch (a) {
         case Action_DECREASE_BRUSH_SIZE: {
             milton_decrease_brush_size(milton);
-            milton->hover_flash_ms = (i32)SDL_GetTicks();
         } break;
         case Action_INCREASE_BRUSH_SIZE: {
             milton_increase_brush_size(milton);
-            milton->hover_flash_ms = (i32)SDL_GetTicks();
         } break;
         case Action_ZOOM_IN: {
             input->scale++;

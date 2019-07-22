@@ -1077,14 +1077,14 @@ void
 peek_out_trigger_stop(Milton* milton)
 {
     if (milton->current_mode == MiltonMode::PEEK_OUT && !milton->peek_out->peek_out_ended) {
-        milton_set_zoom_at_point(milton, milton->hover_point);
+        milton_set_zoom_at_point(milton, milton->platform->pointer);
 
         i64 scale = milton_render_scale(milton);
         milton->peek_out->high_scale = scale;
         milton->peek_out->low_scale = milton->view->scale;
         milton->peek_out->begin_anim_time = platform_get_walltime();
         milton->peek_out->peek_out_ended = true;
-        milton->peek_out->end_pan = raster_to_canvas_with_scale(milton->view, v2i_to_v2l(milton->hover_point), scale);
+        milton->peek_out->end_pan = raster_to_canvas_with_scale(milton->view, v2i_to_v2l(milton->platform->pointer), scale);
     }
 }
 
@@ -1123,8 +1123,8 @@ peek_out_tick(Milton* milton)
             // TODO: Interpolate pan vector
             f32 scale = (f32)milton_render_scale_with_interpolation(milton, interp);
 
-            f32 cx = 2 * milton->hover_point.x / (f32)milton->view->screen_size.w - 1;
-            f32 cy = (2 * milton->hover_point.y / (f32)milton->view->screen_size.h - 1)*-1;
+            f32 cx = 2 * milton->platform->pointer.x / (f32)milton->view->screen_size.w - 1;
+            f32 cy = (2 * milton->platform->pointer.y / (f32)milton->view->screen_size.h - 1)*-1;
             f32 left = cx - milton->view->scale / scale;
             f32 right = cx + milton->view->scale / scale;
             f32 top = cy - milton->view->scale / scale;
@@ -1163,9 +1163,9 @@ drag_brush_size_tick(Milton* milton, MiltonInput* input)
 {
     MiltonDragBrush* drag = milton->drag_brush;
     f32 drag_factor = 0.5f;
-    i64 mouse_y = platform_cursor_get_position(milton->platform).y;
+    i64 mouse_x = platform_cursor_get_position(milton->platform).x;
 
-    f32 new_size = drag->start_size + drag_factor * (mouse_y - drag->start_point.y);
+    f32 new_size = drag->start_size + drag_factor * (mouse_x - drag->start_point.x);
     milton_set_brush_size_for_enum(milton, static_cast<i32>(new_size), drag->brush_idx);
     milton_update_brushes(milton);
     // platform_cursor_set_position(drag->start_point);
@@ -1316,20 +1316,9 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         brush_outline_should_draw = true;
     }
 
-    if ( (input->flags & MiltonInputFlags_HOVERING) ) {
-        milton->hover_point = input->hover_point;
-    }
 
-    if ( gui_point_hovers(milton->gui, milton->hover_point) ) {
+    if ( gui_point_hovers(milton->gui, milton->platform->pointer) ) {
         brush_outline_should_draw = false;
-    }
-
-    // Set the hover point as the last point of the working stroke.
-    if ( is_user_drawing(milton) ) {
-        i32 np = milton->working_stroke.num_points;
-        if ( np > 0 ) {
-            milton->hover_point = VEC2I(canvas_to_raster(milton->view, milton->working_stroke.points[np-1]));
-        }
     }
 
     if ( (input->flags & MiltonInputFlags_IMGUI_GRABBED_INPUT) ) {
@@ -1413,10 +1402,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         b32 in = false;
         if ( (input->flags & MiltonInputFlags_CLICK) ) {
             point = input->click;
-            in = true;
-        }
-        if ( (input->flags & MiltonInputFlags_HOVERING) ) {
-            point = input->hover_point;
             in = true;
         }
         if ( in ) {
@@ -1557,26 +1542,13 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         brush_outline_should_draw = false;
     }
 
-    #if MILTON_HARDWARE_BRUSH_CURSOR
-        if ( milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE &&
-            milton_get_brush_radius(milton) < MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE ) {
-            brush_outline_should_draw = false;
-        }
-    #endif
-
-    if ( !brush_outline_should_draw
-         && (i32)SDL_GetTicks() - milton->hover_flash_ms < HOVER_FLASH_THRESHOLD_MS ) {
-        brush_outline_should_draw = true;
-    }
-
-
     if ( !(milton->gui->flags & MiltonGuiFlags_SHOWING_PREVIEW) ) {
         float radius = -1;
         if (brush_outline_should_draw && current_mode_is_for_drawing(milton)) {
             radius = (float)milton_get_brush_radius(milton);
         }
 
-        v2i brush_point = milton->hover_point;
+        v2i brush_point = milton->platform->pointer;
         if ( milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE ) {
             brush_point = milton->drag_brush->start_point;
         }

@@ -288,8 +288,6 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
                         platform_point_to_pixel_i(platform, &point);
 
-                        milton_input.flags |= MiltonInputFlags_HOVERING;
-
                         platform->pointer = point;
                     }
                 }
@@ -355,6 +353,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                 if (event.motion.windowID != platform->window_id) {
                     break;
                 }
+
                 input_point = {event.motion.x, event.motion.y};
 
                 platform_point_to_pixel_i(platform, &input_point);
@@ -376,9 +375,6 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                                 milton_input.pressures[platform->num_pressure_results++] = NO_PRESSURE_INFO;
                             }
                         }
-                        milton_input.flags &= ~MiltonInputFlags_HOVERING;
-                    } else {
-                        milton_input.flags |= MiltonInputFlags_HOVERING;
                     }
                 }
                 break;
@@ -481,8 +477,6 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
             if ( platform->num_point_results < MAX_INPUT_BUFFER_ELEMS ) {
                 milton_input.points[platform->num_point_results++] = VEC2L(input_point);
             }
-            // Start drawing hover as soon as we stop the stroke.
-            milton_input.flags |= MiltonInputFlags_HOVERING;
         }
         platform->is_pointer_down = false;
 
@@ -787,11 +781,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         panning_update(&platform);
 
-        if ( !platform.is_panning ) {
-            milton_input.flags |= MiltonInputFlags_HOVERING;
-            milton_input.hover_point = platform.pointer;
-        }
-
         static b32 first_run = true;
         if ( first_run ) {
             first_run = false;
@@ -884,6 +873,11 @@ milton_main(bool is_fullscreen, char* file_to_open)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(window);
         ImGui::NewFrame();
+
+        // Avoid the case where we stop changing the brush size when we hover over GUI elements.
+        if ( milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE ) {
+            ImGui::GetIO().WantCaptureMouse = false;
+        }
 
         // Clear our pointer input because we captured an ImGui widget!
         if ( ImGui::GetIO().WantCaptureMouse ) {

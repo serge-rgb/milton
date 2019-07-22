@@ -14,8 +14,7 @@
 #define MILTON_DEFAULT_SCALE        (1 << 10)
 #define NO_PRESSURE_INFO            -1.0f
 #define MAX_INPUT_BUFFER_ELEMS      32
-#define MILTON_MAX_BRUSH_SIZE       100
-#define MILTON_HIDE_BRUSH_OVERLAY_AT_THIS_SIZE 12
+#define MILTON_MAX_BRUSH_SIZE       300
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
 #define MODE_STACK_MAX 64
 
@@ -168,13 +167,6 @@ struct Milton
     Stroke      working_stroke;
     // ----  // gui->picker.info also stored
 
-
-    v2i hover_point;  // Track the pointer when not stroking..
-    i32 hover_flash_ms;  // Set on keyboard shortcut to change brush size.
-                        // Brush hover "flashes" if it is currently hidden to show its current size.
-
-    PeekOut* peek_out;
-
     // Read only
     // Set these with milton_switch_mode and milton_leave_mode
     MiltonMode current_mode;
@@ -207,6 +199,7 @@ struct Milton
     MiltonSettings* settings;  // User settings
     MiltonPersist* persist;
     MiltonDragBrush* drag_brush;
+    PeekOut* peek_out;
 
 #if MILTON_ENABLE_PROFILING
     b32 viz_window_visible;
@@ -240,7 +233,7 @@ enum MiltonInputFlags
     MiltonInputFlags_REDO                = 1 << 3,
                                         // 1 << 4 free to use
                                         // 1 << 5 free to use
-    MiltonInputFlags_HOVERING            = 1 << 6,
+                                        // 1 << 6 free
     MiltonInputFlags_PANNING             = 1 << 7,
     MiltonInputFlags_IMGUI_GRABBED_INPUT = 1 << 8,
     MiltonInputFlags_SAVE_FILE           = 1 << 9,
@@ -259,7 +252,6 @@ struct MiltonInput
     i32  input_count;
 
     v2i  click;
-    v2i  hover_point;
     i32  scale;
     v2l  pan_delta;
 };

@@ -807,9 +807,14 @@ platform_cursor_show()
 void
 platform_cursor_set_position(PlatformState* platform, v2i pos)
 {
-    pos = win32_client_to_screen(platform->specific->hwnd, pos);
+    platform->pointer = pos;
 
+    pos = win32_client_to_screen(platform->specific->hwnd, pos);
     SetCursorPos(pos.x, pos.y);
+
+    // Pending mouse move events will have the cursor close to where it was before we set it.
+    SDL_FlushEvent(SDL_MOUSEMOTION);
+    SDL_FlushEvent(SDL_SYSWMEVENT);
 }
 
 v2i
@@ -826,7 +831,6 @@ platform_cursor_get_position(PlatformState* platform)
     return point;
 }
 
-
 i32
 platform_monitor_refresh_hz()
 {
@@ -838,7 +842,6 @@ platform_monitor_refresh_hz()
     }
     return hz;
 }
-
 
 void
 str_to_path_char(char* str, PATH_CHAR* out, size_t out_sz)
