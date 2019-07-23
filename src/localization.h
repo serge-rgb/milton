@@ -82,6 +82,8 @@ enum Texts
     TXT_background_COLON,
     TXT_could_not_delete_default_canvas,
     TXT_peek_out_increment_percent,
+    TXT_brush_settings,
+    TXT_opacity_pressure,
 
     // Actions
     TXT_Action_FIRST,

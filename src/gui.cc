@@ -263,11 +263,13 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
 
 
 void
-gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton)
+gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f32 brush_window_width)
 {
     b32 show_brush_window = (current_mode_is_for_drawing(milton));
     auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
     MiltonGui* gui = milton->gui;
+
+    const Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
 
     // Brush Window
     if ( show_brush_window ) {
@@ -319,6 +321,23 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton)
                 }
             }
         }
+
+        static b32 brush_settings = false;
+        if (ImGui::Button(loc(TXT_brush_settings))) {
+            brush_settings = !brush_settings;
+        }
+        if ( brush_settings ) {
+            const f32 brush_settings_height = milton->gui->scale * 140;
+            ImGui::SetNextWindowPos(ImVec2(milton->gui->scale * 10 + brush_window_width, milton->gui->scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
+            ImGui::SetNextWindowSize({milton->gui->scale * 271, brush_settings_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+
+            if (ImGui::Begin(loc(TXT_brush_settings), NULL, default_imgui_window_flags)) {
+                static bool use_opacity_for_pressure = false;
+                ImGui::Checkbox(loc(TXT_opacity_pressure), &use_opacity_for_pressure);
+            }
+            ImGui::End();
+        }
+
         // Important to place this before ImGui::End()
         const v2i pos = {
             (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + milton_get_brush_radius(milton)),
@@ -670,11 +689,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
         /* ImGuiSetCond_FirstUseEver */
 
-        const f32 brush_window_height = ui_scale * 140;
-        ImGui::SetNextWindowPos(ImVec2(ui_scale * 10, ui_scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
-        ImGui::SetNextWindowSize({ui_scale * 271, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+        const f32 brush_window_width = milton->gui->scale * 271;
+        const f32 brush_window_height = milton->gui->scale * 140;
 
-        gui_brush_window(input, platform, milton);
+        ImGui::SetNextWindowPos(ImVec2(milton->gui->scale * 10, milton->gui->scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
+        ImGui::SetNextWindowSize({brush_window_width, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+
+        gui_brush_window(input, platform, milton, brush_window_width);
 
         gui_layer_window(input, platform, milton, brush_window_height);
 
