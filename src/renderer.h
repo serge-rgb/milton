@@ -9,33 +9,6 @@
 
 struct LayerEffect;
 
-// Draw data for single stroke
-struct RenderElement
-{
-    GLuint  vbo_stroke;
-    GLuint  vbo_pointa;
-    GLuint  vbo_pointb;
-    GLuint  indices;
-#if STROKE_DEBUG_VIZ
-    GLuint vbo_debug;
-#endif
-
-    i64     count;
-
-    union {
-        struct {  // For when element is a stroke.
-            v4f     color;
-            i32     radius;
-        };
-        struct {  // For when element is layer.
-            f32          layer_alpha;
-            LayerEffect* effects;
-        };
-    };
-
-    int     flags;  // RenderElementFlags enum;
-};
-
 enum RenderBackendFlags
 {
     RenderBackendFlags_NONE = 0,
@@ -43,6 +16,8 @@ enum RenderBackendFlags
     RenderBackendFlags_GUI_VISIBLE        = 1<<0,
     RenderBackendFlags_WITH_BLUR          = 1<<2,
 };
+
+typedef u64 RenderHandle;
 
 struct Arena;
 struct RenderBackend;
@@ -93,6 +68,8 @@ enum CookStrokeOpt
     CookStroke_NEW                   = 0,
     CookStroke_UPDATE_WORKING_STROKE = 1,
 };
+void gpu_reset_stroke(RenderBackend* r, RenderHandle handle);
+
 void gpu_cook_stroke(Arena* arena, RenderBackend* renderer, Stroke* stroke,
                      CookStrokeOpt cook_option = CookStroke_NEW);
 

@@ -8,6 +8,8 @@ uniform sampler2D u_canvas;
 
 in vec3 v_debug_color;
 
+// TODO: This whole shader should be a variation in stroke_raster.f.glsl
+
 void
 main()
 {

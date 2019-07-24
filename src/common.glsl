@@ -46,12 +46,3 @@ brush_is_eraser()
     }
     return is_eraser;
 }
-
-
-vec4
-blend(vec4 dst, vec4 src)
-{
-    vec4 result = src + dst*(1.0f-src.a);
-
-    return result;
-}

@@ -25,6 +25,33 @@ enum ImmediateFlag
     ImmediateFlag_RECT = (1<<0),
 };
 
+// Draw data for single stroke
+struct RenderElement
+{
+    GLuint  vbo_stroke;
+    GLuint  vbo_pointa;
+    GLuint  vbo_pointb;
+    GLuint  indices;
+#if STROKE_DEBUG_VIZ
+    GLuint vbo_debug;
+#endif
+
+    i64     count;
+
+    union {
+        struct {  // For when element is a stroke.
+            v4f     color;
+            i32     radius;
+        };
+        struct {  // For when element is layer.
+            f32          layer_alpha;
+            LayerEffect* effects;
+        };
+    };
+
+    int     flags;  // RenderElementFlags enum;
+};
+
 struct RenderBackend
 {
     f32 viewport_limits[2];  // OpenGL limits to the framebuffer size.
@@ -33,9 +60,8 @@ struct RenderBackend
 
     // OpenGL programs.
     GLuint stroke_program;
-#if STROKE_DEBUG_VIZ
-    GLuint stroke_debug_program;
-#endif
+    GLuint stroke_program_pressure_for_opacity;
+
     GLuint quad_program;
     GLuint picker_program;
     GLuint layer_blend_program;
@@ -179,6 +205,13 @@ print_framebuffer_status()
         snprintf(warning, 1024, "Framebuffer Error: %s", msg);
         milton_log("Warning %s\n", warning);
     }
+}
+
+static RenderElement*
+get_render_element(RenderHandle handle)
+{
+    RenderElement* e = reinterpret_cast<RenderElement*>(handle);
+    return e;
 }
 
 RenderBackend*
@@ -463,26 +496,15 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
         objs[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string);
 
         r->stroke_program = glCreateProgram();
+        r->stroke_program_pressure_for_opacity = glCreateProgram();
 
         gl::link_program(r->stroke_program, objs, array_count(objs));
 
-        gl::set_uniform_i(r->stroke_program, "u_canvas", 0);
+        objs[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string, "#define USE_PRESSURE_FOR_OPACITY 1\n");
+        gl::link_program(r->stroke_program_pressure_for_opacity, objs, array_count(objs));
+
+        gl::set_uniform_i(r->stroke_program_pressure_for_opacity, "u_canvas", 0);
     }
-#if STROKE_DEBUG_VIZ
-    {  // Stroke debug program
-        r->stroke_debug_program = glCreateProgram();
-        GLuint objs[2] = {};
-
-        objs[0] = gl::compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
-        objs[1] = gl::compile_shader(g_stroke_debug_f, GL_FRAGMENT_SHADER);
-
-        r->stroke_debug_program = glCreateProgram();
-
-        gl::link_program(r->stroke_debug_program, objs, array_count(objs));
-
-        gl::set_uniform_i(r->stroke_debug_program, "u_canvas", 0);
-    }
-#endif
     {  // Color picker program
         r->picker_program = glCreateProgram();
         GLuint objs[2] = {};
@@ -643,9 +665,7 @@ gpu_update_scale(RenderBackend* r, i32 scale)
 {
     r->scale = scale;
     gl::set_uniform_i(r->stroke_program, "u_scale", scale);
-    #if STROKE_DEBUG_VIZ
-        gl::set_uniform_i(r->stroke_debug_program, "u_scale", scale);
-    #endif
+    gl::set_uniform_i(r->stroke_program_pressure_for_opacity, "u_scale", scale);
 }
 
 void
@@ -754,7 +774,8 @@ gpu_get_num_clipped_strokes(Layer* root_layer)
         StrokeList strokes = l->strokes;
         for ( i64 si = 0; si < strokes.count; ++si ) {
             Stroke* s = strokes[si];
-            if ( s->render_element.vbo_stroke != 0 ) {
+            RenderElement* re = get_render_element(s->render_handle);
+            if ( re && re->vbo_stroke != 0 ) {
                 ++count;
             }
         }
@@ -768,9 +789,7 @@ set_screen_size(RenderBackend* r, float* fscreen)
 {
     GLuint programs[] = {
         r->stroke_program,
-        #if STROKE_DEBUG_VIZ
-            r->stroke_debug_program,
-        #endif
+        r->stroke_program_pressure_for_opacity,
         r->layer_blend_program,
         r->texture_fill_program,
         r->exporter_program,
@@ -804,10 +823,8 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
     }
     gl::set_uniform_vec2i(r->stroke_program, "u_pan_center", 1, relative_to_render_center(r, pan).d);
     gl::set_uniform_vec2i(r->stroke_program, "u_zoom_center", 1, center.d);
-    #if STROKE_DEBUG_VIZ
-        gl::set_uniform_vec2i(r->stroke_debug_program, "u_pan_center", 1, relative_to_render_center(r, pan).d);
-        gl::set_uniform_vec2i(r->stroke_debug_program, "u_zoom_center", 1, center.d);
-    #endif
+    gl::set_uniform_vec2i(r->stroke_program_pressure_for_opacity, "u_pan_center", 1, relative_to_render_center(r, pan).d);
+    gl::set_uniform_vec2i(r->stroke_program_pressure_for_opacity, "u_zoom_center", 1, center.d);
     gpu_update_scale(r, view->scale);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     set_screen_size(r, fscreen);
@@ -816,13 +833,21 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
 void
 gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt cook_option)
 {
+
+    RenderElement** p_render_element = reinterpret_cast<RenderElement**>(&stroke->render_handle);
+    RenderElement* render_element = *p_render_element;
+    if (render_element == NULL) {
+        render_element = arena_alloc_elem(arena, RenderElement);
+        *p_render_element = render_element;
+    }
+
     r->stroke_z = (r->stroke_z + 1) % (MAX_DEPTH_VALUE-1);
     const i32 stroke_z = r->stroke_z + 1;
 
-    if ( cook_option == CookStroke_NEW && stroke->render_element.vbo_stroke != 0 ) {
+    if ( cook_option == CookStroke_NEW && render_element->vbo_stroke != 0 ) {
         // We already have our data cooked
-        mlt_assert(stroke->render_element.vbo_pointa != 0);
-        mlt_assert(stroke->render_element.vbo_pointb != 0);
+        mlt_assert(render_element->vbo_pointa != 0);
+        mlt_assert(render_element->vbo_pointb != 0);
     } else {
         auto npoints = stroke->num_points;
         if ( npoints == 1 ) {
@@ -840,7 +865,7 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             gpu_cook_stroke(&scratch_arena, r, &duplicate, cook_option);
 
             // Copy render element to stroke
-            stroke->render_element = duplicate.render_element;
+            stroke->render_handle = duplicate.render_handle;
 
             arena_pop(&scratch_arena);
         }
@@ -856,9 +881,6 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             const size_t count_indices = 6*((size_t)npoints-1);
 
             size_t count_debug = 0;
-#if STROKE_DEBUG_VIZ
-            count_debug = count_attribs;
-#endif
             v3f* bounds;
             v3f* apoints;
             v3f* bpoints;
@@ -988,13 +1010,13 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             if ( cook_option == CookStroke_UPDATE_WORKING_STROKE ) {
                 hint = GL_DYNAMIC_DRAW;
             }
-            if ( stroke->render_element.vbo_stroke != 0 ) {
-                vbo_stroke = stroke->render_element.vbo_stroke;
-                vbo_pointa = stroke->render_element.vbo_pointa;
-                vbo_pointb = stroke->render_element.vbo_pointb;
-                indices_buffer = stroke->render_element.indices;
+            if ( render_element->vbo_stroke != 0 ) {
+                vbo_stroke = render_element->vbo_stroke;
+                vbo_pointa = render_element->vbo_pointa;
+                vbo_pointb = render_element->vbo_pointb;
+                indices_buffer = render_element->indices;
                 #if STROKE_DEBUG_VIZ
-                    vbo_debug = stroke->render_element.vbo_debug;
+                    vbo_debug = render_element->vbo_debug;
                 #endif
 
                 auto clear_array_buffer = [hint](GLint vbo, size_t size) {
@@ -1039,21 +1061,19 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
                 #endif
             }
 
-            RenderElement re = stroke->render_element;
-            re.vbo_stroke = vbo_stroke;
-            re.vbo_pointa = vbo_pointa;
-            re.vbo_pointb = vbo_pointb;
-            re.indices = indices_buffer;
+            RenderElement* re = get_render_element(stroke->render_handle);
+            re->vbo_stroke = vbo_stroke;
+            re->vbo_pointa = vbo_pointa;
+            re->vbo_pointb = vbo_pointb;
+            re->indices = indices_buffer;
             #if STROKE_DEBUG_VIZ
-                re.vbo_debug = vbo_debug;
+                re->vbo_debug = vbo_debug;
             #endif
-            re.count = (i64)(indices_i);
-            re.color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
-            re.radius = stroke->brush.radius;
+            re->count = (i64)(indices_i);
+            re->color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
+            re->radius = stroke->brush.radius;
 
-            mlt_assert(re.count > 1);
-
-            stroke->render_element = re;
+            mlt_assert(re->count > 1);
 
             arena_pop(&scratch_arena);
         }
@@ -1065,8 +1085,8 @@ gpu_free_strokes(Stroke* strokes, i64 count, RenderBackend* r)
 {
     for ( i64 i = 0; i < count; ++i ) {
         Stroke* s = &strokes[i];
-        RenderElement* re = &s->render_element;
-        if ( re->vbo_stroke != 0 ) {
+        RenderElement* re = get_render_element(s->render_handle);
+        if ( re && re->vbo_stroke != 0 ) {
             mlt_assert(re->vbo_pointa != 0);
             mlt_assert(re->vbo_pointb != 0);
             mlt_assert(re->indices != 0);
@@ -1189,7 +1209,7 @@ gpu_clip_strokes_and_update(Arena* arena,
                         // a pixel. We don't draw it in that case.
                         if ( !is_outside && area!=0 ) {
                             gpu_cook_stroke(arena, r, s);
-                            push(clip_array, s->render_element);
+                            push(clip_array, *get_render_element(s->render_handle));
                         }
                         else if ( is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
                             // If it is far away, delete.
@@ -1212,7 +1232,8 @@ gpu_clip_strokes_and_update(Arena* arena,
             {
                 for ( i64 i = 0; i < count; ++i ) {
                     Stroke* s = &bucket->data[i];
-                    if ( s->render_element.vbo_stroke != 0 ) {
+                    RenderElement* re = get_render_element(s->render_handle);
+                    if ( re && re->vbo_stroke != 0 ) {
                         r->clipped_count++;
                     }
                 }
@@ -1227,7 +1248,7 @@ gpu_clip_strokes_and_update(Arena* arena,
             if ( working_stroke->num_points > 0 ) {
                 gpu_cook_stroke(arena, r, working_stroke, CookStroke_UPDATE_WORKING_STROKE);
 
-                push(clip_array, working_stroke->render_element);
+                push(clip_array, *get_render_element(working_stroke->render_handle));
             }
         }
 
@@ -1431,7 +1452,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 glBindTexture(texture_target, r->eraser_texture);
-                glUseProgram(r->stroke_program);
 
                 glEnable(GL_DEPTH_TEST);
                 glEnable(GL_BLEND);
@@ -1440,20 +1460,16 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
         // If this render element is not a layer, then it is a stroke.
         else {
             i64 count = re->count;
+            GLuint program_for_stroke = r->stroke_program_pressure_for_opacity;
+            glUseProgram(program_for_stroke);
 
             if ( count > 0 ) {
                 if ( !(r->current_color == re->color) ) {
-                    gl::set_uniform_vec4(r->stroke_program, "u_brush_color", 1, re->color.d);
-                    #if STROKE_DEBUG_VIZ
-                        gl::set_uniform_vec4(r->stroke_debug_program, "u_brush_color", 1, re->color.d);
-                    #endif
+                    gl::set_uniform_vec4(program_for_stroke, "u_brush_color", 1, re->color.d);
                     r->current_color = re->color;
                 }
                 if ( r->current_radius != re->radius ) {
-                    gl::set_uniform_i(r->stroke_program, "u_radius", re->radius);
-                    #if STROKE_DEBUG_VIZ
-                        gl::set_uniform_i(r->stroke_debug_program, "u_radius", re->radius);
-                    #endif
+                    gl::set_uniform_i(program_for_stroke, "u_radius", re->radius);
                     r->current_radius = re->radius;
                 }
 
@@ -1462,9 +1478,10 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                 DEBUG_gl_validate_buffer(re->vbo_pointb);
                 DEBUG_gl_validate_buffer(re->indices);
 
-                gl::vertex_attrib_v3f(r->stroke_program, "a_pointa", re->vbo_pointa);
-                gl::vertex_attrib_v3f(r->stroke_program, "a_pointb", re->vbo_pointb);
-                gl::vertex_attrib_v3f(r->stroke_program, "a_position", re->vbo_stroke);
+
+                gl::vertex_attrib_v3f(program_for_stroke, "a_pointa", re->vbo_pointa);
+                gl::vertex_attrib_v3f(program_for_stroke, "a_pointb", re->vbo_pointb);
+                gl::vertex_attrib_v3f(program_for_stroke, "a_position", re->vbo_stroke);
 
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
 
@@ -1472,29 +1489,10 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                 if ( is_eraser(re->color) ) {
                     glDisable(GL_BLEND);
                     glBindTexture(texture_target, r->eraser_texture);
-                    #if STROKE_DEBUG_VIZ
-                        gl::set_uniform_i(r->stroke_debug_program, "u_canvas", 0);
-                    #endif
-                    gl::set_uniform_i(r->stroke_program, "u_canvas", 0);
+                    gl::set_uniform_i(program_for_stroke, "u_canvas", 0);
                 }
 
                 glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
-
-                #if STROKE_DEBUG_VIZ
-                    glUseProgram(r->stroke_debug_program);
-                    glDisable(GL_DEPTH_TEST);
-
-                    gl::vertex_attrib_v3f(r->stroke_debug_program, "a_pointa", re->vbo_pointa);
-                    gl::vertex_attrib_v3f(r->stroke_debug_program, "a_pointb", re->vbo_pointb);
-                    gl::vertex_attrib_v3f(r->stroke_debug_program, "a_debug_color", re->vbo_debug);
-                    gl::vertex_attrib_v3f(r->stroke_debug_program, "a_position", re->vbo_stroke);
-
-                    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
-
-                    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
-                    glUseProgram(r->stroke_program);
-                    glEnable(GL_DEPTH_TEST);
-                #endif
 
                 if ( is_eraser(re->color) ) {
                     glEnable(GL_BLEND);
@@ -1794,12 +1792,14 @@ gpu_release_data(RenderBackend* r)
 }
 
 
-void imm_begin_frame(RenderBackend* r)
+void
+imm_begin_frame(RenderBackend* r)
 {
     r->imm_flags = 0;
 }
 
-void imm_rect(RenderBackend* r, float left, float right, float top, float bottom, float line_width)
+void
+imm_rect(RenderBackend* r, float left, float right, float top, float bottom, float line_width)
 {
     if ( r->vbo_exporter == 0 ) {
         glGenBuffers(1, &r->vbo_exporter);
@@ -1861,3 +1861,11 @@ void imm_rect(RenderBackend* r, float left, float right, float top, float bottom
     r->imm_flags |= ImmediateFlag_RECT;
 }
 
+void
+gpu_reset_stroke(RenderBackend* r, RenderHandle handle)
+{
+    RenderElement* re = get_render_element(handle);
+    if (re) {
+        re->count = 0;
+    }
+}

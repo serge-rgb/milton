@@ -26,7 +26,7 @@ struct Stroke
     i32             num_points;
     i32             layer_id;
     Rect            bounding_rect;
-    RenderElement   render_element;
+    RenderHandle    render_handle;
 #if STROKE_DEBUG_VIZ
     enum DebugFlags
     {

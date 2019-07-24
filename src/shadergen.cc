@@ -94,10 +94,6 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
             lines[lines_i++] = line;
             begin = iter+1;
             this_len = 0;
-            if (lines_i == 1260) {
-              int foo = 1;
-              foo=1;
-            }
         }
     }
     *out_count = lines_i;

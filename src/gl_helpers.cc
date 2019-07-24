@@ -168,7 +168,7 @@ log (char* str)
 }
 
 GLuint
-compile_shader (const char* in_src, GLuint type, char* config)
+compile_shader (const char* in_src, GLuint type, char* config, char* variation_config)
 {
     const char* sources[] = {
         #if USE_GL_3_2
@@ -197,6 +197,7 @@ compile_shader (const char* in_src, GLuint type, char* config)
 #endif
 
         config,
+        variation_config,
         in_src
     };
 

@@ -6,6 +6,11 @@ in vec3 v_pointb;
 
 uniform sampler2D u_canvas;
 
+#ifndef USE_PRESSURE_FOR_OPACITY
+#define USE_PRESSURE_FOR_OPACITY 0
+#endif
+
+
 void
 main()
 {
@@ -18,10 +23,7 @@ main()
     vec2 ab = b - a;
     float len_ab = length(ab);
 
-    float t = 0.0;
-    if (len_ab != 0.0) {
-        t = clamp(dot((canvas_point - a)/len_ab, ab / len_ab), 0.0, 1.0);
-    }
+    float t = clamp(dot((canvas_point - a)/len_ab, ab / len_ab), 0.0, 1.0);
 
     vec2 stroke_point = mix(a, b, t);
 
@@ -38,6 +40,9 @@ main()
         }
         else {
             out_color = u_brush_color;
+            #if USE_PRESSURE_FOR_OPACITY
+                out_color.a *= pressure;
+            #endif
         }
 #if 0
     } else if (dist/u_scale < 1.0 ) {

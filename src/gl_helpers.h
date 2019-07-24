@@ -32,7 +32,7 @@ bool    check_flags (int flags);
 
 bool    load ();
 void    log (char* str);
-GLuint  compile_shader (const char* src, GLuint type, char* config = "");
+GLuint  compile_shader (const char* src, GLuint type, char* config = "", char* variation_config = "");
 void    link_program (GLuint obj, GLuint shaders[], int64_t num_shaders);
 
 bool    set_attribute_vec2 (GLuint program, char* name, GLfloat* data, size_t data_sz);

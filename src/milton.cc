@@ -536,7 +536,7 @@ void
 reset_working_stroke(Milton* milton)
 {
     milton->working_stroke.num_points = 0;
-    milton->working_stroke.render_element.count = 0;
+    gpu_reset_stroke(milton->renderer, milton->working_stroke.render_handle);
     milton->working_stroke.bounding_rect = rect_without_size();
 }
 
@@ -1039,7 +1039,7 @@ copy_stroke(Arena* arena, CanvasView* view, Stroke* in_stroke, Stroke* out_strok
     memcpy(out_stroke->debug_flags, in_stroke->debug_flags, num_points*sizeof(int));
 #endif
 
-    out_stroke->render_element = {};
+    out_stroke->render_handle = 0;
 }
 
 static i64
