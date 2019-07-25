@@ -90,7 +90,7 @@ milton_load(Milton* milton)
         READ(&milton_binary_version, sizeof(u32), 1, fd);
 
         if (ok) {
-            if ( milton_binary_version < 4 ) {
+            if ( milton_binary_version < 7 ) {
                 if ( platform_dialog_yesno ("This file will be updated to the new version of Milton. Older versions won't be able to open it. Is this OK?", "File format change") ) {
                     milton->persist->mlt_binary_version = MILTON_MINOR_VERSION;
                     milton_log("Updating this file to latest mlt version.\n");
@@ -172,7 +172,12 @@ milton_load(Milton* milton)
 
                     stroke.id = milton->canvas->stroke_id_count++;
 
-                    READ(&stroke.brush, sizeof(Brush), 1, fd);
+                    if ( milton_binary_version < 7 ) {
+                        READ(&stroke.brush, sizeof(BrushPreV7), 1, fd);
+                    }
+                    else {
+                        READ(&stroke.brush, sizeof(Brush), 1, fd);
+                    }
                     READ(&stroke.num_points, sizeof(i32), 1, fd);
 
                     if ( stroke.num_points > STROKE_MAX_POINTS || stroke.num_points <= 0 ) {
@@ -270,7 +275,7 @@ milton_load(Milton* milton)
         // Brush
         if ( milton_binary_version >= 2 && milton_binary_version <= 5  ) {
             // PEN, ERASER
-            READ(&milton->brushes, sizeof(Brush), 2, fd);
+            READ(&milton->brushes, sizeof(BrushPreV7), 2, fd);
             // Sizes
             READ(&milton->brush_sizes, sizeof(i32), 2, fd);
         }
@@ -280,7 +285,13 @@ milton_load(Milton* milton)
             if ( num_brushes > BrushEnum_COUNT ) {
                 milton_log("Error loading file: too many brushes: %d\n", num_brushes);
             }
-            READ(&milton->brushes, sizeof(Brush), num_brushes, fd);
+            if ( milton_binary_version < 7 ) {
+                READ(&milton->brushes, sizeof(BrushPreV7), num_brushes, fd);
+            }
+            else {
+                READ(&milton->brushes, sizeof(Brush), num_brushes, fd);
+            }
+
             READ(&milton->brush_sizes, sizeof(i32), num_brushes, fd);
         }
 
