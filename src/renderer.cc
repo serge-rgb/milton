@@ -26,6 +26,14 @@ enum ImmediateFlag
 };
 
 // Draw data for single stroke
+enum RenderElementFlags
+{
+    RenderElementFlags_NONE = 0,
+
+    RenderElementFlags_LAYER                = 1<<0,
+    RenderElementFlags_PRESSURE_FOR_OPACITY = 1<<1,
+};
+
 struct RenderElement
 {
     GLuint  vbo_stroke;
@@ -120,13 +128,6 @@ struct RenderBackend
 #if MILTON_ENABLE_PROFILING
     u64 clipped_count;
 #endif
-};
-
-enum RenderElementFlags
-{
-    RenderElementFlags_NONE = 0,
-
-    RenderElementFlags_LAYER            = 1<<0,
 };
 
 enum GLVendor
@@ -473,6 +474,7 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
 
     {  // Stroke raster program
         GLuint objs[2];
+        GLuint objs2[2];
 
         char* config_string = "";
         if ( gl::check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
@@ -500,9 +502,12 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
 
         gl::link_program(r->stroke_program, objs, array_count(objs));
 
-        objs[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string, "#define USE_PRESSURE_FOR_OPACITY 1\n");
-        gl::link_program(r->stroke_program_pressure_for_opacity, objs, array_count(objs));
+        objs2[0] = objs[0];
+        objs2[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string, "#define USE_PRESSURE_FOR_OPACITY 1\n");
 
+        gl::link_program(r->stroke_program_pressure_for_opacity, objs2, array_count(objs2));
+
+        gl::set_uniform_i(r->stroke_program, "u_canvas", 0);
         gl::set_uniform_i(r->stroke_program_pressure_for_opacity, "u_canvas", 0);
     }
     {  // Color picker program
@@ -1460,7 +1465,10 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
         // If this render element is not a layer, then it is a stroke.
         else {
             i64 count = re->count;
-            GLuint program_for_stroke = r->stroke_program_pressure_for_opacity;
+            GLuint program_for_stroke = (r->flags & RenderElementFlags_PRESSURE_FOR_OPACITY ) ?
+                r->stroke_program :
+                r->stroke_program_pressure_for_opacity;
+
             glUseProgram(program_for_stroke);
 
             if ( count > 0 ) {
