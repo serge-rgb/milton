@@ -121,9 +121,10 @@ struct RenderBackend
     // See MAX_DEPTH_VALUE
     i32 stroke_z;
 
+	// TODO: Re-enable these?
     // Cached values for stroke rendering uniforms.
-    v4f current_color;
-    float current_radius;
+    // v4f current_color;
+    // float current_radius;
 
 #if MILTON_ENABLE_PROFILING
     u64 clipped_count;
@@ -1476,14 +1477,14 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
             glUseProgram(program_for_stroke);
 
             if ( count > 0 ) {
-                if ( !(r->current_color == re->color) ) {
+                // if ( !(r->current_color == re->color) ) {
                     gl::set_uniform_vec4(program_for_stroke, "u_brush_color", 1, re->color.d);
                     r->current_color = re->color;
-                }
-                if ( r->current_radius != re->radius ) {
+                // }
+                // if ( r->current_radius != re->radius ) {
                     gl::set_uniform_i(program_for_stroke, "u_radius", re->radius);
                     r->current_radius = re->radius;
-                }
+                // }
 
                 DEBUG_gl_validate_buffer(re->vbo_stroke);
                 DEBUG_gl_validate_buffer(re->vbo_pointa);
