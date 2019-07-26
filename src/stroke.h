@@ -31,7 +31,7 @@ struct Stroke
 
     enum
     {
-        StrokeFlag_OPACITY_FROM_PRESSURE = (1<<0),
+        StrokeFlag_PRESSURE_TO_OPACITY = (1<<0),
     } stroke_flags;
 
 #if STROKE_DEBUG_VIZ

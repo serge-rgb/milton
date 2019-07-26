@@ -6,8 +6,8 @@ in vec3 v_pointb;
 
 uniform sampler2D u_canvas;
 
-#ifndef USE_PRESSURE_FOR_OPACITY
-#define USE_PRESSURE_FOR_OPACITY 0
+#ifndef USE_PRESSURE_TO_OPACITY
+#define USE_PRESSURE_TO_OPACITY 0
 #endif
 
 
@@ -40,7 +40,7 @@ main()
         }
         else {
             out_color = u_brush_color;
-            #if USE_PRESSURE_FOR_OPACITY
+            #if USE_PRESSURE_TO_OPACITY
                 out_color.a *= pressure;
             #endif
         }

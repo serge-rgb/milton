@@ -31,7 +31,7 @@ enum RenderElementFlags
     RenderElementFlags_NONE = 0,
 
     RenderElementFlags_LAYER                = 1<<0,
-    RenderElementFlags_PRESSURE_FOR_OPACITY = 1<<1,
+    RenderElementFlags_PRESSURE_TO_OPACITY  = 1<<1,
 };
 
 struct RenderElement
@@ -68,7 +68,7 @@ struct RenderBackend
 
     // OpenGL programs.
     GLuint stroke_program;
-    GLuint stroke_program_pressure_for_opacity;
+    GLuint stroke_program_pressure_to_opacity;
 
     GLuint quad_program;
     GLuint picker_program;
@@ -497,18 +497,17 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
         objs[0] = gl::compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
         objs[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string);
 
+        objs2[0] = objs[0];
+        objs2[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string, "#define USE_PRESSURE_TO_OPACITY 1\n");
+
         r->stroke_program = glCreateProgram();
-        r->stroke_program_pressure_for_opacity = glCreateProgram();
+        r->stroke_program_pressure_to_opacity = glCreateProgram();
 
         gl::link_program(r->stroke_program, objs, array_count(objs));
-
-        objs2[0] = objs[0];
-        objs2[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string, "#define USE_PRESSURE_FOR_OPACITY 1\n");
-
-        gl::link_program(r->stroke_program_pressure_for_opacity, objs2, array_count(objs2));
+        gl::link_program(r->stroke_program_pressure_to_opacity, objs2, array_count(objs2));
 
         gl::set_uniform_i(r->stroke_program, "u_canvas", 0);
-        gl::set_uniform_i(r->stroke_program_pressure_for_opacity, "u_canvas", 0);
+        gl::set_uniform_i(r->stroke_program_pressure_to_opacity, "u_canvas", 0);
     }
     {  // Color picker program
         r->picker_program = glCreateProgram();
@@ -670,7 +669,7 @@ gpu_update_scale(RenderBackend* r, i32 scale)
 {
     r->scale = scale;
     gl::set_uniform_i(r->stroke_program, "u_scale", scale);
-    gl::set_uniform_i(r->stroke_program_pressure_for_opacity, "u_scale", scale);
+    gl::set_uniform_i(r->stroke_program_pressure_to_opacity, "u_scale", scale);
 }
 
 void
@@ -794,7 +793,7 @@ set_screen_size(RenderBackend* r, float* fscreen)
 {
     GLuint programs[] = {
         r->stroke_program,
-        r->stroke_program_pressure_for_opacity,
+        r->stroke_program_pressure_to_opacity,
         r->layer_blend_program,
         r->texture_fill_program,
         r->exporter_program,
@@ -828,8 +827,8 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
     }
     gl::set_uniform_vec2i(r->stroke_program, "u_pan_center", 1, relative_to_render_center(r, pan).d);
     gl::set_uniform_vec2i(r->stroke_program, "u_zoom_center", 1, center.d);
-    gl::set_uniform_vec2i(r->stroke_program_pressure_for_opacity, "u_pan_center", 1, relative_to_render_center(r, pan).d);
-    gl::set_uniform_vec2i(r->stroke_program_pressure_for_opacity, "u_zoom_center", 1, center.d);
+    gl::set_uniform_vec2i(r->stroke_program_pressure_to_opacity, "u_pan_center", 1, relative_to_render_center(r, pan).d);
+    gl::set_uniform_vec2i(r->stroke_program_pressure_to_opacity, "u_zoom_center", 1, center.d);
     gpu_update_scale(r, view->scale);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     set_screen_size(r, fscreen);
@@ -1077,6 +1076,11 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             re->count = (i64)(indices_i);
             re->color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
             re->radius = stroke->brush.radius;
+
+            re->flags = 0;
+            if (stroke->stroke_flags & Stroke::StrokeFlag_PRESSURE_TO_OPACITY) {
+                re->flags |= RenderElementFlags_PRESSURE_TO_OPACITY;
+            }
 
             mlt_assert(re->count > 1);
 
@@ -1363,8 +1367,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glDepthFunc(GL_NOTEQUAL);
 
-    glUseProgram(r->stroke_program);
-
     DArray<RenderElement>* clip_array = &r->clip_array;
 
     PUSH_GRAPHICS_GROUP("render elements");
@@ -1465,9 +1467,11 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
         // If this render element is not a layer, then it is a stroke.
         else {
             i64 count = re->count;
-            GLuint program_for_stroke = (r->flags & RenderElementFlags_PRESSURE_FOR_OPACITY ) ?
-                r->stroke_program :
-                r->stroke_program_pressure_for_opacity;
+            GLuint program_for_stroke = r->stroke_program;
+
+            if ( re->flags & RenderElementFlags_PRESSURE_TO_OPACITY ) {
+                program_for_stroke = r->stroke_program_pressure_to_opacity;
+            }
 
             glUseProgram(program_for_stroke);
 
@@ -1508,7 +1512,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
             } else {
                 static int n = 0;
-                milton_log("Warning: Render element with count 0 [%d times]\n", ++  n);
+                milton_log("Warning: Render element with count 0 [%d times]\n", ++n);
             }
         }
     }
