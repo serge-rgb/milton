@@ -400,8 +400,8 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
         r->viewport_limits[1] = viewport_dims[1];
     }
 
-    r->current_color = {-1,-1,-1,-1};
-    r->current_radius = -1;
+    // r->current_color = {-1,-1,-1,-1};
+    // r->current_radius = -1;
 
     glEnable(GL_SCISSOR_TEST);
     glActiveTexture(GL_TEXTURE0);
@@ -1079,7 +1079,7 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             re->radius = stroke->brush.radius;
 
             re->flags = 0;
-            if (stroke->stroke_flags & Stroke::StrokeFlag_PRESSURE_TO_OPACITY) {
+            if (stroke->flags & Stroke::StrokeFlag_PRESSURE_TO_OPACITY) {
                 re->flags |= RenderElementFlags_PRESSURE_TO_OPACITY;
             }
 
@@ -1479,11 +1479,11 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
             if ( count > 0 ) {
                 // if ( !(r->current_color == re->color) ) {
                     gl::set_uniform_vec4(program_for_stroke, "u_brush_color", 1, re->color.d);
-                    r->current_color = re->color;
+                    // r->current_color = re->color;
                 // }
                 // if ( r->current_radius != re->radius ) {
                     gl::set_uniform_i(program_for_stroke, "u_radius", re->radius);
-                    r->current_radius = re->radius;
+                    // r->current_radius = re->radius;
                 // }
 
                 DEBUG_gl_validate_buffer(re->vbo_stroke);

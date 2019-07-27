@@ -32,7 +32,7 @@ struct Stroke
     enum
     {
         StrokeFlag_PRESSURE_TO_OPACITY = (1<<0),
-    } stroke_flags;
+    } flags;
 
 #if STROKE_DEBUG_VIZ
     enum DebugFlags

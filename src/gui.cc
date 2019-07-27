@@ -333,7 +333,7 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
 
             if (ImGui::Begin(loc(TXT_brush_settings), NULL, default_imgui_window_flags)) {
                 static bool use_opacity_for_pressure = false;
-                ImGui::CheckboxFlags(loc(TXT_opacity_pressure), reinterpret_cast<u32*>(&milton->working_stroke.stroke_flags), Stroke::StrokeFlag_PRESSURE_TO_OPACITY);
+                ImGui::CheckboxFlags(loc(TXT_opacity_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), Stroke::StrokeFlag_PRESSURE_TO_OPACITY);
             }
             ImGui::End();
         }

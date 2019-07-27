@@ -168,7 +168,7 @@ milton_load(Milton* milton)
                 READ(&num_strokes, sizeof(i32), 1, fd);
 
                 for ( i32 stroke_i = 0; ok && stroke_i < num_strokes; ++stroke_i ) {
-                    Stroke stroke = Stroke{};
+                    Stroke stroke = {};
 
                     stroke.id = milton->canvas->stroke_id_count++;
 
@@ -177,6 +177,7 @@ milton_load(Milton* milton)
                     }
                     else {
                         READ(&stroke.brush, sizeof(Brush), 1, fd);
+                        READ(&stroke.flags, sizeof(stroke.flags), 1, fd);
                     }
                     READ(&stroke.num_points, sizeof(i32), 1, fd);
 
@@ -472,6 +473,7 @@ milton_save(Milton* milton)
                             mlt_assert(stroke->num_points > 0);
                             if ( stroke->num_points > 0 && stroke->num_points <= STROKE_MAX_POINTS ) {
                                 if ( !write_data(&stroke->brush, sizeof(Brush), 1, fd) ||
+                                     !write_data(&stroke->flags, sizeof(stroke->flags), 1, fd) ||
                                      !write_data(&stroke->num_points, sizeof(i32), 1, fd) ||
                                      !write_data(stroke->points, sizeof(v2l), (size_t)stroke->num_points, fd) ||
                                      !write_data(stroke->pressures, sizeof(f32), (size_t)stroke->num_points, fd) ||
