@@ -127,7 +127,7 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
 
                 ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiSetCond_FirstUseEver);
                 // ImGui::SetNextWindowPos(ImVec2(pos_x, 20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
-                ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*500), ImGuiSetCond_FirstUseEver);
+                ImGui::SetNextWindowSize(ImVec2(ui_scale*200, ui_scale*300), ImGuiSetCond_FirstUseEver);
 
                 if ( ImGui::Begin("Effects") ) {
                     ImGui::Text(loc(TXT_opacity));
@@ -329,15 +329,15 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
         if ( brush_settings ) {
             const f32 brush_settings_height = milton->gui->scale * 140;
             ImGui::SetNextWindowPos(ImVec2(milton->gui->scale * 10 + brush_window_width, milton->gui->scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
-            ImGui::SetNextWindowSize({milton->gui->scale * 271, brush_settings_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
+            ImGui::SetNextWindowSize({milton->gui->scale * 200, brush_settings_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
-            if (ImGui::Begin(loc(TXT_brush_settings), NULL, default_imgui_window_flags)) {
+            if (ImGui::Begin(loc(TXT_brush_settings))) {
                 ImGui::CheckboxFlags(loc(TXT_opacity_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), StrokeFlag_PRESSURE_TO_OPACITY);
                 if (milton->working_stroke.flags & StrokeFlag_PRESSURE_TO_OPACITY) {
                     int brush_enum = milton_get_brush_enum(milton);
                     f32* min_opacity = &milton->brushes[brush_enum].pressure_opacity_min;
 
-                    ImGui::SliderFloat(loc(TXT_minimum_opacity), min_opacity, 0.0f, 1.0f);
+                    ImGui::SliderFloat(loc(TXT_minimum_opacity), min_opacity, 0.0f, milton->brushes[brush_enum].alpha);
                 }
                 ImGui::CheckboxFlags(loc(TXT_distance_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), StrokeFlag_DISTANCE_TO_OPACITY);
             }

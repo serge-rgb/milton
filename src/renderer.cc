@@ -1525,7 +1525,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                 for ( LayerEffect* e = re->effects; e != NULL; e = e->next ) {
                     if ( e->enabled == false ) { continue; }
 
-                    if ( (r->flags & RenderBackendFlags_WITH_BLUR) && e->type == LayerEffectType_BLUR ) {
+                    if ( e->type == LayerEffectType_BLUR ) {
                         glBindTexture(texture_target, in_texture);
                         glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                                                   texture_target, out_texture, 0);
@@ -1890,9 +1890,7 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
     gpu_clip_strokes_and_update(&milton->root_arena, r, milton->view, milton->view->scale, milton->canvas->root_layer,
                                 &milton->working_stroke, 0, 0, buf_w, buf_h);
 
-    r->flags |= RenderBackendFlags_WITH_BLUR;
     gpu_render_canvas(r, 0, 0, buf_w, buf_h, background_alpha);
-
 
     // Post processing
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {

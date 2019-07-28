@@ -14,7 +14,6 @@ enum RenderBackendFlags
     RenderBackendFlags_NONE = 0,
 
     RenderBackendFlags_GUI_VISIBLE        = 1<<0,
-    RenderBackendFlags_WITH_BLUR          = 1<<2,
 };
 
 typedef u64 RenderHandle;

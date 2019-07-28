@@ -28,7 +28,7 @@ main()
             out_color.a *= (1.0f - u_opacity_min) * pressure + u_opacity_min;
         #endif
         #if DISTANCE_TO_OPACITY
-            out_color.a *= 1 - dist / (u_radius*pressure);
+            out_color.a *= smoothstep(0, 1, 1 - dist / (u_radius*pressure));
         #endif
     }
     else {

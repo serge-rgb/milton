@@ -503,6 +503,7 @@ milton_set_brush_alpha(Milton* milton, float alpha)
     int brush_enum = milton_get_brush_enum(milton);
 
     milton->brushes[brush_enum].alpha = alpha;
+    milton->brushes[brush_enum].pressure_opacity_min = min(alpha, milton->brushes[brush_enum].pressure_opacity_min);
     milton_update_brushes(milton);
 }
 
@@ -1174,7 +1175,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     milton->render_settings.do_full_redraw = false;
 
     b32 brush_outline_should_draw = false;
-    int render_flags = RenderBackendFlags_NONE | RenderBackendFlags_WITH_BLUR;
+    int render_flags = RenderBackendFlags_NONE;
 
     b32 draw_custom_rectangle = false;  // Custom rectangle used for new strokes, undo/redo.
     Rect custom_rectangle = rect_without_size();
@@ -1190,7 +1191,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         milton_load(milton);
         upload_gui(milton);
         milton->render_settings.do_full_redraw = true;
-        render_flags |= RenderBackendFlags_WITH_BLUR;
     }
 
     if ( milton->flags & MiltonStateFlags_FULL_REDRAW_REQUESTED ) {
@@ -1209,8 +1209,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
     if ( input->flags & MiltonInputFlags_FULL_REFRESH ) {
         milton->render_settings.do_full_redraw = true;
-        // GUI might have changed layer effect parameters.
-        render_flags |= RenderBackendFlags_WITH_BLUR;
     }
 
     if ( input->scale ) {
@@ -1259,7 +1257,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                         push(&milton->canvas->redo_stack, h);
 
                         milton->render_settings.do_full_redraw = true;
-                        render_flags |= RenderBackendFlags_WITH_BLUR;
 
                         SaveBlockHeader header = {};
                         header.type = Block_LAYER_CONTENT;
@@ -1282,7 +1279,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                             push(&milton->canvas->history, h);
 
                             milton->render_settings.do_full_redraw = true;
-                            render_flags |= RenderBackendFlags_WITH_BLUR;
 
                             SaveBlockHeader header = {};
                             header.type = Block_LAYER_CONTENT;
@@ -1474,7 +1470,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
                 clear_stroke_redo(milton);
 
                 // Make sure we show blurred layers when finishing a stroke.
-                render_flags |= RenderBackendFlags_WITH_BLUR;
                 milton->render_settings.do_full_redraw = true;
 
                 // Update save block
@@ -1654,6 +1649,32 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     milton->render_settings.do_full_redraw = true;
 #endif
 
+    b32 has_working_stroke = milton->working_stroke.num_points > 0;
+
+    if (has_working_stroke) {
+        b32 has_blur = false;
+
+        Layer* layer = milton->canvas->root_layer;
+        while (layer) {
+            if (layer->flags & LayerFlags_VISIBLE) {
+                LayerEffect* e = layer->effects;
+                while (e) {
+                    if (e->enabled && e->type == LayerEffectType_BLUR) {
+                        has_blur = true;
+                        break;
+                    }
+                    e = e->next;
+                }
+            }
+            if (has_blur) { break; }
+            layer = layer->next;
+        }
+
+        if (has_blur) {
+            milton->render_settings.do_full_redraw = true;
+        }
+    }
+
     // Note: We flip the rectangles. GL is bottom-left by default.
     if ( milton->render_settings.do_full_redraw ) {
         view_width = milton->view->screen_size.w;
@@ -1670,7 +1691,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         view_height = custom_rectangle.bottom - custom_rectangle.top;
         VALIDATE_RECT(custom_rectangle);
     }
-    else if ( milton->working_stroke.num_points > 0 ) {
+    else if (has_working_stroke) {
         Rect bounds      = milton->working_stroke.bounding_rect;
         bounds.top_left  = canvas_to_raster(milton->view, bounds.top_left);
         bounds.bot_right = canvas_to_raster(milton->view, bounds.bot_right);
