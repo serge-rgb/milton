@@ -101,6 +101,7 @@ init_localization()
         EN(TXT_peek_out_increment_percent, "Peek-out increment percentage");
         EN(TXT_brush_settings, "Brush settings");
         EN(TXT_opacity_pressure, "Use pressure for opacity");
+        EN(TXT_distance_pressure, "Use distance for opacity");
 
         EN(TXT_Action_DECREASE_BRUSH_SIZE, "Decrease brush size");
         EN(TXT_Action_INCREASE_BRUSH_SIZE, "Increase brush size");

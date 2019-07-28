@@ -32,6 +32,7 @@ struct Stroke
     enum
     {
         StrokeFlag_PRESSURE_TO_OPACITY = (1<<0),
+        StrokeFlag_DISTANCE_TO_OPACITY = (1<<1),
     } flags;
 
 #if STROKE_DEBUG_VIZ

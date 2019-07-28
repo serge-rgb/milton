@@ -32,6 +32,7 @@ enum RenderElementFlags
 
     RenderElementFlags_LAYER                = 1<<0,
     RenderElementFlags_PRESSURE_TO_OPACITY  = 1<<1,
+    RenderElementFlags_DISTANCE_TO_OPACITY  = 1<<2,
 };
 
 struct RenderElement
@@ -72,7 +73,11 @@ struct RenderBackend
 
     GLuint stroke_clear_program;
     GLuint stroke_info_program;
-    GLuint stroke_fill_program;
+
+    // TODO: If we add more variations we probably will want to automate this...
+    GLuint stroke_fill_program_pressure;
+    GLuint stroke_fill_program_distance;
+    GLuint stroke_fill_program_pressure_distance;
 
     GLuint quad_program;
     GLuint picker_program;
@@ -533,11 +538,28 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
     {
         GLuint objs[2];
         objs[0] = stroke_vs;
-        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER);
 
-        r->stroke_fill_program = glCreateProgram();
-        gl::link_program(r->stroke_fill_program, objs, array_count(objs));
-        gl::set_uniform_i(r->stroke_fill_program, "u_info", 0);
+        r->stroke_fill_program_distance = glCreateProgram();
+        r->stroke_fill_program_pressure = glCreateProgram();
+        r->stroke_fill_program_pressure_distance = glCreateProgram();
+
+        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER);
+        gl::link_program(r->stroke_fill_program_pressure, objs, array_count(objs));
+
+        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER, "", "#define DISTANCE_TO_OPACITY 1\n#define PRESSURE_TO_OPACITY 0\n");
+        gl::link_program(r->stroke_fill_program_distance, objs, array_count(objs));
+
+        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER, "", "#define DISTANCE_TO_OPACITY 1\n");
+        gl::link_program(r->stroke_fill_program_pressure_distance, objs, array_count(objs));
+
+        GLuint ps[] = {
+            r->stroke_fill_program_pressure,
+            r->stroke_fill_program_pressure_distance,
+            r->stroke_fill_program_distance,
+        };
+        for (auto p : ps) {
+            gl::set_uniform_i(p, "u_info", 0);
+        }
     }
     // Stroke clear program
     {
@@ -742,7 +764,9 @@ gpu_update_scale(RenderBackend* r, i32 scale)
         r->stroke_program,
         r->stroke_program_pressure_to_opacity,
         r->stroke_info_program,
-        r->stroke_fill_program,
+        r->stroke_fill_program_pressure,
+        r->stroke_fill_program_pressure_distance,
+        r->stroke_fill_program_distance,
         r->stroke_clear_program,
     };
     for (sz i = 0; i < array_count(ps); ++i) {
@@ -873,7 +897,9 @@ set_screen_size(RenderBackend* r, float* fscreen)
         r->stroke_program,
         r->stroke_program_pressure_to_opacity,
         r->stroke_info_program,
-        r->stroke_fill_program,
+        r->stroke_fill_program_pressure,
+        r->stroke_fill_program_pressure_distance,
+        r->stroke_fill_program_distance,
         r->stroke_clear_program,
         r->layer_blend_program,
         r->texture_fill_program,
@@ -911,7 +937,9 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
         r->stroke_program,
         r->stroke_program_pressure_to_opacity,
         r->stroke_info_program,
-        r->stroke_fill_program,
+        r->stroke_fill_program_pressure,
+        r->stroke_fill_program_pressure_distance,
+        r->stroke_fill_program_distance,
         r->stroke_clear_program,
     };
 
@@ -1171,6 +1199,9 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             re->flags = 0;
             if (stroke->flags & Stroke::StrokeFlag_PRESSURE_TO_OPACITY) {
                 re->flags |= RenderElementFlags_PRESSURE_TO_OPACITY;
+            }
+            if (stroke->flags & Stroke::StrokeFlag_DISTANCE_TO_OPACITY) {
+                re->flags |= RenderElementFlags_DISTANCE_TO_OPACITY;
             }
 
             mlt_assert(re->count > 1);
@@ -1562,9 +1593,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
         else {
             GLuint program_for_stroke = r->stroke_program;
 
-            if ( re->flags & RenderElementFlags_PRESSURE_TO_OPACITY ) {
-                program_for_stroke = r->stroke_program_pressure_to_opacity;
-            }
 
             auto stroke_pass = [r, texture_target](RenderElement* re, GLuint program_for_stroke) {
                 i64 count = re->count;
@@ -1598,25 +1626,48 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
             };
 
             if ( re->count > 0 ) {
-                glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
 
-                glEnable(GL_DEPTH_TEST);
-                glDisable(GL_BLEND);
-                stroke_pass(re, r->stroke_clear_program);
+                if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) ||
+                     (re->flags & RenderElementFlags_DISTANCE_TO_OPACITY) ) {
+                    glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
 
-                glDisable(GL_DEPTH_TEST);
-                glEnable(GL_BLEND);
-                glBlendEquationSeparate(GL_MIN, GL_MAX);
+                    glEnable(GL_DEPTH_TEST);
+                    glDisable(GL_BLEND);
+                    stroke_pass(re, r->stroke_clear_program);
 
-                stroke_pass(re, r->stroke_info_program);
+                    glDisable(GL_DEPTH_TEST);
+                    glEnable(GL_BLEND);
+                    glBlendEquationSeparate(GL_MIN, GL_MAX);
 
-                glBlendEquation(GL_FUNC_ADD);
+                    stroke_pass(re, r->stroke_info_program);
 
-                glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
-                glBindTexture(texture_target, r->stroke_info_texture);
+                    glBlendEquation(GL_FUNC_ADD);
 
-                glEnable(GL_DEPTH_TEST);
-                stroke_pass(re, r->stroke_fill_program);
+                    glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
+                    glBindTexture(texture_target, r->stroke_info_texture);
+
+                    glEnable(GL_DEPTH_TEST);
+
+                    if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
+                        !(re->flags & RenderElementFlags_DISTANCE_TO_OPACITY)) {
+                        stroke_pass(re, r->stroke_fill_program_pressure);
+                    }
+                    else if ( !(re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
+                               (re->flags & RenderElementFlags_DISTANCE_TO_OPACITY)) {
+                        stroke_pass(re, r->stroke_fill_program_distance);
+                    }
+                    else if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
+                              (re->flags & RenderElementFlags_DISTANCE_TO_OPACITY)) {
+                        stroke_pass(re, r->stroke_fill_program_pressure_distance);
+                    }
+                    else {
+                        INVALID_CODE_PATH;
+                    }
+                }
+                else {
+                    // Fast path
+                    stroke_pass(re, r->stroke_program);
+                }
 
                 // gpu_fill_with_texture(r, r->stroke_info_texture);
                 // stroke_pass(re, r->stroke_program);

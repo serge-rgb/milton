@@ -332,8 +332,8 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
             ImGui::SetNextWindowSize({milton->gui->scale * 271, brush_settings_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
             if (ImGui::Begin(loc(TXT_brush_settings), NULL, default_imgui_window_flags)) {
-                static bool use_opacity_for_pressure = false;
                 ImGui::CheckboxFlags(loc(TXT_opacity_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), Stroke::StrokeFlag_PRESSURE_TO_OPACITY);
+                ImGui::CheckboxFlags(loc(TXT_distance_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), Stroke::StrokeFlag_DISTANCE_TO_OPACITY);
             }
             ImGui::End();
         }
