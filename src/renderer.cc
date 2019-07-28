@@ -70,6 +70,10 @@ struct RenderBackend
     GLuint stroke_program;
     GLuint stroke_program_pressure_to_opacity;
 
+    GLuint stroke_clear_program;
+    GLuint stroke_info_program;
+    GLuint stroke_fill_program;
+
     GLuint quad_program;
     GLuint picker_program;
     GLuint layer_blend_program;
@@ -105,6 +109,9 @@ struct RenderBackend
     GLuint eraser_texture;
     GLuint helper_texture;  // Used for various effects..
     GLuint stencil_texture;
+    GLuint stroke_info_texture;
+
+    GLuint stroke_info_fbo;
     GLuint fbo;
 
     i32 flags;  // RenderBackendFlags enum
@@ -473,6 +480,8 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
         gl::link_program(r->quad_program, objs, array_count(objs));
     }
 
+    GLuint stroke_vs = gl::compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
+
     {  // Stroke raster program
         GLuint objs[2];
         GLuint objs2[2];
@@ -495,10 +504,10 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
             }
         }
 
-        objs[0] = gl::compile_shader(g_stroke_raster_v, GL_VERTEX_SHADER);
+        objs[0] = stroke_vs;
         objs[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string);
 
-        objs2[0] = objs[0];
+        objs2[0] = stroke_vs;
         objs2[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string, "#define USE_PRESSURE_TO_OPACITY 1\n");
 
         r->stroke_program = glCreateProgram();
@@ -509,6 +518,35 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
 
         gl::set_uniform_i(r->stroke_program, "u_canvas", 0);
         gl::set_uniform_i(r->stroke_program_pressure_to_opacity, "u_canvas", 0);
+    }
+    // Stroke info program
+    {
+        GLuint objs[2];
+        objs[0] = stroke_vs;
+        objs[1] = gl::compile_shader(g_stroke_info_f, GL_FRAGMENT_SHADER);
+
+        r->stroke_info_program = glCreateProgram();
+        gl::link_program(r->stroke_info_program, objs, array_count(objs));
+
+    }
+    // Stroke fill program
+    {
+        GLuint objs[2];
+        objs[0] = stroke_vs;
+        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER);
+
+        r->stroke_fill_program = glCreateProgram();
+        gl::link_program(r->stroke_fill_program, objs, array_count(objs));
+        gl::set_uniform_i(r->stroke_fill_program, "u_info", 0);
+    }
+    // Stroke clear program
+    {
+        GLuint objs[2];
+        objs[0] = stroke_vs;
+        objs[1] = gl::compile_shader(g_stroke_clear_f, GL_FRAGMENT_SHADER);
+
+        r->stroke_clear_program = glCreateProgram();
+        gl::link_program(r->stroke_clear_program, objs, array_count(objs));
     }
     {  // Color picker program
         r->picker_program = glCreateProgram();
@@ -607,6 +645,28 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
             r->helper_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
         }
 
+        // Stroke info buffer
+        {
+            GLuint t = 0;
+            glGenTextures(1, &t);
+            glBindTexture(GL_TEXTURE_2D, t);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA32F,
+                         /*width, height = */ view->screen_size.w, view->screen_size.h,
+                         /*border = */ 0,
+                         /*format = */ GL_RGB, /*type = */ GL_FLOAT,
+                         /*data = */ NULL);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            r->stroke_info_texture = t;
+
+            r->stroke_info_fbo = gl::new_fbo(r->stroke_info_texture, /*depth*/0, GL_TEXTURE_2D);
+            glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
+            print_framebuffer_status();
+        }
+
 
         glGenTextures(1, &r->stencil_texture);
 
@@ -655,6 +715,15 @@ gpu_resize(RenderBackend* r, CanvasView* view)
         gl::resize_color_texture(r->eraser_texture, r->width, r->height);
         gl::resize_color_texture(r->canvas_texture, r->width, r->height);
         gl::resize_color_texture(r->helper_texture, r->width, r->height);
+        {
+            glBindTexture(GL_TEXTURE_2D, r->stroke_info_texture);
+            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA32F,
+                         /*width, height = */ r->width, r->height,
+                         /*border = */ 0,
+                         /*format = */ GL_RGB, /*type = */ GL_FLOAT,
+                         /*data = */ NULL);
+
+        }
         gl::resize_depth_stencil_texture(r->stencil_texture, r->width, r->height);
     }
 }
@@ -669,8 +738,16 @@ void
 gpu_update_scale(RenderBackend* r, i32 scale)
 {
     r->scale = scale;
-    gl::set_uniform_i(r->stroke_program, "u_scale", scale);
-    gl::set_uniform_i(r->stroke_program_pressure_to_opacity, "u_scale", scale);
+    GLuint ps[] = {
+        r->stroke_program,
+        r->stroke_program_pressure_to_opacity,
+        r->stroke_info_program,
+        r->stroke_fill_program,
+        r->stroke_clear_program,
+    };
+    for (sz i = 0; i < array_count(ps); ++i) {
+        gl::set_uniform_i(ps[i], "u_scale", scale);
+    }
 }
 
 void
@@ -795,6 +872,9 @@ set_screen_size(RenderBackend* r, float* fscreen)
     GLuint programs[] = {
         r->stroke_program,
         r->stroke_program_pressure_to_opacity,
+        r->stroke_info_program,
+        r->stroke_fill_program,
+        r->stroke_clear_program,
         r->layer_blend_program,
         r->texture_fill_program,
         r->exporter_program,
@@ -826,10 +906,20 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
         r->render_center = new_render_center;
         gpu_free_strokes(r, canvas);
     }
-    gl::set_uniform_vec2i(r->stroke_program, "u_pan_center", 1, relative_to_render_center(r, pan).d);
-    gl::set_uniform_vec2i(r->stroke_program, "u_zoom_center", 1, center.d);
-    gl::set_uniform_vec2i(r->stroke_program_pressure_to_opacity, "u_pan_center", 1, relative_to_render_center(r, pan).d);
-    gl::set_uniform_vec2i(r->stroke_program_pressure_to_opacity, "u_zoom_center", 1, center.d);
+
+    GLuint ps[] = {
+        r->stroke_program,
+        r->stroke_program_pressure_to_opacity,
+        r->stroke_info_program,
+        r->stroke_fill_program,
+        r->stroke_clear_program,
+    };
+
+    for (sz i = 0; i < array_count(ps); ++i) {
+        gl::set_uniform_vec2i(ps[i], "u_pan_center", 1, relative_to_render_center(r, pan).d);
+        gl::set_uniform_vec2i(ps[i], "u_zoom_center", 1, center.d);
+    }
+
     gpu_update_scale(r, view->scale);
     float fscreen[] = { (float)view->screen_size.x, (float)view->screen_size.y };
     set_screen_size(r, fscreen);
@@ -1326,6 +1416,8 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
     glClearDepth(0.0f);
 
+    glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
+    glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
 
     GLenum texture_target;
@@ -1426,6 +1518,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                     }
                 }
                 glEnable(GL_BLEND);
+                glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
                 glEnable(GL_DEPTH_TEST);
             }
 
@@ -1467,30 +1560,22 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
         }
         // If this render element is not a layer, then it is a stroke.
         else {
-            i64 count = re->count;
             GLuint program_for_stroke = r->stroke_program;
 
             if ( re->flags & RenderElementFlags_PRESSURE_TO_OPACITY ) {
                 program_for_stroke = r->stroke_program_pressure_to_opacity;
             }
 
-            glUseProgram(program_for_stroke);
-
-            if ( count > 0 ) {
-                // if ( !(r->current_color == re->color) ) {
-                    gl::set_uniform_vec4(program_for_stroke, "u_brush_color", 1, re->color.d);
-                    // r->current_color = re->color;
-                // }
-                // if ( r->current_radius != re->radius ) {
-                    gl::set_uniform_i(program_for_stroke, "u_radius", re->radius);
-                    // r->current_radius = re->radius;
-                // }
+            auto stroke_pass = [r, texture_target](RenderElement* re, GLuint program_for_stroke) {
+                i64 count = re->count;
+                glUseProgram(program_for_stroke);
+                gl::set_uniform_vec4(program_for_stroke, "u_brush_color", 1, re->color.d);
+                gl::set_uniform_i(program_for_stroke, "u_radius", re->radius);
 
                 DEBUG_gl_validate_buffer(re->vbo_stroke);
                 DEBUG_gl_validate_buffer(re->vbo_pointa);
                 DEBUG_gl_validate_buffer(re->vbo_pointb);
                 DEBUG_gl_validate_buffer(re->indices);
-
 
                 gl::vertex_attrib_v3f(program_for_stroke, "a_pointa", re->vbo_pointa);
                 gl::vertex_attrib_v3f(program_for_stroke, "a_pointb", re->vbo_pointb);
@@ -1510,7 +1595,35 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                 if ( is_eraser(re->color) ) {
                     glEnable(GL_BLEND);
                 }
+            };
 
+            if ( re->count > 0 ) {
+                glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
+                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                          texture_target, r->stroke_info_texture, 0);
+
+                glDisable(GL_DEPTH_TEST);
+                glDisable(GL_BLEND);
+                stroke_pass(re, r->stroke_clear_program);
+
+                glEnable(GL_BLEND);
+                glBlendEquationSeparate(GL_MIN, GL_MAX);
+
+                stroke_pass(re, r->stroke_info_program);
+
+                glBlendEquation(GL_FUNC_ADD);
+
+                glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
+                // glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                //                           texture_target, layer_texture, 0);
+                glBindTexture(texture_target, r->stroke_info_texture);
+
+                glEnable(GL_DEPTH_TEST);
+                stroke_pass(re, r->stroke_fill_program);
+
+                // gpu_fill_with_texture(r, r->stroke_info_texture);
+                // stroke_pass(re, r->stroke_program);
+                // stroke_pass(re, r->stroke_program_pressure_to_opacity);
             } else {
                 static int n = 0;
                 milton_log("Warning: Render element with count 0 [%d times]\n", ++n);
@@ -1606,7 +1719,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
         glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 
-        glActiveTexture(GL_TEXTURE0);
+        // glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, r->helper_texture);
 
         gl::set_uniform_i(r->postproc_program, "u_canvas", 0);

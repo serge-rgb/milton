@@ -446,7 +446,7 @@ new_color_texture(int w, int h)
     glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA8,
                  /*width, height = */ w, h,
                  /*border = */ 0,
-                 /*format = */ GL_RGBA, /*type = */ GL_UNSIGNED_BYTE,
+                 /*format = */ GL_RGBA, /*type = */ GL_FLOAT,
                  /*data = */ NULL);
     glBindTexture(GL_TEXTURE_2D, 0);
     return t;
