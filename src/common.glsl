@@ -35,14 +35,3 @@ raster_to_canvas_gl(vec2 raster_point)
 
     return canvas_point;
 }
-
-bool
-brush_is_eraser()
-{
-    bool is_eraser = false;
-    // Constant k_eraser_color defined in canvas.cc
-    if ( u_brush_color == vec4(23,34,45,56) ) {
-        is_eraser = true;
-    }
-    return is_eraser;
-}

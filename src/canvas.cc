@@ -56,13 +56,6 @@ stroke_point_contains_point(v2l p0, i64 r0, v2l p1, i64 r1)
     return contained;
 }
 
-b32
-is_eraser(v4f color)
-{
-    b32 result = color == k_eraser_color;
-    return result;
-}
-
 Rect
 bounding_box_for_stroke(Stroke* stroke)
 {

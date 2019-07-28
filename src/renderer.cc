@@ -29,10 +29,10 @@ enum ImmediateFlag
 enum RenderElementFlags
 {
     RenderElementFlags_NONE = 0,
-
     RenderElementFlags_LAYER                = 1<<0,
     RenderElementFlags_PRESSURE_TO_OPACITY  = 1<<1,
     RenderElementFlags_DISTANCE_TO_OPACITY  = 1<<2,
+    RenderElementFlags_ERASER               = 1<<3,
 };
 
 struct RenderElement
@@ -69,8 +69,9 @@ struct RenderBackend
     v2i render_center;
 
     // OpenGL programs.
+
     GLuint stroke_program;
-    GLuint stroke_program_pressure_to_opacity;
+    GLuint stroke_eraser_program;
 
     GLuint stroke_clear_program;
     GLuint stroke_info_program;
@@ -490,7 +491,6 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
 
     {  // Stroke raster program
         GLuint objs[2];
-        GLuint objs2[2];
 
         char* config_string = "";
         if ( gl::check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
@@ -513,17 +513,20 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
         objs[0] = stroke_vs;
         objs[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string);
 
-        objs2[0] = stroke_vs;
-        objs2[1] = gl::compile_shader(g_stroke_raster_f, GL_FRAGMENT_SHADER, config_string, "#define USE_PRESSURE_TO_OPACITY 1\n");
-
         r->stroke_program = glCreateProgram();
-        r->stroke_program_pressure_to_opacity = glCreateProgram();
 
         gl::link_program(r->stroke_program, objs, array_count(objs));
-        gl::link_program(r->stroke_program_pressure_to_opacity, objs2, array_count(objs2));
+    }
+    // Stroke eraser
+    {
+        GLuint objs[2];
+        objs[0] = stroke_vs;
+        objs[1] = gl::compile_shader(g_stroke_eraser_f, GL_FRAGMENT_SHADER);
 
-        gl::set_uniform_i(r->stroke_program, "u_canvas", 0);
-        gl::set_uniform_i(r->stroke_program_pressure_to_opacity, "u_canvas", 0);
+        r->stroke_eraser_program = glCreateProgram();
+        gl::link_program(r->stroke_eraser_program, objs, array_count(objs));
+
+        gl::set_uniform_i(r->stroke_eraser_program, "u_canvas", 0);
     }
     // Stroke info program
     {
@@ -763,7 +766,7 @@ gpu_update_scale(RenderBackend* r, i32 scale)
     r->scale = scale;
     GLuint ps[] = {
         r->stroke_program,
-        r->stroke_program_pressure_to_opacity,
+        r->stroke_eraser_program,
         r->stroke_info_program,
         r->stroke_fill_program_pressure,
         r->stroke_fill_program_pressure_distance,
@@ -896,7 +899,7 @@ set_screen_size(RenderBackend* r, float* fscreen)
 {
     GLuint programs[] = {
         r->stroke_program,
-        r->stroke_program_pressure_to_opacity,
+        r->stroke_eraser_program,
         r->stroke_info_program,
         r->stroke_fill_program_pressure,
         r->stroke_fill_program_pressure_distance,
@@ -936,7 +939,7 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
 
     GLuint ps[] = {
         r->stroke_program,
-        r->stroke_program_pressure_to_opacity,
+        r->stroke_eraser_program,
         r->stroke_info_program,
         r->stroke_fill_program_pressure,
         r->stroke_fill_program_pressure_distance,
@@ -1199,10 +1202,13 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             re->min_opacity = stroke->brush.pressure_opacity_min;
 
             re->flags = 0;
-            if (stroke->flags & Stroke::StrokeFlag_PRESSURE_TO_OPACITY) {
+            if (stroke->flags & StrokeFlag_ERASER) {
+                re->flags |= RenderElementFlags_ERASER;
+            }
+            if (stroke->flags & StrokeFlag_PRESSURE_TO_OPACITY) {
                 re->flags |= RenderElementFlags_PRESSURE_TO_OPACITY;
             }
-            if (stroke->flags & Stroke::StrokeFlag_DISTANCE_TO_OPACITY) {
+            if (stroke->flags & StrokeFlag_DISTANCE_TO_OPACITY) {
                 re->flags |= RenderElementFlags_DISTANCE_TO_OPACITY;
             }
 
@@ -1595,7 +1601,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
         else {
             GLuint program_for_stroke = r->stroke_program;
 
-
             auto stroke_pass = [r, texture_target](RenderElement* re, GLuint program_for_stroke) {
                 i64 count = re->count;
                 glUseProgram(program_for_stroke);
@@ -1613,23 +1618,15 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, re->indices);
 
-                // Disable blending if this element is an eraser brush stroke.
-                if ( is_eraser(re->color) ) {
-                    glDisable(GL_BLEND);
-                    glBindTexture(texture_target, r->eraser_texture);
-                    gl::set_uniform_i(program_for_stroke, "u_canvas", 0);
-                }
-
                 glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, 0);
-
-                if ( is_eraser(re->color) ) {
-                    glEnable(GL_BLEND);
-                }
             };
 
             if ( re->count > 0 ) {
-
-                if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) ||
+                if (re->flags & RenderElementFlags_ERASER) {
+                    glBindTexture(texture_target, r->eraser_texture);
+                    stroke_pass(re, r->stroke_eraser_program);
+                }
+                else if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) ||
                      (re->flags & RenderElementFlags_DISTANCE_TO_OPACITY) ) {
                     glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
 

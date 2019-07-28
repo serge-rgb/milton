@@ -17,6 +17,13 @@ struct Brush
     f32 pressure_opacity_min;  // Opacity from pressure.
 };
 
+enum StrokeFlag
+{
+    StrokeFlag_PRESSURE_TO_OPACITY  = (1<<0),
+    StrokeFlag_DISTANCE_TO_OPACITY  = (1<<1),
+    StrokeFlag_ERASER               = (1<<2),
+};
+
 struct Stroke
 {
     i32             id;
@@ -29,11 +36,7 @@ struct Stroke
     Rect            bounding_rect;
     RenderHandle    render_handle;
 
-    enum
-    {
-        StrokeFlag_PRESSURE_TO_OPACITY = (1<<0),
-        StrokeFlag_DISTANCE_TO_OPACITY = (1<<1),
-    } flags;
+    u32 flags; // StrokeFlag
 
 #if STROKE_DEBUG_VIZ
     enum DebugFlags

@@ -78,18 +78,9 @@ milton_update_brushes(Milton* milton)
         if ( i == BrushEnum_PEN ) {
             // Alpha is set by the UI
             brush->color = to_premultiplied(gui_get_picker_rgb(milton->gui), brush->alpha);
-
-            // Check for eraser magic value (see blend.f.glsl and layer_blend.f.glsl)
-            if ( brush->color.r == 0.0f &&
-                 brush->color.g == 1.0f &&
-                 brush->color.b == 0.0f &&
-                 brush->color.a == 1.0f ) {
-                // Grab the largest float that's less than 1.0f
-                *reinterpret_cast<u32*>(&brush->color.g) -= 1;
-            }
         }
         else if ( i == BrushEnum_ERASER ) {
-            brush->color = k_eraser_color;
+            // Nothing
         }
         else if ( i == BrushEnum_PRIMITIVE ) {
             brush->color = to_premultiplied(gui_get_picker_rgb(milton->gui), brush->alpha);
@@ -1351,6 +1342,13 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     // Mode tick
+    if (milton->current_mode == MiltonMode::ERASER) {
+        milton->working_stroke.flags |= StrokeFlag_ERASER;
+    }
+    else {
+        milton->working_stroke.flags &= ~StrokeFlag_ERASER;
+    }
+
     if ( current_mode_is_for_drawing(milton) &&
         (input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK)) ) {
         if ( !is_user_drawing(milton)

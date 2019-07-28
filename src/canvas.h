@@ -85,9 +85,6 @@ struct CanvasViewPreV4
 };
 
 
-b32     is_eraser(v4f color);
-
-
 v2l     canvas_to_raster (CanvasView* view, v2l canvas_point);
 v2l     raster_to_canvas (CanvasView* view, v2l raster_point);
 
