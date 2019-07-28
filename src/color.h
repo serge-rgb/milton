@@ -7,9 +7,6 @@
 #include "common.h"
 #include "vector.h"
 
-
-extern v4f k_eraser_color; // unlikely vector to appear as an rgb [0,1]x3 value
-
 u32 color_v4f_to_u32(v4f c);
 
 v4f color_u32_to_v4f(u32 color);

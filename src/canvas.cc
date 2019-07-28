@@ -4,8 +4,6 @@
 #include "canvas.h"
 #include "utils.h"
 
-v4f k_eraser_color = {23,34,45,56};
-
 v2l
 canvas_to_raster_with_scale(CanvasView* view, v2l canvas_point, i64 scale)
 {

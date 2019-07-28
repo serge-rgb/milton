@@ -174,11 +174,19 @@ milton_load(Milton* milton)
 
                     if ( milton_binary_version < 7 ) {
                         READ(&stroke.brush, sizeof(BrushPreV7), 1, fd);
+
+                        // Previous versions used a magic value for the eraser.
+                        v4f k_eraser_color = {23,34,45,56};
+
+                        if (stroke.brush.color == k_eraser_color) {
+                            stroke.flags |= StrokeFlag_ERASER;
+                        }
                     }
                     else {
                         READ(&stroke.brush, sizeof(Brush), 1, fd);
                         READ(&stroke.flags, sizeof(stroke.flags), 1, fd);
                     }
+
                     READ(&stroke.num_points, sizeof(i32), 1, fd);
 
                     if ( stroke.num_points > STROKE_MAX_POINTS || stroke.num_points <= 0 ) {
