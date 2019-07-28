@@ -51,6 +51,7 @@ struct RenderElement
         struct {  // For when element is a stroke.
             v4f     color;
             i32     radius;
+            f32     min_opacity;
         };
         struct {  // For when element is layer.
             f32          layer_alpha;
@@ -1195,6 +1196,7 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             re->count = (i64)(indices_i);
             re->color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
             re->radius = stroke->brush.radius;
+            re->min_opacity = stroke->brush.pressure_opacity_min;
 
             re->flags = 0;
             if (stroke->flags & Stroke::StrokeFlag_PRESSURE_TO_OPACITY) {
@@ -1650,6 +1652,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
                     if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
                         !(re->flags & RenderElementFlags_DISTANCE_TO_OPACITY)) {
+                        gl::set_uniform_f(r->stroke_fill_program_pressure, "u_opacity_min", re->min_opacity);
                         stroke_pass(re, r->stroke_fill_program_pressure);
                     }
                     else if ( !(re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
@@ -1658,6 +1661,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                     }
                     else if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
                               (re->flags & RenderElementFlags_DISTANCE_TO_OPACITY)) {
+                        gl::set_uniform_f(r->stroke_fill_program_pressure_distance, "u_opacity_min", re->min_opacity);
                         stroke_pass(re, r->stroke_fill_program_pressure_distance);
                     }
                     else {

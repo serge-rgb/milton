@@ -4,6 +4,7 @@
 // in vec3 v_pointa;
 // in vec3 v_pointb;
 
+uniform float u_opacity_min;
 uniform sampler2D u_info;
 
 #ifndef PRESSURE_TO_OPACITY
@@ -24,7 +25,7 @@ main()
     if ( dist < u_radius*pressure ) {
         out_color = u_brush_color;
         #if PRESSURE_TO_OPACITY
-            out_color.a *= pressure;
+            out_color.a *= (1.0f - u_opacity_min) * pressure + u_opacity_min;
         #endif
         #if DISTANCE_TO_OPACITY
             out_color.a *= 1 - dist / (u_radius*pressure);

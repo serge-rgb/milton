@@ -333,6 +333,12 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
 
             if (ImGui::Begin(loc(TXT_brush_settings), NULL, default_imgui_window_flags)) {
                 ImGui::CheckboxFlags(loc(TXT_opacity_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), Stroke::StrokeFlag_PRESSURE_TO_OPACITY);
+                if (milton->working_stroke.flags & Stroke::StrokeFlag_PRESSURE_TO_OPACITY) {
+                    int brush_enum = milton_get_brush_enum(milton);
+                    f32* min_opacity = &milton->brushes[brush_enum].pressure_opacity_min;
+
+                    ImGui::SliderFloat(loc(TXT_minimum_opacity), min_opacity, 0.0f, 1.0f);
+                }
                 ImGui::CheckboxFlags(loc(TXT_distance_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), Stroke::StrokeFlag_DISTANCE_TO_OPACITY);
             }
             ImGui::End();

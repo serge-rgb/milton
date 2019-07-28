@@ -290,6 +290,7 @@ b32 current_mode_is_for_drawing(Milton* milton);
 void milton_toggle_gui_visibility(Milton* milton);
 void milton_set_gui_visibility(Milton* milton, b32 visible);
 
+int     milton_get_brush_enum(Milton* milton);
 i32     milton_get_brush_radius(Milton* milton);   // Between 0 and k_max_brush_size
 void    milton_set_brush_size(Milton* milton, i32 size);
 void    milton_increase_brush_size(Milton* milton);

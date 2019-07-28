@@ -85,6 +85,7 @@ enum Texts
     TXT_brush_settings,
     TXT_opacity_pressure,
     TXT_distance_pressure,
+    TXT_minimum_opacity,
 
     // Actions
     TXT_Action_FIRST,
