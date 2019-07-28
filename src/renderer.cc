@@ -1599,13 +1599,12 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
             if ( re->count > 0 ) {
                 glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
-                glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                                          texture_target, r->stroke_info_texture, 0);
 
-                glDisable(GL_DEPTH_TEST);
+                glEnable(GL_DEPTH_TEST);
                 glDisable(GL_BLEND);
                 stroke_pass(re, r->stroke_clear_program);
 
+                glDisable(GL_DEPTH_TEST);
                 glEnable(GL_BLEND);
                 glBlendEquationSeparate(GL_MIN, GL_MAX);
 
@@ -1614,8 +1613,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                 glBlendEquation(GL_FUNC_ADD);
 
                 glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
-                // glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                //                           texture_target, layer_texture, 0);
                 glBindTexture(texture_target, r->stroke_info_texture);
 
                 glEnable(GL_DEPTH_TEST);
