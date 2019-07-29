@@ -1626,8 +1626,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                     glBindTexture(texture_target, r->eraser_texture);
                     stroke_pass(re, r->stroke_eraser_program);
                 }
-                else if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) ||
-                     (re->flags & RenderElementFlags_DISTANCE_TO_OPACITY) ) {
+                else if ( (re->flags & (RenderElementFlags_PRESSURE_TO_OPACITY | RenderElementFlags_DISTANCE_TO_OPACITY)) ) {
                     glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
 
                     glEnable(GL_DEPTH_TEST);
@@ -1669,10 +1668,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                     // Fast path
                     stroke_pass(re, r->stroke_program);
                 }
-
-                // gpu_fill_with_texture(r, r->stroke_info_texture);
-                // stroke_pass(re, r->stroke_program);
-                // stroke_pass(re, r->stroke_program_pressure_to_opacity);
             } else {
                 static int n = 0;
                 milton_log("Warning: Render element with count 0 [%d times]\n", ++n);

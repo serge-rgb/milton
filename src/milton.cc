@@ -785,6 +785,9 @@ void
 milton_enter_mode(Milton* milton, MiltonMode mode)
 {
     if ( mode != milton->current_mode ) {
+        if (mode == MiltonMode::EYEDROPPER) {
+            eyedropper_init(milton);
+        }
         push_mode(milton, milton->current_mode);
         milton->current_mode = mode;
     }
@@ -1391,28 +1394,23 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         milton->gui->flags &= ~(MiltonGuiFlags_SHOWING_PREVIEW);
     }
     else if ( milton->current_mode == MiltonMode::EYEDROPPER ) {
-        eyedropper_init(milton);
-        v2i point = {};
-        b32 in = false;
-        if ( (input->flags & MiltonInputFlags_CLICK) ) {
-            point = input->click;
-            in = true;
-        }
-        if ( in ) {
-            eyedropper_input(milton->eyedropper, milton->gui,
-                             milton->view->screen_size.w,
-                             milton->view->screen_size.h,
-                             point);
-            gpu_update_picker(milton->renderer, &milton->gui->picker);
-        }
+        v2i point = milton->platform->pointer;
+
+        eyedropper_input(milton->eyedropper, milton->gui,
+                         milton->view->screen_size.w,
+                         milton->view->screen_size.h,
+                         point);
+        gpu_update_picker(milton->renderer, &milton->gui->picker);
         if( input->flags & MiltonInputFlags_CLICKUP ) {
             if ( !(milton->flags & MiltonStateFlags_IGNORE_NEXT_CLICKUP) ) {
-                milton_enter_mode(milton, MiltonMode::PEN);
                 milton_update_brushes(milton);
+                milton_leave_mode(milton);
             } else {
                 milton->flags &= ~MiltonStateFlags_IGNORE_NEXT_CLICKUP;
             }
         }
+        render_flags |= RenderBackendFlags_GUI_VISIBLE;
+        milton->render_settings.do_full_redraw = true;  // TODO: Remove this.
     }
     else if (milton->current_mode == MiltonMode::PEEK_OUT) {
         milton->render_settings.do_full_redraw = true;
@@ -1421,7 +1419,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     else if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
         drag_brush_size_tick(milton, input);
     }
-
 
     // ---- End stroke
     if ( end_stroke ) {
