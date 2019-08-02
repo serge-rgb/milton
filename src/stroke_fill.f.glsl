@@ -1,9 +1,6 @@
 // Copyright (c) 2015 Sergio Gonzalez. All rights reserved.
 // License: https://github.com/serge-rgb/milton#license
 
-// in vec3 v_pointa;
-// in vec3 v_pointb;
-
 uniform float u_opacity_min;
 uniform sampler2D u_info;
 
@@ -20,15 +17,14 @@ main()
 {
     vec2 coord = gl_FragCoord.xy / u_screen_size;
     vec2 stroke_info = texture(u_info, coord).ra;
-    float dist = stroke_info.x;
     float pressure = stroke_info.y;
-    if ( dist < u_radius*pressure ) {
+    if ( stroke_info.x < 1.0f  ) {
         out_color = u_brush_color;
         #if PRESSURE_TO_OPACITY
-            out_color.a *= (1.0f - u_opacity_min) * pressure + u_opacity_min;
+            out_color *= (1.0f - u_opacity_min) * pressure + u_opacity_min;
         #endif
         #if DISTANCE_TO_OPACITY
-            out_color.a *= smoothstep(0, 1, 1 - dist / (u_radius*pressure));
+            out_color *= smoothstep(0, 1, 1 - (stroke_info.x / pressure));
         #endif
     }
     else {

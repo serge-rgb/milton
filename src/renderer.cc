@@ -673,21 +673,7 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
 
         // Stroke info buffer
         {
-            GLuint t = 0;
-            glGenTextures(1, &t);
-            glBindTexture(GL_TEXTURE_2D, t);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA32F,
-                         /*width, height = */ view->screen_size.w, view->screen_size.h,
-                         /*border = */ 0,
-                         /*format = */ GL_RGB, /*type = */ GL_FLOAT,
-                         /*data = */ NULL);
-            glBindTexture(GL_TEXTURE_2D, 0);
-            r->stroke_info_texture = t;
-
+            r->stroke_info_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
             r->stroke_info_fbo = gl::new_fbo(r->stroke_info_texture, /*depth*/0, GL_TEXTURE_2D);
             glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
             print_framebuffer_status();
@@ -741,15 +727,7 @@ gpu_resize(RenderBackend* r, CanvasView* view)
         gl::resize_color_texture(r->eraser_texture, r->width, r->height);
         gl::resize_color_texture(r->canvas_texture, r->width, r->height);
         gl::resize_color_texture(r->helper_texture, r->width, r->height);
-        {
-            glBindTexture(GL_TEXTURE_2D, r->stroke_info_texture);
-            glTexImage2D(GL_TEXTURE_2D, /*level = */ 0, /*internal_format = */ GL_RGBA32F,
-                         /*width, height = */ r->width, r->height,
-                         /*border = */ 0,
-                         /*format = */ GL_RGB, /*type = */ GL_FLOAT,
-                         /*data = */ NULL);
-
-        }
+        gl::resize_color_texture(r->stroke_info_texture, r->width, r->height);
         gl::resize_depth_stencil_texture(r->stencil_texture, r->width, r->height);
     }
 }

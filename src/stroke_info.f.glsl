@@ -4,8 +4,6 @@
 in vec3 v_pointa;
 in vec3 v_pointb;
 
-uniform sampler2D u_canvas;
-
 void
 main()
 {
@@ -27,7 +25,9 @@ main()
     // Distance between fragment and stroke
     float dist = distance(stroke_point, canvas_point);
 
-    out_color.r = dist;
-    if (dist < u_radius*pressure)
+    out_color.r = 1.0f;
+    if (dist < u_radius * pressure) {
+        out_color.r = dist / u_radius;
         out_color.a = pressure;
+    }
 }

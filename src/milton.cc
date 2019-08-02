@@ -1410,7 +1410,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
             }
         }
         render_flags |= RenderBackendFlags_GUI_VISIBLE;
-        milton->render_settings.do_full_redraw = true;  // TODO: Remove this.
     }
     else if (milton->current_mode == MiltonMode::PEEK_OUT) {
         milton->render_settings.do_full_redraw = true;
