@@ -550,10 +550,10 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
         objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER);
         gl::link_program(r->stroke_fill_program_pressure, objs, array_count(objs));
 
-        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER, "", "#define DISTANCE_TO_OPACITY 1\\n#define PRESSURE_TO_OPACITY 0\\n");
+        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER, "", "#define DISTANCE_TO_OPACITY 1\n#define PRESSURE_TO_OPACITY 0\n");
         gl::link_program(r->stroke_fill_program_distance, objs, array_count(objs));
 
-        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER, "", "#define DISTANCE_TO_OPACITY 1\\n");
+        objs[1] = gl::compile_shader(g_stroke_fill_f, GL_FRAGMENT_SHADER, "", "#define DISTANCE_TO_OPACITY 1\n");
         gl::link_program(r->stroke_fill_program_pressure_distance, objs, array_count(objs));
 
         GLuint ps[] = {

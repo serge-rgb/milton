@@ -63,7 +63,6 @@ read_entire_file(const char* fname)
 char**
 split_lines(char* contents, i64* out_count, i64* max_line=NULL)
 {
-    i64 this_len = 0;
 
     char** lines = (char**)calloc(1, sizeof(char**)*MAX_LINES);
     i64 lines_i = 0;
@@ -73,19 +72,20 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
     for ( ;
           *iter!='\0';
           ++iter ) {
-        ++this_len;
 
         if ( *iter == '\n' || *(iter+1) == '\0' ) {
+            i64 this_len = iter - begin;
+
             if ( max_line != NULL ) {
                 if ( this_len > *max_line ) {
                     *max_line = this_len;
                 }
             }
             // Copy a string from beginning
-            char* line = (char*)malloc((size_t)this_len+2);
-            // Dumb loop to get rid of quotes.
+            char* line = (char*)calloc(1, (size_t)this_len*2 + 2);
+
             int line_i = 0;
-            for ( int i = 0; i <= this_len; ++i ) {
+            for ( int i = 0; i < this_len; ++i ) {
                 if ( begin[i] == '\"' ) {
                     line[line_i++] = 'Q';
                 }
@@ -93,11 +93,12 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
                     line[line_i++] = begin[i];
                 }
             }
-
+            line[line_i++] = '\n';
             line[line_i++] = '\0';
+
             lines[lines_i++] = line;
+
             begin = iter+1;
-            this_len = 0;
         }
     }
     *out_count = lines_i;
