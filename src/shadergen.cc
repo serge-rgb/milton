@@ -83,14 +83,18 @@ split_lines(char* contents, i64* out_count, i64* max_line=NULL)
             }
             // Copy a string from beginning
             char* line = (char*)malloc((size_t)this_len+2);
-            memcpy(line, begin, (size_t)this_len);
             // Dumb loop to get rid of quotes.
-            for ( int i = 0; i < this_len; ++i ) {
-                if ( line[i] == '\"' ) {
-                    line[i] = 'Q';
+            int line_i = 0;
+            for ( int i = 0; i <= this_len; ++i ) {
+                if ( begin[i] == '\"' ) {
+                    line[line_i++] = 'Q';
+                }
+                else if (begin[i] != '\r' && begin[i] != '\n') {
+                    line[line_i++] = begin[i];
                 }
             }
-            line[this_len++] = '\0';
+
+            line[line_i++] = '\0';
             lines[lines_i++] = line;
             begin = iter+1;
             this_len = 0;

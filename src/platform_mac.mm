@@ -49,6 +49,20 @@ platform_setup_cursor(Arena* arena, PlatformState* platform)
 
 }
 
+void
+platform_cursor_set_position(PlatformState* platform, v2i pos)
+{
+    // TODO: Implement
+}
+
+v2i
+platform_cursor_get_position(PlatformState* platform)
+{
+    // TODO: Implement
+    return v2i{};
+}
+
+
 void*
 platform_get_gl_proc(char* name)
 {
@@ -326,6 +340,7 @@ platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode)
     FILE* fd = fopen(fname, mode);
     return fd;
 }
+
 
 b32
 platform_move_file(PATH_CHAR* src, PATH_CHAR* dest)
