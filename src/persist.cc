@@ -55,6 +55,21 @@ milton_unset_last_canvas_fname()
     }
 }
 
+static b32
+read_brushes(Brush* brushes, i32 num_brushes, FILE* fd)
+{
+    i32 size = 0;
+    b32 ok = fread_checked(&size, sizeof(size), 1, fd);
+
+    if (size == 0 || size > sizeof(Brush)) {
+        ok = false;
+    }
+
+    if (ok) { ok = fread_checked(brushes, size, num_brushes, fd); }
+
+    return ok;
+}
+
 void
 milton_load(Milton* milton)
 {
@@ -188,7 +203,10 @@ milton_load(Milton* milton)
                         stroke.brush.hardness = 2.0f;
                     }
                     else {
-                        READ(&stroke.brush, sizeof(Brush), 1, fd);
+                        if (!read_brushes(&stroke.brush, 1, fd)) {
+                            ok = false;
+                            goto END;
+                        }
                         READ(&stroke.flags, sizeof(stroke.flags), 1, fd);
                     }
 
@@ -306,7 +324,11 @@ milton_load(Milton* milton)
 				READ(&milton->brushes, sizeof(BrushPreV8), num_brushes, fd);
 			}
             else {
-                READ(&milton->brushes, sizeof(Brush), num_brushes, fd);
+                if (!read_brushes(milton->brushes, num_brushes, fd)) {
+                    ok = false;
+                    goto END;
+                }
+
             }
 
             READ(&milton->brush_sizes, sizeof(i32), num_brushes, fd);
@@ -488,7 +510,9 @@ milton_save(Milton* milton)
                             Stroke* stroke = get(&layer->strokes, stroke_i);
                             mlt_assert(stroke->num_points > 0);
                             if ( stroke->num_points > 0 && stroke->num_points <= STROKE_MAX_POINTS ) {
-                                if ( !write_data(&stroke->brush, sizeof(Brush), 1, fd) ||
+                                i32 size_of_brush = sizeof(Brush);
+                                if ( !write_data(&size_of_brush, sizeof(i32), 1, fd ) ||
+                                     !write_data(&stroke->brush, sizeof(Brush), 1, fd) ||
                                      !write_data(&stroke->flags, sizeof(stroke->flags), 1, fd) ||
                                      !write_data(&stroke->num_points, sizeof(i32), 1, fd) ||
                                      !write_data(stroke->points, sizeof(v2l), (size_t)stroke->num_points, fd) ||
@@ -578,21 +602,14 @@ milton_save(Milton* milton)
                         //
                         b32 could_write_brushes = true;
 
-                        if ( milton_binary_version >= 2 && milton_binary_version <= 5 ) {
-                            // PEN, ERASER
-                            if ( !write_data(&milton->brushes, sizeof(Brush), 2, fd) ||
-                            // Sizes
-                                 !write_data(&milton->brush_sizes, sizeof(i32), 2, fd) ) {
-                                could_write_brushes = false;
-                            }
-                        }
-                        else if ( milton_binary_version > 5 ) {
-                            u16 num_brushes = 3;  // Brush, eraser, primitive.
-                            if ( !write_data(&num_brushes, sizeof(num_brushes), 1, fd) ||
-                                 !write_data(&milton->brushes, sizeof(Brush), num_brushes, fd) ||
-                                 !write_data(&milton->brush_sizes, sizeof(i32), num_brushes, fd) ) {
-                                could_write_brushes = false;
-                            }
+                        i32 size_of_brush = sizeof(Brush);
+
+                        u16 num_brushes = 3;  // Brush, eraser, primitive.
+                        if ( !write_data(&num_brushes, sizeof(num_brushes), 1, fd) ||
+                             !write_data(&size_of_brush, sizeof(i32), 1, fd) ||
+                             !write_data(&milton->brushes, sizeof(Brush), num_brushes, fd) ||
+                             !write_data(&milton->brush_sizes, sizeof(i32), num_brushes, fd) ) {
+                            could_write_brushes = false;
                         }
 
                         if ( could_write_brushes ) {
