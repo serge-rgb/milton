@@ -302,6 +302,9 @@ milton_load(Milton* milton)
             if ( milton_binary_version < 7 ) {
                 READ(&milton->brushes, sizeof(BrushPreV7), num_brushes, fd);
             }
+			else if (milton_binary_version < 8) {
+				READ(&milton->brushes, sizeof(BrushPreV8), num_brushes, fd);
+			}
             else {
                 READ(&milton->brushes, sizeof(Brush), num_brushes, fd);
             }
