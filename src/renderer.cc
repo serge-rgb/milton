@@ -52,6 +52,7 @@ struct RenderElement
             v4f     color;
             i32     radius;
             f32     min_opacity;
+            f32     hardness;
         };
         struct {  // For when element is layer.
             f32          layer_alpha;
@@ -1178,6 +1179,7 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
             re->color = { stroke->brush.color.r, stroke->brush.color.g, stroke->brush.color.b, stroke->brush.color.a };
             re->radius = stroke->brush.radius;
             re->min_opacity = stroke->brush.pressure_opacity_min;
+            re->hardness = stroke->brush.hardness;
 
             re->flags = 0;
             if (stroke->flags & StrokeFlag_ERASER) {
@@ -1611,7 +1613,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                     glDisable(GL_BLEND);
                     stroke_pass(re, r->stroke_clear_program);
 
-                    glDisable(GL_DEPTH_TEST);
                     glEnable(GL_BLEND);
                     glBlendEquationSeparate(GL_MIN, GL_MAX);
 
@@ -1622,8 +1623,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                     glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
                     glBindTexture(texture_target, r->stroke_info_texture);
 
-                    glEnable(GL_DEPTH_TEST);
-
                     if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
                         !(re->flags & RenderElementFlags_DISTANCE_TO_OPACITY)) {
                         gl::set_uniform_f(r->stroke_fill_program_pressure, "u_opacity_min", re->min_opacity);
@@ -1631,11 +1630,13 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                     }
                     else if ( !(re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
                                (re->flags & RenderElementFlags_DISTANCE_TO_OPACITY)) {
+                        gl::set_uniform_f(r->stroke_fill_program_distance, "u_hardness", re->hardness);
                         stroke_pass(re, r->stroke_fill_program_distance);
                     }
                     else if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
                               (re->flags & RenderElementFlags_DISTANCE_TO_OPACITY)) {
                         gl::set_uniform_f(r->stroke_fill_program_pressure_distance, "u_opacity_min", re->min_opacity);
+                        gl::set_uniform_f(r->stroke_fill_program_pressure_distance, "u_hardness", re->hardness);
                         stroke_pass(re, r->stroke_fill_program_pressure_distance);
                     }
                     else {

@@ -15,6 +15,7 @@ struct Brush
     v4f color;
     f32 alpha;
     f32 pressure_opacity_min;  // Opacity from pressure.
+    f32 hardness;
 };
 
 enum StrokeFlag
@@ -50,6 +51,14 @@ struct Stroke
 
 
 // ==== Old versions ====
+
+struct BrushPreV8
+{
+    i32 radius;
+    v4f color;
+    f32 alpha;
+    f32 pressure_opacity_min;  // Opacity from pressure.
+};
 
 struct BrushPreV7
 {

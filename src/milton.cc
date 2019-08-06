@@ -85,6 +85,10 @@ milton_update_brushes(Milton* milton)
         else if ( i == BrushEnum_PRIMITIVE ) {
             brush->color = to_premultiplied(gui_get_picker_rgb(milton->gui), brush->alpha);
         }
+
+        if (brush->hardness == 0.0f) {
+            brush->hardness = 10.f;
+        }
     }
 
     int brush_enum = milton_get_brush_enum(milton);

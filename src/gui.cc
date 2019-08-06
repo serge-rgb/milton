@@ -339,7 +339,14 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
 
                     ImGui::SliderFloat(loc(TXT_minimum_opacity), min_opacity, 0.0f, milton->brushes[brush_enum].alpha);
                 }
-                ImGui::CheckboxFlags(loc(TXT_distance_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), StrokeFlag_DISTANCE_TO_OPACITY);
+                ImGui::CheckboxFlags(loc(TXT_soft_brush), reinterpret_cast<u32*>(&milton->working_stroke.flags), StrokeFlag_DISTANCE_TO_OPACITY);
+                if (milton->working_stroke.flags & StrokeFlag_DISTANCE_TO_OPACITY) {
+                    int brush_enum = milton_get_brush_enum(milton);
+                    f32* hardness = &milton->brushes[brush_enum].hardness;
+
+                    ImGui::SliderFloat(loc(TXT_hardness), hardness, 1.0f, 10.0f);
+                }
+
             }
             ImGui::End();
         }
@@ -696,7 +703,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
         /* ImGuiSetCond_FirstUseEver */
 
         const f32 brush_window_width = milton->gui->scale * 271;
-        const f32 brush_window_height = milton->gui->scale * 140;
+        const f32 brush_window_height = milton->gui->scale * 150;
 
         ImGui::SetNextWindowPos(ImVec2(milton->gui->scale * 10, milton->gui->scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowSize({brush_window_width, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences

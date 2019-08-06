@@ -2,6 +2,7 @@
 // License: https://github.com/serge-rgb/milton#license
 
 uniform float u_opacity_min;
+uniform float u_hardness;
 uniform sampler2D u_info;
 
 #ifndef PRESSURE_TO_OPACITY
@@ -24,7 +25,7 @@ main()
             out_color *= (1.0f - u_opacity_min) * pressure + u_opacity_min;
         #endif
         #if DISTANCE_TO_OPACITY
-            out_color *= smoothstep(0, 1, 1 - (stroke_info.x / pressure));
+            out_color *= pow(1 - (stroke_info.x), 1.0f / u_hardness);
         #endif
     }
     else {

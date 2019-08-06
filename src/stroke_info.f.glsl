@@ -25,9 +25,10 @@ main()
     // Distance between fragment and stroke
     float dist = distance(stroke_point, canvas_point);
 
-    out_color.r = 1.0f;
-    if (dist < u_radius * pressure) {
-        out_color.r = dist / u_radius;
+    float rad = u_radius * pressure;
+    out_color.r = dist / rad;
+    out_color.a = 0.0f;
+    if (dist < rad) {
         out_color.a = pressure;
     }
 }

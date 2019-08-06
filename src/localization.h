@@ -84,8 +84,9 @@ enum Texts
     TXT_peek_out_increment_percent,
     TXT_brush_settings,
     TXT_opacity_pressure,
-    TXT_distance_pressure,
+    TXT_soft_brush,
     TXT_minimum_opacity,
+    TXT_hardness,
 
     // Actions
     TXT_Action_FIRST,

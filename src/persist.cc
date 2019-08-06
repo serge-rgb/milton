@@ -182,6 +182,11 @@ milton_load(Milton* milton)
                             stroke.flags |= StrokeFlag_ERASER;
                         }
                     }
+                    else if ( milton_binary_version < 8 ) {
+                        READ(&stroke.brush, sizeof(BrushPreV8), 1, fd);
+                        READ(&stroke.flags, sizeof(stroke.flags), 1, fd);
+                        stroke.brush.hardness = 2.0f;
+                    }
                     else {
                         READ(&stroke.brush, sizeof(Brush), 1, fd);
                         READ(&stroke.flags, sizeof(stroke.flags), 1, fd);
@@ -193,7 +198,7 @@ milton_load(Milton* milton)
                         milton_log("ERROR: File has a stroke with %d points\n",
                                    stroke.num_points);
                         // Older versions have a possible off-by-one bug here.
-                        if (stroke.num_points <= STROKE_MAX_POINTS)  {
+                        if (stroke.num_points == STROKE_MAX_POINTS)  {
                             stroke.points = arena_alloc_array(&canvas->arena, stroke.num_points, v2l);
                             READ(stroke.points, sizeof(v2l), (size_t)stroke.num_points, fd);
                             stroke.pressures = arena_alloc_array(&canvas->arena, stroke.num_points, f32);
