@@ -90,7 +90,7 @@ milton_load(Milton* milton)
         READ(&milton_binary_version, sizeof(u32), 1, fd);
 
         if (ok) {
-            if ( milton_binary_version < 7 ) {
+            if ( milton_binary_version < 8 ) {
                 if ( platform_dialog_yesno ("This file will be updated to the new version of Milton. Older versions won't be able to open it. Is this OK?", "File format change") ) {
                     milton->persist->mlt_binary_version = MILTON_MINOR_VERSION;
                     milton_log("Updating this file to latest mlt version.\n");
