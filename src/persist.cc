@@ -65,7 +65,9 @@ read_brushes(Brush* brushes, i32 num_brushes, FILE* fd)
         ok = false;
     }
 
-    if (ok) { ok = fread_checked(brushes, size, num_brushes, fd); }
+    for (i32 i = 0; i < num_brushes; ++i) {
+        if (ok) { ok = fread_checked(brushes + i, size, 1, fd); }
+    }
 
     return ok;
 }
