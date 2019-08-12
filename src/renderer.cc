@@ -119,7 +119,6 @@ struct RenderBackend
     GLuint stencil_texture;
     GLuint stroke_info_texture;
 
-    GLuint stroke_info_fbo;
     GLuint fbo;
 
     i32 flags;  // RenderBackendFlags enum
@@ -675,8 +674,6 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
         // Stroke info buffer
         {
             r->stroke_info_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
-            r->stroke_info_fbo = gl::new_fbo(r->stroke_info_texture, /*depth*/0, GL_TEXTURE_2D);
-            glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
             print_framebuffer_status();
         }
 
@@ -1435,8 +1432,6 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
     glClearDepth(0.0f);
 
-    glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
-    glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
 
     GLenum texture_target;
@@ -1607,9 +1602,11 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
                     stroke_pass(re, r->stroke_eraser_program);
                 }
                 else if ( (re->flags & (RenderElementFlags_PRESSURE_TO_OPACITY | RenderElementFlags_DISTANCE_TO_OPACITY)) ) {
-                    glBindFramebufferEXT(GL_FRAMEBUFFER, r->stroke_info_fbo);
+                    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                              texture_target, r->stroke_info_texture, 0);
 
-                    glEnable(GL_DEPTH_TEST);
+
+                    glDisable(GL_DEPTH_TEST);
                     glDisable(GL_BLEND);
                     stroke_pass(re, r->stroke_clear_program);
 
@@ -1620,7 +1617,9 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
                     glBlendEquation(GL_FUNC_ADD);
 
-                    glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
+                    glEnable(GL_DEPTH_TEST);
+                    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                              texture_target, layer_texture, 0);
                     glBindTexture(texture_target, r->stroke_info_texture);
 
                     if ( (re->flags & RenderElementFlags_PRESSURE_TO_OPACITY) &&
