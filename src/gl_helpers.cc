@@ -295,11 +295,21 @@ set_attribute_vec2(GLuint program, char* name, GLfloat* data, size_t data_sz)
     return ok;
 }
 
+void
+use_program(GLuint program)
+{
+    static GLuint cached_program = 0;
+    if (program != cached_program) {
+        glUseProgram(program);
+        cached_program = program;
+    }
+}
+
 bool
 set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
@@ -307,7 +317,7 @@ set_uniform_vec4(GLuint program, char* name, size_t count, float* vals)
     if ( ok ) {
         glUniform4fv(loc, (GLsizei)count, vals);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 
@@ -315,7 +325,7 @@ bool
 set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
@@ -323,7 +333,7 @@ set_uniform_vec3i(GLuint program, char* name, size_t count, i32* vals)
     if ( ok ) {
         glUniform3iv(loc, (GLsizei)count, vals);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 
@@ -331,7 +341,7 @@ bool
 set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
@@ -339,7 +349,7 @@ set_uniform_vec3(GLuint program, char* name, size_t count, float* vals)
     if ( ok ) {
         glUniform3fv(loc, (GLsizei)count, vals);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 
@@ -347,14 +357,14 @@ bool
 set_uniform_vec2(GLuint program, char* name, size_t count, float* vals)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform2fv(loc, (GLsizei)count, vals);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 
@@ -362,14 +372,14 @@ bool
 set_uniform_vec2(GLuint program, char* name, float x, float y)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform2f(loc, x, y);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 
@@ -377,14 +387,14 @@ bool
 set_uniform_vec2i(GLuint program, char* name, size_t count, i32* vals)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform2iv(loc, (GLsizei)count, vals);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 
@@ -392,14 +402,14 @@ bool
 set_uniform_f(GLuint program, char* name, float val)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform1f(loc, val);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 
@@ -407,14 +417,14 @@ bool
 set_uniform_i(GLuint program, char* name, i32 val)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform1i(loc, val);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 
@@ -422,14 +432,14 @@ bool
 set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
 {
     GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    glUseProgram(program);
+    use_program(program);
     bool ok = true;
     GLint loc = glGetUniformLocation(program, (GLchar*)name);
     ok = loc >= 0;
     if ( ok ) {
         glUniform2i(loc, x, y);
     }
-    glUseProgram(last_program);
+    use_program(last_program);
     return ok;
 }
 

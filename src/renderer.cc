@@ -241,7 +241,7 @@ gpu_allocate_render_backend(Arena* arena)
 void
 gpu_update_picker(RenderBackend* r, ColorPicker* picker)
 {
-    glUseProgram(r->picker_program);
+    gl::use_program(r->picker_program);
     // Transform to [-1,1]
     v2f a = picker->data.a;
     v2f b = picker->data.b;
@@ -1378,7 +1378,7 @@ static void
 gpu_fill_with_texture(RenderBackend* r, float alpha = 1.0f)
 {
     // Assumes that texture object is already bound.
-    glUseProgram(r->texture_fill_program);
+    gl::use_program(r->texture_fill_program);
     gl::set_uniform_f(r->texture_fill_program, "u_alpha", alpha);
     {
         GLint t_loc = glGetAttribLocation(r->texture_fill_program, "a_position");
@@ -1401,7 +1401,7 @@ enum BoxFilterPass
 static void
 box_filter_pass(RenderBackend* r, int kernel_size, int direction)
 {
-    glUseProgram(r->blur_program);
+    gl::use_program(r->blur_program);
     gl::set_uniform_i(r->blur_program, "u_kernel_size", kernel_size);
     GLint t_loc = glGetAttribLocation(r->blur_program, "a_position");
     if ( t_loc >= 0 ) {
@@ -1578,7 +1578,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
 
             auto stroke_pass = [r, texture_target](RenderElement* re, GLuint program_for_stroke) {
                 i64 count = re->count;
-                glUseProgram(program_for_stroke);
+                gl::use_program(program_for_stroke);
                 gl::set_uniform_vec4(program_for_stroke, "u_brush_color", 1, re->color.d);
                 gl::set_uniform_i(program_for_stroke, "u_radius", re->radius);
 
@@ -1710,7 +1710,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     // TODO: Only render if view rect intersects picker rect
     if ( r->flags & RenderBackendFlags_GUI_VISIBLE ) {
         // Render picker
-        glUseProgram(r->picker_program);
+        gl::use_program(r->picker_program);
         GLint loc = glGetAttribLocation(r->picker_program, "a_position");
 
         if ( loc >= 0 ) {
@@ -1746,7 +1746,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
         gl::set_uniform_i(r->postproc_program, "u_canvas", 0);
 
-        glUseProgram(r->postproc_program);
+        gl::use_program(r->postproc_program);
 
         GLint loc = glGetAttribLocation(r->postproc_program, "a_position");
         if ( loc >= 0 ) {
@@ -1774,7 +1774,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     PUSH_GRAPHICS_GROUP("outlines");
     // Brush outline
     {
-        glUseProgram(r->outline_program);
+        gl::use_program(r->outline_program);
         GLint loc = glGetAttribLocation(r->outline_program, "a_position");
         if ( loc >= 0 ) {
             DEBUG_gl_validate_buffer(r->vbo_outline);
@@ -1802,7 +1802,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     if ( r->imm_flags & ImmediateFlag_RECT ) {
         // Update data if rect is not degenerate.
         // Draw outline.
-        glUseProgram(r->exporter_program);
+        gl::use_program(r->exporter_program);
         GLint loc = glGetAttribLocation(r->exporter_program, "a_position");
         if ( loc>=0 && r->vbo_exporter > 0 ) {
             DEBUG_gl_validate_buffer(r->vbo_exporter);
@@ -1815,7 +1815,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     }
     POP_GRAPHICS_GROUP();  // outlines
 
-    glUseProgram(0);
+    gl::use_program(0);
     POP_GRAPHICS_GROUP(); // gpu_render
 }
 
@@ -1867,7 +1867,7 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
 
     // Post processing
     if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        glUseProgram(r->postproc_program);
+        gl::use_program(r->postproc_program);
         glBindTexture(GL_TEXTURE_2D, r->canvas_texture);
 
         GLint loc = glGetAttribLocation(r->postproc_program, "a_position");
