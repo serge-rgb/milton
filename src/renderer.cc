@@ -1271,106 +1271,110 @@ gpu_clip_strokes_and_update(Arena* arena,
     screen_bounds.bottom = y+h;
 
     reset(clip_array);
-    #if MILTON_ENABLE_PROFILING
-    {
-        r->clipped_count = 0;
-    }
-    #endif
-    for ( Layer* l = root_layer;
-          l != NULL;
-          l = l->next ) {
-        if ( !(l->flags & LayerFlags_VISIBLE) ) {
-            // Skip invisible layers.
-            continue;
+
+    if (screen_bounds.left != screen_bounds.right &&
+        screen_bounds.top != screen_bounds.bottom) {
+        #if MILTON_ENABLE_PROFILING
+        {
+            r->clipped_count = 0;
         }
-
-        StrokeBucket* bucket = &l->strokes.root;
-        i64 bucket_i = 0;
-
-        while ( bucket ) {
-            i64 count = 0;
-            if ( l->strokes.count < bucket_i * STROKELIST_BUCKET_COUNT ) {
-               // There is an allocated bucket but we have already iterated
-               // through all the actual strokes.
-               break;
+        #endif
+        for ( Layer* l = root_layer;
+              l != NULL;
+              l = l->next ) {
+            if ( !(l->flags & LayerFlags_VISIBLE) ) {
+                // Skip invisible layers.
+                continue;
             }
-            if ( l->strokes.count - bucket_i*STROKELIST_BUCKET_COUNT >= STROKELIST_BUCKET_COUNT ) {
-                count = STROKELIST_BUCKET_COUNT;
-            } else {
-                count = l->strokes.count % STROKELIST_BUCKET_COUNT;
-            }
-            Rect bbox = bucket->bounding_rect;
-            bbox.top_left = canvas_to_raster_with_scale(view, bbox.top_left, scale);
-            bbox.bot_right = canvas_to_raster_with_scale(view, bbox.bot_right, scale);
 
-            b32 bucket_outside =   screen_bounds.left   > bbox.right
-                                || screen_bounds.top    > bbox.bottom
-                                || screen_bounds.right  < bbox.left
-                                || screen_bounds.bottom < bbox.top;
+            StrokeBucket* bucket = &l->strokes.root;
+            i64 bucket_i = 0;
 
-            if ( !bucket_outside ) {
-                for ( i64 i = 0; i < count; ++i ) {
-                    Stroke* s = &bucket->data[i];
+            while ( bucket ) {
+                i64 count = 0;
+                if ( l->strokes.count < bucket_i * STROKELIST_BUCKET_COUNT ) {
+                   // There is an allocated bucket but we have already iterated
+                   // through all the actual strokes.
+                   break;
+                }
+                if ( l->strokes.count - bucket_i*STROKELIST_BUCKET_COUNT >= STROKELIST_BUCKET_COUNT ) {
+                    count = STROKELIST_BUCKET_COUNT;
+                } else {
+                    count = l->strokes.count % STROKELIST_BUCKET_COUNT;
+                }
+                Rect bbox = bucket->bounding_rect;
+                bbox.top_left = canvas_to_raster_with_scale(view, bbox.top_left, scale);
+                bbox.bot_right = canvas_to_raster_with_scale(view, bbox.bot_right, scale);
 
-                    if ( s != NULL ) {
-                        Rect bounds = s->bounding_rect;
-                        bounds.top_left = canvas_to_raster_with_scale(view, bounds.top_left, scale);
-                        bounds.bot_right = canvas_to_raster_with_scale(view, bounds.bot_right, scale);
+                b32 bucket_outside =   screen_bounds.left   > bbox.right
+                                    || screen_bounds.top    > bbox.bottom
+                                    || screen_bounds.right  < bbox.left
+                                    || screen_bounds.bottom < bbox.top;
 
-                        b32 is_outside = bounds.left > (x+w) || bounds.right < x
-                                || bounds.top > (y+h) || bounds.bottom < y;
+                if ( !bucket_outside ) {
+                    for ( i64 i = 0; i < count; ++i ) {
+                        Stroke* s = &bucket->data[i];
 
-                        i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
-                        // Area might be 0 if the stroke is smaller than
-                        // a pixel. We don't draw it in that case.
-                        if ( !is_outside && area!=0 ) {
-                            gpu_cook_stroke(arena, r, s);
-                            push(clip_array, *get_render_element(s->render_handle));
-                        }
-                        else if ( is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
-                            // If it is far away, delete.
-                            i32 distance = MLT_ABS(bounds.left - x + bounds.top - y);
-                            const i32 min_number_of_screens = 4;
-                            if (    bounds.top    < y - min_number_of_screens*h
-                                 || bounds.bottom > y+h + min_number_of_screens*h
-                                 || bounds.left   > x+w + min_number_of_screens*w
-                                 || bounds.right  < x - min_number_of_screens*w ) {
-                                gpu_free_strokes(s, 1, r);
+                        if ( s != NULL ) {
+                            Rect bounds = s->bounding_rect;
+                            bounds.top_left = canvas_to_raster_with_scale(view, bounds.top_left, scale);
+                            bounds.bot_right = canvas_to_raster_with_scale(view, bounds.bot_right, scale);
+
+                            b32 is_outside = bounds.left > (x+w) || bounds.right < x
+                                    || bounds.top > (y+h) || bounds.bottom < y;
+
+                            i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
+                            // Area might be 0 if the stroke is smaller than
+                            // a pixel. We don't draw it in that case.
+                            if ( !is_outside && area!=0 ) {
+                                gpu_cook_stroke(arena, r, s);
+                                push(clip_array, *get_render_element(s->render_handle));
+                            }
+                            else if ( is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
+                                // If it is far away, delete.
+                                i32 distance = MLT_ABS(bounds.left - x + bounds.top - y);
+                                const i32 min_number_of_screens = 4;
+                                if (    bounds.top    < y - min_number_of_screens*h
+                                     || bounds.bottom > y+h + min_number_of_screens*h
+                                     || bounds.left   > x+w + min_number_of_screens*w
+                                     || bounds.right  < x - min_number_of_screens*w ) {
+                                    gpu_free_strokes(s, 1, r);
+                                }
                             }
                         }
                     }
                 }
-            }
-            else if ( flags & ClipFlags_UPDATE_GPU_DATA ) {
-                gpu_free_strokes(bucket->data, count, r);
-            }
-            #if MILTON_ENABLE_PROFILING
-            {
-                for ( i64 i = 0; i < count; ++i ) {
-                    Stroke* s = &bucket->data[i];
-                    RenderElement* re = get_render_element(s->render_handle);
-                    if ( re && re->vbo_stroke != 0 ) {
-                        r->clipped_count++;
+                else if ( flags & ClipFlags_UPDATE_GPU_DATA ) {
+                    gpu_free_strokes(bucket->data, count, r);
+                }
+                #if MILTON_ENABLE_PROFILING
+                {
+                    for ( i64 i = 0; i < count; ++i ) {
+                        Stroke* s = &bucket->data[i];
+                        RenderElement* re = get_render_element(s->render_handle);
+                        if ( re && re->vbo_stroke != 0 ) {
+                            r->clipped_count++;
+                        }
                     }
                 }
+                #endif
+                bucket = bucket->next;
+                bucket_i += 1;
             }
-            #endif
-            bucket = bucket->next;
-            bucket_i += 1;
-        }
 
-        // Add the working stroke on the current layer.
-        if ( working_stroke->layer_id == l->id ) {
-            if ( working_stroke->num_points > 0 ) {
-                gpu_cook_stroke(arena, r, working_stroke, CookStroke_UPDATE_WORKING_STROKE);
+            // Add the working stroke on the current layer.
+            if ( working_stroke->layer_id == l->id ) {
+                if ( working_stroke->num_points > 0 ) {
+                    gpu_cook_stroke(arena, r, working_stroke, CookStroke_UPDATE_WORKING_STROKE);
 
-                push(clip_array, *get_render_element(working_stroke->render_handle));
+                    push(clip_array, *get_render_element(working_stroke->render_handle));
+                }
             }
-        }
 
-        auto* p = push(clip_array, layer_element);
-        p->layer_alpha = l->alpha;
-        p->effects = l->effects;
+            auto* p = push(clip_array, layer_element);
+            p->layer_alpha = l->alpha;
+            p->effects = l->effects;
+        }
     }
 }
 
@@ -1670,6 +1674,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
 
     print_framebuffer_status();
 
+    // TODO: Do less work when idling
     gpu_render_canvas(r, view_x, view_y, view_width, view_height);
 
     GLenum texture_target;
