@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "vector.h"
+#include "math.h"
 #include "StrokeList.h"
 
 #define MAX_LAYER_NAME_LEN          64

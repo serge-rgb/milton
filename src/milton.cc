@@ -11,7 +11,7 @@
 #include "localization.h"
 #include "persist.h"
 #include "platform.h"
-#include "vector.h"
+#include "math.h"
 #include "bindings.h"
 
 // Defined below.

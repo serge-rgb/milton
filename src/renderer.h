@@ -5,7 +5,7 @@
 
 #include "common.h"
 #include "system_includes.h"
-#include "vector.h"
+#include "math.h"
 
 struct LayerEffect;
 
