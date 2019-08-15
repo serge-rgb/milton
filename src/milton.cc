@@ -1058,7 +1058,7 @@ peek_out_duration_ms(Milton* milton)
 }
 
 void
-peek_out_trigger_start(Milton* milton)
+peek_out_trigger_start(Milton* milton, int peek_out_flags)
 {
     milton_set_zoom_at_screen_center(milton);
     milton->peek_out->begin_pan = milton->view->pan_center;
@@ -1067,6 +1067,7 @@ peek_out_trigger_start(Milton* milton)
     milton->peek_out->high_scale = peek_out_target_scale(milton);
     milton->peek_out->peek_out_ended = false;
     milton->peek_out->begin_anim_time = platform_get_walltime();
+    milton->peek_out->flags = peek_out_flags;
 
     if (milton->current_mode != MiltonMode::PEEK_OUT) {
         milton_enter_mode(milton, MiltonMode::PEEK_OUT);
@@ -1089,13 +1090,18 @@ peek_out_trigger_stop(Milton* milton)
 }
 
 static void
-peek_out_tick(Milton* milton)
+peek_out_tick(Milton* milton, MiltonInput* input)
 {
     PeekOut* peek = milton->peek_out;
 
     if (milton->current_mode == MiltonMode::PEEK_OUT) {
 
         float interp = peek_out_interpolation(milton);
+
+        if ((peek->flags & PeekOut_CLICK_TO_EXIT) && input->input_count > 0)
+        {
+            peek_out_trigger_stop(milton);
+        }
 
         if ( milton->peek_out->peek_out_ended ) {
             i64 panx = lerp(peek->end_pan.x, peek->begin_pan.x, interp);
@@ -1413,7 +1419,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         render_flags |= RenderBackendFlags_GUI_VISIBLE;
     }
     else if (milton->current_mode == MiltonMode::PEEK_OUT) {
-        peek_out_tick(milton);
+        peek_out_tick(milton, input);
     }
     else if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
         drag_brush_size_tick(milton, input);

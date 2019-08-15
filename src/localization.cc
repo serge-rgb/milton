@@ -104,6 +104,7 @@ init_localization()
         EN(TXT_soft_brush, "Soft brush");
         EN(TXT_minimum_opacity, "Minimum opacity");
         EN(TXT_hardness, "Hardness");
+        EN(TXT_peek_out, "Peek out");
 
         EN(TXT_Action_DECREASE_BRUSH_SIZE, "Decrease brush size");
         EN(TXT_Action_INCREASE_BRUSH_SIZE, "Increase brush size");
@@ -197,6 +198,7 @@ init_localization()
         g_command_abbreviations [TXT_switch_to_brush]       = "B";
         g_command_abbreviations [TXT_switch_to_primitive]   = "L";
         g_command_abbreviations [TXT_switch_to_eraser]      = "E";
+        g_command_abbreviations [TXT_peek_out]              = "`";
     }
 #undef C
 #undef EN
@@ -217,6 +219,7 @@ loc(Texts id)
         result = g_localized_strings[loc][id];
     }
 
+    // TODO: Need to grab bindings...
     if ( result ) {
         char* cmd = g_command_abbreviations[id];
 

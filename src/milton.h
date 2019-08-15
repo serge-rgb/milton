@@ -116,6 +116,11 @@ struct SmoothFilter
     size_t n_points;
 };
 
+enum PeekOutFlags
+{
+    PeekOut_CLICK_TO_EXIT = (1<<0),
+};
+
 struct PeekOut
 {
     WallTime begin_anim_time;
@@ -126,6 +131,8 @@ struct PeekOut
 
     v2l begin_pan;
     v2l end_pan;
+
+    int flags /*PeekOutFlags*/;
 };
 
 struct RenderSettings
@@ -323,7 +330,7 @@ b32  milton_brush_smoothing_enabled(Milton* milton);
 void milton_toggle_brush_smoothing(Milton* milton);
 
 
-void peek_out_trigger_start(Milton* milton);
+void peek_out_trigger_start(Milton* milton, int flags/* PeekOutFlags*/ = 0);
 void peek_out_trigger_stop(Milton* milton);
 
 void drag_brush_size_start(Milton* milton, v2i pointer);

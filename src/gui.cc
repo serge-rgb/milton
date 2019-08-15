@@ -551,6 +551,10 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                 if ( ImGui::MenuItem(loc(TXT_toggle_gui_visibility)) ) {
                     milton_toggle_gui_visibility(milton);
                 }
+
+                if ( ImGui::MenuItem(loc(TXT_peek_out)) ) {
+                    peek_out_trigger_start(milton, PeekOut_CLICK_TO_EXIT);
+                }
 #if MILTON_ENABLE_PROFILING
                 if ( ImGui::MenuItem("Toggle Debug Data [BACKQUOTE]") ) {
                     milton->viz_window_visible = !milton->viz_window_visible;
