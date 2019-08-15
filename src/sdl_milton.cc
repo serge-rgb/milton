@@ -625,7 +625,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
     ImGui_ImplSDL2_InitForOpenGL(window, &gl_context);
     ImGui_ImplOpenGL3_Init(gl_version);
 
-    SDL_GL_SetSwapInterval(0);
+    SDL_GL_SetSwapInterval(1);
 
     int actual_major = 0;
     int actual_minor = 0;
@@ -891,7 +891,6 @@ milton_main(bool is_fullscreen, char* file_to_open)
         // Clear pan delta if we are zooming
         if ( milton_input.scale != 0 ) {
             milton_input.pan_delta = {};
-            input_flags |= MiltonInputFlags_FULL_REFRESH;
         }
         else if ( platform.is_panning ) {
             input_flags |= MiltonInputFlags_PANNING;

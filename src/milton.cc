@@ -290,7 +290,8 @@ clear_smooth_filter(SmoothFilter* filter, v2l value)
 
 static u64 peek_out_duration_ms(Milton* milton);  // forward decl
 
-static float peek_out_interpolation(Milton* milton)
+static float
+peek_out_interpolation(Milton* milton)
 {
     float interp = 0.0f;
 
@@ -1087,7 +1088,7 @@ peek_out_trigger_stop(Milton* milton)
     }
 }
 
-void
+static void
 peek_out_tick(Milton* milton)
 {
     PeekOut* peek = milton->peek_out;
@@ -1095,6 +1096,7 @@ peek_out_tick(Milton* milton)
     if (milton->current_mode == MiltonMode::PEEK_OUT) {
 
         float interp = peek_out_interpolation(milton);
+
         if ( milton->peek_out->peek_out_ended ) {
             i64 panx = lerp(peek->end_pan.x, peek->begin_pan.x, interp);
             i64 pany = lerp(peek->end_pan.y, peek->begin_pan.y, interp);
@@ -1197,11 +1199,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     if ( input->flags & MiltonInputFlags_OPEN_FILE ) {
         milton_load(milton);
         upload_gui(milton);
-        milton->render_settings.do_full_redraw = true;
-    }
-
-    if ( milton->flags & MiltonStateFlags_FULL_REDRAW_REQUESTED ) {
-        milton->flags &= ~MiltonStateFlags_FULL_REDRAW_REQUESTED;
         milton->render_settings.do_full_redraw = true;
     }
 
@@ -1416,7 +1413,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         render_flags |= RenderBackendFlags_GUI_VISIBLE;
     }
     else if (milton->current_mode == MiltonMode::PEEK_OUT) {
-        milton->render_settings.do_full_redraw = true;
         peek_out_tick(milton);
     }
     else if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
@@ -1675,6 +1671,13 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         }
     }
 
+    static u64 scale_of_last_full_redraw = 0;
+
+    if (scale_of_last_full_redraw != milton_render_scale(milton)) {
+        // We want to draw everything when we're scaling up and down.
+        milton->render_settings.do_full_redraw = true;
+    }
+
     // Note: We flip the rectangles. GL is bottom-left by default.
     if ( milton->render_settings.do_full_redraw ) {
         view_width = milton->view->screen_size.w;
@@ -1683,6 +1686,7 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         // that the size of the screen will be used to determine if each stroke
         // should be freed from GPU memory.
         clip_flags = ClipFlags_UPDATE_GPU_DATA;
+        scale_of_last_full_redraw = milton_render_scale(milton);
     }
     else if ( draw_custom_rectangle ) {
         view_x = custom_rectangle.left;
