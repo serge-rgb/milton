@@ -107,7 +107,7 @@ milton_load(Milton* milton)
         READ(&milton_binary_version, sizeof(u32), 1, fd);
 
         if (ok) {
-            if ( milton_binary_version < 8 ) {
+            if ( milton_binary_version < MILTON_MINOR_VERSION ) {
                 if ( platform_dialog_yesno ("This file will be updated to the new version of Milton. Older versions won't be able to open it. Is this OK?", "File format change") ) {
                     milton->persist->mlt_binary_version = MILTON_MINOR_VERSION;
                     milton_log("Updating this file to latest mlt version.\n");
@@ -130,8 +130,23 @@ milton_load(Milton* milton)
             goto END;
         }
 
-        if ( milton_binary_version >= 4 ) {
-            READ(milton->view, sizeof(CanvasView), 1, fd);
+        if ( milton_binary_version >= 9 ) {
+            // Defaults
+            *milton->view = {};
+
+            READ(&milton->view->size, sizeof(u32), 1, fd); // Read size.
+            if (milton->view->size > sizeof(CanvasView)) {
+                ok = false;
+                handled = true;
+                goto END;
+            }
+            READ((u32*)milton->view + 1, milton->view->size - sizeof(u32), 1, fd);  // Rest of the struct.
+
+            milton->view->size = sizeof(CanvasView);
+        }
+        else if ( milton_binary_version >= 4 && milton_binary_version < 9) {
+            init_view(milton->view, milton->settings->background_color, milton->view->screen_size.x, milton->view->screen_size.y); // defaults
+            READ((u32*)milton->view+1/*skip size*/, sizeof(CanvasViewPreV9), 1, fd);
         } else {
             CanvasViewPreV4 legacy_view = {};
             READ(&legacy_view, sizeof(CanvasViewPreV4), 1, fd);
@@ -477,6 +492,7 @@ milton_save(Milton* milton)
             milton_binary_version = milton->persist->mlt_binary_version;
             i32 num_layers = layer::number_of_layers(milton->canvas->root_layer);
 
+            mlt_assert(sizeof(CanvasView) == milton->view->size);
             if ( write_data(&milton_binary_version, sizeof(u32), 1, fd) &&
                  write_data(milton->view, sizeof(CanvasView), 1, fd) &&
                  write_data(&num_layers, sizeof(i32), 1, fd) &&

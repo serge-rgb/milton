@@ -56,10 +56,24 @@ enum LayerEffectType
     LayerEffectType_COUNT,
 };
 
-// IMPORTANT: CanvasView needs to be a flat structure.
-//            Changing it means changing the file format,
-//            because the whole struct is saved to the mlt file
+// IMPORTANT: CanvasView needs to be a flat structure
+//            because the whole struct is saved to the mlt file.
+//            It should only grow down
 struct CanvasView
+{
+    u32 size;                   // Size of struct
+    v2i screen_size;            // Size in pixels
+    i64 scale;                  // Zoom
+    v2i zoom_center;            // In pixels
+    v2l pan_center;             // In canvas scale
+    v3f background_color;
+    i32 working_layer_id;
+    i32 num_layers;
+    f32 angle;                  // Rotation
+};
+
+// Used to load older MLT files.
+struct CanvasViewPreV9
 {
     v2i screen_size;            // Size in pixels
     i64 scale;                  // Zoom
@@ -69,8 +83,6 @@ struct CanvasView
     i32 working_layer_id;
     i32 num_layers;
 };
-
-// Used to load older MLT files.
 struct CanvasViewPreV4
 {
     v2i screen_size;            // Size in pixels

@@ -7,9 +7,13 @@
 v2l
 canvas_to_raster_with_scale(CanvasView* view, v2l canvas_point, i64 scale)
 {
+
+    f32 x = (canvas_point.x - view->pan_center.x) / scale;
+    f32 y = (canvas_point.y - view->pan_center.y) / scale;
+
     v2l raster_point = {
-        ((canvas_point.x - view->pan_center.x) / scale) + view->zoom_center.x,
-        ((canvas_point.y - view->pan_center.y) / scale) + view->zoom_center.y,
+        (x) + view->zoom_center.x,
+        (y) + view->zoom_center.y,
     };
     return raster_point;
 }

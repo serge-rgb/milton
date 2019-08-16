@@ -211,4 +211,3 @@ operator == (const Vector4<Type>& a, const Vector4<Type>& b)
 
 typedef Vector4<float>  v4f;
 typedef Vector4<i32>    v4i;
-

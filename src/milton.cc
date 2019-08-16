@@ -25,20 +25,21 @@ milton_set_background_color(Milton* milton, v3f background_color)
 }
 
 static void
-milton_set_default_view(Milton* milton)
+init_view(CanvasView* view, v3f background_color, i32 width, i32 height)
 {
     milton_log("Setting default view\n");
-    CanvasView* view = milton->view;
 
     auto size = view->screen_size;
 
     *view = CanvasView{};
 
-    view->background_color = milton->settings->background_color;
+	view->size = sizeof(CanvasView);
+    view->background_color = background_color;
     view->screen_size      = size;
     view->zoom_center      = size / 2;
     view->scale            = MILTON_DEFAULT_SCALE;
     view->num_layers       = 1;
+    view->screen_size = { width, height };
 }
 
 int
@@ -585,10 +586,8 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     }
 
     milton->view = arena_alloc_elem(&milton->root_arena, CanvasView);
-    milton_set_default_view(milton);
 
-    milton->view->screen_size = { width, height };
-
+    init_view(milton->view, milton->settings->background_color, width, height);
     if (init_graphics) { gpu_init(milton->renderer, milton->view, &milton->gui->picker); }
 
     if (init_graphics) { gpu_update_background(milton->renderer, milton->view->background_color); }
@@ -728,7 +727,10 @@ milton_reset_canvas_and_set_default(Milton* milton)
     milton_new_layer(milton);
 
     // New View
-    milton_set_default_view(milton);
+    init_view(milton->view,
+        milton->settings->background_color,
+        milton->view->screen_size.x,
+        milton->view->screen_size.y);
     milton->view->background_color = milton->settings->background_color;
     gpu_update_background(milton->renderer, milton->view->background_color);
 
