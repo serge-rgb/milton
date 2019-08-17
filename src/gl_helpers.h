@@ -48,6 +48,7 @@ bool    set_uniform_vec2i (GLuint program, char* name, size_t count, i32* vals);
 bool    set_uniform_f (GLuint program, char* name, float val);
 bool    set_uniform_i (GLuint program, char* name, i32 val);
 bool    set_uniform_vec2i (GLuint program, char* name, i32 x, i32 y);
+bool    set_uniform_mat2 (GLuint program, char* name, f32* vals);
 
 void    vertex_attrib_v3f(GLuint program, char* name);
 

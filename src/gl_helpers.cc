@@ -443,6 +443,22 @@ set_uniform_vec2i(GLuint program, char* name, i32 x, i32 y)
     return ok;
 }
 
+bool
+set_uniform_mat2 (GLuint program, char* name, f32* vals)
+{
+    GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+    use_program(program);
+    bool ok = true;
+    GLint loc = glGetUniformLocation(program, (GLchar*)name);
+    ok = loc >= 0;
+    if ( ok ) {
+        glUniformMatrix2fv(loc, 1, /*transpose*/false, vals);
+    }
+    use_program(last_program);
+    return ok;
+}
+
+
 GLuint
 new_color_texture(int w, int h)
 {

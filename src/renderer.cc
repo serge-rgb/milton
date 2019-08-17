@@ -923,7 +923,17 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
         r->stroke_clear_program,
     };
 
+    f32 cos_angle = cosf(view->angle);
+    f32 sin_angle = sinf(view->angle);
+
+    // GLSL is column-major
+    f32 matrix[] = { cos_angle, sin_angle, -sin_angle, cos_angle };
+
+    f32 matrix_inverse[] = { cos_angle, -sin_angle, sin_angle, cos_angle };
+
     for (sz i = 0; i < array_count(ps); ++i) {
+        gl::set_uniform_mat2(ps[i], "u_rotation", matrix);
+        gl::set_uniform_mat2(ps[i], "u_rotation_inverse", matrix_inverse);
         gl::set_uniform_vec2i(ps[i], "u_pan_center", 1, relative_to_render_center(r, pan).d);
         gl::set_uniform_vec2i(ps[i], "u_zoom_center", 1, center.d);
     }

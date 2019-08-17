@@ -288,6 +288,7 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                     gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                 }
             }
+            ImGui::SliderFloat("DEV view rotation", &milton->view->angle, 0.0f, 3.14f);
 
             const auto size = milton_get_brush_radius(milton);
             auto mut_size = size;

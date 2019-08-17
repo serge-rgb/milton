@@ -52,6 +52,7 @@
     X(void,     glUniform3fv,             GLint location, GLsizei count, GLfloat *value )   \
     X(void,     glUniform3iv,             GLint location, GLsizei count, GLint *value )     \
     X(void,     glUniform4fv,             GLint location, GLsizei count, GLfloat *value )   \
+    X(void,     glUniformMatrix2fv,       GLint location, GLsizei count, GLboolean tranpose, GLfloat* values) \
     X(void,     glUseProgram,             GLuint program)                                         \
     X(void,     glValidateProgram,        GLuint program)                                         \
     X(GLenum,   glCheckFramebufferStatusEXT, GLenum target)                                       \
