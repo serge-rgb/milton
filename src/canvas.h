@@ -56,9 +56,11 @@ enum LayerEffectType
     LayerEffectType_COUNT,
 };
 
+#pragma pack (push, 1)
+
 // IMPORTANT: CanvasView needs to be a flat structure
 //            because the whole struct is saved to the mlt file.
-//            It should only grow down
+//            It should only grow down.
 struct CanvasView
 {
     u32 size;                   // Size of struct
@@ -68,7 +70,6 @@ struct CanvasView
     v2l pan_center;             // In canvas scale
     v3f background_color;
     i32 working_layer_id;
-    i32 num_layers;
     f32 angle;                  // Rotation
 };
 
@@ -82,6 +83,7 @@ struct CanvasViewPreV9
     v3f background_color;
     i32 working_layer_id;
     i32 num_layers;
+    u8 padding[4];
 };
 struct CanvasViewPreV4
 {
@@ -95,6 +97,8 @@ struct CanvasViewPreV4
     i32 working_layer_id;
     i32 num_layers;
 };
+
+#pragma pack(pop)
 
 
 v2l     canvas_to_raster (CanvasView* view, v2l canvas_point);

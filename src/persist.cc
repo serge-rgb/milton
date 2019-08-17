@@ -140,13 +140,22 @@ milton_load(Milton* milton)
                 handled = true;
                 goto END;
             }
-            READ((u32*)milton->view + 1, milton->view->size - sizeof(u32), 1, fd);  // Rest of the struct.
+            READ((u8*)milton->view + offsetof(CanvasView, screen_size),
+                milton->view->size - sizeof(u32),
+                1,
+                fd);  // Rest of the struct.
 
             milton->view->size = sizeof(CanvasView);
         }
         else if ( milton_binary_version >= 4 && milton_binary_version < 9) {
             init_view(milton->view, milton->settings->background_color, milton->view->screen_size.x, milton->view->screen_size.y); // defaults
-            READ((u32*)milton->view+1/*skip size*/, sizeof(CanvasViewPreV9), 1, fd);
+
+            size_t bytes_offset = offsetof(CanvasView, screen_size);
+
+            READ((u8*)milton->view + bytes_offset, sizeof(CanvasViewPreV9), 1, fd);
+
+            // Patch angle, which was stomped by the old num_layers member, which we don't use anymore.
+            milton->view->angle = 0.0f;
         } else {
             CanvasViewPreV4 legacy_view = {};
             READ(&legacy_view, sizeof(CanvasViewPreV4), 1, fd);
@@ -156,7 +165,7 @@ milton_load(Milton* milton)
             milton->view->pan_center = VEC2L(legacy_view.pan_center * -1);
             milton->view->background_color = legacy_view.background_color;
             milton->view->working_layer_id = legacy_view.working_layer_id;
-            milton->view->num_layers = legacy_view.num_layers;
+            milton->view->angle = 0.0f;
         }
 
         // The screen size might hurt us.
@@ -493,6 +502,7 @@ milton_save(Milton* milton)
             i32 num_layers = layer::number_of_layers(milton->canvas->root_layer);
 
             mlt_assert(sizeof(CanvasView) == milton->view->size);
+
             if ( write_data(&milton_binary_version, sizeof(u32), 1, fd) &&
                  write_data(milton->view, sizeof(CanvasView), 1, fd) &&
                  write_data(&num_layers, sizeof(i32), 1, fd) &&

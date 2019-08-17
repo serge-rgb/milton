@@ -34,12 +34,12 @@ init_view(CanvasView* view, v3f background_color, i32 width, i32 height)
     *view = CanvasView{};
 
 	view->size = sizeof(CanvasView);
-    view->background_color = background_color;
-    view->screen_size      = size;
-    view->zoom_center      = size / 2;
-    view->scale            = MILTON_DEFAULT_SCALE;
-    view->num_layers       = 1;
-    view->screen_size = { width, height };
+    view->background_color  = background_color;
+    view->screen_size       = size;
+    view->zoom_center       = size / 2;
+    view->scale             = MILTON_DEFAULT_SCALE;
+    view->angle             = 0.0f;
+    view->screen_size       = { width, height };
 }
 
 int
