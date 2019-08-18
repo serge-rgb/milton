@@ -1273,12 +1273,30 @@ gpu_clip_strokes_and_update(Arena* arena,
     RenderElement layer_element = {};
     layer_element.flags |= RenderElementFlags_LAYER;
 
-    Rect screen_bounds;
+    Rect screen_bounds = rect_without_size();
 
-    screen_bounds.left = x;
-    screen_bounds.right = x + w;
-    screen_bounds.top = y;
-    screen_bounds.bottom = y+h;
+    v2l corners[4] = {
+        v2l{ x, y },
+        v2l{ x+w, y },
+        v2l{ x+w, y+h },
+        v2l{ x, y+h },
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        v2l p = raster_to_canvas_with_scale(view, corners[i], scale);
+        if (p.x < screen_bounds.left) {
+            screen_bounds.left = p.x;
+        }
+        if (p.x > screen_bounds.right) {
+            screen_bounds.right = p.x;
+        }
+        if (p.y < screen_bounds.top) {
+            screen_bounds.top = p.y;
+        }
+        if (p.y > screen_bounds.bottom) {
+            screen_bounds.bottom = p.y;
+        }
+    }
 
     reset(clip_array);
 
@@ -1312,9 +1330,8 @@ gpu_clip_strokes_and_update(Arena* arena,
                 } else {
                     count = l->strokes.count % STROKELIST_BUCKET_COUNT;
                 }
+
                 Rect bbox = bucket->bounding_rect;
-                bbox.top_left = canvas_to_raster_with_scale(view, bbox.top_left, scale);
-                bbox.bot_right = canvas_to_raster_with_scale(view, bbox.bot_right, scale);
 
                 b32 bucket_outside =   screen_bounds.left   > bbox.right
                                     || screen_bounds.top    > bbox.bottom
@@ -1327,20 +1344,23 @@ gpu_clip_strokes_and_update(Arena* arena,
 
                         if ( s != NULL ) {
                             Rect bounds = s->bounding_rect;
-                            bounds.top_left = canvas_to_raster_with_scale(view, bounds.top_left, scale);
-                            bounds.bot_right = canvas_to_raster_with_scale(view, bounds.bot_right, scale);
 
-                            b32 is_outside = bounds.left > (x+w) || bounds.right < x
-                                    || bounds.top > (y+h) || bounds.bottom < y;
+                            b32 stroke_outside =   screen_bounds.left   > bounds.right
+                                                || screen_bounds.top    > bounds.bottom
+                                                || screen_bounds.right  < bounds.left
+                                                || screen_bounds.bottom < bounds.top;
 
                             i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
                             // Area might be 0 if the stroke is smaller than
                             // a pixel. We don't draw it in that case.
-                            if ( !is_outside && area!=0 ) {
+                            if (area == 0) {
+                                volatile b32 brk = 1;
+                            }
+                            else if ( !stroke_outside && area!=0 ) {
                                 gpu_cook_stroke(arena, r, s);
                                 push(clip_array, *get_render_element(s->render_handle));
                             }
-                            else if ( is_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
+                            else if ( stroke_outside && ( flags & ClipFlags_UPDATE_GPU_DATA ) ) {
                                 // If it is far away, delete.
                                 i32 distance = MLT_ABS(bounds.left - x + bounds.top - y);
                                 const i32 min_number_of_screens = 4;
