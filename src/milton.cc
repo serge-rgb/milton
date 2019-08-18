@@ -686,8 +686,15 @@ milton_resize_and_pan(Milton* milton, v2l pan_delta, v2i new_screen_size)
     if ( new_screen_size.w < milton->max_width && new_screen_size.h < milton->max_height ) {
         milton->view->screen_size = new_screen_size;
 
+        f32 x = pan_delta.x;
+        f32 y = pan_delta.y;
+
+        f32 cos_angle = cosf(milton->view->angle);
+        f32 sin_angle = sinf(milton->view->angle);
+
+        v2f deltaf = v2f{x * cos_angle - y * sin_angle, y * cos_angle + x * sin_angle };
         // Add delta to pan vector
-        v2l pan_center = milton->view->pan_center - (pan_delta * milton->view->scale);
+        v2l pan_center = milton->view->pan_center - (v2f_to_v2l(deltaf) * milton->view->scale);
 
         milton->view->pan_center = pan_center;
 
