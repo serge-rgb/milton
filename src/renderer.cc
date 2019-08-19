@@ -1042,7 +1042,7 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
                     bounds[bounds_i++] = { (float)min_x, (float)min_y, (float)stroke_z };
                     bounds[bounds_i++] = { (float)min_x, (float)max_y, (float)stroke_z };
                     bounds[bounds_i++] = { (float)max_x, (float)max_y, (float)stroke_z };
-                    bounds[bounds_i++]   = { (float)max_x, (float)min_y, (float)stroke_z };
+                    bounds[bounds_i++] = { (float)max_x, (float)min_y, (float)stroke_z };
                 } else {
                     // Points are different. Do a coordinate change for a tighter box.
                     v2f d = normalized(v2i_to_v2f(point_j - point_i));

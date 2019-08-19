@@ -35,6 +35,7 @@ enum class MiltonMode
     HISTORY,
     PEEK_OUT,
     DRAG_BRUSH_SIZE,
+    TRANSFORM,  // Scale and rotate
 
     COUNT,
 };
@@ -147,6 +148,18 @@ struct MiltonDragBrush
     v2i start_point;
 };
 
+enum class TransformModeFSM
+{
+    START,
+    ROTATING,
+};
+
+struct TransformMode
+{
+    TransformModeFSM fsm;
+    v2f start_point;
+};
+
 struct Milton
 {
     b32 flags;  // See MiltonStateFlags
@@ -207,6 +220,7 @@ struct Milton
     MiltonPersist* persist;
     MiltonDragBrush* drag_brush;
     PeekOut* peek_out;
+    TransformMode* transform;
 
 #if MILTON_ENABLE_PROFILING
     b32 viz_window_visible;
@@ -332,6 +346,9 @@ void milton_toggle_brush_smoothing(Milton* milton);
 
 void peek_out_trigger_start(Milton* milton, int flags/* PeekOutFlags*/ = 0);
 void peek_out_trigger_stop(Milton* milton);
+
+void transform_start(Milton* milton, v2i pointer);
+void transform_stop(Milton* milton);
 
 void drag_brush_size_start(Milton* milton, v2i pointer);
 void drag_brush_size_stop(Milton* milton);
