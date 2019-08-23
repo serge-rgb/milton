@@ -1273,30 +1273,7 @@ gpu_clip_strokes_and_update(Arena* arena,
     RenderElement layer_element = {};
     layer_element.flags |= RenderElementFlags_LAYER;
 
-    Rect screen_bounds = rect_without_size();
-
-    v2l corners[4] = {
-        v2l{ x, y },
-        v2l{ x+w, y },
-        v2l{ x+w, y+h },
-        v2l{ x, y+h },
-    };
-
-    for (int i = 0; i < 4; ++i) {
-        v2l p = raster_to_canvas_with_scale(view, corners[i], scale);
-        if (p.x < screen_bounds.left) {
-            screen_bounds.left = p.x;
-        }
-        if (p.x > screen_bounds.right) {
-            screen_bounds.right = p.x;
-        }
-        if (p.y < screen_bounds.top) {
-            screen_bounds.top = p.y;
-        }
-        if (p.y > screen_bounds.bottom) {
-            screen_bounds.bottom = p.y;
-        }
-    }
+    Rect screen_bounds = raster_to_canvas_bounding_rect(view, x, y, w, h, scale);
 
     reset(clip_array);
 
@@ -1353,10 +1330,7 @@ gpu_clip_strokes_and_update(Arena* arena,
                             i32 area = (bounds.right-bounds.left) * (bounds.bottom-bounds.top);
                             // Area might be 0 if the stroke is smaller than
                             // a pixel. We don't draw it in that case.
-                            if (area == 0) {
-                                volatile b32 brk = 1;
-                            }
-                            else if ( !stroke_outside && area!=0 ) {
+                            if ( !stroke_outside && area!=0 ) {
                                 gpu_cook_stroke(arena, r, s);
                                 push(clip_array, *get_render_element(s->render_handle));
                             }

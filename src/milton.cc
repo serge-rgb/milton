@@ -1193,6 +1193,7 @@ transform_start(Milton* milton, v2i pointer)
 {
     if (milton->current_mode != MiltonMode::TRANSFORM) {
         milton_enter_mode(milton, MiltonMode::TRANSFORM);
+        milton_set_zoom_at_screen_center(milton);
     }
 }
 
@@ -1213,17 +1214,19 @@ transform_tick(Milton* milton, MiltonInput* input)
         v2f point = v2l_to_v2f(input->points[ input->input_count - 1 ]);
         if (t->fsm == TransformModeFSM::START) {
             t->fsm = TransformModeFSM::ROTATING;
-            t->start_point = point;
+            t->last_point = point;
         }
         else if (t->fsm == TransformModeFSM::ROTATING) {
             // Rotate!
             v2f center = v2i_to_v2f(milton->view->screen_size / 2);
             v2f a = point - center;
-            v2f b = t->start_point - center;
+            v2f b = t->last_point - center;
             f32 lena = magnitude(a);
             f32 lenb = magnitude(b);
             f32 cos_angle = DOT(b, a) / (lena * lenb);
-            milton->view->angle = acosf(cos_angle);
+            f32 sign = orientation(center, t->last_point, point) > 0 ? -1.0f : 1.0f;
+            milton->view->angle += sign * acosf(cos_angle);
+            t->last_point = point;
             gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
             // milton->render_settings.do_full_redraw = true;
         }
@@ -1250,7 +1253,6 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     int render_flags = RenderBackendFlags_NONE;
 
     b32 draw_custom_rectangle = false;  // Custom rectangle used for new strokes, undo/redo.
-    Rect custom_rectangle = rect_without_size();
 
     b32 should_save =
             ((input->flags & MiltonInputFlags_OPEN_FILE)) ||
@@ -1511,11 +1513,9 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
 
                     new_stroke.id = milton->canvas->stroke_id_count++;
 
-                    draw_custom_rectangle = true;
                     Rect bounds = new_stroke.bounding_rect;
                     bounds.top_left = canvas_to_raster(milton->view, bounds.top_left);
                     bounds.bot_right = canvas_to_raster(milton->view, bounds.bot_right);
-                    custom_rectangle = rect_union(custom_rectangle, bounds);
                 }
 
                 mlt_assert(new_stroke.num_points > 0);
@@ -1738,8 +1738,10 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
     }
 
     static u64 scale_of_last_full_redraw = 0;
+    static f32 angle_of_last_full_redraw = 0.0f;
 
-    if (scale_of_last_full_redraw != milton_render_scale(milton)) {
+    if (scale_of_last_full_redraw != milton_render_scale(milton) ||
+        angle_of_last_full_redraw != milton->view->angle ) {
         // We want to draw everything when we're scaling up and down.
         milton->render_settings.do_full_redraw = true;
     }
@@ -1753,18 +1755,10 @@ milton_update_and_render(Milton* milton, MiltonInput* input)
         // should be freed from GPU memory.
         clip_flags = ClipFlags_UPDATE_GPU_DATA;
         scale_of_last_full_redraw = milton_render_scale(milton);
-    }
-    else if ( draw_custom_rectangle ) {
-        view_x = custom_rectangle.left;
-        view_y = custom_rectangle.top;
-        view_width = custom_rectangle.right - custom_rectangle.left;
-        view_height = custom_rectangle.bottom - custom_rectangle.top;
-        VALIDATE_RECT(custom_rectangle);
+        angle_of_last_full_redraw = milton->view->angle;
     }
     else if (has_working_stroke) {
-        Rect bounds      = milton->working_stroke.bounding_rect;
-        bounds.top_left  = canvas_to_raster(milton->view, bounds.top_left);
-        bounds.bot_right = canvas_to_raster(milton->view, bounds.bot_right);
+        Rect bounds  = canvas_to_raster_bounding_rect(milton->view, milton->working_stroke.bounding_rect);
 
         view_x           = bounds.left;
         view_y           = bounds.top;

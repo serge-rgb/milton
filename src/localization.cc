@@ -99,12 +99,16 @@ init_localization()
         EN(TXT_OPENBRACKET_default_canvas_CLOSE_BRACKET, "[Default canvas]");
         EN(TXT_could_not_delete_default_canvas, "Could not delete default canvas. Contents will be still there when you create a new canvas.");
         EN(TXT_peek_out_increment_percent, "Peek-out increment percentage");
-        EN(TXT_brush_settings, "Brush settings");
         EN(TXT_opacity_pressure, "Use pressure for opacity");
         EN(TXT_soft_brush, "Soft brush");
-        EN(TXT_minimum_opacity, "Minimum opacity");
+        EN(TXT_minimum, "Minimum");
         EN(TXT_hardness, "Hardness");
-        EN(TXT_peek_out, "Peek out");
+        EN(TXT_peek_out, "Peek-Out");
+        EN(TXT_rotation, "Rotation");
+        EN(TXT_blur, "Blur");
+        EN(TXT_level, "Level");
+        EN(TXT_delete_blur, "Delete Blur");
+        EN(TXT_enabled, "Enabled");
 
         EN(TXT_Action_DECREASE_BRUSH_SIZE, "Decrease brush size");
         EN(TXT_Action_INCREASE_BRUSH_SIZE, "Increase brush size");

@@ -157,7 +157,7 @@ enum class TransformModeFSM
 struct TransformMode
 {
     TransformModeFSM fsm;
-    v2f start_point;
+    v2f last_point;
 };
 
 struct Milton

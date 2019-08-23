@@ -82,12 +82,16 @@ enum Texts
     TXT_background_COLON,
     TXT_could_not_delete_default_canvas,
     TXT_peek_out_increment_percent,
-    TXT_brush_settings,
     TXT_opacity_pressure,
     TXT_soft_brush,
-    TXT_minimum_opacity,
+    TXT_minimum,
     TXT_hardness,
     TXT_peek_out,
+    TXT_rotation,
+    TXT_blur,
+    TXT_level,
+    TXT_delete_blur,
+    TXT_enabled,
 
     // Actions
     TXT_Action_FIRST,

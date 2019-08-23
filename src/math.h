@@ -6,6 +6,9 @@
 
 #include "common.h"
 
+
+#define PI 3.141592654f
+
 template<typename T>
 struct Vector2
 {

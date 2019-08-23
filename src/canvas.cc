@@ -54,6 +54,70 @@ canvas_to_raster(CanvasView* view, v2l canvas_point)
     return canvas_to_raster_with_scale(view, canvas_point, view->scale);
 }
 
+Rect
+raster_to_canvas_bounding_rect(CanvasView* view, i32 x, i32 y, i32 w, i32 h, i64 scale)
+{
+    Rect result = rect_without_size();
+
+    v2l corners[4] = {
+        v2l{ x, y },
+        v2l{ x+w, y },
+        v2l{ x+w, y+h },
+        v2l{ x, y+h },
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        v2l p = raster_to_canvas_with_scale(view, corners[i], scale);
+        if (p.x < result.left) {
+            result.left = p.x;
+        }
+        if (p.x > result.right) {
+            result.right = p.x;
+        }
+        if (p.y < result.top) {
+            result.top = p.y;
+        }
+        if (p.y > result.bottom) {
+            result.bottom = p.y;
+        }
+    }
+
+    return result;
+}
+
+Rect
+canvas_to_raster_bounding_rect(CanvasView* view, Rect rect)
+{
+    Rect result = rect_without_size();
+
+    v2l corners[4] = {
+        v2l{ rect.left, rect.top },
+        v2l{ rect.right, rect.top },
+        v2l{ rect.right, rect.bottom },
+        v2l{ rect.left, rect.bottom },
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        v2l p = canvas_to_raster(view, corners[i]);
+        if (p.x < result.left) {
+            result.left = p.x;
+        }
+        if (p.x > result.right) {
+            result.right = p.x;
+        }
+        if (p.y < result.top) {
+            result.top = p.y;
+        }
+        if (p.y > result.bottom) {
+            result.bottom = p.y;
+        }
+    }
+
+    return result;
+}
+
+
+
 // Does point p0 with radius r0 contain point p1 with radius r1?
 b32
 stroke_point_contains_point(v2l p0, i64 r0, v2l p1, i64 r1)

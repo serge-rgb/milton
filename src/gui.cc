@@ -26,7 +26,17 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
     // Layer window
     ImGui::SetNextWindowPos(ImVec2(ui_scale*10, ui_scale*20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(ui_scale*300, ui_scale*220), ImGuiSetCond_FirstUseEver);
+
     if ( ImGui::Begin(loc(TXT_layers)) ) {
+        i32 angle = (milton->view->angle / PI) * 180;
+        while (angle < 0) { angle += 360; }
+        while (angle > 360) { angle -= 360; }
+        if (ImGui::SliderInt(loc(TXT_rotation), &angle, 0.0f, 360)) {
+            milton->view->angle = (f32)angle / 180.0f * PI;
+            input->flags |= (i32)MiltonInputFlags_PANNING;
+            gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
+        }
+
         CanvasView* view = milton->view;
         // left
         ImGui::BeginChild("left pane", ImVec2(150, 0), true);
@@ -111,89 +121,6 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
         }
         ImGui::SameLine();
 
-        // Layer effects
-        if ( canvas ) {
-            Layer* working_layer = canvas->working_layer;
-            Arena* canvas_arena = &canvas->arena;
-
-            static b32 show_effects = false;
-            if ( ImGui::Button("Effects")) {
-                show_effects = !show_effects;
-            }
-            if ( show_effects ) {
-                // ImGui::GetWindow(Pos|Size) works in here because we are inside Begin()/End() calls.
-                i32 pos_x = (i32)(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x + 10);
-                i32 pos_y = (i32)(ImGui::GetWindowPos().y);
-
-                ImGui::SetNextWindowPos(ImVec2(pos_x, pos_y), ImGuiSetCond_FirstUseEver);
-                // ImGui::SetNextWindowPos(ImVec2(pos_x, 20 + (float)pbounds.bottom + brush_window_height ), ImGuiSetCond_FirstUseEver);
-                ImGui::SetNextWindowSize(ImVec2(ui_scale*200, ui_scale*300), ImGuiSetCond_FirstUseEver);
-
-                if ( ImGui::Begin("Effects") ) {
-                    ImGui::Text(loc(TXT_opacity));
-                    f32 alpha = canvas->working_layer->alpha;
-                    if ( ImGui::SliderFloat("##opacity", &alpha, 0.0f, 1.0f) ) {
-                        // Used the slider. Ask if it's OK to convert the binary format.
-                        if ( milton->persist->mlt_binary_version < 3 ) {
-                            milton_log("Modified milton file from %d to 3\n", milton->persist->mlt_binary_version);
-                            milton->persist->mlt_binary_version = 3;
-                        }
-                        input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-
-                        if ( alpha > 1 ) { alpha = 1; }
-                        if ( alpha < 0 ) { alpha = 0; }
-
-                        canvas->working_layer->alpha = alpha;
-                    }
-
-                    static b32 selecting = false;
-
-                    ImGui::Separator();
-
-                    if ( ImGui::Button("Add Blur") ) {
-                        LayerEffect* e = arena_alloc_elem(canvas_arena, LayerEffect);
-                        e->next = working_layer->effects;
-                        working_layer->effects = e;
-                        e->enabled = true;
-                        e->blur.original_scale = milton->view->scale;
-                        e->blur.kernel_size = 10;
-                        input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-                    }
-
-                    LayerEffect* prev = NULL;
-                    int effect_id = 1;
-                    for ( LayerEffect* e = working_layer->effects; e != NULL; e = e->next ) {
-                        ImGui::PushID(effect_id);
-                        static bool v = 0;
-                        if ( ImGui::Checkbox("Enabled", (bool*)&e->enabled) ) {
-                            input->flags |= MiltonInputFlags_FULL_REFRESH;
-                        }
-                        if ( ImGui::SliderInt("Level", &e->blur.kernel_size, 2, 100, 0) ) {
-                            if (e->blur.kernel_size % 2 == 0) {
-                                --e->blur.kernel_size;
-                            }
-                            input->flags |= MiltonInputFlags_FULL_REFRESH;
-                        }
-                        {
-                            if (ImGui::Button("Delete")) {
-                                if (prev) {
-                                    prev->next = e->next;
-                                } else {  // Was the first.
-                                    working_layer->effects = e->next;
-                                }
-                                input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
-                            }
-                        }
-                        ImGui::PopID();
-                        prev = e;
-                        ImGui::Separator();
-                        effect_id++;
-                    }
-                    // ImGui::Slider
-                } ImGui::End();
-
-            }
-        }
 
         ImGui::Separator();
         ImGui::EndChild();
@@ -255,6 +182,72 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                 }
             }
         }
+        static b32 show_effects = false;
+        {
+            // ImGui::GetWindow(Pos|Size) works in here because we are inside Begin()/End() calls.
+            {
+                ImGui::Text(loc(TXT_opacity));
+                f32 alpha = canvas->working_layer->alpha;
+                if ( ImGui::SliderFloat("##opacity", &alpha, 0.0f, 1.0f) ) {
+                    // Used the slider. Ask if it's OK to convert the binary format.
+                    if ( milton->persist->mlt_binary_version < 3 ) {
+                        milton_log("Modified milton file from %d to 3\n", milton->persist->mlt_binary_version);
+                        milton->persist->mlt_binary_version = 3;
+                    }
+                    input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+
+                    if ( alpha > 1 ) { alpha = 1; }
+                    if ( alpha < 0 ) { alpha = 0; }
+
+                    canvas->working_layer->alpha = alpha;
+                }
+
+                static b32 selecting = false;
+
+                ImGui::Separator();
+
+                if ( ImGui::Button(loc(TXT_blur)) ) {
+                    LayerEffect* e = arena_alloc_elem(&milton->canvas_arena, LayerEffect);
+                    e->next = milton->canvas->working_layer->effects;
+                    milton->canvas->working_layer->effects = e;
+                    e->enabled = true;
+                    e->blur.original_scale = milton->view->scale;
+                    e->blur.kernel_size = 10;
+                    input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+                }
+
+                LayerEffect* prev = NULL;
+                int effect_id = 1;
+                for ( LayerEffect* e = milton->canvas->working_layer->effects; e != NULL; e = e->next ) {
+                    ImGui::PushID(effect_id);
+                    static bool v = 0;
+                    if ( ImGui::Checkbox(loc(TXT_enabled), (bool*)&e->enabled) ) {
+                        input->flags |= MiltonInputFlags_FULL_REFRESH;
+                    }
+                    if ( ImGui::SliderInt(loc(TXT_level), &e->blur.kernel_size, 2, 100, 0) ) {
+                        if (e->blur.kernel_size % 2 == 0) {
+                            --e->blur.kernel_size;
+                        }
+                        input->flags |= MiltonInputFlags_FULL_REFRESH;
+                    }
+                    {
+                        if (ImGui::Button(loc(TXT_delete_blur))) {
+                            if (prev) {
+                                prev->next = e->next;
+                            } else {  // Was the first.
+                                milton->canvas->working_layer->effects = e->next;
+                            }
+                            input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
+                        }
+                    }
+                    ImGui::PopID();
+                    prev = e;
+                    ImGui::Separator();
+                    effect_id++;
+                }
+                // ImGui::Slider
+            }
+        }
         ImGui::EndChild();
         ImGui::EndGroup();
 
@@ -266,14 +259,14 @@ void
 gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f32 brush_window_width)
 {
     b32 show_brush_window = (current_mode_is_for_drawing(milton));
-    auto default_imgui_window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
+    auto imgui_window_flags = ImGuiWindowFlags_NoCollapse;
     MiltonGui* gui = milton->gui;
 
     const Rect pbounds = get_bounds_for_picker_and_colors(&gui->picker);
 
     // Brush Window
     if ( show_brush_window ) {
-        if ( ImGui::Begin(loc(TXT_brushes), NULL, default_imgui_window_flags) ) {
+        if ( ImGui::Begin(loc(TXT_brushes), NULL, imgui_window_flags) ) {
             if ( milton->current_mode == MiltonMode::PEN ||
                  milton->current_mode == MiltonMode::PRIMITIVE ) {
                 const float pen_alpha = milton_get_brush_alpha(milton);
@@ -288,11 +281,6 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                     gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
                 }
             }
-            if (ImGui::SliderFloat("DEV view 'rotation'", &milton->view->angle, 0.0f, 2*3.141592654f)) {
-                input->flags |= (i32)MiltonInputFlags_PANNING;
-                gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
-            }
-
             const auto size = milton_get_brush_radius(milton);
             auto mut_size = size;
 
@@ -326,22 +314,19 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
             }
         }
 
-        static b32 brush_settings = false;
-        if (ImGui::Button(loc(TXT_brush_settings))) {
-            brush_settings = !brush_settings;
-        }
-        if ( brush_settings ) {
+        {
             const f32 brush_settings_height = milton->gui->scale * 140;
             ImGui::SetNextWindowPos(ImVec2(milton->gui->scale * 10 + brush_window_width, milton->gui->scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
             ImGui::SetNextWindowSize({milton->gui->scale * 200, brush_settings_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
-            if (ImGui::Begin(loc(TXT_brush_settings))) {
+            // TODO: Conditionally show this?
+            {
                 ImGui::CheckboxFlags(loc(TXT_opacity_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), StrokeFlag_PRESSURE_TO_OPACITY);
                 if (milton->working_stroke.flags & StrokeFlag_PRESSURE_TO_OPACITY) {
                     int brush_enum = milton_get_brush_enum(milton);
                     f32* min_opacity = &milton->brushes[brush_enum].pressure_opacity_min;
 
-                    ImGui::SliderFloat(loc(TXT_minimum_opacity), min_opacity, 0.0f, milton->brushes[brush_enum].alpha);
+                    ImGui::SliderFloat(loc(TXT_minimum), min_opacity, 0.0f, milton->brushes[brush_enum].alpha);
                 }
                 ImGui::CheckboxFlags(loc(TXT_soft_brush), reinterpret_cast<u32*>(&milton->working_stroke.flags), StrokeFlag_DISTANCE_TO_OPACITY);
                 if (milton->working_stroke.flags & StrokeFlag_DISTANCE_TO_OPACITY) {
@@ -352,7 +337,6 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                 }
 
             }
-            ImGui::End();
         }
 
         // Important to place this before ImGui::End()
@@ -710,8 +694,8 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
         /* ImGuiSetCond_Once          = 1 << 1, // Only set the variable on the first call per runtime session */
         /* ImGuiSetCond_FirstUseEver */
 
-        const f32 brush_window_width = milton->gui->scale * 271;
-        const f32 brush_window_height = milton->gui->scale * 150;
+        const f32 brush_window_width = milton->gui->scale * 290;
+        const f32 brush_window_height = milton->gui->scale * 180;
 
         ImGui::SetNextWindowPos(ImVec2(milton->gui->scale * 10, milton->gui->scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
         ImGui::SetNextWindowSize({brush_window_width, brush_window_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences

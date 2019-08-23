@@ -107,7 +107,9 @@ v2l     raster_to_canvas (CanvasView* view, v2l raster_point);
 b32     stroke_point_contains_point (v2l p0, i64 r0, v2l p1, i64 r1);  // Does point p0 with radius r0 contain point p1 with radius r1?
 Rect    bounding_box_for_stroke (Stroke* stroke);
 Rect    bounding_box_for_last_n_points (Stroke* stroke, i32 last_n);
-Rect    canvas_rect_to_raster_rect (CanvasView* view, Rect canvas_rect);
+
+Rect    raster_to_canvas_bounding_rect(CanvasView* view, i32 x, i32 y, i32 w, i32 h, i64 scale);
+Rect    canvas_to_raster_bounding_rect(CanvasView* view, Rect rect);
 
 // ---- Layer functions.
 

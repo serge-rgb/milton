@@ -16,7 +16,7 @@
 // Debug settings
 
 #define MILTON_ENABLE_PROFILING 1
-#define REDRAW_EVERY_FRAME 1
+#define REDRAW_EVERY_FRAME 0
 #define GRAPHICS_DEBUG 1
 #define MILTON_ZOOM_DEBUG 0
 #define STROKE_DEBUG_VIZ 0

@@ -155,6 +155,7 @@ char*       str_trim_to_last_slash(char* str);
 void        utf16_to_utf8_simple(char* , char* );
 void        utf16_to_utf8_simple(wchar_t* utf16_name, char* utf8_name);
 
+
 struct Bitmap
 {
     i32 width;
