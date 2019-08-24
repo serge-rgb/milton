@@ -149,7 +149,7 @@ pointer_to_brush_size(Milton* milton)
 }
 
 static b32
-is_user_drawing(Milton* milton)
+is_user_drawing(Milton const* milton)
 {
     b32 result = milton->working_stroke.num_points > 0;
     return result;
@@ -193,7 +193,7 @@ milton_set_gui_visibility(Milton* milton, b32 visible)
 }
 
 b32
-current_mode_is_for_drawing(Milton* milton)
+current_mode_is_for_drawing(Milton const* milton)
 {
     return mode_is_for_drawing(milton->current_mode);
 }
@@ -798,6 +798,10 @@ milton_enter_mode(Milton* milton, MiltonMode mode)
         }
         push_mode(milton, milton->current_mode);
         milton->current_mode = mode;
+
+        if (is_user_drawing(milton)) {
+            milton->flags |= MiltonStateFlags_FINISH_CURRENT_STROKE;
+        }
     }
 }
 
@@ -1236,7 +1240,9 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
 
     PROFILE_GRAPH_BEGIN(update);
 
-    b32 end_stroke = (input->flags & MiltonInputFlags_END_STROKE);
+    b32 end_stroke = (input->flags & MiltonInputFlags_END_STROKE) || (milton->flags & MiltonStateFlags_FINISH_CURRENT_STROKE);
+
+    milton->flags &= ~MiltonStateFlags_FINISH_CURRENT_STROKE;
 
     milton->render_settings.do_full_redraw = false;
 
@@ -1418,7 +1424,7 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
                 // Input for primitive.
                 milton_primitive_input(milton, input, end_stroke);
             }
-            else {  // Input for eraser and pen
+            else if ( milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE )  {  // Input for eraser and pen
                 Stroke* ws = &milton->working_stroke;
                 auto prev_num_points = ws->num_points;
                 milton_stroke_input(milton, input);

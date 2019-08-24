@@ -162,7 +162,7 @@ struct TransformMode
 
 struct Milton
 {
-    b32 flags;  // See MiltonStateFlags
+    u32 flags;  // See MiltonStateFlags
 
     i32 max_width;
     i32 max_height;
@@ -231,7 +231,7 @@ struct Milton
 enum MiltonStateFlags
 {
     MiltonStateFlags_RUNNING                = 1 << 0,
-                                           // 1 << 1 unused
+    MiltonStateFlags_FINISH_CURRENT_STROKE  = 1 << 1,
                                             // 1 << 2 unused
     MiltonStateFlags_JUST_SAVED             = 1 << 3,
     MiltonStateFlags_NEW_CANVAS             = 1 << 4,
@@ -306,7 +306,7 @@ void milton_reset_canvas_and_set_default(Milton* milton);
 
 void milton_gl_backend_draw(Milton* milton);
 
-b32 current_mode_is_for_drawing(Milton* milton);
+b32 current_mode_is_for_drawing(Milton const* milton);
 
 void milton_toggle_gui_visibility(Milton* milton);
 void milton_set_gui_visibility(Milton* milton, b32 visible);
