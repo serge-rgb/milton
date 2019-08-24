@@ -92,6 +92,8 @@ enum Texts
     TXT_level,
     TXT_delete_blur,
     TXT_enabled,
+    TXT_default_will_be_cleared,
+    TXT_reset_view_at_origin,
 
     // Actions
     TXT_Action_FIRST,

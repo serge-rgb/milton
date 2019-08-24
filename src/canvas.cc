@@ -116,6 +116,13 @@ canvas_to_raster_bounding_rect(CanvasView* view, Rect rect)
     return result;
 }
 
+void
+reset_transform_at_origin(v2l* pan_center, i64* scale, f32* angle)
+{
+    *pan_center = {};
+    *scale = 1024;
+    *angle = 0.0f;
+}
 
 
 // Does point p0 with radius r0 contain point p1 with radius r1?

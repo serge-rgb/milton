@@ -109,6 +109,8 @@ init_localization()
         EN(TXT_level, "Level");
         EN(TXT_delete_blur, "Delete Blur");
         EN(TXT_enabled, "Enabled");
+        EN(TXT_default_will_be_cleared, "The default canvas will be cleared. Save it?");
+        EN(TXT_reset_view_at_origin, "Reset view at origin");
 
         EN(TXT_Action_DECREASE_BRUSH_SIZE, "Decrease brush size");
         EN(TXT_Action_INCREASE_BRUSH_SIZE, "Increase brush size");

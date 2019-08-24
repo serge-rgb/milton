@@ -118,6 +118,13 @@ normalized (v2f v)
    return result;
 }
 
+f32
+clamp(f32 value, f32 min, f32 max)
+{
+    return min(max(value, min), max);
+}
+
+
 
 // Could be called a signed area. `orientation(a, b, c) / 2` is the area of the
 // triangle.

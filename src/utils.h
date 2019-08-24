@@ -68,6 +68,8 @@ f32 norm(v2f v);
 
 v2f normalized (v2f v);
 
+f32 clamp(f32 value, f32 min, f32 max);
+
 #define SQUARE(x) ((x) * (x))
 
 

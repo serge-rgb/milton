@@ -361,7 +361,6 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
     CanvasState* canvas = milton->canvas;
 
     // TODO: translate
-    static char* default_will_be_lost = "The default canvas will be cleared. Save it?";
 
     if ( gui->menu_visible ) {
         if ( ImGui::BeginMainMenuBar() ) {
@@ -370,7 +369,7 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                     b32 save_file = false;
                     if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
                         if ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
-                            save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                            save_file = platform_dialog_yesno(loc(TXT_default_will_be_cleared), "Save?");
                         }
                     }
                     if ( save_file ) {
@@ -399,7 +398,7 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                     if ( ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
                         b32 save_file = false;
                         if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
-                            save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                            save_file = platform_dialog_yesno(loc(TXT_default_will_be_cleared), "Save?");
                         }
                         if ( save_file ) {
                             PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
@@ -527,12 +526,8 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                 // Eye Dropper
                 if ( ImGui::MenuItem(loc(TXT_eye_dropper)) ) {
                     input->mode_to_set = MiltonMode::EYEDROPPER;
-                    milton->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;
+                    milton->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;  // TODO: This is stupid and ugly. Might not even be needed anymore?
                 }
-                // History
-                // if ( ImGui::MenuItem("History") ) {
-                //     input->mode_to_set = MiltonMode_HISTORY;
-                // }
                 ImGui::EndMenu();
             }
             if ( ImGui::BeginMenu(loc(TXT_view)) ) {
@@ -543,6 +538,15 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                 if ( ImGui::MenuItem(loc(TXT_peek_out)) ) {
                     peek_out_trigger_start(milton, PeekOut_CLICK_TO_EXIT);
                 }
+
+                if ( ImGui::MenuItem(loc(TXT_reset_view_at_origin)) ) {
+                    reset_transform_at_origin(
+                        &milton->view->pan_center,
+                        &milton->view->scale,
+                        &milton->view->angle);
+                    gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
+                }
+
 #if MILTON_ENABLE_PROFILING
                 if ( ImGui::MenuItem("Toggle Debug Data [BACKQUOTE]") ) {
                     milton->viz_window_visible = !milton->viz_window_visible;
@@ -976,7 +980,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
             if ( screen_height>0 && screen_height>0 ) {
                 v2l pan = view->pan_center;
 
-                i64 radius = ((i64)1<<63);
+                i64 radius = ((i64)(1ull<<63)-1);
 
                 {
                     if ( pan.y > 0 ) {

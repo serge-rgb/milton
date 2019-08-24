@@ -111,6 +111,8 @@ Rect    bounding_box_for_last_n_points (Stroke* stroke, i32 last_n);
 Rect    raster_to_canvas_bounding_rect(CanvasView* view, i32 x, i32 y, i32 w, i32 h, i64 scale);
 Rect    canvas_to_raster_bounding_rect(CanvasView* view, Rect rect);
 
+void    reset_transform_at_origin(v2l* pan_center, i64* scale, f32* angle);
+
 // ---- Layer functions.
 
 

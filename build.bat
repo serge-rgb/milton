@@ -15,6 +15,8 @@ pushd build
 cl /Zi ..\src\shadergen.cc %warnFlags%
 popd
 
+taskkill /f /im milton.exe
+
 build\shadergen.exe
 
 pushd build

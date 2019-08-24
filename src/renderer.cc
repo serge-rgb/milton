@@ -906,6 +906,7 @@ gpu_update_canvas(RenderBackend* r, CanvasState* canvas, CanvasView* view)
 {
     v2i center = view->zoom_center;
     v2l pan = view->pan_center;
+
     v2i new_render_center = VEC2I(pan / (i64)(1<<RENDER_CHUNK_SIZE_LOG2));
     if ( new_render_center != r->render_center ) {
         milton_log("Moving to new render center. %d, %d Clearing render data.\n", new_render_center.x, new_render_center.y);

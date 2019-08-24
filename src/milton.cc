@@ -91,11 +91,6 @@ milton_update_brushes(Milton* milton)
             brush->hardness = 10.f;
         }
     }
-
-    int brush_enum = milton_get_brush_enum(milton);
-
-    // TODO: Is this needed?
-    // milton->working_stroke.brush = milton->brushes[brush_enum];
 }
 
 
@@ -345,10 +340,6 @@ milton_stroke_input(Milton* milton, MiltonInput const* input)
     if ( milton->view->scale != milton_render_scale(milton) ) {
         return;  // We can't draw while peeking.
     }
-
-    // Using the pan center to do a change of coordinates so that we
-    // don't lose precision when we convert to floating point
-    v2l pan_center = milton->view->pan_center;
 
     Stroke* ws = &milton->working_stroke;
 
@@ -1122,9 +1113,6 @@ peek_out_tick(Milton* milton, MiltonInput const* input)
             v2l pan = { panx, pany };
 
             milton->view->pan_center = pan;
-
-            // set zoom at point
-            milton->view->pan_center = pan;
             milton->view->zoom_center = milton->view->screen_size / 2;
             gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
 
@@ -1220,17 +1208,18 @@ transform_tick(Milton* milton, MiltonInput const* input)
         }
         else if (t->fsm == TransformModeFSM::ROTATING) {
             // Rotate!
-            v2f center = v2i_to_v2f(milton->view->screen_size / 2);
-            v2f a = point - center;
-            v2f b = t->last_point - center;
-            f32 lena = magnitude(a);
-            f32 lenb = magnitude(b);
-            f32 cos_angle = DOT(b, a) / (lena * lenb);
-            f32 sign = orientation(center, t->last_point, point) > 0 ? -1.0f : 1.0f;
-            milton->view->angle += sign * acosf(cos_angle);
-            t->last_point = point;
-            gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
-            // milton->render_settings.do_full_redraw = true;
+            const v2f center = v2i_to_v2f(milton->view->screen_size / 2);
+            const v2f a = point - center;
+            const v2f b = t->last_point - center;
+            const f32 lena = magnitude(a);
+            const f32 lenb = magnitude(b);
+            if (lena > 0.0f && lenb > 0.0f) {
+                const f32 cos_angle = clamp(DOT(b, a) / (lena * lenb), 0.0f, 1.0f);
+                const f32 sign = orientation(center, t->last_point, point) > 0 ? -1.0f : 1.0f;
+                milton->view->angle += sign * acosf(cos_angle);
+                t->last_point = point;
+                gpu_update_canvas(milton->renderer, milton->canvas, milton->view);
+            }
         }
     }
     if (input->flags & MiltonInputFlags_CLICKUP) {
