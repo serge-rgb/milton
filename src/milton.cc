@@ -43,7 +43,7 @@ init_view(CanvasView* view, v3f background_color, i32 width, i32 height)
 }
 
 int
-milton_get_brush_enum(Milton* milton)
+milton_get_brush_enum(Milton const* milton)
 {
     int brush_enum = BrushEnum_NOBRUSH;
     switch ( milton->current_mode ) {
@@ -93,7 +93,9 @@ milton_update_brushes(Milton* milton)
     }
 
     int brush_enum = milton_get_brush_enum(milton);
-    milton->working_stroke.brush = milton->brushes[brush_enum];
+
+    // TODO: Is this needed?
+    // milton->working_stroke.brush = milton->brushes[brush_enum];
 }
 
 
@@ -134,7 +136,7 @@ eyedropper_deinit(Eyedropper* e)
 }
 
 static Brush
-milton_get_brush(Milton* milton)
+milton_get_brush(Milton const* milton)
 {
     int brush_enum = milton_get_brush_enum(milton);
 
@@ -219,7 +221,7 @@ clear_stroke_redo(Milton* milton)
 }
 
 static void
-milton_primitive_input(Milton* milton, MiltonInput* input, b32 end_stroke)
+milton_primitive_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
 {
     if ( end_stroke && milton->primitive_fsm == Primitive_DRAWING) {
        milton->primitive_fsm = Primitive_WAITING;
@@ -334,7 +336,7 @@ milton_render_scale(Milton* milton)
 }
 
 static void
-milton_stroke_input(Milton* milton, MiltonInput* input)
+milton_stroke_input(Milton* milton, MiltonInput const* input)
 {
     if ( input->input_count == 0 ) {
         return;
@@ -442,8 +444,8 @@ milton_set_default_canvas_file(Milton* milton)
     milton->flags |= MiltonStateFlags_DEFAULT_CANVAS;
 }
 
-i32
-milton_get_brush_radius_for_enum(Milton* milton, int brush_enum)
+static i32
+milton_get_brush_radius_for_enum(Milton const* milton, int brush_enum)
 {
     i32 brush_size = milton->brush_sizes[brush_enum];
     if ( brush_size <= 0 ) {
@@ -453,7 +455,7 @@ milton_get_brush_radius_for_enum(Milton* milton, int brush_enum)
 }
 
 i32
-milton_get_brush_radius(Milton* milton)
+milton_get_brush_radius(Milton const* milton)
 {
     i32 radius = milton_get_brush_radius_for_enum(milton, milton_get_brush_enum(milton));
     return radius;
@@ -514,7 +516,7 @@ milton_set_brush_alpha(Milton* milton, float alpha)
 }
 
 float
-milton_get_brush_alpha(Milton* milton)
+milton_get_brush_alpha(Milton const* milton)
 {
     int brush_enum = milton_get_brush_enum(milton);
     const float alpha = milton->brushes[brush_enum].alpha;
@@ -1100,7 +1102,7 @@ peek_out_trigger_stop(Milton* milton)
 }
 
 static void
-peek_out_tick(Milton* milton, MiltonInput* input)
+peek_out_tick(Milton* milton, MiltonInput const* input)
 {
     PeekOut* peek = milton->peek_out;
 
@@ -1176,7 +1178,7 @@ drag_brush_size_stop(Milton* milton)
 }
 
 static void
-drag_brush_size_tick(Milton* milton, MiltonInput* input)
+drag_brush_size_tick(Milton* milton, MiltonInput const* input)
 {
     MiltonDragBrush* drag = milton->drag_brush;
     f32 drag_factor = 0.5f;
@@ -1206,7 +1208,7 @@ transform_stop(Milton* milton)
 }
 
 static void
-transform_tick(Milton* milton, MiltonInput* input)
+transform_tick(Milton* milton, MiltonInput const* input)
 {
     TransformMode* t = milton->transform;
 
@@ -1239,7 +1241,7 @@ transform_tick(Milton* milton, MiltonInput* input)
 }
 
 void
-milton_update_and_render(Milton* milton, MiltonInput* input)
+milton_update_and_render(Milton* milton, MiltonInput const* input)
 {
     imm_begin_frame(milton->renderer);
 

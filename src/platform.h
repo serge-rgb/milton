@@ -146,13 +146,15 @@ enum FileKind
     #define MAX_PATH PATH_MAX
 #endif
 
-struct PlatformPrefs
+// BACKWARDS-COMPATIBILITY NOTE: Should only grow down.
+struct PlatformSettings
 {
     // Store the window size at the time of quitting.
     i32 width;
     i32 height;
     // Last opened file.
     PATH_CHAR last_mlt_file[MAX_PATH];
+
 };
 
 // Defined in platform_windows.cc

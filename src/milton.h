@@ -311,12 +311,12 @@ b32 current_mode_is_for_drawing(Milton* milton);
 void milton_toggle_gui_visibility(Milton* milton);
 void milton_set_gui_visibility(Milton* milton, b32 visible);
 
-int     milton_get_brush_enum(Milton* milton);
-i32     milton_get_brush_radius(Milton* milton);   // Between 0 and k_max_brush_size
+int     milton_get_brush_enum(Milton const* milton);
+i32     milton_get_brush_radius(Milton const* milton);   // Between 0 and k_max_brush_size
 void    milton_set_brush_size(Milton* milton, i32 size);
 void    milton_increase_brush_size(Milton* milton);
 void    milton_decrease_brush_size(Milton* milton);
-float   milton_get_brush_alpha(Milton* milton);
+float   milton_get_brush_alpha(Milton const* milton);
 void    milton_set_brush_alpha(Milton* milton, float alpha);
 
 // Returns false if the pan_delta moves the pan vector outside of the canvas.
@@ -326,7 +326,7 @@ MiltonMode milton_leave_mode(Milton* milton);
 void milton_enter_mode(Milton* milton, MiltonMode mode);
 
 // Our "game loop" inner function.
-void milton_update_and_render(Milton* milton, MiltonInput* input);
+void milton_update_and_render(Milton* milton, MiltonInput const* input);
 
 void milton_try_quit(Milton* milton);
 

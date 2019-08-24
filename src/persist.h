@@ -85,8 +85,8 @@ u64 milton_save(Milton* milton);
 
 void milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h);
 
-b32  milton_appstate_load(PlatformPrefs* prefs);
-void milton_appstate_save(PlatformPrefs* prefs);
+b32  platform_settings_load(PlatformSettings* prefs);
+void platform_settings_save(PlatformSettings* prefs);
 
 b32 milton_settings_load(MiltonSettings* settings);
 void milton_settings_save(MiltonSettings* settings);

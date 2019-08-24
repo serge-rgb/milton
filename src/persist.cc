@@ -858,21 +858,24 @@ milton_save_buffer_to_file(PATH_CHAR* fname, u8* buffer, i32 w, i32 h)
 }
 
 b32
-milton_appstate_load(PlatformPrefs* prefs)
+platform_settings_load(PlatformSettings* prefs)
 {
     b32 loaded = false;
-    PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
+    PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("platform_settings.bin");
     platform_fname_at_config(fname, MAX_PATH);
 
     milton_log("Prefs file: %s\n", fname);
 
-    FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
+    *prefs = {};
 
-    if ( fd ) {
+    if ( FILE* fd = platform_fopen(fname, TO_PATH_STR("rb")) ) {
         if ( !ferror(fd) ) {
-            fread(&prefs->width, sizeof(i32), 1, fd);
-            fread(&prefs->height, sizeof(i32), 1, fd);
-            loaded = true;
+            u16 prefs_size = 0;
+            fread(&prefs_size, sizeof(u16), 1, fd);
+
+            if (prefs_size <= sizeof(*prefs)) {
+                loaded = fread(prefs, prefs_size, 1, fd);
+            }
         }
         else {
             milton_log("Error writing to prefs file...\n");
@@ -887,19 +890,15 @@ milton_appstate_load(PlatformPrefs* prefs)
 }
 
 void
-milton_appstate_save(PlatformPrefs* prefs)
+platform_settings_save(PlatformSettings* prefs)
 {
-    PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("PREFS.milton_prefs");
+    PATH_CHAR fname[MAX_PATH] = TO_PATH_STR("platform_settings.bin");
     platform_fname_at_config(fname, MAX_PATH);
     FILE* fd = platform_fopen(fname, TO_PATH_STR("wb"));
-    if ( fd ) {
-        if ( !ferror(fd) ) {
-            fwrite(&prefs->width, sizeof(i32), 1, fd);
-            fwrite(&prefs->height, sizeof(i32), 1, fd);
-        }
-        else {
-            milton_log( "Error writing to profs file...\n" );
-        }
+    if ( fd && !ferror(fd) ) {
+        u16 prefs_size = sizeof(PlatformSettings);
+        fwrite(&prefs_size, sizeof(u16), 1, fd);
+        fwrite(prefs, sizeof(*prefs), 1, fd);
         fclose(fd);
     }
     else {
@@ -910,7 +909,7 @@ milton_appstate_save(PlatformPrefs* prefs)
 b32
 milton_settings_load(MiltonSettings* settings)
 {
-    PATH_CHAR settings_fname[MAX_PATH] = TO_PATH_STR("milton_settings.ini"); {
+    PATH_CHAR settings_fname[MAX_PATH] = TO_PATH_STR("user_settings.bin"); {
         platform_fname_at_config(settings_fname, MAX_PATH);
     }
 
@@ -935,7 +934,7 @@ milton_settings_load(MiltonSettings* settings)
 
 void milton_settings_save(MiltonSettings* settings)
 {
-    PATH_CHAR settings_fname[MAX_PATH] = TO_PATH_STR("milton_settings.ini"); {
+    PATH_CHAR settings_fname[MAX_PATH] = TO_PATH_STR("user_settings.bin"); {
         platform_fname_at_config(settings_fname, MAX_PATH);
     }
 

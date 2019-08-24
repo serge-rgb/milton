@@ -1331,7 +1331,7 @@ exporter_init(Exporter* exporter)
 }
 
 b32
-exporter_input(Exporter* exporter, MiltonInput* input)
+exporter_input(Exporter* exporter, MiltonInput const* input)
 {
     b32 changed = false;
     if ( input->input_count > 0 ) {
@@ -1404,7 +1404,7 @@ gui_get_picker_rgb(MiltonGui* gui)
 
 // Returns true if the Picker consumed input. False if the GUI wasn't affected
 b32
-gui_consume_input(MiltonGui* gui, MiltonInput* input)
+gui_consume_input(MiltonGui* gui, MiltonInput const* input)
 {
     b32 accepts = false;
     v2i point = VEC2I(input->points[0]);
