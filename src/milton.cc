@@ -1323,10 +1323,6 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
                         push(&milton->canvas->redo_stack, h);
 
                         milton->render_settings.do_full_redraw = true;
-
-                        SaveBlockHeader header = {};
-                        header.type = Block_LAYER_CONTENT;
-                        header.block_layer.id = h.layer_id;
                     }
                     break;
                 }
@@ -1345,10 +1341,6 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
                             push(&milton->canvas->history, h);
 
                             milton->render_settings.do_full_redraw = true;
-
-                            SaveBlockHeader header = {};
-                            header.type = Block_LAYER_CONTENT;
-                            header.block_layer.id = h.layer_id;
 
                             break;
                         }
@@ -1530,11 +1522,6 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
 
                 // Make sure we show blurred layers when finishing a stroke.
                 milton->render_settings.do_full_redraw = true;
-
-                // Update save block
-                SaveBlockHeader header = {};
-                header.type = Block_LAYER_CONTENT;
-                header.block_layer.id = milton->view->working_layer_id;
             }
         }
     }

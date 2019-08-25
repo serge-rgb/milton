@@ -8,57 +8,6 @@
 struct Milton;
 struct MiltonSettings;
 
-#define NUM_FIXED_BLOCKS 3  // Picker, buttons, brushes.
-enum BlockType
-{
-    // Fixed-size and fixed-position
-    Block_COLOR_PICKER,
-    Block_BUTTONS,
-    Block_BRUSHES,
-
-    // Dynamic size and movable
-    Block_PAINTING_DESCRIPTION,
-    Block_LAYER_CONTENT,
-};
-
-#pragma pack(push, 1)
-struct BlockLayer
-{
-    i32 id;
-};
-
-struct SaveBlockHeader
-{
-    u16 type; /*BlockType*/
-
-    // MLT version 6
-    union
-    {
-        // TODO: if layer content is the only one who uses this, maybe it would be better to save block_layer outside of the header.
-        BlockLayer block_layer;  // Block_LAYER_CONTENT
-    };
-
-};
-#pragma pack(pop)
-
-
-struct SaveBlock
-{
-    SaveBlockHeader header;
-
-    u64 bytes_begin;
-    u64 bytes_end;
-
-    u8 dirty;
-
-    union
-    {
-        // Block_LAYER_CONTENT
-        u64 num_saved_strokes;
-    };
-};
-
-
 struct MiltonPersist
 {
     // Persistence
@@ -69,10 +18,6 @@ struct MiltonPersist
                                         // when the mlt file gets large.
                                         // Check that all the strokes are saved at quit time in case that
                                         // the last MoveFileEx failed.
-    DArray<SaveBlock> blocks;
-
-    //u16 save_id;
-
     float target_MB_per_sec;
 
     sz bytes_to_last_block;

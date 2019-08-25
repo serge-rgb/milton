@@ -418,39 +418,6 @@ END:
 #undef READ
 }
 
-void
-milton_persist_set_blocks_for_painting(Milton* milton)
-{
-    // Set up blocks.
-    MiltonPersist* p = milton->persist;
-
-    reset(&p->blocks);
-
-    // Fixed blocks
-    push(&p->blocks, { Block_COLOR_PICKER });
-    push(&p->blocks, { Block_BRUSHES });
-    push(&p->blocks, { Block_BUTTONS });
-
-    // Movable blocks
-    push(&p->blocks, { Block_PAINTING_DESCRIPTION });
-
-    for (Layer* layer = milton->canvas->root_layer;
-         layer;
-         layer = layer->next) {
-        SaveBlockHeader header = {};
-        header.type = Block_LAYER_CONTENT;
-        header.block_layer.id = layer->id;
-        SaveBlock block = {};
-        block.header = header;
-        block.dirty = true;
-        push(&p->blocks,  block);
-    }
-
-    for (sz i = 0; i < p->blocks.count; ++i) {
-        p->blocks[i].dirty = true;
-    }
-}
-
 static bool
 write_data(void* address, size_t size, size_t count, FILE* fd)
 {
