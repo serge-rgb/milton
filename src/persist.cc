@@ -282,6 +282,14 @@ milton_load(Milton* milton)
                         layer::layer_push_stroke(layer, stroke);
                     }
                 }
+
+                // Set the flags of the working layer to the last stroke of the working layer.
+                if (layer->id == saved_working_layer_id) {
+                    i64 stroke_count = count(&layer->strokes);
+                    if (stroke_count > 0) {
+                        milton->working_stroke.flags = layer->strokes[ stroke_count - 1]->flags;
+                    }
+                }
             }
 
             if ( milton_binary_version >= 4 ) {

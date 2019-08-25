@@ -86,10 +86,6 @@ milton_update_brushes(Milton* milton)
         else if ( i == BrushEnum_PRIMITIVE ) {
             brush->color = to_premultiplied(gui_get_picker_rgb(milton->gui), brush->alpha);
         }
-
-        if (brush->hardness == 0.0f) {
-            brush->hardness = 10.f;
-        }
     }
 }
 
@@ -601,28 +597,35 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
         }
     }
 
-    // Set default brush sizes.
-    for ( int i = 0; i < BrushEnum_COUNT; ++i ) {
-        switch ( i ) {
-        case BrushEnum_PEN: {
-           milton->brush_sizes[i] = 10;
-        } break;
-        case BrushEnum_ERASER: {
-           milton->brush_sizes[i] = 40;
-        } break;
-        case BrushEnum_PRIMITIVE: {
-           milton->brush_sizes[i] = 10;
-        } break;
-        case BrushEnum_NOBRUSH: { {
-           milton->brush_sizes[i] = 1;
-        } } break;
-        default: {
-           INVALID_CODE_PATH;
-        } break;
+    // Set default brush.
+    {
+        milton->working_stroke.flags |= StrokeFlag_DISTANCE_TO_OPACITY;  // Soft brush.
+
+        for ( int i = 0; i < BrushEnum_COUNT; ++i ) {
+
+            milton->brushes[i].alpha = 1.0f;
+            milton->brushes[i].hardness = k_max_hardness;
+
+            switch ( i ) {
+            case BrushEnum_PEN: {
+               milton->brush_sizes[i] = 30;
+            } break;
+            case BrushEnum_ERASER: {
+               milton->brush_sizes[i] = 40;
+            } break;
+            case BrushEnum_PRIMITIVE: {
+               milton->brush_sizes[i] = 10;
+            } break;
+            case BrushEnum_NOBRUSH: { {
+               milton->brush_sizes[i] = 1;
+            } } break;
+            default: {
+               INVALID_CODE_PATH;
+            } break;
+            }
+            mlt_assert(milton->brush_sizes[i] > 0 && milton->brush_sizes[i] <= MILTON_MAX_BRUSH_SIZE);
         }
-        mlt_assert(milton->brush_sizes[i] > 0 && milton->brush_sizes[i] <= MILTON_MAX_BRUSH_SIZE);
     }
-    milton_set_brush_alpha(milton, 1.0f);
 
     milton->persist->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.

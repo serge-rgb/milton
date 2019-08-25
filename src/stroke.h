@@ -8,10 +8,12 @@
                        // member. Refactor to eliminate this
                        // dependency
 
+static const f32 k_max_hardness = 10.0f;
+
 
 struct Brush
 {
-    i32 radius;
+    i32 radius;  // In pixels. See milton->brush_sizes for canvas-space sizes.
     v4f color;
     f32 alpha;
     f32 pressure_opacity_min;  // Opacity from pressure.

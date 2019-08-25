@@ -15,8 +15,8 @@ canvas_to_raster_with_scale(CanvasView* view, v2l canvas_point, i64 scale)
     f32 sin_angle = sinf(-view->angle);
 
     v2l raster_point = {
-        (x * cos_angle - y * sin_angle) / scale + view->zoom_center.x,
-        (y * cos_angle + x * sin_angle) / scale + view->zoom_center.y,
+        i64(x * cos_angle - y * sin_angle) / scale + view->zoom_center.x,
+        i64(y * cos_angle + x * sin_angle) / scale + view->zoom_center.y,
     };
     return raster_point;
 }
@@ -35,8 +35,8 @@ raster_to_canvas_with_scale(CanvasView* view, v2l raster_point, i64 scale)
 
 
     v2l canvas_point = {
-        (x * cos_angle - y * sin_angle) * scale + view->pan_center.x,
-        (y * cos_angle + x * sin_angle) * scale + view->pan_center.y,
+        i64(x * cos_angle - y * sin_angle) * scale + view->pan_center.x,
+        i64(y * cos_angle + x * sin_angle) * scale + view->pan_center.y,
     };
 
     return canvas_point;

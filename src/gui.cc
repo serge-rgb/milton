@@ -333,7 +333,7 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                     int brush_enum = milton_get_brush_enum(milton);
                     f32* hardness = &milton->brushes[brush_enum].hardness;
 
-                    ImGui::SliderFloat(loc(TXT_hardness), hardness, 1.0f, 10.0f);
+                    ImGui::SliderFloat(loc(TXT_hardness), hardness, 1.0f, k_max_hardness);
                 }
 
             }
