@@ -251,40 +251,28 @@ stroke_append_point(Stroke* stroke, v2l canvas_point, f32 pressure)
 static v2l
 smooth_filter(SmoothFilter* filter, v2l input)
 {
-    filter->points[filter->end] = input;
+    v2f point = v2l_to_v2f(input - filter->center);
 
-    v2f result = v2l_to_v2f(filter->points[filter->start] - input);
-
-    filter->end++;
-    filter->end %= SMOOTHING_WINDOW;
-
-    if (filter->end == filter->start) {
-        filter->start = (filter->end+1) % SMOOTHING_WINDOW;
+    if (filter->first)
+    {
+        filter->prediction = point;
+        filter->first = false;
     }
+    else
+    {
+        f32 alpha = 0.5;
 
-    f32 alpha = 0.8f;
-
-    for ( size_t i = filter->start;
-          i != filter->end;
-          i++, i %= SMOOTHING_WINDOW) {
-
-        v2f point = v2l_to_v2f(filter->points[i] - input);
-
-        result = (alpha * point) + ((1 - alpha) * result);
+        filter->prediction = alpha * point + (1 - alpha) * filter->prediction;
     }
-
-    v2l output = {
-        i64(result.x) + input.x,
-        i64(result.y) + input.y,
-    };
-
-    return output;
+    v2l result = v2f_to_v2l(filter->prediction) + filter->center;
+    return result;
 }
 
 static void
-clear_smooth_filter(SmoothFilter* filter, v2l value)
+clear_smooth_filter(SmoothFilter* filter, v2l center)
 {
-    filter->start = filter->end;
+    filter->first = true;
+    filter->center = center;
 }
 
 static u64 peek_out_duration_ms(Milton* milton);  // forward decl
