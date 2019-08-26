@@ -488,12 +488,16 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                     input->mode_to_set = MiltonMode::PEN;
                 }
                 if ( ImGui::BeginMenu(loc(TXT_brush_options)) ) {
-                    b32 smoothing_enabled = milton_brush_smoothing_enabled(milton);
-                    char* entry_str = smoothing_enabled? loc(TXT_disable_stroke_smoothing) : loc(TXT_enable_stroke_smoothing);
 
-                    if ( ImGui::MenuItem(entry_str) ) {
-                        milton_toggle_brush_smoothing(milton);
-                    }
+                    // Toggling brush smoothing is barely noticeable...
+
+                    // b32 smoothing_enabled = milton_brush_smoothing_enabled(milton);
+                    // char* entry_str = smoothing_enabled? loc(TXT_disable_stroke_smoothing) : loc(TXT_enable_stroke_smoothing);
+
+                    // if ( ImGui::MenuItem(entry_str) ) {
+                    //     milton_toggle_brush_smoothing(milton);
+                    // }
+
                     // Decrease / increase brush size
                     if ( ImGui::MenuItem(loc(TXT_decrease_brush_size)) ) {
                         for (int i=0;i<5;++i) milton_decrease_brush_size(milton);

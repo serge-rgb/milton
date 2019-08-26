@@ -251,35 +251,40 @@ stroke_append_point(Stroke* stroke, v2l canvas_point, f32 pressure)
 static v2l
 smooth_filter(SmoothFilter* filter, v2l input)
 {
-    filter->points[filter->index++] = input;
-    filter->index %= SMOOTHING_WINDOW;
+    filter->points[filter->end] = input;
 
-    float factor = 1.0 / SMOOTHING_WINDOW;
+    v2f result = v2l_to_v2f(filter->points[filter->start] - input);
 
-    v2f sum = {0};
-    for (int i = 0; i < SMOOTHING_WINDOW; ++i) {
-        v2f point = {
-            (float)filter->points[i].x - input.x,
-            (float)filter->points[i].y - input.y,
-        };
+    filter->end++;
+    filter->end %= SMOOTHING_WINDOW;
 
-        sum = sum + point * factor;
+    if (filter->end == filter->start) {
+        filter->start = (filter->end+1) % SMOOTHING_WINDOW;
     }
 
-    v2l result = {
-        (long)sum.x + input.x,
-        (long)sum.y + input.y,
+    f32 alpha = 0.8f;
+
+    for ( size_t i = filter->start;
+          i != filter->end;
+          i++, i %= SMOOTHING_WINDOW) {
+
+        v2f point = v2l_to_v2f(filter->points[i] - input);
+
+        result = (alpha * point) + ((1 - alpha) * result);
+    }
+
+    v2l output = {
+        i64(result.x) + input.x,
+        i64(result.y) + input.y,
     };
 
-    return result;
+    return output;
 }
 
 static void
 clear_smooth_filter(SmoothFilter* filter, v2l value)
 {
-    for (int i = 0; i < SMOOTHING_WINDOW; ++i) {
-        filter->points[i] = value;
-    }
+    filter->start = filter->end;
 }
 
 static u64 peek_out_duration_ms(Milton* milton);  // forward decl

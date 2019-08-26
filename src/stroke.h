@@ -51,7 +51,6 @@ struct Stroke
 #endif
 };
 
-
 // ==== Old versions ====
 
 struct BrushPreV8
@@ -68,3 +67,12 @@ struct BrushPreV7
     v4f color;
     f32 alpha;
 };
+
+static inline Brush default_brush()
+{
+    Brush brush = {};
+    brush.radius = 10240;
+    brush.alpha = 1.0f;
+    brush.hardness = 10.0f;
+    return brush;
+}

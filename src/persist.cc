@@ -66,6 +66,7 @@ read_brushes(Brush* brushes, i32 num_brushes, FILE* fd)
     }
 
     for (i32 i = 0; i < num_brushes; ++i) {
+        brushes[i] = default_brush();
         if (ok) { ok = fread_checked(brushes + i, size, 1, fd); }
     }
 
@@ -222,6 +223,7 @@ milton_load(Milton* milton)
                         if (stroke.brush.color == k_eraser_color) {
                             stroke.flags |= StrokeFlag_ERASER;
                         }
+                        stroke.brush.hardness = 10.0f;
                     }
                     else if ( milton_binary_version < 8 ) {
                         READ(&stroke.brush, sizeof(BrushPreV8), 1, fd);
@@ -341,7 +343,9 @@ milton_load(Milton* milton)
         // Brush
         if ( milton_binary_version >= 2 && milton_binary_version <= 5  ) {
             // PEN, ERASER
-            READ(&milton->brushes, sizeof(BrushPreV7), 2, fd);
+            for (int i = 0; i < 2; ++i) {
+                READ(&milton->brushes[i], sizeof(BrushPreV7), 1, fd);
+            }
             // Sizes
             READ(&milton->brush_sizes, sizeof(i32), 2, fd);
         }
@@ -352,10 +356,16 @@ milton_load(Milton* milton)
                 milton_log("Error loading file: too many brushes: %d\n", num_brushes);
             }
             if ( milton_binary_version < 7 ) {
-                READ(&milton->brushes, sizeof(BrushPreV7), num_brushes, fd);
+                for (int i = 0; i < num_brushes; ++i) {
+                    milton->brushes[i] = default_brush();
+                    READ(milton->brushes + i, sizeof(BrushPreV7), 1, fd);
+                }
             }
 			else if (milton_binary_version < 8) {
-				READ(&milton->brushes, sizeof(BrushPreV8), num_brushes, fd);
+                for (int i = 0; i < num_brushes; ++i) {
+                    milton->brushes[i] = default_brush();
+                    READ(milton->brushes + i, sizeof(BrushPreV8), 1, fd);
+                }
 			}
             else {
                 if (!read_brushes(milton->brushes, num_brushes, fd)) {

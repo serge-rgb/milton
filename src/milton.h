@@ -111,10 +111,10 @@ struct Eyedropper
 
 struct SmoothFilter
 {
-    #define SMOOTHING_WINDOW 6
+    #define SMOOTHING_WINDOW 10
     v2l points[SMOOTHING_WINDOW];
-    size_t index;
-    size_t n_points;
+    i64 start;
+    i64 end;
 };
 
 enum PeekOutFlags

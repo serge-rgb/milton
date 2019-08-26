@@ -36,8 +36,18 @@ typedef Vector2<i32>     v2i;
 typedef Vector2<i64>     v2l;
 typedef Vector2<float>   v2f;
 #define operator2_scalar(OP) \
-        template<typename T> \
-        Vector2<T> operator OP (const Vector2<T>& v, T f) \
+template<typename T> \
+Vector2<T> operator OP (const Vector2<T>& v, T f) \
+{                       \
+                        \
+    Vector2<T> r = {    \
+        v.x OP f,       \
+        v.y OP f,       \
+    };                  \
+    return r;           \
+} \
+template<typename T> \
+Vector2<T> operator OP (T f, const Vector2<T>& v) \
 {                       \
                         \
     Vector2<T> r = {    \
