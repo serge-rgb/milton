@@ -174,6 +174,7 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                 ImGui::Text(loc(TXT_cant_be_undone));
                 if ( ImGui::Button(loc(TXT_yes)) ) {
                     milton_delete_working_layer(milton);
+                    input->flags |= MiltonInputFlags_FULL_REFRESH;
                     deleting = false;
                 }
                 ImGui::SameLine();
