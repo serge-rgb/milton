@@ -119,7 +119,7 @@ struct MiltonGui
 
     f32 scale;
 
-    MiltonSettings* modified_settings;
+    MiltonSettings* original_settings;
 
     char scratch_binding_key[Action_COUNT][2];
 };

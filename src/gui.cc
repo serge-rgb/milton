@@ -442,9 +442,9 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                 if ( ImGui::MenuItem(loc(TXT_settings)) && !show_settings ) {
                     milton_set_gui_visibility(milton, true);
                     show_settings = true;
-                    *gui->modified_settings = *milton->settings;
+                    *gui->original_settings = *milton->settings;
                     for (sz i = Action_FIRST; i < Action_COUNT; ++i) {
-                        gui->scratch_binding_key[i][0] = gui->modified_settings->bindings.bindings[i].bound_key;
+                        gui->scratch_binding_key[i][0] = gui->original_settings->bindings.bindings[i].bound_key;
                     }
                 }
                 if ( ImGui::MenuItem(loc(TXT_quit)) ) {
@@ -718,13 +718,13 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
                 snprintf(cancel, array_count(cancel), "%s##%d", loc(TXT_cancel), i);
 
     			if (ImGui::Button(ok)) {
-    				*milton->settings = *gui->modified_settings;
     				milton_settings_save(milton->settings);
     				show_settings = false;
     			}
     			ImGui::SameLine();
     			if (ImGui::Button(cancel)) {
     				show_settings = false;
+                    *milton->settings = *gui->original_settings;
     			}
             };
 
@@ -738,24 +738,24 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
 
                 ImGui::Text(loc(TXT_default_background_color));
 
-                v3f* bg = &gui->modified_settings->background_color;
+                v3f* bg = &milton->settings->background_color;
                 if (ImGui::ColorEdit3(loc(TXT_color), bg->d)) {
                     // TODO: Let milton know that we need to save the settings
                 }
 
                 if ( ImGui::Button(loc(TXT_set_current_background_color_as_default)) ) {
-                    gui->modified_settings->background_color = milton->view->background_color;
+                    milton->settings->background_color = milton->view->background_color;
                 }
 
 				const float peek_range = 20;
-				int peek_out_percent = 100 * (gui->modified_settings->peek_out_increment / peek_range);
+				int peek_out_percent = 100 * (milton->settings->peek_out_increment / peek_range);
                 if (ImGui::SliderInt(loc(TXT_peek_out_increment_percent), &peek_out_percent, 0, 100)) {
-					gui->modified_settings->peek_out_increment = (peek_out_percent / 100.0f) * peek_range;
+					milton->settings->peek_out_increment = (peek_out_percent / 100.0f) * peek_range;
 				}
 
                 ImGui::Separator();
 
-                MiltonBindings* bs = &gui->modified_settings->bindings;
+                MiltonBindings* bs = &milton->settings->bindings;
 
                 for (sz i = Action_FIRST; i < Action_COUNT; ++i ) {
                     Binding* b = bs->bindings + i;
@@ -1463,7 +1463,7 @@ gui_init(Arena* root_arena, MiltonGui* gui, f32 ui_scale)
     gui->picker.pixels = arena_alloc_array(root_arena, (4 * bounds_radius_px * bounds_radius_px), u32);
     gui->visible = true;
     gui->picker.color_buttons = arena_alloc_elem(root_arena, ColorButton);
-    gui->modified_settings = arena_alloc_elem(root_arena, MiltonSettings);
+    gui->original_settings = arena_alloc_elem(root_arena, MiltonSettings);
 
     picker_init(&gui->picker);
 
