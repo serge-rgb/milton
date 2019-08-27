@@ -197,8 +197,7 @@ gui_layer_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
                     }
                     input->flags |= (i32)MiltonInputFlags_FULL_REFRESH;
 
-                    if ( alpha > 1 ) { alpha = 1; }
-                    if ( alpha < 0 ) { alpha = 0; }
+                    alpha = clamp(alpha, 0.0f, 1.0f);
 
                     canvas->working_layer->alpha = alpha;
                 }
@@ -285,6 +284,13 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
             const auto size = milton_get_brush_radius(milton);
             auto mut_size = size;
 
+
+            if (ImGui::CheckboxFlags(loc(TXT_size_relative_to_canvas),
+                                    reinterpret_cast<u32*>(&milton->working_stroke.flags),
+                                    StrokeFlag_RELATIVE_TO_CANVAS)) {
+                // Just set it to be relative...
+            }
+
             ImGui::SliderInt(loc(TXT_brush_size), &mut_size, 1, MILTON_MAX_BRUSH_SIZE);
 
             if ( mut_size != size ) {
@@ -320,8 +326,7 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, f3
             ImGui::SetNextWindowPos(ImVec2(milton->gui->scale * 10 + brush_window_width, milton->gui->scale * 10 + (float)pbounds.bottom), ImGuiSetCond_FirstUseEver);
             ImGui::SetNextWindowSize({milton->gui->scale * 200, brush_settings_height}, ImGuiSetCond_FirstUseEver);  // We don't want to set it *every* time, the user might have preferences
 
-            // TODO: Conditionally show this?
-            {
+            if (!(milton->working_stroke.flags & StrokeFlag_ERASER)) {
                 ImGui::CheckboxFlags(loc(TXT_opacity_pressure), reinterpret_cast<u32*>(&milton->working_stroke.flags), StrokeFlag_PRESSURE_TO_OPACITY);
                 if (milton->working_stroke.flags & StrokeFlag_PRESSURE_TO_OPACITY) {
                     int brush_enum = milton_get_brush_enum(milton);

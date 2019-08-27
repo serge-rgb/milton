@@ -74,6 +74,7 @@ milton_update_brushes(Milton* milton)
     for ( int i = 0; i < BrushEnum_COUNT; ++i ) {
         Brush* brush = &milton->brushes[i];
         i32 size = milton->brush_sizes[i];
+
         brush->radius = size * milton->view->scale;
         mlt_assert(brush->radius < FLT_MAX);
         if ( i == BrushEnum_PEN ) {
@@ -445,10 +446,8 @@ void
 milton_set_brush_size_for_enum(Milton* milton, i32 size, int brush_idx)
 {
     if ( current_mode_is_for_drawing(milton) ) {
-        if ( size <= MILTON_MAX_BRUSH_SIZE && size > 0 ) {
-            (*pointer_to_brush_size(milton)) = size;
-            milton_update_brushes(milton);
-        }
+        (*pointer_to_brush_size(milton)) = size;
+        milton_update_brushes(milton);
     }
 }
 
@@ -1280,6 +1279,19 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
         i32 view_scale_limit = VIEW_SCALE_LIMIT;
 
         i32 min_scale = MINIMUM_SCALE;
+
+        // Update the current brush if it's canvas-relative
+        if (milton->working_stroke.flags & StrokeFlag_RELATIVE_TO_CANVAS) {
+
+            i32* psize = pointer_to_brush_size(milton);
+
+            if ( input->scale > 0 && milton->view->scale >= min_scale ) {
+                (*psize) = (i32)((*psize) * scale_factor) + 1;
+            }
+            else if ( input->scale < 0 && (*psize) < view_scale_limit ) {
+                (*psize) = (i32)(ceilf((*psize) / scale_factor));
+            }
+        }
 
         if ( input->scale > 0 && milton->view->scale >= min_scale ) {
             milton->view->scale = (i32)(ceilf(milton->view->scale / scale_factor));

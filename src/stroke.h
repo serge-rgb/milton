@@ -20,11 +20,14 @@ struct Brush
     f32 hardness;
 };
 
+
+// TODO: These should be brush flags. Probably want to do it when we add a new member to the Brush struct..
 enum StrokeFlag
 {
     StrokeFlag_PRESSURE_TO_OPACITY  = (1<<0),
     StrokeFlag_DISTANCE_TO_OPACITY  = (1<<1),
     StrokeFlag_ERASER               = (1<<2),
+    StrokeFlag_RELATIVE_TO_CANVAS   = (1<<3),
 };
 
 struct Stroke
