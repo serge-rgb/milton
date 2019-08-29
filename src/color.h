@@ -5,7 +5,7 @@
 #pragma once
 
 #include "common.h"
-#include "math.h"
+#include "vector.h"
 
 u32 color_v4f_to_u32(v4f c);
 

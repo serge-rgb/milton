@@ -990,7 +990,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton)
             if ( screen_height>0 && screen_height>0 ) {
                 v2l pan = view->pan_center;
 
-                i64 radius = ((i64)(1ull<<63)-1);
+                i64 radius = ((i64)((1ull)<<63ull)-1);
 
                 {
                     if ( pan.y > 0 ) {

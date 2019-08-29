@@ -8,7 +8,6 @@
 #include "gl_helpers.cc"
 #include "gui.cc"
 #include "localization.cc"
-#include "math.cc"
 #include "memory.cc"
 #include "milton.cc"
 #include "persist.cc"
@@ -16,6 +15,7 @@
 #include "renderer.cc"
 #include "sdl_milton.cc"
 #include "utils.cc"
+#include "vector.cc"
 
 #if defined(_WIN32)
     #include "platform_windows.cc"

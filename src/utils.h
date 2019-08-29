@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "math.h"
+#include "vector.h"
 
 #include "system_includes.h"  // Including this because some system headers will redefine macros. (offsetof in stddef.h)
 

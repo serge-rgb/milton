@@ -5,7 +5,7 @@
 #pragma once
 
 #include "utils.h"
-#include "math.h"
+#include "vector.h"
 
 struct Arena;
 struct MiltonInput;

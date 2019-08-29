@@ -9,7 +9,7 @@
 
 #include "system_includes.h"
 #include "utils.h"
-#include "math.h"
+#include "vector.h"
 
 #if defined(__cplusplus)
 extern "C" {
