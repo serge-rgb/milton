@@ -44,13 +44,13 @@ How to Compile
 Windows
 -------
 
-Milton currently supports Visual Studio 2017.
+Milton currently supports Visual Studio 2019.
 
 Other versions of Visual Studio might not work.
 
 To build:
 
-Run `cmd.exe` and type the following
+Run a x64 developer command prompt (for VS 2019 this corresponds to the "x64 Native Tools Command Prompt") and type the following:
 
 ```
 build.bat
