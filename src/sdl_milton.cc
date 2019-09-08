@@ -201,6 +201,15 @@ panning_update(PlatformState* platform)
     }
 }
 
+void
+sdl_toggle_fullscreen(PlatformState* platform)
+{
+    u32 window_flag = SDL_GetWindowFlags(platform->window);
+
+    SDL_SetWindowFullscreen(platform->window, (window_flag & SDL_WINDOW_FULLSCREEN_DESKTOP ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP));
+
+}
+
 MiltonInput
 sdl_event_loop(Milton* milton, PlatformState* platform)
 {
@@ -518,6 +527,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     i32 window_width = 1280;
     i32 window_height = 800;
+    i32 window_position = SDL_WINDOWPOS_UNDEFINED;
     {
         if (prefs.width > 0 && prefs.height > 0) {
             if ( !is_fullscreen ) {
@@ -532,6 +542,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
                 window_width = dm.w;
                 window_height = dm.h;
+                window_position = 0;
             }
         }
     }
@@ -575,14 +586,14 @@ milton_main(bool is_fullscreen, char* file_to_open)
     Uint32 sdl_window_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
 
     if (is_fullscreen) {
-        sdl_window_flags |= SDL_WINDOW_FULLSCREEN;
+        sdl_window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
     else {
         sdl_window_flags |= SDL_WINDOW_RESIZABLE;
     }
 
     window = SDL_CreateWindow("Milton",
-                              SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                              window_position, window_position,
                               window_width, window_height,
                               sdl_window_flags);
 

@@ -41,7 +41,7 @@ enum BindableAction
    Action_PEEK_OUT,
    Action_DRAG_BRUSH_SIZE,
    Action_TRANSFORM,
-
+   Action_FULLSCREEN_TOGGLE,
    #if MILTON_ENABLE_PROFILING
       // Debug bindings
       Action_TOGGLE_DEBUG_WINDOW,

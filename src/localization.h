@@ -130,7 +130,7 @@ enum Texts
     TXT_Action_PEEK_OUT,
     TXT_Action_DRAG_BRUSH_SIZE,
     TXT_Action_TRANSFORM,
-
+    TXT_Action_FULLSCREEN_TOGGLE,
 #if MILTON_ENABLE_PROFILING
     TXT_Action_TOGGLE_DEBUG_WINDOW,
 #endif

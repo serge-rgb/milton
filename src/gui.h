@@ -131,8 +131,8 @@ struct MiltonGui
 
 void milton_imgui_tick(MiltonInput* input, PlatformState* platform_state,  Milton* milton);
 
-
-
+//
+void sdl_toggle_fullscreen(PlatformState* platform);
 //
 void                gui_init(Arena* root_arena, MiltonGui* gui, f32 scale);
 void                gui_toggle_menu_visibility(MiltonGui* gui);

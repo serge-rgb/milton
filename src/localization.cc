@@ -145,6 +145,7 @@ init_localization()
         EN(TXT_Action_PEEK_OUT, "Peek out");
         EN(TXT_Action_DRAG_BRUSH_SIZE, "Drag to change brush size");
         EN(TXT_Action_TRANSFORM, "Rotate");
+        EN(TXT_Action_FULLSCREEN_TOGGLE, "Toggle Fullscreen");
     #if MILTON_ENABLE_PROFILING
         EN(TXT_Action_TOGGLE_DEBUG_WINDOW, "Toggle debug window");
     #endif
