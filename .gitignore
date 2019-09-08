@@ -57,3 +57,4 @@ src/shaders.gen.h
 
 # Deploy script
 OUTPUT
+*.user

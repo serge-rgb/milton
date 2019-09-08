@@ -57,7 +57,7 @@ extern "C"
 #endif  // NTDDI_WINXP
 #define CSIDL_FLAG_MASK                 0xFF00        // mask for all possible flag values
 
-HRESULT WINAPI SHGetFolderPathW(__reserved HWND hwnd, __in int csidl, __in_opt HANDLE hToken, __in DWORD dwFlags, __out_ecount(MAX_PATH) LPWSTR pszPath);
+HRESULT WINAPI SHGetFolderPathW(HWND hwnd, int csidl, HANDLE hToken, DWORD dwFlags, LPWSTR pszPath);
 
 
     //*

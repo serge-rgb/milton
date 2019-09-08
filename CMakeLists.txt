@@ -124,6 +124,11 @@ if(APPLE)
   )
 endif()
 
+if(WIN32)
+  target_link_libraries(Milton
+    "-lopengl32"
+  )
+endif()
 
 if(WIN32 OR APPLE)
   target_include_directories(Milton PRIVATE
