@@ -86,9 +86,15 @@ void profiler_reset();
     /////////
     #define PROFILE_GRAPH_BEGIN(name) \
             milton->graph_frame.start = perf_counter();
-
+#if defined(__MINGW64__)
+    #define PRIi64 "zu"
+    #define PROFILE_GRAPH_END(name)  \
+        milton->graph_frame.name = perf_counter() - milton->graph_frame.start
+#else
     #define PROFILE_GRAPH_END(name)  \
             milton->graph_frame.##name = perf_counter() - milton->graph_frame.start
+#endif
+
 
 #elif defined(__linux__) && MILTON_ENABLE_PROFILING
 
