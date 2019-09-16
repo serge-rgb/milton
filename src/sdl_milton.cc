@@ -886,7 +886,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
             input_flags |= MiltonInputFlags_IMGUI_GRABBED_INPUT;
         }
 
-        milton_imgui_tick(&milton_input, &platform, milton);
+        milton_imgui_tick(&milton_input, &platform, milton, &prefs);
 
         // Clear pan delta if we are zooming
         if ( milton_input.scale != 0 ) {
@@ -966,17 +966,13 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
     arena_free(&milton->root_arena);
 
-    if(!is_fullscreen) {
-        bool save_prefs = prefs.width != platform.width || prefs.height != platform.height;
-        if ( save_prefs ) {
-            v2l size =  { platform.width,platform.height };
-            platform_pixel_to_point(&platform, &size);
+    // Save preferences.
+    v2l size =  { platform.width,platform.height };
+    platform_pixel_to_point(&platform, &size);
 
-            prefs.width  = size.w;
-            prefs.height = size.h;
-            platform_settings_save(&prefs);
-        }
-    }
+    prefs.width  = size.w;
+    prefs.height = size.h;
+    platform_settings_save(&prefs);
 
     SDL_Quit();
 

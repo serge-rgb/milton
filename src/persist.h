@@ -14,9 +14,9 @@ struct MiltonPersist
     PATH_CHAR*  mlt_file_path;
     u32         mlt_binary_version;
     WallTime    last_save_time;
-    i64         last_save_stroke_count;  // This is a workaround to MoveFileEx failing occasionally, particularaly when
+    i64         last_save_stroke_count; // This is a workaround to MoveFileEx failing occasionally, particularly
                                         // when the mlt file gets large.
-                                        // Check that all the strokes are saved at quit time in case that
+                                        // Check that all the strokes are saved at quit time in case
                                         // the last MoveFileEx failed.
     float target_MB_per_sec;
 

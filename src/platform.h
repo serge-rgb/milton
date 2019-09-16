@@ -152,9 +152,20 @@ struct PlatformSettings
     // Store the window size at the time of quitting.
     i32 width;
     i32 height;
+
     // Last opened file.
     PATH_CHAR last_mlt_file[MAX_PATH];
 
+    // GUI settings.
+    i32 brush_window_left;
+    i32 brush_window_top;
+    i32 brush_window_width;
+    i32 brush_window_height;
+
+    i32 layer_window_left;
+    i32 layer_window_top;
+    i32 layer_window_width;
+    i32 layer_window_height;
 };
 
 // Defined in platform_windows.cc
