@@ -111,6 +111,7 @@ init_localization()
         EN(TXT_enabled, "Enabled");
         EN(TXT_default_will_be_cleared, "The default canvas will be cleared. Save it?");
         EN(TXT_reset_view_at_origin, "Reset view at origin");
+        EN(TXT_reset_GUI, "Reset GUI layout (tool windows)");
         EN(TXT_size_relative_to_canvas, "Size relative to canvas");
 
         EN(TXT_Action_DECREASE_BRUSH_SIZE, "Decrease brush size");
