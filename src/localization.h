@@ -94,6 +94,7 @@ enum Texts
     TXT_enabled,
     TXT_default_will_be_cleared,
     TXT_reset_view_at_origin,
+    TXT_reset_GUI,
     TXT_size_relative_to_canvas,
 
     // Actions
