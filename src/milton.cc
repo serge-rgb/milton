@@ -1172,9 +1172,12 @@ drag_brush_size_tick(Milton* milton, MiltonInput const* input)
     i64 mouse_x = platform_cursor_get_position(milton->platform).x;
 
     f32 new_size = drag->start_size + drag_factor * (mouse_x - drag->start_point.x);
+    if ( new_size < 1 )
+        new_size = 1;
+    if ( new_size > 300 )
+        new_size = 300;
     milton_set_brush_size_for_enum(milton, static_cast<i32>(new_size), drag->brush_idx);
     milton_update_brushes(milton);
-    // platform_cursor_set_position(drag->start_point);
 }
 
 void
