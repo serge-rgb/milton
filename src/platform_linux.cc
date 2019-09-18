@@ -147,6 +147,28 @@ platform_dialog_yesno(char* info, char* title)
     return true;
 }
 
+i32
+platform_dialog_yesnocancel(char* info, char* title);
+{
+    platform_cursor_show();
+    GtkWidget *dialog = gtk_message_dialog_new(
+            NULL,
+            (GtkDialogFlags)0,
+            GTK_MESSAGE_QUESTION,
+            GTK_BUTTONS_OK_CANCEL,
+            "%s",
+            info
+            );
+    gtk_window_set_title(GTK_WINDOW(dialog), title);
+    gint answer = gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+    if ( answer == GTK_RESPONSE_YES )
+        return ANSWER_YES;
+    if ( answer == GTK_RESPONSE_NO )
+        return ANSWER_NO;
+    return ANSWER_CANCEL;
+}
+
 void
 platform_fname_at_config(PATH_CHAR* fname, size_t len)
 {
