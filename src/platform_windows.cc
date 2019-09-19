@@ -511,7 +511,7 @@ platform_dialog_yesno(char* info, char* title)
     return yes == IDYES;
 }
 
-i32
+YesNoCancelAnswer
 platform_dialog_yesnocancel(char* info, char* title)
 {
     platform_cursor_show();
@@ -521,10 +521,10 @@ platform_dialog_yesnocancel(char* info, char* title)
                              MB_YESNOCANCEL//_In_     UINT    uType
                             );
     if ( answer == IDYES )
-        return ANSWER_YES;
+        return YesNoCancelAnswer::Yes;
     if ( answer == IDNO )
-        return ANSWER_NO;
-    return ANSWER_CANCEL;
+        return YesNoCancelAnswer::No;
+    return YesNoCancelAnswer::Cancel;
 }
 
 void
