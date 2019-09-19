@@ -179,15 +179,13 @@ PATH_CHAR*   platform_save_dialog(FileKind kind);
 void    platform_dialog(char* info, char* title);
 b32     platform_dialog_yesno(char* info, char* title);
 
-// platform_dialog_yesnocancel returns
-//  1 for Yes
-//  0 for No
-// -1 for Cancel
-// but you can use the ANSWER_... constants.
-i32 platform_dialog_yesnocancel(char* info, char* title);
-const i32 ANSWER_YES    =  1;
-const i32 ANSWER_NO     =  0;
-const i32 ANSWER_CANCEL = -1;
+enum YesNoCancelAnswer
+{
+    Yes,
+    No,
+    Cancel
+};
+YesNoCancelAnswer platform_dialog_yesnocancel(char* info, char* title);
 
 void*   platform_get_gl_proc(char* name);
 void    platform_load_gl_func_pointers();

@@ -147,7 +147,7 @@ platform_dialog_yesno(char* info, char* title)
     return true;
 }
 
-i32
+YesNoCancelAnswer
 platform_dialog_yesnocancel(char* info, char* title);
 {
     platform_cursor_show();
@@ -163,10 +163,10 @@ platform_dialog_yesnocancel(char* info, char* title);
     gint answer = gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
     if ( answer == GTK_RESPONSE_YES )
-        return ANSWER_YES;
+        return YesNoCancelAnswer::Yes;
     if ( answer == GTK_RESPONSE_NO )
-        return ANSWER_NO;
-    return ANSWER_CANCEL;
+        return YesNoCancelAnswer::No;
+    return YesNoCancelAnswer::Cancel;
 }
 
 void
