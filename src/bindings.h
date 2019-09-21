@@ -80,7 +80,8 @@ struct Binding
    enum Key
    {
       UNBOUND = 0,
-      ESC = -1,
+      TAB = '\t',
+      ESC = 27,
 
       F1 = -2,
       F2 = -3,

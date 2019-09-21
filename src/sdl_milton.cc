@@ -77,17 +77,15 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
         }
         else {
             switch (k) {
-                case SDLK_TAB: { active_key = SDLK_TAB;  } break;
-                case SDLK_ESCAPE: { active_key = Binding::ESC; } break;
-                case SDLK_F1: { active_key = Binding::F1; } break;
-                case SDLK_F2: { active_key = Binding::F2; } break;
-                case SDLK_F3: { active_key = Binding::F3; } break;
-                case SDLK_F4: { active_key = Binding::F4; } break;
-                case SDLK_F5: { active_key = Binding::F5; } break;
-                case SDLK_F6: { active_key = Binding::F6; } break;
-                case SDLK_F7: { active_key = Binding::F7; } break;
-                case SDLK_F8: { active_key = Binding::F8; } break;
-                case SDLK_F9: { active_key = Binding::F9; } break;
+                case SDLK_F1:  { active_key = Binding::F1;  } break;
+                case SDLK_F2:  { active_key = Binding::F2;  } break;
+                case SDLK_F3:  { active_key = Binding::F3;  } break;
+                case SDLK_F4:  { active_key = Binding::F4;  } break;
+                case SDLK_F5:  { active_key = Binding::F5;  } break;
+                case SDLK_F6:  { active_key = Binding::F6;  } break;
+                case SDLK_F7:  { active_key = Binding::F7;  } break;
+                case SDLK_F8:  { active_key = Binding::F8;  } break;
+                case SDLK_F9:  { active_key = Binding::F9;  } break;
                 case SDLK_F10: { active_key = Binding::F10; } break;
                 case SDLK_F11: { active_key = Binding::F11; } break;
                 case SDLK_F12: { active_key = Binding::F12; } break;
