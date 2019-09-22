@@ -778,15 +778,15 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
                 char cancel[64] = {};
                 snprintf(cancel, array_count(cancel), "%s##%d", loc(TXT_cancel), i);
 
-    			if (ImGui::Button(ok)) {
-    				milton_settings_save(milton->settings);
-    				show_settings = false;
-    			}
-    			ImGui::SameLine();
-    			if (ImGui::Button(cancel)) {
-    				show_settings = false;
+                if (ImGui::Button(ok)) {
+                    milton_settings_save(milton->settings);
+                    show_settings = false;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button(cancel)) {
+                    show_settings = false;
                     *milton->settings = *gui->original_settings;
-    			}
+                }
             };
 
             ImGui::SetNextWindowSize(ImVec2(ui_scale*400, ui_scale*400),
@@ -807,11 +807,11 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
                     milton->settings->background_color = milton->view->background_color;
                 }
 
-				const float peek_range = 20;
-				int peek_out_percent = 100 * (milton->settings->peek_out_increment / peek_range);
+                const float peek_range = 20;
+                int peek_out_percent = 100 * (milton->settings->peek_out_increment / peek_range);
                 if (ImGui::SliderInt(loc(TXT_peek_out_increment_percent), &peek_out_percent, 0, 100)) {
-					milton->settings->peek_out_increment = (peek_out_percent / 100.0f) * peek_range;
-				}
+                    milton->settings->peek_out_increment = (peek_out_percent / 100.0f) * peek_range;
+                }
 
                 ImGui::Separator();
 
@@ -827,7 +827,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
                     snprintf(alt_lbl, array_count(alt_lbl), "alt##%d", (int)i);
 
                     char win_lbl[64] = {};
-					snprintf(win_lbl, array_count(win_lbl), "win##%d", (int)i);
+                    snprintf(win_lbl, array_count(win_lbl), "win##%d", (int)i);
 
 
                     ImGui::CheckboxFlags(control_lbl, (unsigned int*)&b->modifiers, Modifier_CTRL);
@@ -851,7 +851,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
 
                 ImGui::SetCursorPosY( ImGui::GetCursorPosY() + ui_scale*80 );
 
-				ok_cancel(2);
+                ok_cancel(2);
 
             } ImGui::End();
         }

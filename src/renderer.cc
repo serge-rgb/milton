@@ -135,7 +135,7 @@ struct RenderBackend
     // See MAX_DEPTH_VALUE
     i32 stroke_z;
 
-	// TODO: Re-enable these?
+    // TODO: Re-enable these?
     // Cached values for stroke rendering uniforms.
     // v4f current_color;
     // float current_radius;

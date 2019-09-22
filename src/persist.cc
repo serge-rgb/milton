@@ -361,12 +361,12 @@ milton_load(Milton* milton)
                     READ(milton->brushes + i, sizeof(BrushPreV7), 1, fd);
                 }
             }
-			else if (milton_binary_version < 8) {
+            else if (milton_binary_version < 8) {
                 for (int i = 0; i < num_brushes; ++i) {
                     milton->brushes[i] = default_brush();
                     READ(milton->brushes + i, sizeof(BrushPreV8), 1, fd);
                 }
-			}
+            }
             else {
                 if (!read_brushes(milton->brushes, num_brushes, fd)) {
                     ok = false;
