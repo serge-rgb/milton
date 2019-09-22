@@ -136,7 +136,7 @@ platform_monitor_refresh_hz()
     return hz;
 }
 
-int 
+int
 platform_titlebar_height(PlatformState* p)
 {
     return 20; // TODO: implement on mac and linux
