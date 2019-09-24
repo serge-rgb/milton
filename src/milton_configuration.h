@@ -52,7 +52,7 @@
 
 #define PEEK_OUT_SPEED 20  // ms / increment
 
- // No support for system cursor on linux or macos for now
+// No support for system cursor on linux or macos for now
 #if defined(__linux__) || defined(__MACH__)
 #undef MILTON_HARDWARE_BRUSH_CURSOR
 #define MILTON_HARDWARE_BRUSH_CURSOR 0

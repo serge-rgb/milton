@@ -1134,8 +1134,8 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
                 #endif
 
                 auto clear_array_buffer = [hint](GLint vbo, size_t size) {
-                  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-                  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(size), NULL, hint);
+                    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+                    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(size), NULL, hint);
                 };
                 clear_array_buffer(vbo_stroke, bounds_i*sizeof(decltype(*bounds)));
                 clear_array_buffer(vbo_pointa, bounds_i*sizeof(decltype(*apoints)));
@@ -1162,8 +1162,8 @@ gpu_cook_stroke(Arena* arena, RenderBackend* r, Stroke* stroke, CookStrokeOpt co
 
             /*Send data to GPU*/ {
                 auto send_buffer_data = [hint](GLint vbo, size_t size, void* data) {
-                  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-                  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(size), data, hint);
+                    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+                    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(size), data, hint);
                 };
 
                 send_buffer_data(vbo_stroke, bounds_i*sizeof(decltype(*bounds)), bounds);
@@ -1299,9 +1299,9 @@ gpu_clip_strokes_and_update(Arena* arena,
             while ( bucket ) {
                 i64 count = 0;
                 if ( l->strokes.count < bucket_i * STROKELIST_BUCKET_COUNT ) {
-                   // There is an allocated bucket but we have already iterated
-                   // through all the actual strokes.
-                   break;
+                    // There is an allocated bucket but we have already iterated
+                    // through all the actual strokes.
+                    break;
                 }
                 if ( l->strokes.count - bucket_i*STROKELIST_BUCKET_COUNT >= STROKELIST_BUCKET_COUNT ) {
                     count = STROKELIST_BUCKET_COUNT;

@@ -236,8 +236,8 @@ enum MiltonStateFlags
     MiltonStateFlags_NEW_CANVAS             = 1 << 4,
     MiltonStateFlags_DEFAULT_CANVAS         = 1 << 5,
     MiltonStateFlags_IGNORE_NEXT_CLICKUP    = 1 << 6,  // When selecting eyedropper from menu, avoid the click from selecting the color...
-                                           // 1 << 7 unused
-                                           // 1 << 8 unused
+                                            // 1 << 7 unused
+                                            // 1 << 8 unused
     MiltonStateFlags_LAST_SAVE_FAILED       = 1 << 9,
     MiltonStateFlags_MOVE_FILE_FAILED       = 1 << 10,
     MiltonStateFlags_BRUSH_SMOOTHING        = 1 << 11,

@@ -161,7 +161,7 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
                 milton_set_canvas_file(milton, name);
                 input->flags |= MiltonInputFlags_SAVE_FILE;
                 b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
-                   DeleteErrorTolerance_OK_NOT_EXIST);
+                    DeleteErrorTolerance_OK_NOT_EXIST);
                 if ( del == false ) {
                     platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
                         "Info");
@@ -170,7 +170,7 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
         } break;
         case Action_OPEN: {
             b32 save_requested = false;
-                          // If current canvas is MiltonPersist, then prompt to save
+            // If current canvas is MiltonPersist, then prompt to save
             if ( ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) ) {
                 b32 save_file = false;
                 if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
@@ -183,7 +183,7 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
                         milton_set_canvas_file(milton, name);
                         milton_save(milton);
                         b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"),
-                           DeleteErrorTolerance_OK_NOT_EXIST);
+                            DeleteErrorTolerance_OK_NOT_EXIST);
                         if ( del == false ) {
                             platform_dialog("Could not delete default canvas. Contents will be still there when you create a new canvas.",
                                 "Info");
