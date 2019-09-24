@@ -664,23 +664,22 @@ milton_main(bool is_fullscreen, char* file_to_open)
     platform.ui_scale = platform_ui_scale(&platform);
     milton_log("UI scale is %f\n", platform.ui_scale);
     // Initialize milton
-    {
-        PATH_CHAR* file_to_open_ = NULL;
-        PATH_CHAR buffer[MAX_PATH] = {};
+    PATH_CHAR* file_to_open_ = NULL;
+    PATH_CHAR buffer[MAX_PATH] = {};
 
-        if ( file_to_open ) {
-            file_to_open_ = (PATH_CHAR*)buffer;
-        }
-
-        str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
-
-        milton_init(milton, platform.width, platform.height, platform.ui_scale, (PATH_CHAR*)file_to_open_);
-        milton->platform = &platform;
-        milton->gui->menu_visible = true;
-        if ( is_fullscreen ) {
-            milton->gui->menu_visible = false;
-        }
+    if ( file_to_open ) {
+        file_to_open_ = (PATH_CHAR*)buffer;
     }
+
+    str_to_path_char(file_to_open, (PATH_CHAR*)file_to_open_, MAX_PATH*sizeof(*file_to_open_));
+
+    milton_init(milton, platform.width, platform.height, platform.ui_scale, (PATH_CHAR*)file_to_open_);
+    milton->platform = &platform;
+    milton->gui->menu_visible = true;
+    if ( is_fullscreen ) {
+        milton->gui->menu_visible = false;
+    }
+
     milton_resize_and_pan(milton, {}, {platform.width, platform.height});
 
     platform.window_id = SDL_GetWindowID(window);
