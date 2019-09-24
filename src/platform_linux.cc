@@ -150,6 +150,8 @@ platform_dialog_yesno(char* info, char* title)
 YesNoCancelAnswer
 platform_dialog_yesnocancel(char* info, char* title);
 {
+    // NOTE: As of 2019-09-23, this function hasn't been tested on Linux.
+
     platform_cursor_show();
     GtkWidget *dialog = gtk_message_dialog_new(
             NULL,
@@ -163,10 +165,10 @@ platform_dialog_yesnocancel(char* info, char* title);
     gint answer = gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
     if ( answer == GTK_RESPONSE_YES )
-        return YesNoCancelAnswer::Yes;
+        return YesNoCancelAnswer::YES;
     if ( answer == GTK_RESPONSE_NO )
-        return YesNoCancelAnswer::No;
-    return YesNoCancelAnswer::Cancel;
+        return YesNoCancelAnswer::NO;
+    return YesNoCancelAnswer::CANCEL;
 }
 
 void

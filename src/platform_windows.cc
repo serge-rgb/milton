@@ -521,10 +521,10 @@ platform_dialog_yesnocancel(char* info, char* title)
                              MB_YESNOCANCEL//_In_     UINT    uType
                             );
     if ( answer == IDYES )
-        return YesNoCancelAnswer::Yes;
+        return YesNoCancelAnswer::YES;
     if ( answer == IDNO )
-        return YesNoCancelAnswer::No;
-    return YesNoCancelAnswer::Cancel;
+        return YesNoCancelAnswer::NO;
+    return YesNoCancelAnswer::CANCEL;
 }
 
 void

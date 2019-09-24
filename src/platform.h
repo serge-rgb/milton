@@ -181,9 +181,9 @@ b32     platform_dialog_yesno(char* info, char* title);
 
 enum YesNoCancelAnswer
 {
-    Yes,
-    No,
-    Cancel
+    YES,
+    NO,
+    CANCEL,
 };
 YesNoCancelAnswer platform_dialog_yesnocancel(char* info, char* title);
 
