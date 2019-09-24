@@ -126,23 +126,25 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
             milton_try_quit(milton);
         } break;
         case Action_NEW: {
-            b32 save_file = false;
+            YesNoCancelAnswer save_file = YesNoCancelAnswer::No;
             if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
                 if ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
-                    save_file = platform_dialog_yesno(default_will_be_lost, "Save?");
+                    save_file = platform_dialog_yesnocancel(default_will_be_lost, "Save?");
                 }
             }
-            if ( save_file ) {
+            if ( save_file == YesNoCancelAnswer::Cancel )
+                break;
+            if ( save_file == YesNoCancelAnswer::Yes ) {
                 PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
-                if ( name ) {
-                    milton_log("Saving to %s\n", name);
-                    milton_set_canvas_file(milton, name);
-                    milton_save(milton);
-                    b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
-                    if ( del == false ) {
-                        platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
-                            "Info");
-                    }
+                if ( !name ) // save dialog was cancelled
+                    break;
+                milton_log("Saving to %s\n", name);
+                milton_set_canvas_file(milton, name);
+                milton_save(milton);
+                b32 del = platform_delete_file_at_config(TO_PATH_STR("MiltonPersist.mlt"), DeleteErrorTolerance_OK_NOT_EXIST);
+                if ( del == false ) {
+                    platform_dialog("Could not delete contents. The work will be still be there even though you saved it to a file.",
+                        "Info");
                 }
             }
             milton_reset_canvas_and_set_default(milton);

@@ -171,12 +171,21 @@ struct PlatformSettings
 // Defined in platform_windows.cc
 FILE*   platform_fopen(const PATH_CHAR* fname, const PATH_CHAR* mode);
 
-// Returns a 0-terminated string with the full path of the target file. NULL if error.
+// Returns a 0-terminated string with the full path of the target file.
+// If the user cancels the operation it returns NULL.
 PATH_CHAR*   platform_open_dialog(FileKind kind);
 PATH_CHAR*   platform_save_dialog(FileKind kind);
 
 void    platform_dialog(char* info, char* title);
 b32     platform_dialog_yesno(char* info, char* title);
+
+enum YesNoCancelAnswer
+{
+    Yes,
+    No,
+    Cancel
+};
+YesNoCancelAnswer platform_dialog_yesnocancel(char* info, char* title);
 
 void*   platform_get_gl_proc(char* name);
 void    platform_load_gl_func_pointers();
