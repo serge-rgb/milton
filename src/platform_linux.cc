@@ -304,7 +304,7 @@ platform_get_walltime()
 }
 
 void*
-platform_get_gl_proc(char* name) 
+platform_get_gl_proc(char* name)
 {
     return glXGetProcAddressARB((GLubyte*)name);
 }

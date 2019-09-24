@@ -33,7 +33,7 @@ init_view(CanvasView* view, v3f background_color, i32 width, i32 height)
 
     *view = CanvasView{};
 
-	view->size = sizeof(CanvasView);
+    view->size = sizeof(CanvasView);
     view->background_color  = background_color;
     view->screen_size       = size;
     view->zoom_center       = size / 2;
@@ -872,7 +872,7 @@ milton_save_thread(void* state_)
                     milton->save_flag = SaveEnum_WAITING;
                 }
             }
-			wait_begin_us = perf_counter();
+            wait_begin_us = perf_counter();
         }
         SDL_UnlockMutex(milton->save_mutex);
 
