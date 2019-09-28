@@ -1415,7 +1415,7 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
     }
 
     if ( current_mode_is_for_drawing(milton) &&
-        (input->input_count > 0 || (input->flags | MiltonInputFlags_CLICK)) ) {
+        (input->input_count > 0) ) {
         if ( !is_user_drawing(milton)
              && gui_consume_input(milton->gui, input) ) {
             milton_update_brushes(milton);
@@ -1468,12 +1468,8 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
                          point);
         gpu_update_picker(milton->renderer, &milton->gui->picker);
         if( input->flags & MiltonInputFlags_CLICKUP ) {
-            if ( !(milton->flags & MiltonStateFlags_IGNORE_NEXT_CLICKUP) ) {
-                milton_update_brushes(milton);
-                milton_leave_mode(milton);
-            } else {
-                milton->flags &= ~MiltonStateFlags_IGNORE_NEXT_CLICKUP;
-            }
+            milton_update_brushes(milton);
+            milton_leave_mode(milton);
         }
         render_flags |= RenderBackendFlags_GUI_VISIBLE;
     }

@@ -315,7 +315,6 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         v2i point = v2i{(int)long_point.x, (int)long_point.y};
 
                         if ( !platform->is_panning && point.x >= 0 && point.y > 0 ) {
-                            milton_input.flags |= MiltonInputFlags_CLICK;
                             milton_input.click = point;
 
                             platform->is_pointer_down = true;

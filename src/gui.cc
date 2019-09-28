@@ -593,7 +593,6 @@ gui_menu(MiltonInput* input, PlatformState* platform, Milton* milton, b32& show_
                 // Eye Dropper
                 if ( ImGui::MenuItem(loc(TXT_eye_dropper)) ) {
                     input->mode_to_set = MiltonMode::EYEDROPPER;
-                    milton->flags |= MiltonStateFlags_IGNORE_NEXT_CLICKUP;  // TODO: This is stupid and ugly. Might not even be needed anymore?
                 }
                 ImGui::EndMenu();
             }
