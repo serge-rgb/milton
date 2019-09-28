@@ -142,7 +142,7 @@ load ()
                     milton_log("WARNING: Extension too large (%d)\n", len);
                 }
             }
-         }
+        }
     }
 #endif
 
@@ -187,13 +187,13 @@ compile_shader (const char* in_src, GLuint type, char* config, char* variation_c
             "#define STROKE_DEBUG_VIZ 0\n",
         #endif
         (check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE)) ? "#define HAS_TEXTURE_MULTISAMPLE 1\n"
-                                                                   : "#define HAS_TEXTURE_MULTISAMPLE 0\n",
-       "#if HAS_TEXTURE_MULTISAMPLE\n",
-       "#extension GL_ARB_sample_shading : enable\n",
-       //" #extension GL_ARB_texture_multisample : enable\n",
-       "#endif\n",
+                                                                    : "#define HAS_TEXTURE_MULTISAMPLE 0\n",
+        "#if HAS_TEXTURE_MULTISAMPLE\n",
+        "#extension GL_ARB_sample_shading : enable\n",
+        //" #extension GL_ARB_texture_multisample : enable\n",
+        "#endif\n",
 #if USE_GL_3_2
-       (type == GL_FRAGMENT_SHADER) ? "out vec4 out_color; \n" : "\n",
+        (type == GL_FRAGMENT_SHADER) ? "out vec4 out_color; \n" : "\n",
 #endif
 
         config,

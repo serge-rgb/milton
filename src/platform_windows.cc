@@ -725,10 +725,10 @@ win32_client_to_screen(HWND hwnd, v2i client)
 {
     POINT point = { client.x, client.y };
     int res = MapWindowPoints(
-      hwnd,
-      HWND_DESKTOP,
-      &point,
-      1
+        hwnd,
+        HWND_DESKTOP,
+        &point,
+        1
     );
 
     if (res == 0) {
@@ -744,10 +744,10 @@ win32_screen_to_client(HWND hwnd, v2i screen)
 {
     POINT point = { screen.x, screen.y };
     int res = MapWindowPoints(
-      HWND_DESKTOP,
-      hwnd,
-      &point,
-      1
+        HWND_DESKTOP,
+        hwnd,
+        &point,
+        1
     );
 
     if (res == 0) {
