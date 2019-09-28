@@ -9,13 +9,13 @@
 
 
 #if !defined(MILTON_DEBUG)  // Might be defined by cmake
-    #define MILTON_DEBUG 1
+    #define MILTON_DEBUG 0
 #endif
 
 
 // Debug settings
 
-#define MILTON_ENABLE_PROFILING 1
+#define MILTON_ENABLE_PROFILING 0
 #define REDRAW_EVERY_FRAME 0
 #define GRAPHICS_DEBUG 0
 #define MILTON_ZOOM_DEBUG 0
