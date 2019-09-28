@@ -216,7 +216,7 @@ static void
 milton_primitive_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
 {
     if ( end_stroke && milton->primitive_fsm == Primitive_DRAWING) {
-       milton->primitive_fsm = Primitive_WAITING;
+        milton->primitive_fsm = Primitive_WAITING;
     }
     else if (input->input_count > 0) {
         v2l point = raster_to_canvas(milton->view, input->points[input->input_count - 1]);
@@ -230,7 +230,7 @@ milton_primitive_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
             ws->layer_id                      = milton->view->working_layer_id;
         }
         else if ( milton->primitive_fsm == Primitive_DRAWING ) {
-           milton->working_stroke.points[1] = point;
+            milton->working_stroke.points[1] = point;
         }
     }
 }
@@ -430,7 +430,7 @@ milton_get_brush_radius_for_enum(Milton const* milton, int brush_enum)
 {
     i32 brush_size = milton->brush_sizes[brush_enum];
     if ( brush_size <= 0 ) {
-       brush_size = 1;
+        brush_size = 1;
     }
     return brush_size;
 }
@@ -600,19 +600,19 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 
             switch ( i ) {
             case BrushEnum_PEN: {
-               milton->brush_sizes[i] = 30;
+                milton->brush_sizes[i] = 30;
             } break;
             case BrushEnum_ERASER: {
-               milton->brush_sizes[i] = 40;
+                milton->brush_sizes[i] = 40;
             } break;
             case BrushEnum_PRIMITIVE: {
-               milton->brush_sizes[i] = 10;
+                milton->brush_sizes[i] = 10;
             } break;
             case BrushEnum_NOBRUSH: { {
-               milton->brush_sizes[i] = 1;
+                milton->brush_sizes[i] = 1;
             } } break;
             default: {
-               INVALID_CODE_PATH;
+                INVALID_CODE_PATH;
             } break;
             }
             mlt_assert(milton->brush_sizes[i] > 0 && milton->brush_sizes[i] <= MILTON_MAX_BRUSH_SIZE);

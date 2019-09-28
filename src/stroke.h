@@ -47,8 +47,8 @@ struct Stroke
 #if STROKE_DEBUG_VIZ
     enum DebugFlags
     {
-      NONE = (0),
-      INTERPOLATED  = (1<<0),
+        NONE = (0),
+        INTERPOLATED  = (1<<0),
     };
     int* debug_flags;
 #endif

@@ -1000,7 +1000,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
 
             float hist[] = { poll, update, raster, GL, system };
             ImGui::PlotHistogram("Graph",
-                          (const float*)hist, array_count(hist));
+                            (const float*)hist, array_count(hist));
 
             {
                 static const int window_size = 100;
@@ -1017,9 +1017,9 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
                 mavg /= window_size;
 
                 snprintf(msg, array_count(msg),
-                     "Total %f ms (%f ms m. avg)\n",
-                     sum,
-                     mavg);
+                         "Total %f ms (%f ms m. avg)\n",
+                         sum,
+                         mavg);
 
             }
             ImGui::Text(msg);
