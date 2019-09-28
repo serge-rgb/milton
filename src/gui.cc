@@ -353,16 +353,12 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, Pl
 
             if ( milton->current_mode != MiltonMode::PEN ) {
                 if ( ImGui::Button(loc(TXT_switch_to_brush)) ) {
-                    i32 f = input->flags;
-                    input->flags = (MiltonInputFlags)f;
                     input->mode_to_set = MiltonMode::PEN;
                 }
             }
 
             if ( milton->current_mode != MiltonMode::PRIMITIVE ) {
                 if ( ImGui::Button(loc(TXT_switch_to_primitive)) ) {
-                    i32 f = input->flags;
-                    input->flags = (MiltonInputFlags)f;
                     input->mode_to_set = MiltonMode::PRIMITIVE;
                 }
             }

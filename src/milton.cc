@@ -1502,10 +1502,8 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
                 CanvasState* canvas = milton->canvas;
                 copy_stroke(&canvas->arena, milton->view, &milton->working_stroke, &new_stroke);
                 {
-                    new_stroke.brush = milton->working_stroke.brush;
                     new_stroke.layer_id = milton->view->working_layer_id;
-                    new_stroke.bounding_rect = rect_union(bounding_box_for_stroke(&new_stroke),
-                                                        bounding_box_for_stroke(&new_stroke));
+                    new_stroke.bounding_rect = bounding_box_for_stroke(&new_stroke);
 
                     new_stroke.id = milton->canvas->stroke_id_count++;
 
