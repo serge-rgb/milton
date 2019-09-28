@@ -591,8 +591,6 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
 
     // Set default brush.
     {
-        milton->working_stroke.flags |= StrokeFlag_DISTANCE_TO_OPACITY;  // Soft brush.
-
         for ( int i = 0; i < BrushEnum_COUNT; ++i ) {
 
             milton->brushes[i].alpha = 1.0f;
