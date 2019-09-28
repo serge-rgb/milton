@@ -341,6 +341,10 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                     if ( event.button.button == SDL_BUTTON_MIDDLE ) {
                         platform->is_middle_button_down = false;
                     }
+                    if ( ImGui::GetIO().WantCaptureMouse ) {
+                        // NOTE(ameen): button-click events that cause UI changes have 1 frame delay to update.
+                        platform->force_next_frame = true;
+                    }
                     pointer_up = true;
                     milton_input.flags |= MiltonInputFlags_CLICKUP;
                     milton_input.flags |= MiltonInputFlags_END_STROKE;
@@ -955,6 +959,9 @@ milton_main(bool is_fullscreen, char* file_to_open)
         // IMGUI events might update until the frame after they are created.
         if ( !platform.force_next_frame ) {
             SDL_WaitEvent(NULL);
+        }
+        else {
+            platform.force_next_frame = false;
         }
     }
 
