@@ -203,7 +203,7 @@ MiltonInput
 sdl_event_loop(Milton* milton, PlatformState* platform)
 {
     MiltonInput milton_input = {};
-    milton_input.mode_to_set = MiltonMode::COUNT;
+    milton_input.mode_to_set = MiltonMode::MODE_COUNT;
 
     b32 pointer_up = false;
 

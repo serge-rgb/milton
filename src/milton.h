@@ -37,7 +37,7 @@ enum class MiltonMode
     DRAG_BRUSH_SIZE,
     TRANSFORM,  // Scale and rotate
 
-    COUNT,
+    MODE_COUNT,
 };
 
 enum BrushEnum

@@ -1541,7 +1541,7 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
     }
 
     MiltonMode current_mode = milton->current_mode;
-    if ( input->mode_to_set < MiltonMode::COUNT ) {
+    if ( input->mode_to_set < MiltonMode::MODE_COUNT ) {
         if ( current_mode == input->mode_to_set ) {
             // Modes we can toggle
             MiltonMode toggleable_modes[] = {
