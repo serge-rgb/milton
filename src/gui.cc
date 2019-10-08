@@ -766,30 +766,22 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
 
         // Settings window
         if ( show_settings ) {
-            auto ok_cancel = [&](int i) {
-
-                char ok[64] = {};
-                snprintf(ok, array_count(ok), "%s##%d", loc(TXT_ok), i);
-                char cancel[64] = {};
-                snprintf(cancel, array_count(cancel), "%s##%d", loc(TXT_cancel), i);
-
-                if (ImGui::Button(ok)) {
-                    milton_settings_save(milton->settings);
-                    show_settings = false;
-                }
-                ImGui::SameLine();
-                if (ImGui::Button(cancel)) {
-                    show_settings = false;
-                    *milton->settings = *gui->original_settings;
-                }
-            };
-
             ImGui::SetNextWindowSize(ImVec2(ui_scale*400, ui_scale*400),
                                      ImGuiSetCond_FirstUseEver);
             if ( ImGui::Begin(loc(TXT_settings)) ) {
-
-                ok_cancel(1);
+                if (ImGui::Button(loc(TXT_ok))) {
+                    milton_settings_save(milton->settings);
+                    show_settings = false;
+                }
+                
+                ImGui::SameLine();
+                if (ImGui::Button(loc(TXT_cancel))) {
+                    show_settings = false;
+                    *milton->settings = *gui->original_settings;
+                }
+                
                 ImGui::Separator();
+                ImGui::BeginChild("ScrollRegion");
 
                 ImGui::Text(loc(TXT_default_background_color));
 
@@ -844,10 +836,7 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
                     ImGui::PopItemWidth();
                 }
 
-                ImGui::SetCursorPosY( ImGui::GetCursorPosY() + ui_scale*80 );
-
-                ok_cancel(2);
-
+                ImGui::EndChild();
             } ImGui::End();
         }
 
