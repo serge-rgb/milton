@@ -179,11 +179,15 @@ PATH_CHAR*   platform_save_dialog(FileKind kind);
 void    platform_dialog(char* info, char* title);
 b32     platform_dialog_yesno(char* info, char* title);
 
+// NOTE: These constants end with an underscore in order to prevent issues on
+// macOS where the Objective-C headers define macros `YES` and `NO` as part of
+// the `BOOL` type. Removing the underscores and compiling on macOS causes the
+// compiler to attempt macro expansion on these names resulting in errors.
 enum YesNoCancelAnswer
 {
-    YES,
-    NO,
-    CANCEL,
+    YES_,
+    NO_,
+    CANCEL_,
 };
 YesNoCancelAnswer platform_dialog_yesnocancel(char* info, char* title);
 

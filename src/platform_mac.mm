@@ -122,6 +122,25 @@ platform_dialog_yesno_mac(char* info, char* title)
     }
 }
 
+YesNoCancelAnswer
+platform_dialog_yesnocancel(char* info, char* title)
+{
+    @autoreleasepool {
+        NSAlert *alert = mac_alert(info, title);
+        [alert addButtonWithTitle:NSLocalizedString(@"Yes", nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"No", nil)];
+        [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
+        NSModalResponse result = [alert runModal];
+        if (result == NSAlertFirstButtonReturn) {
+          return YesNoCancelAnswer::YES_;
+        }
+        else if (result == NSAlertSecondButtonReturn) {
+          return YesNoCancelAnswer::NO_;
+        }
+        return YesNoCancelAnswer::CANCEL_;
+    }
+}
+
 char*
 platform_open_dialog_mac(FileKind kind)
 {
