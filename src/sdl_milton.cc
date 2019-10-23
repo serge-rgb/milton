@@ -798,11 +798,8 @@ milton_main(bool is_fullscreen, char* file_to_open)
         platform_fname_at_exe(fname, MAX_PATH);
         FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
 
-#ifdef __APPLE__
-        // Retina screens have a framebuffer twice the size of the window.
-        // We have to scale the font accordingly.
-        io.FontGlobalScale = 1.0f / platform.ui_scale;
-#endif
+        io.FontGlobalScale = platform_font_scale(&platform);
+        
         if ( fd ) {
             size_t  ttf_sz = 0;
             void*   ttf_data = NULL;

@@ -117,6 +117,7 @@ void*   platform_allocate(size_t size);
 #define platform_deallocate(pointer) platform_deallocate_internal((void**)&(pointer));
 void    platform_deallocate_internal(void** ptr);
 float   platform_ui_scale(PlatformState* p);
+float   platform_font_scale(PlatformState* p);
 void    platform_point_to_pixel(PlatformState* ps, v2l* inout);
 void    platform_point_to_pixel_i(PlatformState* ps, v2i* inout);
 void    platform_pixel_to_point(PlatformState* ps, v2l* inout);
@@ -193,7 +194,6 @@ i32 platform_monitor_refresh_hz();
 // Microsecond (us) resolution timer.
 u64 perf_counter();
 float perf_count_to_sec(u64 counter);
-
 
 #if defined(_WIN32)
 #include "platform_windows.h"
