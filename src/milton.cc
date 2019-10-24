@@ -1411,9 +1411,8 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
     else {
         milton->working_stroke.flags &= ~StrokeFlag_ERASER;
     }
-
     if ( current_mode_is_for_drawing(milton) &&
-        (input->input_count > 0) ) {
+        (input->input_count > 0 || end_stroke) ) {
         if ( !is_user_drawing(milton)
              && gui_consume_input(milton->gui, input) ) {
             milton_update_brushes(milton);
