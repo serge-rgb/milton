@@ -126,15 +126,15 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
             milton_try_quit(milton);
         } break;
         case Action_NEW: {
-            YesNoCancelAnswer save_file = YesNoCancelAnswer::NO;
+            YesNoCancelAnswer save_file = YesNoCancelAnswer::NO_;
             if ( layer::count_strokes(milton->canvas->root_layer) > 0 ) {
                 if ( milton->flags & MiltonStateFlags_DEFAULT_CANVAS ) {
                     save_file = platform_dialog_yesnocancel(default_will_be_lost, "Save?");
                 }
             }
-            if ( save_file == YesNoCancelAnswer::CANCEL )
+            if ( save_file == YesNoCancelAnswer::CANCEL_ )
                 break;
-            if ( save_file == YesNoCancelAnswer::YES ) {
+            if ( save_file == YesNoCancelAnswer::YES_ ) {
                 PATH_CHAR* name = platform_save_dialog(FileKind_MILTON_CANVAS);
                 if ( !name ) // save dialog was cancelled
                     break;

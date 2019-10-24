@@ -175,10 +175,10 @@ platform_dialog_yesnocancel(char* info, char* title)
     gint answer = gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
     if ( answer == GTK_RESPONSE_YES )
-        return YesNoCancelAnswer::YES;
+        return YesNoCancelAnswer::YES_;
     if ( answer == GTK_RESPONSE_NO )
-        return YesNoCancelAnswer::NO;
-    return YesNoCancelAnswer::CANCEL;
+        return YesNoCancelAnswer::NO_;
+    return YesNoCancelAnswer::CANCEL_;
 }
 
 void
