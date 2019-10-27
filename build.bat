@@ -27,7 +27,7 @@ pushd build
          copy ..\Milton.rc Milton.rc
          rc Milton.rc
 
-set compiler_flags=/Od /MTd /Zi %includeFlags% %warnFlags% /Femilton.exe /wd4217 /link ..\third_party\bin\%platform%\SDL2.lib OpenGL32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib
+set compiler_flags=/O2 /MTd /Zi %includeFlags% %warnFlags% /Femilton.exe /wd4217 /link ..\third_party\bin\%platform%\SDL2.lib OpenGL32.lib gdi32.lib shell32.lib comdlg32.lib ole32.lib oleAut32.lib winmm.lib advapi32.lib version.lib
 
 if "%1"=="test" (
    cl ..\src\unity_tests.cc %compiler_flags /SUBSYSTEM:Console
