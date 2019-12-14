@@ -41,7 +41,9 @@ enum Texts
     // ==== Translation to spanish completed until this point
 
     TXT_settings,
-    TXT_switch_to_primitive,
+    TXT_switch_to_primitive_line,
+    TXT_switch_to_primitive_rectangle,
+    TXT_switch_to_primitive_grid,
     TXT_help_me,
     TXT_new_layer,
     TXT_rename,
@@ -96,6 +98,8 @@ enum Texts
     TXT_reset_view_at_origin,
     TXT_reset_GUI,
     TXT_size_relative_to_canvas,
+    TXT_grid_columns,
+    TXT_grid_rows,
 
     // Actions
     TXT_Action_FIRST,
@@ -116,7 +120,9 @@ enum Texts
     TXT_Action_MODE_ERASER,
     TXT_Action_MODE_PEN,
     TXT_Action_MODE_EYEDROPPER,
-    TXT_Action_MODE_PRIMITIVE,
+    TXT_Action_MODE_PRIMITIVE_LINE,
+    TXT_Action_MODE_PRIMITIVE_RECTANGLE,
+    TXT_Action_MODE_PRIMITIVE_GRID,
     TXT_Action_SET_BRUSH_ALPHA_10,
     TXT_Action_SET_BRUSH_ALPHA_20,
     TXT_Action_SET_BRUSH_ALPHA_30,

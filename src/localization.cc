@@ -43,7 +43,9 @@ init_localization()
         EN(TXT_brush_size, "Brush size");
         EN(TXT_switch_to_brush, "Brush");
         EN(TXT_switch_to_eraser, "Eraser");
-        EN(TXT_switch_to_primitive, "Lines");
+        EN(TXT_switch_to_primitive_line, "Lines");
+        EN(TXT_switch_to_primitive_rectangle, "Rectangle");
+        EN(TXT_switch_to_primitive_grid, "Grid");
         EN(TXT_choose_background_color, "Choose background color");
         EN(TXT_color, "Color");
         EN(TXT_export_DOTS, "Export...");
@@ -113,6 +115,8 @@ init_localization()
         EN(TXT_reset_view_at_origin, "Reset view at origin");
         EN(TXT_reset_GUI, "Reset GUI layout (tool windows)");
         EN(TXT_size_relative_to_canvas, "Size relative to canvas");
+        EN(TXT_grid_columns, "Grid Columns");
+        EN(TXT_grid_rows, "Grid Rows");
 
         EN(TXT_Action_DECREASE_BRUSH_SIZE, "Decrease brush size");
         EN(TXT_Action_INCREASE_BRUSH_SIZE, "Increase brush size");
@@ -131,7 +135,9 @@ init_localization()
         EN(TXT_Action_MODE_ERASER, "Eraser");
         EN(TXT_Action_MODE_PEN, "Pen");
         EN(TXT_Action_MODE_EYEDROPPER, "Eyedropper");
-        EN(TXT_Action_MODE_PRIMITIVE, "Primitive");
+        EN(TXT_Action_MODE_PRIMITIVE_LINE, "Primitive Line");
+        EN(TXT_Action_MODE_PRIMITIVE_RECTANGLE, "Primitive Rectangle");
+        EN(TXT_Action_MODE_PRIMITIVE_GRID, "Primitive Grid");
         EN(TXT_Action_SET_BRUSH_ALPHA_10, "Set alpha to 10%");
         EN(TXT_Action_SET_BRUSH_ALPHA_20, "Set alpha to 20%");
         EN(TXT_Action_SET_BRUSH_ALPHA_30, "Set alpha to 30%");
@@ -205,7 +211,9 @@ init_localization()
         g_command_abbreviations [TXT_increase_brush_size]   = " ] ";
         g_command_abbreviations [TXT_eye_dropper]           = "i";
         g_command_abbreviations [TXT_switch_to_brush]       = "B";
-        g_command_abbreviations [TXT_switch_to_primitive]   = "L";
+        g_command_abbreviations [TXT_switch_to_primitive_line] = "L";
+        g_command_abbreviations [TXT_switch_to_primitive_rectangle] = "R";
+        g_command_abbreviations [TXT_switch_to_primitive_grid]   = "G";
         g_command_abbreviations [TXT_switch_to_eraser]      = "E";
         g_command_abbreviations [TXT_peek_out]              = "`";
     }

@@ -53,7 +53,9 @@ milton_get_brush_enum(Milton const* milton)
         case MiltonMode::ERASER: {
             brush_enum = BrushEnum_ERASER;
         } break;
-        case MiltonMode::PRIMITIVE: {
+        case MiltonMode::PRIMITIVE_LINE:
+        case MiltonMode::PRIMITIVE_RECTANGLE:
+        case MiltonMode::PRIMITIVE_GRID: {
             brush_enum = BrushEnum_PRIMITIVE;
         } break;
         case MiltonMode::DRAG_BRUSH_SIZE: {
@@ -157,8 +159,8 @@ mode_is_for_drawing(MiltonMode mode)
 {
     b32 result = mode == MiltonMode::PEN ||
             mode == MiltonMode::ERASER ||
-            mode == MiltonMode::PRIMITIVE ||
-            mode == MiltonMode::DRAG_BRUSH_SIZE;
+            mode == MiltonMode::DRAG_BRUSH_SIZE || 
+            mode_is_for_primitives(mode);
     return result;
 }
 
@@ -195,6 +197,14 @@ current_mode_is_for_drawing(Milton const* milton)
     return mode_is_for_drawing(milton->current_mode);
 }
 
+b32
+mode_is_for_primitives(MiltonMode mode)
+{
+    return mode == MiltonMode::PRIMITIVE_LINE ||
+        mode == MiltonMode::PRIMITIVE_RECTANGLE ||
+        mode == MiltonMode::PRIMITIVE_GRID;
+}
+
 static void
 clear_stroke_redo(Milton* milton)
 {
@@ -213,7 +223,7 @@ clear_stroke_redo(Milton* milton)
 }
 
 static void
-milton_primitive_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
+milton_primitive_line_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
 {
     if ( end_stroke && milton->primitive_fsm == Primitive_DRAWING) {
         milton->primitive_fsm = Primitive_WAITING;
@@ -231,6 +241,93 @@ milton_primitive_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
         }
         else if ( milton->primitive_fsm == Primitive_DRAWING ) {
             milton->working_stroke.points[1] = point;
+        }
+    }
+}
+
+static void
+milton_primitive_rectangle_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
+{
+    if ( end_stroke && milton->primitive_fsm == Primitive_DRAWING) {
+        milton->primitive_fsm = Primitive_WAITING;
+    }
+    else if (input->input_count > 0) {
+        v2l point = raster_to_canvas(milton->view, input->points[input->input_count - 1]);
+        Stroke* ws = &milton->working_stroke;
+        if ( milton->primitive_fsm == Primitive_WAITING ) {
+            milton->primitive_fsm             = Primitive_DRAWING;
+            for (int i = 0; i < 5; ++i) {
+                ws->points[i] = point;
+                ws->pressures[i] = 1.0f;
+            }
+            ws->num_points = 5;
+            ws->brush                         = milton_get_brush(milton);
+            ws->layer_id                      = milton->view->working_layer_id;
+        }
+        else if ( milton->primitive_fsm == Primitive_DRAWING ) {
+            ws->points[1] = v2l { point.x, ws->points[0].y };
+            ws->points[2] = point;
+            ws->points[3] = v2l { ws->points[0].x, point.y };
+            ws->points[4] = ws->points[0];
+        }
+    }
+}
+
+static void
+milton_primitive_grid_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
+{
+    int c = milton->grid_rows;
+    int r = milton->grid_columns;
+
+    if ( end_stroke && milton->primitive_fsm == Primitive_DRAWING) {
+        milton->primitive_fsm = Primitive_WAITING;
+    }
+    else if (input->input_count > 0) {
+        v2l point = raster_to_canvas(milton->view, input->points[input->input_count - 1]);
+        Stroke* ws = &milton->working_stroke;
+        if ( milton->primitive_fsm == Primitive_WAITING ) {
+            milton->primitive_fsm             = Primitive_DRAWING;
+            ws->num_points = 4 + 2 * c + 2 * r;
+            for (int i = 0; i < ws->num_points; ++i) {
+                ws->points[i] = point;
+                ws->pressures[i] = 1.0f;
+            }
+            ws->brush                         = milton_get_brush(milton);
+            ws->layer_id                      = milton->view->working_layer_id;
+        }
+        else if ( milton->primitive_fsm == Primitive_DRAWING ) {
+            ws->points[1] = v2l { point.x, ws->points[0].y };
+            ws->points[2] = point;
+            ws->points[3] = v2l { ws->points[0].x, point.y };
+            ws->points[4] = ws->points[0];
+
+            v2l current_point = ws->points[0];
+            int index = 5;
+            int h = point.y - ws->points[0].y;
+            int w = point.x - ws->points[0].x;
+            int y_sign = 1;
+
+            for (int i = 0; i < c; ++i) {
+
+                current_point.y += h * y_sign;
+                y_sign *= -1;
+                ws->points[index++] = current_point;
+
+                current_point.x += w / c;
+                ws->points[index++] = current_point;
+            }
+
+            y_sign = c % 2 == 0 ? 1 : -1;
+            int x_sign = -1;
+
+            for (int i = 0; i < r; ++i) {
+                current_point.x += w * x_sign;
+                x_sign *= -1;
+                ws->points[index++] = current_point;
+
+                current_point.y += (h / r) * y_sign;
+                ws->points[index++] = current_point;
+            }
         }
     }
 }
@@ -641,11 +738,14 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     profiler_init();
 #endif
 
-    #if MILTON_SAVE_ASYNC
-        milton->save_mutex = SDL_CreateMutex();
-        milton->save_cond = SDL_CreateCond();
-        milton->save_thread = SDL_CreateThread(milton_save_thread, "Save thread", (void*)milton);
-    #endif
+#if MILTON_SAVE_ASYNC
+    milton->save_mutex = SDL_CreateMutex();
+    milton->save_cond = SDL_CreateCond();
+    milton->save_thread = SDL_CreateThread(milton_save_thread, "Save thread", (void*)milton);
+#endif
+
+    milton->grid_rows = 4;
+    milton->grid_columns = 4;
 }
 
 void
@@ -1420,9 +1520,14 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
         }
         else if ( !milton->gui->owns_user_input
                   && (milton->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
-            if ( milton->current_mode == MiltonMode::PRIMITIVE ) {
-                // Input for primitive.
-                milton_primitive_input(milton, input, end_stroke);
+            if ( milton->current_mode == MiltonMode::PRIMITIVE_LINE ) {
+                milton_primitive_line_input(milton, input, end_stroke);
+            } 
+            else if ( milton->current_mode == MiltonMode::PRIMITIVE_RECTANGLE ) {
+                milton_primitive_rectangle_input(milton, input, end_stroke);
+            } 
+            else if ( milton->current_mode == MiltonMode::PRIMITIVE_GRID ) {
+                milton_primitive_grid_input(milton, input, end_stroke);
             }
             else if ( milton->current_mode != MiltonMode::DRAG_BRUSH_SIZE )  {  // Input for eraser and pen
                 Stroke* ws = &milton->working_stroke;
@@ -1489,7 +1594,7 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
             if ( milton->working_stroke.num_points > 0 ) {
                 // We used the selected color to draw something. Push.
                 if (  (milton->current_mode == MiltonMode::PEN ||
-                       milton->current_mode == MiltonMode::PRIMITIVE)
+                       mode_is_for_primitives(milton->current_mode))
                      && gui_mark_color_used(milton->gui) ) {
                     // Tell the renderer to update the picker
                     gpu_update_picker(milton->renderer, &milton->gui->picker);
@@ -1545,7 +1650,9 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
             // Modes we can toggle
             MiltonMode toggleable_modes[] = {
                 MiltonMode::EYEDROPPER,
-                MiltonMode::PRIMITIVE,
+                MiltonMode::PRIMITIVE_LINE,
+                MiltonMode::PRIMITIVE_RECTANGLE,
+                MiltonMode::PRIMITIVE_GRID,
             };
 
             for ( size_t i = 0; i < array_count(toggleable_modes); ++i ) {

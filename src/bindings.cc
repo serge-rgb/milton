@@ -69,7 +69,9 @@ set_default_bindings(MiltonBindings* bs)
     binding(bs, Modifier_NONE, 'e', Action_MODE_ERASER);
     binding(bs, Modifier_NONE, 'b', Action_MODE_PEN);
     binding(bs, Modifier_NONE, 'i', Action_MODE_EYEDROPPER);
-    binding(bs, Modifier_NONE, 'l', Action_MODE_PRIMITIVE);
+    binding(bs, Modifier_NONE, 'l', Action_MODE_PRIMITIVE_LINE);
+    binding(bs, Modifier_NONE, 'r', Action_MODE_PRIMITIVE_RECTANGLE);
+    binding(bs, Modifier_NONE, 'g', Action_MODE_PRIMITIVE_GRID);
     binding(bs, Modifier_NONE, Binding::F1, Action_HELP);
     binding(bs, Modifier_NONE, Binding::TAB, Action_TOGGLE_GUI);
 
@@ -212,8 +214,14 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
         case Action_MODE_EYEDROPPER: {
             input->mode_to_set = MiltonMode::EYEDROPPER;
         } break;
-        case Action_MODE_PRIMITIVE: {
-            input->mode_to_set = MiltonMode::PRIMITIVE;
+        case Action_MODE_PRIMITIVE_LINE: {
+            input->mode_to_set = MiltonMode::PRIMITIVE_LINE;
+        } break;
+        case Action_MODE_PRIMITIVE_RECTANGLE: {
+            input->mode_to_set = MiltonMode::PRIMITIVE_RECTANGLE;
+        } break;
+        case Action_MODE_PRIMITIVE_GRID: {
+            input->mode_to_set = MiltonMode::PRIMITIVE_GRID;
         } break;
         case Action_SET_BRUSH_ALPHA_10: {
             milton_set_brush_alpha(milton, 0.1f);
