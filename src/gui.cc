@@ -380,8 +380,8 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, Pl
             }
 
             if (milton->current_mode == MiltonMode::PRIMITIVE_GRID ) {
-                ImGui::SliderInt(loc(TXT_grid_columns), &milton->grid_columns, 0, 32);
-                ImGui::SliderInt(loc(TXT_grid_rows), &milton->grid_rows, 0, 32);
+                ImGui::SliderInt(loc(TXT_grid_columns), &milton->grid_columns, 1, 32);
+                ImGui::SliderInt(loc(TXT_grid_rows), &milton->grid_rows, 1, 32);
             }
         }
 

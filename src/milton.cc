@@ -159,7 +159,7 @@ mode_is_for_drawing(MiltonMode mode)
 {
     b32 result = mode == MiltonMode::PEN ||
             mode == MiltonMode::ERASER ||
-            mode == MiltonMode::DRAG_BRUSH_SIZE || 
+            mode == MiltonMode::DRAG_BRUSH_SIZE ||
             mode_is_for_primitives(mode);
     return result;
 }
@@ -253,6 +253,7 @@ milton_primitive_rectangle_input(Milton* milton, MiltonInput const* input, b32 e
     }
     else if (input->input_count > 0) {
         v2l point = raster_to_canvas(milton->view, input->points[input->input_count - 1]);
+
         Stroke* ws = &milton->working_stroke;
         if ( milton->primitive_fsm == Primitive_WAITING ) {
             milton->primitive_fsm             = Primitive_DRAWING;
@@ -265,9 +266,12 @@ milton_primitive_rectangle_input(Milton* milton, MiltonInput const* input, b32 e
             ws->layer_id                      = milton->view->working_layer_id;
         }
         else if ( milton->primitive_fsm == Primitive_DRAWING ) {
-            ws->points[1] = v2l { point.x, ws->points[0].y };
+            v2l p0 = canvas_to_raster(milton->view, ws->points[0]);
+            v2l p2 = input->points[input->input_count - 1];
+
+            ws->points[1] = raster_to_canvas(milton->view, { p2.x, p0.y });
             ws->points[2] = point;
-            ws->points[3] = v2l { ws->points[0].x, point.y };
+            ws->points[3] = raster_to_canvas(milton->view, { p0.x, p2.y });
             ws->points[4] = ws->points[0];
         }
     }
@@ -276,8 +280,8 @@ milton_primitive_rectangle_input(Milton* milton, MiltonInput const* input, b32 e
 static void
 milton_primitive_grid_input(Milton* milton, MiltonInput const* input, b32 end_stroke)
 {
-    int c = milton->grid_rows;
-    int r = milton->grid_columns;
+    int c = milton->grid_columns;
+    int r = milton->grid_rows;
 
     if ( end_stroke && milton->primitive_fsm == Primitive_DRAWING) {
         milton->primitive_fsm = Primitive_WAITING;
@@ -296,37 +300,42 @@ milton_primitive_grid_input(Milton* milton, MiltonInput const* input, b32 end_st
             ws->layer_id                      = milton->view->working_layer_id;
         }
         else if ( milton->primitive_fsm == Primitive_DRAWING ) {
-            ws->points[1] = v2l { point.x, ws->points[0].y };
+            v2l p0 = canvas_to_raster(milton->view, ws->points[0]);
+            v2l p2 = input->points[input->input_count - 1];
+
+            ws->points[1] = raster_to_canvas(milton->view, { p2.x, p0.y });
             ws->points[2] = point;
-            ws->points[3] = v2l { ws->points[0].x, point.y };
+            ws->points[3] = raster_to_canvas(milton->view, { p0.x, p2.y });
             ws->points[4] = ws->points[0];
 
-            v2l current_point = ws->points[0];
+            v2l current_point = p0;
             int index = 5;
-            int h = point.y - ws->points[0].y;
-            int w = point.x - ws->points[0].x;
+            int h = p2.y - p0.y;
+            int w = p2.x - p0.x;
             int y_sign = 1;
 
+            f32 cw = (f32) w / (f32)c;
+            f32 rh = (f32) h / (f32)r;
+
             for (int i = 0; i < c; ++i) {
-
-                current_point.y += h * y_sign;
+                current_point.y = y_sign == 1 ? p2.y : p0.y;
                 y_sign *= -1;
-                ws->points[index++] = current_point;
+                ws->points[index++] = raster_to_canvas(milton->view, current_point);
 
-                current_point.x += w / c;
-                ws->points[index++] = current_point;
+                current_point.x = p0.x + (cw * (i+1));
+                ws->points[index++] = raster_to_canvas(milton->view, current_point);
             }
 
             y_sign = c % 2 == 0 ? 1 : -1;
             int x_sign = -1;
 
             for (int i = 0; i < r; ++i) {
-                current_point.x += w * x_sign;
+                current_point.x = x_sign == 1 ? p2.x : p0.x;
                 x_sign *= -1;
-                ws->points[index++] = current_point;
+                ws->points[index++] = raster_to_canvas(milton->view, current_point);
 
-                current_point.y += (h / r) * y_sign;
-                ws->points[index++] = current_point;
+                current_point.y = y_sign == 1 ? p2.y - (rh * (i+1)) : p0.y + (rh * (i+1));
+                ws->points[index++] = raster_to_canvas(milton->view, current_point);
             }
         }
     }
@@ -1522,10 +1531,10 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
                   && (milton->canvas->working_layer->flags & LayerFlags_VISIBLE) ) {
             if ( milton->current_mode == MiltonMode::PRIMITIVE_LINE ) {
                 milton_primitive_line_input(milton, input, end_stroke);
-            } 
+            }
             else if ( milton->current_mode == MiltonMode::PRIMITIVE_RECTANGLE ) {
                 milton_primitive_rectangle_input(milton, input, end_stroke);
-            } 
+            }
             else if ( milton->current_mode == MiltonMode::PRIMITIVE_GRID ) {
                 milton_primitive_grid_input(milton, input, end_stroke);
             }
