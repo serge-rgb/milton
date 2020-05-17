@@ -29,7 +29,9 @@ enum class MiltonMode
 {
     PEN,
     ERASER,
-    PRIMITIVE, // Lines, circles, etc.
+    PRIMITIVE_LINE,
+    PRIMITIVE_RECTANGLE,
+    PRIMITIVE_GRID,
     EXPORTING,
     EYEDROPPER,
     HISTORY,
@@ -221,6 +223,10 @@ struct Milton
     PeekOut* peek_out;
     TransformMode* transform;
 
+    // Primitives
+    i32 grid_rows;
+    i32 grid_columns;
+
 #if MILTON_ENABLE_PROFILING
     b32 viz_window_visible;
     GraphData graph_frame;
@@ -306,6 +312,8 @@ void milton_reset_canvas_and_set_default(Milton* milton);
 void milton_gl_backend_draw(Milton* milton);
 
 b32 current_mode_is_for_drawing(Milton const* milton);
+
+b32 mode_is_for_primitives(MiltonMode milton);
 
 void milton_toggle_gui_visibility(Milton* milton);
 void milton_set_gui_visibility(Milton* milton, b32 visible);

@@ -321,7 +321,7 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, Pl
     if ( show_brush_window ) {
         if ( ImGui::Begin(loc(TXT_brushes), NULL, imgui_window_flags) ) {
             if ( milton->current_mode == MiltonMode::PEN ||
-                 milton->current_mode == MiltonMode::PRIMITIVE ) {
+                 mode_is_for_primitives(milton->current_mode) ) {
                 const float pen_alpha = milton_get_brush_alpha(milton);
                 mlt_assert(pen_alpha >= 0.0f && pen_alpha <= 1.0f);
                 float mut_alpha = pen_alpha*100;
@@ -351,22 +351,37 @@ gui_brush_window(MiltonInput* input, PlatformState* platform, Milton* milton, Pl
                 milton->gui->flags |= (i32)MiltonGuiFlags_SHOWING_PREVIEW;
             }
 
-            if ( milton->current_mode != MiltonMode::PEN ) {
-                if ( ImGui::Button(loc(TXT_switch_to_brush)) ) {
-                    input->mode_to_set = MiltonMode::PEN;
-                }
+            if ( ImGui::Button(loc(TXT_switch_to_primitive_line)) ) {
+                input->mode_to_set = MiltonMode::PRIMITIVE_LINE;
             }
 
-            if ( milton->current_mode != MiltonMode::PRIMITIVE ) {
-                if ( ImGui::Button(loc(TXT_switch_to_primitive)) ) {
-                    input->mode_to_set = MiltonMode::PRIMITIVE;
-                }
+            ImGui::SameLine();
+
+            if ( ImGui::Button(loc(TXT_switch_to_primitive_rectangle)) ) {
+                input->mode_to_set = MiltonMode::PRIMITIVE_RECTANGLE;
             }
+
+            ImGui::SameLine();
+
+            if ( ImGui::Button(loc(TXT_switch_to_primitive_grid)) ) {
+                input->mode_to_set = MiltonMode::PRIMITIVE_GRID;
+            }
+
+            if ( ImGui::Button(loc(TXT_switch_to_brush)) ) {
+                input->mode_to_set = MiltonMode::PEN;
+            }
+
+            ImGui::SameLine();
 
             if ( milton->current_mode != MiltonMode::ERASER ) {
                 if ( ImGui::Button(loc(TXT_switch_to_eraser)) ) {
                     input->mode_to_set = MiltonMode::ERASER;
                 }
+            }
+
+            if (milton->current_mode == MiltonMode::PRIMITIVE_GRID ) {
+                ImGui::SliderInt(loc(TXT_grid_columns), &milton->grid_columns, 1, 32);
+                ImGui::SliderInt(loc(TXT_grid_rows), &milton->grid_rows, 1, 32);
             }
         }
 
