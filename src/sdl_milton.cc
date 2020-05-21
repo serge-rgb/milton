@@ -154,6 +154,9 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
         if ( k == SDLK_SPACE && !is_keyup ) {
             platform->is_space_down = true;
         }
+        if (( k == SDLK_LCTRL || k == SDLK_RCTRL) && !is_keyup ) {
+            platform->is_ctrl_down = true;
+        }
     }
 }
 
@@ -164,9 +167,16 @@ panning_update(PlatformState* platform)
         platform->pan_start = VEC2L(platform->pointer);
         platform->pan_point = platform->pan_start;  // No huge pan_delta at beginning of pan.
     };
+    auto reset_zoom_start = [platform]() {
+        platform->zoom_start = VEC2L(platform->pointer);
+        platform->zoom_point = platform->zoom_start;  // No huge pan_delta at beginning of pan.
+    };
 
     platform->was_panning = platform->is_panning;
     platform->was_zooming = platform->is_zooming;
+
+
+    b32 is_ctrl_down = platform->is_ctrl_down;
 
     // Panning from GUI menu, waiting for input
     if (platform->waiting_for_zoom_input)
@@ -181,7 +191,7 @@ panning_update(PlatformState* platform)
         }
 
         if ( platform->is_space_down &&
-            platform->is_ctrl_down) {
+            is_ctrl_down) {
             platform->waiting_for_zoom_input = false;
         }
     }
@@ -199,7 +209,7 @@ panning_update(PlatformState* platform)
     else {
         if (platform->is_zooming )
         {
-            if ( (!platform->is_pointer_down && !platform->is_space_down && !platform->is_ctrl_down)
+            if ( (!platform->is_pointer_down && !platform->is_space_down && !is_ctrl_down)
                  || !platform->is_pointer_down ) {
                 platform->is_zooming = false;
             }
@@ -217,7 +227,7 @@ panning_update(PlatformState* platform)
             }
         }
         else {
-            if (platform->is_space_down && platform->is_pointer_down && platform->is_ctrl_down) {
+            if (platform->is_space_down && platform->is_pointer_down && is_ctrl_down) {
                 platform->is_zooming = true;
                 platform->is_panning = false;
                 reset_zoom_start();
@@ -349,7 +359,8 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                         if ( !platform->is_panning &&
                              !platform->is_zooming &&
                              point.x >= 0 && point.y > 0 ) {
-                            input_flags |= MiltonInputFlags_CLICK;
+
+                            /* input_flags |= MiltonInputFlags_CLICK; */
                             milton_input.click = point;
 
                             platform->is_pointer_down = true;
@@ -506,7 +517,7 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
     if ( pointer_up ) {
         // Add final point
         if ( !platform->is_panning && !platform->is_zooming &&platform->is_pointer_down ) {
-            input_flags |= MiltonInputFlags_END_STROKE;
+            /* input_flags |= MiltonInputFlags_END_STROKE; */
             input_point = { event.button.x, event.button.y };
 
             platform_point_to_pixel_i(platform, &input_point);
@@ -817,13 +828,13 @@ milton_main(bool is_fullscreen, char* file_to_open)
 
         panning_update(&platform);
 
-        // TODO(pmongeau) is this needed?
-        // update curor
-        if ( !platform.is_panning &&
-             !platform.is_zooming) {
-            milton_input.flags |= MiltonInputFlags_HOVERING;
-            milton_input.hover_point = platform.pointer;
-        }
+        /* // TODO(pmongeau) is this needed? */
+        /* // update curor */
+        /* if ( !platform.is_panning && */
+        /*      !platform.is_zooming) { */
+        /*     /1* milton_input.flags |= MiltonInputFlags_HOVERING; *1/ */
+        /*     milton_input.hover_point = platform.pointer; */
+        /* } */
 
         static b32 first_run = true;
         if ( first_run ) {
@@ -985,7 +996,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
                                (i32)platform.zoom_start.y};
 
             milton_input.scale = zoom_delta_y > 0 ? 1: -1;;
-            milton_set_zoom_at_point(milton_state, zoom_center);
+            milton_set_zoom_at_point(milton, zoom_center);
             milton_input.zoom_delta = zoom_delta_y;
 
             // Reset zoom_start. Delta is not cumulative.
