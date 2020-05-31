@@ -4,7 +4,7 @@
 #pragma once
 
 #define MILTON_MAJOR_VERSION 1
-#define MILTON_MINOR_VERSION 9
+#define MILTON_MINOR_VERSION 10
 #define MILTON_MICRO_VERSION 1
 
 

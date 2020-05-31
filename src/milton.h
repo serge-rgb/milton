@@ -15,6 +15,7 @@
 #define NO_PRESSURE_INFO            -1.0f
 #define MAX_INPUT_BUFFER_ELEMS      32
 #define MILTON_MAX_BRUSH_SIZE       300
+#define MILTON_MAX_GRID_SIZE        32
 #define HOVER_FLASH_THRESHOLD_MS    500  // How long does the hidden brush hover show when it has changed size.
 #define MODE_STACK_MAX 64
 
