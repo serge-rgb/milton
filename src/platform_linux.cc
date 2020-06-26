@@ -132,6 +132,7 @@ platform_dialog(char* info, char* title)
             info
             );
     gtk_window_set_title(GTK_WINDOW(dialog), title);
+    gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
 }
@@ -149,6 +150,7 @@ platform_dialog_yesno(char* info, char* title)
             info
             );
     gtk_window_set_title(GTK_WINDOW(dialog), title);
+    gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
     if ( gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES ) {
         gtk_widget_destroy(dialog);
         return false;
@@ -172,6 +174,7 @@ platform_dialog_yesnocancel(char* info, char* title)
             info
             );
     gtk_window_set_title(GTK_WINDOW(dialog), title);
+    gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
     gint answer = gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
     if ( answer == GTK_RESPONSE_YES )
@@ -270,6 +273,7 @@ platform_open_dialog(FileKind kind)
     GtkFileFilter *filter = gtk_file_filter_new();
     linux_set_GTK_filter(chooser, filter, kind);
     gtk_file_chooser_set_current_folder(chooser, getenv("HOME"));
+    gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
     if ( gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT ) {
         gtk_widget_destroy(dialog);
         return NULL;
@@ -313,6 +317,7 @@ platform_save_dialog(FileKind kind)
     gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
     gtk_file_chooser_set_current_folder(chooser, getenv("HOME"));
     gtk_file_chooser_set_current_name(chooser, kind == FileKind_IMAGE ? "untitled.jpg" : "untitled.mlt");
+    gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
     if ( gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT ) {
         gtk_widget_destroy(dialog);
         return NULL;
