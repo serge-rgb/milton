@@ -385,6 +385,12 @@ platform_ui_scale(PlatformState* p)
     return scale;
 }
 
+float
+platform_font_scale(PlatformState* p)
+{
+    return 1.0f / p->ui_scale;
+}
+
 PATH_CHAR*
 platform_open_dialog(FileKind kind)
 {

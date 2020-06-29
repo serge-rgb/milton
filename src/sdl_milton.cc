@@ -710,6 +710,8 @@ milton_main(bool is_fullscreen, char* file_to_open)
         platform_fname_at_exe(fname, MAX_PATH);
         FILE* fd = platform_fopen(fname, TO_PATH_STR("rb"));
 
+        io.FontGlobalScale = platform_font_scale(&platform);
+        
         if ( fd ) {
             size_t  ttf_sz = 0;
             void*   ttf_data = NULL;

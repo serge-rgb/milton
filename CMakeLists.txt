@@ -119,6 +119,13 @@ else()
 endif()
 
 if(APPLE)
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_LIST_DIR}/Info.plist
+  )
+  EXEC_PROGRAM( "mkdir -p ${CMAKE_CURRENT_LIST_DIR}/build/Milton.app/Contents/Resources")
+  EXEC_PROGRAM( "cp ${CMAKE_CURRENT_LIST_DIR}/milton_icon.icns ${CMAKE_CURRENT_LIST_DIR}/build/Milton.app/Contents/Resources")
+
   target_link_libraries(Milton
     "-framework OpenGL"
   )
