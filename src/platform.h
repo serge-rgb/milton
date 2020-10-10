@@ -67,6 +67,7 @@ struct PlatformState
 
     v2l zoom_start;
     v2l zoom_point;
+    i64 zoom_start_scale;
 
     b32 should_quit;
     u32 window_id;

@@ -161,15 +161,16 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
 }
 
 void
-panning_update(PlatformState* platform)
+panning_update(PlatformState* platform, Milton *milton)
 {
     auto reset_pan_start = [platform]() {
         platform->pan_start = VEC2L(platform->pointer);
         platform->pan_point = platform->pan_start;  // No huge pan_delta at beginning of pan.
     };
-    auto reset_zoom_start = [platform]() {
+    auto reset_zoom_start = [platform, milton]() {
         platform->zoom_start = VEC2L(platform->pointer);
-        platform->zoom_point = platform->zoom_start;  // No huge pan_delta at beginning of pan.
+        platform->zoom_point = platform->zoom_start;
+        platform->zoom_start_scale = milton->view->scale;
     };
 
     platform->was_panning = platform->is_panning;
@@ -179,23 +180,7 @@ panning_update(PlatformState* platform)
     b32 is_ctrl_down = platform->is_ctrl_down;
 
     // Panning from GUI menu, waiting for input
-    if (platform->waiting_for_zoom_input)
-    {
-        if ( platform->is_pointer_down ) {
-            platform->waiting_for_zoom_input = false;
-            platform->waiting_for_pan_input = false;
-            platform->is_zooming = true;
-            platform->is_panning = false;
-
-            reset_zoom_start();
-        }
-
-        if ( platform->is_space_down &&
-            is_ctrl_down) {
-            platform->waiting_for_zoom_input = false;
-        }
-    }
-    else if ( platform->waiting_for_pan_input ) {
+    if ( platform->waiting_for_pan_input ) {
         if ( platform->is_pointer_down ) {
             platform->waiting_for_pan_input = false;
             platform->is_panning = true;
@@ -235,6 +220,7 @@ panning_update(PlatformState* platform)
             else if ( (platform->is_space_down && platform->is_pointer_down)
                  || platform->is_middle_button_down ) {
                 platform->is_panning = true;
+                platform->is_zooming = false;
                 reset_pan_start();
             }
         }
@@ -455,6 +441,9 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
                 if ( keycode == SDLK_SPACE ) {
                     platform->is_space_down = false;
+                }
+                else if ( keycode == SDLK_LCTRL || keycode == SDLK_RCTRL ) {
+                    platform->is_ctrl_down = false;
                 }
                 shortcut_handle_key(milton, platform, &event, &milton_input, /*is_keyup*/true);
             } break;
@@ -826,7 +815,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
             }
         }
 
-        panning_update(&platform);
+        panning_update(&platform, milton);
 
         /* // TODO(pmongeau) is this needed? */
         /* // update curor */
@@ -986,21 +975,20 @@ milton_main(bool is_fullscreen, char* file_to_open)
         platform.pan_start = platform.pan_point;
 
 
-        /* f32 zoom_delta_x = 0.5f * (platform.zoom_point.x - platform.zoom_start.x); */
-        f32 zoom_delta_y = -(platform.zoom_point.y - platform.zoom_start.y);
-        /* v2i zoom_vec = platform.zoom_point - platform.zoom_start; */
-        /* f32 zoom_delta = SQUARE(zoom_vec.x * zoom_vec.x + zoom_vec.y * zoom_vec.y); */
-        if (zoom_delta_y != 0)
+        f32 zoom_delta_y = (platform.zoom_point.y - platform.zoom_start.y);
+
+        if (zoom_delta_y != 0 && platform.is_zooming)
         {
             v2i zoom_center = {(i32)platform.zoom_start.x,
                                (i32)platform.zoom_start.y};
 
-            milton_input.scale = zoom_delta_y > 0 ? 1: -1;;
-            milton_set_zoom_at_point(milton, zoom_center);
-            milton_input.zoom_delta = zoom_delta_y;
-
-            // Reset zoom_start. Delta is not cumulative.
-            platform.zoom_start = platform.zoom_point;
+            f32 scale = min(
+                max(MINIMUM_SCALE, platform.zoom_start_scale + zoom_delta_y * 5),
+                VIEW_SCALE_LIMIT);
+            milton_set_zoom_at_point_with_scale(milton, zoom_center, scale);
+            f32 scale_factor = scale / milton->view->scale;
+            milton->view->scale = scale;
+            milton_update_brushes(milton);
         }
 
         // ==== Update and render
