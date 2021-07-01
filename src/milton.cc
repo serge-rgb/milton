@@ -1320,10 +1320,10 @@ drag_zoom_tick(Milton* milton, MiltonInput const* input)
     v2i mouse = platform_cursor_get_position(milton->platform);
 
     i64 new_size = drag->start_size + drag_factor * -(mouse.x - mouse.y - drag->start_point.x + drag->start_point.y);
-     if ( new_size < MINIMUM_SCALE )
-         new_size = MINIMUM_SCALE;
-     if ( new_size > VIEW_SCALE_LIMIT )
-         new_size = VIEW_SCALE_LIMIT;
+    if ( new_size < MINIMUM_SCALE )
+        new_size = MINIMUM_SCALE;
+    if ( new_size > VIEW_SCALE_LIMIT )
+        new_size = VIEW_SCALE_LIMIT;
     milton->view->scale = new_size;
     milton_set_zoom_at_point(milton, drag->new_zoom_center);
 }
