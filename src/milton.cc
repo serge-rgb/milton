@@ -1316,14 +1316,17 @@ static void
 drag_zoom_tick(Milton* milton, MiltonInput const* input)
 {
     MiltonDragZoom* drag = milton->drag_zoom;
-    f32 drag_factor = 0.5f;
-    v2i mouse = platform_cursor_get_position(milton->platform);
+    f32 drag_factor = 100.0f * ( static_cast<f32>(drag->start_size) / VIEW_SCALE_LIMIT );
+    i64 mouse_x = platform_cursor_get_position(milton->platform).x;
 
-    i64 new_size = drag->start_size + drag_factor * -(mouse.x - mouse.y - drag->start_point.x + drag->start_point.y);
+    i64 new_size = drag->start_size + drag_factor * -(mouse_x - drag->start_point.x );
+
+    
     if ( new_size < MINIMUM_SCALE )
         new_size = MINIMUM_SCALE;
     if ( new_size > VIEW_SCALE_LIMIT )
         new_size = VIEW_SCALE_LIMIT;
+    
     milton->view->scale = new_size;
     milton_set_zoom_at_point(milton, drag->new_zoom_center);
 }
