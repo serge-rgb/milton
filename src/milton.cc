@@ -160,6 +160,7 @@ mode_is_for_drawing(MiltonMode mode)
     b32 result = mode == MiltonMode::PEN ||
             mode == MiltonMode::ERASER ||
             mode == MiltonMode::DRAG_BRUSH_SIZE ||
+            mode == MiltonMode::DRAG_ZOOM ||
             mode_is_for_primitives(mode);
     return result;
 }
@@ -655,6 +656,7 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->eyedropper = arena_alloc_elem(&milton->root_arena, Eyedropper);
     milton->persist = arena_alloc_elem(&milton->root_arena, MiltonPersist);
     milton->drag_brush = arena_alloc_elem(&milton->root_arena, MiltonDragBrush);
+    milton->drag_zoom = arena_alloc_elem(&milton->root_arena, MiltonDragZoom);
     milton->transform = arena_alloc_elem(&milton->root_arena, TransformMode);
 
     milton->persist->target_MB_per_sec = 0.2f;
@@ -1288,6 +1290,46 @@ drag_brush_size_tick(Milton* milton, MiltonInput const* input)
 }
 
 void
+drag_zoom_start(Milton* milton, v2i pointer)
+{
+    if ( milton->current_mode != MiltonMode::DRAG_ZOOM &&
+         current_mode_is_for_drawing(milton) ) {
+        i64 size = milton->view->scale;
+        milton->drag_zoom->start_point = platform_cursor_get_position(milton->platform);
+        milton->drag_zoom->start_size = size;
+        milton->drag_zoom->new_zoom_center = milton->platform->pointer;
+        milton_enter_mode(milton, MiltonMode::DRAG_ZOOM);
+    }
+}
+
+void
+drag_zoom_stop(Milton* milton)
+{
+    if (milton->current_mode == MiltonMode::DRAG_ZOOM) {
+        v2i point = milton->drag_zoom->start_point;
+        platform_cursor_set_position(milton->platform, point);
+        milton_leave_mode(milton);
+    }
+}
+
+static void
+drag_zoom_tick(Milton* milton, MiltonInput const* input)
+{
+    MiltonDragZoom* drag = milton->drag_zoom;
+    f32 drag_factor = 0.5f;
+    v2i mouse = platform_cursor_get_position(milton->platform);
+
+    i64 new_size = drag->start_size + drag_factor * -(mouse.x - mouse.y - drag->start_point.x + drag->start_point.y);
+     if ( new_size < MINIMUM_SCALE )
+         new_size = MINIMUM_SCALE;
+     if ( new_size > VIEW_SCALE_LIMIT )
+         new_size = VIEW_SCALE_LIMIT;
+    milton->view->scale = new_size;
+    milton_set_zoom_at_point(milton, drag->new_zoom_center);
+}
+
+
+void
 transform_start(Milton* milton, v2i pointer)
 {
     if (milton->current_mode != MiltonMode::TRANSFORM) {
@@ -1589,6 +1631,9 @@ milton_update_and_render(Milton* milton, MiltonInput const* input)
     }
     else if (milton->current_mode == MiltonMode::DRAG_BRUSH_SIZE) {
         drag_brush_size_tick(milton, input);
+    }
+    else if (milton->current_mode == MiltonMode::DRAG_ZOOM) {
+        drag_zoom_tick(milton, input);
     }
     else if (milton->current_mode == MiltonMode::TRANSFORM) {
         transform_tick(milton, input);

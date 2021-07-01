@@ -136,6 +136,7 @@ enum Texts
     TXT_Action_HELP,
     TXT_Action_PEEK_OUT,
     TXT_Action_DRAG_BRUSH_SIZE,
+    TXT_Action_DRAG_ZOOM,
     TXT_Action_TRANSFORM,
 
 #if MILTON_ENABLE_PROFILING

@@ -37,6 +37,7 @@ enum class MiltonMode
     HISTORY,
     PEEK_OUT,
     DRAG_BRUSH_SIZE,
+    DRAG_ZOOM,
     TRANSFORM,  // Scale and rotate
 
     MODE_COUNT,
@@ -149,6 +150,13 @@ struct MiltonDragBrush
     v2i start_point;
 };
 
+struct MiltonDragZoom
+{
+    i64 start_size;
+    v2i start_point;
+    v2i new_zoom_center;
+};
+
 enum class TransformModeFSM
 {
     START,
@@ -220,6 +228,7 @@ struct Milton
     MiltonSettings* settings;  // User settings
     MiltonPersist* persist;
     MiltonDragBrush* drag_brush;
+    MiltonDragZoom* drag_zoom;
     PeekOut* peek_out;
     TransformMode* transform;
 
@@ -359,3 +368,6 @@ void transform_stop(Milton* milton);
 
 void drag_brush_size_start(Milton* milton, v2i pointer);
 void drag_brush_size_stop(Milton* milton);
+
+void drag_zoom_start(Milton* milton, v2i pointer);
+void drag_zoom_stop(Milton* milton);
