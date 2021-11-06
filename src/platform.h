@@ -224,14 +224,13 @@ i32 platform_monitor_refresh_hz();
 u64 perf_counter();
 float perf_count_to_sec(u64 counter);
 
+    
+#if defined(__cplusplus)
+}
+#endif
 
 #if defined(_WIN32)
 #include "platform_windows.h"
 #elif defined(__linux__) || defined(__MACH__)
 #include "platform_unix.h"
-#endif
-
-
-#if defined(__cplusplus)
-}
 #endif
