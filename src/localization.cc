@@ -151,6 +151,7 @@ init_localization()
         EN(TXT_Action_HELP, "Help");
         EN(TXT_Action_PEEK_OUT, "Peek out");
         EN(TXT_Action_DRAG_BRUSH_SIZE, "Drag to change brush size");
+        EN(TXT_Action_DRAG_ZOOM, "Drag to zoom in/out");
         EN(TXT_Action_TRANSFORM, "Rotate");
     #if MILTON_ENABLE_PROFILING
         EN(TXT_Action_TOGGLE_DEBUG_WINDOW, "Toggle debug window");

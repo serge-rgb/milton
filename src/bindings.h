@@ -42,6 +42,7 @@ enum BindableAction
     Action_HELP,
     Action_PEEK_OUT,
     Action_DRAG_BRUSH_SIZE,
+    Action_DRAG_ZOOM,
     Action_TRANSFORM,
 
     #if MILTON_ENABLE_PROFILING
@@ -54,6 +55,7 @@ enum BindableAction
     // Press-and-release actions.
     ActionRelease_PEEK_OUT,
     ActionRelease_DRAG_BRUSH_SIZE,
+    ActionRelease_DRAG_ZOOM,
     ActionRelease_TRANSFORM,
 
     Action_COUNT_WITH_RELEASE,

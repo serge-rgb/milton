@@ -89,6 +89,7 @@ set_default_bindings(MiltonBindings* bs)
     binding_with_release(bs, Modifier_NONE, '`', Action_PEEK_OUT, ActionRelease_PEEK_OUT);
     binding_with_release(bs, Modifier_SHIFT, Binding::UNBOUND, Action_DRAG_BRUSH_SIZE, ActionRelease_DRAG_BRUSH_SIZE);
     binding_with_release(bs, Modifier_ALT, Binding::UNBOUND, Action_TRANSFORM, ActionRelease_TRANSFORM);
+    binding_with_release(bs, Modifier_CTRL, Binding::UNBOUND, Action_DRAG_ZOOM, ActionRelease_DRAG_ZOOM);
 
     #if MILTON_ENABLE_PROFILING
     binding(bs, Modifier_CTRL, '`', Action_TOGGLE_DEBUG_WINDOW);
@@ -267,6 +268,12 @@ binding_dispatch_action(BindableAction a, MiltonInput* input, Milton* milton, v2
         } break;
         case ActionRelease_DRAG_BRUSH_SIZE: {
             drag_brush_size_stop(milton);
+        } break;
+        case Action_DRAG_ZOOM: {
+            drag_zoom_start(milton, pointer);
+        } break;
+        case ActionRelease_DRAG_ZOOM: {
+            drag_zoom_stop(milton);
         } break;
         case Action_TRANSFORM: {
             transform_start(milton, pointer);
