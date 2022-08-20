@@ -76,6 +76,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   find_package(OpenGL REQUIRED)
   find_package(GTK2 2.6 REQUIRED gtk)
   find_package(X11 REQUIRED)
+  find_package(SDL2 REQUIRED)
   find_library(XINPUT_LIBRARY libXi.so)
   find_package(Threads REQUIRED)
 
@@ -95,10 +96,13 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     message(FATAL_ERROR "Could not find X11 libraries")
   endif()
 
+  if(NOT SDL2_FOUND)
+    message(FATAL_ERROR "Could not find SDL2 libraries")
+  endif()
+
   target_include_directories(Milton PRIVATE
     ${GTK2_INCLUDE_DIRS}
     ${X11_INCLUDE_DIR}
-    ${SDL2DIR}/build/linux64/include/SDL2
     ${OPENGL_INCLUDE_DIR}
   )
 
@@ -107,8 +111,7 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     ${X11_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${XINPUT_LIBRARY}
-    ${SDL2DIR}/build/linux64/lib/libSDL2maind.a
-    ${SDL2DIR}/build/linux64/lib/libSDL2d.a
+    SDL2::SDL2
     ${CMAKE_THREAD_LIBS_INIT}
     ${CMAKE_DL_LIBS}
     )
