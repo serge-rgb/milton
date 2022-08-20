@@ -65,6 +65,29 @@ Linux and macOS
 
 As of 2018-10-24, linux and mac are not officially supported. I (Sergio) would like to support them again but my efforts are currently going into producing a new release for Windows. You can try and compile with the included scripts, but things will likely not work!
 
+On 2021-02-27 a successful build for Linux can be done with these steps:
+
+While in the milton top directory
+```
+cd third_party/SDL2-2.0.8
+mkdir build
+cd build
+cmake -DVIDEO_WAYLAND=OFF -DCMAKE_INSTALL_PREFIX=linux64 -DCMAKE_BUILD_TYPE=Debug ../
+make
+make install
+```
+
+and then in the milton top directory, so ```cd ../../../```,
+```
+mkdir build
+cd build
+cmake ../
+make
+```
+
+And if successful, you should have an executable called "Milton" that runs.
+
+I did not make this work automatically with CMake, because I don't know CMake.
 
 Versioning scheme
 =================
