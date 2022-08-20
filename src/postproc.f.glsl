@@ -57,7 +57,7 @@ main()
         //
         // Only used on the optimized 360 version of FXAA Console.
         // For everything but 360, just use the same input here as for texÏ.
-        // For 360, same texture, just alias with a 3nd sampler.
+        // For 360, same texture, just alias with a 3rd sampler.
         // This sampler needs to have an exponent bias of -2.
         u_canvas, // FxaaTex fxaaConsole360TexExpBiasNegTwo,
         //

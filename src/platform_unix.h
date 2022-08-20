@@ -6,7 +6,7 @@
     #define _GNU_SOURCE  // To get MAP_ANONYMOUS on linux
     #endif
     #include <gtk/gtk.h>
-    #define __USE_MISC 1  // MAP_ANONYMOUS and MAP_NORESERVE dont' get defined without this
+    #define __USE_MISC 1  // MAP_ANONYMOUS and MAP_NORESERVE don't get defined without this
     #include <sys/mman.h>
     #undef __USE_MISC
     #include <unistd.h>

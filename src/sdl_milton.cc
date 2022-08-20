@@ -738,7 +738,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
             fclose(fd);
         }
     }
-    // Initalize system cursors
+    // Initialize system cursors
     {
         platform.cursor_default   = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
         platform.cursor_hand      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
