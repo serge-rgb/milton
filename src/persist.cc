@@ -400,6 +400,13 @@ milton_load(Milton* milton)
             }
         }
 
+        // MLT 10
+        // Grid sizes
+        if ( milton_binary_version >= 10 ) {
+          READ(&milton->grid_rows, sizeof(milton->grid_rows), 1, fd);
+          READ(&milton->grid_columns, sizeof(milton->grid_columns), 1, fd);
+        }
+
         err = fclose(fd);
         if ( err != 0 ) {
             ok = false;
@@ -656,11 +663,27 @@ milton_save(Milton* milton)
                                     }
                                 }
 
-                                //
-                                // Done.
-                                //
                                 if ( could_write_layer_alpha ) {
+
+                                  //
+                                  // Grid Sizes
+                                  //
+
+                                  b32 could_write_grid_sizes = true;
+
+                                  if ( milton_binary_version >= 10 ) {
+                                    if ( !write_data(&milton->grid_rows, sizeof(milton->grid_rows), 1, fd) ||
+                                         !write_data(&milton->grid_columns, sizeof(milton->grid_columns), 1, fd) ) {
+                                      could_write_grid_sizes = false;
+                                    }
+                                  }
+
+                                  //
+                                  // Done.
+                                  //
+                                  if ( could_write_grid_sizes ) {
                                     could_write_milton_state = true;
+                                  }
                                 }
                             }
                         }

@@ -723,6 +723,12 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
         }
     }
 
+    // Set default grid sizes
+    {
+      milton->grid_rows = 4;
+      milton->grid_columns = 4;
+    }
+
     milton->persist->last_save_time = {};
     // Note: This will fill out uninitialized data like default layers.
     if (read_from_disk) { milton_load(milton); }
@@ -752,9 +758,6 @@ milton_init(Milton* milton, i32 width, i32 height, f32 ui_scale, PATH_CHAR* file
     milton->save_cond = SDL_CreateCond();
     milton->save_thread = SDL_CreateThread(milton_save_thread, "Save thread", (void*)milton);
 #endif
-
-    milton->grid_rows = 4;
-    milton->grid_columns = 4;
 }
 
 void
