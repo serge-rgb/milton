@@ -91,21 +91,6 @@
     X(void,     glDeleteShader,           GLuint shader)                                          \
     X(void, glPolygonMode,  GLenum face, GLenum mode) \
 
-    // X(void,     glBindAttribLocation,     GLuint program, GLuint index, GLchar* name)       \
-    // X(void,     glDeleteFramebuffersEXT,  GLsizei n, GLuint *framebuffers)                  \
-    // X(void,     glDisableVertexAttribArray, GLuint index)                                         \
-    // X(void,     glEnableClientState, GLenum array)\
-    // X(void,     glTexImage2DMultisample,  GLenum target, GLsizei samples, GLint internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations) \
-    // X(void,     glUniform3f,              GLint location, GLfloat v0, GLfloat v1, GLfloat v3)     \
-    // X(void,     glUniform3i,              GLint location, GLint v0, GLint v1, GLint v3)           \
-    // X(void,     glUniform4iv,             GLint location, GLsizei count, GLint *value )     \
-    // X(void,     glUniformMatrix3fv,       GLint location, GLsizei count, GLboolean transpose, GLfloat* value) \
-    //
-    //
-    //
-    //
-    //
-
 #define GL_FUNCTIONS \
     GL_FUNCTIONS_GRAPHICS_DEBUG \
     GL_FUNCTIONS_DEBUG \

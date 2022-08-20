@@ -73,13 +73,6 @@
 // Spawn threads to save the canvas.
 #define MILTON_SAVE_ASYNC 1
 
-// NOTE: Multisampling is no longer supported in Milton. This define is left
-// in because there is some helper code which I would prefer not to delete.
-#define MULTISAMPLING_ENABLED 0
-    #define MSAA_NUM_SAMPLES 4
-
-
-
 // When not in debug mode, disable all debug flags.
 
 #if !MILTON_DEBUG

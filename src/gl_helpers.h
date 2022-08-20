@@ -23,7 +23,6 @@ GL_DEBUG_CALLBACK(milton_gl_debug_callback);
 enum GLHelperFlags
 {
     GLHelperFlags_SAMPLE_SHADING        = 1<<0,
-    GLHelperFlags_TEXTURE_MULTISAMPLE   = 1<<1,
 };
 
 namespace gl {
@@ -55,13 +54,6 @@ void    vertex_attrib_v3f(GLuint program, char* name);
 GLuint  new_color_texture (int w, int h);
 GLuint  new_depth_stencil_texture (int w, int h);
 GLuint  new_fbo (GLuint color_attachment, GLuint depth_stencil_attachment=0, GLenum texture_target=GL_TEXTURE_2D);
-
-#if MULTISAMPLING_ENABLED
-GLuint  new_color_texture_multisample (int w, int h);
-GLuint  new_depth_stencil_texture_multisample (int w, int h);
-void    resize_color_texture_multisample (GLuint t, int w, int h);
-void    resize_depth_stencil_texture_multisample (GLuint t, int w, int h);
-#endif
 
 void    resize_color_texture (GLuint t, int w, int h);
 void    resize_depth_stencil_texture (GLuint t, int w, int h);

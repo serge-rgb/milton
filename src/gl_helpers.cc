@@ -99,53 +99,6 @@ load ()
     bool ok = true;
     // Extension checking.
 
-#if MULTISAMPLING_ENABLED
-    i64 num_extensions = 0;
-    glGetIntegerv(GL_NUM_EXTENSIONS, (GLint*)&num_extensions);
-
-    if ( num_extensions > 0 ) {
-        for ( i64 extension_i = 0; extension_i < num_extensions; ++extension_i ) {
-            char* extension_string = (char*)glGetStringi(GL_EXTENSIONS, (GLuint)extension_i);
-
-                if ( strcmp(extension_string, "GL_ARB_sample_shading") == 0 ) {
-                    gl::set_flags(GLHelperFlags_SAMPLE_SHADING);
-                }
-                if ( strcmp(extension_string, "GL_ARB_texture_multisample") == 0 ) {
-                    gl::set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
-                }
-        }
-    }
-    // glGetStringi probably does not handle GL_EXTENSIONS
-    else if ( num_extensions == 0 ) {
-        const char* extensions = (const char*)glGetString(GL_EXTENSIONS);
-        #define MAX_EXTENSION_LEN 256
-        char ext[MAX_EXTENSION_LEN] = {};
-        const char* begin = extensions;
-        for ( const char* end = extensions;
-              *end != '\0';
-              ++end ) {
-            if ( *end == ' ' ) {
-                size_t len = (size_t)end - (size_t)begin;
-
-                if ( len < MAX_EXTENSION_LEN ) {
-                    memcpy((void*)ext, (void*)begin, len);
-                    ext[len]='\0';
-                        if ( strcmp(ext, "GL_ARB_sample_shading") == 0 ) {
-                            gl::set_flags(GLHelperFlags_SAMPLE_SHADING);
-                        }
-                        if ( strcmp(ext, "GL_ARB_texture_multisample") == 0 ) {
-                            gl::set_flags(GLHelperFlags_TEXTURE_MULTISAMPLE);
-                        }
-                    begin = end+1;
-                }
-                else {
-                    milton_log("WARNING: Extension too large (%d)\n", len);
-                }
-            }
-        }
-    }
-#endif
-
 #if defined(_WIN32)
 #pragma warning(push, 0)
     if ( !check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
@@ -186,12 +139,6 @@ compile_shader (const char* in_src, GLuint type, char* config, char* variation_c
         #else
             "#define STROKE_DEBUG_VIZ 0\n",
         #endif
-        (check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE)) ? "#define HAS_TEXTURE_MULTISAMPLE 1\n"
-                                                                    : "#define HAS_TEXTURE_MULTISAMPLE 0\n",
-        "#if HAS_TEXTURE_MULTISAMPLE\n",
-        "#extension GL_ARB_sample_shading : enable\n",
-        //" #extension GL_ARB_texture_multisample : enable\n",
-        "#endif\n",
 #if USE_GL_3_2
         (type == GL_FRAGMENT_SHADER) ? "out vec4 out_color; \n" : "\n",
 #endif
@@ -517,74 +464,6 @@ new_fbo(GLuint color_attachment, GLuint depth_stencil_attachment, GLenum texture
 
     glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
     return fbo;
-}
-
-
-GLuint
-new_color_texture_multisample(int w, int h)
-{
-#if MULTISAMPLING_ENABLED
-    GLuint t = 0;
-    glGenTextures(1, &t);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
-
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                            GL_RGBA,
-                            w,h,
-                            GL_TRUE);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
-    return t;
-#else
-    return 0;
-#endif
-}
-
-GLuint
-new_depth_stencil_texture_multisample(int w, int h)
-{
-#if MULTISAMPLING_ENABLED
-    GLuint t = 0;
-    glGenTextures(1, &t);
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
-
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                            /*internalFormat, num of components*/GL_DEPTH24_STENCIL8,
-                            w,h,
-                            GL_TRUE);
-
-
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-
-    return t;
-#else
-    return 0;
-#endif
-}
-
-void
-resize_color_texture_multisample(GLuint t, int w, int h)
-{
-#if MULTISAMPLING_ENABLED
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                            GL_RGBA,
-                            w,h,
-                            GL_TRUE);
-#endif
-}
-
-void
-resize_depth_stencil_texture_multisample(GLuint t, int w, int h)
-{
-#if MULTISAMPLING_ENABLED
-    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, t);
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, MSAA_NUM_SAMPLES,
-                            GL_DEPTH24_STENCIL8,
-                            w,h,
-                            GL_TRUE);
-
-#endif
 }
 
 void

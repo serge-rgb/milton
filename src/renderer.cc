@@ -206,10 +206,6 @@ print_framebuffer_status()
             msg = "Unsupported Framebuffer";
             break;
         }
-        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: {
-            msg = "Incomplete Multisample";
-            break;
-        }
         default: {
             msg = "Unknown";
             break;
@@ -396,15 +392,6 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
     #endif
 
     r->stroke_z = MAX_DEPTH_VALUE - 20;
-
-    if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        glEnable(GL_MULTISAMPLE);
-        // TODO: remove sample shading
-        if ( gl::check_flags(GLHelperFlags_SAMPLE_SHADING) ) {
-            glEnable(GL_SAMPLE_SHADING_ARB);
-            // glMinSampleShadingARB(1.0f);
-        }
-    }
 
     {
         GLfloat viewport_dims[2] = {};
@@ -651,25 +638,12 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
 
     // Framebuffer object for canvas. Layer buffer
     {
-        if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-            r->canvas_texture = gl::new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
-        } else {
-            r->canvas_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
-        }
-
-        if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-            r->eraser_texture = gl::new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
-        } else {
-            r->eraser_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
-        }
+        r->canvas_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
+        r->eraser_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
 
         glGenTextures(1, &r->helper_texture);
 
-        if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-            r->helper_texture = gl::new_color_texture_multisample(view->screen_size.w, view->screen_size.h);
-        } else {
-            r->helper_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
-        }
+        r->helper_texture = gl::new_color_texture(view->screen_size.w, view->screen_size.h);
 
         // Stroke info buffer
         {
@@ -680,21 +654,11 @@ gpu_init(RenderBackend* r, CanvasView* view, ColorPicker* picker)
 
         glGenTextures(1, &r->stencil_texture);
 
-        if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-            r->stencil_texture = gl::new_depth_stencil_texture_multisample(view->screen_size.w, view->screen_size.h);
-        }
-        else {
-            r->stencil_texture = gl::new_depth_stencil_texture(view->screen_size.w, view->screen_size.h);
-        }
+        r->stencil_texture = gl::new_depth_stencil_texture(view->screen_size.w, view->screen_size.h);
 
         // Create framebuffer object.
         GLenum texture_target;
-        if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-            texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-        }
-        else{
-            texture_target = GL_TEXTURE_2D;
-        }
+        texture_target = GL_TEXTURE_2D;
         r->fbo = gl::new_fbo(r->canvas_texture, r->stencil_texture, texture_target);
         glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
         print_framebuffer_status();
@@ -715,19 +679,11 @@ gpu_resize(RenderBackend* r, CanvasView* view)
     r->width = view->screen_size.w;
     r->height = view->screen_size.h;
 
-    if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        gl::resize_color_texture_multisample(r->eraser_texture, r->width, r->height);
-        gl::resize_color_texture_multisample(r->canvas_texture, r->width, r->height);
-        gl::resize_color_texture_multisample(r->helper_texture, r->width, r->height);
-        gl::resize_depth_stencil_texture_multisample(r->stencil_texture, r->width, r->height);
-    }
-    else {
-        gl::resize_color_texture(r->eraser_texture, r->width, r->height);
-        gl::resize_color_texture(r->canvas_texture, r->width, r->height);
-        gl::resize_color_texture(r->helper_texture, r->width, r->height);
-        gl::resize_color_texture(r->stroke_info_texture, r->width, r->height);
-        gl::resize_depth_stencil_texture(r->stencil_texture, r->width, r->height);
-    }
+    gl::resize_color_texture(r->eraser_texture, r->width, r->height);
+    gl::resize_color_texture(r->canvas_texture, r->width, r->height);
+    gl::resize_color_texture(r->helper_texture, r->width, r->height);
+    gl::resize_color_texture(r->stroke_info_texture, r->width, r->height);
+    gl::resize_depth_stencil_texture(r->stencil_texture, r->width, r->height);
 }
 
 void
@@ -1444,11 +1400,7 @@ gpu_render_canvas(RenderBackend* r, i32 view_x, i32 view_y,
     glBindFramebufferEXT(GL_FRAMEBUFFER, r->fbo);
 
     GLenum texture_target;
-    if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-    } else {
-        texture_target = GL_TEXTURE_2D;
-    }
+    texture_target = GL_TEXTURE_2D;
 
     GLuint layer_texture = r->helper_texture;
 
@@ -1683,11 +1635,7 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     gpu_render_canvas(r, view_x, view_y, view_width, view_height);
 
     GLenum texture_target;
-    if ( gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        texture_target = GL_TEXTURE_2D_MULTISAMPLE;
-    } else {
-        texture_target = GL_TEXTURE_2D;
-    }
+    texture_target = GL_TEXTURE_2D;
 
     // Use helper_texture as a place to do AA.
 
@@ -1696,22 +1644,12 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     glDisable(GL_DEPTH_TEST);
 
     PUSH_GRAPHICS_GROUP("blit to helper texture");
-    if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                                  r->canvas_texture, 0);
-        glBindTexture(texture_target, r->helper_texture);
-        glCopyTexImage2D(texture_target, 0, GL_RGBA8, 0,0, r->width, r->height, 0);
+    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
+                              r->helper_texture, 0);
+    glBindTexture(texture_target, r->canvas_texture);
 
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                                  r->helper_texture, 0);
-        glBindTexture(texture_target, r->canvas_texture);
-    } else {
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture_target,
-                                  r->helper_texture, 0);
-        glBindTexture(texture_target, r->canvas_texture);
+    gpu_fill_with_texture(r);
 
-        gpu_fill_with_texture(r);
-    }
     POP_GRAPHICS_GROUP();
 
     // Render GUI on top of helper_texture
@@ -1748,34 +1686,26 @@ gpu_render(RenderBackend* r,  i32 view_x, i32 view_y, i32 view_width, i32 view_h
     // Do post-processing on painting and on GUI elements. Draw to backbuffer
 
     PUSH_GRAPHICS_GROUP("postproc");
-    if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+    glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 
-        // glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, r->helper_texture);
+    // glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, r->helper_texture);
 
-        gl::set_uniform_i(r->postproc_program, "u_canvas", 0);
+    gl::set_uniform_i(r->postproc_program, "u_canvas", 0);
 
-        gl::use_program(r->postproc_program);
+    gl::use_program(r->postproc_program);
 
-        GLint loc = glGetAttribLocation(r->postproc_program, "a_position");
-        if ( loc >= 0 ) {
-            DEBUG_gl_validate_buffer(r->vbo_screen_quad);
-            glBindBuffer(GL_ARRAY_BUFFER, r->vbo_screen_quad);
-            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray((GLuint)loc);
-            glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
-                                  /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
-                                  /*stride*/ 0, /*ptr*/ 0);
+    GLint loc = glGetAttribLocation(r->postproc_program, "a_position");
+    if ( loc >= 0 ) {
+        DEBUG_gl_validate_buffer(r->vbo_screen_quad);
+        glBindBuffer(GL_ARRAY_BUFFER, r->vbo_screen_quad);
+        glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray((GLuint)loc);
+        glVertexAttribPointer(/*attrib location*/ (GLuint)loc,
+                              /*size*/ 2, GL_FLOAT, /*normalize*/ GL_FALSE,
+                              /*stride*/ 0, /*ptr*/ 0);
 
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
-    }
-    else {  // Resolve
-        glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebufferEXT(GL_READ_FRAMEBUFFER, r->fbo);
-        glBlitFramebufferEXT(0, 0, r->width, r->height,
-                             0, 0, r->width, r->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
     POP_GRAPHICS_GROUP();
 
@@ -1881,25 +1811,17 @@ gpu_render_to_buffer(Milton* milton, u8* buffer, i32 scale, i32 x, i32 y, i32 w,
     gpu_render_canvas(r, 0, 0, buf_w, buf_h, background_alpha);
 
     // Post processing
-    if ( !gl::check_flags(GLHelperFlags_TEXTURE_MULTISAMPLE) ) {
-        gl::use_program(r->postproc_program);
-        glBindTexture(GL_TEXTURE_2D, r->canvas_texture);
+    gl::use_program(r->postproc_program);
+    glBindTexture(GL_TEXTURE_2D, r->canvas_texture);
 
-        GLint loc = glGetAttribLocation(r->postproc_program, "a_position");
-        if ( loc >= 0 ) {
-            DEBUG_gl_validate_buffer(r->vbo_screen_quad);
-            glBindBuffer(GL_ARRAY_BUFFER, r->vbo_screen_quad);
-            glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray((GLuint)loc);
+    GLint loc = glGetAttribLocation(r->postproc_program, "a_position");
+    if ( loc >= 0 ) {
+        DEBUG_gl_validate_buffer(r->vbo_screen_quad);
+        glBindBuffer(GL_ARRAY_BUFFER, r->vbo_screen_quad);
+        glVertexAttribPointer((GLuint)loc, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray((GLuint)loc);
 
-            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
-    } else {
-        glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebufferEXT(GL_READ_FRAMEBUFFER, r->fbo);
-        glBlitFramebufferEXT(0, 0, buf_w, buf_h,
-                             0, 0, buf_w, buf_h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-        glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
     glEnable(GL_DEPTH_TEST);
