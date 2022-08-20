@@ -8,9 +8,6 @@ There is no save button, your work is persistent with unlimited undo.
 
 ### [Latest release](https://github.com/serge-rgb/milton/releases/)
 
-[![Stories in Ready](https://badge.waffle.io/serge-rgb/milton.png?label=ready&title=Ready)](https://waffle.io/serge-rgb/milton)
-[![Join the chat at https://gitter.im/serge-rgb/milton](https://badges.gitter.im/serge-rgb/milton.svg)](https://gitter.im/serge-rgb/milton?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 ![Milton Paint ss](http://i.imgur.com/4pdHeeI.png)
 
 ![zoooom](http://i.imgur.com/fqOhPlr.gif)
