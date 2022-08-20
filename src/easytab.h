@@ -975,7 +975,7 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
     UINT DesiredPktRate = 200;
     {
         UINT MaxPktRate = 0;
-        // Get maxiumum rate (DVX_PKTRATE)
+        // Get maximum rate (DVX_PKTRATE)
         if (EasyTab->WTInfoA(WTI_DEVICES, DVC_PKTRATE, &MaxPktRate))
         {
             DesiredPktRate = min(DesiredPktRate, MaxPktRate);
@@ -1076,7 +1076,7 @@ EasyTabResult EasyTab_Load_Ex(HWND Window,
             return EASYTAB_WACOM_WIN32_ERROR;
         }
 
-        // Get tablet capabilites
+        // Get tablet capabilities
         {
             EasyTab->MaxPressure = Pressure.axMax;
             EasyTab->RangeX      = RangeX.axMax;
@@ -1177,7 +1177,7 @@ EasyTabResult EasyTab_HandleEvent(HWND Window, UINT Message, LPARAM LParam, WPAR
 
         }
         result = EASYTAB_OK;
-        // Alway clear the queue.
+        // Always clear the queue.
         EasyTab->WTPacketsGet(EasyTab->Context, EASYTAB_PACKETQUEUE_SIZE+1, NULL);
     }
     else if (Message == WM_ACTIVATE && EasyTab->Context)

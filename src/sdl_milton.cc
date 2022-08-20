@@ -77,18 +77,33 @@ shortcut_handle_key(Milton* milton, PlatformState* platform, SDL_Event* event, M
         }
         else {
             switch (k) {
-                case SDLK_F1:  { active_key = Binding::F1;  } break;
-                case SDLK_F2:  { active_key = Binding::F2;  } break;
-                case SDLK_F3:  { active_key = Binding::F3;  } break;
-                case SDLK_F4:  { active_key = Binding::F4;  } break;
-                case SDLK_F5:  { active_key = Binding::F5;  } break;
-                case SDLK_F6:  { active_key = Binding::F6;  } break;
-                case SDLK_F7:  { active_key = Binding::F7;  } break;
-                case SDLK_F8:  { active_key = Binding::F8;  } break;
-                case SDLK_F9:  { active_key = Binding::F9;  } break;
-                case SDLK_F10: { active_key = Binding::F10; } break;
-                case SDLK_F11: { active_key = Binding::F11; } break;
-                case SDLK_F12: { active_key = Binding::F12; } break;
+                case SDLK_F1:           { active_key = Binding::F1;  } break;
+                case SDLK_F2:           { active_key = Binding::F2;  } break;
+                case SDLK_F3:           { active_key = Binding::F3;  } break;
+                case SDLK_F4:           { active_key = Binding::F4;  } break;
+                case SDLK_F5:           { active_key = Binding::F5;  } break;
+                case SDLK_F6:           { active_key = Binding::F6;  } break;
+                case SDLK_F7:           { active_key = Binding::F7;  } break;
+                case SDLK_F8:           { active_key = Binding::F8;  } break;
+                case SDLK_F9:           { active_key = Binding::F9;  } break;
+                case SDLK_F10:          { active_key = Binding::F10; } break;
+                case SDLK_F11:          { active_key = Binding::F11; } break;
+                case SDLK_F12:          { active_key = Binding::F12; } break;
+                case SDLK_KP_0:         { active_key = Binding::KP_0; } break;
+                case SDLK_KP_1:         { active_key = Binding::KP_1; } break;
+                case SDLK_KP_2:         { active_key = Binding::KP_2; } break;
+                case SDLK_KP_3:         { active_key = Binding::KP_3; } break;
+                case SDLK_KP_4:         { active_key = Binding::KP_4; } break;
+                case SDLK_KP_5:         { active_key = Binding::KP_5; } break;
+                case SDLK_KP_6:         { active_key = Binding::KP_6; } break;
+                case SDLK_KP_7:         { active_key = Binding::KP_7; } break;
+                case SDLK_KP_8:         { active_key = Binding::KP_8; } break;
+                case SDLK_KP_9:         { active_key = Binding::KP_9; } break;
+                case SDLK_KP_PLUS:      { active_key = Binding::KP_PLUS; } break;
+                case SDLK_KP_MINUS:     { active_key = Binding::KP_MINUS; } break;
+                case SDLK_KP_PERIOD:    { active_key = Binding::KP_PERIOD; } break;
+                case SDLK_KP_DIVIDE:    { active_key = Binding::KP_DIVIDE; } break;
+                case SDLK_KP_MULTIPLY:  { active_key = Binding::KP_MULTIPLY; } break;
                 default: {  } break;
             }
         }
@@ -738,7 +753,7 @@ milton_main(bool is_fullscreen, char* file_to_open)
             fclose(fd);
         }
     }
-    // Initalize system cursors
+    // Initialize system cursors
     {
         platform.cursor_default   = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
         platform.cursor_hand      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);

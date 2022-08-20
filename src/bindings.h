@@ -97,6 +97,22 @@ struct Binding
         F10 = -11,
         F11 = -12,
         F12 = -13,
+
+        KP_DIVIDE = '/',
+        KP_MULTIPLY = '*',
+        KP_MINUS = '-',
+        KP_PLUS = '+',
+        KP_PERIOD = '.',
+        KP_0 = '0',
+        KP_1 = '1',
+        KP_2 = '2',
+        KP_3 = '3',
+        KP_4 = '4',
+        KP_5 = '5',
+        KP_6 = '6',
+        KP_7 = '7',
+        KP_8 = '8',
+        KP_9 = '9',
     };
 
     BindableAction action;
