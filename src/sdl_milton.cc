@@ -214,6 +214,28 @@ panning_update(PlatformState* platform)
     }
 }
 
+static void stylus_buttons_exec_function(MiltonInput *milton_input,
+                                         Milton *milton,
+                                         StylusButtonFunction mode)
+{
+    switch (mode) {
+        case STYLUS_DEFAULT:
+            break;
+        case STYLUS_ERASER:
+            milton_input->mode_to_set = MiltonMode::ERASER;
+            break;
+        case STYLUS_BRUSH:
+            milton_input->mode_to_set = MiltonMode::PEN;
+            break;
+        case STYLUS_DECB:
+            for (int i=0;i<5;++i) milton_decrease_brush_size(milton);
+            break;
+        case STYLUS_INCB:
+            for (int i=0;i<5;++i) milton_increase_brush_size(milton);
+            break;
+    }
+}
+
 MiltonInput
 sdl_event_loop(Milton* milton, PlatformState* platform)
 {
@@ -270,6 +292,32 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                     b32 taking_pen_input = EasyTab->PenInProximity
                                            && bit_touch
                                            && !( bit_upper || bit_lower );
+
+                    if (platform->platform_can_configure_stylus) {
+                        // Save lower and upper button status from the stylus - otherwise it returns
+                        // being pressed all the time
+                        if(bit_lower && !platform->stylus_lower_button_pressed) {
+                            platform->stylus_lower_button_pressed = true;
+                            stylus_buttons_exec_function(&milton_input,
+                                                         milton,
+                                                         milton->settings->stylus_lower_button);
+                        }
+
+                        if(!bit_lower && platform->stylus_lower_button_pressed) {
+                            platform->stylus_lower_button_pressed = false;
+                        }
+
+                        if(bit_upper && !platform->stylus_upper_button_pressed) {
+                            platform->stylus_upper_button_pressed = true;
+                            stylus_buttons_exec_function(&milton_input,
+                                                         milton,
+                                                         milton->settings->stylus_upper_button);
+                        }
+
+                        if(!bit_upper && platform->stylus_upper_button_pressed) {
+                            platform->stylus_upper_button_pressed = false;
+                        }
+                    }
 
                     if ( taking_pen_input ) {
                         platform->is_pointer_down = true;

@@ -84,6 +84,10 @@ struct PlatformState
     PlatformSpecific* specific;
 
     float ui_scale;
+
+    bool platform_can_configure_stylus;
+    int stylus_upper_button_pressed;
+    int stylus_lower_button_pressed;
 };
 
 typedef enum HistoryDebug

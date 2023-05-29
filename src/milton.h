@@ -98,11 +98,23 @@ enum PrimitiveFSM
     Primitive_DONE,
 };
 
+enum StylusButtonFunction
+{
+    STYLUS_DEFAULT,
+    STYLUS_ERASER,
+    STYLUS_BRUSH,
+    STYLUS_DECB,
+    STYLUS_INCB,
+};
+
 #pragma pack(push, 1)
 struct MiltonSettings
 {
     v3f background_color;
     float peek_out_increment;
+
+    StylusButtonFunction stylus_upper_button;
+    StylusButtonFunction stylus_lower_button;
 
     MiltonBindings bindings;
 };
