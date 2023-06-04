@@ -384,3 +384,5 @@ void drag_brush_size_stop(Milton* milton);
 
 void drag_zoom_start(Milton* milton, v2i pointer);
 void drag_zoom_stop(Milton* milton);
+
+void stylus_buttons_exec_function(MiltonInput *milton_input, Milton *milton, StylusButtonFunction mode);
