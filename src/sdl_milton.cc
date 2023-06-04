@@ -271,6 +271,32 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
                                            && bit_touch
                                            && !( bit_upper || bit_lower );
 
+                    if (platform->platform_can_configure_stylus) {
+                        // Save lower and upper button status from the stylus - otherwise it returns
+                        // being pressed all the time
+                        if(bit_lower && !platform->stylus_lower_button_pressed) {
+                            platform->stylus_lower_button_pressed = true;
+                            stylus_buttons_exec_function(&milton_input,
+                                                         milton,
+                                                         milton->settings->stylus_lower_button);
+                        }
+
+                        if(!bit_lower && platform->stylus_lower_button_pressed) {
+                            platform->stylus_lower_button_pressed = false;
+                        }
+
+                        if(bit_upper && !platform->stylus_upper_button_pressed) {
+                            platform->stylus_upper_button_pressed = true;
+                            stylus_buttons_exec_function(&milton_input,
+                                                         milton,
+                                                         milton->settings->stylus_upper_button);
+                        }
+
+                        if(!bit_upper && platform->stylus_upper_button_pressed) {
+                            platform->stylus_upper_button_pressed = false;
+                        }
+                    }
+
                     if ( taking_pen_input ) {
                         platform->is_pointer_down = true;
 

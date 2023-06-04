@@ -815,6 +815,51 @@ milton_imgui_tick(MiltonInput* input, PlatformState* platform,  Milton* milton, 
                     milton->settings->peek_out_increment = (peek_out_percent / 100.0f) * peek_range;
                 }
 
+                if(platform->platform_can_configure_stylus) {
+                    char result[50];   // array to hold the result.
+                    ImGui::Separator();
+
+                    ImGui::Text(loc(TXT_stylus_upper_button_function));
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_default), "##upper");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_upper_button, STYLUS_DEFAULT);
+                    ImGui::SameLine();
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_eraser), "##upper");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_upper_button, STYLUS_ERASER);
+                    ImGui::SameLine();
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_brush), "##upper");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_upper_button, STYLUS_BRUSH);
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_decrease_brush_size), "##upper");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_upper_button, STYLUS_DECB);
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_increase_brush_size), "##upper");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_upper_button, STYLUS_INCB);
+
+                    ImGui::Separator();
+
+                    ImGui::Text(loc(TXT_stylus_lower_button_function));
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_default), "##lower");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_lower_button, STYLUS_DEFAULT);
+                    ImGui::SameLine();
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_eraser), "##lower");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_lower_button, STYLUS_ERASER);
+                    ImGui::SameLine();
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_brush), "##lower");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_lower_button, STYLUS_BRUSH);
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_decrease_brush_size), "##lower");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_lower_button, STYLUS_DECB);
+
+                    snprintf(result, array_count(result), "%s%s", loc(TXT_increase_brush_size), "##lower");
+                    ImGui::RadioButton(result, (int*)&milton->settings->stylus_lower_button, STYLUS_INCB);
+                }
+
                 ImGui::Separator();
 
                 MiltonBindings* bs = &milton->settings->bindings;

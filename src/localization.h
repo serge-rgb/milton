@@ -100,6 +100,10 @@ enum Texts
     TXT_size_relative_to_canvas,
     TXT_grid_columns,
     TXT_grid_rows,
+    TXT_default,
+    TXT_stylus_lower_button_function,
+    TXT_stylus_upper_button_function,
+
 
     // Actions
     TXT_Action_FIRST,

@@ -77,6 +77,7 @@ platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo)
         milton_log("EasyTab failed to load. Code %d\n", easytab_res);
     }
 
+    platform->platform_can_configure_stylus = false;
 }
 
 void
