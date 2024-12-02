@@ -41,8 +41,8 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include <xmmintrin.h>
-#include <emmintrin.h>
+// #include <xmmintrin.h>
+// #include <emmintrin.h>
 
 #if defined(_WIN32)
 
