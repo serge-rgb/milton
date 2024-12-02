@@ -352,6 +352,12 @@ platform_ui_scale(PlatformState* p)
     return scale;
 }
 
+float
+platform_font_scale(PlatformState* p)
+{
+    return 1.0f;
+}
+
 void    platform_point_to_pixel(PlatformState* ps, v2l* inout)
 {
 

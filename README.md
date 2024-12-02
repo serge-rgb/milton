@@ -59,6 +59,17 @@ Milton will be compiled to `build\Milton.exe`
 This repo provides a binary SDL.lib that was compiled by running
 `build_deps.bat` in the `third_party` directory.
 
+macOS
+-----
+While in the milton top directory
+```
+mkdir build
+cd build
+cmake ../
+make
+```
+
+Should result in a working `Milton.app`.
 
 Linux and macOS
 ---------------
