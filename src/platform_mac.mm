@@ -29,7 +29,7 @@
 void
 platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo)
 {
-
+    platform->platform_can_configure_stylus = false;
 }
 
 void

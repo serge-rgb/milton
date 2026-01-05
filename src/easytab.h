@@ -801,7 +801,7 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
                     ProximityIn(EasyTab->Device, EasyTab->ProximityTypeIn, EventClassProximityIn);
                     ProximityOut(EasyTab->Device, EasyTab->ProximityTypeOut,EventClassProximityOut );
                     DeviceButtonPress(EasyTab->Device, EasyTab->ButtonTypePress, EventClassButtonPress);
-                    DeviceButtonPress(EasyTab->Device, EasyTab->ButtonTypeRelease, EventClassButtonRelease);
+                    DeviceButtonRelease(EasyTab->Device, EasyTab->ButtonTypeRelease, EventClassButtonRelease);
 
                     #define APPEND_EVENT_CLASS(EventClass) \
                         if (EventClass)                                                     \
@@ -813,6 +813,8 @@ EasyTabResult EasyTab_Load(Display* Disp, Window Win)
                     APPEND_EVENT_CLASS(EventClassMotion);
                     APPEND_EVENT_CLASS(EventClassProximityIn);
                     APPEND_EVENT_CLASS(EventClassProximityOut);
+                    APPEND_EVENT_CLASS(EventClassButtonPress);
+                    APPEND_EVENT_CLASS(EventClassButtonRelease);
 
                     #undef APPEND_EVENT_CLASS
                 } break;
@@ -865,10 +867,22 @@ EasyTabResult EasyTab_HandleEvent(XEvent* Event)
     else if (Event->type == EasyTab->ButtonTypePress)
     {
         // TODO: Buttons
+        // Done lower and upper buttons - tested on wacom one
+        XDeviceButtonPressedEvent* ButtonEvent = (XDeviceButtonPressedEvent*)(Event);
+        if(ButtonEvent->button == Button2)
+                EasyTab->Buttons |= EasyTab_Buttons_Pen_Lower;
+        else if(ButtonEvent->button == Button3)
+                EasyTab->Buttons |= EasyTab_Buttons_Pen_Upper;
     }
     else if (Event->type == EasyTab->ButtonTypeRelease)
     {
 
+        // Done lower and upper buttons - tested on wacom one
+        XDeviceButtonPressedEvent* ButtonEvent = (XDeviceButtonPressedEvent*)(Event);
+        if(ButtonEvent->button == Button2)
+                EasyTab->Buttons &= ~EasyTab_Buttons_Pen_Lower;
+        else if(ButtonEvent->button == Button3)
+                EasyTab->Buttons &= ~EasyTab_Buttons_Pen_Upper;
     }
     else
     {

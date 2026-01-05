@@ -39,6 +39,7 @@ platform_init(PlatformState* platform, SDL_SysWMinfo* sysinfo)
     mlt_assert(sysinfo->subsystem == SDL_SYSWM_X11);
     gtk_init(NULL, NULL);
     EasyTab_Load(sysinfo->info.x11.display, sysinfo->info.x11.window);
+    platform->platform_can_configure_stylus = true;
 }
 
 EasyTabResult

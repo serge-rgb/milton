@@ -98,11 +98,24 @@ enum PrimitiveFSM
     Primitive_DONE,
 };
 
+enum StylusButtonFunction
+{
+    STYLUS_DEFAULT,
+    STYLUS_ERASER,
+    STYLUS_BRUSH,
+    STYLUS_DECB,
+    STYLUS_INCB,
+    STYLUS_ZOOM,
+};
+
 #pragma pack(push, 1)
 struct MiltonSettings
 {
     v3f background_color;
     float peek_out_increment;
+
+    StylusButtonFunction stylus_upper_button;
+    StylusButtonFunction stylus_upper_ctrl_button;
 
     MiltonBindings bindings;
 };
@@ -282,6 +295,7 @@ struct MiltonInput
 {
     int flags;  // MiltonInputFlags
     MiltonMode mode_to_set;
+    MiltonMode saved_mode;
 
     v2l  points[MAX_INPUT_BUFFER_ELEMS];
     f32  pressures[MAX_INPUT_BUFFER_ELEMS];
@@ -372,3 +386,5 @@ void drag_brush_size_stop(Milton* milton);
 
 void drag_zoom_start(Milton* milton, v2i pointer);
 void drag_zoom_stop(Milton* milton);
+
+void stylus_buttons_exec_function(MiltonInput *milton_input, Milton *milton, StylusButtonFunction mode);

@@ -268,8 +268,27 @@ sdl_event_loop(Milton* milton, PlatformState* platform)
 
                     // Pen in use but not drawing
                     b32 taking_pen_input = EasyTab->PenInProximity
-                                           && bit_touch
-                                           && !( bit_upper || bit_lower );
+                                           && bit_touch;
+                                           // && !( bit_upper || bit_lower );
+
+                    if (platform->platform_can_configure_stylus) {
+                        // Save lower and upper button status from the stylus - otherwise it returns
+                        // being pressed all the time
+                        if(bit_upper && !platform->stylus_upper_button_pressed) {
+			    milton_input.saved_mode = milton->current_mode;
+                            platform->stylus_upper_button_pressed = true;
+                            stylus_buttons_exec_function(&milton_input,
+                                                         milton,
+                                                         milton->settings->stylus_upper_button);
+			    drag_zoom_start(milton, platform->pointer);
+                        }
+
+                        if(!bit_upper && platform->stylus_upper_button_pressed) {
+                            platform->stylus_upper_button_pressed = false;
+			    milton_input.mode_to_set = milton_input.saved_mode;
+			    drag_zoom_stop(milton);
+                        }
+                    }
 
                     if ( taking_pen_input ) {
                         platform->is_pointer_down = true;
